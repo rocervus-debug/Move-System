@@ -1694,8 +1694,19 @@ async function loadLeadsFromSupabase() {
     return;
   }
 
-  leads = data || [];
-}
+leads = (data || []).map(l => ({
+  id: l.id,
+  nombre: l.name || '',
+  telefono: l.phone || '',
+  email: l.email || '',
+  fuente: l.source || 'No definido',
+  clase: l.interest || 'No definido',
+  estado: l.status || 'Lead Nuevo',
+  fechaIngreso: l.created_at || '',
+  created_at: l.created_at || '',
+  notas: l.notes || '',
+  assigned_to: l.assigned_to || ''
+}));}
    function renderDashboard(){
   const total   = leads.length;
   const activos = leads.filter(l=>l.estado==='Cerrado – Ganado').length;
