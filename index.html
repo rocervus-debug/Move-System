@@ -1305,27 +1305,40 @@ const ESTADO_BADGE = {
 };
 const CLASE_BADGE = {'Strength':'b-str','Endurance':'b-end','Hyrox':'b-hyrox'};
 
-function saveLead(){
-  const nombre = document.getElementById('l-nombre').value.trim();
+async function saveLead(){
+   const nombre = document.getElementById('l-nombre').value.trim();
   const tel    = document.getElementById('l-tel').value.trim();
   const fuente = document.getElementById('l-fuente').value;
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   if(!tel){ alert('El teléfono es obligatorio.'); return; }
-  const lead = {
-    id: Date.now(),
-    nombre, tel,
-    email:  document.getElementById('l-email').value.trim(),
-    canal:  document.getElementById('l-canal').value,
-    fuente: fuente||'Sin fuente',
-    clase:  document.getElementById('l-clase').value||'No definido',
-    estado: document.getElementById('l-estado').value,
-    notas:  document.getElementById('l-notas').value.trim(),
-    fechaIngreso: new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
-    historial: [],
+const lead = {
+  name: nombre,
+  phone: tel,
+  email: document.getElementById('l-email').value.trim(),
+  source: fuente || 'Sin fuente',
+  interest: document.getElementById('l-clase').value || 'No definido',
+  status: document.getElementById('l-estado').value || 'Lead Nuevo',
+  notes: document.getElementById('l-notas').value.trim(),
+  assigned_to: ''
   };
-  leads.push(lead);
-  saveState();
-  closeModal('lead');
+ const { error } = await supabaseClient
+  .from('leads')
+  .insert([lead]);
+
+if (error) {
+  console.error('Error guardando lead:', error);
+  alert('No se pudo guardar el prospecto.');
+  return;
+}
+
+await loadLeadsFromSupabase();
+renderCRM(currentCRMTab);
+renderPipeline();
+renderDashboard();
+updateBadges();
+
+closeModal('lead');
+toast('Prospecto guardado correctamente');
   clearLeadForm();
   toast(`Prospecto "${nombre}" agregado correctamente.`);
   renderCRM('prospectos');
