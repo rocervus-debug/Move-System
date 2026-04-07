@@ -1684,7 +1684,19 @@ function renderEvalHistory(){
 // ═══════════════════════════════════════════════════════════════════
 // DASHBOARD RENDER
 // ═══════════════════════════════════════════════════════════════════
-function renderDashboard(){
+async function loadLeadsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from('leads')
+    .select('*');
+
+  if (error) {
+    console.error('Error cargando leads:', error);
+    return;
+  }
+
+  leads = data || [];
+}
+   function renderDashboard(){
   const total   = leads.length;
   const activos = leads.filter(l=>l.estado==='Cerrado – Ganado').length;
   const conv    = total>0 ? Math.round((activos/total)*100)+'%' : '—';
@@ -2125,7 +2137,8 @@ function renderCalendario(){
 // ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', async ()=>{
+  await loadLeadsFromSupabase();
   renderDashboard();
   renderCoaches();
   renderEvalSelects();
@@ -2135,7 +2148,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderSolicitudes();
   renderCalendario();
   updateBadges();
-  // close detail panel when clicking outside (but not on interactive elements)
+
   document.addEventListener('click',e=>{
     if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td')&&!e.target.closest('.pipe-card'))
       closeDetail();
