@@ -488,36 +488,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .contact-entry{background:var(--bg);border-radius:8px;padding:10px;border-left:3px solid var(--accent);}
 .contact-entry .ce-date{font-size:10px;color:var(--text3);}
 .contact-entry .ce-text{font-size:12px;color:var(--text);margin-top:2px;}
-   .contact-entry .ce-text{font-size:12px;color:var(--text);margin-top:2px;}
-
-/* 👇 PEGA ESTO AQUÍ */
-@media (max-width: 768px) {
-  body {
-    display: block;
-    height: auto;
-    overflow: auto;
-  }
-
-  .sidebar {
-    width: 100%;
-    height: auto;
-  }
-
-  .main {
-    width: 100%;
-  }
-
-  .kpi-grid,
-  .coach-grid,
-  .g2,
-  .g3 {
-    grid-template-columns: 1fr;
-  }
-
-  .content {
-    padding: 16px;
-  }
-}
 </style>
 </head>
 <body>
@@ -608,7 +578,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div class="topbar-divider"></div>
     <span class="topbar-sub" id="topSub">Lunes 6 de Abril, 2026</span>
     <div class="topbar-right">
-      <div class="search-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar…"/></div>
+      <div class="search-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="globalSearch" placeholder="Buscar en CRM…" oninput="handleSearch(this.value)"/></div>
       <button class="btn btn-primary" id="topBtn" onclick="openModal('lead')">+ Nuevo Lead</button>
       <div class="notif-btn" onclick="toggleNotif()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot"></span></div>
     </div>
@@ -844,7 +814,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
             <div><div style="font-size:11px;color:var(--text3);">Score total</div><div style="font-family:var(--font-display);font-size:36px;font-weight:700;color:var(--accent);" id="eval-score-num">0<span style="font-size:14px;font-weight:400;color:var(--text3)">/40</span></div></div>
             <span id="eval-semaforo" class="badge b-gray" style="font-size:12px;padding:6px 14px;">Sin datos</span>
           </div>
-          <div class="field" style="margin-top:12px;"><label>Notas y áreas de mejora</label><textarea placeholder="Observaciones de esta evaluación..."></textarea></div>
+          <div class="field" style="margin-top:12px;"><label>Notas y áreas de mejora</label><textarea id="eval-notas" placeholder="Observaciones de esta evaluación..."></textarea></div>
           <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="saveEval()">Guardar Evaluación</button>
         </div>
         <div class="card">
@@ -1153,14 +1123,116 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
 </div>
 
+<!-- Modal: Editar Coach -->
+<div class="modal-overlay" id="modal-edit-coach">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✏️ Editar Coach</div>
+      <button class="modal-close" onclick="closeModal('edit-coach')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ec-id"/>
+      <div class="field-grid">
+        <div class="field"><label>Nombre completo *</label><input id="ec-nombre" type="text"/></div>
+        <div class="field"><label>Teléfono</label><input id="ec-tel" type="text"/></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Especialidad *</label>
+          <select id="ec-espec"><option value="">Selecciona…</option><option>Strength</option><option>Endurance</option><option>Hyrox</option><option>Multidisciplina</option></select>
+        </div>
+        <div class="field"><label>Máx. clases / semana</label><input id="ec-max" type="number" min="1" max="30"/></div>
+      </div>
+      <div class="field"><label>Disponibilidad</label><input id="ec-disp" type="text" placeholder="Ej: Lun-Sáb 6am-8pm"/></div>
+      <div class="field"><label>Notas internas</label><textarea id="ec-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-coach')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditCoach()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Pago -->
+<div class="modal-overlay" id="modal-edit-pago">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✏️ Editar Pago</div>
+      <button class="modal-close" onclick="closeModal('edit-pago')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-id"/>
+      <div class="field-grid">
+        <div class="field"><label>Cliente *</label><input id="ep-cliente" type="text"/></div>
+        <div class="field"><label>Monto (MXN) *</label><input id="ep-monto" type="number" min="0"/></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Plan / Membresía</label>
+          <select id="ep-plan"><option>Mensual</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de día</option></select>
+        </div>
+        <div class="field"><label>Método de pago</label>
+          <select id="ep-metodo"><option>Transferencia</option><option>Efectivo</option><option>Tarjeta</option><option>Otro</option></select>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Fecha de pago *</label><input id="ep-fecha" type="date"/></div>
+        <div class="field"><label>Fecha de vencimiento</label><input id="ep-vence" type="date"/></div>
+      </div>
+      <div class="field"><label>Notas</label><textarea id="ep-notas" placeholder="Referencia, observaciones..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-pago')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditPago()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Campaña -->
+<div class="modal-overlay" id="modal-edit-campana">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✏️ Editar Campaña</div>
+      <button class="modal-close" onclick="closeModal('edit-campana')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eca-id"/>
+      <div class="field"><label>Nombre *</label><input id="eca-nombre" type="text"/></div>
+      <div class="field-grid">
+        <div class="field"><label>Canal *</label>
+          <select id="eca-canal"><option value="">Selecciona…</option><option>Instagram Orgánico</option><option>Meta Ads</option><option>TikTok</option><option>Email</option><option>WhatsApp</option><option>Google Ads</option><option>Otra</option></select>
+        </div>
+        <div class="field"><label>Estado</label>
+          <select id="eca-estado"><option>Activa</option><option>Borrador</option><option>Pausada</option><option>Finalizada</option></select>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Fecha inicio</label><input id="eca-inicio" type="date"/></div>
+        <div class="field"><label>Fecha fin</label><input id="eca-fin" type="date"/></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Presupuesto (MXN)</label><input id="eca-presup" type="number" min="0"/></div>
+        <div class="field"><label>Objetivo</label><input id="eca-objetivo" type="text"/></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Leads generados</label><input id="eca-leads" type="number" min="0"/></div>
+        <div class="field"><label>Conversiones</label><input id="eca-conv" type="number" min="0"/></div>
+      </div>
+      <div class="field"><label>Notas</label><textarea id="eca-notas"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-campana')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditCampana()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// STATE — localStorage-backed
+// STATE — leads from Supabase, rest from localStorage
 // ═══════════════════════════════════════════════════════════════════
-let leads = [];
+let leads      = []; // loaded from Supabase on init
 let coaches    = JSON.parse(localStorage.getItem('move_coaches')    || '[]');
 let evals      = JSON.parse(localStorage.getItem('move_evals')      || '[]');
 let pagos      = JSON.parse(localStorage.getItem('move_pagos')      || '[]');
@@ -1197,13 +1269,38 @@ if(!contenidos){
 }
 
 function saveState(){
-  localStorage.setItem('move_leads',       JSON.stringify(leads));
+  // leads are managed in Supabase — only save local data
   localStorage.setItem('move_coaches',     JSON.stringify(coaches));
   localStorage.setItem('move_evals',       JSON.stringify(evals));
   localStorage.setItem('move_pagos',       JSON.stringify(pagos));
   localStorage.setItem('move_campanas',    JSON.stringify(campanas));
   localStorage.setItem('move_solicitudes', JSON.stringify(solicitudes));
   localStorage.setItem('move_contenidos',  JSON.stringify(contenidos));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SUPABASE — cargar leads
+// ═══════════════════════════════════════════════════════════════════
+async function loadLeadsFromSupabase(){
+  if(!window.supabaseClient){ console.warn('Supabase no está listo todavía'); return; }
+  const { data, error } = await window.supabaseClient.from('leads').select('*').order('id', { ascending: false });
+  if(error){ console.error('Error cargando leads:', error); return; }
+  leads = (data || []).map(l => ({
+    id:           l.id,
+    nombre:       l.name  || '',
+    tel:          l.phone || '',
+    email:        l.email || '',
+    canal:        l.canal || 'WhatsApp',
+    fuente:       l.source   || 'Sin fuente',
+    clase:        l.interest || 'No definido',
+    estado:       l.status   || 'Lead Nuevo',
+    notas:        l.notes    || '',
+    historial:    l.historial || [],
+    fechaIngreso: l.created_at
+      ? new Date(l.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+      : '',
+    assigned_to:  l.assigned_to || '',
+  }));
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1222,18 +1319,19 @@ const topTitles = {
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
 };
 const topBtnLabels = {
-  dashboard:   '— Dashboard',
+  dashboard:   '+ Nuevo Lead',
   crm:         '+ Nuevo Prospecto',
   pipeline:    '+ Nuevo Lead',
   pagos:       '+ Registrar Pago',
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
   solicitudes: '+ Nueva Solicitud',
-  horario:     '+ Ver Horario',
+  horario:     '— Sin acción',
   coaches:     '+ Agregar Coach',
   evaluaciones:'+ Evaluar Coach',
 };
 const topBtnActions = {
+  dashboard:   ()=>openModal('lead'),
   crm:         ()=>openModal('lead'),
   pipeline:    ()=>openModal('lead'),
   coaches:     ()=>openModal('coach'),
@@ -1242,6 +1340,7 @@ const topBtnActions = {
   pagos:       ()=>openModal('pago'),
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
+  horario:     ()=>{},
 };
 
 function go(id, el){
@@ -1252,8 +1351,10 @@ function go(id, el){
   const t = topTitles[id]||[id,''];
   document.getElementById('topTitle').textContent = t[0];
   document.getElementById('topSub').textContent = t[1];
-  document.getElementById('topBtn').textContent = topBtnLabels[id]||'Nuevo';
-  document.getElementById('topBtn').onclick = topBtnActions[id]||null;
+  const topBtn = document.getElementById('topBtn');
+  topBtn.textContent = topBtnLabels[id]||'Nuevo';
+  topBtn.onclick = topBtnActions[id]||null;
+  topBtn.style.display = (id==='horario') ? 'none' : 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
   if(id==='coaches')     renderCoaches();
@@ -1306,41 +1407,32 @@ const ESTADO_BADGE = {
 const CLASE_BADGE = {'Strength':'b-str','Endurance':'b-end','Hyrox':'b-hyrox'};
 
 async function saveLead(){
-   const nombre = document.getElementById('l-nombre').value.trim();
+  const nombre = document.getElementById('l-nombre').value.trim();
   const tel    = document.getElementById('l-tel').value.trim();
   const fuente = document.getElementById('l-fuente').value;
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   if(!tel){ alert('El teléfono es obligatorio.'); return; }
-const lead = {
-  name: nombre,
-  phone: tel,
-  email: document.getElementById('l-email').value.trim(),
-  source: fuente || 'Sin fuente',
-  interest: document.getElementById('l-clase').value || 'No definido',
-  status: document.getElementById('l-estado').value || 'Lead Nuevo',
-  notes: document.getElementById('l-notas').value.trim(),
-  assigned_to: ''
+  const payload = {
+    name:     nombre,
+    phone:    tel,
+    email:    document.getElementById('l-email').value.trim(),
+    canal:    document.getElementById('l-canal').value,
+    source:   fuente||'Sin fuente',
+    interest: document.getElementById('l-clase').value||'No definido',
+    status:   document.getElementById('l-estado').value||'Lead Nuevo',
+    notes:    document.getElementById('l-notas').value.trim(),
+    historial: [],
   };
- const { error } = await supabaseClient
-  .from('leads')
-  .insert([lead]);
-
-if (error) {
-  console.error('Error guardando lead:', error);
-  alert('No se pudo guardar el prospecto.');
-  return;
-}
-
-await loadLeadsFromSupabase();
-
-renderCRM(currentCRMTab);
-renderPipeline();
-renderDashboard();
-updateBadges();
-
-closeModal('lead');
-clearLeadForm();
-toast(`Prospecto "${nombre}" agregado correctamente.`);
+  const { data, error } = await window.supabaseClient.from('leads').insert([payload]).select();
+  if(error){ console.error('Error guardando lead:',error); alert('No se pudo guardar el prospecto.'); return; }
+  await loadLeadsFromSupabase();
+  closeModal('lead');
+  clearLeadForm();
+  toast(`Prospecto "${nombre}" agregado correctamente.`);
+  renderCRM('prospectos');
+  renderPipeline();
+  updateBadges();
+  renderDashboard();
 }
 
 function clearLeadForm(){
@@ -1348,10 +1440,11 @@ function clearLeadForm(){
   ['l-canal','l-fuente','l-clase','l-estado'].forEach(id=>document.getElementById(id).selectedIndex=0);
 }
 
-function deleteLead(id){
+async function deleteLead(id){
   if(!confirm('¿Eliminar este prospecto permanentemente?')) return;
+  const { error } = await window.supabaseClient.from('leads').delete().eq('id', id);
+  if(error){ console.error('Error eliminando lead:',error); alert('No se pudo eliminar el prospecto.'); return; }
   leads = leads.filter(l=>l.id!==id);
-  saveState();
   closeDetail();
   toast('Prospecto eliminado.','🗑');
   renderCRM(currentCRMTab);
@@ -1396,18 +1489,20 @@ function openEditEstado(id){
   openModal('edit-estado');
 }
 
-function updateLeadEstado(){
-  const id    = parseInt(document.getElementById('edit-lead-id').value);
+async function updateLeadEstado(){
+  const id    = document.getElementById('edit-lead-id').value; // UUID string
   const estado= document.getElementById('edit-estado-val').value;
   const nota  = document.getElementById('edit-nota').value.trim();
   const l = leads.find(x=>x.id===id);
   if(!l) return;
+  const newHistorial = [...(l.historial||[])];
+  if(nota) newHistorial.push({ fecha: new Date().toLocaleDateString('es-MX'), texto: nota });
+  const { error } = await window.supabaseClient.from('leads')
+    .update({ status: estado, historial: newHistorial })
+    .eq('id', id);
+  if(error){ console.error('Error actualizando estado:',error); alert('No se pudo actualizar el estado.'); return; }
   l.estado = estado;
-  if(nota){
-    l.historial = l.historial||[];
-    l.historial.push({ fecha: new Date().toLocaleDateString('es-MX'), texto: nota });
-  }
-  saveState();
+  l.historial = newHistorial;
   closeModal('edit-estado');
   toast(`Estado actualizado: ${estado}`);
   renderCRM(currentCRMTab);
@@ -1473,15 +1568,17 @@ function renderCRM(tab){
     const cb = CLASE_BADGE[l.clase]||'b-gray';
     const eb = ESTADO_BADGE[l.estado]||'b-gray';
     html += `<tr>
-      <td class="name" style="cursor:pointer;" onclick="openDetail(${l.id})">${esc(l.nombre)}</td>
+      <td class="name" style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.nombre)}</td>
       <td>${esc(l.fuente)}</td>
       <td><span class="badge ${cb}">${esc(l.clase)}</span></td>
       <td><span class="badge ${eb}">${esc(l.estado)}</span></td>
       <td>${esc(l.fechaIngreso)}</td>
       <td>${esc(l.tel)}</td>
       <td class="tbl-action">
-        <button class="btn btn-outline btn-sm" onclick="openDetail(${l.id})">Ver</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditEstado(${l.id})">Estado</button>
+        <button class="btn btn-outline btn-sm" onclick="openDetail('${l.id}')">Ver</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditLead('${l.id}')">✏️ Editar</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditEstado('${l.id}')">Estado</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLead('${l.id}')">🗑</button>
       </td>
     </tr>`;
   });
@@ -1519,7 +1616,7 @@ function renderPipeline(){
     }
     stageleads.forEach(l=>{
       const cb = CLASE_BADGE[l.clase]||'b-gray';
-      html += `<div class="pipe-card" onclick="openDetail(${l.id})">
+      html += `<div class="pipe-card" onclick="openDetail('${l.id}')">
         <div class="pc-name">${esc(l.nombre)}</div>
         <div class="pc-meta">${esc(l.fuente)}</div>
         <div style="margin-top:6px;"><span class="badge ${cb}" style="font-size:9px;">${esc(l.clase)}</span></div>
@@ -1574,6 +1671,41 @@ function deleteCoach(id){
   renderDashboard();
 }
 
+function openEditCoach(id){
+  const c = coaches.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('ec-id').value    = id;
+  document.getElementById('ec-nombre').value= c.nombre||'';
+  document.getElementById('ec-tel').value   = c.tel||'';
+  document.getElementById('ec-espec').value = c.espec||'';
+  document.getElementById('ec-max').value   = c.max||10;
+  document.getElementById('ec-disp').value  = c.disp||'';
+  document.getElementById('ec-notas').value = c.notas||'';
+  openModal('edit-coach');
+}
+
+function saveEditCoach(){
+  const id     = parseInt(document.getElementById('ec-id').value);
+  const nombre = document.getElementById('ec-nombre').value.trim();
+  const espec  = document.getElementById('ec-espec').value;
+  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  if(!espec)  { alert('Selecciona una especialidad.'); return; }
+  const c = coaches.find(x=>x.id===id);
+  if(!c) return;
+  c.nombre = nombre;
+  c.tel    = document.getElementById('ec-tel').value.trim();
+  c.espec  = espec;
+  c.max    = parseInt(document.getElementById('ec-max').value)||10;
+  c.disp   = document.getElementById('ec-disp').value.trim();
+  c.notas  = document.getElementById('ec-notas').value.trim();
+  saveState();
+  closeModal('edit-coach');
+  toast(`Coach "${nombre}" actualizado.`,'✓');
+  renderCoaches();
+  renderEvalSelects();
+  renderDashboard();
+}
+
 function renderCoaches(){
   const grid = document.getElementById('coaches-grid');
   if(!coaches.length){
@@ -1602,9 +1734,12 @@ function renderCoaches(){
       </div>
       <div class="coach-score">${scoreDisplay}</div>
       <div class="prog" style="margin-top:6px;"><div class="prog-fill" style="width:${avgScore?((avgScore/40)*100):0}%;background:${avgScore>=32?'var(--ok)':avgScore>=24?'var(--warn)':'var(--danger)'};"></div></div>
-      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
         <span class="badge ${sem[1]}">${sem[0]}</span>
-        <button class="btn btn-danger btn-sm" onclick="deleteCoach(${c.id})" style="font-size:10px;padding:3px 8px;">Eliminar</button>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-outline btn-sm" onclick="openEditCoach(${c.id})" style="font-size:10px;padding:3px 8px;">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCoach(${c.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
+        </div>
       </div>
       ${c.notas?`<div style="margin-top:8px;font-size:11px;color:var(--text3);">${esc(c.notas)}</div>`:''}
     </div>`;
@@ -1657,12 +1792,14 @@ function saveEval(){
     id: Date.now(), coachId: cid,
     coachNombre: c?c.nombre:'—',
     total,
+    notas: document.getElementById('eval-notas').value.trim(),
     fecha: new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
   });
   saveState();
-  // Reset stars
+  // Reset stars + notes
   document.querySelectorAll('#eval-criteria .star').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('#eval-criteria .star-val').forEach(v=>v.textContent='0/5');
+  document.getElementById('eval-notas').value='';
   updateEvalScore();
   toast(`Evaluación guardada: ${total}/40`);
   renderEvalHistory();
@@ -1677,7 +1814,7 @@ function renderEvalHistory(){
     return;
   }
   const sorted = [...evals].sort((a,b)=>b.id-a.id);
-  el.innerHTML = `<table class="tbl"><thead><tr><th>Coach</th><th>Fecha</th><th>Score</th><th>Semáforo</th></tr></thead><tbody>`
+  el.innerHTML = `<table class="tbl"><thead><tr><th>Coach</th><th>Fecha</th><th>Score</th><th>Semáforo</th><th>Notas</th></tr></thead><tbody>`
     + sorted.map(e=>{
       const sem = e.total>=32?['b-ok','Verde']:e.total>=24?['b-warn','Amarillo']:['b-danger','Rojo'];
       return `<tr>
@@ -1685,6 +1822,7 @@ function renderEvalHistory(){
         <td>${esc(e.fecha)}</td>
         <td style="font-weight:700;color:${e.total>=32?'var(--ok)':e.total>=24?'var(--warn)':'var(--danger)'};">${e.total}/40</td>
         <td><span class="badge ${sem[0]}">${sem[1]}</span></td>
+        <td style="font-size:11px;color:var(--text3);max-width:160px;">${esc(e.notas||'—')}</td>
       </tr>`;
     }).join('')
     + '</tbody></table>';
@@ -1693,30 +1831,7 @@ function renderEvalHistory(){
 // ═══════════════════════════════════════════════════════════════════
 // DASHBOARD RENDER
 // ═══════════════════════════════════════════════════════════════════
-async function loadLeadsFromSupabase() {
-  const { data, error } = await supabaseClient
-    .from('leads')
-    .select('*');
-
-  if (error) {
-    console.error('Error cargando leads:', error);
-    return;
-  }
-
-leads = (data || []).map(l => ({
-  id: l.id,
-  nombre: l.name || '',
-  telefono: l.phone || '',
-  email: l.email || '',
-  fuente: l.source || 'No definido',
-  clase: l.interest || 'No definido',
-  estado: l.status || 'Lead Nuevo',
-  fechaIngreso: l.created_at || '',
-  created_at: l.created_at || '',
-  notas: l.notes || '',
-  assigned_to: l.assigned_to || ''
-}));}
-   function renderDashboard(){
+function renderDashboard(){
   const total   = leads.length;
   const activos = leads.filter(l=>l.estado==='Cerrado – Ganado').length;
   const conv    = total>0 ? Math.round((activos/total)*100)+'%' : '—';
@@ -1816,21 +1931,33 @@ function openEditLead(id){
   openModal('edit-lead');
 }
 
-function saveEditLead(){
-  const id = parseInt(document.getElementById('el-id').value);
+async function saveEditLead(){
+  const id = document.getElementById('el-id').value; // UUID string
   const nombre = document.getElementById('el-nombre').value.trim();
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   const l = leads.find(x=>x.id===id);
   if(!l) return;
+  const updates = {
+    name:     nombre,
+    phone:    document.getElementById('el-tel').value.trim(),
+    email:    document.getElementById('el-email').value.trim(),
+    canal:    document.getElementById('el-canal').value,
+    source:   document.getElementById('el-fuente').value||'Sin fuente',
+    interest: document.getElementById('el-clase').value||'No definido',
+    status:   document.getElementById('el-estado').value,
+    notes:    document.getElementById('el-notas').value.trim(),
+  };
+  const { error } = await window.supabaseClient.from('leads').update(updates).eq('id', id);
+  if(error){ console.error('Error actualizando lead:',error); alert('No se pudo actualizar el prospecto.'); return; }
+  // Update local object
   l.nombre = nombre;
-  l.tel    = document.getElementById('el-tel').value.trim();
-  l.email  = document.getElementById('el-email').value.trim();
-  l.canal  = document.getElementById('el-canal').value;
-  l.fuente = document.getElementById('el-fuente').value||'Sin fuente';
-  l.clase  = document.getElementById('el-clase').value||'No definido';
-  l.estado = document.getElementById('el-estado').value;
-  l.notas  = document.getElementById('el-notas').value.trim();
-  saveState();
+  l.tel    = updates.phone;
+  l.email  = updates.email;
+  l.canal  = updates.canal;
+  l.fuente = updates.source;
+  l.clase  = updates.interest;
+  l.estado = updates.status;
+  l.notas  = updates.notes;
   closeModal('edit-lead');
   toast(`Prospecto "${nombre}" actualizado.`,'✓');
   // refresh detail panel
@@ -1884,6 +2011,43 @@ function deletePago(id){
   renderPagos();
 }
 
+function openEditPago(id){
+  const p = pagos.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('ep-id').value      = id;
+  document.getElementById('ep-cliente').value = p.cliente||'';
+  document.getElementById('ep-monto').value   = p.monto||'';
+  document.getElementById('ep-plan').value    = p.plan||'Mensual';
+  document.getElementById('ep-metodo').value  = p.metodo||'Transferencia';
+  document.getElementById('ep-fecha').value   = p.fecha||'';
+  document.getElementById('ep-vence').value   = (p.vence&&p.vence!=='—')?p.vence:'';
+  document.getElementById('ep-notas').value   = p.notas||'';
+  openModal('edit-pago');
+}
+
+function saveEditPago(){
+  const id      = parseInt(document.getElementById('ep-id').value);
+  const cliente = document.getElementById('ep-cliente').value.trim();
+  const monto   = parseFloat(document.getElementById('ep-monto').value);
+  const fecha   = document.getElementById('ep-fecha').value;
+  if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
+  if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
+  if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
+  const p = pagos.find(x=>x.id===id);
+  if(!p) return;
+  p.cliente = cliente;
+  p.monto   = monto;
+  p.plan    = document.getElementById('ep-plan').value;
+  p.metodo  = document.getElementById('ep-metodo').value;
+  p.fecha   = fecha;
+  p.vence   = document.getElementById('ep-vence').value||'—';
+  p.notas   = document.getElementById('ep-notas').value.trim();
+  saveState();
+  closeModal('edit-pago');
+  toast(`Pago de ${cliente} actualizado.`,'✓');
+  renderPagos();
+}
+
 function renderPagos(){
   // Update KPIs
   const today = new Date();
@@ -1921,7 +2085,10 @@ function renderPagos(){
       <td>${esc(p.metodo)}</td>
       <td>${fechaFmt}</td>
       <td>${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deletePago(${p.id})" style="font-size:10px;padding:3px 8px;">🗑</button></td>
+      <td class="tbl-action">
+        <button class="btn btn-outline btn-sm" onclick="openEditPago(${p.id})" style="font-size:10px;padding:3px 8px;">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePago(${p.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
+      </td>
     </tr>`;
   });
   html += '</tbody></table></div>';
@@ -1967,6 +2134,47 @@ function deleteCampana(id){
   renderCampanas();
 }
 
+function openEditCampana(id){
+  const c = campanas.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('eca-id').value      = id;
+  document.getElementById('eca-nombre').value  = c.nombre||'';
+  document.getElementById('eca-canal').value   = c.canal||'';
+  document.getElementById('eca-estado').value  = c.estado||'Activa';
+  document.getElementById('eca-inicio').value  = (c.inicio&&c.inicio!=='—')?c.inicio:'';
+  document.getElementById('eca-fin').value     = (c.fin&&c.fin!=='—')?c.fin:'';
+  document.getElementById('eca-presup').value  = c.presup||0;
+  document.getElementById('eca-objetivo').value= c.objetivo||'';
+  document.getElementById('eca-leads').value   = c.leads||0;
+  document.getElementById('eca-conv').value    = c.conversiones||0;
+  document.getElementById('eca-notas').value   = c.notas||'';
+  openModal('edit-campana');
+}
+
+function saveEditCampana(){
+  const id     = parseInt(document.getElementById('eca-id').value);
+  const nombre = document.getElementById('eca-nombre').value.trim();
+  const canal  = document.getElementById('eca-canal').value;
+  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  if(!canal)  { alert('Selecciona un canal.'); return; }
+  const c = campanas.find(x=>x.id===id);
+  if(!c) return;
+  c.nombre      = nombre;
+  c.canal       = canal;
+  c.estado      = document.getElementById('eca-estado').value;
+  c.inicio      = document.getElementById('eca-inicio').value||'—';
+  c.fin         = document.getElementById('eca-fin').value||'—';
+  c.presup      = parseFloat(document.getElementById('eca-presup').value)||0;
+  c.objetivo    = document.getElementById('eca-objetivo').value.trim();
+  c.leads       = parseInt(document.getElementById('eca-leads').value)||0;
+  c.conversiones= parseInt(document.getElementById('eca-conv').value)||0;
+  c.notas       = document.getElementById('eca-notas').value.trim();
+  saveState();
+  closeModal('edit-campana');
+  toast(`Campaña "${nombre}" actualizada.`,'✓');
+  renderCampanas();
+}
+
 function renderCampanas(){
   const el = document.getElementById('campanas-list');
   if(!campanas.length){
@@ -1985,6 +2193,7 @@ function renderCampanas(){
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <span class="badge ${eb}">${esc(c.estado)}</span>
+          <button class="btn btn-outline btn-sm" onclick="openEditCampana(${c.id})" style="font-size:10px;padding:3px 8px;">✏️ Editar</button>
           <button class="btn btn-danger btn-sm" onclick="deleteCampana(${c.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
         </div>
       </div>
@@ -2155,9 +2364,62 @@ function renderCalendario(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════════════════
+function handleSearch(q){
+  q = q.trim().toLowerCase();
+  // Only filter CRM table if active; otherwise just highlight
+  const crmActive = document.getElementById('v-crm').classList.contains('active');
+  if(!crmActive){
+    // navigate to CRM and search there
+    go('crm', document.getElementById('nav-crm'));
+  }
+  const wrap = document.getElementById('crm-content');
+  if(!q){ renderCRM(currentCRMTab); return; }
+  const filtered = leads.filter(l=>
+    (l.nombre||'').toLowerCase().includes(q) ||
+    (l.tel||'').toLowerCase().includes(q) ||
+    (l.email||'').toLowerCase().includes(q) ||
+    (l.fuente||'').toLowerCase().includes(q) ||
+    (l.estado||'').toLowerCase().includes(q)
+  );
+  if(!filtered.length){
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">No se encontraron prospectos para "${q}".</div></div>`;
+    return;
+  }
+  let html = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr>
+    <th>Nombre</th><th>Fuente</th><th>Clase</th><th>Estado</th>
+    <th>Fecha ingreso</th><th>Teléfono</th><th></th>
+  </tr></thead><tbody>`;
+  filtered.forEach(l=>{
+    const cb = CLASE_BADGE[l.clase]||'b-gray';
+    const eb = ESTADO_BADGE[l.estado]||'b-gray';
+    html += `<tr>
+      <td class="name" style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.nombre)}</td>
+      <td>${esc(l.fuente)}</td>
+      <td><span class="badge ${cb}">${esc(l.clase)}</span></td>
+      <td><span class="badge ${eb}">${esc(l.estado)}</span></td>
+      <td>${esc(l.fechaIngreso)}</td>
+      <td>${esc(l.tel)}</td>
+      <td class="tbl-action">
+        <button class="btn btn-outline btn-sm" onclick="openDetail('${l.id}')">Ver</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditLead('${l.id}')">✏️ Editar</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditEstado('${l.id}')">Estado</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLead('${l.id}')">🗑</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  html += `<div style="padding:8px 14px;font-size:11px;color:var(--text3);">🔍 ${filtered.length} resultado(s) para "${q}"</div>`;
+  wrap.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Wait for Supabase to be ready (SDK loaded at bottom of file)
+  await new Promise(r => setTimeout(r, 100));
   await loadLeadsFromSupabase();
   renderDashboard();
   renderCoaches();
@@ -2168,19 +2430,20 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderSolicitudes();
   renderCalendario();
   updateBadges();
-
+  // close detail panel when clicking outside (but not on interactive elements)
   document.addEventListener('click',e=>{
     if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td')&&!e.target.closest('.pipe-card'))
       closeDetail();
   });
 });
 </script>
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<!-- ═══ SUPABASE SDK + INIT ═══ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const supabaseUrl = 'https://savzjanpydyjtrgdkllx.supabase.co';
   const supabaseKey = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
-window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+  window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 </script>
 </body>
 </html>
