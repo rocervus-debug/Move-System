@@ -488,6 +488,180 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .contact-entry{background:var(--bg);border-radius:8px;padding:10px;border-left:3px solid var(--accent);}
 .contact-entry .ce-date{font-size:10px;color:var(--text3);}
 .contact-entry .ce-text{font-size:12px;color:var(--text);margin-top:2px;}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — phones & tablets
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Layout: sidebar becomes bottom nav bar */
+  body {
+    flex-direction: column;
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    border-right: none;
+    border-top: 1px solid rgba(255,255,255,.1);
+    padding: 4px 6px 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .logo { display: none; }
+
+  .nav-section {
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    flex-shrink: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .nav-section-label { display: none; }
+
+  .nav-item {
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 8px;
+    min-width: 60px;
+    gap: 2px;
+    border-radius: 8px;
+    margin: 1px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+  }
+  .nav-item.active { border-left: none; border-bottom: 2px solid var(--accent); }
+  .nav-item .nav-icon { font-size: 18px; line-height: 1; }
+  .nav-item .nav-label { font-size: 9px; white-space: nowrap; display: block; }
+  .nav-item .nav-badge { top: -2px; right: 2px; font-size: 8px; padding: 1px 4px; }
+
+  /* Main content area */
+  .main {
+    margin-left: 0 !important;
+    padding-bottom: 90px;
+    height: auto;
+    overflow-y: auto;
+    width: 100%;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: unset;
+  }
+  .topbar-left { flex: 1; min-width: 0; }
+  .topbar-title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-sub { font-size: 10px; display: none; }
+  .top-btn { font-size: 11px; padding: 7px 12px; white-space: nowrap; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  #globalSearch { width: 140px; font-size: 12px; }
+
+  .content { padding: 12px; }
+
+  /* KPI cards */
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi-card { padding: 12px 14px; }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { font-size: 10px; }
+  .kpi-meta { font-size: 10px; }
+
+  /* Dashboard */
+  .dash-row { flex-direction: column; gap: 12px; }
+  .dash-col { min-width: 0 !important; width: 100%; }
+
+  /* Tables → horizontal scroll wrapper */
+  div[style*="overflow-x:auto"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .tbl { min-width: 560px; }
+  .tbl td, .tbl th { padding: 7px 10px; font-size: 12px; }
+  .tbl-action { display: flex; gap: 4px; flex-wrap: nowrap; }
+  .tbl-action .btn { font-size: 10px; padding: 3px 7px; }
+
+  /* Pipeline kanban → horizontal scroll */
+  #pipeline-kanban { overflow-x: auto !important; -webkit-overflow-scrolling: touch; flex-wrap: nowrap !important; padding-bottom: 10px; }
+  .pipe-col { min-width: 150px; flex-shrink: 0; }
+
+  /* Coaches grid */
+  .coaches-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .coach-card { padding: 14px; }
+  .coach-av { width: 44px; height: 44px; font-size: 16px; }
+  .coach-name { font-size: 13px; }
+
+  /* CRM tabs */
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; gap: 4px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { white-space: nowrap; font-size: 12px; padding: 7px 10px; }
+
+  /* Detail panel → full screen slide-over */
+  #detailPanel {
+    width: 100% !important;
+    right: -100% !important;
+    top: 0;
+    bottom: 70px;
+    border-radius: 0;
+  }
+  #detailPanel.open { right: 0 !important; }
+
+  /* Modals → full-width sheets */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 90vh;
+    animation: modal-slide-up .25s ease;
+  }
+  @keyframes modal-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-body { padding: 16px; }
+  .field-grid { grid-template-columns: 1fr; }
+
+  /* Campaign cards */
+  .camp-card { padding: 14px; }
+  .camp-metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Solicitudes */
+  .sol-item { flex-wrap: wrap; gap: 8px; }
+  .sol-item > div:last-child { width: 100%; justify-content: flex-end; }
+
+  /* Calendar */
+  .cal-grid { gap: 1px; }
+  .cal-day { min-height: 44px; padding: 3px; font-size: 10px; }
+  .cal-dh { font-size: 9px; padding: 3px; }
+  .cal-post { font-size: 9px; padding: 2px 3px; }
+
+  /* Eval section */
+  #eval-score-box { flex-direction: column; gap: 8px; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .coaches-grid { grid-template-columns: 1fr; }
+  .nav-item { min-width: 52px; padding: 5px 5px; }
+  .nav-item .nav-icon { font-size: 16px; }
+  .nav-item .nav-label { font-size: 8px; }
+  .topbar-title { font-size: 15px; }
+  #globalSearch { width: 110px; }
+  .camp-metrics { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
@@ -920,12 +1094,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         <div class="field"><label>Teléfono</label><input id="c-tel" type="text" placeholder="+52 461…"/></div>
       </div>
       <div class="field-grid">
-        <div class="field"><label>Especialidad principal *</label>
-          <select id="c-espec"><option value="">Selecciona…</option><option>Strength</option><option>Endurance</option><option>Hyrox</option><option>Multidisciplina</option></select>
-        </div>
-        <div class="field"><label>Máx. clases por semana</label><input id="c-max" type="number" placeholder="14" min="1" max="30"/></div>
+        <div class="field"><label>Email</label><input id="c-email" type="email" placeholder="coach@example.com"/></div>
+        <div class="field"><label>Rol</label><input id="c-rol" type="text" placeholder="Ej: Coach Principal"/></div>
       </div>
-      <div class="field"><label>Disponibilidad</label><input id="c-disp" type="text" placeholder="Ej: Lun-Sáb 6am-8pm"/></div>
+      <div class="field"><label>Clases que imparte</label><input id="c-clases" type="text" placeholder="Ej: Strength, Hyrox"/></div>
       <div class="field"><label>Notas internas</label><textarea id="c-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -1066,12 +1238,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     </div>
     <div class="modal-body">
       <div class="field-grid">
-        <div class="field"><label>Día de Abril *</label><input id="con-dia" type="number" placeholder="1" min="1" max="30"/></div>
+        <div class="field"><label>Día de Abril *</label><input id="co-dia" type="number" placeholder="1" min="1" max="30"/></div>
         <div class="field"><label>Tipo</label>
-          <select id="con-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option></select>
+          <select id="co-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option></select>
         </div>
       </div>
-      <div class="field"><label>Título / Descripción *</label><input id="con-titulo" type="text" placeholder="Ej: Reel Strength – tutorial snatch"/></div>
+      <div class="field"><label>Título / Descripción *</label><input id="co-titulo" type="text" placeholder="Ej: Reel Strength – tutorial snatch"/></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('contenido')">Cancelar</button>
@@ -1137,12 +1309,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         <div class="field"><label>Teléfono</label><input id="ec-tel" type="text"/></div>
       </div>
       <div class="field-grid">
-        <div class="field"><label>Especialidad *</label>
-          <select id="ec-espec"><option value="">Selecciona…</option><option>Strength</option><option>Endurance</option><option>Hyrox</option><option>Multidisciplina</option></select>
-        </div>
-        <div class="field"><label>Máx. clases / semana</label><input id="ec-max" type="number" min="1" max="30"/></div>
+        <div class="field"><label>Email</label><input id="ec-email" type="email"/></div>
+        <div class="field"><label>Rol</label><input id="ec-rol" type="text"/></div>
       </div>
-      <div class="field"><label>Disponibilidad</label><input id="ec-disp" type="text" placeholder="Ej: Lun-Sáb 6am-8pm"/></div>
+      <div class="field"><label>Clases que imparte</label><input id="ec-clases" type="text"/></div>
       <div class="field"><label>Notas internas</label><textarea id="ec-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -1230,53 +1400,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// STATE — leads from Supabase, rest from localStorage
+// STATE — All data loaded from Supabase on initialization
 // ═══════════════════════════════════════════════════════════════════
-let leads      = []; // loaded from Supabase on init
-let coaches    = JSON.parse(localStorage.getItem('move_coaches')    || '[]');
-let evals      = JSON.parse(localStorage.getItem('move_evals')      || '[]');
-let pagos      = JSON.parse(localStorage.getItem('move_pagos')      || '[]');
-let campanas   = JSON.parse(localStorage.getItem('move_campanas')   || '[]');
-let solicitudes= JSON.parse(localStorage.getItem('move_solicitudes')|| 'null');
-let contenidos = JSON.parse(localStorage.getItem('move_contenidos') || 'null');
+let leads      = []; // loaded from Supabase
+let coaches    = []; // loaded from Supabase
+let evals      = []; // loaded from Supabase
+let pagos      = []; // loaded from Supabase
+let campanas   = []; // loaded from Supabase
+let solicitudes= []; // loaded from Supabase
+let contenidos = []; // loaded from Supabase
 
-// Seed initial solicitudes if first run
-if(!solicitudes){
-  solicitudes = [
-    {id:1,titulo:'Diseño flyer: Clase especial Hyrox – 12 Abr',tipo:'Diseño',quien:'Head Coach',vence:'2026-04-08',estado:'En proceso',notas:''},
-    {id:2,titulo:'Copy WhatsApp: Campaña de retención mayo',tipo:'Copy',quien:'Ventas',vence:'2026-04-10',estado:'Nueva',notas:''},
-    {id:3,titulo:'Reel presentación nuevo coach',tipo:'Reel',quien:'Head Coach',vence:'2026-04-15',estado:'Nueva',notas:''},
-  ];
-  localStorage.setItem('move_solicitudes', JSON.stringify(solicitudes));
-}
-// Seed initial contenidos if first run
-if(!contenidos){
-  contenidos = [
-    {id:101,dia:1,tipo:'Reel',titulo:'Reel Strength'},
-    {id:102,dia:1,tipo:'Story',titulo:'Story tip'},
-    {id:103,dia:2,tipo:'Feed',titulo:'Feed Endurance'},
-    {id:104,dia:3,tipo:'Email',titulo:'Email clientes'},
-    {id:105,dia:5,tipo:'Reel',titulo:'Reel Hyrox'},
-    {id:106,dia:6,tipo:'Feed',titulo:'Testimonio'},
-    {id:107,dia:8,tipo:'Reel',titulo:'Motivación'},
-    {id:108,dia:9,tipo:'Feed',titulo:'Coach del mes'},
-    {id:109,dia:10,tipo:'Story',titulo:'Story WOD'},
-    {id:110,dia:11,tipo:'Email',titulo:'Newsletter'},
-    {id:111,dia:12,tipo:'Reel',titulo:'Antes/después'},
-    {id:112,dia:13,tipo:'Feed',titulo:'Post Hyrox'},
-  ];
-  localStorage.setItem('move_contenidos', JSON.stringify(contenidos));
-}
-
-function saveState(){
-  // leads are managed in Supabase — only save local data
-  localStorage.setItem('move_coaches',     JSON.stringify(coaches));
-  localStorage.setItem('move_evals',       JSON.stringify(evals));
-  localStorage.setItem('move_pagos',       JSON.stringify(pagos));
-  localStorage.setItem('move_campanas',    JSON.stringify(campanas));
-  localStorage.setItem('move_solicitudes', JSON.stringify(solicitudes));
-  localStorage.setItem('move_contenidos',  JSON.stringify(contenidos));
-}
+function saveState(){ /* data is managed in Supabase */ }
 
 // ═══════════════════════════════════════════════════════════════════
 // SUPABASE — cargar leads
@@ -1300,6 +1434,64 @@ async function loadLeadsFromSupabase(){
       ? new Date(l.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
       : '',
     assigned_to:  l.assigned_to || '',
+  }));
+}
+
+async function loadCoachesFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('coaches').select('*').order('created_at');
+  if(error){ console.error('Error cargando coaches:', error); return; }
+  coaches = (data||[]).map(c=>({
+    id: c.id, nombre: c.nombre||'', tel: c.tel||'', email: c.email||'',
+    rol: c.rol||'', clases: c.clases||'', activo: c.activo!==false, notas: c.notas||''
+  }));
+}
+
+async function loadEvalsFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('evaluaciones').select('*').order('created_at', {ascending: false});
+  if(error){ console.error('Error cargando evaluaciones:', error); return; }
+  evals = (data||[]).map(e=>({
+    id: e.id,
+    coachNombre: e.cliente||'',   // stored in 'cliente' column
+    coachId:     e.coach||'',     // stored in 'coach' column
+    total:       parseInt(e.tipo)||0, // score stored in 'tipo' column
+    notas:       e.notas||'',
+    fecha:       e.fecha||'',
+    created_at:  e.created_at||''
+  }));
+}
+
+async function loadPagosFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('pagos').select('*').order('created_at', {ascending: false});
+  if(error){ console.error('Error cargando pagos:', error); return; }
+  pagos = (data||[]).map(p=>({
+    id: p.id, cliente: p.cliente||'', monto: p.monto||0, fecha: p.fecha||'',
+    plan: p.plan||'', metodo: p.metodo||'', vence: p.vence||'—', notas: p.notas||''
+  }));
+}
+
+async function loadCampanasFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('campanas').select('*').order('created_at', {ascending: false});
+  if(error){ console.error('Error cargando campañas:', error); return; }
+  campanas = (data||[]).map(c=>({
+    id: c.id, nombre: c.nombre||'', canal: c.canal||'', estado: c.estado||'Activa',
+    inicio: c.inicio||'', fin: c.fin||'', leads: c.leads_count||0, conversiones: c.conversiones||0, notas: c.notas||''
+  }));
+}
+
+async function loadSolicitudesFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('solicitudes').select('*').order('created_at', {ascending: false});
+  if(error){ console.error('Error cargando solicitudes:', error); return; }
+  solicitudes = (data||[]).map(s=>({
+    id: s.id, titulo: s.titulo||'', tipo: s.tipo||'', quien: s.quien||'',
+    vence: s.vence||'', estado: s.estado||'Nueva', notas: s.notas||''
+  }));
+}
+
+async function loadContenidosFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('contenidos').select('*').order('dia');
+  if(error){ console.error('Error cargando contenidos:', error); return; }
+  contenidos = (data||[]).map(c=>({
+    id: c.id, dia: c.dia||1, tipo: c.tipo||'', titulo: c.titulo||''
   }));
 }
 
@@ -1632,43 +1824,40 @@ function renderPipeline(){
 // ═══════════════════════════════════════════════════════════════════
 const COACH_COLORS = ['#124660','#2d6a4f','#7c3aed','#b45309','#1d4ed8','#be123c'];
 
-function saveCoach(){
+async function saveCoach(){
   const nombre = document.getElementById('c-nombre').value.trim();
-  const espec  = document.getElementById('c-espec').value;
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  if(!espec) { alert('Selecciona una especialidad.'); return; }
-  const coach = {
-    id: Date.now(),
-    nombre, espec,
-    tel:   document.getElementById('c-tel').value.trim(),
-    max:   parseInt(document.getElementById('c-max').value)||10,
-    disp:  document.getElementById('c-disp').value.trim(),
-    notas: document.getElementById('c-notas').value.trim(),
-    colorIdx: coaches.length % COACH_COLORS.length,
-    score: null,
+  const payload = {
+    nombre, tel: document.getElementById('c-tel').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
+    rol: document.getElementById('c-rol').value,
+    clases: document.getElementById('c-clases').value,
+    activo: true, notas: ''
   };
-  coaches.push(coach);
-  saveState();
+  const { error } = await window.supabaseClient.from('coaches').insert([payload]);
+  if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'); return; }
+  await loadCoachesFromSupabase();
   closeModal('coach');
-  clearCoachForm();
-  toast(`Coach "${nombre}" agregado al equipo.`);
+  ['c-nombre','c-tel','c-email','c-rol','c-clases'].forEach(id=>document.getElementById(id).value='');
+  toast(`Coach "${nombre}" agregado.`,'✓');
   renderCoaches();
   renderEvalSelects();
+  updateBadges();
 }
 
 function clearCoachForm(){
-  ['c-nombre','c-tel','c-max','c-disp','c-notas'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('c-espec').selectedIndex=0;
+  ['c-nombre','c-tel','c-email','c-rol','c-clases'].forEach(id=>document.getElementById(id).value='');
 }
 
-function deleteCoach(id){
+async function deleteCoach(id){
   if(!confirm('¿Eliminar este coach?')) return;
+  const { error } = await window.supabaseClient.from('coaches').delete().eq('id', id);
+  if(error){ console.error('Error eliminando coach:', error); alert('No se pudo eliminar.'); return; }
   coaches = coaches.filter(c=>c.id!==id);
-  saveState();
   toast('Coach eliminado.','🗑');
   renderCoaches();
   renderEvalSelects();
-  renderDashboard();
+  updateBadges();
 }
 
 function openEditCoach(id){
@@ -1677,33 +1866,31 @@ function openEditCoach(id){
   document.getElementById('ec-id').value    = id;
   document.getElementById('ec-nombre').value= c.nombre||'';
   document.getElementById('ec-tel').value   = c.tel||'';
-  document.getElementById('ec-espec').value = c.espec||'';
-  document.getElementById('ec-max').value   = c.max||10;
-  document.getElementById('ec-disp').value  = c.disp||'';
+  document.getElementById('ec-email').value = c.email||'';
+  document.getElementById('ec-rol').value   = c.rol||'';
+  document.getElementById('ec-clases').value= c.clases||'';
   document.getElementById('ec-notas').value = c.notas||'';
   openModal('edit-coach');
 }
 
-function saveEditCoach(){
-  const id     = parseInt(document.getElementById('ec-id').value);
+async function saveEditCoach(){
+  const id = document.getElementById('ec-id').value;
   const nombre = document.getElementById('ec-nombre').value.trim();
-  const espec  = document.getElementById('ec-espec').value;
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  if(!espec)  { alert('Selecciona una especialidad.'); return; }
+  const updates = {
+    nombre, tel: document.getElementById('ec-tel').value.trim(),
+    email: document.getElementById('ec-email').value.trim(),
+    rol: document.getElementById('ec-rol').value,
+    clases: document.getElementById('ec-clases').value,
+  };
+  const { error } = await window.supabaseClient.from('coaches').update(updates).eq('id', id);
+  if(error){ console.error('Error actualizando coach:', error); alert('No se pudo actualizar.'); return; }
   const c = coaches.find(x=>x.id===id);
-  if(!c) return;
-  c.nombre = nombre;
-  c.tel    = document.getElementById('ec-tel').value.trim();
-  c.espec  = espec;
-  c.max    = parseInt(document.getElementById('ec-max').value)||10;
-  c.disp   = document.getElementById('ec-disp').value.trim();
-  c.notas  = document.getElementById('ec-notas').value.trim();
-  saveState();
+  if(c) Object.assign(c, updates);
   closeModal('edit-coach');
   toast(`Coach "${nombre}" actualizado.`,'✓');
   renderCoaches();
   renderEvalSelects();
-  renderDashboard();
 }
 
 function renderCoaches(){
@@ -1713,32 +1900,22 @@ function renderCoaches(){
     return;
   }
   grid.innerHTML = coaches.map(c=>{
-    const color = COACH_COLORS[c.colorIdx]||COACH_COLORS[0];
     const initials = c.nombre.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    const evalData = evals.filter(e=>e.coachId===c.id);
-    const avgScore = evalData.length
-      ? Math.round(evalData.reduce((a,b)=>a+b.total,0)/evalData.length)
-      : null;
-    const sem = avgScore===null ? ['—','b-gray']
-               : avgScore>=32  ? ['🟢 Verde','b-ok']
-               : avgScore>=24  ? ['🟡 Amarillo','b-warn']
-               : ['🔴 Rojo','b-danger'];
-    const scoreDisplay = avgScore!==null ? `${avgScore}<span>/40</span>` : '<span style="font-size:14px;color:var(--text3);">Sin evaluar</span>';
-    const isRed = avgScore!==null && avgScore<24;
-    return `<div class="coach-card ${isRed?'danger-border':''}">
+    const color = ['#0F4C75','#166534','#6D28D9','#B45309'][Math.abs(c.id.charCodeAt(0)) % 4];
+    const statusBadge = c.activo ? ['b-ok','Activo'] : ['b-gray','Inactivo'];
+    return `<div class="coach-card">
       <div class="coach-av" style="background:${color};">${initials}</div>
       <div class="coach-name">${esc(c.nombre)}</div>
-      <div class="coach-spec">${esc(c.espec)}${c.disp?` · ${esc(c.disp)}`:''}</div>
+      <div class="coach-spec">${esc(c.rol||'—')}${c.clases?` · ${esc(c.clases)}`:''}</div>
       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
-        <span class="badge ${c.espec==='Strength'?'b-str':c.espec==='Endurance'?'b-end':c.espec==='Hyrox'?'b-hyrox':'b-gray'}">${esc(c.espec)}</span>
+        <span class="badge ${statusBadge[0]}">${statusBadge[1]}</span>
+        ${c.email?`<span class="badge b-gray" title="${esc(c.email)}" style="font-size:10px;">📧</span>`:''}
       </div>
-      <div class="coach-score">${scoreDisplay}</div>
-      <div class="prog" style="margin-top:6px;"><div class="prog-fill" style="width:${avgScore?((avgScore/40)*100):0}%;background:${avgScore>=32?'var(--ok)':avgScore>=24?'var(--warn)':'var(--danger)'};"></div></div>
       <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
-        <span class="badge ${sem[1]}">${sem[0]}</span>
+        <div style="flex:1;"></div>
         <div style="display:flex;gap:5px;">
-          <button class="btn btn-outline btn-sm" onclick="openEditCoach(${c.id})" style="font-size:10px;padding:3px 8px;">✏️ Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteCoach(${c.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditCoach('${c.id}')" style="font-size:10px;padding:3px 8px;">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCoach('${c.id}')" style="font-size:10px;padding:3px 8px;">🗑</button>
         </div>
       </div>
       ${c.notas?`<div style="margin-top:8px;font-size:11px;color:var(--text3);">${esc(c.notas)}</div>`:''}
@@ -1779,8 +1956,8 @@ function updateEvalScore(){
   document.getElementById('eval-score-box').style.background = total>=32?'var(--ok-bg)':total>=24?'var(--warn-bg)':total>0?'var(--danger-bg)':'var(--accent-bg)';
 }
 
-function saveEval(){
-  const cid = parseInt(document.getElementById('eval-coach-sel').value);
+async function saveEval(){
+  const cid = document.getElementById('eval-coach-sel').value; // UUID string
   if(!cid){ alert('Selecciona un coach.'); return; }
   let total = 0;
   document.querySelectorAll('#eval-criteria .stars').forEach(g=>{
@@ -1788,14 +1965,16 @@ function saveEval(){
   });
   if(total===0){ alert('Completa al menos un criterio de evaluación.'); return; }
   const c = coaches.find(x=>x.id===cid);
-  evals.push({
-    id: Date.now(), coachId: cid,
-    coachNombre: c?c.nombre:'—',
-    total,
-    notas: document.getElementById('eval-notas').value.trim(),
-    fecha: new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
-  });
-  saveState();
+  const payload = {
+    cliente:  c ? c.nombre : '—',    // coach name goes in 'cliente' column
+    coach:    cid,                    // coach UUID goes in 'coach' column
+    tipo:     String(total),          // score stored in 'tipo' column
+    notas:    document.getElementById('eval-notas').value.trim(),
+    fecha:    new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
+  };
+  const { error } = await window.supabaseClient.from('evaluaciones').insert([payload]);
+  if(error){ console.error('Error guardando evaluación:', error); alert('No se pudo guardar la evaluación.'); return; }
+  await loadEvalsFromSupabase();
   // Reset stars + notes
   document.querySelectorAll('#eval-criteria .star').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('#eval-criteria .star-val').forEach(v=>v.textContent='0/5');
@@ -1813,7 +1992,7 @@ function renderEvalHistory(){
     el.innerHTML = `<div class="empty-state" style="padding:30px;"><div class="empty-icon">📊</div><div class="empty-title">Sin evaluaciones aún</div></div>`;
     return;
   }
-  const sorted = [...evals].sort((a,b)=>b.id-a.id);
+  const sorted = [...evals].sort((a,b)=>(b.created_at||b.fecha||'').localeCompare(a.created_at||a.fecha||''));
   el.innerHTML = `<table class="tbl"><thead><tr><th>Coach</th><th>Fecha</th><th>Score</th><th>Semáforo</th><th>Notas</th></tr></thead><tbody>`
     + sorted.map(e=>{
       const sem = e.total>=32?['b-ok','Verde']:e.total>=24?['b-warn','Amarillo']:['b-danger','Rojo'];
@@ -1977,22 +2156,23 @@ async function saveEditLead(){
 // ═══════════════════════════════════════════════════════════════════
 // PAGOS CRUD
 // ═══════════════════════════════════════════════════════════════════
-function savePago(){
+async function savePago(){
   const cliente = document.getElementById('p-cliente').value.trim();
   const monto   = parseFloat(document.getElementById('p-monto').value);
   const fecha   = document.getElementById('p-fecha').value;
   if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
   if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
   if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
-  pagos.push({
-    id: Date.now(),
+  const payload = {
     cliente, monto, fecha,
     plan:   document.getElementById('p-plan').value,
     metodo: document.getElementById('p-metodo').value,
-    vence:  document.getElementById('p-vence').value||'—',
+    vence:  document.getElementById('p-vence').value||null,
     notas:  document.getElementById('p-notas').value.trim(),
-  });
-  saveState();
+  };
+  const { error } = await window.supabaseClient.from('pagos').insert([payload]);
+  if(error){ console.error('Error guardando pago:', error); alert('No se pudo guardar el pago.'); return; }
+  await loadPagosFromSupabase();
   closeModal('pago');
   ['p-cliente','p-monto','p-notas'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('p-fecha').value='';
@@ -2003,10 +2183,11 @@ function savePago(){
   renderPagos();
 }
 
-function deletePago(id){
+async function deletePago(id){
   if(!confirm('¿Eliminar este pago?')) return;
+  const { error } = await window.supabaseClient.from('pagos').delete().eq('id', id);
+  if(error){ console.error('Error eliminando pago:', error); alert('No se pudo eliminar.'); return; }
   pagos = pagos.filter(p=>p.id!==id);
-  saveState();
   toast('Pago eliminado.','🗑');
   renderPagos();
 }
@@ -2025,24 +2206,23 @@ function openEditPago(id){
   openModal('edit-pago');
 }
 
-function saveEditPago(){
-  const id      = parseInt(document.getElementById('ep-id').value);
+async function saveEditPago(){
+  const id = document.getElementById('ep-id').value;
   const cliente = document.getElementById('ep-cliente').value.trim();
-  const monto   = parseFloat(document.getElementById('ep-monto').value);
-  const fecha   = document.getElementById('ep-fecha').value;
-  if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
-  if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
-  if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
+  const monto = parseFloat(document.getElementById('ep-monto').value);
+  if(!cliente){ alert('El cliente es obligatorio.'); return; }
+  const updates = {
+    cliente, monto,
+    fecha:  document.getElementById('ep-fecha').value,
+    plan:   document.getElementById('ep-plan').value,
+    metodo: document.getElementById('ep-metodo').value,
+    vence:  document.getElementById('ep-vence').value||null,
+    notas:  document.getElementById('ep-notas').value.trim(),
+  };
+  const { error } = await window.supabaseClient.from('pagos').update(updates).eq('id', id);
+  if(error){ console.error('Error actualizando pago:', error); alert('No se pudo actualizar.'); return; }
   const p = pagos.find(x=>x.id===id);
-  if(!p) return;
-  p.cliente = cliente;
-  p.monto   = monto;
-  p.plan    = document.getElementById('ep-plan').value;
-  p.metodo  = document.getElementById('ep-metodo').value;
-  p.fecha   = fecha;
-  p.vence   = document.getElementById('ep-vence').value||'—';
-  p.notas   = document.getElementById('ep-notas').value.trim();
-  saveState();
+  if(p) Object.assign(p, {cliente, monto, fecha: updates.fecha, plan: updates.plan, metodo: updates.metodo, vence: updates.vence||'—', notas: updates.notas});
   closeModal('edit-pago');
   toast(`Pago de ${cliente} actualizado.`,'✓');
   renderPagos();
@@ -2068,7 +2248,7 @@ function renderPagos(){
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Registra los pagos de tus clientes para llevar control de ingresos y renovaciones.</div></div>`;
     return;
   }
-  const sorted = [...pagos].sort((a,b)=>b.id-a.id);
+  const sorted = [...pagos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   let html = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr>
     <th>Cliente</th><th>Plan</th><th>Monto</th><th>Método</th><th>Fecha Pago</th><th>Vencimiento</th><th></th>
   </tr></thead><tbody>`;
@@ -2086,8 +2266,8 @@ function renderPagos(){
       <td>${fechaFmt}</td>
       <td>${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span></td>
       <td class="tbl-action">
-        <button class="btn btn-outline btn-sm" onclick="openEditPago(${p.id})" style="font-size:10px;padding:3px 8px;">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePago(${p.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditPago('${p.id}')" style="font-size:10px;padding:3px 8px;">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePago('${p.id}')" style="font-size:10px;padding:3px 8px;">🗑</button>
       </td>
     </tr>`;
   });
@@ -2100,38 +2280,37 @@ function renderPagos(){
 // ═══════════════════════════════════════════════════════════════════
 const CA_ESTADO_BADGE = { 'Activa':'b-ok','Borrador':'b-gray','Pausada':'b-warn','Finalizada':'b-accent' };
 
-function saveCampana(){
+async function saveCampana(){
   const nombre = document.getElementById('ca-nombre').value.trim();
-  const canal  = document.getElementById('ca-canal').value;
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  if(!canal)  { alert('Selecciona un canal.'); return; }
-  campanas.push({
-    id: Date.now(), nombre, canal,
+  const payload = {
+    nombre,
+    canal:   document.getElementById('ca-canal').value,
     estado:  document.getElementById('ca-estado').value,
-    inicio:  document.getElementById('ca-inicio').value||'—',
-    fin:     document.getElementById('ca-fin').value||'—',
-    presup:  parseFloat(document.getElementById('ca-presup').value)||0,
-    objetivo:document.getElementById('ca-objetivo').value.trim(),
+    inicio:  document.getElementById('ca-inicio').value,
+    fin:     document.getElementById('ca-fin').value,
+    leads_count: 0, conversiones: 0,
     notas:   document.getElementById('ca-notas').value.trim(),
-    leads:0, conversiones:0,
-  });
-  saveState();
+  };
+  const { error } = await window.supabaseClient.from('campanas').insert([payload]);
+  if(error){ console.error('Error guardando campaña:', error); alert('No se pudo guardar la campaña.'); return; }
+  await loadCampanasFromSupabase();
   closeModal('campana');
-  ['ca-nombre','ca-objetivo','ca-notas','ca-presup'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('ca-inicio').value='';
-  document.getElementById('ca-fin').value='';
-  document.getElementById('ca-canal').selectedIndex=0;
-  document.getElementById('ca-estado').selectedIndex=0;
-  toast(`Campaña "${nombre}" creada.`,'🎯');
+  ['ca-nombre','ca-notas'].forEach(id=>document.getElementById(id).value='');
+  ['ca-inicio','ca-fin'].forEach(id=>document.getElementById(id).value='');
+  toast(`Campaña "${nombre}" creada.`,'📣');
   renderCampanas();
+  updateBadges();
 }
 
-function deleteCampana(id){
+async function deleteCampana(id){
   if(!confirm('¿Eliminar esta campaña?')) return;
+  const { error } = await window.supabaseClient.from('campanas').delete().eq('id', id);
+  if(error){ console.error('Error eliminando campaña:', error); alert('No se pudo eliminar.'); return; }
   campanas = campanas.filter(c=>c.id!==id);
-  saveState();
   toast('Campaña eliminada.','🗑');
   renderCampanas();
+  updateBadges();
 }
 
 function openEditCampana(id){
@@ -2141,38 +2320,36 @@ function openEditCampana(id){
   document.getElementById('eca-nombre').value  = c.nombre||'';
   document.getElementById('eca-canal').value   = c.canal||'';
   document.getElementById('eca-estado').value  = c.estado||'Activa';
-  document.getElementById('eca-inicio').value  = (c.inicio&&c.inicio!=='—')?c.inicio:'';
-  document.getElementById('eca-fin').value     = (c.fin&&c.fin!=='—')?c.fin:'';
-  document.getElementById('eca-presup').value  = c.presup||0;
-  document.getElementById('eca-objetivo').value= c.objetivo||'';
+  document.getElementById('eca-inicio').value  = c.inicio||'';
+  document.getElementById('eca-fin').value     = c.fin||'';
   document.getElementById('eca-leads').value   = c.leads||0;
   document.getElementById('eca-conv').value    = c.conversiones||0;
   document.getElementById('eca-notas').value   = c.notas||'';
   openModal('edit-campana');
 }
 
-function saveEditCampana(){
-  const id     = parseInt(document.getElementById('eca-id').value);
+async function saveEditCampana(){
+  const id = document.getElementById('eca-id').value;
   const nombre = document.getElementById('eca-nombre').value.trim();
-  const canal  = document.getElementById('eca-canal').value;
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  if(!canal)  { alert('Selecciona un canal.'); return; }
+  const updates = {
+    nombre,
+    canal:         document.getElementById('eca-canal').value,
+    estado:        document.getElementById('eca-estado').value,
+    inicio:        document.getElementById('eca-inicio').value,
+    fin:           document.getElementById('eca-fin').value,
+    leads_count:   parseInt(document.getElementById('eca-leads').value)||0,
+    conversiones:  parseInt(document.getElementById('eca-conv').value)||0,
+    notas:         document.getElementById('eca-notas').value.trim(),
+  };
+  const { error } = await window.supabaseClient.from('campanas').update(updates).eq('id', id);
+  if(error){ console.error('Error actualizando campaña:', error); alert('No se pudo actualizar.'); return; }
   const c = campanas.find(x=>x.id===id);
-  if(!c) return;
-  c.nombre      = nombre;
-  c.canal       = canal;
-  c.estado      = document.getElementById('eca-estado').value;
-  c.inicio      = document.getElementById('eca-inicio').value||'—';
-  c.fin         = document.getElementById('eca-fin').value||'—';
-  c.presup      = parseFloat(document.getElementById('eca-presup').value)||0;
-  c.objetivo    = document.getElementById('eca-objetivo').value.trim();
-  c.leads       = parseInt(document.getElementById('eca-leads').value)||0;
-  c.conversiones= parseInt(document.getElementById('eca-conv').value)||0;
-  c.notas       = document.getElementById('eca-notas').value.trim();
-  saveState();
+  if(c) Object.assign(c, {nombre, canal: updates.canal, estado: updates.estado, inicio: updates.inicio, fin: updates.fin, leads: updates.leads_count, conversiones: updates.conversiones, notas: updates.notas});
   closeModal('edit-campana');
   toast(`Campaña "${nombre}" actualizada.`,'✓');
   renderCampanas();
+  updateBadges();
 }
 
 function renderCampanas(){
@@ -2193,15 +2370,15 @@ function renderCampanas(){
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <span class="badge ${eb}">${esc(c.estado)}</span>
-          <button class="btn btn-outline btn-sm" onclick="openEditCampana(${c.id})" style="font-size:10px;padding:3px 8px;">✏️ Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteCampana(${c.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditCampana('${c.id}')" style="font-size:10px;padding:3px 8px;">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCampana('${c.id}')" style="font-size:10px;padding:3px 8px;">🗑</button>
         </div>
       </div>
       <div class="camp-metrics">
-        <div class="camp-m"><div class="val">${c.leads}</div><div class="lbl">Leads</div></div>
-        <div class="camp-m"><div class="val">${c.conversiones}</div><div class="lbl">Conversiones</div></div>
-        <div class="camp-m"><div class="val">$${c.presup.toLocaleString('es-MX')}</div><div class="lbl">Presupuesto</div></div>
-        <div class="camp-m"><div class="val">${c.leads>0?Math.round((c.conversiones/c.leads)*100):0}%</div><div class="lbl">Conversión</div></div>
+        <div class="camp-m"><div class="val">${c.leads||0}</div><div class="lbl">Leads</div></div>
+        <div class="camp-m"><div class="val">${c.conversiones||0}</div><div class="lbl">Conversiones</div></div>
+        <div class="camp-m"><div class="val">${(c.leads||0)>0?Math.round(((c.conversiones||0)/(c.leads||1))*100):0}%</div><div class="lbl">Conversión</div></div>
+        <div class="camp-m"><div class="val">${esc(c.estado||'—')}</div><div class="lbl">Estado</div></div>
       </div>
       ${c.notas?`<div style="margin-top:10px;font-size:12px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);">${esc(c.notas)}</div>`:''}
     </div>`;
@@ -2214,43 +2391,44 @@ function renderCampanas(){
 const SOL_TIPO_ICO = {Diseño:'🎨',Reel:'🎬',Copy:'✍️',Foto:'📸',Email:'📧',Otro:'📌'};
 const SOL_ESTADO_BADGE = {'Nueva':'b-info','En proceso':'b-warn','Completada':'b-ok','Cancelada':'b-gray'};
 
-function saveSolicitud(){
+async function saveSolicitud(){
   const titulo = document.getElementById('s-titulo').value.trim();
   if(!titulo){ alert('El título es obligatorio.'); return; }
-  solicitudes.push({
-    id: Date.now(), titulo,
+  const payload = {
+    titulo,
     tipo:   document.getElementById('s-tipo').value,
-    quien:  document.getElementById('s-quien').value.trim()||'Sin especificar',
-    vence:  document.getElementById('s-vence').value||'—',
-    estado: document.getElementById('s-estado').value,
-    notas:  document.getElementById('s-notas').value.trim(),
-    fechaCreacion: new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short'}),
-  });
-  saveState();
+    quien:  document.getElementById('s-quien').value.trim(),
+    vence:  document.getElementById('s-vence').value,
+    estado: 'Nueva', notas: ''
+  };
+  const { error } = await window.supabaseClient.from('solicitudes').insert([payload]);
+  if(error){ console.error('Error guardando solicitud:', error); alert('No se pudo guardar.'); return; }
+  await loadSolicitudesFromSupabase();
   closeModal('solicitud');
-  ['s-titulo','s-quien','s-notas'].forEach(id=>document.getElementById(id).value='');
+  ['s-titulo','s-quien'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('s-vence').value='';
-  document.getElementById('s-tipo').selectedIndex=0;
-  document.getElementById('s-estado').selectedIndex=0;
-  toast(`Solicitud "${titulo}" creada.`,'📋');
+  toast(`Solicitud "${titulo}" creada.`,'📝');
   renderSolicitudes();
+  updateBadges();
 }
 
-function updateSolicitudEstado(id, estado){
+async function updateSolicitudEstado(id, nuevoEstado){
+  const { error } = await window.supabaseClient.from('solicitudes').update({estado: nuevoEstado}).eq('id', id);
+  if(error){ console.error('Error actualizando solicitud:', error); return; }
   const s = solicitudes.find(x=>x.id===id);
-  if(!s) return;
-  s.estado = estado;
-  saveState();
+  if(s) s.estado = nuevoEstado;
   renderSolicitudes();
-  toast(`Solicitud actualizada: ${estado}`);
+  updateBadges();
 }
 
-function deleteSolicitud(id){
+async function deleteSolicitud(id){
   if(!confirm('¿Eliminar esta solicitud?')) return;
+  const { error } = await window.supabaseClient.from('solicitudes').delete().eq('id', id);
+  if(error){ console.error('Error eliminando solicitud:', error); alert('No se pudo eliminar.'); return; }
   solicitudes = solicitudes.filter(s=>s.id!==id);
-  saveState();
   toast('Solicitud eliminada.','🗑');
   renderSolicitudes();
+  updateBadges();
 }
 
 function renderSolicitudes(){
@@ -2263,7 +2441,7 @@ function renderSolicitudes(){
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin solicitudes</div><div class="empty-sub">Crea una nueva solicitud con el botón de arriba.</div></div>`;
     return;
   }
-  const sorted = [...solicitudes].sort((a,b)=>b.id-a.id);
+  const sorted = [...solicitudes].sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
   el.innerHTML = sorted.map(s=>{
     const ico   = SOL_TIPO_ICO[s.tipo]||'📌';
     const eb    = SOL_ESTADO_BADGE[s.estado]||'b-gray';
@@ -2276,11 +2454,11 @@ function renderSolicitudes(){
         <div class="sol-meta">${esc(s.quien)} · ${esc(s.tipo)} · Vence: ${venceFmt}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <select class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:11px;cursor:pointer;" onchange="updateSolicitudEstado(${s.id},this.value)">
+        <select class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:11px;cursor:pointer;" onchange="updateSolicitudEstado('${s.id}',this.value)">
           ${['Nueva','En proceso','Completada','Cancelada'].map(opt=>`<option ${opt===s.estado?'selected':''}>${opt}</option>`).join('')}
         </select>
         <span class="badge ${eb}">${s.estado}</span>
-        <button class="btn btn-danger btn-sm" onclick="deleteSolicitud(${s.id})" style="font-size:10px;padding:3px 8px;">🗑</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSolicitud('${s.id}')" style="font-size:10px;padding:3px 8px;">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -2292,29 +2470,27 @@ function renderSolicitudes(){
 const CON_TIPO_CLASS = {Reel:'cp-reel',Feed:'cp-ig',Story:'cp-story',Email:'cp-email'};
 const CON_TIPO_ICO   = {Reel:'🎬',Feed:'📸',Story:'📲',Email:'📧'};
 
-function saveContenido(){
-  const dia   = parseInt(document.getElementById('con-dia').value);
-  const titulo= document.getElementById('con-titulo').value.trim();
-  if(!dia||dia<1||dia>30){ alert('Ingresa un día válido (1-30).'); return; }
+async function saveContenido(){
+  const titulo = document.getElementById('co-titulo').value.trim();
+  const dia    = parseInt(document.getElementById('co-dia').value);
   if(!titulo){ alert('El título es obligatorio.'); return; }
-  contenidos.push({
-    id: Date.now(), dia, titulo,
-    tipo: document.getElementById('con-tipo').value,
-  });
-  saveState();
+  if(!dia||dia<1||dia>31){ alert('El día debe ser entre 1 y 31.'); return; }
+  const payload = { titulo, dia, tipo: document.getElementById('co-tipo').value };
+  const { error } = await window.supabaseClient.from('contenidos').insert([payload]);
+  if(error){ console.error('Error guardando contenido:', error); alert('No se pudo guardar.'); return; }
+  await loadContenidosFromSupabase();
   closeModal('contenido');
-  document.getElementById('con-dia').value='';
-  document.getElementById('con-titulo').value='';
-  document.getElementById('con-tipo').selectedIndex=0;
-  toast(`Contenido agregado al día ${dia}.`,'📅');
+  document.getElementById('co-titulo').value='';
+  document.getElementById('co-dia').value='';
+  toast(`Contenido "${titulo}" programado para día ${dia}.`,'📅');
   renderCalendario();
 }
 
-function deleteContenido(id){
+async function deleteContenido(id){
+  const { error } = await window.supabaseClient.from('contenidos').delete().eq('id', id);
+  if(error){ console.error('Error eliminando contenido:', error); return; }
   contenidos = contenidos.filter(c=>c.id!==id);
-  saveState();
   renderCalendario();
-  toast('Contenido eliminado.','🗑');
 }
 
 function renderCalendario(){
@@ -2339,7 +2515,7 @@ function renderCalendario(){
     items.forEach(c=>{
       const cls = CON_TIPO_CLASS[c.tipo]||'cp-ig';
       const ico = CON_TIPO_ICO[c.tipo]||'📄';
-      inner += `<div class="cal-post ${cls}" title="Eliminar" onclick="deleteContenido(${c.id})" style="cursor:pointer;" title="Clic para eliminar">${ico} ${esc(c.titulo)}</div>`;
+      inner += `<div class="cal-post ${cls}" title="Eliminar" onclick="deleteContenido('${c.id}')" style="cursor:pointer;" title="Clic para eliminar">${ico} ${esc(c.titulo)}</div>`;
     });
     html += `<div class="cal-day ${isToday?'today':''}">${inner}</div>`;
   }
@@ -2418,9 +2594,16 @@ function handleSearch(q){
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async ()=>{
-  // Wait for Supabase to be ready (SDK loaded at bottom of file)
-  await new Promise(r => setTimeout(r, 100));
-  await loadLeadsFromSupabase();
+  await new Promise(r => setTimeout(r, 150));
+  await Promise.all([
+    loadLeadsFromSupabase(),
+    loadCoachesFromSupabase(),
+    loadEvalsFromSupabase(),
+    loadPagosFromSupabase(),
+    loadCampanasFromSupabase(),
+    loadSolicitudesFromSupabase(),
+    loadContenidosFromSupabase(),
+  ]);
   renderDashboard();
   renderCoaches();
   renderEvalSelects();
@@ -2430,7 +2613,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderSolicitudes();
   renderCalendario();
   updateBadges();
-  // close detail panel when clicking outside (but not on interactive elements)
   document.addEventListener('click',e=>{
     if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td')&&!e.target.closest('.pipe-card'))
       closeDetail();
