@@ -444,13 +444,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   background:var(--move-darkest);color:#fff;
   padding:12px 20px;border-radius:10px;
   font-size:13px;font-weight:500;
-  box-shadow:var(--shadow-lg);z-index:999;
+  box-shadow:var(--shadow-lg);z-index:9999;
   transform:translateY(80px);opacity:0;
   transition:all .3s cubic-bezier(.34,1.56,.64,1);
   display:flex;align-items:center;gap:8px;
   border:1px solid rgba(255,255,255,.06);
+  max-width:calc(100vw - 32px);
 }
 .toast.show{transform:translateY(0);opacity:1;}
+@media(max-width:768px){
+  .toast{ bottom:96px; right:12px; left:12px; font-size:12px; justify-content:center; }
+}
 
 /* Status pills in table action col */
 .tbl-action{display:flex;gap:6px;align-items:center;}
@@ -598,7 +602,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   .pipe-col { min-width: 150px; flex-shrink: 0; }
 
   /* Coaches grid */
-  .coaches-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .coach-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .coach-card { padding: 14px; }
   .coach-av { width: 44px; height: 44px; font-size: 16px; }
   .coach-name { font-size: 13px; }
@@ -654,7 +658,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .coaches-grid { grid-template-columns: 1fr; }
+  .coach-grid { grid-template-columns: 1fr; }
   .nav-item { min-width: 52px; padding: 5px 5px; }
   .nav-item .nav-icon { font-size: 16px; }
   .nav-item .nav-label { font-size: 8px; }
@@ -1417,7 +1421,7 @@ function saveState(){ /* data is managed in Supabase */ }
 // ═══════════════════════════════════════════════════════════════════
 async function loadLeadsFromSupabase(){
   if(!window.supabaseClient){ console.warn('Supabase no está listo todavía'); return; }
-  const { data, error } = await window.supabaseClient.from('leads').select('*').order('id', { ascending: false });
+  const { data, error } = await window.supabaseClient.from('leads').select('*').order('created_at', { ascending: false });
   if(error){ console.error('Error cargando leads:', error); return; }
   leads = (data || []).map(l => ({
     id:           l.id,
@@ -1474,7 +1478,10 @@ async function loadCampanasFromSupabase(){
   if(error){ console.error('Error cargando campañas:', error); return; }
   campanas = (data||[]).map(c=>({
     id: c.id, nombre: c.nombre||'', canal: c.canal||'', estado: c.estado||'Activa',
-    inicio: c.inicio||'', fin: c.fin||'', leads: c.leads_count||0, conversiones: c.conversiones||0, notas: c.notas||''
+    inicio: c.inicio||'', fin: c.fin||'',
+    leads: c.leads_count||0, conversiones: c.conversiones||0,
+    objetivo: c.objetivo||'', presup: c.presupuesto||0,
+    notas: c.notas||''
   }));
 }
 
@@ -1828,11 +1835,13 @@ async function saveCoach(){
   const nombre = document.getElementById('c-nombre').value.trim();
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   const payload = {
-    nombre, tel: document.getElementById('c-tel').value.trim(),
-    email: document.getElementById('c-email').value.trim(),
-    rol: document.getElementById('c-rol').value,
-    clases: document.getElementById('c-clases').value,
-    activo: true, notas: ''
+    nombre,
+    tel:    document.getElementById('c-tel').value.trim(),
+    email:  document.getElementById('c-email').value.trim(),
+    rol:    document.getElementById('c-rol').value.trim(),
+    clases: document.getElementById('c-clases').value.trim(),
+    activo: true,
+    notas:  document.getElementById('c-notas').value.trim()
   };
   const { error } = await window.supabaseClient.from('coaches').insert([payload]);
   if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'); return; }
@@ -1899,9 +1908,9 @@ function renderCoaches(){
     grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Agrega a tu equipo de coaches. Sus perfiles son completamente independientes de los clientes del CRM.</div></div></div>`;
     return;
   }
-  grid.innerHTML = coaches.map(c=>{
-    const initials = c.nombre.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    const color = ['#0F4C75','#166534','#6D28D9','#B45309'][Math.abs(c.id.charCodeAt(0)) % 4];
+  grid.innerHTML = coaches.map((c, idx)=>{
+    const initials = (c.nombre||'?').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
+    const color = COACH_COLORS[idx % COACH_COLORS.length];
     const statusBadge = c.activo ? ['b-ok','Activo'] : ['b-gray','Inactivo'];
     return `<div class="coach-card">
       <div class="coach-av" style="background:${color};">${initials}</div>
@@ -1993,7 +2002,7 @@ function renderEvalHistory(){
     return;
   }
   const sorted = [...evals].sort((a,b)=>(b.created_at||b.fecha||'').localeCompare(a.created_at||a.fecha||''));
-  el.innerHTML = `<table class="tbl"><thead><tr><th>Coach</th><th>Fecha</th><th>Score</th><th>Semáforo</th><th>Notas</th></tr></thead><tbody>`
+  el.innerHTML = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Coach</th><th>Fecha</th><th>Score</th><th>Semáforo</th><th>Notas</th><th></th></tr></thead><tbody>`
     + sorted.map(e=>{
       const sem = e.total>=32?['b-ok','Verde']:e.total>=24?['b-warn','Amarillo']:['b-danger','Rojo'];
       return `<tr>
@@ -2002,9 +2011,20 @@ function renderEvalHistory(){
         <td style="font-weight:700;color:${e.total>=32?'var(--ok)':e.total>=24?'var(--warn)':'var(--danger)'};">${e.total}/40</td>
         <td><span class="badge ${sem[0]}">${sem[1]}</span></td>
         <td style="font-size:11px;color:var(--text3);max-width:160px;">${esc(e.notas||'—')}</td>
+        <td class="tbl-action"><button class="btn btn-danger btn-sm" onclick="deleteEval('${e.id}')" style="font-size:10px;padding:3px 7px;">🗑</button></td>
       </tr>`;
     }).join('')
-    + '</tbody></table>';
+    + '</tbody></table></div>';
+}
+
+async function deleteEval(id){
+  if(!confirm('¿Eliminar esta evaluación?')) return;
+  const { error } = await window.supabaseClient.from('evaluaciones').delete().eq('id', id);
+  if(error){ console.error('Error eliminando evaluación:', error); alert('No se pudo eliminar.'); return; }
+  evals = evals.filter(e=>e.id!==id);
+  toast('Evaluación eliminada.','🗑');
+  renderEvalHistory();
+  renderDashboard();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2045,9 +2065,9 @@ function renderDashboard(){
   if(!coaches.length){
     coachEl.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches</div></div>`;
   } else {
-    coachEl.innerHTML = coaches.map(c=>{
-      const color = COACH_COLORS[c.colorIdx];
-      const initials = c.nombre.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    coachEl.innerHTML = coaches.map((c, idx)=>{
+      const color = COACH_COLORS[idx % COACH_COLORS.length];
+      const initials = (c.nombre||'?').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
       const evalData = evals.filter(e=>e.coachId===c.id);
       const avg = evalData.length ? Math.round(evalData.reduce((a,b)=>a+b.total,0)/evalData.length) : null;
       const semClass = avg===null?'s-ok s' : avg>=32?'s-ok':avg>=24?'s-warn':'s-danger';
@@ -2285,19 +2305,22 @@ async function saveCampana(){
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   const payload = {
     nombre,
-    canal:   document.getElementById('ca-canal').value,
-    estado:  document.getElementById('ca-estado').value,
-    inicio:  document.getElementById('ca-inicio').value,
-    fin:     document.getElementById('ca-fin').value,
+    canal:        document.getElementById('ca-canal').value,
+    estado:       document.getElementById('ca-estado').value,
+    inicio:       document.getElementById('ca-inicio').value,
+    fin:          document.getElementById('ca-fin').value,
+    presupuesto:  parseFloat(document.getElementById('ca-presup').value)||0,
+    objetivo:     document.getElementById('ca-objetivo').value.trim(),
     leads_count: 0, conversiones: 0,
-    notas:   document.getElementById('ca-notas').value.trim(),
+    notas:        document.getElementById('ca-notas').value.trim(),
   };
   const { error } = await window.supabaseClient.from('campanas').insert([payload]);
   if(error){ console.error('Error guardando campaña:', error); alert('No se pudo guardar la campaña.'); return; }
   await loadCampanasFromSupabase();
   closeModal('campana');
-  ['ca-nombre','ca-notas'].forEach(id=>document.getElementById(id).value='');
+  ['ca-nombre','ca-notas','ca-objetivo'].forEach(id=>document.getElementById(id).value='');
   ['ca-inicio','ca-fin'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ca-presup').value='';
   toast(`Campaña "${nombre}" creada.`,'📣');
   renderCampanas();
   updateBadges();
@@ -2324,6 +2347,8 @@ function openEditCampana(id){
   document.getElementById('eca-fin').value     = c.fin||'';
   document.getElementById('eca-leads').value   = c.leads||0;
   document.getElementById('eca-conv').value    = c.conversiones||0;
+  document.getElementById('eca-presup').value  = c.presup||0;
+  document.getElementById('eca-objetivo').value= c.objetivo||'';
   document.getElementById('eca-notas').value   = c.notas||'';
   openModal('edit-campana');
 }
@@ -2340,12 +2365,14 @@ async function saveEditCampana(){
     fin:           document.getElementById('eca-fin').value,
     leads_count:   parseInt(document.getElementById('eca-leads').value)||0,
     conversiones:  parseInt(document.getElementById('eca-conv').value)||0,
+    presupuesto:   parseFloat(document.getElementById('eca-presup').value)||0,
+    objetivo:      document.getElementById('eca-objetivo').value.trim(),
     notas:         document.getElementById('eca-notas').value.trim(),
   };
   const { error } = await window.supabaseClient.from('campanas').update(updates).eq('id', id);
   if(error){ console.error('Error actualizando campaña:', error); alert('No se pudo actualizar.'); return; }
   const c = campanas.find(x=>x.id===id);
-  if(c) Object.assign(c, {nombre, canal: updates.canal, estado: updates.estado, inicio: updates.inicio, fin: updates.fin, leads: updates.leads_count, conversiones: updates.conversiones, notas: updates.notas});
+  if(c) Object.assign(c, {nombre, canal: updates.canal, estado: updates.estado, inicio: updates.inicio, fin: updates.fin, leads: updates.leads_count, conversiones: updates.conversiones, presup: updates.presupuesto, objetivo: updates.objetivo, notas: updates.notas});
   closeModal('edit-campana');
   toast(`Campaña "${nombre}" actualizada.`,'✓');
   renderCampanas();
@@ -2378,7 +2405,7 @@ function renderCampanas(){
         <div class="camp-m"><div class="val">${c.leads||0}</div><div class="lbl">Leads</div></div>
         <div class="camp-m"><div class="val">${c.conversiones||0}</div><div class="lbl">Conversiones</div></div>
         <div class="camp-m"><div class="val">${(c.leads||0)>0?Math.round(((c.conversiones||0)/(c.leads||1))*100):0}%</div><div class="lbl">Conversión</div></div>
-        <div class="camp-m"><div class="val">${esc(c.estado||'—')}</div><div class="lbl">Estado</div></div>
+        <div class="camp-m"><div class="val">${c.presup?'$'+Number(c.presup).toLocaleString('es-MX'):'—'}</div><div class="lbl">Presupuesto</div></div>
       </div>
       ${c.notas?`<div style="margin-top:10px;font-size:12px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);">${esc(c.notas)}</div>`:''}
     </div>`;
