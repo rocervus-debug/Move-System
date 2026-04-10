@@ -494,6 +494,72 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .contact-entry .ce-text{font-size:12px;color:var(--text);margin-top:2px;}
 
 /* ═══════════════════════════════════════════════════════════════
+   HORARIO DINÁMICO
+═══════════════════════════════════════════════════════════════ */
+.hor-grid{
+  display:grid;
+  grid-template-columns:64px repeat(7,1fr);
+  gap:4px;
+  min-width:680px;
+}
+.hor-th{
+  background:var(--accent);color:#fff;
+  padding:9px 4px;border-radius:8px;
+  text-align:center;font-size:10px;font-weight:700;letter-spacing:.6px;
+}
+.hor-time{
+  color:var(--text4);font-size:10px;font-weight:600;
+  display:flex;align-items:flex-start;justify-content:flex-end;
+  padding-right:8px;padding-top:8px;
+}
+.hor-cell{
+  min-height:62px;border-radius:8px;
+  border:1.5px dashed var(--border2);
+  background:var(--bg);
+  display:flex;flex-direction:column;gap:4px;
+  padding:4px;
+  transition:border-color .15s;
+}
+.hor-cell:hover{ border-color:var(--accent); }
+.hor-add-btn{
+  width:100%;background:none;border:none;
+  color:var(--text4);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  height:32px;border-radius:6px;
+  transition:all .15s;
+}
+.hor-add-btn:hover{ background:var(--accent-bg); color:var(--accent); }
+.hor-clase{
+  border-radius:6px;padding:5px 7px;
+  position:relative;cursor:pointer;
+  font-size:10px;
+}
+.hor-clase.sc-str{ background:var(--strength-bg);border-left:3px solid var(--strength); }
+.hor-clase.sc-end{ background:var(--endurance-bg);border-left:3px solid var(--endurance); }
+.hor-clase.sc-hyrox{ background:var(--hyrox-bg);border-left:3px solid var(--hyrox); }
+.hor-clase.sc-open{ background:rgba(29,78,216,.07);border-left:3px solid #1d4ed8; }
+.hor-clase.sc-otro{ background:rgba(74,85,104,.07);border-left:3px solid var(--charcoal); }
+.hor-clase-name{ font-weight:700;color:var(--text);line-height:1.2; }
+.hor-clase-coach{ color:var(--text3);margin-top:2px;line-height:1.2; }
+.hor-clase-cupo{ color:var(--text4);margin-top:1px; }
+.hor-clase-actions{
+  display:none;position:absolute;top:3px;right:3px;
+  gap:2px;
+}
+.hor-clase:hover .hor-clase-actions{ display:flex; }
+.hor-clase-actions button{
+  background:rgba(255,255,255,.85);border:none;
+  border-radius:4px;cursor:pointer;padding:1px 4px;
+  font-size:10px;line-height:1.4;
+}
+.hor-clase-actions button:hover{ background:#fff;box-shadow:var(--shadow); }
+.hor-legend{ display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
+.hor-legend-item{
+  font-size:11px;padding:3px 10px;
+  border-radius:99px;font-weight:700;cursor:default;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE — phones & tablets
 ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
@@ -903,49 +969,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
       <div class="sh">
-        <div class="sh-title">Horario Semanal — 6 al 12 Abr 2026</div>
+        <div class="sh-title">Horario Semanal</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <span style="font-size:11px;padding:3px 10px;background:var(--strength-bg);color:var(--strength);border-radius:99px;font-weight:700;">■ Strength</span>
           <span style="font-size:11px;padding:3px 10px;background:var(--endurance-bg);color:var(--endurance);border-radius:99px;font-weight:700;">■ Endurance</span>
           <span style="font-size:11px;padding:3px 10px;background:var(--hyrox-bg);color:var(--hyrox);border-radius:99px;font-weight:700;">■ Hyrox</span>
+          <span style="font-size:11px;padding:3px 10px;background:rgba(29,78,216,.07);color:#1d4ed8;border-radius:99px;font-weight:700;">■ Open</span>
+          <span style="font-size:11px;padding:3px 10px;background:rgba(74,85,104,.07);color:var(--charcoal);border-radius:99px;font-weight:700;">■ Otro</span>
         </div>
       </div>
       <div class="card" style="overflow-x:auto;">
-        <div class="sched-grid" style="min-width:700px;">
-          <div></div>
-          <div class="sched-th">LUN 7</div><div class="sched-th">MAR 8</div><div class="sched-th">MIÉ 9</div><div class="sched-th">JUE 10</div><div class="sched-th">VIE 11</div><div class="sched-th">SÁB 12</div>
-          <div class="sched-time">6:00am</div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name" id="sh-mon-6-str">—</div></div>
-          <div class="sched-cell sc-end"><div class="sched-class-name">Endurance</div><div class="sched-coach-name" id="sh-tue-6-end">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-end"><div class="sched-class-name">Endurance</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox OPEN</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-time">7:00am</div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-time">6:00pm</div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-end"><div class="sched-class-name">Endurance</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-empty"></div>
-          <div class="sched-time">7:00pm</div>
-          <div class="sched-cell sc-end"><div class="sched-class-name">Endurance</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-empty"></div>
-          <div class="sched-cell sc-str"><div class="sched-class-name">Strength</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-hyrox"><div class="sched-class-name">Hyrox</div><div class="sched-coach-name">—</div></div>
-          <div class="sched-cell sc-empty"></div>
-        </div>
-      </div>
-      <div style="margin-top:12px;padding:14px;background:var(--warn-bg);border:1px solid #fde68a;border-radius:8px;font-size:13px;color:var(--warn);font-weight:600;">
-        ⚠️ Los nombres de coaches en el horario se asignarán automáticamente al agregar coaches en el módulo correspondiente.
+        <div id="horario-grid" style="min-width:680px;"></div>
       </div>
     </div>
 
@@ -1399,6 +1433,115 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
 </div>
 
+<!-- MODAL ADD CLASE -->
+<div class="modal-overlay" id="modal-clase">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">🗓 Nueva Clase</div>
+      <button class="modal-close" onclick="closeModal('clase')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Día *</label>
+          <select id="cl-dia">
+            <option value="Lunes">Lunes</option><option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option><option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+        <div class="field"><label>Hora *</label>
+          <select id="cl-hora">
+            <option>5:00am</option><option>6:00am</option><option>7:00am</option>
+            <option>8:00am</option><option>9:00am</option><option>10:00am</option>
+            <option>11:00am</option><option>12:00pm</option><option>1:00pm</option>
+            <option>2:00pm</option><option>3:00pm</option><option>4:00pm</option>
+            <option>5:00pm</option><option>6:00pm</option><option>7:00pm</option>
+            <option>8:00pm</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Tipo *</label>
+          <select id="cl-tipo">
+            <option value="Strength">Strength</option>
+            <option value="Endurance">Endurance</option>
+            <option value="Hyrox">Hyrox</option>
+            <option value="Open">Open</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="field"><label>Coach</label>
+          <select id="cl-coach"><option value="">Sin asignar</option></select>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Cupo máximo</label><input id="cl-cupo" type="number" min="1" value="15"/></div>
+        <div class="field"><label>Notas</label><input id="cl-notas" type="text" placeholder="Opcional…"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('clase')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClase()">Agregar Clase</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT CLASE -->
+<div class="modal-overlay" id="modal-edit-clase">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✏️ Editar Clase</div>
+      <button class="modal-close" onclick="closeModal('edit-clase')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ecl-id"/>
+      <div class="field-grid">
+        <div class="field"><label>Día *</label>
+          <select id="ecl-dia">
+            <option value="Lunes">Lunes</option><option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option><option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+        <div class="field"><label>Hora *</label>
+          <select id="ecl-hora">
+            <option>5:00am</option><option>6:00am</option><option>7:00am</option>
+            <option>8:00am</option><option>9:00am</option><option>10:00am</option>
+            <option>11:00am</option><option>12:00pm</option><option>1:00pm</option>
+            <option>2:00pm</option><option>3:00pm</option><option>4:00pm</option>
+            <option>5:00pm</option><option>6:00pm</option><option>7:00pm</option>
+            <option>8:00pm</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Tipo *</label>
+          <select id="ecl-tipo">
+            <option value="Strength">Strength</option>
+            <option value="Endurance">Endurance</option>
+            <option value="Hyrox">Hyrox</option>
+            <option value="Open">Open</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="field"><label>Coach</label>
+          <select id="ecl-coach"><option value="">Sin asignar</option></select>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Cupo máximo</label><input id="ecl-cupo" type="number" min="1"/></div>
+        <div class="field"><label>Notas</label><input id="ecl-notas" type="text"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-clase')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditClase()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1413,6 +1556,7 @@ let pagos      = []; // loaded from Supabase
 let campanas   = []; // loaded from Supabase
 let solicitudes= []; // loaded from Supabase
 let contenidos = []; // loaded from Supabase
+let horario    = []; // loaded from Supabase
 
 function saveState(){ /* data is managed in Supabase */ }
 
@@ -1503,6 +1647,25 @@ async function loadContenidosFromSupabase(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SUPABASE — cargar horario
+// ═══════════════════════════════════════════════════════════════════
+async function loadHorarioFromSupabase(){
+  if(!window.supabaseClient){ return; }
+  const { data, error } = await window.supabaseClient.from('horario').select('*').order('hora');
+  if(error){ console.error('Error cargando horario:', error); return; }
+  horario = (data||[]).map(h=>({
+    id: h.id,
+    dia:          h.dia||'',
+    hora:         h.hora||'',
+    tipo:         h.tipo||'Strength',
+    coach_id:     h.coach_id||'',
+    coach_nombre: h.coach_nombre||'',
+    cupo:         h.cupo||15,
+    notas:        h.notas||''
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
 const topTitles = {
@@ -1525,7 +1688,7 @@ const topBtnLabels = {
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
   solicitudes: '+ Nueva Solicitud',
-  horario:     '— Sin acción',
+  horario:     '+ Nueva Clase',
   coaches:     '+ Agregar Coach',
   evaluaciones:'+ Evaluar Coach',
 };
@@ -1539,7 +1702,7 @@ const topBtnActions = {
   pagos:       ()=>openModal('pago'),
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
-  horario:     ()=>{},
+  horario:     ()=>openAddClaseModal(),
 };
 
 function go(id, el){
@@ -1553,7 +1716,7 @@ function go(id, el){
   const topBtn = document.getElementById('topBtn');
   topBtn.textContent = topBtnLabels[id]||'Nuevo';
   topBtn.onclick = topBtnActions[id]||null;
-  topBtn.style.display = (id==='horario') ? 'none' : 'inline-flex';
+  topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
   if(id==='coaches')     renderCoaches();
@@ -1563,6 +1726,7 @@ function go(id, el){
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
+  if(id==='horario')     renderHorario();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2567,6 +2731,168 @@ function renderCalendario(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// HORARIO — render & CRUD
+// ═══════════════════════════════════════════════════════════════════
+const DIAS_ORDER = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const DIAS_SHORT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+function horaSort(a, b){
+  // sort times like 5:00am, 6:00am ... 12:00pm ... 1:00pm
+  function toMin(t){
+    const m = t.match(/(\d+):(\d+)(am|pm)/i);
+    if(!m) return 0;
+    let h = parseInt(m[1]), min = parseInt(m[2]);
+    if(m[3].toLowerCase()==='pm' && h!==12) h+=12;
+    if(m[3].toLowerCase()==='am' && h===12) h=0;
+    return h*60+min;
+  }
+  return toMin(a)-toMin(b);
+}
+
+function tipoClass(tipo){
+  const map = {Strength:'sc-str',Endurance:'sc-end',Hyrox:'sc-hyrox',Open:'sc-open',Otro:'sc-otro'};
+  return map[tipo]||'sc-otro';
+}
+
+function renderHorario(){
+  const grid = document.getElementById('horario-grid');
+  if(!grid) return;
+
+  // Unique sorted hours across all entries + sensible defaults if empty
+  const allHoras = [...new Set(horario.map(h=>h.hora))].sort(horaSort);
+  const HORAS = allHoras.length ? allHoras : ['6:00am','7:00am','6:00pm','7:00pm'];
+
+  let html = '<div class="hor-grid">';
+  // Header row
+  html += '<div class="hor-th" style="background:transparent;"></div>';
+  DIAS_SHORT.forEach((d,i)=>{ html+=`<div class="hor-th">${d}</div>`; });
+
+  // Data rows
+  HORAS.forEach(hora=>{
+    html += `<div class="hor-time">${hora}</div>`;
+    DIAS_ORDER.forEach(dia=>{
+      const clases = horario.filter(h=>h.dia===dia && h.hora===hora);
+      html += `<div class="hor-cell">`;
+      clases.forEach(c=>{
+        const tc = tipoClass(c.tipo);
+        html += `<div class="hor-clase ${tc}" onclick="openEditClase('${c.id}')">
+          <div class="hor-clase-name">${esc(c.tipo)}</div>
+          <div class="hor-clase-coach">${c.coach_nombre ? esc(c.coach_nombre) : '<em style="opacity:.5">Sin coach</em>'}</div>
+          ${c.cupo ? `<div style="font-size:9px;opacity:.55;margin-top:2px;">👥 Cupo: ${c.cupo}</div>` : ''}
+          <div class="hor-clase-actions">
+            <button onclick="event.stopPropagation();openEditClase('${c.id}')" title="Editar">✏️</button>
+            <button onclick="event.stopPropagation();deleteClase('${c.id}')" title="Eliminar">🗑</button>
+          </div>
+        </div>`;
+      });
+      html += `<button class="hor-add-btn" onclick="openAddClaseModal('${dia}','${hora}')" title="Agregar clase">+</button>`;
+      html += `</div>`;
+    });
+  });
+
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+function openAddClaseModal(dia, hora){
+  // populate coach dropdown
+  const sel = document.getElementById('cl-coach');
+  sel.innerHTML = '<option value="">Sin asignar</option>';
+  coaches.forEach(c=>{ sel.innerHTML += `<option value="${c.id}">${esc(c.nombre)}</option>`; });
+
+  // pre-select dia/hora if passed from grid button
+  if(dia){
+    const dsel = document.getElementById('cl-dia');
+    for(let o of dsel.options){ if(o.value===dia){ o.selected=true; break; } }
+  }
+  if(hora){
+    const hsel = document.getElementById('cl-hora');
+    for(let o of hsel.options){ if(o.value===hora){ o.selected=true; break; } }
+  }
+
+  // reset other fields
+  document.getElementById('cl-tipo').value = 'Strength';
+  document.getElementById('cl-cupo').value = '15';
+  document.getElementById('cl-notas').value = '';
+  openModal('clase');
+}
+
+async function saveClase(){
+  const dia   = document.getElementById('cl-dia').value;
+  const hora  = document.getElementById('cl-hora').value;
+  const tipo  = document.getElementById('cl-tipo').value;
+  const cid   = document.getElementById('cl-coach').value;
+  const cupo  = parseInt(document.getElementById('cl-cupo').value)||15;
+  const notas = document.getElementById('cl-notas').value.trim();
+  const coachObj = coaches.find(c=>c.id===cid);
+  const payload = {
+    dia, hora, tipo,
+    coach_id:     cid||null,
+    coach_nombre: coachObj ? coachObj.nombre : '',
+    cupo, notas
+  };
+  const { error } = await window.supabaseClient.from('horario').insert([payload]);
+  if(error){ toast('Error al guardar clase ❌','✕'); console.error(error); return; }
+  closeModal('clase');
+  await loadHorarioFromSupabase();
+  renderHorario();
+  toast('Clase agregada ✓');
+}
+
+function openEditClase(id){
+  const c = horario.find(h=>h.id===id);
+  if(!c) return;
+  document.getElementById('ecl-id').value   = id;
+  document.getElementById('ecl-cupo').value  = c.cupo;
+  document.getElementById('ecl-notas').value = c.notas;
+
+  // populate coach dropdown
+  const sel = document.getElementById('ecl-coach');
+  sel.innerHTML = '<option value="">Sin asignar</option>';
+  coaches.forEach(co=>{ sel.innerHTML += `<option value="${co.id}">${esc(co.nombre)}</option>`; });
+
+  // set selects
+  for(let o of document.getElementById('ecl-dia').options)  { o.selected = (o.value===c.dia);  }
+  for(let o of document.getElementById('ecl-hora').options) { o.selected = (o.value===c.hora); }
+  for(let o of document.getElementById('ecl-tipo').options) { o.selected = (o.value===c.tipo); }
+  for(let o of sel.options){ o.selected = (o.value===c.coach_id); }
+
+  openModal('edit-clase');
+}
+
+async function saveEditClase(){
+  const id    = document.getElementById('ecl-id').value;
+  const dia   = document.getElementById('ecl-dia').value;
+  const hora  = document.getElementById('ecl-hora').value;
+  const tipo  = document.getElementById('ecl-tipo').value;
+  const cid   = document.getElementById('ecl-coach').value;
+  const cupo  = parseInt(document.getElementById('ecl-cupo').value)||15;
+  const notas = document.getElementById('ecl-notas').value.trim();
+  const coachObj = coaches.find(c=>c.id===cid);
+  const payload = {
+    dia, hora, tipo,
+    coach_id:     cid||null,
+    coach_nombre: coachObj ? coachObj.nombre : '',
+    cupo, notas
+  };
+  const { error } = await window.supabaseClient.from('horario').update(payload).eq('id', id);
+  if(error){ toast('Error al guardar ❌','✕'); console.error(error); return; }
+  closeModal('edit-clase');
+  await loadHorarioFromSupabase();
+  renderHorario();
+  toast('Clase actualizada ✓');
+}
+
+async function deleteClase(id){
+  if(!confirm('¿Eliminar esta clase del horario?')) return;
+  const { error } = await window.supabaseClient.from('horario').delete().eq('id', id);
+  if(error){ toast('Error al eliminar ❌','✕'); return; }
+  await loadHorarioFromSupabase();
+  renderHorario();
+  toast('Clase eliminada','🗑');
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SEARCH
 // ═══════════════════════════════════════════════════════════════════
 function handleSearch(q){
@@ -2630,6 +2956,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadCampanasFromSupabase(),
     loadSolicitudesFromSupabase(),
     loadContenidosFromSupabase(),
+    loadHorarioFromSupabase(),
   ]);
   renderDashboard();
   renderCoaches();
