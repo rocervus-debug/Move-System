@@ -1533,7 +1533,14 @@ select option{background:#10101c;color:var(--text);}
           <select id="p-plan"><option>Mensual</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de día</option></select>
         </div>
         <div class="field"><label>Método de pago</label>
-          <select id="p-metodo"><option>Transferencia</option><option>Efectivo</option><option>Tarjeta</option><option>Otro</option></select>
+          <select id="p-metodo">
+            <option>Transferencia</option>
+            <option>Efectivo</option>
+            <option>Tarjeta</option>
+            <option>TotalPass</option>
+            <option>Nessty</option>
+            <option>Otro</option>
+          </select>
         </div>
       </div>
       <div class="field-grid">
@@ -1724,7 +1731,14 @@ select option{background:#10101c;color:var(--text);}
           <select id="ep-plan"><option>Mensual</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de día</option></select>
         </div>
         <div class="field"><label>Método de pago</label>
-          <select id="ep-metodo"><option>Transferencia</option><option>Efectivo</option><option>Tarjeta</option><option>Otro</option></select>
+          <select id="ep-metodo">
+            <option>Transferencia</option>
+            <option>Efectivo</option>
+            <option>Tarjeta</option>
+            <option>TotalPass</option>
+            <option>Nessty</option>
+            <option>Otro</option>
+          </select>
         </div>
       </div>
       <div class="field-grid">
@@ -3013,40 +3027,69 @@ async function deletePago(id){
   renderPagos();
 }
 
+// Helper: set a select value, adding the option dynamically if it's missing
+function setSelectVal(selId, val){
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  // Try to find the matching option
+  let found = false;
+  for(const opt of sel.options){ if(opt.value===val||opt.text===val){ opt.selected=true; found=true; break; } }
+  // If not found and value is non-empty, add it as an option and select it
+  if(!found && val){
+    const opt = document.createElement('option');
+    opt.value = val; opt.text = val; opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
 function openEditPago(id){
   const p = pagos.find(x=>x.id===id);
-  if(!p) return;
+  if(!p){ toast('Pago no encontrado ❌','✕'); return; }
   document.getElementById('ep-id').value      = id;
   document.getElementById('ep-cliente').value = p.cliente||'';
   document.getElementById('ep-monto').value   = p.monto||'';
-  document.getElementById('ep-plan').value    = p.plan||'Mensual';
-  document.getElementById('ep-metodo').value  = p.metodo||'Transferencia';
   document.getElementById('ep-fecha').value   = p.fecha||'';
-  document.getElementById('ep-vence').value   = (p.vence&&p.vence!=='—')?p.vence:'';
+  document.getElementById('ep-vence').value   = (p.vence&&p.vence!=='—') ? p.vence : '';
   document.getElementById('ep-notas').value   = p.notas||'';
+  setSelectVal('ep-plan',   p.plan   || 'Mensual');
+  setSelectVal('ep-metodo', p.metodo || 'Transferencia');
   openModal('edit-pago');
 }
 
 async function saveEditPago(){
-  const id = document.getElementById('ep-id').value;
+  const id      = document.getElementById('ep-id').value;
   const cliente = document.getElementById('ep-cliente').value.trim();
-  const monto = parseFloat(document.getElementById('ep-monto').value);
-  if(!cliente){ alert('El cliente es obligatorio.'); return; }
+  const monto   = parseFloat(document.getElementById('ep-monto').value);
+  const fecha   = document.getElementById('ep-fecha').value;
+  if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
+  if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
+  if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
   const updates = {
-    cliente, monto,
-    fecha:  document.getElementById('ep-fecha').value,
+    cliente, monto, fecha,
     plan:   document.getElementById('ep-plan').value,
     metodo: document.getElementById('ep-metodo').value,
-    vence:  document.getElementById('ep-vence').value||null,
+    vence:  document.getElementById('ep-vence').value || null,
     notas:  document.getElementById('ep-notas').value.trim(),
   };
   const { error } = await window.supabaseClient.from('pagos').update(updates).eq('id', id);
-  if(error){ console.error('Error actualizando pago:', error); alert('No se pudo actualizar.'); return; }
-  const p = pagos.find(x=>x.id===id);
-  if(p) Object.assign(p, {cliente, monto, fecha: updates.fecha, plan: updates.plan, metodo: updates.metodo, vence: updates.vence||'—', notas: updates.notas});
+  if(error){ console.error('Error actualizando pago:', error); toast('No se pudo actualizar el pago ❌','✕'); return; }
   closeModal('edit-pago');
-  toast(`Pago de ${cliente} actualizado.`,'✓');
+  toast(`Pago de ${cliente} actualizado ✓`);
+  await loadPagosFromSupabase();
   renderPagos();
+}
+
+function metodoBadge(m){
+  const map = {
+    'Transferencia': ['#60a5fa','rgba(96,165,250,.12)','💸'],
+    'Efectivo':      ['var(--ok)','var(--ok-bg)','💵'],
+    'Tarjeta':       ['#c084fc','rgba(192,132,252,.12)','💳'],
+    'TotalPass':     ['#f97316','rgba(249,115,22,.12)','🏷'],
+    'Nessty':        ['#fb923c','rgba(251,146,60,.12)','🔗'],
+    'Otro':          ['var(--text3)','rgba(255,255,255,.05)','💰'],
+  };
+  const [color, bg, ico] = map[m] || ['var(--text3)','rgba(255,255,255,.05)','💰'];
+  return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:${bg};color:${color};border:1px solid ${color}22;">${ico} ${esc(m||'—')}</span>`;
 }
 
 function renderPagos(){
@@ -3083,7 +3126,7 @@ function renderPagos(){
       <td class="name">${esc(p.cliente)}</td>
       <td>${esc(p.plan)}</td>
       <td style="font-weight:700;color:var(--ok);">$${p.monto.toLocaleString('es-MX')}</td>
-      <td>${esc(p.metodo)}</td>
+      <td>${metodoBadge(p.metodo)}</td>
       <td>${fechaFmt}</td>
       <td>${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span></td>
       <td class="tbl-action">
