@@ -2101,7 +2101,7 @@ async function saveNewUser(){
 }
 
 function openEditUser(id){
-  const u = usuarios.find(x=>x.id===id);
+  const u = usuarios.find(x=>String(x.id)===String(id));
   if(!u) return;
   document.getElementById('eu-id').value     = id;
   document.getElementById('eu-nombre').value = u.nombre;
@@ -2460,7 +2460,7 @@ async function deleteLead(id){
 }
 
 function openDetail(id){
-  const l = leads.find(x=>x.id===id);
+  const l = leads.find(x=>String(x.id)===String(id));
   if(!l) return;
   document.getElementById('dp-name').textContent = l.nombre;
   document.getElementById('dp-sub').textContent  = l.estado + ' · ' + l.fechaIngreso;
@@ -2487,7 +2487,7 @@ function closeDetail(){
 }
 
 function openEditEstado(id){
-  const l = leads.find(x=>x.id===id);
+  const l = leads.find(x=>String(x.id)===String(id));
   if(!l) return;
   document.getElementById('edit-lead-id').value = id;
   document.getElementById('edit-estado-val').value = l.estado;
@@ -2499,7 +2499,7 @@ async function updateLeadEstado(){
   const id    = document.getElementById('edit-lead-id').value; // UUID string
   const estado= document.getElementById('edit-estado-val').value;
   const nota  = document.getElementById('edit-nota').value.trim();
-  const l = leads.find(x=>x.id===id);
+  const l = leads.find(x=>String(x.id)===String(id));
   if(!l) return;
   const newHistorial = [...(l.historial||[])];
   if(nota) newHistorial.push({ fecha: new Date().toLocaleDateString('es-MX'), texto: nota });
@@ -2677,7 +2677,7 @@ async function deleteCoach(id){
 }
 
 function openEditCoach(id){
-  const c = coaches.find(x=>x.id===id);
+  const c = coaches.find(x=>String(x.id)===String(id));
   if(!c) return;
   document.getElementById('ec-id').value    = id;
   document.getElementById('ec-nombre').value= c.nombre||'';
@@ -2701,7 +2701,7 @@ async function saveEditCoach(){
   };
   const { error } = await window.supabaseClient.from('coaches').update(updates).eq('id', id);
   if(error){ console.error('Error actualizando coach:', error); alert('No se pudo actualizar.'); return; }
-  const c = coaches.find(x=>x.id===id);
+  const c = coaches.find(x=>String(x.id)===String(id));
   if(c) Object.assign(c, updates);
   closeModal('edit-coach');
   toast(`Coach "${nombre}" actualizado.`,'✓');
@@ -2931,7 +2931,7 @@ function updateBadges(){
 // EDIT LEAD (full)
 // ═══════════════════════════════════════════════════════════════════
 function openEditLead(id){
-  const l = leads.find(x=>x.id===id);
+  const l = leads.find(x=>String(x.id)===String(id));
   if(!l) return;
   document.getElementById('el-id').value       = id;
   document.getElementById('el-nombre').value   = l.nombre||'';
@@ -2949,7 +2949,7 @@ async function saveEditLead(){
   const id = document.getElementById('el-id').value; // UUID string
   const nombre = document.getElementById('el-nombre').value.trim();
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  const l = leads.find(x=>x.id===id);
+  const l = leads.find(x=>String(x.id)===String(id));
   if(!l) return;
   const updates = {
     name:     nombre,
@@ -3022,7 +3022,7 @@ async function deletePago(id){
   if(!confirm('¿Eliminar este pago?')) return;
   const { error } = await window.supabaseClient.from('pagos').delete().eq('id', id);
   if(error){ console.error('Error eliminando pago:', error); alert('No se pudo eliminar.'); return; }
-  pagos = pagos.filter(p=>p.id!==id);
+  pagos = pagos.filter(p=>String(p.id)!==String(id));
   toast('Pago eliminado.','🗑');
   renderPagos();
 }
@@ -3043,7 +3043,7 @@ function setSelectVal(selId, val){
 }
 
 function openEditPago(id){
-  const p = pagos.find(x=>x.id===id);
+  const p = pagos.find(x=>String(x.id)===String(id));
   if(!p){ toast('Pago no encontrado ❌','✕'); return; }
   document.getElementById('ep-id').value      = id;
   document.getElementById('ep-cliente').value = p.cliente||'';
@@ -3181,7 +3181,7 @@ async function deleteCampana(id){
 }
 
 function openEditCampana(id){
-  const c = campanas.find(x=>x.id===id);
+  const c = campanas.find(x=>String(x.id)===String(id));
   if(!c) return;
   document.getElementById('eca-id').value      = id;
   document.getElementById('eca-nombre').value  = c.nombre||'';
@@ -3215,7 +3215,7 @@ async function saveEditCampana(){
   };
   const { error } = await window.supabaseClient.from('campanas').update(updates).eq('id', id);
   if(error){ console.error('Error actualizando campaña:', error); alert('No se pudo actualizar.'); return; }
-  const c = campanas.find(x=>x.id===id);
+  const c = campanas.find(x=>String(x.id)===String(id));
   if(c) Object.assign(c, {nombre, canal: updates.canal, estado: updates.estado, inicio: updates.inicio, fin: updates.fin, leads: updates.leads_count, conversiones: updates.conversiones, presup: updates.presupuesto, objetivo: updates.objetivo, notas: updates.notas});
   closeModal('edit-campana');
   toast(`Campaña "${nombre}" actualizada.`,'✓');
@@ -3286,7 +3286,7 @@ async function saveSolicitud(){
 async function updateSolicitudEstado(id, nuevoEstado){
   const { error } = await window.supabaseClient.from('solicitudes').update({estado: nuevoEstado}).eq('id', id);
   if(error){ console.error('Error actualizando solicitud:', error); return; }
-  const s = solicitudes.find(x=>x.id===id);
+  const s = solicitudes.find(x=>String(x.id)===String(id));
   if(s) s.estado = nuevoEstado;
   renderSolicitudes();
   updateBadges();
@@ -3520,7 +3520,7 @@ async function saveClase(){
 }
 
 function openEditClase(id){
-  const c = horario.find(h=>h.id===id);
+  const c = horario.find(h=>String(h.id)===String(id));
   if(!c) return;
   document.getElementById('ecl-id').value   = id;
   document.getElementById('ecl-cupo').value  = c.cupo;
