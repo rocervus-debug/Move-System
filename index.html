@@ -2404,32 +2404,36 @@ select option{background:#10101c;color:var(--text);}
 </div>
 
 <!-- ══ MODAL: PROGRAMA ENTRADA ══ -->
-<div class="modal-overlay" id="modal-programa">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-header">
-      <div class="modal-title" id="prog-modal-title">Entrenamiento del día</div>
-      <button class="modal-close" onclick="closeModal('programa')">✕</button>
+<div class="modal-overlay" id="modal-programa" style="align-items:stretch;padding:20px;">
+  <div class="modal" style="max-width:860px;width:100%;max-height:none;height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;">
+    <div class="modal-header" style="flex-shrink:0;">
+      <div>
+        <div class="modal-title" id="prog-modal-title">Entrenamiento del día</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="prog-modal-sub">—</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="prog-tipo-sel" style="font-size:12px;padding:4px 8px;border-radius:7px;background:var(--card2);border:1px solid var(--border);color:var(--text2);">
+          <option value="Strength">💪 Strength</option>
+          <option value="Hyrox">🏁 Hyrox</option>
+          <option value="Endurance">🏃 Endurance</option>
+        </select>
+        <button class="modal-close" onclick="closeModal('programa')">✕</button>
+      </div>
     </div>
-    <div style="margin-bottom:10px;font-size:12px;color:var(--text3);" id="prog-modal-sub">—</div>
-    <div class="field">
-      <label>Tipo</label>
-      <select id="prog-tipo-sel">
-        <option value="Strength">💪 Strength</option>
-        <option value="Hyrox">🏁 Hyrox</option>
-        <option value="Endurance">🏃 Endurance</option>
-      </select>
+    <!-- Contenido ocupa todo el espacio disponible -->
+    <div style="flex:1;min-height:0;padding:16px 24px;display:flex;flex-direction:column;gap:10px;">
+      <textarea id="prog-contenido"
+        placeholder="Warm up:&#10;&#10;A) BLOQUE PRINCIPAL&#10;A1) Back Squat 4x5 @80%&#10;A2) ...&#10;&#10;B) FINALIZADOR&#10;&#10;Cool down:&#10;&#10;📝 NOTA:"
+        style="flex:1;min-height:0;font-family:monospace;font-size:13px;line-height:1.7;resize:none;width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);outline:none;"></textarea>
+      <textarea id="prog-notas" rows="2" placeholder="Notas del coach (opcional)..."
+        style="resize:none;width:100%;box-sizing:border-box;font-size:12px;"></textarea>
     </div>
-    <div class="field">
-      <label>Contenido del Entrenamiento</label>
-      <textarea id="prog-contenido" placeholder="Warm up:&#10;A1) Back Squat 4x5 @80%&#10;A2) Deadlift 4x3&#10;...&#10;&#10;Cool down:" rows="12" style="font-family:monospace;font-size:13px;line-height:1.6;"></textarea>
-    </div>
-    <div class="field"><label>Notas del Coach</label><textarea id="prog-notas" rows="2" placeholder="Indicaciones adicionales..."></textarea></div>
     <input type="hidden" id="prog-fecha-input"/>
     <input type="hidden" id="prog-id-input"/>
-    <div class="modal-footer">
+    <div class="modal-footer" style="flex-shrink:0;">
       <button class="btn btn-outline btn-sm" id="prog-delete-btn" onclick="deletePrograma()" style="margin-right:auto;color:var(--danger);border-color:var(--danger);display:none;">🗑 Eliminar</button>
       <button class="btn btn-outline" onclick="closeModal('programa')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savePrograma()">Guardar</button>
+      <button class="btn btn-primary" onclick="savePrograma()">💾 Guardar</button>
     </div>
   </div>
 </div>
@@ -3873,8 +3877,10 @@ function openProgramaModal(fechaStr){
   document.getElementById('prog-modal-sub').textContent    = fmtLabel.charAt(0).toUpperCase()+fmtLabel.slice(1);
   document.getElementById('prog-fecha-input').value        = fechaStr;
   document.getElementById('prog-id-input').value           = prog ? prog.id : '';
-  document.getElementById('prog-contenido').value          = prog ? prog.contenido : '';
-  document.getElementById('prog-notas').value              = prog ? prog.notas : '';
+  document.getElementById('prog-contenido').value = prog ? prog.contenido : '';
+  // Omitir notas auto-generadas por el asistente IA — mostrar vacío
+  const rawNotas = prog ? (prog.notas||'') : '';
+  document.getElementById('prog-notas').value = rawNotas.startsWith('Generado automáticamente') ? '' : rawNotas;
   setSelectVal('prog-tipo-sel', progTab);
 
   const delBtn = document.getElementById('prog-delete-btn');
