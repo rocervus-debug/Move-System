@@ -756,6 +756,20 @@ select option{background:#10101c;color:var(--text);}
 }
 .hor-clase-actions button:hover{ background:rgba(0,180,216,.2);border-color:var(--accent); }
 .hor-legend{ display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
+/* ── Monthly Schedule Table ── */
+.hor-month-tbl{ width:100%;border-collapse:collapse;font-size:12px; }
+.hor-month-tbl .hor-wdate-th{ background:var(--card2);color:var(--text2);font-size:10px;font-weight:700;text-align:center;padding:6px 4px;border:1px solid var(--border);min-width:90px;line-height:1.3; }
+.hor-month-tbl .hor-wdate-th.hor-today-col{ background:rgba(0,180,216,.14);color:var(--accent);border-color:rgba(0,180,216,.4); }
+.hor-month-tbl .hor-time-th{ background:var(--card2);color:var(--text3);font-size:10px;font-weight:700;padding:6px 10px;border:1px solid var(--border);white-space:nowrap;min-width:72px; }
+.hor-month-tbl .hor-clase-td{ border:1px solid var(--border);padding:4px 5px;cursor:pointer;transition:background .1s;text-align:center;vertical-align:middle; }
+.hor-month-tbl .hor-clase-td:hover{ background:rgba(0,180,216,.07); }
+.hor-month-tbl .hor-empty-col{ background:rgba(0,0,0,.12);border:1px solid var(--border); }
+.hor-coach-chip{ display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid transparent;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis; }
+.hor-chip-ov::after{ content:'✎';font-size:8px;margin-left:3px;opacity:.6; }
+.hor-cerrado-chip{ color:var(--text3);font-size:10px;font-weight:600;font-style:italic;letter-spacing:.3px; }
+.hor-plus-chip{ color:var(--border);font-size:15px;line-height:1;transition:color .15s; }
+.hor-clase-td:hover .hor-plus-chip{ color:var(--accent); }
+.hor-week-sep-row td{ background:rgba(0,180,216,.04);border-top:2px solid rgba(0,180,216,.18); }
 .hor-legend-item{
   font-size:11px;padding:3px 10px;
   border-radius:99px;font-weight:700;cursor:default;
@@ -1299,18 +1313,52 @@ select option{background:#10101c;color:var(--text);}
 
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
-      <div class="sh">
-        <div class="sh-title">Horario Semanal</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <span style="font-size:11px;padding:3px 10px;background:var(--strength-bg);color:var(--strength);border-radius:99px;font-weight:700;">■ Strength</span>
-          <span style="font-size:11px;padding:3px 10px;background:var(--endurance-bg);color:var(--endurance);border-radius:99px;font-weight:700;">■ Endurance</span>
-          <span style="font-size:11px;padding:3px 10px;background:var(--hyrox-bg);color:var(--hyrox);border-radius:99px;font-weight:700;">■ Hyrox</span>
-          <span style="font-size:11px;padding:3px 10px;background:rgba(29,78,216,.07);color:#1d4ed8;border-radius:99px;font-weight:700;">■ Open</span>
-          <span style="font-size:11px;padding:3px 10px;background:rgba(74,85,104,.07);color:var(--charcoal);border-radius:99px;font-weight:700;">■ Otro</span>
+      <div class="tabs" style="margin-bottom:18px;">
+        <div class="tab active" id="htab-btn-mensual" onclick="switchHorTab('mensual')">📅 Vista Mensual</div>
+        <div class="tab" id="htab-btn-plantilla" onclick="switchHorTab('plantilla')">📋 Plantilla Semanal</div>
+        <div class="tab" id="htab-btn-nomina" onclick="switchHorTab('nomina')">💰 Nómina Quincena</div>
+      </div>
+
+      <!-- Tab: Vista Mensual -->
+      <div id="hor-tab-mensual">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn btn-outline btn-sm" onclick="changeHorMonth(-1)" style="font-size:14px;padding:4px 12px;">‹</button>
+            <span id="hor-mes-label" style="font-size:15px;font-weight:800;color:var(--text1);min-width:150px;text-align:center;letter-spacing:.3px;">—</span>
+            <button class="btn btn-outline btn-sm" onclick="changeHorMonth(1)" style="font-size:14px;padding:4px 12px;">›</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:10px;padding:2px 8px;background:var(--strength-bg);color:var(--strength);border-radius:99px;font-weight:700;">Strength</span>
+            <span style="font-size:10px;padding:2px 8px;background:var(--endurance-bg);color:var(--endurance);border-radius:99px;font-weight:700;">Endurance</span>
+            <span style="font-size:10px;padding:2px 8px;background:var(--hyrox-bg);color:var(--hyrox);border-radius:99px;font-weight:700;">Hyrox</span>
+            <span style="font-size:10px;padding:2px 8px;background:rgba(29,78,216,.1);color:#60a5fa;border-radius:99px;font-weight:700;">Open</span>
+            <span style="font-size:10px;padding:2px 8px;background:rgba(0,180,216,.08);color:var(--accent);border-radius:99px;font-weight:700;">✎ = editado</span>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow-x:auto;">
+          <div id="horario-mensual-grid" style="min-width:760px;"></div>
         </div>
       </div>
-      <div class="card" style="overflow-x:auto;">
-        <div id="horario-grid" style="min-width:680px;"></div>
+
+      <!-- Tab: Plantilla Semanal -->
+      <div id="hor-tab-plantilla" style="display:none;">
+        <div class="sh" style="margin-bottom:16px;">
+          <div class="sh-title" style="font-size:14px;color:var(--text2);">Plantilla recurrente semana a semana. Se aplica a todos los días del mes salvo que tengas un cambio específico.</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddClaseModal()">+ Nueva Clase</button>
+        </div>
+        <div class="card" style="overflow-x:auto;">
+          <div id="horario-grid" style="min-width:680px;"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Nómina Quincena -->
+      <div id="hor-tab-nomina" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <button class="btn btn-outline btn-sm" onclick="changeHorMonth(-1);switchHorTab('nomina');" style="font-size:14px;padding:4px 12px;">‹</button>
+          <span id="hor-mes-label2" style="font-size:15px;font-weight:800;color:var(--text1);min-width:150px;text-align:center;">—</span>
+          <button class="btn btn-outline btn-sm" onclick="changeHorMonth(1);switchHorTab('nomina');" style="font-size:14px;padding:4px 12px;">›</button>
+        </div>
+        <div id="nomina-quincena-wrap"></div>
       </div>
     </div>
 
@@ -2047,6 +2095,45 @@ select option{background:#10101c;color:var(--text);}
   </div>
 </div>
 
+<!-- Modal: Editar celda del calendario mensual de clases -->
+<div class="modal-overlay" id="modal-horario-override">
+  <div class="modal" style="width:400px;">
+    <div class="modal-head">
+      <div class="modal-title">🗓 <span id="hov-titulo">Editar Clase</span></div>
+      <button class="modal-close" onclick="closeModal('horario-override')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="hov-fecha"/>
+      <input type="hidden" id="hov-hora"/>
+      <div class="field">
+        <label>Coach asignado</label>
+        <select id="hov-coach">
+          <option value="">— Sin asignar —</option>
+          <option value="__cerrado__">🔒 CERRADO</option>
+        </select>
+      </div>
+      <div class="field" id="hov-tipo-wrap">
+        <label>Tipo de clase</label>
+        <select id="hov-tipo">
+          <option value="Strength">Strength</option>
+          <option value="Endurance">Endurance</option>
+          <option value="Hyrox">Hyrox</option>
+          <option value="Open">Open</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);background:var(--card2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
+        ℹ️ Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="deleteHorarioOverride()" style="margin-right:auto;" title="Volver a plantilla base">↩ Usar plantilla</button>
+      <button class="btn btn-outline" onclick="closeModal('horario-override')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveHorarioOverride()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2065,6 +2152,9 @@ let horario    = []; // loaded from Supabase
 let usuarios   = []; // loaded from Supabase (admin only)
 let currentUser = null; // active session
 let pagoFilter  = { estado:'todos', metodo:'todos', plan:'todos' };
+let horarioOverrides = []; // specific-date overrides for horario
+let hvYear  = new Date().getFullYear();
+let hvMonth = new Date().getMonth(); // 0-indexed
 
 // ═══════════════════════════════════════════════════════════════════
 // AUTH — Login / Logout / Session
@@ -2373,9 +2463,10 @@ async function loadContenidosFromSupabase(){
 // ═══════════════════════════════════════════════════════════════════
 async function loadHorarioFromSupabase(){
   if(!window.supabaseClient){ return; }
-  const { data, error } = await window.supabaseClient.from('horario').select('*').order('hora');
+  const { data, error } = await window.supabaseClient.from('horarios').select('*').order('hora');
   if(error){ console.error('Error cargando horario:', error); return; }
-  horario = (data||[]).map(h=>({
+  // Base template = records without a specific date (fecha null or empty)
+  horario = (data||[]).filter(h=>!h.fecha).map(h=>({
     id: h.id,
     dia:          h.dia||'',
     hora:         h.hora||'',
@@ -2398,7 +2489,7 @@ const topTitles = {
   marketing:   ['Hub de Marketing',          'Calendario de contenido y campañas'],
   campanas:    ['Campañas',                  'Resultados y métricas por campaña'],
   solicitudes: ['Solicitudes Internas',      'Pedidos de apoyo a Marketing'],
-  horario:     ['Horario Semanal',           'Programación de clases'],
+  horario:     ['Calendario de Clases',      'Vista mensual · Plantilla · Nómina'],
   coaches:     ['Equipo de Coaches',         'Perfiles del equipo de entrenamiento'],
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
   settings:    ['Configuración',             'Apariencia · Usuarios · Mi cuenta'],
@@ -2411,7 +2502,7 @@ const topBtnLabels = {
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
   solicitudes: '+ Nueva Solicitud',
-  horario:     '+ Nueva Clase',
+  horario:     '+ Plantilla',
   coaches:     '+ Agregar Coach',
   evaluaciones:'+ Evaluar Coach',
   settings:    '+ Nuevo Usuario',
@@ -2426,7 +2517,7 @@ const topBtnActions = {
   pagos:       ()=>openModal('pago'),
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
-  horario:     ()=>openAddClaseModal(),
+  horario:     ()=>{ switchHorTab('plantilla'); setTimeout(openAddClaseModal,50); },
   settings:    ()=>{ if(currentUser&&currentUser.rol==='admin') openModal('add-user'); },
 };
 
@@ -2453,7 +2544,7 @@ function go(id, el){
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
-  if(id==='horario')     renderHorario();
+  if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); }
 }
 
@@ -2938,7 +3029,7 @@ function renderDashboard(){
   const hcl= document.getElementById('hero-clases');
   if(hc)  hc.textContent  = coaches.length || '0';
   if(hl)  hl.textContent  = total || '0';
-  if(hcl) hcl.textContent = horario.length || '0';
+  if(hcl) hcl.textContent = horario.filter(h=>h.tipo!=='CERRADO').length || '0';
 
   // ─── Payment KPIs ───
   const now   = new Date(); now.setHours(0,0,0,0);
@@ -3633,6 +3724,360 @@ function renderCalendario(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// HORARIO MENSUAL — monthly calendar + overrides + quincena KPI
+// ═══════════════════════════════════════════════════════════════════
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_CORTO_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DIA_NAMES_SHORT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const DAY_NAME_BY_DOW = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const TIPO_COLORS = {
+  Strength: 'var(--strength)', Endurance: 'var(--endurance)',
+  Hyrox: 'var(--hyrox)', Open: '#60a5fa', Otro: 'var(--text3)'
+};
+const TIPO_BG = {
+  Strength: 'var(--strength-bg)', Endurance: 'var(--endurance-bg)',
+  Hyrox: 'var(--hyrox-bg)', Open: 'rgba(29,78,216,.1)', Otro: 'rgba(74,85,104,.07)'
+};
+
+function formatHoraDisplay(h){
+  return (h||'').replace(/^(\d+):(\d+)(am|pm)$/i,(_,hr,mn,ap)=>`${hr}:${mn} ${ap.toUpperCase()}`);
+}
+
+function stableColorIdx(name){
+  let h=0; for(const c of (name||'')) h=((h<<5)-h)+c.charCodeAt(0);
+  return Math.abs(h) % COACH_COLORS.length;
+}
+
+async function loadHorarioOverridesFromSupabase(){
+  const mm    = String(hvMonth+1).padStart(2,'0');
+  const start = `${hvYear}-${mm}-01`;
+  const end   = `${hvYear}-${mm}-31`;
+  // Overrides = records in the same 'horarios' table that have a specific fecha
+  const { data, error } = await window.supabaseClient
+    .from('horarios').select('*').gte('fecha', start).lte('fecha', end).not('fecha','is',null);
+  if(error){ console.error('Error cargando overrides:', error); horarioOverrides=[]; return; }
+  horarioOverrides = (data||[]).filter(o=>o.fecha&&o.fecha.length>0).map(o=>({
+    id: o.id, fecha: o.fecha, hora: o.hora,
+    tipo: o.tipo||'', coach_id: o.coach_id||'',
+    coach_nombre: o.coach_nombre||'',
+    cerrado: o.tipo === 'CERRADO'  // CERRADO stored as tipo='CERRADO'
+  }));
+}
+
+function getEffectiveClase(fechaStr, hora){
+  const ov = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+  if(ov !== undefined) return { ...ov, cerrado: ov.tipo==='CERRADO', _isOverride: true };
+  const dow = new Date(fechaStr+'T12:00:00').getDay();
+  const dayName = DAY_NAME_BY_DOW[dow];
+  const base = horario.find(h=>h.dia===dayName && h.hora===hora);
+  return base ? { ...base, cerrado: base.tipo==='CERRADO', _isOverride: false } : null;
+}
+
+function switchHorTab(tab){
+  ['mensual','plantilla','nomina'].forEach(t=>{
+    const el = document.getElementById('hor-tab-'+t);
+    const btn= document.getElementById('htab-btn-'+t);
+    if(el)  el.style.display  = t===tab ? '' : 'none';
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+  if(tab==='mensual')   renderHorarioMensual();
+  if(tab==='plantilla') renderHorario();
+  if(tab==='nomina')    renderQuincenaKPI();
+}
+
+function changeHorMonth(delta){
+  hvMonth += delta;
+  if(hvMonth>11){ hvMonth=0; hvYear++; }
+  if(hvMonth<0 ){ hvMonth=11; hvYear--; }
+  loadHorarioOverridesFromSupabase().then(()=>{
+    renderHorarioMensual();
+    renderQuincenaKPI();
+    const lbl2 = document.getElementById('hor-mes-label2');
+    if(lbl2) lbl2.textContent = `${MESES_ES[hvMonth]} ${hvYear}`;
+  });
+}
+
+function renderHorarioMensual(){
+  const grid = document.getElementById('horario-mensual-grid');
+  if(!grid) return;
+
+  const lbl  = document.getElementById('hor-mes-label');
+  const lbl2 = document.getElementById('hor-mes-label2');
+  if(lbl)  lbl.textContent  = `${MESES_ES[hvMonth]} ${hvYear}`;
+  if(lbl2) lbl2.textContent = `${MESES_ES[hvMonth]} ${hvYear}`;
+
+  const allHoras = [...new Set(horario.map(h=>h.hora))].sort(horaSort);
+  if(!allHoras.length){
+    grid.innerHTML = '<div style="padding:40px 24px;text-align:center;color:var(--text3);font-size:13px;">Sin plantilla semanal definida. Ve a <strong>Plantilla Semanal</strong> y agrega las clases primero.</div>';
+    return;
+  }
+
+  const daysInMonth = new Date(hvYear, hvMonth+1, 0).getDate();
+  const todayDay = (new Date().getFullYear()===hvYear && new Date().getMonth()===hvMonth) ? new Date().getDate() : -1;
+
+  // Build weeks (Mon=0 groups)
+  const weeks = [];
+  let week = [];
+  for(let d=1; d<=daysInMonth; d++){
+    const dt  = new Date(hvYear, hvMonth, d);
+    const dow = (dt.getDay()+6)%7; // Mon=0
+    if(dow===0 && week.length){ weeks.push(week); week=[]; }
+    week.push({ day:d, dow });
+  }
+  if(week.length) weeks.push(week);
+
+  let html = '<table class="hor-month-tbl">';
+
+  weeks.forEach(wk=>{
+    // Week header row
+    html += '<tr class="hor-week-sep-row">';
+    html += '<td class="hor-time-th"></td>';
+    for(let i=0;i<7;i++){
+      const di = wk.find(d=>d.dow===i);
+      if(di){
+        const isToday = di.day===todayDay;
+        const dd = String(di.day).padStart(2,'0');
+        const mm = String(hvMonth+1).padStart(2,'0');
+        html += `<th class="hor-wdate-th${isToday?' hor-today-col':''}">${DIA_NAMES_SHORT[i]}<br><span style="font-size:12px;font-weight:800;">${dd}/${mm}</span></th>`;
+      } else {
+        html += `<th class="hor-wdate-th" style="opacity:.25;">${DIA_NAMES_SHORT[i]}</th>`;
+      }
+    }
+    html += '</tr>';
+
+    // Time slot rows
+    allHoras.forEach(hora=>{
+      html += '<tr>';
+      html += `<td class="hor-time-th">${formatHoraDisplay(hora)}</td>`;
+      for(let i=0;i<7;i++){
+        const di = wk.find(d=>d.dow===i);
+        if(!di){ html += '<td class="hor-empty-col"></td>'; continue; }
+        const mm2 = String(hvMonth+1).padStart(2,'0');
+        const dd2 = String(di.day).padStart(2,'0');
+        const fStr = `${hvYear}-${mm2}-${dd2}`;
+        const clase = getEffectiveClase(fStr, hora);
+        const isOv  = clase && clase._isOverride;
+        html += `<td class="hor-clase-td" onclick="openEditClaseCell('${fStr}','${hora}')">`;
+        if(!clase){
+          html += `<span class="hor-plus-chip">＋</span>`;
+        } else if(clase.cerrado){
+          html += `<span class="hor-cerrado-chip">CERRADO</span>`;
+        } else {
+          const cn   = clase.coach_nombre || '';
+          const tipo = clase.tipo || '';
+          const cIdx = coaches.findIndex(c=>String(c.id)===String(clase.coach_id||''));
+          const color= cIdx>=0 ? COACH_COLORS[cIdx%COACH_COLORS.length] : COACH_COLORS[stableColorIdx(cn)%COACH_COLORS.length];
+          const tbg  = TIPO_BG[tipo]||'rgba(255,255,255,.04)';
+          const tcl  = TIPO_COLORS[tipo]||'var(--text2)';
+          const ovMark = isOv ? ' hor-chip-ov' : '';
+          html += cn
+            ? `<span class="hor-coach-chip${ovMark}" style="background:${color}28;border-color:${color}55;color:${color};" title="${esc(tipo)}">${esc(cn)}</span>`
+            : `<span class="hor-coach-chip${ovMark}" style="background:${tbg};border-color:${tcl}44;color:${tcl};" title="${esc(tipo)}">${esc(tipo||'?')}</span>`;
+        }
+        html += '</td>';
+      }
+      html += '</tr>';
+    });
+  });
+
+  html += '</table>';
+  grid.innerHTML = html;
+}
+
+function openEditClaseCell(fechaStr, hora){
+  const d = new Date(fechaStr+'T12:00:00');
+  const label = `${d.getDate()} ${MESES_CORTO_ES[d.getMonth()]} · ${formatHoraDisplay(hora)}`;
+  document.getElementById('hov-titulo').textContent = label;
+  document.getElementById('hov-fecha').value = fechaStr;
+  document.getElementById('hov-hora').value  = hora;
+
+  // Populate coach select
+  const sel = document.getElementById('hov-coach');
+  sel.innerHTML = '<option value="">— Sin asignar —</option><option value="__cerrado__">🔒 CERRADO</option>';
+  coaches.forEach(c=>{ sel.innerHTML += `<option value="${c.id}">${esc(c.nombre)}</option>`; });
+
+  // Pre-fill with current effective clase
+  const clase = getEffectiveClase(fechaStr, hora);
+  if(clase){
+    if(clase.tipo==='CERRADO'||clase.cerrado){
+      sel.value = '__cerrado__';
+    } else {
+      sel.value = clase.coach_id || '';
+    }
+    const tipoVal = (clase.tipo==='CERRADO'||!clase.tipo) ? 'Strength' : clase.tipo;
+    setSelectVal('hov-tipo', tipoVal);
+  } else {
+    sel.value = '';
+    document.getElementById('hov-tipo').value = 'Strength';
+  }
+
+  // Toggle tipo visibility when cerrado
+  const tipoWrap = document.getElementById('hov-tipo-wrap');
+  tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : '';
+  sel.onchange = ()=>{ tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : ''; };
+
+  openModal('horario-override');
+}
+
+async function saveHorarioOverride(){
+  const fechaStr = document.getElementById('hov-fecha').value;
+  const hora     = document.getElementById('hov-hora').value;
+  const coachVal = document.getElementById('hov-coach').value;
+  const tipo     = document.getElementById('hov-tipo').value;
+
+  const cerrado  = coachVal === '__cerrado__';
+  const coachId  = cerrado ? null : (coachVal||null);
+  const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)) : null;
+  const coachNom = coachObj ? coachObj.nombre : '';
+
+  // CERRADO stored as tipo='CERRADO' — no cerrado bool column needed
+  const payload = {
+    fecha:        fechaStr,
+    hora:         hora,
+    dia:          '',            // overrides don't use the weekly dia field
+    tipo:         cerrado ? 'CERRADO' : tipo,
+    coach_id:     coachId,
+    coach_nombre: cerrado ? 'CERRADO' : coachNom,
+    cupo:         15,
+    notas:        ''
+  };
+
+  const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+  let err;
+  if(existing){
+    const r = await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id);
+    err = r.error;
+  } else {
+    const r = await window.supabaseClient.from('horarios').insert([payload]);
+    err = r.error;
+  }
+
+  if(err){ alert('Error al guardar: '+(err.message||err)); console.error('Error saving override:', err); return; }
+
+  await loadHorarioOverridesFromSupabase();
+  closeModal('horario-override');
+  toast('Clase actualizada ✅','✅');
+  renderHorarioMensual();
+}
+
+async function deleteHorarioOverride(){
+  const fechaStr = document.getElementById('hov-fecha').value;
+  const hora     = document.getElementById('hov-hora').value;
+  const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+  if(!existing){ closeModal('horario-override'); return; }
+  const { error } = await window.supabaseClient.from('horarios').delete().eq('id', existing.id);
+  if(error){ console.error('Error deleting override:', error); return; }
+  horarioOverrides = horarioOverrides.filter(o=>String(o.id)!==String(existing.id));
+  closeModal('horario-override');
+  toast('Restablecido a plantilla base ↩','↩');
+  renderHorarioMensual();
+}
+
+function renderQuincenaKPI(){
+  const el = document.getElementById('nomina-quincena-wrap');
+  if(!el) return;
+  const lbl2 = document.getElementById('hor-mes-label2');
+  if(lbl2) lbl2.textContent = `${MESES_ES[hvMonth]} ${hvYear}`;
+
+  if(!coaches.length){
+    el.innerHTML = '<div class="empty-state card"><div class="empty-icon">👥</div><div class="empty-title">Sin coaches registrados</div></div>'; return;
+  }
+
+  const allHoras  = [...new Set(horario.map(h=>h.hora))];
+  const daysInMonth = new Date(hvYear, hvMonth+1, 0).getDate();
+  const q1End = 15, q2End = daysInMonth;
+
+  function countForCoach(coachId, coachNom, from, to){
+    let cnt = 0;
+    for(let d=from; d<=to; d++){
+      const mm2 = String(hvMonth+1).padStart(2,'0');
+      const dd2 = String(d).padStart(2,'0');
+      const fStr = `${hvYear}-${mm2}-${dd2}`;
+      allHoras.forEach(hora=>{
+        const c = getEffectiveClase(fStr, hora);
+        if(!c||c.cerrado) return;
+        if(String(c.coach_id)===String(coachId)||c.coach_nombre===coachNom) cnt++;
+      });
+    }
+    return cnt;
+  }
+
+  const rateKey = `move_coach_rate_${hvYear}_${hvMonth}`;
+  const rates   = JSON.parse(localStorage.getItem(rateKey)||'{}');
+
+  const rows = coaches.map((c,idx)=>{
+    const q1    = countForCoach(c.id, c.nombre, 1, q1End);
+    const q2    = countForCoach(c.id, c.nombre, q1End+1, q2End);
+    const total = q1+q2;
+    const rate  = parseFloat(rates[c.id])||0;
+    const color = COACH_COLORS[idx%COACH_COLORS.length];
+    return { c, q1, q2, total, rate, payQ1: q1*rate, payQ2: q2*rate, color };
+  }).sort((a,b)=>b.total-a.total);
+
+  const totalQ1 = rows.reduce((s,r)=>s+r.q1,0);
+  const totalQ2 = rows.reduce((s,r)=>s+r.q2,0);
+  const totalPay= rows.reduce((s,r)=>s+r.payQ1+r.payQ2,0);
+
+  el.innerHTML = `
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-header"><div class="card-title">📊 Resumen de Clases — ${MESES_ES[hvMonth]} ${hvYear}</div></div>
+    <div style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr>
+        <th>Coach</th>
+        <th style="text-align:center;">Q1 clases<br><span style="font-weight:400;font-size:10px;opacity:.6;">(días 1–15)</span></th>
+        <th style="text-align:center;">Q2 clases<br><span style="font-weight:400;font-size:10px;opacity:.6;">(días 16–${q2End})</span></th>
+        <th style="text-align:center;">Total mes</th>
+        <th>Tarifa / clase<br><span style="font-weight:400;font-size:10px;opacity:.6;">Guardar = Enter</span></th>
+        <th style="text-align:center;">Pago Q1</th>
+        <th style="text-align:center;">Pago Q2</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr>
+          <td class="name">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:26px;height:26px;border-radius:50%;background:${r.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0;">${(r.c.nombre||'?').slice(0,2).toUpperCase()}</div>
+              ${esc(r.c.nombre)}
+            </div>
+          </td>
+          <td style="text-align:center;font-size:16px;font-weight:800;color:var(--accent);">${r.q1}</td>
+          <td style="text-align:center;font-size:16px;font-weight:800;color:var(--accent);">${r.q2}</td>
+          <td style="text-align:center;font-size:18px;font-weight:800;color:var(--ok);">${r.total}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="color:var(--text3);font-size:12px;">$</span>
+              <input type="number" value="${r.rate||''}" placeholder="0" min="0"
+                style="width:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text1);font-size:12px;"
+                onchange="saveCoachRate('${r.c.id}',this.value)"/>
+            </div>
+          </td>
+          <td style="text-align:center;font-weight:700;color:var(--ok);">${r.payQ1>0?'$'+r.payQ1.toLocaleString('es-MX'):'—'}</td>
+          <td style="text-align:center;font-weight:700;color:var(--ok);">${r.payQ2>0?'$'+r.payQ2.toLocaleString('es-MX'):'—'}</td>
+        </tr>`).join('')}
+        <tr style="border-top:2px solid var(--border);background:var(--card2);">
+          <td style="font-weight:700;">TOTAL</td>
+          <td style="text-align:center;font-weight:800;color:var(--accent);">${totalQ1}</td>
+          <td style="text-align:center;font-weight:800;color:var(--accent);">${totalQ2}</td>
+          <td style="text-align:center;font-weight:800;color:var(--ok);">${totalQ1+totalQ2}</td>
+          <td></td>
+          <td colspan="2" style="text-align:center;font-weight:800;color:var(--ok);">${totalPay>0?'$'+totalPay.toLocaleString('es-MX'):'—'}</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);">* Tarifas guardadas en este dispositivo. Los conteos incluyen clases de la plantilla + cambios específicos del mes.</div>
+  </div>`;
+}
+
+function saveCoachRate(coachId, rate){
+  const rateKey = `move_coach_rate_${hvYear}_${hvMonth}`;
+  const saved   = JSON.parse(localStorage.getItem(rateKey)||'{}');
+  saved[coachId] = parseFloat(rate)||0;
+  localStorage.setItem(rateKey, JSON.stringify(saved));
+  renderQuincenaKPI();
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // HORARIO — render & CRUD
 // ═══════════════════════════════════════════════════════════════════
 const DIAS_ORDER = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -3652,7 +4097,7 @@ function horaSort(a, b){
 }
 
 function tipoClass(tipo){
-  const map = {Strength:'sc-str',Endurance:'sc-end',Hyrox:'sc-hyrox',Open:'sc-open',Otro:'sc-otro'};
+  const map = {Strength:'sc-str',Endurance:'sc-end',Hyrox:'sc-hyrox',Open:'sc-open',Otro:'sc-otro',CERRADO:'sc-otro'};
   return map[tipo]||'sc-otro';
 }
 
@@ -3733,7 +4178,7 @@ async function saveClase(){
     coach_nombre: coachObj ? coachObj.nombre : '',
     cupo, notas
   };
-  const { error } = await window.supabaseClient.from('horario').insert([payload]);
+  const { error } = await window.supabaseClient.from('horarios').insert([payload]);
   if(error){ toast('Error al guardar clase ❌','✕'); console.error(error); return; }
   closeModal('clase');
   await loadHorarioFromSupabase();
@@ -3777,7 +4222,7 @@ async function saveEditClase(){
     coach_nombre: coachObj ? coachObj.nombre : '',
     cupo, notas
   };
-  const { error } = await window.supabaseClient.from('horario').update(payload).eq('id', id);
+  const { error } = await window.supabaseClient.from('horarios').update(payload).eq('id', id);
   if(error){ toast('Error al guardar ❌','✕'); console.error(error); return; }
   closeModal('edit-clase');
   await loadHorarioFromSupabase();
@@ -3787,7 +4232,7 @@ async function saveEditClase(){
 
 async function deleteClase(id){
   if(!confirm('¿Eliminar esta clase del horario?')) return;
-  const { error } = await window.supabaseClient.from('horario').delete().eq('id', id);
+  const { error } = await window.supabaseClient.from('horarios').delete().eq('id', id);
   if(error){ toast('Error al eliminar ❌','✕'); return; }
   await loadHorarioFromSupabase();
   renderHorario();
@@ -3864,6 +4309,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadSolicitudesFromSupabase(),
     loadContenidosFromSupabase(),
     loadHorarioFromSupabase(),
+    loadHorarioOverridesFromSupabase(),
   ]);
   renderDashboard();
   renderCoaches();
