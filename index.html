@@ -741,8 +741,8 @@ select option{background:#10101c;color:var(--text);}
 .hor-clase.sc-hyrox{ background:var(--hyrox-bg);border-left:3px solid var(--hyrox); }
 .hor-clase.sc-open{ background:rgba(29,78,216,.07);border-left:3px solid #1d4ed8; }
 .hor-clase.sc-otro{ background:rgba(74,85,104,.07);border-left:3px solid var(--charcoal); }
-.hor-clase-name{ font-weight:700;color:var(--text);line-height:1.2; }
-.hor-clase-coach{ color:var(--text3);margin-top:2px;line-height:1.2; }
+.hor-clase-name{ font-size:10px;font-weight:600;color:var(--text3);line-height:1.2;opacity:.75; }
+.hor-clase-coach{ font-size:12px;font-weight:800;color:var(--text);margin-bottom:1px;line-height:1.2; }
 .hor-clase-cupo{ color:var(--text4);margin-top:1px; }
 .hor-clase-actions{
   display:none;position:absolute;top:3px;right:3px;
@@ -771,8 +771,10 @@ select option{background:#10101c;color:var(--text);}
 .hor-month-tbl .hor-clase-td{ border:1px solid var(--border);padding:4px 5px;cursor:pointer;transition:background .1s;text-align:center;vertical-align:middle; }
 .hor-month-tbl .hor-clase-td:hover{ background:rgba(0,180,216,.07); }
 .hor-month-tbl .hor-empty-col{ background:rgba(0,0,0,.12);border:1px solid var(--border); }
-.hor-coach-chip{ display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid transparent;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis; }
-.hor-chip-ov::after{ content:'✎';font-size:8px;margin-left:3px;opacity:.6; }
+.hor-coach-chip{ display:inline-flex;flex-direction:column;align-items:center;padding:4px 8px;border-radius:7px;border:1px solid transparent;max-width:110px;cursor:pointer; }
+.hor-chip-name{ font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;line-height:1.2; }
+.hor-chip-tipo{ font-size:9px;font-weight:500;opacity:.65;white-space:nowrap;line-height:1.2;margin-top:1px; }
+.hor-chip-ov .hor-chip-name::after{ content:' ✎';font-size:8px;opacity:.6; }
 .hor-cerrado-chip{ color:var(--text3);font-size:10px;font-weight:600;font-style:italic;letter-spacing:.3px; }
 .hor-plus-chip{ color:var(--border);font-size:15px;line-height:1;transition:color .15s; }
 .hor-clase-td:hover .hor-plus-chip{ color:var(--accent); }
@@ -3765,6 +3767,23 @@ function stableColorIdx(name){
   return Math.abs(h) % COACH_COLORS.length;
 }
 
+// Resolve coach display name: prefer stored nombre, fall back to coaches array by id
+function resolveCoachName(coach_id, coach_nombre){
+  if(coach_nombre && coach_nombre !== 'CERRADO') return coach_nombre;
+  if(coach_id){
+    const c = coaches.find(x=>String(x.id)===String(coach_id));
+    if(c) return c.nombre;
+  }
+  return '';
+}
+
+// Get color index for a coach (by id or name)
+function coachColorIdx(coach_id, coach_nombre){
+  const idx = coaches.findIndex(c=>String(c.id)===String(coach_id||''));
+  if(idx>=0) return idx;
+  return stableColorIdx(coach_nombre||coach_id||'');
+}
+
 async function loadHorarioOverridesFromSupabase(){
   const mm    = String(hvMonth+1).padStart(2,'0');
   const start = `${hvYear}-${mm}-01`;
@@ -3877,19 +3896,31 @@ function renderHorarioMensual(){
         html += `<td class="hor-clase-td" onclick="openEditClaseCell('${fStr}','${hora}')">`;
         if(!clase){
           html += `<span class="hor-plus-chip">＋</span>`;
-        } else if(clase.cerrado){
+        } else if(clase.cerrado || clase.tipo==='CERRADO'){
           html += `<span class="hor-cerrado-chip">CERRADO</span>`;
         } else {
-          const cn   = clase.coach_nombre || '';
-          const tipo = clase.tipo || '';
-          const cIdx = coaches.findIndex(c=>String(c.id)===String(clase.coach_id||''));
-          const color= cIdx>=0 ? COACH_COLORS[cIdx%COACH_COLORS.length] : COACH_COLORS[stableColorIdx(cn)%COACH_COLORS.length];
-          const tbg  = TIPO_BG[tipo]||'rgba(255,255,255,.04)';
-          const tcl  = TIPO_COLORS[tipo]||'var(--text2)';
-          const ovMark = isOv ? ' hor-chip-ov' : '';
-          html += cn
-            ? `<span class="hor-coach-chip${ovMark}" style="background:${color}28;border-color:${color}55;color:${color};" title="${esc(tipo)}">${esc(cn)}</span>`
-            : `<span class="hor-coach-chip${ovMark}" style="background:${tbg};border-color:${tcl}44;color:${tcl};" title="${esc(tipo)}">${esc(tipo||'?')}</span>`;
+          const cn    = resolveCoachName(clase.coach_id||'', clase.coach_nombre||'');
+          const tipo  = clase.tipo || '';
+          const cIdx  = coachColorIdx(clase.coach_id||'', cn);
+          const color = COACH_COLORS[cIdx % COACH_COLORS.length];
+          const tbg   = TIPO_BG[tipo]  || 'rgba(255,255,255,.04)';
+          const tcl   = TIPO_COLORS[tipo] || 'var(--text2)';
+          const ovCls = isOv ? ' hor-chip-ov' : '';
+          if(cn){
+            // Coach name is the hero; tipo shown smaller below
+            html += `<div class="hor-coach-chip${ovCls}" style="background:${color}28;border-color:${color}55;color:${color};">
+              <span class="hor-chip-name">${esc(cn)}</span>
+              ${tipo?`<span class="hor-chip-tipo">${esc(tipo)}</span>`:''}
+            </div>`;
+          } else if(tipo){
+            // No coach — show tipo with its class color
+            html += `<div class="hor-coach-chip${ovCls}" style="background:${tbg};border-color:${tcl}44;color:${tcl};">
+              <span class="hor-chip-name">${esc(tipo)}</span>
+              <span class="hor-chip-tipo">Sin coach</span>
+            </div>`;
+          } else {
+            html += `<span class="hor-plus-chip">＋</span>`;
+          }
         }
         html += '</td>';
       }
@@ -3944,7 +3975,7 @@ async function saveHorarioOverride(){
 
   const cerrado  = coachVal === '__cerrado__';
   const coachId  = cerrado ? null : (coachVal||null);
-  const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)) : null;
+  const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)||c.nombre===coachId) : null;
   const coachNom = coachObj ? coachObj.nombre : '';
 
   // CERRADO stored as tipo='CERRADO' — no cerrado bool column needed
@@ -4139,9 +4170,10 @@ function renderHorario(){
       html += `<div class="hor-cell">`;
       clases.forEach(c=>{
         const tc = tipoClass(c.tipo);
+        const cn = resolveCoachName(c.coach_id, c.coach_nombre);
         html += `<div class="hor-clase ${tc}" onclick="openEditClase('${c.id}')">
+          <div class="hor-clase-coach">${cn ? esc(cn) : '<em style="opacity:.4;font-size:10px">Sin coach</em>'}</div>
           <div class="hor-clase-name">${esc(c.tipo)}</div>
-          <div class="hor-clase-coach">${c.coach_nombre ? esc(c.coach_nombre) : '<em style="opacity:.5">Sin coach</em>'}</div>
           ${c.cupo ? `<div style="font-size:9px;opacity:.55;margin-top:2px;">👥 Cupo: ${c.cupo}</div>` : ''}
           <div class="hor-clase-actions">
             <button onclick="event.stopPropagation();openEditClase('${c.id}')" title="Editar">✏️</button>
@@ -4220,7 +4252,7 @@ async function saveClase(){
 
   if(!dias.length){ alert('Selecciona al menos un día.'); return; }
 
-  const coachObj = coaches.find(c=>c.id===cid);
+  const coachObj = coaches.find(c=>String(c.id)===String(cid));
   // Build one payload per day; fecha='' marks it as base template (not a specific date override)
   const payloads = dias.map(dia=>({
     dia, hora, tipo,
@@ -4273,7 +4305,7 @@ async function saveEditClase(){
   const cid   = document.getElementById('ecl-coach').value;
   const cupo  = parseInt(document.getElementById('ecl-cupo').value)||15;
   const notas = document.getElementById('ecl-notas').value.trim();
-  const coachObj = coaches.find(c=>c.id===cid);
+  const coachObj = coaches.find(c=>String(c.id)===String(cid));
   const payload = {
     dia, hora, tipo,
     fecha:        '',   // keep as base template
