@@ -1553,6 +1553,16 @@ select option{background:#10101c;color:var(--text);}
 
     <!-- ══ PROGRAMA DE ENTRENAMIENTO ══ -->
     <div class="view" id="v-programa">
+      <!-- AI Banner -->
+      <div id="prog-ai-banner" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(0,180,216,.08));border:1px solid rgba(139,92,246,.25);margin-bottom:16px;">
+        <div style="font-size:22px;flex-shrink:0;">🤖</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">Asistente de Programación IA</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;" id="prog-ai-status">Genera y sube entrenamientos semanales automáticamente. Configura el contexto para resultados óptimos.</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openProgConfig()" style="border-color:rgba(139,92,246,.5);color:#8b5cf6;white-space:nowrap;">⚙️ Configurar IA</button>
+      </div>
+
       <div class="tabs" style="margin-bottom:16px;">
         <div class="tab active" id="prog-tab-Strength"   onclick="switchProgTab('Strength')">💪 Strength</div>
         <div class="tab" id="prog-tab-Hyrox"      onclick="switchProgTab('Hyrox')">🏁 Hyrox</div>
@@ -2320,6 +2330,75 @@ select option{background:#10101c;color:var(--text);}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('gasto')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveGasto()">Guardar Gasto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: CONFIG ASISTENTE IA ══ -->
+<div class="modal-overlay" id="modal-prog-config">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <div class="modal-title">🤖 Configurar Asistente IA</div>
+      <button class="modal-close" onclick="closeModal('prog-config')">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;padding:10px 12px;background:var(--card2);border-radius:8px;border:1px solid var(--border);">
+      Esta configuración le indica al asistente qué equipo tienen disponible, cuál es el objetivo de cada programa y en qué fase del ciclo están. Se usa cada semana para generar entrenamientos progresivos y evitar repetición.
+    </div>
+
+    <!-- Equipo general -->
+    <div class="field">
+      <label>🏋️ Equipo disponible en el gimnasio</label>
+      <textarea id="cfg-equipo" rows="3" placeholder="Ej: Barbell, mancuernas 5-40kg, kettlebells, pull-up bar, assault bike, rower, ski erg, sled, sandbags, TRX, cajones pliométricos, wall balls, cuerdas de batalla..."></textarea>
+    </div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:16px 0 10px;">Objetivos por Disciplina</div>
+
+    <div class="tabs" style="margin-bottom:14px;" id="cfg-tabs">
+      <div class="tab active" id="cfg-tab-Strength"  onclick="switchCfgTab('Strength')">💪 Strength</div>
+      <div class="tab" id="cfg-tab-Hyrox"     onclick="switchCfgTab('Hyrox')">🏁 Hyrox</div>
+      <div class="tab" id="cfg-tab-Endurance" onclick="switchCfgTab('Endurance')">🏃 Endurance</div>
+    </div>
+
+    <div id="cfg-panel-Strength">
+      <div class="field-row">
+        <div class="field"><label>Bloque actual</label>
+          <select id="cfg-str-bloque"><option>Base</option><option>Hipertrofia</option><option>Fuerza</option><option>Pico</option><option>Deload</option></select></div>
+        <div class="field"><label>Nivel de clientes</label>
+          <select id="cfg-str-nivel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option><option>Mixto</option></select></div>
+      </div>
+      <div class="field"><label>Objetivo del programa</label>
+        <textarea id="cfg-str-objetivo" rows="2" placeholder="Ej: Desarrollar fuerza funcional e hipertrofia. Progresión lineal de cargas. Énfasis en patrones de empuje, jalón, bisagra y sentadilla."></textarea></div>
+      <div class="field"><label>Notas para el asistente</label>
+        <textarea id="cfg-str-notas" rows="2" placeholder="Ej: Los clientes entrenan 3-4 días/semana. Sesiones de máximo 60 min. Evitar movimientos olímpicos complejos."></textarea></div>
+    </div>
+    <div id="cfg-panel-Hyrox" style="display:none;">
+      <div class="field-row">
+        <div class="field"><label>Bloque actual</label>
+          <select id="cfg-hyr-bloque"><option>Base</option><option>Acumulación</option><option>Intensificación</option><option>Pico competitivo</option><option>Deload</option></select></div>
+        <div class="field"><label>Nivel de clientes</label>
+          <select id="cfg-hyr-nivel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option><option>Mixto</option></select></div>
+      </div>
+      <div class="field"><label>Objetivo del programa</label>
+        <textarea id="cfg-hyr-objetivo" rows="2" placeholder="Ej: Preparación para competencia Hyrox. Desarrollar capacidad en las 8 estaciones + running. Simular el formato de carrera."></textarea></div>
+      <div class="field"><label>Notas para el asistente</label>
+        <textarea id="cfg-hyr-notas" rows="2" placeholder="Ej: Próxima competencia en X fecha. Trabajar debilidades en sled push y burpee broad jump."></textarea></div>
+    </div>
+    <div id="cfg-panel-Endurance" style="display:none;">
+      <div class="field-row">
+        <div class="field"><label>Bloque actual</label>
+          <select id="cfg-end-bloque"><option>Base aeróbica</option><option>Volumen</option><option>Intervalos</option><option>Pico</option><option>Recuperación</option></select></div>
+        <div class="field"><label>Nivel de clientes</label>
+          <select id="cfg-end-nivel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option><option>Mixto</option></select></div>
+      </div>
+      <div class="field"><label>Objetivo del programa</label>
+        <textarea id="cfg-end-objetivo" rows="2" placeholder="Ej: Construir base aeróbica sólida. Mejorar VO2max. Alternar: rowing, bike, ski erg, running."></textarea></div>
+      <div class="field"><label>Notas para el asistente</label>
+        <textarea id="cfg-end-notas" rows="2" placeholder="Ej: Sesiones de Z2 los miércoles de 45-60 min. Intervalos los martes. Long session los sábados."></textarea></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('prog-config')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProgConfig()">💾 Guardar Configuración</button>
     </div>
   </div>
 </div>
@@ -3643,6 +3722,72 @@ async function deleteGasto(id){
 // ═══════════════════════════════════════════════════════════════════
 // PROGRAMAS DE ENTRENAMIENTO — Supabase CRUD + render
 // ═══════════════════════════════════════════════════════════════════
+// ─── Configuración del Asistente IA ───
+let progConfig = {}; // loaded from Supabase config_programas table
+
+async function loadProgConfigFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('config_programas').select('*');
+  if(error){ console.warn('config_programas table may not exist yet:', error.message); return; }
+  progConfig = {};
+  (data||[]).forEach(row=>{ progConfig[row.tipo] = row; });
+}
+
+function switchCfgTab(tab){
+  ['Strength','Hyrox','Endurance'].forEach(t=>{
+    document.getElementById('cfg-tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('cfg-panel-'+t).style.display = t===tab ? '' : 'none';
+  });
+}
+
+function openProgConfig(){
+  // Pre-fill from loaded config
+  const gym = progConfig['gym']||{};
+  const str = progConfig['Strength']||{};
+  const hyr = progConfig['Hyrox']||{};
+  const end = progConfig['Endurance']||{};
+  const sv = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
+  sv('cfg-equipo', gym.equipo||'');
+  sv('cfg-str-objetivo', str.objetivo||''); sv('cfg-str-notas', str.notas||'');
+  if(str.bloque)  setSelectVal('cfg-str-bloque', str.bloque);
+  if(str.nivel)   setSelectVal('cfg-str-nivel',  str.nivel);
+  sv('cfg-hyr-objetivo', hyr.objetivo||''); sv('cfg-hyr-notas', hyr.notas||'');
+  if(hyr.bloque)  setSelectVal('cfg-hyr-bloque', hyr.bloque);
+  if(hyr.nivel)   setSelectVal('cfg-hyr-nivel',  hyr.nivel);
+  sv('cfg-end-objetivo', end.objetivo||''); sv('cfg-end-notas', end.notas||'');
+  if(end.bloque)  setSelectVal('cfg-end-bloque', end.bloque);
+  if(end.nivel)   setSelectVal('cfg-end-nivel',  end.nivel);
+  switchCfgTab('Strength');
+  openModal('prog-config');
+}
+
+async function saveProgConfig(){
+  const gv = id => (document.getElementById(id)||{}).value||'';
+  const rows = [
+    { tipo:'gym',       equipo: gv('cfg-equipo'), objetivo:'', bloque:'', nivel:'', notas:'' },
+    { tipo:'Strength',  equipo:'', objetivo: gv('cfg-str-objetivo'), bloque: gv('cfg-str-bloque'), nivel: gv('cfg-str-nivel'), notas: gv('cfg-str-notas') },
+    { tipo:'Hyrox',     equipo:'', objetivo: gv('cfg-hyr-objetivo'), bloque: gv('cfg-hyr-bloque'), nivel: gv('cfg-hyr-nivel'), notas: gv('cfg-hyr-notas') },
+    { tipo:'Endurance', equipo:'', objetivo: gv('cfg-end-objetivo'), bloque: gv('cfg-end-bloque'), nivel: gv('cfg-end-nivel'), notas: gv('cfg-end-notas') },
+  ];
+  let anyError = false;
+  for(const row of rows){
+    const existing = progConfig[row.tipo];
+    let err;
+    if(existing && existing.id){
+      const r = await window.supabaseClient.from('config_programas').update(row).eq('id', existing.id);
+      err = r.error;
+    } else {
+      const r = await window.supabaseClient.from('config_programas').insert([row]);
+      err = r.error;
+    }
+    if(err){ console.error('Error saving config for', row.tipo, err); anyError = true; }
+  }
+  if(anyError){ toast('Error guardando config ❌','✕'); return; }
+  await loadProgConfigFromSupabase();
+  closeModal('prog-config');
+  toast('Configuración guardada ✓ El asistente usará esto cada semana.','🤖');
+  document.getElementById('prog-ai-status').textContent = 'Configuración actualizada ✓ — El asistente generará entrenamientos cada domingo.';
+}
+
 async function loadProgramasFromSupabase(){
   const { data, error } = await window.supabaseClient.from('programas').select('*').order('fecha');
   if(error){ console.error('Error cargando programas:', error); return; }
@@ -4974,6 +5119,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadHorarioOverridesFromSupabase(),
     loadGastosFromSupabase(),
     loadProgramasFromSupabase(),
+    loadProgConfigFromSupabase(),
   ]);
   renderDashboard();
   renderCoaches();
