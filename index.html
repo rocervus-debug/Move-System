@@ -422,8 +422,14 @@ body{
 .cal-day:hover{background:rgba(0,180,216,.05);border-color:rgba(0,180,216,.15);}
 .cal-day.today{background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.25);box-shadow:0 0 16px rgba(0,180,216,.08);}
 .cal-date{font-size:10px;font-weight:700;color:var(--text2);margin-bottom:4px;}
-.cal-post{border-radius:4px;padding:2px 5px;font-size:9px;font-weight:600;margin-bottom:2px;cursor:pointer;display:block;transition:opacity .15s;}
-.cal-post:hover{opacity:.75;}
+.pf-btn{background:var(--card2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;cursor:pointer;transition:all .15s;}
+.pf-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pf-btn.active{background:rgba(0,180,216,.15);border-color:var(--accent);color:var(--accent);}
+.cal-post{border-radius:4px;padding:2px 5px;font-size:9px;font-weight:600;margin-bottom:2px;display:block;transition:opacity .15s;position:relative;overflow:hidden;}
+.cal-post:hover{opacity:.9;}
+.cal-post-actions{display:none;position:absolute;right:2px;top:50%;transform:translateY(-50%);gap:2px;background:inherit;}
+.cal-post:hover .cal-post-actions{display:flex;}
+.cal-post-actions button{background:rgba(0,0,0,.35);border:none;cursor:pointer;font-size:9px;padding:1px 3px;border-radius:3px;color:#fff;line-height:1;}
 .cp-ig{background:rgba(167,139,250,.15);color:#c084fc;}
 .cp-email{background:rgba(96,165,250,.15);color:#60a5fa;}
 .cp-reel{background:rgba(251,191,36,.15);color:#fbbf24;}
@@ -1116,7 +1122,7 @@ select option{background:#10101c;color:var(--text);}
         <div class="kpi-card" style="--kpi-color:var(--accent)">
           <div class="kpi-label">Clientes Activos</div>
           <div class="kpi-value" id="kpi-activos">0</div>
-          <div class="kpi-meta">Membresías vigentes</div>
+          <div class="kpi-meta">Cerrado – Ganado</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#7c3aed">
           <div class="kpi-label">Leads Este Mes</div>
@@ -1130,8 +1136,31 @@ select option{background:#10101c;color:var(--text);}
         </div>
         <div class="kpi-card" style="--kpi-color:var(--warn)">
           <div class="kpi-label">Ingresos del Mes</div>
-          <div class="kpi-value">$0</div>
-          <div class="kpi-meta">Pendiente de configurar</div>
+          <div class="kpi-value" id="kpi-ingresos-mes">$0</div>
+          <div class="kpi-meta" id="kpi-ingresos-meta">Pagos registrados</div>
+        </div>
+      </div>
+      <!-- Payment stats row -->
+      <div class="kpi-grid" style="margin-bottom:18px;">
+        <div class="kpi-card" style="--kpi-color:var(--ok)">
+          <div class="kpi-label">💰 Ingresos Totales</div>
+          <div class="kpi-value" id="kpi-total-ingresos">$0</div>
+          <div class="kpi-meta" id="kpi-total-ingresos-meta">Todos los pagos</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#22c55e">
+          <div class="kpi-label">🆕 Socios Nuevos</div>
+          <div class="kpi-value" id="kpi-socios-nuevos">0</div>
+          <div class="kpi-meta">Primer pago este mes</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--danger)">
+          <div class="kpi-label">📉 Membresías Vencidas</div>
+          <div class="kpi-value" id="kpi-vencidas">0</div>
+          <div class="kpi-meta">Sin renovar</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--warn)">
+          <div class="kpi-label">⏰ Por Vencer (30 días)</div>
+          <div class="kpi-value" id="kpi-por-vencer">0</div>
+          <div class="kpi-meta">Requieren atención</div>
         </div>
       </div>
 
@@ -1160,8 +1189,10 @@ select option{background:#10101c;color:var(--text);}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">Alertas Activas</div></div>
-          <div class="alert-item a-info"><span class="alert-icon">💡</span><div><div class="alert-title">Sistema listo para configurar</div><div class="alert-desc">Empieza agregando tus leads y coaches desde los módulos correspondientes.</div></div></div>
+          <div class="card-header"><div class="card-title">⏰ Próximos Vencimientos</div><span class="card-sub">30 días</span></div>
+          <div id="dash-vencimientos">
+            <div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">Los pagos por vencer en los próximos 30 días aparecerán aquí.</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1199,6 +1230,35 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">💳 Registro de Pagos</div><button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button></div>
+        <!-- Filters -->
+        <div id="pagos-filters" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 0 14px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;">Estado:</span>
+            <button class="pf-btn active" data-filter="estado" data-val="todos" onclick="setPagoFilter('estado','todos',this)">Todos</button>
+            <button class="pf-btn" data-filter="estado" data-val="vigente" onclick="setPagoFilter('estado','vigente',this)">✅ Vigente</button>
+            <button class="pf-btn" data-filter="estado" data-val="por_vencer" onclick="setPagoFilter('estado','por_vencer',this)">⚠️ Por vencer</button>
+            <button class="pf-btn" data-filter="estado" data-val="vencido" onclick="setPagoFilter('estado','vencido',this)">🔴 Vencido</button>
+          </div>
+          <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;">Plan:</span>
+            <button class="pf-btn active" data-filter="plan" data-val="todos" onclick="setPagoFilter('plan','todos',this)">Todos</button>
+            <button class="pf-btn" data-filter="plan" data-val="Mensual" onclick="setPagoFilter('plan','Mensual',this)">Mensual</button>
+            <button class="pf-btn" data-filter="plan" data-val="Trimestral" onclick="setPagoFilter('plan','Trimestral',this)">Trimestral</button>
+            <button class="pf-btn" data-filter="plan" data-val="Semestral" onclick="setPagoFilter('plan','Semestral',this)">Semestral</button>
+            <button class="pf-btn" data-filter="plan" data-val="Anual" onclick="setPagoFilter('plan','Anual',this)">Anual</button>
+          </div>
+          <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;">Método:</span>
+            <button class="pf-btn active" data-filter="metodo" data-val="todos" onclick="setPagoFilter('metodo','todos',this)">Todos</button>
+            <button class="pf-btn" data-filter="metodo" data-val="Efectivo" onclick="setPagoFilter('metodo','Efectivo',this)">💵 Efectivo</button>
+            <button class="pf-btn" data-filter="metodo" data-val="Transferencia" onclick="setPagoFilter('metodo','Transferencia',this)">💸 Transf.</button>
+            <button class="pf-btn" data-filter="metodo" data-val="Tarjeta" onclick="setPagoFilter('metodo','Tarjeta',this)">💳 Tarjeta</button>
+            <button class="pf-btn" data-filter="metodo" data-val="TotalPass" onclick="setPagoFilter('metodo','TotalPass',this)">🏷 TotalPass</button>
+            <button class="pf-btn" data-filter="metodo" data-val="Nessty" onclick="setPagoFilter('metodo','Nessty',this)">🔗 Nessty</button>
+          </div>
+        </div>
         <div id="pagos-list"><div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Registra los pagos de tus clientes para llevar control de ingresos y renovaciones.</div></div></div>
       </div>
     </div>
@@ -1643,6 +1703,30 @@ select option{background:#10101c;color:var(--text);}
   </div>
 </div>
 
+<!-- Modal: Editar Contenido del Calendario -->
+<div class="modal-overlay" id="modal-edit-contenido">
+  <div class="modal" style="width:420px;">
+    <div class="modal-head">
+      <div class="modal-title">✏️ Editar Contenido</div>
+      <button class="modal-close" onclick="closeModal('edit-contenido')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eco-id"/>
+      <div class="field-grid">
+        <div class="field"><label>Día de Abril *</label><input id="eco-dia" type="number" placeholder="1" min="1" max="30"/></div>
+        <div class="field"><label>Tipo</label>
+          <select id="eco-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Título / Descripción *</label><input id="eco-titulo" type="text" placeholder="Ej: Reel Strength – tutorial snatch"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-contenido')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditContenido()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Editar Prospecto / Cliente completo -->
 <div class="modal-overlay" id="modal-edit-lead">
   <div class="modal">
@@ -1980,6 +2064,7 @@ let contenidos = []; // loaded from Supabase
 let horario    = []; // loaded from Supabase
 let usuarios   = []; // loaded from Supabase (admin only)
 let currentUser = null; // active session
+let pagoFilter  = { estado:'todos', metodo:'todos', plan:'todos' };
 
 // ═══════════════════════════════════════════════════════════════════
 // AUTH — Login / Logout / Session
@@ -2855,6 +2940,77 @@ function renderDashboard(){
   if(hl)  hl.textContent  = total || '0';
   if(hcl) hcl.textContent = horario.length || '0';
 
+  // ─── Payment KPIs ───
+  const now   = new Date(); now.setHours(0,0,0,0);
+  const in30  = new Date(now); in30.setDate(now.getDate()+30);
+  // Ingresos del mes (pagos registrados en el mes actual)
+  const thisMonth = now.toISOString().slice(0,7); // "2026-04"
+  const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMonth));
+  const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+p.monto,0);
+  // Total ingresos
+  const totalIngresos = pagos.reduce((s,p)=>s+p.monto,0);
+  // Socios nuevos: clientes que tienen su primer pago este mes (unique por nombre)
+  const clientesNuevos = new Set();
+  pagosEsteMes.forEach(p=>{
+    const tieneAntes = pagos.some(x=>x.cliente===p.cliente && (x.fecha||'')<(p.fecha||'') && !(x.fecha||'').startsWith(thisMonth));
+    if(!tieneAntes) clientesNuevos.add(p.cliente);
+  });
+  // Membresías vencidas
+  const vencidasCount = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now).length;
+  // Por vencer en 30 días
+  const porVencer30 = pagos.filter(p=>{
+    if(!p.vence||p.vence==='—') return false;
+    const v = new Date(p.vence); return v>=now && v<=in30;
+  });
+
+  const ki = document.getElementById('kpi-ingresos-mes');
+  const km = document.getElementById('kpi-ingresos-meta');
+  if(ki) ki.textContent = '$'+ingresosMes.toLocaleString('es-MX');
+  if(km) km.textContent = pagosEsteMes.length+' pago'+(pagosEsteMes.length!==1?'s':'');
+
+  const kti = document.getElementById('kpi-total-ingresos');
+  const ktim= document.getElementById('kpi-total-ingresos-meta');
+  if(kti) kti.textContent  = '$'+totalIngresos.toLocaleString('es-MX');
+  if(ktim) ktim.textContent= pagos.length+' pago'+(pagos.length!==1?'s':'');
+
+  const ksn = document.getElementById('kpi-socios-nuevos');
+  if(ksn) ksn.textContent = clientesNuevos.size;
+
+  const kv = document.getElementById('kpi-vencidas');
+  if(kv) kv.textContent = vencidasCount;
+
+  const kpv = document.getElementById('kpi-por-vencer');
+  if(kpv) kpv.textContent = porVencer30.length;
+
+  // ─── Próximos Vencimientos list ───
+  const vencEl = document.getElementById('dash-vencimientos');
+  if(vencEl){
+    if(!porVencer30.length){
+      vencEl.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">No hay membresías por vencer en los próximos 30 días.</div></div>`;
+    } else {
+      const sorted = [...porVencer30].sort((a,b)=>(a.vence||'').localeCompare(b.vence||''));
+      vencEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;">` +
+        sorted.map(p=>{
+          const v = new Date(p.vence+'T12:00:00');
+          const diffDays = Math.round((v-now)/(1000*60*60*24));
+          const urgColor = diffDays<=7 ? 'var(--danger)' : diffDays<=15 ? 'var(--warn)' : 'var(--ok)';
+          const urgLabel = diffDays===0 ? 'Hoy' : diffDays===1 ? 'Mañana' : `${diffDays} días`;
+          const vFmt = v.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card2);border-radius:8px;border:1px solid var(--border);">
+            <div style="width:34px;height:34px;border-radius:8px;background:${urgColor}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">⏰</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.cliente)}</div>
+              <div style="font-size:11px;color:var(--text3);">${esc(p.plan||'—')} · ${vFmt}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:13px;font-weight:700;color:${urgColor};">${urgLabel}</div>
+              <div style="font-size:11px;color:var(--text3);">$${(p.monto||0).toLocaleString('es-MX')}</div>
+            </div>
+          </div>`;
+        }).join('') + `</div>`;
+    }
+  }
+
   updateBadges();
 
   // Pipeline bars
@@ -3092,9 +3248,26 @@ function metodoBadge(m){
   return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:${bg};color:${color};border:1px solid ${color}22;">${ico} ${esc(m||'—')}</span>`;
 }
 
+function setPagoFilter(key, val, btn){
+  pagoFilter[key] = val;
+  // Update active button in group
+  const group = btn.parentElement.querySelectorAll('.pf-btn');
+  group.forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPagos();
+}
+
+function getPagoEstado(p, today, in7){
+  if(!p.vence||p.vence==='—') return 'sin_fecha';
+  const v = new Date(p.vence);
+  if(v < today) return 'vencido';
+  if(v <= in7) return 'por_vencer';
+  return 'vigente';
+}
+
 function renderPagos(){
   // Update KPIs
-  const today = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
   const in7   = new Date(today); in7.setDate(today.getDate()+7);
   const totalCobrado  = pagos.reduce((s,p)=>s+p.monto,0);
   const porVencer     = pagos.filter(p=>{ if(!p.vence||p.vence==='—') return false; const v=new Date(p.vence); return v>=today&&v<=in7; });
@@ -3112,7 +3285,27 @@ function renderPagos(){
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Registra los pagos de tus clientes para llevar control de ingresos y renovaciones.</div></div>`;
     return;
   }
-  const sorted = [...pagos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+
+  // Apply filters
+  let filtered = [...pagos];
+  if(pagoFilter.estado !== 'todos'){
+    filtered = filtered.filter(p=>{
+      const est = getPagoEstado(p, today, in7);
+      return est === pagoFilter.estado;
+    });
+  }
+  if(pagoFilter.plan !== 'todos'){
+    filtered = filtered.filter(p=>(p.plan||'') === pagoFilter.plan);
+  }
+  if(pagoFilter.metodo !== 'todos'){
+    filtered = filtered.filter(p=>(p.metodo||'') === pagoFilter.metodo);
+  }
+
+  const sorted = [...filtered].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  if(!sorted.length){
+    el.innerHTML = `<div class="empty-state" style="padding:30px;"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">No hay pagos que coincidan con los filtros seleccionados.</div></div>`;
+    return;
+  }
   let html = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr>
     <th>Cliente</th><th>Plan</th><th>Monto</th><th>Método</th><th>Fecha Pago</th><th>Vencimiento</th><th></th>
   </tr></thead><tbody>`;
@@ -3358,19 +3551,48 @@ async function saveContenido(){
 }
 
 async function deleteContenido(id){
+  if(!confirm('¿Eliminar este contenido?')) return;
   const { error } = await window.supabaseClient.from('contenidos').delete().eq('id', id);
-  if(error){ console.error('Error eliminando contenido:', error); return; }
-  contenidos = contenidos.filter(c=>c.id!==id);
+  if(error){ console.error('Error eliminando contenido:', error); alert('No se pudo eliminar.'); return; }
+  contenidos = contenidos.filter(c=>String(c.id)!==String(id));
+  toast('Contenido eliminado.','🗑');
+  renderCalendario();
+}
+
+function openEditContenido(id){
+  const c = contenidos.find(x=>String(x.id)===String(id));
+  if(!c){ alert('Contenido no encontrado.'); return; }
+  document.getElementById('eco-id').value    = id;
+  document.getElementById('eco-titulo').value= c.titulo||'';
+  document.getElementById('eco-dia').value   = c.dia||'';
+  setSelectVal('eco-tipo', c.tipo||'Reel');
+  openModal('edit-contenido');
+}
+
+async function saveEditContenido(){
+  const id     = document.getElementById('eco-id').value;
+  const titulo = document.getElementById('eco-titulo').value.trim();
+  const dia    = parseInt(document.getElementById('eco-dia').value);
+  if(!titulo){ alert('El título es obligatorio.'); return; }
+  if(!dia||dia<1||dia>31){ alert('El día debe ser entre 1 y 31.'); return; }
+  const payload = { titulo, dia, tipo: document.getElementById('eco-tipo').value };
+  const { error } = await window.supabaseClient.from('contenidos').update(payload).eq('id', id);
+  if(error){ console.error('Error editando contenido:', error); alert('No se pudo guardar.'); return; }
+  await loadContenidosFromSupabase();
+  closeModal('edit-contenido');
+  toast(`Contenido actualizado.`,'✅');
   renderCalendario();
 }
 
 function renderCalendario(){
   const grid = document.getElementById('cal-grid');
   if(!grid) return;
-  const TODAY = 7; // today is April 7, 2026
-  // April 2026 starts on Wednesday (day index 2, Mon=0)
-  const startOffset = 2; // Wed
-  const daysInMonth = 30;
+  const _now = new Date();
+  const TODAY = _now.getDate();
+  // Calculate the day-of-week offset for the 1st of this month (Mon=0)
+  const firstDay = new Date(_now.getFullYear(), _now.getMonth(), 1);
+  const startOffset = (firstDay.getDay() + 6) % 7; // convert Sun=0 to Mon=0
+  const daysInMonth = new Date(_now.getFullYear(), _now.getMonth()+1, 0).getDate();
 
   let html = '';
   // Day headers
@@ -3386,7 +3608,7 @@ function renderCalendario(){
     items.forEach(c=>{
       const cls = CON_TIPO_CLASS[c.tipo]||'cp-ig';
       const ico = CON_TIPO_ICO[c.tipo]||'📄';
-      inner += `<div class="cal-post ${cls}" title="Eliminar" onclick="deleteContenido('${c.id}')" style="cursor:pointer;" title="Clic para eliminar">${ico} ${esc(c.titulo)}</div>`;
+      inner += `<div class="cal-post ${cls}">${ico} <span style="margin-right:22px;">${esc(c.titulo)}</span><div class="cal-post-actions"><button onclick="event.stopPropagation();openEditContenido('${c.id}')" title="Editar">✏️</button><button onclick="event.stopPropagation();deleteContenido('${c.id}')" title="Eliminar">🗑</button></div></div>`;
     });
     html += `<div class="cal-day ${isToday?'today':''}">${inner}</div>`;
   }
