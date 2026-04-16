@@ -757,6 +757,13 @@ select option{background:#10101c;color:var(--text);}
 .hor-clase-actions button:hover{ background:rgba(0,180,216,.2);border-color:var(--accent); }
 .hor-legend{ display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
 /* ── Monthly Schedule Table ── */
+/* Day-picker chips */
+.day-chips-row{ display:flex;gap:6px;flex-wrap:wrap; }
+.day-chip-lbl{ cursor:pointer;display:flex; }
+.day-chip-lbl input[type=checkbox]{ display:none; }
+.day-chip-lbl span{ padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;background:var(--card2);border:1px solid var(--border);color:var(--text3);transition:all .15s;user-select:none; }
+.day-chip-lbl:hover span{ border-color:var(--accent);color:var(--accent); }
+.day-chip-lbl.selected span{ background:rgba(0,180,216,.18);border-color:var(--accent);color:var(--accent); }
 .hor-month-tbl{ width:100%;border-collapse:collapse;font-size:12px; }
 .hor-month-tbl .hor-wdate-th{ background:var(--card2);color:var(--text2);font-size:10px;font-weight:700;text-align:center;padding:6px 4px;border:1px solid var(--border);min-width:90px;line-height:1.3; }
 .hor-month-tbl .hor-wdate-th.hor-today-col{ background:rgba(0,180,216,.14);color:var(--accent);border-color:rgba(0,180,216,.4); }
@@ -1988,31 +1995,40 @@ select option{background:#10101c;color:var(--text);}
 
 <!-- MODAL ADD CLASE -->
 <div class="modal-overlay" id="modal-clase">
-  <div class="modal">
+  <div class="modal" style="width:480px;">
     <div class="modal-head">
-      <div class="modal-title">🗓 Nueva Clase</div>
+      <div class="modal-title">🗓 Nueva Clase — Plantilla Semanal</div>
       <button class="modal-close" onclick="closeModal('clase')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field-grid">
-        <div class="field"><label>Día *</label>
-          <select id="cl-dia">
-            <option value="Lunes">Lunes</option><option value="Martes">Martes</option>
-            <option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option>
-            <option value="Viernes">Viernes</option><option value="Sábado">Sábado</option>
-            <option value="Domingo">Domingo</option>
-          </select>
+      <!-- Multi-day selector -->
+      <div class="field">
+        <label>Días recurrentes *</label>
+        <div class="day-chips-row">
+          <label class="day-chip-lbl" id="dchip-Lunes"><input type="checkbox" class="cl-dia-chk" value="Lunes" onchange="updateDayChip(this)"/><span>Lun</span></label>
+          <label class="day-chip-lbl" id="dchip-Martes"><input type="checkbox" class="cl-dia-chk" value="Martes" onchange="updateDayChip(this)"/><span>Mar</span></label>
+          <label class="day-chip-lbl" id="dchip-Miércoles"><input type="checkbox" class="cl-dia-chk" value="Miércoles" onchange="updateDayChip(this)"/><span>Mié</span></label>
+          <label class="day-chip-lbl" id="dchip-Jueves"><input type="checkbox" class="cl-dia-chk" value="Jueves" onchange="updateDayChip(this)"/><span>Jue</span></label>
+          <label class="day-chip-lbl" id="dchip-Viernes"><input type="checkbox" class="cl-dia-chk" value="Viernes" onchange="updateDayChip(this)"/><span>Vie</span></label>
+          <label class="day-chip-lbl" id="dchip-Sábado"><input type="checkbox" class="cl-dia-chk" value="Sábado" onchange="updateDayChip(this)"/><span>Sáb</span></label>
+          <label class="day-chip-lbl" id="dchip-Domingo"><input type="checkbox" class="cl-dia-chk" value="Domingo" onchange="updateDayChip(this)"/><span>Dom</span></label>
         </div>
-        <div class="field"><label>Hora *</label>
-          <select id="cl-hora">
-            <option>5:00am</option><option>6:00am</option><option>7:00am</option>
-            <option>8:00am</option><option>9:00am</option><option>10:00am</option>
-            <option>11:00am</option><option>12:00pm</option><option>1:00pm</option>
-            <option>2:00pm</option><option>3:00pm</option><option>4:00pm</option>
-            <option>5:00pm</option><option>6:00pm</option><option>7:00pm</option>
-            <option>8:00pm</option>
-          </select>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn btn-outline btn-sm" type="button" onclick="toggleDayPreset('week')">Lun–Vie</button>
+          <button class="btn btn-outline btn-sm" type="button" onclick="toggleDayPreset('all')">Todos</button>
+          <button class="btn btn-outline btn-sm" type="button" onclick="toggleDayPreset('finsem')">Sáb+Dom</button>
+          <button class="btn btn-outline btn-sm" type="button" onclick="toggleDayPreset('none')" style="margin-left:auto;color:var(--text3);">Ninguno</button>
         </div>
+      </div>
+      <div class="field"><label>Hora *</label>
+        <select id="cl-hora">
+          <option>5:00am</option><option>5:30am</option><option>6:00am</option><option>6:30am</option>
+          <option>7:00am</option><option>7:30am</option><option>8:00am</option><option>8:30am</option>
+          <option>9:00am</option><option>9:30am</option><option>10:00am</option><option>11:00am</option>
+          <option>12:00pm</option><option>1:00pm</option><option>2:00pm</option><option>3:00pm</option>
+          <option>4:00pm</option><option>5:00pm</option><option>5:30pm</option><option>6:00pm</option>
+          <option>6:30pm</option><option>7:00pm</option><option>7:30pm</option><option>8:00pm</option>
+        </select>
       </div>
       <div class="field-grid">
         <div class="field"><label>Tipo *</label>
@@ -2034,8 +2050,9 @@ select option{background:#10101c;color:var(--text);}
       </div>
     </div>
     <div class="modal-footer">
+      <span id="cl-days-count" style="font-size:11px;color:var(--text3);margin-right:auto;"></span>
       <button class="btn btn-outline" onclick="closeModal('clase')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveClase()">Agregar Clase</button>
+      <button class="btn btn-primary" onclick="saveClase()">Agregar Clase(s)</button>
     </div>
   </div>
 </div>
@@ -2465,8 +2482,8 @@ async function loadHorarioFromSupabase(){
   if(!window.supabaseClient){ return; }
   const { data, error } = await window.supabaseClient.from('horarios').select('*').order('hora');
   if(error){ console.error('Error cargando horario:', error); return; }
-  // Base template = records without a specific date (fecha null or empty)
-  horario = (data||[]).filter(h=>!h.fecha).map(h=>({
+  // Base template = records where fecha is null, empty, or not a date (YYYY-MM-DD format)
+  horario = (data||[]).filter(h=>!h.fecha || h.fecha==='' || !/^\d{4}-\d{2}-\d{2}$/.test(h.fecha)).map(h=>({
     id: h.id,
     dia:          h.dia||'',
     hora:         h.hora||'',
@@ -3756,7 +3773,7 @@ async function loadHorarioOverridesFromSupabase(){
   const { data, error } = await window.supabaseClient
     .from('horarios').select('*').gte('fecha', start).lte('fecha', end).not('fecha','is',null);
   if(error){ console.error('Error cargando overrides:', error); horarioOverrides=[]; return; }
-  horarioOverrides = (data||[]).filter(o=>o.fecha&&o.fecha.length>0).map(o=>({
+  horarioOverrides = (data||[]).filter(o=>o.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(o.fecha)).map(o=>({
     id: o.id, fecha: o.fecha, hora: o.hora,
     tipo: o.tipo||'', coach_id: o.coach_id||'',
     coach_nombre: o.coach_nombre||'',
@@ -4141,23 +4158,52 @@ function renderHorario(){
   grid.innerHTML = html;
 }
 
+function updateDayChip(chk){
+  const lbl = chk.closest('.day-chip-lbl');
+  if(lbl) lbl.classList.toggle('selected', chk.checked);
+  const count = document.querySelectorAll('.cl-dia-chk:checked').length;
+  const cnt = document.getElementById('cl-days-count');
+  if(cnt) cnt.textContent = count > 0 ? `${count} día${count>1?'s':''} seleccionado${count>1?'s':''}` : '';
+}
+
+function toggleDayPreset(preset){
+  const chks = document.querySelectorAll('.cl-dia-chk');
+  const week  = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+  const finsem= ['Sábado','Domingo'];
+  chks.forEach(c=>{
+    const val = c.value;
+    let checked = false;
+    if(preset==='all')    checked = true;
+    if(preset==='none')   checked = false;
+    if(preset==='week')   checked = week.includes(val);
+    if(preset==='finsem') checked = finsem.includes(val);
+    c.checked = checked;
+    updateDayChip(c);
+  });
+}
+
 function openAddClaseModal(dia, hora){
   // populate coach dropdown
   const sel = document.getElementById('cl-coach');
   sel.innerHTML = '<option value="">Sin asignar</option>';
   coaches.forEach(c=>{ sel.innerHTML += `<option value="${c.id}">${esc(c.nombre)}</option>`; });
 
-  // pre-select dia/hora if passed from grid button
+  // Reset all day checkboxes
+  toggleDayPreset('none');
+
+  // Pre-check a specific day if called from grid cell
   if(dia){
-    const dsel = document.getElementById('cl-dia');
-    for(let o of dsel.options){ if(o.value===dia){ o.selected=true; break; } }
-  }
-  if(hora){
-    const hsel = document.getElementById('cl-hora');
-    for(let o of hsel.options){ if(o.value===hora){ o.selected=true; break; } }
+    const chk = document.querySelector(`.cl-dia-chk[value="${dia}"]`);
+    if(chk){ chk.checked=true; updateDayChip(chk); }
   }
 
-  // reset other fields
+  // Pre-select hora if passed
+  if(hora){
+    for(let o of document.getElementById('cl-hora').options){
+      if(o.value===hora){ o.selected=true; break; }
+    }
+  }
+
   document.getElementById('cl-tipo').value = 'Strength';
   document.getElementById('cl-cupo').value = '15';
   document.getElementById('cl-notas').value = '';
@@ -4165,25 +4211,37 @@ function openAddClaseModal(dia, hora){
 }
 
 async function saveClase(){
-  const dia   = document.getElementById('cl-dia').value;
+  const dias  = [...document.querySelectorAll('.cl-dia-chk:checked')].map(c=>c.value);
   const hora  = document.getElementById('cl-hora').value;
   const tipo  = document.getElementById('cl-tipo').value;
   const cid   = document.getElementById('cl-coach').value;
   const cupo  = parseInt(document.getElementById('cl-cupo').value)||15;
   const notas = document.getElementById('cl-notas').value.trim();
+
+  if(!dias.length){ alert('Selecciona al menos un día.'); return; }
+
   const coachObj = coaches.find(c=>c.id===cid);
-  const payload = {
+  // Build one payload per day; fecha='' marks it as base template (not a specific date override)
+  const payloads = dias.map(dia=>({
     dia, hora, tipo,
+    fecha:        '',             // empty string = base template (avoids PK null violation)
     coach_id:     cid||null,
     coach_nombre: coachObj ? coachObj.nombre : '',
     cupo, notas
-  };
-  const { error } = await window.supabaseClient.from('horarios').insert([payload]);
-  if(error){ toast('Error al guardar clase ❌','✕'); console.error(error); return; }
+  }));
+
+  const { error } = await window.supabaseClient.from('horarios').insert(payloads);
+  if(error){
+    const msg = error.message||JSON.stringify(error);
+    toast('Error ❌: '+msg.slice(0,60),'✕');
+    console.error('saveClase error:', error);
+    return;
+  }
   closeModal('clase');
   await loadHorarioFromSupabase();
   renderHorario();
-  toast('Clase agregada ✓');
+  renderHorarioMensual();
+  toast(`${dias.length} clase${dias.length>1?'s':''} agregada${dias.length>1?'s':''} ✓`,'✅');
 }
 
 function openEditClase(id){
@@ -4218,6 +4276,7 @@ async function saveEditClase(){
   const coachObj = coaches.find(c=>c.id===cid);
   const payload = {
     dia, hora, tipo,
+    fecha:        '',   // keep as base template
     coach_id:     cid||null,
     coach_nombre: coachObj ? coachObj.nombre : '',
     cupo, notas
