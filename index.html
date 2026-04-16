@@ -650,6 +650,115 @@ select option{background:#10101c;color:var(--text);}
 .login-error.show{display:block;}
 
 /* ═══════════════════════════════════════════════════════════════
+   COACH VIEW — vista dedicada para coaches (solo lectura)
+═══════════════════════════════════════════════════════════════ */
+#coach-screen{
+  display:none;position:fixed;inset:0;z-index:8000;
+  background:var(--bg);flex-direction:column;overflow:hidden;
+}
+#coach-screen.visible{ display:flex; }
+
+.coach-header{
+  display:flex;align-items:center;padding:14px 20px;
+  background:rgba(6,6,13,.95);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);flex-shrink:0;gap:14px;position:sticky;top:0;z-index:10;
+}
+.coach-logo{
+  font-family:var(--font-display);font-size:22px;font-weight:800;
+  color:#fff;letter-spacing:3px;
+}
+.coach-greeting{
+  flex:1;min-width:0;
+}
+.coach-greeting-name{font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.coach-greeting-role{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;}
+
+.coach-tabs{
+  display:flex;border-bottom:1px solid var(--border);background:rgba(6,6,13,.9);
+  flex-shrink:0;
+}
+.coach-tab{
+  flex:1;padding:14px 8px;text-align:center;font-size:13px;font-weight:700;
+  color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .15s;letter-spacing:.3px;
+}
+.coach-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,180,216,.05);}
+.coach-tab:hover:not(.active){color:var(--text2);background:rgba(255,255,255,.03);}
+
+.coach-body{
+  flex:1;overflow-y:auto;padding:16px;
+}
+
+/* Sub-tabs for programa disciplines */
+.coach-sub-tabs{
+  display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;
+}
+.coach-sub-tab{
+  padding:6px 16px;border-radius:99px;font-size:12px;font-weight:700;
+  border:1px solid var(--border);color:var(--text3);cursor:pointer;
+  transition:all .15s;background:var(--card2);
+}
+.coach-sub-tab.active{background:rgba(0,180,216,.15);border-color:var(--accent);color:var(--accent);}
+
+/* Read-only calendar day cell — no hover edit hint */
+.coach-prog-day{
+  border-radius:10px;border:1px solid var(--border);padding:6px;
+  min-height:80px;cursor:pointer;background:var(--card2);
+  transition:border-color .15s;
+}
+.coach-prog-day:hover{border-color:var(--accent);}
+.coach-prog-day.has-content{border-color:rgba(0,180,216,.35);background:rgba(0,180,216,.05);}
+.coach-prog-day.is-today{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,180,216,.2);}
+.coach-prog-day.empty-col{background:rgba(0,0,0,.18);border-color:transparent;cursor:default;pointer-events:none;}
+
+/* Read-only workout viewer popup */
+#coach-detail-overlay{
+  display:none;position:fixed;inset:0;z-index:9500;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  align-items:flex-end;justify-content:center;
+}
+#coach-detail-overlay.open{display:flex;}
+.coach-detail-sheet{
+  width:100%;max-width:700px;max-height:90vh;
+  background:rgba(10,10,20,.98);border-radius:20px 20px 0 0;
+  border:1px solid rgba(0,180,216,.18);
+  display:flex;flex-direction:column;overflow:hidden;
+  animation:slide-up .25s ease;
+}
+@keyframes slide-up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.coach-detail-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.coach-detail-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);}
+.coach-detail-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.coach-detail-body{flex:1;overflow-y:auto;padding:20px;}
+.coach-workout-text{
+  font-family:monospace;font-size:13px;line-height:1.8;color:var(--text2);
+  white-space:pre-wrap;word-break:break-word;
+}
+/* Highlight section headers in workout text */
+.coach-workout-text .wod-section{
+  font-family:var(--font-display);font-size:11px;font-weight:800;
+  color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;
+}
+.coach-detail-close{
+  width:32px;height:32px;border-radius:8px;border:none;
+  background:rgba(255,255,255,.07);color:var(--text3);
+  cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.coach-detail-close:hover{background:rgba(0,180,216,.15);color:var(--accent);}
+
+/* Horario read-only cell */
+.coach-hor-info{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:5px 3px;width:100%;box-sizing:border-box;
+}
+.coach-hor-name{color:#fff;font-size:11px;font-weight:900;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.coach-hor-tipo{color:rgba(255,255,255,.8);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ═══════════════════════════════════════════════════════════════
    SETTINGS
 ═══════════════════════════════════════════════════════════════ */
 .settings-section{margin-bottom:28px;}
@@ -1017,6 +1126,64 @@ select option{background:#10101c;color:var(--text);}
 <!-- ═══════════════════════════════════════
      LOGIN SCREEN
 ═══════════════════════════════════════ -->
+<!-- ══ COACH VIEW ══ -->
+<div id="coach-screen">
+  <!-- Header -->
+  <div class="coach-header">
+    <div class="coach-logo">MOVE</div>
+    <div class="coach-greeting">
+      <div class="coach-greeting-name" id="coach-nombre">Coach</div>
+      <div class="coach-greeting-role">Equipo de Entrenamiento</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()" style="font-size:11px;">Salir</button>
+  </div>
+  <!-- Main tabs -->
+  <div class="coach-tabs">
+    <div class="coach-tab active" id="ctab-horario" onclick="switchCoachTab('horario')">📅 Horario</div>
+    <div class="coach-tab" id="ctab-programa" onclick="switchCoachTab('programa')">💪 Programa</div>
+  </div>
+  <!-- Body -->
+  <div class="coach-body">
+    <!-- Horario panel -->
+    <div id="cpanel-horario">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <button class="btn btn-outline btn-sm" onclick="coachHorNav(-1)">‹</button>
+        <span style="font-size:14px;font-weight:700;flex:1;text-align:center;" id="coach-hor-label">—</span>
+        <button class="btn btn-outline btn-sm" onclick="coachHorNav(1)">›</button>
+      </div>
+      <div id="coach-hor-grid" style="overflow-x:auto;"><!-- rendered --></div>
+    </div>
+    <!-- Programa panel -->
+    <div id="cpanel-programa" style="display:none;">
+      <div class="coach-sub-tabs">
+        <div class="coach-sub-tab active" id="cstab-Strength"  onclick="switchCoachProgTab('Strength')">💪 Strength</div>
+        <div class="coach-sub-tab" id="cstab-Hyrox"     onclick="switchCoachProgTab('Hyrox')">🏁 Hyrox</div>
+        <div class="coach-sub-tab" id="cstab-Endurance" onclick="switchCoachProgTab('Endurance')">🏃 Endurance</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <button class="btn btn-outline btn-sm" onclick="coachProgNav(-1)">‹</button>
+        <span style="font-size:14px;font-weight:700;flex:1;text-align:center;" id="coach-prog-label">—</span>
+        <button class="btn btn-outline btn-sm" onclick="coachProgNav(1)">›</button>
+      </div>
+      <div id="coach-prog-grid"><!-- rendered --></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COACH DETAIL POPUP ══ -->
+<div id="coach-detail-overlay" onclick="if(event.target===this)closeCoachDetail()">
+  <div class="coach-detail-sheet">
+    <div class="coach-detail-header">
+      <div>
+        <div class="coach-detail-title" id="coach-detail-title">—</div>
+        <div class="coach-detail-sub" id="coach-detail-sub">—</div>
+      </div>
+      <button class="coach-detail-close" onclick="closeCoachDetail()">✕</button>
+    </div>
+    <div class="coach-detail-body" id="coach-detail-body">—</div>
+  </div>
+</div>
+
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">MOVE</div>
@@ -2502,10 +2669,14 @@ async function doLogin(){
 function doLogout(){
   clearSession();
   currentUser = null;
+  // Hide coach view if visible
+  document.getElementById('coach-screen').classList.remove('visible');
+  closeCoachDetail();
+  // Show login
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-email').value='';
   document.getElementById('login-pass').value='';
-  // reset nav
+  // Reset main app nav
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('v-dashboard').classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -2514,10 +2685,278 @@ function doLogout(){
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
-  updateSidebarUser();
-  applyStoredSettings();
-  if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
-  else document.getElementById('users-section').style.display='none';
+  if(currentUser.rol === 'coach'){
+    showCoachView();
+  } else {
+    document.querySelector('.wrapper').style.display = '';
+    updateSidebarUser();
+    applyStoredSettings();
+    if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
+    else document.getElementById('users-section').style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COACH VIEW — solo lectura: horario + programa
+// ═══════════════════════════════════════════════════════════════════
+let coachHorYear  = new Date().getFullYear();
+let coachHorMonth = new Date().getMonth();
+let coachProgTabActive = 'Strength';
+let coachProgYear  = new Date().getFullYear();
+let coachProgMonth = new Date().getMonth();
+
+function showCoachView(){
+  document.getElementById('coach-screen').classList.add('visible');
+  document.querySelector('.wrapper').style.display = 'none';
+  const nombre = currentUser.nombre || 'Coach';
+  document.getElementById('coach-nombre').textContent = nombre;
+  switchCoachTab('horario');
+}
+
+function switchCoachTab(tab){
+  ['horario','programa'].forEach(t=>{
+    document.getElementById('ctab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('cpanel-'+t).style.display = t===tab ? '' : 'none';
+  });
+  if(tab==='horario') renderCoachHorario();
+  if(tab==='programa') renderCoachPrograma();
+}
+
+function coachHorNav(dir){
+  coachHorMonth += dir;
+  if(coachHorMonth > 11){ coachHorMonth=0; coachHorYear++; }
+  if(coachHorMonth < 0) { coachHorMonth=11; coachHorYear--; }
+  renderCoachHorario();
+}
+
+function renderCoachHorario(){
+  const lbl = document.getElementById('coach-hor-label');
+  if(lbl) lbl.textContent = `${MESES_ES[coachHorMonth]} ${coachHorYear}`;
+
+  // Load overrides for this month if needed
+  const prevHvY = hvYear, prevHvM = hvMonth;
+  hvYear = coachHorYear; hvMonth = coachHorMonth;
+  loadHorarioOverridesFromSupabase().then(()=>{
+    hvYear = prevHvY; hvMonth = prevHvM;
+    _renderCoachHorarioGrid();
+  });
+}
+
+function _renderCoachHorarioGrid(){
+  const grid = document.getElementById('coach-hor-grid');
+  if(!grid) return;
+
+  const allHoras = [...new Set(horario.map(h=>h.hora))].sort(horaSort);
+  if(!allHoras.length){
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Sin horario definido</div></div>`;
+    return;
+  }
+
+  const daysInMonth = new Date(coachHorYear, coachHorMonth+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayDay = (today.getFullYear()===coachHorYear && today.getMonth()===coachHorMonth) ? today.getDate() : -1;
+
+  // Build weeks
+  const weeks = [];
+  let week = [];
+  for(let d=1; d<=daysInMonth; d++){
+    const dt  = new Date(coachHorYear, coachHorMonth, d);
+    const dow = (dt.getDay()+6)%7;
+    if(dow===0 && week.length){ weeks.push(week); week=[]; }
+    week.push({day:d, dow});
+  }
+  if(week.length) weeks.push(week);
+
+  // Save overrides temporarily scoped to coach month
+  const savedOverrides = horarioOverrides;
+  // Use overrides already loaded
+
+  let html = '<table class="hor-month-tbl" style="font-size:11px;">';
+  weeks.forEach(wk=>{
+    html += '<tr class="hor-week-sep-row"><td class="hor-time-th"></td>';
+    for(let i=0;i<7;i++){
+      const di = wk.find(d=>d.dow===i);
+      if(di){
+        const isToday = di.day===todayDay;
+        const dd=String(di.day).padStart(2,'0'), mm=String(coachHorMonth+1).padStart(2,'0');
+        html += `<th class="hor-wdate-th${isToday?' hor-today-col':''}">${DIA_NAMES_SHORT[i]}<br><span style="font-size:11px;font-weight:800;">${dd}/${mm}</span></th>`;
+      } else {
+        html += `<th class="hor-wdate-th" style="opacity:.25;">${DIA_NAMES_SHORT[i]}</th>`;
+      }
+    }
+    html += '</tr>';
+
+    allHoras.forEach(hora=>{
+      html += `<tr><td class="hor-time-th">${formatHoraDisplay(hora)}</td>`;
+      for(let i=0;i<7;i++){
+        const di = wk.find(d=>d.dow===i);
+        if(!di){ html += '<td class="hor-empty-col"></td>'; continue; }
+        const mm2=String(coachHorMonth+1).padStart(2,'0'), dd2=String(di.day).padStart(2,'0');
+        const fStr=`${coachHorYear}-${mm2}-${dd2}`;
+
+        // Use horarioOverrides already in scope (loaded for coach month)
+        const ov = horarioOverrides.find(o=>o.fecha===fStr && o.hora===hora);
+        const clase = ov !== undefined ? {...ov, cerrado:ov.tipo==='CERRADO', _isOverride:true}
+          : (()=>{
+              const dow2 = new Date(fStr+'T12:00:00').getDay();
+              const dayName = DAY_NAME_BY_DOW[dow2];
+              const base = horario.find(h=>h.dia===dayName && h.hora===hora);
+              return base ? {...base, cerrado:base.tipo==='CERRADO', _isOverride:false} : null;
+            })();
+
+        if(!clase){
+          html += `<td class="hor-clase-td" style="background:transparent;cursor:default;"></td>`;
+        } else if(clase.cerrado || clase.tipo==='CERRADO'){
+          html += `<td class="hor-clase-td hor-cerrado-td"><span class="hor-cerrado-chip">CERRADO</span></td>`;
+        } else {
+          const cn    = resolveCoachName(clase.coach_id||'', clase.coach_nombre||'');
+          const tipo  = clase.tipo||'';
+          const cIdx  = coachColorIdx(clase.coach_id||'', cn);
+          const color = COACH_COLORS[cIdx % COACH_COLORS.length];
+          const tdColor = cn ? color : (TIPO_COLORS[tipo]||'#475569');
+          html += `<td class="hor-clase-td hor-filled" style="background:${tdColor};border-color:${tdColor};cursor:pointer;"
+            onclick="openCoachHorDetail('${fStr}','${hora}','${esc(cn||tipo)}','${esc(tipo)}','${esc(cn)}',${clase.cupo||0})">
+            <div class="coach-hor-info">
+              <span class="coach-hor-name">${cn ? esc(cn) : esc(tipo)}</span>
+              ${cn&&tipo ? `<span class="coach-hor-tipo">${esc(tipo)}</span>` : ''}
+            </div>
+          </td>`;
+        }
+      }
+      html += '</tr>';
+    });
+  });
+  html += '</table>';
+  grid.innerHTML = html;
+}
+
+function openCoachHorDetail(fechaStr, hora, title, tipo, coach, cupo){
+  const dt = new Date(fechaStr+'T12:00:00');
+  const fmtDate = dt.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('coach-detail-title').textContent = title || tipo;
+  document.getElementById('coach-detail-sub').textContent   = `${fmtDate.charAt(0).toUpperCase()+fmtDate.slice(1)} · ${formatHoraDisplay(hora)}`;
+  document.getElementById('coach-detail-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${tipo ? `<div style="padding:8px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">Tipo</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);">${esc(tipo)}</div>
+        </div>` : ''}
+        ${coach ? `<div style="padding:8px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">Coach</div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent);">${esc(coach)}</div>
+        </div>` : ''}
+        ${cupo ? `<div style="padding:8px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">Cupo</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);">👥 ${cupo} lugares</div>
+        </div>` : ''}
+      </div>
+      <div style="padding:12px 14px;border-radius:8px;background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.15);font-size:12px;color:var(--text3);">
+        📌 Para cambios en el horario, contacta al administrador.
+      </div>
+    </div>`;
+  document.getElementById('coach-detail-overlay').classList.add('open');
+}
+
+function switchCoachProgTab(tab){
+  coachProgTabActive = tab;
+  ['Strength','Hyrox','Endurance'].forEach(t=>{
+    document.getElementById('cstab-'+t).classList.toggle('active', t===tab);
+  });
+  renderCoachPrograma();
+}
+
+function coachProgNav(dir){
+  coachProgMonth += dir;
+  if(coachProgMonth > 11){ coachProgMonth=0; coachProgYear++; }
+  if(coachProgMonth < 0) { coachProgMonth=11; coachProgYear--; }
+  renderCoachPrograma();
+}
+
+function renderCoachPrograma(){
+  const lbl = document.getElementById('coach-prog-label');
+  if(lbl) lbl.textContent = `${MESES_ES[coachProgMonth]} ${coachProgYear}`;
+
+  const grid = document.getElementById('coach-prog-grid');
+  if(!grid) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const daysInMonth = new Date(coachProgYear, coachProgMonth+1, 0).getDate();
+  const firstDow    = (new Date(coachProgYear, coachProgMonth, 1).getDay()+6)%7;
+  const DIAS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  const cells = [];
+  for(let i=0; i<firstDow; i++) cells.push(null);
+  for(let d=1; d<=daysInMonth; d++) cells.push(d);
+
+  let html = '<div class="prog-cal-grid">';
+  DIAS_S.forEach(d=>{ html += `<div class="prog-day-header">${d}</div>`; });
+  cells.forEach(day=>{
+    if(!day){ html += `<div class="coach-prog-day empty-col"></div>`; return; }
+    const mm  = String(coachProgMonth+1).padStart(2,'0');
+    const dd  = String(day).padStart(2,'0');
+    const fStr= `${coachProgYear}-${mm}-${dd}`;
+    const dt  = new Date(fStr+'T12:00:00');
+    const isToday = dt.getTime() === today.getTime();
+    const prog = programas.find(p=>p.fecha===fStr && p.tipo===coachProgTabActive);
+    const hasContent = prog && prog.contenido;
+    let cls = 'coach-prog-day';
+    if(isToday)    cls += ' is-today';
+    if(hasContent) cls += ' has-content';
+    const preview = hasContent ? esc(prog.contenido.slice(0,80))+'…' : '';
+    html += `<div class="${cls}" onclick="${hasContent ? `openCoachProgDetail('${fStr}')` : ''}">
+      <div class="prog-day-num" style="font-size:11px;font-weight:700;color:${isToday?'var(--accent)':'var(--text3)'};margin-bottom:3px;">${day}</div>
+      ${hasContent
+        ? `<span class="prog-day-tag prog-tag-${coachProgTabActive}">${coachProgTabActive}</span>
+           <div style="font-size:9px;color:var(--text3);line-height:1.4;margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${preview}</div>`
+        : `<div style="color:var(--border);font-size:13px;text-align:center;margin-top:10px;">—</div>`
+      }
+    </div>`;
+  });
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+function openCoachProgDetail(fechaStr){
+  const prog = programas.find(p=>p.fecha===fechaStr && p.tipo===coachProgTabActive);
+  if(!prog) return;
+  const dt = new Date(fechaStr+'T12:00:00');
+  const fmtDate = dt.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const tagColors = {Strength:'#8b5cf6',Hyrox:'#ef4444',Endurance:'#10b981'};
+  const tagColor  = tagColors[coachProgTabActive]||'var(--accent)';
+
+  document.getElementById('coach-detail-title').innerHTML =
+    `<span style="color:${tagColor};">${coachProgTabActive}</span> · ${dt.getDate()} ${MESES_CORTO_ES ? MESES_CORTO_ES[dt.getMonth()] : ''}`;
+  document.getElementById('coach-detail-sub').textContent = fmtDate.charAt(0).toUpperCase()+fmtDate.slice(1);
+
+  // Render workout text with section highlights
+  const texto = prog.contenido || '';
+  const rendered = texto
+    .split('\n')
+    .map(line=>{
+      const trimmed = line.trim();
+      // Detect section headers: lines starting with uppercase keyword + colon, or emoji + text
+      const isSectionHeader = /^(WARM UP|COOL DOWN|A\)|B\)|C\)|📝|OBJETIVO|MODALIDAD|TIPO|DURACIÓN|ESTRUCTURA|BLOQUE|FINALIZADOR)/i.test(trimmed) || /^[A-Z][A-Z\s]{3,}:/.test(trimmed);
+      if(isSectionHeader && trimmed){
+        return `<div style="font-family:var(--font-display);font-size:10px;font-weight:800;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:14px;margin-bottom:4px;">${esc(trimmed)}</div>`;
+      }
+      if(!trimmed) return `<div style="height:6px;"></div>`;
+      return `<div style="font-size:13px;color:var(--text2);line-height:1.7;padding-left:2px;">${esc(trimmed)}</div>`;
+    }).join('');
+
+  document.getElementById('coach-detail-body').innerHTML = `
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
+      <span style="display:inline-block;padding:4px 12px;border-radius:99px;background:${tagColor}22;color:${tagColor};font-size:11px;font-weight:800;border:1px solid ${tagColor}44;">${coachProgTabActive}</span>
+      <span style="font-size:11px;color:var(--text3);">${dt.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}</span>
+    </div>
+    <div>${rendered}</div>
+    ${prog.notas ? `<div style="margin-top:16px;padding:10px 14px;border-radius:8px;background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.18);font-size:12px;color:var(--text3);">📌 ${esc(prog.notas)}</div>` : ''}
+  `;
+  document.getElementById('coach-detail-overlay').classList.add('open');
+}
+
+function closeCoachDetail(){
+  document.getElementById('coach-detail-overlay').classList.remove('open');
 }
 
 function updateSidebarUser(){
