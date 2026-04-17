@@ -661,15 +661,18 @@ select option{background:#10101c;color:var(--text);}
 ═══════════════════════════════════════════════════════════════ */
 #coach-screen{
   display:none;position:fixed;
-  top:0;left:0;right:0;bottom:0;  /* iOS: inset shorthand not always reliable */
-  z-index:8000;
+  top:0;left:0;right:0;bottom:0;
+  /* Higher than sidebar (9000) and bottom nav so it covers everything */
+  z-index:9200;
   background:var(--bg);flex-direction:column;overflow:hidden;
   -webkit-overflow-scrolling:touch;
-  /* GPU compositing for iOS fixed elements */
   -webkit-transform:translateZ(0);
   transform:translateZ(0);
 }
 #coach-screen.visible{ display:flex; }
+
+/* When coach screen is active, bury the admin sidebar underneath */
+#coach-screen.visible ~ aside.sidebar { display: none !important; }
 
 .coach-header{
   display:flex;align-items:center;padding:14px 20px;
@@ -2933,9 +2936,12 @@ async function doLogin(){
 function doLogout(){
   clearSession();
   currentUser = null;
-  // Hide coach view if visible
+  // Hide coach view
   document.getElementById('coach-screen').classList.remove('visible');
   closeCoachDetail();
+  // Restore sidebar (in case coach was logged in and hid it)
+  const sb = document.querySelector('aside.sidebar');
+  if(sb) sb.style.display = '';
   // Show login
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-email').value='';
@@ -2972,6 +2978,9 @@ let coachProgMonth = new Date().getMonth();
 function showCoachView(){
   document.getElementById('coach-screen').classList.add('visible');
   document.querySelector('.wrapper').style.display = 'none';
+  // Hide admin sidebar completely (belt+suspenders alongside CSS sibling rule)
+  const sb = document.querySelector('aside.sidebar');
+  if(sb) sb.style.display = 'none';
   const nombre = currentUser.nombre || 'Coach';
   document.getElementById('coach-nombre').textContent = nombre;
   switchCoachTab('horario');
