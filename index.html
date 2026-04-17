@@ -4,6 +4,26 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>MOVE — Sistema Interno</title>
+
+<!-- ═══ PWA — Web App Manifest ═══ -->
+<link rel="manifest" href="manifest.json"/>
+
+<!-- ═══ PWA — iOS Safari (Apple) ═══ -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="MOVE"/>
+<link rel="apple-touch-icon" href="move-icon-180.png"/>
+
+<!-- ═══ PWA — Tema y splash ═══ -->
+<meta name="theme-color" content="#00b4d8"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="MOVE"/>
+<meta name="msapplication-TileColor" content="#06060e"/>
+<meta name="msapplication-TileImage" content="move-icon-192.png"/>
+
+<!-- ═══ SEO / descripción ═══ -->
+<meta name="description" content="Sistema de gestión interno — MOVE Fitness Center"/>
+
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -5876,6 +5896,29 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   const supabaseUrl = 'https://savzjanpydyjtrgdkllx.supabase.co';
   const supabaseKey = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
   window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+</script>
+
+<!-- ═══ PWA — Service Worker Registration ═══ -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          console.log('[MOVE PWA] Service worker registrado:', reg.scope);
+          // Notifica cuando hay una actualización disponible
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Hay una nueva versión — el toast ya existe en la app
+                console.log('[MOVE PWA] Nueva versión disponible');
+              }
+            });
+          });
+        })
+        .catch(err => console.warn('[MOVE PWA] Error SW:', err));
+    });
+  }
 </script>
 </body>
 </html>
