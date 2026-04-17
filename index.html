@@ -2939,9 +2939,11 @@ function doLogout(){
   // Hide coach view
   document.getElementById('coach-screen').classList.remove('visible');
   closeCoachDetail();
-  // Restore sidebar (in case coach was logged in and hid it)
+  // Restore admin layout elements (in case coach was logged in)
   const sb = document.querySelector('aside.sidebar');
+  const mn = document.querySelector('div.main');
   if(sb) sb.style.display = '';
+  if(mn) mn.style.display = '';
   // Show login
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-email').value='';
@@ -2958,7 +2960,11 @@ function showApp(){
   if(currentUser.rol === 'coach'){
     showCoachView();
   } else {
-    document.querySelector('.wrapper').style.display = '';
+    // Show admin layout (sidebar + main)
+    const sb = document.querySelector('aside.sidebar');
+    const mn = document.querySelector('div.main');
+    if(sb) sb.style.display = '';
+    if(mn) mn.style.display = '';
     updateSidebarUser();
     applyStoredSettings();
     if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
@@ -2977,10 +2983,11 @@ let coachProgMonth = new Date().getMonth();
 
 function showCoachView(){
   document.getElementById('coach-screen').classList.add('visible');
-  document.querySelector('.wrapper').style.display = 'none';
-  // Hide admin sidebar completely (belt+suspenders alongside CSS sibling rule)
+  // Hide the entire admin layout (sidebar + main content)
   const sb = document.querySelector('aside.sidebar');
+  const mn = document.querySelector('div.main');
   if(sb) sb.style.display = 'none';
+  if(mn) mn.style.display = 'none';
   const nombre = currentUser.nombre || 'Coach';
   document.getElementById('coach-nombre').textContent = nombre;
   switchCoachTab('horario');
