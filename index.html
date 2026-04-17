@@ -1588,6 +1588,9 @@ select option{background:#10101c;color:var(--text);}
       <div class="nav-item" id="nav-programa" onclick="go('programa',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Programa de Entreno
       </div>
+      <div class="nav-item" id="nav-asistencia" onclick="go('asistencia',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Asistencia
+      </div>
     </div>
 
     <div class="nav-section">
@@ -1781,6 +1784,28 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- ── META MENSUAL + RETENCIÓN ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;" id="dash-meta-ret-grid">
+        <div class="card" id="dash-meta-card">
+          <div class="card-header">
+            <div class="card-title">🎯 Meta del Mes</div>
+            <span class="card-sub" id="dash-meta-label">—</span>
+          </div>
+          <div id="dash-meta-body" style="padding:4px 0 8px;">
+            <div style="color:var(--text3);font-size:12px;">Configura tu meta en Ajustes.</div>
+          </div>
+        </div>
+        <div class="card" id="dash-retencion-card">
+          <div class="card-header">
+            <div class="card-title">🔄 Retención</div>
+            <span class="card-sub" id="dash-ret-label">vs mes anterior</span>
+          </div>
+          <div id="dash-ret-body" style="padding:4px 0 8px;">
+            <div style="color:var(--text3);font-size:12px;">Calculando...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── BALANCE GENERAL DEL MES ── -->
       <div class="card" style="margin-top:18px;" id="dash-balance-card">
         <div class="card-header">
@@ -1790,6 +1815,50 @@ select option{background:#10101c;color:var(--text);}
         <div id="dash-balance-body">
           <!-- Rendered by renderDashboard() -->
         </div>
+      </div>
+    </div>
+
+    <!-- ══ ASISTENCIA ══ -->
+    <div class="view" id="v-asistencia">
+      <div id="asist-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;"></div>
+      <div class="g2" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Registrar Asistencia</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">
+            <div class="field">
+              <label>Fecha de la clase</label>
+              <input type="date" id="asist-fecha" style="width:100%;"/>
+            </div>
+            <div class="field">
+              <label>Clase / Disciplina</label>
+              <input type="text" id="asist-clase" placeholder="Ej: Strength 7am, Cardio 6pm..." style="width:100%;"/>
+            </div>
+            <div class="field">
+              <label>Coach</label>
+              <select id="asist-coach" style="width:100%;"><option value="">— Seleccionar coach —</option></select>
+            </div>
+            <div class="field">
+              <label>Participantes (uno por línea o separados por coma)</label>
+              <textarea id="asist-participantes" rows="4" placeholder="Ana García&#10;Luis Martínez&#10;Valeria Serrano" style="width:100%;resize:vertical;"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="guardarAsistencia()">✓ Guardar Asistencia</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚠️ Clientes en Riesgo</div><span class="card-sub">Pagan pero no asisten</span></div>
+          <div id="asist-riesgo">
+            <div class="empty-state" style="padding:24px;"><div class="empty-icon">📊</div><div class="empty-title">Sin datos</div><div class="empty-sub">Registra asistencia para ver clientes en riesgo.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📅 Historial de Clases</div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="asist-buscar" placeholder="Buscar cliente..." oninput="renderAsistencia()" style="padding:6px 10px;background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;width:160px;"/>
+          </div>
+        </div>
+        <div id="asist-historial" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
     </div>
 
@@ -1806,7 +1875,25 @@ select option{background:#10101c;color:var(--text);}
       </div>
 
       <!-- KPIs -->
-      <div id="clientes-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+      <div id="clientes-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;"></div>
+
+      <!-- Acciones rápidas -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+        <button onclick="waEnMasa()" id="btn-wa-masa"
+          style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;
+                 background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
+                 border:1px solid rgba(37,211,102,.3);cursor:pointer;white-space:nowrap;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+          WA a vencidos/por vencer
+        </button>
+        <button onclick="exportarClientesCSV()"
+          style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;
+                 background:var(--card2);color:var(--text);font-size:12px;font-weight:600;
+                 border:1px solid var(--border);cursor:pointer;white-space:nowrap;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar CSV
+        </button>
+      </div>
 
       <!-- Filtro por TIPO (paquete vs pase) -->
       <div style="margin-bottom:8px;">
@@ -1868,7 +1955,7 @@ select option{background:#10101c;color:var(--text);}
         <div class="kpi-card" style="--kpi-color:var(--accent)"><div class="kpi-label">Proyección del Mes</div><div class="kpi-value">$0</div><div class="kpi-meta">Ingresa tus pagos</div></div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">💳 Registro de Pagos</div><button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button></div>
+        <div class="card-header"><div class="card-title">💳 Registro de Pagos</div><div style="display:flex;gap:8px;"><button class="btn btn-outline btn-sm" onclick="exportarPagosCSV()">📥 Exportar CSV</button><button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button></div></div>
         <!-- Filters -->
         <div id="pagos-filters" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 0 14px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -2164,6 +2251,39 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- Notificaciones -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title">🔔 Notificaciones Push</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Alertas de membresías</div>
+              <div class="settings-desc">Recibe una notificación diaria cuando haya membresías vencidas o a 3 días de vencer. Funciona aunque la app esté en segundo plano.</div>
+            </div>
+            <div class="settings-control">
+              <button class="btn btn-primary btn-sm" onclick="solicitarPermisosNotificaciones()">🔔 Activar notificaciones</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta mensual -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title">🎯 Metas de Negocio</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Meta de ingresos mensual</div>
+              <div class="settings-desc">Se usa para calcular el % de avance en el Dashboard cada mes</div>
+            </div>
+            <div class="settings-control">
+              <input class="settings-input" id="cfg-meta-mensual" type="number" min="0" placeholder="Ej: 50000"/>
+              <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveMetaMensual()">Guardar meta</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Usuarios — solo visible para admin -->
       <div class="card" id="users-section">
         <div class="settings-section" style="margin-bottom:0;">
@@ -2233,6 +2353,40 @@ select option{background:#10101c;color:var(--text);}
     </div>
   </div>
 </div>
+
+<!-- CLIENTE DETAIL PANEL -->
+<div class="detail-panel" id="clientePanel" style="z-index:460;">
+  <div class="detail-head">
+    <button class="detail-close" onclick="closeClientePanel()">✕</button>
+    <div style="font-size:10px;color:var(--sidebar-text);text-transform:uppercase;letter-spacing:1px;">Cliente</div>
+    <div class="detail-name" id="cpanel-nombre">—</div>
+    <div class="detail-sub" id="cpanel-sub">—</div>
+  </div>
+  <div class="detail-body">
+    <!-- KPIs del cliente -->
+    <div id="cpanel-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;"></div>
+
+    <!-- Membresía actual -->
+    <div class="detail-section">
+      <div class="detail-section-title">Membresía Actual</div>
+      <div id="cpanel-membresia"></div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="detail-section">
+      <div class="detail-section-title">Acciones</div>
+      <div id="cpanel-acciones" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- Historial completo de pagos -->
+    <div class="detail-section">
+      <div class="detail-section-title">Historial de Pagos</div>
+      <div id="cpanel-historial" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+</div>
+<div id="cliente-panel-overlay" onclick="closeClientePanel()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:459;"></div>
 
 <!-- ═══ MODALS ═══ -->
 
@@ -3478,6 +3632,10 @@ function applyStoredSettings(){
   const cfgTagline    = document.getElementById('cfg-tagline');
   if(cfgPhotoInput) cfgPhotoInput.value = url;
   if(cfgTagline)    cfgTagline.value    = tagline;
+  // Meta mensual
+  const meta = localStorage.getItem('move_meta_mensual')||'';
+  const cfgMeta = document.getElementById('cfg-meta-mensual');
+  if(cfgMeta && meta) cfgMeta.value = meta;
 }
 
 function previewPhoto(url){
@@ -3633,6 +3791,7 @@ const topTitles = {
   pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
   pagos:       ['Pagos & Renovaciones',      'Control de ingresos y membresías'],
   clientes:    ['Clientes',                  'Directorio de socios activos y membresías'],
+  asistencia:  ['Asistencia',               'Registro de asistencia por clase'],
   marketing:   ['Hub de Marketing',          'Calendario de contenido y campañas'],
   campanas:    ['Campañas',                  'Resultados y métricas por campaña'],
   solicitudes: ['Solicitudes Internas',      'Pedidos de apoyo a Marketing'],
@@ -3649,6 +3808,7 @@ const topBtnLabels = {
   pipeline:    '+ Nuevo Lead',
   pagos:       '+ Registrar Pago',
   clientes:    '+ Registrar Pago',
+  asistencia:  '+ Registrar Clase',
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
   solicitudes: '+ Nueva Solicitud',
@@ -3668,6 +3828,7 @@ const topBtnActions = {
   solicitudes: ()=>openModal('solicitud'),
   pagos:       ()=>openModal('pago'),
   clientes:    ()=>openModal('pago'),
+  asistencia:  ()=>openRegistrarClase(),
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
   horario:     ()=>{ switchHorTab('plantilla'); setTimeout(openAddClaseModal,50); },
@@ -3697,6 +3858,7 @@ function go(id, el){
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
   if(id==='clientes')    renderClientes();
+  if(id==='asistencia')  renderAsistencia();
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
@@ -4465,9 +4627,11 @@ function renderClientes(){
              📱 Agregar número</button>
          </div>`;
 
-    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+    return `<div onclick="openClientePanel('${esc(c.nombre)}')"
+                 style="display:flex;align-items:center;gap:14px;padding:14px 16px;
                          background:var(--card);border:1px solid var(--border);border-radius:12px;
-                         border-left:3px solid ${cfg.color};">
+                         border-left:3px solid ${cfg.color};cursor:pointer;transition:background .15s;"
+                 onmouseenter="this.style.background='var(--card2)'" onmouseleave="this.style.background='var(--card)'">
       <div style="width:42px;height:42px;border-radius:50%;background:${cfg.bg};
                   display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;
                   color:${cfg.color};flex-shrink:0;border:2px solid ${cfg.color}44;">
@@ -4488,7 +4652,7 @@ function renderClientes(){
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;">${histHtml}</div>
       </div>
-      <div style="flex-shrink:0;">${waBtn}</div>
+      <div style="flex-shrink:0;" onclick="event.stopPropagation()">${waBtn}</div>
     </div>`;
   }).join('');
 }
@@ -4500,6 +4664,460 @@ function abrirEditarTelefono(nombreCliente){
     [0];
   if(ultimoPago){ openEditPago(ultimoPago.id); }
   else { toast('No se encontró un pago para editar.','⚠️'); }
+}
+
+// ─── Panel de detalle de cliente ──────────────────────────────────
+function openClientePanel(nombreCliente){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const historial = pagos
+    .filter(p=>(p.cliente||'').trim()===nombreCliente)
+    .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  if(!historial.length) return;
+
+  const ultimo = historial[0];
+  const totalPagado = historial.reduce((s,p)=>s+p.monto,0);
+  const primerPago  = historial[historial.length-1];
+
+  // Estado membresía
+  let estado='sin-fecha', diff=null;
+  if(ultimo.vence && ultimo.vence.length>=10){
+    const vDate=new Date(ultimo.vence+'T12:00:00');
+    diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
+    estado= diff<0?'vencido':diff<=14?'por-vencer':'activo';
+  }
+  const esCfg={
+    activo:      {color:'var(--ok)',     label:'Activo',     icon:'✅'},
+    'por-vencer':{color:'var(--warn)',   label:'Por vencer', icon:'⚠️'},
+    vencido:     {color:'var(--danger)', label:'Vencido',    icon:'🔴'},
+    'sin-fecha': {color:'var(--text3)',  label:'Sin fecha',  icon:'📅'},
+  };
+  const cfg = esCfg[estado];
+  const tipo = historial.some(p=>!esPaseDia(p.plan)) ? 'Paquete / Membresía' : 'Pase de Día';
+
+  // Header
+  document.getElementById('cpanel-nombre').textContent = nombreCliente;
+  document.getElementById('cpanel-sub').textContent = `${tipo} · ${historial.length} pago${historial.length!==1?'s':''} registrados`;
+
+  // KPIs
+  const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const fechaPrimero = primerPago.fecha
+    ? (() => { const d=new Date(primerPago.fecha+'T12:00:00'); return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`; })()
+    : '—';
+  document.getElementById('cpanel-kpis').innerHTML = `
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">💰 Total pagado</div>
+      <div style="font-size:18px;font-weight:800;color:var(--ok);">$${totalPagado.toLocaleString('es-MX')}</div>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">📅 Cliente desde</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);">${fechaPrimero}</div>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">🔄 Renovaciones</div>
+      <div style="font-size:18px;font-weight:800;color:var(--accent);">${historial.length}</div>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">${cfg.icon} Estado</div>
+      <div style="font-size:13px;font-weight:700;color:${cfg.color};">${cfg.label}</div>
+    </div>`;
+
+  // Membresía actual
+  const venceFmt = ultimo.vence && ultimo.vence.length>=10
+    ? (() => { const [y,m,d]=ultimo.vence.split('-'); const ms=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return `${parseInt(d)} de ${ms[parseInt(m)-1]} de ${y}`; })()
+    : '—';
+  const diasLabel = diff!==null
+    ? (diff<0?`Venció hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`:diff===0?'Vence hoy':`Vence en ${diff} día${diff!==1?'s':''}`)
+    : 'Sin fecha de vencimiento';
+  const tel = (ultimo.telefono||'').replace(/\D/g,'');
+  document.getElementById('cpanel-membresia').innerHTML = `
+    <div style="background:${cfg.color}11;border:1px solid ${cfg.color}33;border-radius:10px;padding:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${esc(ultimo.plan||'—')}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:3px;">Vencimiento: <strong style="color:${cfg.color};">${venceFmt}</strong></div>
+      <div style="font-size:12px;color:${cfg.color};font-weight:700;">${diasLabel}</div>
+      ${tel?`<div style="font-size:11px;color:var(--text3);margin-top:6px;">📱 ${tel}</div>`:''}
+    </div>`;
+
+  // Acciones
+  const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
+  const numWA = tel.length===10?'52'+tel:tel;
+  const accs = [];
+  if(numWA.length>=12){
+    const msgWA = encodeURIComponent(buildWAMsg(nombreCliente, ultimo.plan, ultimo.vence));
+    accs.push(`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
+      style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+             background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
+             text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WhatsApp</a>`);
+  }
+  accs.push(`<button onclick="abrirEditarTelefono('${esc(nombreCliente)}')"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+           background:var(--card2);color:var(--text);font-size:12px;font-weight:600;
+           border:1px solid var(--border);cursor:pointer;">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Editar pago</button>`);
+  accs.push(`<button onclick="openModal('pago');document.getElementById('p-cliente').value='${esc(nombreCliente)}';closeClientePanel();"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+           background:rgba(0,180,216,.12);color:var(--accent);font-size:12px;font-weight:600;
+           border:1px solid rgba(0,180,216,.25);cursor:pointer;">
+    + Registrar Pago</button>`);
+  document.getElementById('cpanel-acciones').innerHTML = accs.join('');
+
+  // Historial completo
+  const mesesES=['enero','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  document.getElementById('cpanel-historial').innerHTML = historial.length
+    ? historial.map((p,i)=>{
+        const esUltimo = i===0;
+        const fmtFecha = p.fecha && p.fecha.length>=10
+          ? (()=>{const d=new Date(p.fecha+'T12:00:00');return `${d.getDate()} ${mesesES[d.getMonth()]} ${d.getFullYear()}`;})()
+          : p.fecha||'—';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                             background:${esUltimo?'rgba(0,180,216,.06)':'var(--card2)'};
+                             border:1px solid ${esUltimo?'rgba(0,180,216,.2)':'var(--border)'};
+                             border-radius:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+              <span style="font-size:12px;font-weight:700;color:var(--text);">${esc(p.plan||'—')}</span>
+              ${esUltimo?'<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(0,180,216,.15);color:var(--accent);">Último</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--text3);">${fmtFecha} · ${esc(p.metodo||'—')} ${p.notas?`· ${esc(p.notas)}`:''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:14px;font-weight:800;color:var(--ok);">$${(p.monto||0).toLocaleString('es-MX')}</div>
+            ${p.vence&&p.vence.length>=10?`<div style="font-size:10px;color:var(--text3);">Vence ${p.vence}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="color:var(--text3);font-size:13px;">Sin pagos registrados.</div>`;
+
+  // Abrir panel
+  document.getElementById('clientePanel').classList.add('open');
+  document.getElementById('cliente-panel-overlay').style.display = 'block';
+}
+
+function closeClientePanel(){
+  document.getElementById('clientePanel').classList.remove('open');
+  document.getElementById('cliente-panel-overlay').style.display = 'none';
+}
+
+// ─── WhatsApp en masa ──────────────────────────────────────────────
+function waEnMasa(){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  // Agrupar último pago por cliente
+  const mapaUltimo = {};
+  pagos.forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    if(!mapaUltimo[n]){ mapaUltimo[n]=p; return; }
+    if((p.vence||'')>(mapaUltimo[n].vence||'')) mapaUltimo[n]=p;
+  });
+
+  const candidatos = Object.values(mapaUltimo).filter(p=>{
+    const tel=(p.telefono||'').replace(/\D/g,'');
+    if(tel.length!==10) return false; // sin teléfono, skip
+    if(!p.vence||p.vence.length<10) return false;
+    const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
+    return diff<=14; // vencidos o por vencer en 14 días
+  });
+
+  if(!candidatos.length){
+    toast('No hay clientes con teléfono registrado vencidos o por vencer esta quincena.','ℹ️');
+    return;
+  }
+
+  toast(`Abriendo ${candidatos.length} conversación${candidatos.length!==1?'es':''} de WhatsApp...`,'📲');
+
+  // Abrir cada chat con delay de 600ms para que el navegador no bloquee los popups
+  candidatos.forEach((p,i)=>{
+    const numWA='52'+p.telefono.replace(/\D/g,'');
+    const msgWA=encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
+    setTimeout(()=>window.open(`https://wa.me/${numWA}?text=${msgWA}`,'_blank'), i*600);
+  });
+}
+
+// ─── Exportar CSV de clientes ──────────────────────────────────────
+function exportarClientesCSV(){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const mapaConteo = {};
+  pagos.forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    if(!mapaConteo[n]){ mapaConteo[n]={ultimo:p,total:1}; return; }
+    mapaConteo[n].total++;
+    if((p.vence||'')>(mapaConteo[n].ultimo.vence||'')) mapaConteo[n].ultimo=p;
+  });
+
+  const filas = [['Nombre','Teléfono','Plan','Vencimiento','Estado','Tipo','Total Pagos','Total Pagado']];
+  Object.entries(mapaConteo).forEach(([nombre,datos])=>{
+    const c=datos.ultimo;
+    let estado='Sin fecha';
+    if(c.vence&&c.vence.length>=10){
+      const diff=Math.ceil((new Date(c.vence+'T12:00:00')-hoy)/(1000*60*60*24));
+      estado=diff<0?'Vencido':diff<=14?'Por vencer':'Activo';
+    }
+    const tipo = pagos.filter(p=>(p.cliente||'').trim()===nombre).some(p=>!esPaseDia(p.plan))?'Paquete':'Pase de Día';
+    const totalPagado = pagos.filter(p=>(p.cliente||'').trim()===nombre).reduce((s,p)=>s+p.monto,0);
+    filas.push([nombre,c.telefono||'',c.plan||'',c.vence||'',estado,tipo,datos.total,totalPagado]);
+  });
+
+  const csv = filas.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`MOVE_Clientes_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('Clientes exportados ✓','📥');
+}
+
+// ─── Exportar CSV de pagos ─────────────────────────────────────────
+function exportarPagosCSV(){
+  const filas=[['Fecha','Cliente','Plan','Monto','Método','Vencimiento','Teléfono','Notas']];
+  const sorted=[...pagos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  sorted.forEach(p=>filas.push([p.fecha||'',p.cliente||'',p.plan||'',p.monto||0,p.metodo||'',p.vence||'',p.telefono||'',p.notas||'']));
+  const csv=filas.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`MOVE_Pagos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('Pagos exportados ✓','📥');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ASISTENCIA (localStorage — no requiere nueva tabla en Supabase)
+// ═══════════════════════════════════════════════════════════════════
+function loadAsistencia(){ return JSON.parse(localStorage.getItem('move_asistencia')||'[]'); }
+function saveAsistenciaLS(data){ localStorage.setItem('move_asistencia', JSON.stringify(data)); }
+
+function openRegistrarClase(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const fi = document.getElementById('asist-fecha');
+  if(fi && !fi.value) fi.value = hoy;
+  document.getElementById('asist-clase').focus();
+}
+
+function guardarAsistencia(){
+  const fecha = document.getElementById('asist-fecha').value;
+  const clase = document.getElementById('asist-clase').value.trim();
+  const coachEl = document.getElementById('asist-coach');
+  const coach = coachEl ? coachEl.options[coachEl.selectedIndex]?.text : '';
+  const rawParticipantes = document.getElementById('asist-participantes').value;
+  if(!fecha||!clase){ toast('Faltan fecha y nombre de clase.','⚠️'); return; }
+
+  const participantes = rawParticipantes
+    .split(/[\n,]+/)
+    .map(s=>s.trim()).filter(Boolean);
+  if(!participantes.length){ toast('Agrega al menos un participante.','⚠️'); return; }
+
+  const registro = { id: Date.now(), fecha, clase, coach: coach==='— Seleccionar coach —'?'':coach, participantes };
+  const data = loadAsistencia();
+  data.unshift(registro);
+  saveAsistenciaLS(data);
+
+  document.getElementById('asist-clase').value = '';
+  document.getElementById('asist-participantes').value = '';
+  toast(`Asistencia guardada: ${participantes.length} participante${participantes.length!==1?'s':''}. ✓`,'✅');
+  renderAsistencia();
+}
+
+function eliminarAsistencia(id){
+  if(!confirm('¿Eliminar este registro de asistencia?')) return;
+  const data = loadAsistencia().filter(r=>r.id!==id);
+  saveAsistenciaLS(data);
+  renderAsistencia();
+  toast('Registro eliminado','🗑');
+}
+
+function renderAsistencia(){
+  const data = loadAsistencia();
+  const busq = (document.getElementById('asist-buscar')||{value:''}).value.toLowerCase().trim();
+
+  // Poblar select de coaches
+  const coachSel = document.getElementById('asist-coach');
+  if(coachSel && coaches.length){
+    const current = coachSel.value;
+    coachSel.innerHTML = '<option value="">— Seleccionar coach —</option>' +
+      coaches.map(c=>`<option value="${c.id}" ${c.id===current?'selected':''}>${esc(c.nombre)}</option>`).join('');
+  }
+
+  // ── KPIs ──
+  const kpisEl = document.getElementById('asist-kpis');
+  const totalClases     = data.length;
+  const totalAsistencias= data.reduce((s,r)=>s+r.participantes.length,0);
+  // Participantes únicos
+  const uniquePartic = new Set(data.flatMap(r=>r.participantes.map(p=>p.toLowerCase().trim())));
+  // Promedio por clase
+  const prom = totalClases>0 ? Math.round(totalAsistencias/totalClases*10)/10 : 0;
+  if(kpisEl) kpisEl.innerHTML=`
+    <div class="kpi-card" style="--kpi-color:var(--accent)"><div class="kpi-label">Clases Registradas</div><div class="kpi-value">${totalClases}</div><div class="kpi-meta">Total histórico</div></div>
+    <div class="kpi-card" style="--kpi-color:var(--ok)"><div class="kpi-label">Check-ins Totales</div><div class="kpi-value">${totalAsistencias}</div><div class="kpi-meta">Asistencias acumuladas</div></div>
+    <div class="kpi-card" style="--kpi-color:#a78bfa"><div class="kpi-label">Alumnos Únicos</div><div class="kpi-value">${uniquePartic.size}</div><div class="kpi-meta">Distintos en historial</div></div>
+    <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Promedio/Clase</div><div class="kpi-value">${prom}</div><div class="kpi-meta">Personas por sesión</div></div>`;
+
+  // ── Clientes en riesgo (tienen membresía activa pero no aparecen en asistencia últimos 30 días) ──
+  const riesgoEl = document.getElementById('asist-riesgo');
+  if(riesgoEl){
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const hace30 = new Date(hoy); hace30.setDate(hoy.getDate()-30);
+    const hace30Str = hace30.toISOString().slice(0,10);
+
+    // Clientes con membresía activa
+    const mapaUltimo = {};
+    pagos.forEach(p=>{
+      const n=(p.cliente||'').trim(); if(!n) return;
+      if(!mapaUltimo[n]||((p.vence||'')>(mapaUltimo[n].vence||''))) mapaUltimo[n]=p;
+    });
+    const clientesActivos = Object.entries(mapaUltimo)
+      .filter(([,p])=>{
+        if(!p.vence||p.vence.length<10) return false;
+        const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
+        return diff>=0;
+      })
+      .map(([nombre])=>nombre);
+
+    // Quiénes asistieron en los últimos 30 días
+    const asistReciente = new Set(
+      data.filter(r=>r.fecha>=hace30Str)
+        .flatMap(r=>r.participantes.map(p=>p.toLowerCase().trim()))
+    );
+
+    const enRiesgo = clientesActivos.filter(n=>!asistReciente.has(n.toLowerCase().trim()));
+    if(!enRiesgo.length){
+      riesgoEl.innerHTML=`<div style="padding:20px;text-align:center;"><span style="font-size:22px;">✅</span><div style="font-size:12px;color:var(--text3);margin-top:6px;">Todos los clientes activos han asistido recientemente.</div></div>`;
+    } else {
+      riesgoEl.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Membresía activa pero sin check-in en 30 días (${enRiesgo.length}):</div>`+
+        enRiesgo.slice(0,10).map(nombre=>{
+          const p = mapaUltimo[nombre];
+          const tel=(p.telefono||'').replace(/\D/g,'');
+          const numWA=tel.length===10?'52'+tel:tel;
+          const msgWA=encodeURIComponent(buildWAMsg(nombre, p.plan, p.vence));
+          const waLink=numWA.length>=12
+            ?`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener" style="font-size:11px;color:#25d366;text-decoration:none;font-weight:700;">WhatsApp →</a>`
+            :'';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(239,68,68,.06);border-radius:8px;border-left:3px solid var(--danger);margin-bottom:5px;">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--text);">${esc(nombre)}</div>
+              <div style="font-size:10px;color:var(--text3);">${esc(p.plan||'—')} · vence ${p.vence||'—'}</div>
+            </div>
+            ${waLink}
+          </div>`;
+        }).join('')+
+        (enRiesgo.length>10?`<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px;">+${enRiesgo.length-10} más...</div>`:'');
+    }
+  }
+
+  // ── Historial ──
+  const histEl = document.getElementById('asist-historial');
+  if(!histEl) return;
+
+  let lista = data;
+  if(busq) lista = lista.filter(r=>
+    r.clase.toLowerCase().includes(busq) ||
+    (r.coach||'').toLowerCase().includes(busq) ||
+    r.participantes.some(p=>p.toLowerCase().includes(busq))
+  );
+
+  if(!lista.length){
+    histEl.innerHTML=`<div class="empty-state" style="padding:30px;"><div class="empty-icon">📋</div><div class="empty-title">Sin registros</div><div class="empty-sub">Registra la primera clase para verla aquí.</div></div>`;
+    return;
+  }
+
+  histEl.innerHTML = lista.map(r=>{
+    const fecha = r.fecha && r.fecha.length>=10
+      ? (()=>{const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];const[,m,d]=r.fecha.split('-');return `${parseInt(d)} ${meses[parseInt(m)-1]}`;})()
+      : r.fecha||'—';
+    const tags=r.participantes.map(p=>`<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);">${esc(p)}</span>`).join('');
+    return `<div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);">${esc(r.clase)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${fecha}${r.coach?` · Coach: ${esc(r.coach)}`:''} · <strong style="color:var(--accent);">${r.participantes.length} persona${r.participantes.length!==1?'s':''}</strong></div>
+        </div>
+        <button onclick="eliminarAsistencia(${r.id})" title="Eliminar"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;opacity:.5;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">✕</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${tags}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Meta mensual ──────────────────────────────────────────────────
+function saveMetaMensual(){
+  const val = parseFloat(document.getElementById('cfg-meta-mensual').value)||0;
+  localStorage.setItem('move_meta_mensual', val);
+  toast(`Meta guardada: $${val.toLocaleString('es-MX')} ✓`,'🎯');
+  renderDashboard();
+}
+
+function renderMetaMensual(ingresosMes){
+  const el = document.getElementById('dash-meta-body');
+  const lbl= document.getElementById('dash-meta-label');
+  if(!el) return;
+  const meta = parseFloat(localStorage.getItem('move_meta_mensual')||'0');
+  if(!meta){
+    el.innerHTML=`<div style="font-size:12px;color:var(--text3);">Configura tu meta en <button onclick="go('settings',document.getElementById('nav-settings'))" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:underline;">Ajustes</button></div>`;
+    if(lbl) lbl.textContent='Sin configurar';
+    return;
+  }
+  const pct = Math.min(100, Math.round((ingresosMes/meta)*100));
+  const color = pct>=100?'var(--ok)':pct>=70?'var(--warn)':'var(--danger)';
+  const faltaLabel = ingresosMes>=meta
+    ? `¡Meta superada! +$${(ingresosMes-meta).toLocaleString('es-MX')}`
+    : `Faltan $${(meta-ingresosMes).toLocaleString('es-MX')}`;
+  if(lbl) lbl.textContent = `${pct}% completado`;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+      <span style="font-size:22px;font-weight:800;color:${color};">$${ingresosMes.toLocaleString('es-MX')}</span>
+      <span style="font-size:12px;color:var(--text3);">de $${meta.toLocaleString('es-MX')}</span>
+    </div>
+    <div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden;margin-bottom:8px;">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:6px;transition:width .5s ease;"></div>
+    </div>
+    <div style="font-size:11px;color:${color};font-weight:700;">${faltaLabel}</div>`;
+}
+
+// ─── Tasa de retención ─────────────────────────────────────────────
+function renderRetencion(){
+  const el  = document.getElementById('dash-ret-body');
+  const lbl = document.getElementById('dash-ret-label');
+  if(!el) return;
+  const hoy = new Date();
+  const mesActual   = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+  const mesAnterior = (() => { const d=new Date(hoy); d.setMonth(d.getMonth()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+
+  const clientesMesAnt  = new Set(pagos.filter(p=>(p.fecha||'').startsWith(mesAnterior)).map(p=>(p.cliente||'').trim()).filter(Boolean));
+  const clientesMesAct  = new Set(pagos.filter(p=>(p.fecha||'').startsWith(mesActual )).map(p=>(p.cliente||'').trim()).filter(Boolean));
+  const clientesNuevos  = [...clientesMesAct].filter(c=>!clientesMesAnt.has(c)).length;
+  const renovaron       = [...clientesMesAnt].filter(c=>clientesMesAct.has(c)).length;
+  const totalAnt        = clientesMesAnt.size;
+  const tasaRet         = totalAnt>0 ? Math.round((renovaron/totalAnt)*100) : null;
+
+  const MESES_ES2=['Jan','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  if(lbl) lbl.textContent = `${MESES_ES2[hoy.getMonth()-1]||'mes ant.'} → ${MESES_ES2[hoy.getMonth()]}`;
+
+  if(tasaRet===null){
+    el.innerHTML=`<div style="font-size:12px;color:var(--text3);">Sin datos del mes anterior aún.</div>`;
+    return;
+  }
+  const color = tasaRet>=70?'var(--ok)':tasaRet>=40?'var(--warn)':'var(--danger)';
+  const emoji = tasaRet>=70?'🟢':tasaRet>=40?'🟡':'🔴';
+  el.innerHTML=`
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:28px;font-weight:800;color:${color};">${tasaRet}%</span>
+      <span style="font-size:12px;color:var(--text3);">retención</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;">
+      <div style="text-align:center;padding:8px;background:var(--card2);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:16px;font-weight:800;color:var(--text);">${totalAnt}</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Mes ant.</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(16,185,129,.08);border-radius:8px;border:1px solid rgba(16,185,129,.2);">
+        <div style="font-size:16px;font-weight:800;color:var(--ok);">${renovaron}</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Renovaron</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(0,180,216,.08);border-radius:8px;border:1px solid rgba(0,180,216,.2);">
+        <div style="font-size:16px;font-weight:800;color:var(--accent);">${clientesNuevos}</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Nuevos</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:${color};font-weight:700;">${emoji} ${tasaRet>=70?'Excelente retención':tasaRet>=40?'Retención aceptable':'Retención baja — revisa clientes vencidos'}</div>`;
 }
 
 // DASHBOARD RENDER
@@ -4684,6 +5302,8 @@ function renderDashboard(){
 
   updateBadges();
   renderMembresiasAlert();
+  renderMetaMensual(ingresosMes);
+  renderRetencion();
 
   // Pipeline bars
   const pipeEl = document.getElementById('dash-pipeline-bars');
@@ -6340,27 +6960,84 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 </script>
 
-<!-- ═══ PWA — Service Worker Registration ═══ -->
+<!-- ═══ PWA — Service Worker + Notificaciones Push ═══ -->
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => {
-          console.log('[MOVE PWA] Service worker registrado:', reg.scope);
-          // Notifica cuando hay una actualización disponible
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Hay una nueva versión — el toast ya existe en la app
-                console.log('[MOVE PWA] Nueva versión disponible');
-              }
-            });
+let _swRegistration = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        _swRegistration = reg;
+        console.log('[MOVE PWA] Service worker registrado:', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[MOVE PWA] Nueva versión disponible');
+            }
           });
-        })
-        .catch(err => console.warn('[MOVE PWA] Error SW:', err));
+        });
+        // Verificar membresías al cargar (con delay para que datos estén listos)
+        setTimeout(checkMembresiasNotificaciones, 4000);
+      })
+      .catch(err => console.warn('[MOVE PWA] Error SW:', err));
+  });
+}
+
+async function solicitarPermisosNotificaciones(){
+  if(!('Notification' in window)){
+    toast('Este dispositivo no soporta notificaciones.','ℹ️'); return;
+  }
+  const perm = await Notification.requestPermission();
+  if(perm === 'granted'){
+    toast('Notificaciones activadas ✓','🔔');
+    new Notification('MOVE Sistema', { body: 'Recibirás alertas de membresías por vencer.', icon: './move-icon-192.png' });
+    checkMembresiasNotificaciones();
+  } else {
+    toast('Permiso denegado. Actívalas desde el navegador.','⚠️');
+  }
+}
+
+function checkMembresiasNotificaciones(){
+  if(Notification.permission !== 'granted') return;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const todayStr = hoy.toISOString().slice(0,10);
+  const lastCheck = localStorage.getItem('move_notif_last')||'';
+  if(lastCheck === todayStr) return; // ya notificamos hoy
+
+  const mapaUltimo = {};
+  pagos.forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    if(!mapaUltimo[n]||((p.vence||'')>(mapaUltimo[n].vence||''))) mapaUltimo[n]=p;
+  });
+
+  const urgentes = Object.values(mapaUltimo).filter(p=>{
+    if(!p.vence||p.vence.length<10) return false;
+    const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
+    return diff>=0 && diff<=3;
+  });
+  const vencidos = Object.values(mapaUltimo).filter(p=>{
+    if(!p.vence||p.vence.length<10) return false;
+    const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
+    return diff<0;
+  });
+
+  if(urgentes.length>0){
+    new Notification('⚠️ MOVE — Membresías por vencer', {
+      body: `${urgentes.length} membresía${urgentes.length!==1?'s':''} vence${urgentes.length===1?'':'n'} en 3 días o menos: ${urgentes.slice(0,3).map(p=>p.cliente).join(', ')}${urgentes.length>3?'...':''}`,
+      icon: './move-icon-192.png',
+      badge: './move-icon-192.png',
     });
   }
+  if(vencidos.length>0){
+    setTimeout(()=>new Notification('🔴 MOVE — Membresías vencidas', {
+      body: `${vencidos.length} cliente${vencidos.length!==1?'s':''} con membresía vencida: ${vencidos.slice(0,3).map(p=>p.cliente).join(', ')}${vencidos.length>3?'...':''}`,
+      icon: './move-icon-192.png',
+    }), 1500);
+  }
+  localStorage.setItem('move_notif_last', todayStr);
+}
 </script>
 </body>
 </html>
