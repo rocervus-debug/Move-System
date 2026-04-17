@@ -2380,7 +2380,7 @@ select option{background:#10101c;color:var(--text);}
 </div><!-- /main -->
 
 <!-- ═══ QR CHECK-IN MODAL ═══ -->
-<div class="modal-bg" id="modal-qr" onclick="closeModal('qr')">
+<div class="modal-overlay" id="modal-qr" onclick="closeModal('qr')">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:center;">
     <div class="modal-header">
       <div class="modal-title">📱 QR de Check-in</div>
@@ -7469,7 +7469,24 @@ function showQRCheckIn(fecha, clase, coach, id){
 
 function copyQRLink(){
   if(!_qrCurrentLink) return;
-  navigator.clipboard.writeText(_qrCurrentLink).then(()=>toast('Enlace copiado','📋')).catch(()=>toast('No se pudo copiar','⚠️'));
+  // Try modern clipboard API first, fallback to execCommand for file:// and older browsers
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(_qrCurrentLink)
+      .then(()=>toast('Enlace copiado','📋'))
+      .catch(()=>_copyFallback(_qrCurrentLink));
+  } else {
+    _copyFallback(_qrCurrentLink);
+  }
+}
+function _copyFallback(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try{ document.execCommand('copy'); toast('Enlace copiado','📋'); }
+  catch(e){ toast('No se pudo copiar. Copia el enlace manualmente.','⚠️'); }
+  document.body.removeChild(ta);
 }
 </script>
 
