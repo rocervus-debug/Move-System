@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>MOVE — Sistema Interno</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -472,7 +472,7 @@ body{
 ══════════════════════════════════ */
 .modal-overlay{
   display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  background:rgba(0,0,0,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   z-index:500;align-items:center;justify-content:center;
 }
 .modal-overlay.open{display:flex;}
@@ -525,7 +525,7 @@ select option{background:#10101c;color:var(--text);}
   background:rgba(12,12,22,.96);border:1px solid rgba(0,180,216,.15);
   border-radius:12px;box-shadow:var(--shadow-lg), 0 0 40px rgba(0,0,0,.6);
   z-index:400;display:none;
-  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
 }
 .notif-panel.open{display:block;animation:modal-in .18s ease;}
 .notif-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
@@ -534,7 +534,9 @@ select option{background:#10101c;color:var(--text);}
 
 /* Toast */
 .toast{
-  position:fixed;bottom:24px;right:24px;
+  position:fixed;
+  /* Sit above bottom nav on mobile */
+  bottom:24px;right:24px;
   background:var(--move-darkest);color:#fff;
   padding:12px 20px;border-radius:10px;
   font-size:13px;font-weight:500;
@@ -544,6 +546,11 @@ select option{background:#10101c;color:var(--text);}
   display:flex;align-items:center;gap:8px;
   border:1px solid rgba(255,255,255,.06);
   max-width:calc(100vw - 32px);
+  /* GPU layer */
+  -webkit-transform:translateY(80px);
+}
+.toast.show{
+  -webkit-transform:translateY(0);
 }
 .toast.show{transform:translateY(0);opacity:1;}
 @media(max-width:768px){
@@ -560,7 +567,7 @@ select option{background:#10101c;color:var(--text);}
   border-left:1px solid rgba(0,180,216,.12);
   box-shadow:-16px 0 48px rgba(0,0,0,.7), 0 0 60px rgba(0,180,216,.05);
   z-index:450;transition:right .25s cubic-bezier(.4,0,.2,1);overflow-y:auto;
-  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
 }
 .detail-panel.open{right:0;}
 .detail-head{
@@ -568,7 +575,7 @@ select option{background:#10101c;color:var(--text);}
   border-bottom:1px solid rgba(0,180,216,.12);
   padding:20px 20px 18px;
   position:sticky;top:0;z-index:1;
-  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
 }
 .detail-close{
   position:absolute;top:16px;right:16px;
@@ -653,15 +660,22 @@ select option{background:#10101c;color:var(--text);}
    COACH VIEW — vista dedicada para coaches (solo lectura)
 ═══════════════════════════════════════════════════════════════ */
 #coach-screen{
-  display:none;position:fixed;inset:0;z-index:8000;
+  display:none;position:fixed;
+  top:0;left:0;right:0;bottom:0;  /* iOS: inset shorthand not always reliable */
+  z-index:8000;
   background:var(--bg);flex-direction:column;overflow:hidden;
+  -webkit-overflow-scrolling:touch;
+  /* GPU compositing for iOS fixed elements */
+  -webkit-transform:translateZ(0);
+  transform:translateZ(0);
 }
 #coach-screen.visible{ display:flex; }
 
 .coach-header{
   display:flex;align-items:center;padding:14px 20px;
   background:rgba(6,6,13,.95);border-bottom:1px solid var(--border);
-  backdrop-filter:blur(12px);flex-shrink:0;gap:14px;position:sticky;top:0;z-index:10;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  flex-shrink:0;gap:14px;position:sticky;top:0;z-index:10;
 }
 .coach-logo{
   font-family:var(--font-display);font-size:22px;font-weight:800;
@@ -714,7 +728,7 @@ select option{background:#10101c;color:var(--text);}
 /* Read-only workout viewer popup */
 #coach-detail-overlay{
   display:none;position:fixed;inset:0;z-index:9500;
-  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  background:rgba(0,0,0,.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   align-items:flex-end;justify-content:center;
 }
 #coach-detail-overlay.open{display:flex;}
@@ -969,108 +983,145 @@ select option{background:#10101c;color:var(--text);}
 /* ── 768px breakpoint ── */
 @media (max-width: 768px) {
 
-  /* ──────────── Layout ──────────── */
+  /* ──────────── iOS Safari root fixes ──────────── */
+  /*
+     Safari requires !important to override base body height/overflow.
+     Also: position:fixed inside overflow:hidden breaks on iOS, so
+     we must clear overflow on body before the sidebar can be fixed.
+  */
   body {
-    flex-direction: column;
-    overflow: auto;
-    height: auto;
-    min-height: 100vh;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    /* iOS Safari fill-available fallback */
+    min-height: -webkit-fill-available !important;
   }
 
   /* Sidebar → bottom nav */
   .sidebar {
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 200;
-    border-right: none;
-    border-top: 1px solid rgba(0,180,216,.18);
-    background: rgba(6,6,13,.97);
-    backdrop-filter: blur(16px);
+    width: 100% !important;
+    height: auto !important;
+    min-height: 60px;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    z-index: 9000 !important;
+    border-right: none !important;
+    border-top: 1px solid rgba(0,180,216,.18) !important;
+    background: rgba(6,6,13,.97) !important;
     -webkit-backdrop-filter: blur(16px);
-    padding: 6px 8px env(safe-area-inset-bottom, 6px);
+    backdrop-filter: blur(16px);
+    /* iOS: padding for home indicator */
+    padding: 6px 8px constant(safe-area-inset-bottom) !important;
+    padding: 6px 8px env(safe-area-inset-bottom, 8px) !important;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    box-shadow: 0 -8px 32px rgba(0,0,0,.6);
+    box-shadow: 0 -4px 24px rgba(0,0,0,.7) !important;
+    /* GPU layer for iOS fixed positioning */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
   .sidebar::-webkit-scrollbar { display: none; }
 
-  .logo { display: none; }
+  .logo { display: none !important; }
 
   .nav-section {
-    display: flex;
-    flex-direction: row;
-    padding: 0;
+    display: flex !important;
+    flex-direction: row !important;
+    padding: 0 !important;
     flex-shrink: 0;
     width: 100%;
     justify-content: flex-start;
     gap: 2px;
   }
-  .nav-section-label { display: none; }
+  .nav-section-label { display: none !important; }
 
   .nav-item {
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: center;
     padding: 7px 10px 5px;
-    min-width: 58px;
+    min-width: 56px;
     gap: 3px;
     border-radius: 12px;
     margin: 1px;
-    border-left: none;
-    border-bottom: none;
+    border-left: none !important;
+    border-bottom: none !important;
     background: transparent;
     transition: background .15s;
     min-height: 52px;
     justify-content: center;
+    /* Touch target: min 44×44 */
+    min-width: 44px;
+    min-height: 44px;
   }
   .nav-item.active {
-    border-left: none;
-    background: rgba(0,180,216,.12);
+    border-left: none !important;
+    background: rgba(0,180,216,.14) !important;
   }
   .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px rgba(0,180,216,.7)); }
-  .nav-item.active .nav-label { color: var(--accent); }
-  .nav-item .nav-icon { font-size: 19px; line-height: 1; }
+  .nav-item.active .nav-label { color: var(--accent) !important; }
+  .nav-item .nav-icon { font-size: 19px !important; line-height: 1; }
   .nav-item .nav-label {
-    font-size: 9px; white-space: nowrap; display: block;
+    font-size: 9px !important; white-space: nowrap; display: block !important;
     color: var(--text4); font-weight: 700; letter-spacing: .3px;
   }
   .nav-item .nav-badge { top: 2px; right: 6px; font-size: 8px; padding: 1px 4px; }
 
-  .sidebar-footer { display: none; }
+  .sidebar-footer { display: none !important; }
 
-  /* Main content */
+  /* Main content — override overflow:hidden from base CSS */
   .main {
+    flex: 1 !important;
+    flex-direction: column !important;
     margin-left: 0 !important;
-    padding-bottom: 84px;
-    height: auto;
-    overflow-y: auto;
-    width: 100%;
+    width: 100% !important;
+    height: auto !important;
+    /* CRITICAL: override base overflow:hidden */
+    overflow: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    /* Space for fixed bottom nav + iOS home indicator */
+    padding-bottom: 80px !important;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
   }
 
   /* ──────────── Topbar ──────────── */
   .topbar {
-    position: sticky;
-    top: 0;
+    position: sticky !important;
+    top: 0 !important;
     z-index: 100;
     padding: 10px 14px;
-    flex-wrap: nowrap;
+    flex-wrap: nowrap !important;
     gap: 8px;
     min-height: unset;
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
   }
   .topbar-left { flex: 1; min-width: 0; }
   .topbar-title { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .topbar-sub { display: none; }
-  .top-btn { font-size: 11px; padding: 8px 12px; white-space: nowrap; flex-shrink: 0; min-height: 36px; }
+  .topbar-sub { display: none !important; }
+  .top-btn {
+    font-size: 11px; padding: 8px 12px;
+    white-space: nowrap; flex-shrink: 0;
+    /* 44px touch target */
+    min-height: 44px; min-width: 44px;
+  }
   .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  #globalSearch { display: none; }
+  #globalSearch { display: none !important; }
 
   .content { padding: 12px; }
+
+  /* Toast above bottom nav */
+  .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); right: 12px; left: 12px; right: 12px; }
 
   /* ──────────── KPI cards ──────────── */
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1149,10 +1200,11 @@ select option{background:#10101c;color:var(--text);}
   .modal-footer { padding: 12px 18px; }
   .field-grid { grid-template-columns: 1fr; }
 
-  /* Full-screen programa modal */
+  /* Full-screen programa modal — avoid dvh (iOS <15.4 compat) */
   #modal-programa .modal {
-    height: calc(100dvh - 0px) !important;
-    max-height: 100dvh !important;
+    height: 100vh !important;
+    height: -webkit-fill-available !important;
+    max-height: 100vh !important;
     border-radius: 0 !important;
   }
 
