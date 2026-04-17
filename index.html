@@ -1526,6 +1526,10 @@ select option{background:#10101c;color:var(--text);}
       <div class="nav-item" id="nav-pagos" onclick="go('pagos',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span> Pagos & Renovaciones
       </div>
+      <div class="nav-item" id="nav-clientes" onclick="go('clientes',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span> Clientes
+        <span class="nav-badge blue" id="badge-clientes" style="display:none;">0</span>
+      </div>
     </div>
 
     <div class="nav-section">
@@ -1758,6 +1762,31 @@ select option{background:#10101c;color:var(--text);}
         <div id="dash-balance-body">
           <!-- Rendered by renderDashboard() -->
         </div>
+      </div>
+    </div>
+
+    <!-- ══ CLIENTES ══ -->
+    <div class="view" id="v-clientes">
+      <div class="sh" style="flex-wrap:wrap;gap:10px;">
+        <div class="sh-title">Directorio de Clientes</div>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;max-width:380px;">
+          <div style="position:relative;flex:1;">
+            <svg viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--text3);fill:none;stroke-width:2;pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="clientes-search" type="text" placeholder="Buscar cliente..." oninput="renderClientes()"
+              style="width:100%;padding:8px 12px 8px 34px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"/>
+          </div>
+          <select id="clientes-filtro" onchange="renderClientes()" style="padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;cursor:pointer;">
+            <option value="todos">Todos</option>
+            <option value="activos">Activos</option>
+            <option value="por-vencer">Por vencer</option>
+            <option value="vencidos">Vencidos</option>
+            <option value="sin-fecha">Sin fecha</option>
+          </select>
+        </div>
+      </div>
+      <div id="clientes-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;"></div>
+      <div id="clientes-list" style="display:flex;flex-direction:column;gap:8px;">
+        <div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Sin clientes aún</div><div class="empty-sub">Los clientes aparecen al registrar pagos.</div></div>
       </div>
     </div>
 
@@ -3556,6 +3585,7 @@ const topTitles = {
   crm:         ['CRM & Prospectos',          'Gestión comercial de clientes y prospectos'],
   pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
   pagos:       ['Pagos & Renovaciones',      'Control de ingresos y membresías'],
+  clientes:    ['Clientes',                  'Directorio de socios activos y membresías'],
   marketing:   ['Hub de Marketing',          'Calendario de contenido y campañas'],
   campanas:    ['Campañas',                  'Resultados y métricas por campaña'],
   solicitudes: ['Solicitudes Internas',      'Pedidos de apoyo a Marketing'],
@@ -3571,6 +3601,7 @@ const topBtnLabels = {
   crm:         '+ Nuevo Prospecto',
   pipeline:    '+ Nuevo Lead',
   pagos:       '+ Registrar Pago',
+  clientes:    '+ Registrar Pago',
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
   solicitudes: '+ Nueva Solicitud',
@@ -3589,6 +3620,7 @@ const topBtnActions = {
   campanas:    ()=>openModal('campana'),
   solicitudes: ()=>openModal('solicitud'),
   pagos:       ()=>openModal('pago'),
+  clientes:    ()=>openModal('pago'),
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
   horario:     ()=>{ switchHorTab('plantilla'); setTimeout(openAddClaseModal,50); },
@@ -3617,6 +3649,7 @@ function go(id, el){
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
+  if(id==='clientes')    renderClientes();
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
@@ -4161,6 +4194,200 @@ function renderMembresiasAlert(){
       ${waBtn}
     </div>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CLIENTES
+// ═══════════════════════════════════════════════════════════════════
+function renderClientes(){
+  const listEl  = document.getElementById('clientes-list');
+  const kpisEl  = document.getElementById('clientes-kpis');
+  const busq    = (document.getElementById('clientes-search')||{value:''}).value.toLowerCase().trim();
+  const filtro  = (document.getElementById('clientes-filtro')||{value:'todos'}).value;
+  if(!listEl) return;
+
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  // Agrupar pagos por cliente — quedarse con el último pago por cada nombre
+  const mapaClientes = {};
+  pagos.forEach(p => {
+    const nombre = (p.cliente||'').trim();
+    if(!nombre) return;
+    if(!mapaClientes[nombre]) { mapaClientes[nombre] = p; return; }
+    // Preferir el que tiene vence más reciente; si empate, el que tiene fecha más reciente
+    const aVence = mapaClientes[nombre].vence||'';
+    const bVence = p.vence||'';
+    if(bVence > aVence) { mapaClientes[nombre] = p; return; }
+    if(bVence === aVence && (p.fecha||'') > (mapaClientes[nombre].fecha||'')) {
+      mapaClientes[nombre] = p;
+    }
+  });
+
+  let clientes = Object.values(mapaClientes);
+
+  // Calcular estado de cada cliente
+  clientes = clientes.map(c => {
+    let estado = 'sin-fecha';
+    let diff = null;
+    if(c.vence && c.vence.length >= 10) {
+      const vDate = new Date(c.vence + 'T12:00:00');
+      diff = Math.ceil((vDate - hoy) / (1000*60*60*24));
+      if(diff < 0)      estado = 'vencido';
+      else if(diff <= 14) estado = 'por-vencer';
+      else              estado = 'activo';
+    }
+    return { ...c, estado, diff };
+  });
+
+  // KPIs
+  const totalC    = clientes.length;
+  const activos   = clientes.filter(c=>c.estado==='activo').length;
+  const porVencer = clientes.filter(c=>c.estado==='por-vencer').length;
+  const vencidos  = clientes.filter(c=>c.estado==='vencido').length;
+
+  if(kpisEl) kpisEl.innerHTML = `
+    <div class="kpi-card" style="--kpi-color:var(--accent)">
+      <div class="kpi-label">Total Clientes</div>
+      <div class="kpi-value">${totalC}</div>
+      <div class="kpi-meta">Con al menos 1 pago</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--ok)">
+      <div class="kpi-label">Membresía Activa</div>
+      <div class="kpi-value">${activos}</div>
+      <div class="kpi-meta">Vence en más de 14 días</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--warn)">
+      <div class="kpi-label">Por Vencer</div>
+      <div class="kpi-value">${porVencer}</div>
+      <div class="kpi-meta">Próximos 14 días</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--danger)">
+      <div class="kpi-label">Vencidas</div>
+      <div class="kpi-value">${vencidos}</div>
+      <div class="kpi-meta">Requieren renovación</div>
+    </div>`;
+
+  // Badge en sidebar
+  const badge = document.getElementById('badge-clientes');
+  if(badge){
+    if(porVencer + vencidos > 0){
+      badge.textContent = porVencer + vencidos;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Filtro de estado
+  let lista = clientes;
+  if(filtro !== 'todos') lista = lista.filter(c => c.estado === filtro);
+
+  // Búsqueda por texto
+  if(busq) lista = lista.filter(c => (c.cliente||'').toLowerCase().includes(busq));
+
+  // Ordenar: vencidos primero, luego por-vencer, luego activos, luego sin-fecha
+  const ordenEstado = { vencido:0, 'por-vencer':1, activo:2, 'sin-fecha':3 };
+  lista.sort((a,b) => {
+    const oe = (ordenEstado[a.estado]||3) - (ordenEstado[b.estado]||3);
+    if(oe !== 0) return oe;
+    return (a.diff??999) - (b.diff??999);
+  });
+
+  if(!lista.length){
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">Intenta con otro filtro o término de búsqueda.</div></div>`;
+    return;
+  }
+
+  listEl.innerHTML = lista.map(c => {
+    // Color y etiqueta de estado
+    const esCfg = {
+      activo:     { color:'var(--ok)',     bg:'rgba(16,185,129,.10)', label:'Activo',     icon:'✅' },
+      'por-vencer':{ color:'var(--warn)',  bg:'rgba(251,191,36,.10)', label:'Por vencer', icon:'⚠️' },
+      vencido:    { color:'var(--danger)', bg:'rgba(248,113,113,.10)', label:'Vencido',   icon:'🔴' },
+      'sin-fecha':{ color:'var(--text3)',  bg:'rgba(100,116,139,.10)', label:'Sin fecha', icon:'📅' },
+    };
+    const cfg = esCfg[c.estado] || esCfg['sin-fecha'];
+
+    const venceFmt = c.vence && c.vence.length >= 10
+      ? new Date(c.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+      : '—';
+    const diasLabel = c.diff !== null
+      ? (c.diff < 0 ? `Venció hace ${Math.abs(c.diff)} día${Math.abs(c.diff)!==1?'s':''}` : c.diff===0 ? 'Vence hoy' : `Vence en ${c.diff} día${c.diff!==1?'s':''}`)
+      : 'Sin fecha registrada';
+
+    // WhatsApp
+    const tel   = (c.telefono||'').replace(/\D/g,'');
+    const numWA = tel.length===10 ? '52'+tel : tel;
+    const plan  = c.plan||'membresía';
+    const msgWA = encodeURIComponent(
+      `Hola ${c.cliente} 👋 Te recordamos que tu ${plan} en MOVE vence el ${c.vence}. ¿Te gustaría renovar? Estamos para ayudarte 💪`
+    );
+    const waBtn = numWA.length >= 12
+      ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
+             style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;
+                    background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
+                    text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;flex-shrink:0;">
+           <svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+           WhatsApp
+         </a>`
+      : `<button onclick="abrirEditarTelefono('${esc(c.cliente)}')"
+           style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;
+                  background:var(--card2);color:var(--text3);font-size:12px;font-weight:600;
+                  border:1px dashed var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0;">
+           📱 Agregar número
+         </button>`;
+
+    // Últimos pagos del cliente
+    const historial = pagos
+      .filter(p=>(p.cliente||'').trim()===c.cliente)
+      .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))
+      .slice(0,3);
+
+    const histHtml = historial.map(h=>`
+      <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--card2);color:var(--text3);border:1px solid var(--border);">
+        ${h.fecha||'—'} · $${(h.monto||0).toLocaleString('es-MX')} · ${h.plan||'—'}
+      </span>`).join('');
+
+    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+                         background:var(--card);border:1px solid var(--border);border-radius:12px;
+                         border-left:3px solid ${cfg.color};">
+      <!-- Avatar -->
+      <div style="width:42px;height:42px;border-radius:50%;background:${cfg.bg};
+                  display:flex;align-items:center;justify-content:center;font-size:17px;
+                  flex-shrink:0;border:2px solid ${cfg.color}33;">
+        ${c.cliente.trim().charAt(0).toUpperCase()}
+      </div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+          <span style="font-size:15px;font-weight:700;color:var(--text);">${esc(c.cliente)}</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${cfg.bg};color:${cfg.color};font-weight:700;">${cfg.icon} ${cfg.label}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:5px;">
+          ${esc(c.plan||'—')} &nbsp;·&nbsp; Vence: <strong style="color:${cfg.color};">${venceFmt}</strong> &nbsp;·&nbsp; ${diasLabel}
+          ${tel ? `&nbsp;·&nbsp; 📱 ${tel}` : ''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${histHtml}</div>
+      </div>
+      <!-- Acción WA -->
+      <div style="flex-shrink:0;">
+        ${waBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirEditarTelefono(nombreCliente){
+  // Abre el modal de pago más reciente del cliente para editar el teléfono
+  const ultimoPago = pagos
+    .filter(p=>(p.cliente||'').trim()===nombreCliente)
+    .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))
+    [0];
+  if(ultimoPago) {
+    openEditPago(ultimoPago.id);
+  } else {
+    toast('No se encontró un pago para editar.','⚠️');
+  }
 }
 
 // DASHBOARD RENDER
@@ -4849,6 +5076,7 @@ async function savePago(){
   toast(`Pago de $${monto.toLocaleString('es-MX')} registrado para ${cliente}.`,'💳');
   renderPagos();
   renderMembresiasAlert();
+  renderClientes();
 }
 
 async function deletePago(id){
@@ -4913,6 +5141,7 @@ async function saveEditPago(){
   await loadPagosFromSupabase();
   renderPagos();
   renderMembresiasAlert();
+  renderClientes();
 }
 
 function metodoBadge(m){
@@ -5971,6 +6200,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderEvalHistory();
   renderPagos();
   renderMembresiasAlert();
+  renderClientes();
   renderCampanas();
   renderSolicitudes();
   renderCalendario();
