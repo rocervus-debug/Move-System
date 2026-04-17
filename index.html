@@ -947,11 +947,29 @@ select option{background:#10101c;color:var(--text);}
 .prog-tag-Endurance{ background:rgba(16,185,129,.2);color:#10b981; }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE — phones & tablets
+   MOBILE RESPONSIVE — Obsidian Pulse aesthetic · phones & tablets
 ═══════════════════════════════════════════════════════════════ */
+
+/* ── Coach view mobile polish (applied at all sizes) ── */
+.coach-logo {
+  position: relative;
+  padding-left: 10px;
+}
+.coach-logo::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 20px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0,180,216,.6);
+}
+
+/* ── 768px breakpoint ── */
 @media (max-width: 768px) {
 
-  /* Layout: sidebar becomes bottom nav bar */
+  /* ──────────── Layout ──────────── */
   body {
     flex-direction: column;
     overflow: auto;
@@ -959,6 +977,7 @@ select option{background:#10101c;color:var(--text);}
     min-height: 100vh;
   }
 
+  /* Sidebar → bottom nav */
   .sidebar {
     width: 100%;
     height: auto;
@@ -969,10 +988,14 @@ select option{background:#10101c;color:var(--text);}
     bottom: 0; left: 0; right: 0;
     z-index: 200;
     border-right: none;
-    border-top: 1px solid rgba(0,180,216,.15);
-    padding: 4px 6px 6px;
+    border-top: 1px solid rgba(0,180,216,.18);
+    background: rgba(6,6,13,.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 6px 8px env(safe-area-inset-bottom, 6px);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    box-shadow: 0 -8px 32px rgba(0,0,0,.6);
   }
   .sidebar::-webkit-scrollbar { display: none; }
 
@@ -985,139 +1008,290 @@ select option{background:#10101c;color:var(--text);}
     flex-shrink: 0;
     width: 100%;
     justify-content: flex-start;
+    gap: 2px;
   }
   .nav-section-label { display: none; }
 
   .nav-item {
     flex-direction: column;
     align-items: center;
-    padding: 6px 8px;
-    min-width: 60px;
-    gap: 2px;
-    border-radius: 8px;
+    padding: 7px 10px 5px;
+    min-width: 58px;
+    gap: 3px;
+    border-radius: 12px;
     margin: 1px;
     border-left: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    transition: background .15s;
+    min-height: 52px;
+    justify-content: center;
   }
-  .nav-item.active { border-left: none; border-bottom: 2px solid var(--accent); }
-  .nav-item .nav-icon { font-size: 18px; line-height: 1; }
-  .nav-item .nav-label { font-size: 9px; white-space: nowrap; display: block; }
-  .nav-item .nav-badge { top: -2px; right: 2px; font-size: 8px; padding: 1px 4px; }
+  .nav-item.active {
+    border-left: none;
+    background: rgba(0,180,216,.12);
+  }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px rgba(0,180,216,.7)); }
+  .nav-item.active .nav-label { color: var(--accent); }
+  .nav-item .nav-icon { font-size: 19px; line-height: 1; }
+  .nav-item .nav-label {
+    font-size: 9px; white-space: nowrap; display: block;
+    color: var(--text4); font-weight: 700; letter-spacing: .3px;
+  }
+  .nav-item .nav-badge { top: 2px; right: 6px; font-size: 8px; padding: 1px 4px; }
 
-  /* Main content area */
+  .sidebar-footer { display: none; }
+
+  /* Main content */
   .main {
     margin-left: 0 !important;
-    padding-bottom: 90px;
+    padding-bottom: 84px;
     height: auto;
     overflow-y: auto;
     width: 100%;
   }
 
-  /* Topbar */
+  /* ──────────── Topbar ──────────── */
   .topbar {
     position: sticky;
     top: 0;
     z-index: 100;
     padding: 10px 14px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     min-height: unset;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   .topbar-left { flex: 1; min-width: 0; }
-  .topbar-title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .topbar-sub { font-size: 10px; display: none; }
-  .top-btn { font-size: 11px; padding: 7px 12px; white-space: nowrap; }
-  .topbar-right { display: flex; align-items: center; gap: 8px; }
-  #globalSearch { width: 140px; font-size: 12px; }
+  .topbar-title { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-sub { display: none; }
+  .top-btn { font-size: 11px; padding: 8px 12px; white-space: nowrap; flex-shrink: 0; min-height: 36px; }
+  .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  #globalSearch { display: none; }
 
   .content { padding: 12px; }
 
-  /* KPI cards */
+  /* ──────────── KPI cards ──────────── */
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .kpi-card { padding: 12px 14px; }
+  .kpi-card { padding: 12px 14px; border-radius: 12px; }
   .kpi-value { font-size: 22px; }
   .kpi-label { font-size: 10px; }
   .kpi-meta { font-size: 10px; }
 
-  /* Dashboard */
+  /* ──────────── Dashboard ──────────── */
   .dash-row { flex-direction: column; gap: 12px; }
   .dash-col { min-width: 0 !important; width: 100%; }
 
-  /* Tables → horizontal scroll wrapper */
-  div[style*="overflow-x:auto"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  /* Balance hero cards */
+  .balance-card { padding: 14px 16px; margin-bottom: 10px; }
+
+  /* ──────────── Tables ──────────── */
+  div[style*="overflow-x:auto"],
+  div[style*="overflow-x: auto"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
   .tbl { min-width: 560px; }
-  .tbl td, .tbl th { padding: 7px 10px; font-size: 12px; }
+  .tbl td, .tbl th { padding: 8px 10px; font-size: 12px; }
   .tbl-action { display: flex; gap: 4px; flex-wrap: nowrap; }
-  .tbl-action .btn { font-size: 10px; padding: 3px 7px; }
+  .tbl-action .btn { font-size: 10px; padding: 4px 8px; min-height: 32px; }
 
-  /* Pipeline kanban → horizontal scroll */
-  #pipeline-kanban { overflow-x: auto !important; -webkit-overflow-scrolling: touch; flex-wrap: nowrap !important; padding-bottom: 10px; }
-  .pipe-col { min-width: 150px; flex-shrink: 0; }
+  /* ──────────── Pipeline kanban ──────────── */
+  #pipeline-kanban {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    padding-bottom: 10px;
+    gap: 10px;
+  }
+  .pipe-col { min-width: 160px; flex-shrink: 0; padding: 10px; }
+  .pipe-col-title { font-size: 11px; }
+  .pipe-card { padding: 10px; }
 
-  /* Coaches grid */
+  /* ──────────── Coach cards grid ──────────── */
   .coach-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .coach-card { padding: 14px; }
   .coach-av { width: 44px; height: 44px; font-size: 16px; }
   .coach-name { font-size: 13px; }
 
-  /* CRM tabs */
-  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; gap: 4px; }
+  /* ──────────── CRM tabs ──────────── */
+  .tabs {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap; scrollbar-width: none; gap: 4px;
+    padding-bottom: 2px;
+  }
   .tabs::-webkit-scrollbar { display: none; }
-  .tab { white-space: nowrap; font-size: 12px; padding: 7px 10px; }
+  .tab { white-space: nowrap; font-size: 12px; padding: 7px 12px; min-height: 36px; }
 
-  /* Detail panel → full screen slide-over */
+  /* ──────────── Detail panel ──────────── */
   #detailPanel {
     width: 100% !important;
     right: -100% !important;
-    top: 0;
-    bottom: 70px;
+    top: 0; bottom: 70px;
     border-radius: 0;
+    z-index: 300;
   }
   #detailPanel.open { right: 0 !important; }
 
-  /* Modals → full-width sheets */
+  /* ──────────── Modals → bottom sheets ──────────── */
   .modal-overlay { align-items: flex-end; padding: 0; }
   .modal {
     width: 100% !important;
     max-width: 100% !important;
     border-radius: 20px 20px 0 0 !important;
-    max-height: 90vh;
-    animation: modal-slide-up .25s ease;
+    max-height: 92vh;
+    animation: modal-slide-up .28s cubic-bezier(.32,1,.23,1);
   }
   @keyframes modal-slide-up {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
+    from { transform: translateY(100%); opacity: .6; }
+    to   { transform: translateY(0);    opacity: 1; }
   }
-  .modal-body { padding: 16px; }
+  .modal-header { padding: 16px 18px 12px; }
+  .modal-body { padding: 14px 18px; }
+  .modal-footer { padding: 12px 18px; }
   .field-grid { grid-template-columns: 1fr; }
 
-  /* Campaign cards */
+  /* Full-screen programa modal */
+  #modal-programa .modal {
+    height: calc(100dvh - 0px) !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  /* ──────────── Horario ──────────── */
+  /* Monthly table: horizontal scroll with sticky time column */
+  #horario-mensual-grid,
+  #coach-hor-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .hor-month-tbl { font-size: 11px; }
+  .hor-month-tbl .hor-time-th { min-width: 56px; font-size: 9px; padding: 4px 6px; position: sticky; left: 0; z-index: 2; background: var(--card); }
+  .hor-month-tbl .hor-wdate-th { min-width: 70px; font-size: 9px; padding: 4px 3px; }
+  .hor-month-tbl .hor-clase-td { min-width: 70px; }
+  .hor-cell-block { min-height: 40px; padding: 4px 2px; }
+  .hor-cell-coach { font-size: 10px; max-width: 64px; }
+  .hor-cell-tipo  { font-size: 8px; }
+
+  /* Weekly grid */
+  .hor-grid { min-width: 520px; }
+  .hor-cell { min-height: 52px; }
+
+  /* Day chips */
+  .day-chips-row { gap: 4px; }
+  .day-chip-lbl span { padding: 5px 10px; font-size: 11px; }
+
+  /* Legend */
+  .hor-legend { gap: 6px; }
+  .hor-legend-item { font-size: 10px; padding: 2px 8px; }
+
+  /* ──────────── Gastos ──────────── */
+  /* Filter row → scrollable chips */
+  #gastos-filter-row {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap; scrollbar-width: none;
+    gap: 6px; padding-bottom: 4px;
+  }
+  #gastos-filter-row::-webkit-scrollbar { display: none; }
+
+  .gasto-row { padding: 10px 12px; gap: 8px; }
+  .gasto-desc-main { font-size: 12px; }
+  .gasto-desc-sub  { font-size: 10px; }
+  .gasto-monto { font-size: 13px; }
+  .gasto-actions { opacity: 1; }   /* always visible on touch */
+
+  /* ──────────── Programa calendar ──────────── */
+  .prog-cal-grid { gap: 3px; }
+  .prog-day-cell { min-height: 60px; padding: 4px; border-radius: 8px; }
+  .prog-day-num { font-size: 10px; }
+  .prog-day-content { font-size: 9px; -webkit-line-clamp: 3; }
+  .prog-day-header { font-size: 9px; }
+  .prog-day-tag { font-size: 8px; padding: 1px 4px; }
+
+  /* Coach programa sub-tabs → pills scroll */
+  .coach-sub-tabs {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap; scrollbar-width: none; gap: 6px;
+    padding-bottom: 2px;
+  }
+  .coach-sub-tabs::-webkit-scrollbar { display: none; }
+  .coach-sub-tab { white-space: nowrap; flex-shrink: 0; }
+
+  /* ──────────── Campaign cards ──────────── */
   .camp-card { padding: 14px; }
   .camp-metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
 
-  /* Solicitudes */
+  /* ──────────── Solicitudes ──────────── */
   .sol-item { flex-wrap: wrap; gap: 8px; }
   .sol-item > div:last-child { width: 100%; justify-content: flex-end; }
 
-  /* Calendar */
+  /* ──────────── Content calendar ──────────── */
   .cal-grid { gap: 1px; }
   .cal-day { min-height: 44px; padding: 3px; font-size: 10px; }
-  .cal-dh { font-size: 9px; padding: 3px; }
+  .cal-dh  { font-size: 9px; padding: 3px; }
   .cal-post { font-size: 9px; padding: 2px 3px; }
 
-  /* Eval section */
+  /* ──────────── Evaluaciones ──────────── */
   #eval-score-box { flex-direction: column; gap: 8px; text-align: center; }
+
+  /* ──────────── Settings ──────────── */
+  .settings-input { width: 100%; max-width: 240px; }
+  .settings-row { flex-wrap: wrap; gap: 8px; }
+
+  /* ──────────── Coach view (mobile) ──────────── */
+  .coach-header { padding: 12px 16px; gap: 12px; }
+  .coach-logo { font-size: 20px; letter-spacing: 2px; }
+  .coach-greeting-name { font-size: 13px; }
+  .coach-body { padding: 12px; }
+
+  /* Coach detail bottom sheet → full width */
+  .coach-detail-sheet {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 88vh;
+  }
+  .coach-detail-header { padding: 14px 16px; }
+  .coach-detail-body   { padding: 14px 16px; }
+  .coach-workout-text  { font-size: 12px; line-height: 1.7; }
+
+  /* User section */
+  .user-row { flex-wrap: wrap; }
 }
 
+/* ── 480px breakpoint ── */
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .coach-grid { grid-template-columns: 1fr; }
-  .nav-item { min-width: 52px; padding: 5px 5px; }
-  .nav-item .nav-icon { font-size: 16px; }
+
+  /* Bottom nav — tighter */
+  .nav-item { min-width: 50px; padding: 6px 6px 4px; }
+  .nav-item .nav-icon { font-size: 17px; }
   .nav-item .nav-label { font-size: 8px; }
-  .topbar-title { font-size: 15px; }
-  #globalSearch { width: 110px; }
+
+  .topbar-title { font-size: 14px; }
+  .top-btn { font-size: 10px; padding: 7px 10px; }
+
+  /* KPI: stay 2-col */
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .kpi-value { font-size: 20px; }
+
+  /* Coach cards → 1-col */
+  .coach-grid { grid-template-columns: 1fr; }
+
+  /* Programa calendar → smaller cells */
+  .prog-cal-grid { gap: 2px; }
+  .prog-day-cell { min-height: 50px; padding: 3px; }
+  .prog-day-num { font-size: 9px; }
+
+  /* Campaign metrics */
   .camp-metrics { grid-template-columns: 1fr 1fr; }
+
+  /* Horario cells even tighter */
+  .hor-month-tbl .hor-wdate-th { min-width: 58px; font-size: 8px; }
+  .hor-month-tbl .hor-clase-td { min-width: 58px; }
+  .hor-cell-coach { font-size: 9px; max-width: 54px; }
+
+  /* Coach logo slightly smaller */
+  .coach-logo { font-size: 18px; }
+
+  /* Modals full bleed */
+  .modal-header { padding: 14px 14px 10px; }
+  .modal-body   { padding: 12px 14px; }
+  .modal-footer { padding: 10px 14px; }
 }
 </style>
 </head>
@@ -1694,7 +1868,7 @@ select option{background:#10101c;color:var(--text);}
       </div>
 
       <!-- Filters -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+      <div id="gastos-filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
           <button class="pf-btn active" id="gf-cat-todos" onclick="setGastoFilter('categoria','todos')">Todos</button>
           <button class="pf-btn" id="gf-cat-Nómina" onclick="setGastoFilter('categoria','Nómina')">Nómina</button>
