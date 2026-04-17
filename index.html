@@ -1771,6 +1771,15 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- ── CUMPLEAÑOS ── -->
+      <div class="card" style="margin-top:18px;" id="dash-cumple-card">
+        <div class="card-header">
+          <div class="card-title">🎂 Cumpleaños esta semana</div>
+          <span class="card-sub" id="dash-cumple-sub">—</span>
+        </div>
+        <div id="dash-cumple-body"></div>
+      </div>
+
       <!-- ── ALERTAS DE MEMBRESÍAS ── -->
       <div class="card" style="margin-top:18px;">
         <div class="card-header">
@@ -1806,11 +1815,23 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- ── GRÁFICA HISTÓRICA DE INGRESOS ── -->
+      <div class="card" style="margin-top:18px;">
+        <div class="card-header">
+          <div class="card-title">📈 Ingresos Últimos 6 Meses</div>
+          <span class="card-sub" id="dash-hist-total">—</span>
+        </div>
+        <div class="chart-wrap" style="height:200px;"><canvas id="histIngrChart"></canvas></div>
+      </div>
+
       <!-- ── BALANCE GENERAL DEL MES ── -->
       <div class="card" style="margin-top:18px;" id="dash-balance-card">
         <div class="card-header">
           <div class="card-title">📊 Balance General del Mes</div>
-          <span class="card-sub" id="dash-balance-mes-label">—</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="card-sub" id="dash-balance-mes-label">—</span>
+            <button onclick="generarReporteMensual()" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(0,180,216,.12);color:var(--accent);border:1px solid rgba(0,180,216,.28);cursor:pointer;font-weight:700;white-space:nowrap;">📄 Reporte Mensual</button>
+          </div>
         </div>
         <div id="dash-balance-body">
           <!-- Rendered by renderDashboard() -->
@@ -2025,10 +2046,13 @@ select option{background:#10101c;color:var(--text);}
 
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
-      <div class="tabs" style="margin-bottom:18px;">
-        <div class="tab active" id="htab-btn-mensual" onclick="switchHorTab('mensual')">📅 Vista Mensual</div>
-        <div class="tab" id="htab-btn-plantilla" onclick="switchHorTab('plantilla')">📋 Plantilla Semanal</div>
-        <div class="tab" id="htab-btn-nomina" onclick="switchHorTab('nomina')">💰 Nómina Quincena</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+        <div class="tabs" style="margin-bottom:0;">
+          <div class="tab active" id="htab-btn-mensual" onclick="switchHorTab('mensual')">📅 Vista Mensual</div>
+          <div class="tab" id="htab-btn-plantilla" onclick="switchHorTab('plantilla')">📋 Plantilla Semanal</div>
+          <div class="tab" id="htab-btn-nomina" onclick="switchHorTab('nomina')">💰 Nómina Quincena</div>
+        </div>
+        <a href="horario-publico.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:7px 14px;border-radius:8px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);text-decoration:none;font-weight:700;white-space:nowrap;">🌐 Ver Horario Público</a>
       </div>
 
       <!-- Tab: Vista Mensual -->
@@ -2087,6 +2111,17 @@ select option{background:#10101c;color:var(--text);}
       <div class="coach-grid" id="coaches-grid">
         <div class="card" style="grid-column:1/-1;">
           <div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Agrega a tu equipo de coaches. Sus perfiles son completamente independientes de los clientes.</div></div>
+        </div>
+      </div>
+
+      <!-- ── METAS POR COACH ── -->
+      <div class="card" style="margin-top:18px;" id="coach-metas-card">
+        <div class="card-header">
+          <div class="card-title">🎯 Metas del Mes</div>
+          <span class="card-sub" id="coach-metas-label">—</span>
+        </div>
+        <div id="coach-metas-body">
+          <div style="color:var(--text3);font-size:12px;padding:8px 0;">Agrega coaches para configurar metas mensuales de clases.</div>
         </div>
       </div>
     </div>
@@ -2267,6 +2302,30 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- Catálogo de planes -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title">📋 Catálogo de Planes</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el monto se llenará automático al seleccionar el plan.</div>
+          <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="flex:1;min-width:140px;margin:0;">
+              <label>Nombre del plan</label>
+              <input id="plan-nuevo-nombre" type="text" class="settings-input" placeholder="Ej: Mensual, Quincenal..."/>
+            </div>
+            <div class="field" style="width:120px;margin:0;">
+              <label>Precio</label>
+              <input id="plan-nuevo-precio" type="number" class="settings-input" placeholder="1200"/>
+            </div>
+            <div class="field" style="width:100px;margin:0;">
+              <label>Días</label>
+              <input id="plan-nuevo-dias" type="number" class="settings-input" placeholder="30" title="Días de vigencia (para calcular vencimiento automático)"/>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="agregarPlan()" style="margin-bottom:1px;">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Meta mensual -->
       <div class="card" style="margin-bottom:18px;">
         <div class="settings-section" style="margin-bottom:0;">
@@ -2319,6 +2378,26 @@ select option{background:#10101c;color:var(--text);}
 
   </div><!-- /content -->
 </div><!-- /main -->
+
+<!-- ═══ QR CHECK-IN MODAL ═══ -->
+<div class="modal-bg" id="modal-qr" onclick="closeModal('qr')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:center;">
+    <div class="modal-header">
+      <div class="modal-title">📱 QR de Check-in</div>
+      <button class="modal-close" onclick="closeModal('qr')">✕</button>
+    </div>
+    <div style="padding:20px 24px 24px;">
+      <div id="qr-info" style="margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.5;"></div>
+      <div style="display:inline-block;background:#fff;border-radius:14px;padding:10px;box-shadow:0 4px 24px rgba(0,0,0,.4);">
+        <img id="qr-img" src="" alt="QR" style="width:220px;height:220px;display:block;border-radius:6px;" onerror="this.style.display='none';document.getElementById('qr-fallback').style.display='block';"/>
+        <div id="qr-fallback" style="display:none;width:220px;height:220px;display:flex;align-items:center;justify-content:center;font-size:40px;">📱</div>
+      </div>
+      <div style="margin-top:14px;font-size:11px;color:var(--text3);">El cliente escanea el código para hacer check-in desde su celular</div>
+      <div id="qr-link" style="margin-top:10px;background:var(--card2);border-radius:7px;padding:8px 12px;font-size:10px;color:var(--text3);word-break:break-all;text-align:left;border:1px solid var(--border);"></div>
+      <button onclick="copyQRLink()" style="margin-top:10px;display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:6px 14px;border-radius:7px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">📋 Copiar enlace</button>
+    </div>
+  </div>
+</div>
 
 <!-- LEAD DETAIL PANEL -->
 <div class="detail-panel" id="detailPanel">
@@ -2497,7 +2576,7 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
-          <select id="p-plan"><option>Mensual</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de día</option></select>
+          <select id="p-plan" onchange="onPlanChange('p-plan','p-monto','p-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option></select>
         </div>
         <div class="field"><label>Método de pago</label>
           <select id="p-metodo">
@@ -2516,7 +2595,10 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>📱 WhatsApp (10 dígitos)</label><input id="p-telefono" type="tel" placeholder="5512345678" maxlength="15"/></div>
-        <div class="field"><label>Notas</label><input id="p-notas" type="text" placeholder="Referencia, observaciones..."/></div>
+        <div class="field"><label>🎂 Fecha de nacimiento</label><input id="p-cumpleanos" type="date"/></div>
+      </div>
+      <div class="field">
+        <label>Notas</label><input id="p-notas" type="text" placeholder="Referencia, observaciones..."/>
       </div>
     </div>
     <div class="modal-footer">
@@ -2722,7 +2804,7 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
-          <select id="ep-plan"><option>Mensual</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de día</option></select>
+          <select id="ep-plan" onchange="onPlanChange('ep-plan','ep-monto','ep-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option></select>
         </div>
         <div class="field"><label>Método de pago</label>
           <select id="ep-metodo">
@@ -2741,7 +2823,10 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>📱 WhatsApp (10 dígitos)</label><input id="ep-telefono" type="tel" placeholder="5512345678" maxlength="15"/></div>
-        <div class="field"><label>Notas</label><input id="ep-notas" type="text" placeholder="Referencia, observaciones..."/></div>
+        <div class="field"><label>🎂 Fecha de nacimiento</label><input id="ep-cumpleanos" type="date"/></div>
+      </div>
+      <div class="field">
+        <label>Notas</label><input id="ep-notas" type="text" placeholder="Referencia, observaciones..."/>
       </div>
     </div>
     <div class="modal-footer">
@@ -3729,7 +3814,8 @@ async function loadPagosFromSupabase(){
   pagos = (data||[]).map(p=>({
     id: p.id, cliente: p.cliente||'', monto: p.monto||0, fecha: p.fecha||'',
     plan: p.plan||'', metodo: p.metodo||'', vence: p.vence||'—', notas: p.notas||'',
-    telefono: p.telefono||''
+    telefono:   p.telefono||'',
+    cumpleanos: p.cumpleanos||''
   }));
 }
 
@@ -3853,7 +3939,7 @@ function go(id, el){
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
-  if(id==='coaches')     renderCoaches();
+  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); }
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
@@ -3865,7 +3951,7 @@ function go(id, el){
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa')    { renderProgramaCalendar(); }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); }
+  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -5030,8 +5116,12 @@ function renderAsistencia(){
           <div style="font-size:14px;font-weight:700;color:var(--text);">${esc(r.clase)}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px;">${fecha}${r.coach?` · Coach: ${esc(r.coach)}`:''} · <strong style="color:var(--accent);">${r.participantes.length} persona${r.participantes.length!==1?'s':''}</strong></div>
         </div>
-        <button onclick="eliminarAsistencia(${r.id})" title="Eliminar"
-          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;opacity:.5;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">✕</button>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <button onclick="event.stopPropagation();showQRCheckIn('${esc(r.fecha)}','${esc(r.clase)}','${esc(r.coach||'')}',${r.id})" title="Mostrar QR de check-in"
+            style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.25);color:var(--accent);cursor:pointer;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;white-space:nowrap;">📱 QR</button>
+          <button onclick="eliminarAsistencia(${r.id})" title="Eliminar"
+            style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;opacity:.5;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">✕</button>
+        </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:5px;">${tags}</div>
     </div>`;
@@ -5118,6 +5208,205 @@ function renderRetencion(){
       </div>
     </div>
     <div style="font-size:11px;color:${color};font-weight:700;">${emoji} ${tasaRet>=70?'Excelente retención':tasaRet>=40?'Retención aceptable':'Retención baja — revisa clientes vencidos'}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CATÁLOGO DE PLANES
+// ═══════════════════════════════════════════════════════════════════
+function loadPlanes(){
+  return JSON.parse(localStorage.getItem('move_planes')||'[]');
+}
+function savePlanesLS(data){ localStorage.setItem('move_planes', JSON.stringify(data)); }
+
+function agregarPlan(){
+  const nombre = document.getElementById('plan-nuevo-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('plan-nuevo-precio').value)||0;
+  const dias   = parseInt(document.getElementById('plan-nuevo-dias').value)||0;
+  if(!nombre||!precio){ toast('Escribe nombre y precio del plan.','⚠️'); return; }
+  const planes = loadPlanes();
+  planes.push({ id: Date.now(), nombre, precio, dias });
+  savePlanesLS(planes);
+  document.getElementById('plan-nuevo-nombre').value='';
+  document.getElementById('plan-nuevo-precio').value='';
+  document.getElementById('plan-nuevo-dias').value='';
+  renderPlanes();
+  syncPlanSelect();
+  toast(`Plan "${nombre}" agregado ✓`,'📋');
+}
+
+function eliminarPlan(id){
+  const planes = loadPlanes().filter(p=>p.id!==id);
+  savePlanesLS(planes);
+  renderPlanes();
+  syncPlanSelect();
+}
+
+function renderPlanes(){
+  const el = document.getElementById('planes-lista');
+  if(!el) return;
+  const planes = loadPlanes();
+  if(!planes.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--text3);padding:8px 0;">Sin planes configurados aún.</div>`;
+    return;
+  }
+  el.innerHTML = planes.map(p=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:9px;">
+      <div style="flex:1;">
+        <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(p.nombre)}</span>
+        <span style="font-size:12px;color:var(--ok);margin-left:8px;font-weight:700;">$${p.precio.toLocaleString('es-MX')}</span>
+        ${p.dias?`<span style="font-size:11px;color:var(--text3);margin-left:8px;">${p.dias} días</span>`:''}
+      </div>
+      <button onclick="eliminarPlan(${p.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:.5;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">✕</button>
+    </div>`).join('');
+}
+
+// Sincroniza el <select> de planes en el modal de pago
+function syncPlanSelect(){
+  const planes = loadPlanes();
+  ['p-plan','ep-plan'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    // Guarda las opciones hardcoded originales
+    const hardcoded = ['Mensual','Quincenal','Trimestral','Semestral','Anual','Pase de Día'];
+    // Opciones del catálogo
+    const catOpts = planes.map(p=>`<option value="${esc(p.nombre)}" data-precio="${p.precio}" data-dias="${p.dias}">${esc(p.nombre)} — $${p.precio.toLocaleString('es-MX')}</option>`).join('');
+    const baseOpts = hardcoded.map(n=>`<option value="${n}">${n}</option>`).join('');
+    sel.innerHTML = (planes.length ? catOpts+'<option disabled>──────────</option>' : '') + baseOpts;
+  });
+}
+
+// Auto-llena monto y vencimiento al seleccionar plan
+function onPlanChange(selectId, montoId, venceId){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  const precio = parseFloat(opt.dataset.precio||'0');
+  const dias   = parseInt(opt.dataset.dias||'0');
+  if(precio){
+    const montoEl=document.getElementById(montoId);
+    if(montoEl&&!montoEl.value) montoEl.value=precio;
+  }
+  if(dias && venceId){
+    const fechaEl=document.getElementById(selectId==='p-plan'?'p-fecha':'ep-fecha');
+    const venceEl=document.getElementById(venceId);
+    if(venceEl&&fechaEl&&fechaEl.value){
+      const base=new Date(fechaEl.value+'T12:00:00');
+      base.setDate(base.getDate()+dias);
+      venceEl.value=base.toISOString().slice(0,10);
+    }
+  }
+}
+
+// ─── Cumpleaños ────────────────────────────────────────────────────
+function renderCumpleanos(){
+  const el  = document.getElementById('dash-cumple-body');
+  const sub = document.getElementById('dash-cumple-sub');
+  if(!el) return;
+
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const mesHoy = hoy.getMonth()+1;
+  const diaHoy = hoy.getDate();
+
+  // Clientes únicos con cumpleaños — tomar el más reciente por nombre
+  const mapa = {};
+  pagos.forEach(p=>{
+    const n=(p.cliente||'').trim();
+    if(!n||!p.cumpleanos||p.cumpleanos.length<10) return;
+    if(!mapa[n]||(p.cumpleanos>mapa[n].cumpleanos)) mapa[n]=p;
+  });
+
+  const mesesES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  const cumples = Object.values(mapa).map(p=>{
+    const [,m,d] = p.cumpleanos.split('-');
+    const mes=parseInt(m), dia=parseInt(d);
+    // Días hasta el cumpleaños este año
+    let proxFecha = new Date(hoy.getFullYear(), mes-1, dia);
+    if(proxFecha < hoy) proxFecha = new Date(hoy.getFullYear()+1, mes-1, dia);
+    const diff = Math.ceil((proxFecha-hoy)/(1000*60*60*24));
+    return { nombre:p.cliente, telefono:p.telefono||'', cumpleanos:p.cumpleanos, mes, dia, diff };
+  }).filter(c=>c.diff<=7).sort((a,b)=>a.diff-b.diff);
+
+  if(sub) sub.textContent = cumples.length>0 ? `${cumples.length} cumpleaños` : 'Sin cumpleaños esta semana';
+
+  if(!cumples.length){
+    el.innerHTML=`<div style="padding:16px 20px;color:var(--text3);font-size:13px;text-align:center;"><span style="font-size:20px;">🎉</span><br>No hay cumpleaños en los próximos 7 días.</div>`;
+    return;
+  }
+
+  const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
+
+  el.innerHTML = cumples.map(c=>{
+    const label = c.diff===0?'¡Hoy!':c.diff===1?'Mañana':`En ${c.diff} días`;
+    const color = c.diff===0?'var(--ok)':c.diff<=2?'var(--warn)':'var(--accent)';
+    const fechaFmt=`${c.dia} de ${mesesES[c.mes-1]}`;
+    const tel=(c.telefono||'').replace(/\D/g,'');
+    const numWA=tel.length===10?'52'+tel:tel;
+    const primerNombre=c.nombre.split(' ')[0];
+    const msgCumple=encodeURIComponent(`Hola ${primerNombre}! Hoy te mandamos un saludo especial desde MOVE para desearté un muy feliz cumpleanos. Que lo pases increible y que este nuevo ano venga lleno de salud y energia. Nos vemos en el gym! 🎉💪`);
+    const waBtn = numWA.length>=12
+      ?`<a href="https://wa.me/${numWA}?text=${msgCumple}" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;
+                  background:rgba(37,211,102,.15);color:#25d366;font-size:11px;font-weight:700;
+                  text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;flex-shrink:0;">${WA_SVG} Saludar</a>`
+      :'';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);">
+      <span style="font-size:22px;">🎂</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(c.nombre)}</div>
+        <div style="font-size:11px;color:var(--text3);">${fechaFmt}</div>
+      </div>
+      <span style="font-size:12px;font-weight:700;color:${color};margin-right:8px;">${label}</span>
+      ${waBtn}
+    </div>`;
+  }).join('');
+}
+
+// ─── Gráfica histórica de ingresos ────────────────────────────────
+function renderHistIngresos(){
+  const canvas = document.getElementById('histIngrChart');
+  const lbl    = document.getElementById('dash-hist-total');
+  if(!canvas) return;
+
+  const now = new Date();
+  const mesesES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const labels = [];
+  const datos  = [];
+
+  for(let i=5; i>=0; i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const total = pagos.filter(p=>(p.fecha||'').startsWith(key)).reduce((s,p)=>s+(p.monto||0),0);
+    labels.push(`${mesesES[d.getMonth()]} ${d.getFullYear()}`);
+    datos.push(total);
+  }
+
+  const totalAcum = datos.reduce((s,v)=>s+v,0);
+  if(lbl) lbl.textContent = `Acumulado: $${totalAcum.toLocaleString('es-MX')}`;
+
+  if(window._histChart) window._histChart.destroy();
+  window._histChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets:[{
+        label:'Ingresos',
+        data: datos,
+        backgroundColor: datos.map((_,i)=> i===5 ? 'rgba(0,180,216,.85)' : 'rgba(0,180,216,.35)'),
+        borderColor: 'rgba(0,180,216,1)',
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>`$${ctx.raw.toLocaleString('es-MX')}` } } },
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}} },
+        y:{ grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}, callback: v=>'$'+v.toLocaleString('es-MX')} }
+      }
+    }
+  });
 }
 
 // DASHBOARD RENDER
@@ -5304,6 +5593,8 @@ function renderDashboard(){
   renderMembresiasAlert();
   renderMetaMensual(ingresosMes);
   renderRetencion();
+  renderHistIngresos();
+  renderCumpleanos();
 
   // Pipeline bars
   const pipeEl = document.getElementById('dash-pipeline-bars');
@@ -5793,8 +6084,9 @@ async function savePago(){
     plan:      document.getElementById('p-plan').value,
     metodo:    document.getElementById('p-metodo').value,
     vence:     document.getElementById('p-vence').value||null,
-    notas:     document.getElementById('p-notas').value.trim(),
-    telefono:  document.getElementById('p-telefono').value.trim(),
+    notas:      document.getElementById('p-notas').value.trim(),
+    telefono:   document.getElementById('p-telefono').value.trim(),
+    cumpleanos: document.getElementById('p-cumpleanos').value||null,
   };
   const { error } = await window.supabaseClient.from('pagos').insert([payload]);
   if(error){ console.error('Error guardando pago:', error); alert('No se pudo guardar el pago.'); return; }
@@ -5844,7 +6136,8 @@ function openEditPago(id){
   document.getElementById('ep-fecha').value    = p.fecha||'';
   document.getElementById('ep-vence').value    = (p.vence&&p.vence!=='—') ? p.vence : '';
   document.getElementById('ep-notas').value    = p.notas||'';
-  document.getElementById('ep-telefono').value = p.telefono||'';
+  document.getElementById('ep-telefono').value   = p.telefono||'';
+  document.getElementById('ep-cumpleanos').value = p.cumpleanos||'';
   setSelectVal('ep-plan',   p.plan   || 'Mensual');
   setSelectVal('ep-metodo', p.metodo || 'Transferencia');
   openModal('edit-pago');
@@ -5863,8 +6156,9 @@ async function saveEditPago(){
     plan:      document.getElementById('ep-plan').value,
     metodo:    document.getElementById('ep-metodo').value,
     vence:     document.getElementById('ep-vence').value || null,
-    notas:     document.getElementById('ep-notas').value.trim(),
-    telefono:  document.getElementById('ep-telefono').value.trim(),
+    notas:      document.getElementById('ep-notas').value.trim(),
+    telefono:   document.getElementById('ep-telefono').value.trim(),
+    cumpleanos: document.getElementById('ep-cumpleanos').value||null,
   };
   const { error } = await window.supabaseClient.from('pagos').update(updates).eq('id', id);
   if(error){ console.error('Error actualizando pago:', error); toast('No se pudo actualizar el pago ❌','✕'); return; }
@@ -6958,6 +7252,293 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   const supabaseUrl = 'https://savzjanpydyjtrgdkllx.supabase.co';
   const supabaseKey = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
   window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+</script>
+
+<!-- ═══ REPORTE MENSUAL ═══ -->
+<script>
+function generarReporteMensual(){
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const month = hoy.getMonth();
+  const mesStr = `${year}-${String(month+1).padStart(2,'0')}`;
+  const mesNombre = MESES_ES[month];
+  const mesAntYear = month===0?year-1:year;
+  const mesAntNum  = month===0?12:month;
+  const mesAntStr  = `${mesAntYear}-${String(mesAntNum).padStart(2,'0')}`;
+
+  // ─ Ingresos del mes ─
+  const pagosMes = pagos.filter(p=>(p.fecha||'').startsWith(mesStr));
+  const ingresosMes = pagosMes.reduce((s,p)=>s+(p.monto||0),0);
+  const meta = parseFloat(localStorage.getItem('move_meta_mensual')||'0');
+  const pctMeta = meta>0 ? Math.min(200, Math.round((ingresosMes/meta)*100)) : null;
+
+  // ─ Clientes activos y nuevos ─
+  const mapaUltimo = {};
+  pagos.forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    if(!mapaUltimo[n]||((p.vence||'')>(mapaUltimo[n].vence||''))) mapaUltimo[n]=p;
+  });
+  const activos = Object.values(mapaUltimo).filter(p=>{
+    if(!p.vence||p.vence.length<10) return false;
+    return Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(86400000))>=0;
+  }).length;
+  const primerPago = {};
+  [...pagos].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    if(!primerPago[n]) primerPago[n]=p.fecha||'';
+  });
+  const nuevos = Object.values(primerPago).filter(f=>f.startsWith(mesStr)).length;
+
+  // ─ Retención ─
+  const cliAnt = new Set(pagos.filter(p=>(p.fecha||'').startsWith(mesAntStr)).map(p=>(p.cliente||'').trim()).filter(Boolean));
+  const cliActual = new Set(pagosMes.map(p=>(p.cliente||'').trim()).filter(Boolean));
+  const renovaron = [...cliAnt].filter(n=>cliActual.has(n)).length;
+  const tasaRet = cliAnt.size>0 ? Math.round(renovaron/cliAnt.size*100) : null;
+
+  // ─ Por plan ─
+  const porPlan = {};
+  pagosMes.forEach(p=>{ const pl=(p.plan||'Sin plan').trim(); if(!porPlan[pl]) porPlan[pl]={qty:0,monto:0}; porPlan[pl].qty++; porPlan[pl].monto+=(p.monto||0); });
+  const planesSorted = Object.entries(porPlan).sort((a,b)=>b[1].monto-a[1].monto);
+
+  // ─ Top 5 clientes ─
+  const porCli = {};
+  pagosMes.forEach(p=>{ const n=(p.cliente||'').trim(); if(!n) return; porCli[n]=(porCli[n]||0)+(p.monto||0); });
+  const top5 = Object.entries(porCli).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // ─ Gastos del mes ─
+  const gastosMes = gastos.filter(g=>(g.fecha||'').startsWith(mesStr));
+  const totalGastos = gastosMes.reduce((s,g)=>s+(g.monto||0),0);
+  const balance = ingresosMes - totalGastos;
+
+  // ─ Coaches ─
+  const rateKey = `move_coach_rate_${year}_${month}`;
+  const rates   = JSON.parse(localStorage.getItem(rateKey)||'{}');
+  const coachRows = coaches.map(c=>{
+    const rate = parseFloat(rates[c.id])||0;
+    const asistData = loadAsistencia().filter(r=>r.fecha&&r.fecha.startsWith(mesStr));
+    const clases = asistData.filter(r=>r.coach===c.nombre||r.coach===c.id).length;
+    return { nombre:c.nombre, clases, rate, pago: clases*rate };
+  }).filter(r=>r.clases>0||Object.keys(rates).includes(String(r.c?.id))).sort((a,b)=>b.clases-a.clases);
+
+  const pctColor = pctMeta===null ? '#60a5fa' : pctMeta>=100 ? '#10e8a0' : pctMeta>=70 ? '#fbbf24' : '#f87171';
+  const retColor = tasaRet===null ? '#60a5fa' : tasaRet>=70 ? '#10e8a0' : tasaRet>=40 ? '#fbbf24' : '#f87171';
+
+  const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/>
+<title>Reporte Mensual — MOVE ${mesNombre} ${year}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Barlow',sans-serif;background:#fff;color:#111;font-size:14px;padding:32px;}
+  @media print{body{padding:0;} .no-print{display:none!important;}}
+  h1{font-size:28px;font-weight:800;letter-spacing:1px;color:#04040c;}
+  h2{font-size:14px;font-weight:700;color:#04040c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #00b4d8;}
+  .brand-tag{font-size:10px;font-weight:700;color:#00b4d8;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
+  .meta-tag{font-size:12px;color:#6b7280;margin-top:4px;}
+  .print-btn{background:#00b4d8;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .kpi{background:#f9fafb;border-radius:10px;padding:16px;border:1px solid #e5e7eb;text-align:center;}
+  .kpi-val{font-size:28px;font-weight:800;color:#04040c;line-height:1;}
+  .kpi-lbl{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+  .kpi-sub{font-size:11px;color:#6b7280;margin-top:2px;}
+  .section{margin-bottom:28px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:#f3f4f6;padding:9px 12px;text-align:left;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;}
+  td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151;}
+  tr:last-child td{border-bottom:none;}
+  .amt{font-weight:700;color:#04040c;text-align:right;}
+  .progress{background:#e5e7eb;border-radius:99px;height:8px;margin-top:8px;}
+  .progress-bar{height:8px;border-radius:99px;background:#00b4d8;}
+  .bal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:14px;}
+  .bal-row:last-child{border-bottom:none;border-top:2px solid #04040c;margin-top:6px;padding-top:14px;font-size:16px;font-weight:800;}
+  .ok{color:#059669;} .danger{color:#dc2626;} .warn{color:#d97706;}
+  .footer{margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center;}
+</style>
+</head><body>
+<div class="header">
+  <div>
+    <div class="brand-tag">Sistema Interno</div>
+    <h1>MOVE</h1>
+    <div class="meta-tag">Reporte Mensual · ${mesNombre} ${year}</div>
+    <div class="meta-tag">Generado el ${hoy.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+  </div>
+  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-val">$${ingresosMes.toLocaleString('es-MX')}</div>
+    <div class="kpi-lbl">Ingresos del Mes</div>
+    ${meta>0?`<div class="kpi-sub">Meta: $${meta.toLocaleString('es-MX')}</div>`:''}
+  </div>
+  <div class="kpi">
+    <div class="kpi-val" style="color:#00b4d8;">${activos}</div>
+    <div class="kpi-lbl">Clientes Activos</div>
+    <div class="kpi-sub">${nuevos} nuevos este mes</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val" style="color:${retColor};">${tasaRet!==null?tasaRet+'%':'—'}</div>
+    <div class="kpi-lbl">Retención</div>
+    <div class="kpi-sub">${cliAnt.size} clientes mes anterior</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val" style="color:${balance>=0?'#059669':'#dc2626'};">$${balance.toLocaleString('es-MX')}</div>
+    <div class="kpi-lbl">Balance Neto</div>
+    <div class="kpi-sub">Ingresos − Gastos</div>
+  </div>
+</div>
+
+${meta>0?`
+<div class="section">
+  <h2>Avance de Meta Mensual</h2>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;">
+    <span style="font-size:20px;font-weight:800;color:${pctColor};">${pctMeta}%</span>
+    <span style="font-size:12px;color:#6b7280;">$${ingresosMes.toLocaleString('es-MX')} de $${meta.toLocaleString('es-MX')}</span>
+  </div>
+  <div class="progress"><div class="progress-bar" style="width:${Math.min(100,pctMeta||0)}%;background:${pctColor};"></div></div>
+  <div style="font-size:12px;color:#6b7280;margin-top:8px;">${ingresosMes>=meta?`Meta superada en $${(ingresosMes-meta).toLocaleString('es-MX')}`:`Faltan $${(meta-ingresosMes).toLocaleString('es-MX')} para alcanzar la meta`}</div>
+</div>`:''}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
+  <div class="section" style="margin-bottom:0;">
+    <h2>Ingresos por Plan</h2>
+    ${planesSorted.length?`<table><thead><tr><th>Plan</th><th>Pagos</th><th style="text-align:right;">Total</th></tr></thead><tbody>
+    ${planesSorted.map(([pl,v])=>`<tr><td>${pl}</td><td>${v.qty}</td><td class="amt">$${v.monto.toLocaleString('es-MX')}</td></tr>`).join('')}
+    </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin pagos este mes.</div>'}
+  </div>
+  <div class="section" style="margin-bottom:0;">
+    <h2>Top 5 Clientes del Mes</h2>
+    ${top5.length?`<table><thead><tr><th>#</th><th>Cliente</th><th style="text-align:right;">Total</th></tr></thead><tbody>
+    ${top5.map(([n,m],i)=>`<tr><td style="color:#9ca3af;font-weight:700;">${i+1}</td><td>${n}</td><td class="amt">$${m.toLocaleString('es-MX')}</td></tr>`).join('')}
+    </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin datos este mes.</div>'}
+  </div>
+</div>
+
+<div class="section">
+  <h2>Balance Financiero</h2>
+  <div class="bal-row"><span>Ingresos totales</span><span class="ok">+$${ingresosMes.toLocaleString('es-MX')}</span></div>
+  <div class="bal-row"><span>Gastos y egresos</span><span class="danger">−$${totalGastos.toLocaleString('es-MX')}</span></div>
+  <div class="bal-row"><span>Balance neto</span><span style="color:${balance>=0?'#059669':'#dc2626'};">$${balance.toLocaleString('es-MX')}</span></div>
+</div>
+
+${pagosMes.length?`
+<div class="section">
+  <h2>Registro de Pagos del Mes (${pagosMes.length})</h2>
+  <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Plan</th><th>Método</th><th style="text-align:right;">Monto</th></tr></thead><tbody>
+  ${[...pagosMes].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(p=>`<tr>
+    <td>${p.fecha||'—'}</td><td>${p.cliente||'—'}</td><td>${p.plan||'—'}</td>
+    <td>${p.metodo||'—'}</td><td class="amt">$${(p.monto||0).toLocaleString('es-MX')}</td>
+  </tr>`).join('')}
+  </tbody></table>
+</div>`:''}
+
+<div class="footer">MOVE Fitness Center · Reporte Mensual ${mesNombre} ${year} · Sistema Interno</div>
+</body></html>`;
+
+  const win = window.open('','_blank');
+  if(win){ win.document.write(html); win.document.close(); }
+  else toast('Permite ventanas emergentes para generar el reporte.','⚠️');
+}
+</script>
+
+<!-- ═══ QR CHECK-IN ═══ -->
+<script>
+let _qrCurrentLink = '';
+
+function showQRCheckIn(fecha, clase, coach, id){
+  // Build checkin URL
+  const base = window.location.href.replace(/\/[^\/]*$/, '') + '/checkin.html';
+  const params = new URLSearchParams({ fecha, clase, coach });
+  const url = `${base}?${params.toString()}`;
+  _qrCurrentLink = url;
+
+  // QR image via free API
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=000000&margin=2`;
+  document.getElementById('qr-img').src = qrUrl;
+  document.getElementById('qr-fallback').style.display = 'none';
+  document.getElementById('qr-img').style.display = 'block';
+
+  const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  let fechaLabel = fecha;
+  if(fecha&&fecha.length>=10){const[,m,d]=fecha.split('-'); fechaLabel=`${parseInt(d)} ${meses[parseInt(m)-1]}`;}
+  document.getElementById('qr-info').innerHTML = `<strong style="color:var(--text);">${esc(clase)}</strong><br><span style="font-size:12px;">${fechaLabel}${coach?` · Coach: ${esc(coach)}`:''}</span>`;
+  document.getElementById('qr-link').textContent = url;
+  openModal('qr');
+}
+
+function copyQRLink(){
+  if(!_qrCurrentLink) return;
+  navigator.clipboard.writeText(_qrCurrentLink).then(()=>toast('Enlace copiado','📋')).catch(()=>toast('No se pudo copiar','⚠️'));
+}
+</script>
+
+<!-- ═══ METAS POR COACH ═══ -->
+<script>
+function renderMetasCoach(){
+  const el = document.getElementById('coach-metas-body');
+  const lbl = document.getElementById('coach-metas-label');
+  if(!el) return;
+
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const month = hoy.getMonth();
+  if(lbl) lbl.textContent = `${MESES_ES[month]} ${year}`;
+
+  if(!coaches.length){
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">Agrega coaches para configurar metas.</div>';
+    return;
+  }
+
+  const metaKey = `move_coach_meta_${year}_${month}`;
+  const metas   = JSON.parse(localStorage.getItem(metaKey)||'{}');
+
+  // Count actual classes per coach this month from asistencia
+  const mesStr = `${year}-${String(month+1).padStart(2,'0')}`;
+  const asistMes = loadAsistencia().filter(r=>(r.fecha||'').startsWith(mesStr));
+  const clasesPorCoach = {};
+  coaches.forEach(c=>{ clasesPorCoach[c.nombre] = 0; clasesPorCoach[c.id] = 0; });
+  asistMes.forEach(r=>{
+    const cn = r.coach||'';
+    if(clasesPorCoach[cn]!==undefined) clasesPorCoach[cn]++;
+  });
+  const actualPorCoach = {};
+  coaches.forEach(c=>{
+    actualPorCoach[c.id] = (clasesPorCoach[c.nombre]||0) + (clasesPorCoach[c.id]||0);
+  });
+
+  el.innerHTML = coaches.map((c,idx)=>{
+    const meta   = parseInt(metas[c.id])||0;
+    const actual = actualPorCoach[c.id]||0;
+    const pct    = meta>0 ? Math.min(100,Math.round(actual/meta*100)) : null;
+    const color  = COACH_COLORS[idx%COACH_COLORS.length];
+    const barColor = pct===null?'var(--accent)':pct>=100?'var(--ok)':pct>=60?'var(--warn)':'var(--danger)';
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+      <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">${(c.nombre||'?').slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(c.nombre)}</span>
+          <span style="font-size:12px;color:${barColor};font-weight:800;">${actual}<span style="color:var(--text3);font-weight:400;"> / <input type="number" value="${meta||''}" min="0" placeholder="meta" title="Meta de clases al mes"
+            onchange="saveMetaCoach('${c.id}',this.value)"
+            style="width:50px;background:var(--input-bg,var(--card2));border:1px solid var(--border);border-radius:5px;padding:2px 5px;color:var(--text);font-size:11px;text-align:center;"/></span></span>
+        </div>
+        ${meta>0?`<div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden;"><div style="width:${pct}%;height:6px;background:${barColor};border-radius:99px;transition:width .4s;"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">${pct}% completado${pct>=100?' · ¡Meta alcanzada! 🎯':''}</div>`
+        :`<div style="font-size:10px;color:var(--text3);">Ingresa la meta de clases para este mes</div>`}
+      </div>
+    </div>`;
+  }).join('')+'<div style="font-size:10px;color:var(--text3);margin-top:10px;text-align:right;">Las metas se guardan por mes en este dispositivo. Presiona Enter o cambia el campo para guardar.</div>';
+}
+
+function saveMetaCoach(coachId, val){
+  const hoy = new Date();
+  const metaKey = `move_coach_meta_${hoy.getFullYear()}_${hoy.getMonth()}`;
+  const metas = JSON.parse(localStorage.getItem(metaKey)||'{}');
+  metas[coachId] = parseInt(val)||0;
+  localStorage.setItem(metaKey, JSON.stringify(metas));
+  toast('Meta de coach guardada','🎯');
+  renderMetasCoach();
+}
 </script>
 
 <!-- ═══ PWA — Service Worker + Notificaciones Push ═══ -->
