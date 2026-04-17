@@ -4210,11 +4210,7 @@ function renderMembresiasAlert(){
     // WhatsApp link
     const tel    = (p.telefono||'').replace(/\D/g,'');
     const numWA  = tel.length===10 ? '52'+tel : tel;
-    const plan   = p.plan||'membresía';
-    const msgWA  = encodeURIComponent(
-      `Hola ${p.cliente} 👋 Te recordamos que tu ${plan} en MOVE vence el ${p.vence}. ` +
-      `¿Te gustaría renovar? Escríbenos para ayudarte 💪`
-    );
+    const msgWA  = encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
     const waBtn  = numWA.length >= 12
       ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
            style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
@@ -4246,6 +4242,36 @@ function renderMembresiasAlert(){
 // ═══════════════════════════════════════════════════════════════════
 // CLIENTES
 // ═══════════════════════════════════════════════════════════════════
+
+// ─── Helper: construye el mensaje de WhatsApp ───────────────────────
+function buildWAMsg(nombre, plan, vence){
+  // Nombre legible del plan
+  const planMap = {
+    'mensual':     'membresía mensual',
+    'quincenal':   'membresía quincenal',
+    'trimestral':  'membresía trimestral',
+    'semestral':   'membresía semestral',
+    'anual':       'membresía anual',
+    'mensual familiar': 'membresía familiar mensual',
+    'pase de día': 'pase de día',
+    'pase':        'pase de día',
+  };
+  const planKey = (plan||'').toLowerCase().trim();
+  const planLabel = planMap[planKey] || (plan||'membresía').toLowerCase();
+
+  // Fecha legible
+  let fechaLabel = vence||'';
+  if(vence && vence.length >= 10){
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const [y,m,d] = vence.split('-');
+    fechaLabel = `${parseInt(d)} de ${meses[parseInt(m)-1]} de ${y}`;
+  }
+
+  // Primer nombre solamente
+  const primerNombre = (nombre||'').split(' ')[0];
+
+  return `Hola ${primerNombre}! Te escribimos desde MOVE para avisarte que tu ${planLabel} vence el ${fechaLabel}. Queremos que sigas siendo parte de la comunidad, asi que cuando quieras renovar aqui estamos para ayudarte. Un saludo!`;
+}
 
 // Estado activo de los filtros
 let _cliEstado = 'todos';
@@ -4415,10 +4441,7 @@ function renderClientes(){
     // WhatsApp
     const tel   = (c.telefono||'').replace(/\D/g,'');
     const numWA = tel.length===10 ? '52'+tel : tel;
-    const plan  = c.plan||'membresía';
-    const msgWA = encodeURIComponent(
-      `Hola ${c.nombre} 👋 Te recordamos que tu ${plan} en MOVE vence el ${c.vence}. ¿Te gustaría renovar? Estamos para ayudarte 💪`
-    );
+    const msgWA = encodeURIComponent(buildWAMsg(c.nombre, c.plan, c.vence));
     const waBtn = numWA.length >= 12
       ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
              style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
