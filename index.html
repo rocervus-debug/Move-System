@@ -1841,6 +1841,20 @@ select option{background:#10101c;color:var(--text);}
 
     <!-- ══ ASISTENCIA ══ -->
     <div class="view" id="v-asistencia">
+
+      <!-- ── CHECK-INS QR DE HOY ── -->
+      <div class="card" style="margin-bottom:18px;border:1px solid rgba(0,180,216,.2);">
+        <div class="card-header">
+          <div class="card-title">📡 Check-ins QR de Hoy</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="card-sub" id="asist-qr-label">—</span>
+            <button onclick="loadQRCheckinsHoy()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">↺ Actualizar</button>
+            <a href="checkin.html?kiosko=1" target="_blank" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;font-weight:700;text-decoration:none;white-space:nowrap;">📱 Abrir Kiosco</a>
+          </div>
+        </div>
+        <div id="asist-qr-hoy" style="min-height:48px;"></div>
+      </div>
+
       <div id="asist-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;"></div>
       <div class="g2" style="margin-bottom:18px;">
         <div class="card">
@@ -1862,7 +1876,13 @@ select option{background:#10101c;color:var(--text);}
               <label>Participantes (uno por línea o separados por coma)</label>
               <textarea id="asist-participantes" rows="4" placeholder="Ana García&#10;Luis Martínez&#10;Valeria Serrano" style="width:100%;resize:vertical;"></textarea>
             </div>
-            <button class="btn btn-primary" onclick="guardarAsistencia()">✓ Guardar Asistencia</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-primary" style="flex:1;" onclick="guardarAsistencia()">✓ Guardar Asistencia</button>
+              <button onclick="generarQRDesdeFormulario()" title="Generar QR para esta clase"
+                style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:9px;
+                       background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.3);
+                       cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap;">📱 QR</button>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -2455,6 +2475,12 @@ select option{background:#10101c;color:var(--text);}
     <div class="detail-section">
       <div class="detail-section-title">Acciones</div>
       <div id="cpanel-acciones" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- QR Personal -->
+    <div class="detail-section" id="cpanel-qr-section">
+      <div class="detail-section-title">📱 QR Personal de Check-in</div>
+      <div id="cpanel-qr-body"></div>
     </div>
 
     <!-- Historial completo de pagos -->
@@ -3944,7 +3970,7 @@ function go(id, el){
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
   if(id==='clientes')    renderClientes();
-  if(id==='asistencia')  renderAsistencia();
+  if(id==='asistencia')  { renderAsistencia(); loadQRCheckinsHoy(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
@@ -4874,9 +4900,68 @@ function openClientePanel(nombreCliente){
       }).join('')
     : `<div style="color:var(--text3);font-size:13px;">Sin pagos registrados.</div>`;
 
+  // ── QR Personal ──
+  const qrContent   = `MOVE_CHECKIN:${nombreCliente}`;
+  const qrImgUrl    = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrContent)}&bgcolor=ffffff&color=000000&margin=3&qzone=1`;
+  const primerNombre = nombreCliente.split(' ')[0];
+  const numWAForQR   = tel.length===10?'52'+tel:tel;
+  const qrWAMsg = encodeURIComponent(`Hola ${primerNombre}! Te enviamos tu codigo QR personal de MOVE. Guardalo en tu celular — cada vez que llegues al gym solo presentalo en la entrada para registrar tu asistencia automaticamente. Sin escribir nada!`);
+  document.getElementById('cpanel-qr-body').innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+      <div style="background:#fff;border-radius:10px;padding:7px;display:inline-block;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.5);">
+        <img src="${qrImgUrl}" width="130" height="130" style="display:block;border-radius:4px;" alt="QR ${esc(nombreCliente)}"/>
+      </div>
+      <div style="flex:1;min-width:130px;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.55;">QR único para <strong style="color:var(--text);">${esc(primerNombre)}</strong>. Al escanearlo en el kiosco de entrada registra su asistencia al instante.</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          ${numWAForQR.length>=12?`<a href="https://wa.me/${numWAForQR}?text=${qrWAMsg}" target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+                   background:rgba(37,211,102,.12);color:#25d366;font-size:11px;font-weight:700;
+                   text-decoration:none;border:1px solid rgba(37,211,102,.28);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+            Enviar por WhatsApp</a>`:''}
+          <button onclick="imprimirQRCliente('${esc(nombreCliente)}')"
+            style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+                   background:var(--card2);color:var(--text2);font-size:11px;font-weight:600;
+                   border:1px solid var(--border);cursor:pointer;">🖨️ Imprimir QR</button>
+        </div>
+      </div>
+    </div>`;
+
   // Abrir panel
   document.getElementById('clientePanel').classList.add('open');
   document.getElementById('cliente-panel-overlay').style.display = 'block';
+}
+
+function imprimirQRCliente(nombre){
+  const qrContent = `MOVE_CHECKIN:${nombre}`;
+  const qrImgUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrContent)}&bgcolor=ffffff&color=000000&margin=4&qzone=2`;
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
+<title>QR — ${nombre}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Barlow',sans-serif;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  @media print{body{padding:0;}}
+  .card{border:2px solid #000;border-radius:16px;padding:28px 24px;text-align:center;max-width:280px;width:100%;}
+  .logo{font-size:26px;font-weight:800;letter-spacing:2px;color:#04040c;margin-bottom:4px;}
+  .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6b7280;margin-bottom:20px;}
+  img{width:200px;height:200px;margin:0 auto 16px;display:block;}
+  .name{font-size:18px;font-weight:800;color:#04040c;margin-bottom:4px;}
+  .inst{font-size:11px;color:#6b7280;line-height:1.5;}
+  .btn{margin-top:16px;padding:9px 24px;background:#04040c;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;}
+</style></head><body>
+<div class="card">
+  <div class="logo">MOVE</div>
+  <div class="sub">Fitness Center</div>
+  <img src="${qrImgUrl}" alt="QR ${nombre}"/>
+  <div class="name">${nombre}</div>
+  <div class="inst">Presenta este QR en la entrada<br>para registrar tu asistencia</div>
+  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+</div>
+</body></html>`;
+  const win = window.open('','_blank');
+  if(win){ win.document.write(html); win.document.close(); }
 }
 
 function closeClientePanel(){
@@ -7467,6 +7552,19 @@ function showQRCheckIn(fecha, clase, coach, id){
   openModal('qr');
 }
 
+function generarQRDesdeFormulario(){
+  const fecha = document.getElementById('asist-fecha').value;
+  const clase = document.getElementById('asist-clase').value.trim();
+  const coachEl = document.getElementById('asist-coach');
+  const coachText = coachEl ? coachEl.options[coachEl.selectedIndex]?.text : '';
+  const coach = (coachText === '— Seleccionar coach —') ? '' : (coachText||'');
+
+  if(!fecha || !clase){
+    toast('Llena la fecha y la clase antes de generar el QR.','⚠️'); return;
+  }
+  showQRCheckIn(fecha, clase, coach, null);
+}
+
 function copyQRLink(){
   if(!_qrCurrentLink) return;
   // Try modern clipboard API first, fallback to execCommand for file:// and older browsers
@@ -7545,6 +7643,43 @@ function renderMetasCoach(){
       </div>
     </div>`;
   }).join('')+'<div style="font-size:10px;color:var(--text3);margin-top:10px;text-align:right;">Las metas se guardan por mes en este dispositivo. Presiona Enter o cambia el campo para guardar.</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// QR CHECK-INS DE HOY — carga desde Supabase
+// ═══════════════════════════════════════════════════════════════════
+async function loadQRCheckinsHoy(){
+  const el  = document.getElementById('asist-qr-hoy');
+  const lbl = document.getElementById('asist-qr-label');
+  if(!el) return;
+  el.innerHTML = '<div style="padding:10px 0;font-size:12px;color:var(--text3);">Cargando check-ins...</div>';
+  const hoy = new Date().toISOString().slice(0,10);
+  if(lbl) lbl.textContent = `Hoy · ${hoy}`;
+  try{
+    const { data, error } = await window.supabaseClient
+      .from('qr_checkins').select('*').eq('fecha', hoy).order('created_at', {ascending:false});
+    if(error) throw error;
+    const checkins = data||[];
+    if(lbl) lbl.textContent = `Hoy · ${checkins.length} check-in${checkins.length!==1?'s':''}`;
+    if(!checkins.length){
+      el.innerHTML = '<div style="padding:12px 0;font-size:12px;color:var(--text3);text-align:center;">Sin check-ins QR por ahora. Abre el kiosco para que los clientes escaneen.</div>';
+      return;
+    }
+    el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:7px;padding:4px 0;">
+      ${checkins.map(c=>{
+        const hora = c.created_at ? new Date(c.created_at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div style="display:flex;align-items:center;gap:7px;padding:6px 12px;background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.2);border-radius:8px;">
+          <span style="font-size:16px;">✅</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${esc(c.nombre||'—')}</div>
+            ${hora?`<div style="font-size:10px;color:var(--text3);">${hora}${c.clase?` · ${esc(c.clase)}`:''}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } catch(e){
+    el.innerHTML = '<div style="padding:10px 0;font-size:12px;color:var(--text3);">No se pudo cargar. Verifica que la tabla <code>qr_checkins</code> exista en Supabase.</div>';
+  }
 }
 
 function saveMetaCoach(coachId, val){
