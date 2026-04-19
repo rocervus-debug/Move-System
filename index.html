@@ -924,6 +924,11 @@ select option{background:#10101c;color:var(--text);}
 .hor-cell-coach{ color:#fff;font-size:11px;font-weight:900;text-align:center;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px; }
 .hor-cell-tipo{ color:rgba(255,255,255,.82);font-size:9px;font-weight:700;text-align:center;line-height:1.2;letter-spacing:.5px;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.3); }
 .hor-cell-ov{ position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#fff;opacity:.75;box-shadow:0 0 3px rgba(0,0,0,.4); }
+/* Coverage / substitution */
+.hor-sub-badge{ display:inline-block;background:rgba(251,191,36,.22);border:1px solid rgba(251,191,36,.5);color:#fbbf24;font-size:8px;font-weight:800;letter-spacing:.3px;border-radius:4px;padding:1px 5px;text-transform:uppercase;margin-bottom:2px;line-height:1.4; }
+.hor-sub-orig{ color:rgba(255,255,255,.55);font-size:8px;text-decoration:line-through;text-align:center;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.hor-cob-btn{ display:inline-flex;align-items:center;justify-content:center;margin-top:3px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);border-radius:4px;font-size:9px;padding:1px 5px;cursor:pointer;color:rgba(255,255,255,.8);transition:background .15s;line-height:1.4;white-space:nowrap; }
+.hor-cob-btn:hover{ background:rgba(0,0,0,.55);color:#fff; }
 /* Cerrado cell */
 .hor-cerrado-td{ background:repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 4px,transparent 4px,transparent 9px) !important;background-color:rgba(0,0,0,.35) !important; }
 .hor-cerrado-chip{ color:var(--text3);font-size:10px;font-weight:700;font-style:italic;letter-spacing:.3px;opacity:.6; }
@@ -2346,6 +2351,27 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- Kiosco URL -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title">📱 Kiosco de Check-in</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">URL pública del kiosco</div>
+              <div class="settings-desc">Si subiste el sistema a Vercel o tu web, pega aquí la URL base (ej: <code style="font-size:10px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;">https://move-gym.vercel.app</code>). Los QR de tus clientes usarán esa URL para que puedan hacer check-in desde su celular. Sin URL, los QR funcionan solo con el escáner USB o cámara en el kiosco.</div>
+            </div>
+            <div class="settings-control" style="flex:1;max-width:340px;">
+              <input class="settings-input" style="width:100%;" id="cfg-kiosko-url" type="text" placeholder="https://tu-gym.vercel.app"/>
+              <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveKioskoUrl()">Guardar URL</button>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:10px 14px;background:rgba(0,180,216,.06);border-radius:8px;border:1px solid rgba(0,180,216,.15);font-size:11px;color:var(--text3);line-height:1.6;">
+            <strong style="color:var(--accent);">Escáner USB:</strong> conecta el escáner a la tablet/PC, abre <code>checkin.html</code> en Chrome y listo — no necesita cámara ni internet constante.<br>
+            <strong style="color:var(--accent);">Vercel (gratis):</strong> sube los archivos HTML a <a href="https://vercel.com" target="_blank" style="color:var(--accent);">vercel.com</a> → los clientes hacen check-in desde su celular sin kiosco.
+          </div>
+        </div>
+      </div>
+
       <!-- Meta mensual -->
       <div class="card" style="margin-bottom:18px;">
         <div class="settings-section" style="margin-bottom:0;">
@@ -3116,6 +3142,42 @@ select option{background:#10101c;color:var(--text);}
       <button class="btn btn-outline btn-sm" onclick="deleteHorarioOverride()" style="margin-right:auto;" title="Volver a plantilla base">↩ Usar plantilla</button>
       <button class="btn btn-outline" onclick="closeModal('horario-override')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveHorarioOverride()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cobertura de clase (sustitución de coach) -->
+<div class="modal-overlay" id="modal-cobertura">
+  <div class="modal" style="width:420px;">
+    <div class="modal-head">
+      <div class="modal-title">👤 <span id="cob-titulo">Cobertura de Clase</span></div>
+      <button class="modal-close" onclick="closeModal('cobertura')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cob-fecha"/>
+      <input type="hidden" id="cob-hora"/>
+      <input type="hidden" id="cob-orig-id"/>
+      <input type="hidden" id="cob-orig-nombre"/>
+      <input type="hidden" id="cob-tipo"/>
+      <!-- Original coach info -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Coach original</div>
+        <div id="cob-orig-label" style="font-size:14px;font-weight:800;color:var(--text);"></div>
+      </div>
+      <div class="field">
+        <label>¿Quién cubrió esta clase?</label>
+        <select id="cob-coach">
+          <option value="">— Seleccionar coach —</option>
+        </select>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);background:var(--card2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
+        ℹ️ Solo se modifica esta clase en esta fecha. La plantilla semanal no cambia. El conteo de la quincena se actualiza automáticamente.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" id="cob-remove-btn" onclick="removeCobertura()" style="margin-right:auto;display:none;" title="Quitar cobertura">↩ Quitar cobertura</button>
+      <button class="btn btn-outline" onclick="closeModal('cobertura')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCobertura()">👤 Guardar cobertura</button>
     </div>
   </div>
 </div>
@@ -3977,7 +4039,7 @@ function go(id, el){
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa')    { renderProgramaCalendar(); }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); }
+  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -4901,7 +4963,10 @@ function openClientePanel(nombreCliente){
     : `<div style="color:var(--text3);font-size:13px;">Sin pagos registrados.</div>`;
 
   // ── QR Personal ──
-  const qrContent   = `MOVE_CHECKIN:${nombreCliente}`;
+  const kioskoBase  = getKioskoUrl();
+  const qrContent   = kioskoBase
+    ? `${kioskoBase}/checkin.html?nombre=${encodeURIComponent(nombreCliente)}`
+    : `MOVE_CHECKIN:${nombreCliente}`;
   const qrImgUrl    = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrContent)}&bgcolor=ffffff&color=000000&margin=3&qzone=1`;
   const primerNombre = nombreCliente.split(' ')[0];
   const numWAForQR   = tel.length===10?'52'+tel:tel;
@@ -4934,7 +4999,10 @@ function openClientePanel(nombreCliente){
 }
 
 function imprimirQRCliente(nombre){
-  const qrContent = `MOVE_CHECKIN:${nombre}`;
+  const kioskoBase = getKioskoUrl();
+  const qrContent  = kioskoBase
+    ? `${kioskoBase}/checkin.html?nombre=${encodeURIComponent(nombre)}`
+    : `MOVE_CHECKIN:${nombre}`;
   const qrImgUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrContent)}&bgcolor=ffffff&color=000000&margin=4&qzone=2`;
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
 <title>QR — ${nombre}</title>
@@ -5214,6 +5282,15 @@ function renderAsistencia(){
 }
 
 // ─── Meta mensual ──────────────────────────────────────────────────
+function saveKioskoUrl(){
+  const val = (document.getElementById('cfg-kiosko-url').value||'').trim().replace(/\/+$/,'');
+  localStorage.setItem('move_kiosko_url', val);
+  toast(val ? `URL guardada: ${val}` : 'URL borrada — QR usará modo USB/cámara','📱');
+}
+function getKioskoUrl(){
+  return (localStorage.getItem('move_kiosko_url')||'').trim();
+}
+
 function saveMetaMensual(){
   const val = parseFloat(document.getElementById('cfg-meta-mensual').value)||0;
   localStorage.setItem('move_meta_mensual', val);
@@ -6706,6 +6783,7 @@ async function loadHorarioOverridesFromSupabase(){
     id: o.id, fecha: o.fecha, hora: o.hora,
     tipo: o.tipo||'', coach_id: o.coach_id||'',
     coach_nombre: o.coach_nombre||'',
+    notas: o.notas||'',
     cerrado: o.tipo === 'CERRADO'  // CERRADO stored as tipo='CERRADO'
   }));
 }
@@ -6813,13 +6891,20 @@ function renderHorarioMensual(){
           const cIdx  = coachColorIdx(clase.coach_id||'', cn);
           const baseColor = COACH_COLORS[cIdx % COACH_COLORS.length];
           const color = cn ? baseColor : (TIPO_COLORS[tipo] || '#475569');
-          const ovDot = isOv ? '<span class="hor-cell-ov" title="Modificado"></span>' : '';
+          // Coverage detection
+          const isSub = isOv && clase.notas && clase.notas.startsWith('SUB:');
+          const origCoachLabel = isSub ? (clase.notas.replace('SUB:','').split('|')[0]||'') : '';
+          const subBadge = isSub
+            ? `<span class="hor-sub-badge" title="Cubrió a: ${esc(origCoachLabel)}">↔ Sub</span><span class="hor-sub-orig">${esc(origCoachLabel)}</span>`
+            : (isOv ? '<span class="hor-cell-ov" title="Modificado"></span>' : '');
+          const coberBtn = `<span class="hor-cob-btn" onclick="event.stopPropagation();openCoberturaModal('${fStr}','${hora}')" title="Cobertura">👤 Cubrió</span>`;
           html += `<td class="hor-clase-td hor-filled" style="background:${color};border-color:${color};" onclick="openEditClaseCell('${fStr}','${hora}')">
             <div class="hor-cell-block">
-              ${ovDot}
+              ${subBadge}
               <span class="hor-cell-coach">${cn ? esc(cn) : esc(tipo)}</span>
               ${cn && tipo ? `<span class="hor-cell-tipo">${esc(tipo)}</span>` : ''}
               ${!cn ? `<span class="hor-cell-tipo" style="opacity:.5;">Sin coach</span>` : ''}
+              ${coberBtn}
             </div>
           </td>`;
         }
@@ -6919,6 +7004,112 @@ async function deleteHorarioOverride(){
   closeModal('horario-override');
   toast('Restablecido a plantilla base ↩','↩');
   renderHorarioMensual();
+}
+
+// ─── Cobertura (coach substitution) ────────────────────────────────────────
+
+function openCoberturaModal(fechaStr, hora){
+  const clase = getEffectiveClase(fechaStr, hora);
+  if(!clase || clase.cerrado) return;
+
+  const d = new Date(fechaStr+'T12:00:00');
+  const label = `${d.getDate()} ${MESES_CORTO_ES[d.getMonth()]} · ${formatHoraDisplay(hora)}`;
+  document.getElementById('cob-titulo').textContent = label;
+  document.getElementById('cob-fecha').value  = fechaStr;
+  document.getElementById('cob-hora').value   = hora;
+
+  // Original coach: if already a sub override, grab from notas; else use clase directly
+  let origNombre = '', origId = '';
+  if(clase._isOverride && clase.notas && clase.notas.startsWith('SUB:')){
+    const parts = clase.notas.replace('SUB:','').split('|');
+    origNombre = parts[0]||'';
+    origId     = parts[1]||'';
+  } else {
+    origNombre = resolveCoachName(clase.coach_id||'', clase.coach_nombre||'');
+    origId     = String(clase.coach_id||'');
+  }
+  document.getElementById('cob-orig-label').textContent = origNombre || 'Sin asignar';
+  document.getElementById('cob-orig-id').value    = origId;
+  document.getElementById('cob-orig-nombre').value = origNombre;
+  document.getElementById('cob-tipo').value        = clase.tipo || 'Strength';
+
+  // Populate sub coach dropdown (all coaches, mark original as disabled)
+  const sel = document.getElementById('cob-coach');
+  sel.innerHTML = '<option value="">— Seleccionar coach —</option>';
+  coaches.forEach(c=>{
+    const isOrig = String(c.id)===String(origId) || c.nombre===origNombre;
+    sel.innerHTML += `<option value="${c.id}" ${isOrig?'disabled style="opacity:.4;"':''}>${esc(c.nombre)}${isOrig?' (original)':''}</option>`;
+  });
+
+  // Pre-select if already a sub
+  if(clase._isOverride && clase.notas && clase.notas.startsWith('SUB:')){
+    sel.value = clase.coach_id||'';
+  }
+
+  // Show/hide "Quitar cobertura" button
+  const removeBtn = document.getElementById('cob-remove-btn');
+  const isAlreadySub = clase._isOverride && clase.notas && clase.notas.startsWith('SUB:');
+  removeBtn.style.display = isAlreadySub ? '' : 'none';
+
+  openModal('cobertura');
+}
+
+async function saveCobertura(){
+  const fechaStr   = document.getElementById('cob-fecha').value;
+  const hora       = document.getElementById('cob-hora').value;
+  const coachVal   = document.getElementById('cob-coach').value;
+  const tipo       = document.getElementById('cob-tipo').value;
+  const origNombre = document.getElementById('cob-orig-nombre').value;
+  const origId     = document.getElementById('cob-orig-id').value;
+
+  if(!coachVal){ toast('Selecciona el coach que cubrió la clase','⚠️'); return; }
+
+  const coachObj = coaches.find(c=>String(c.id)===String(coachVal));
+  const coachNom = coachObj ? coachObj.nombre : '';
+
+  const payload = {
+    fecha:        fechaStr,
+    hora:         hora,
+    dia:          '',
+    tipo:         tipo,
+    coach_id:     coachVal,
+    coach_nombre: coachNom,
+    cupo:         15,
+    notas:        `SUB:${origNombre}|${origId}`
+  };
+
+  const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+  let err;
+  if(existing){
+    const r = await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id);
+    err = r.error;
+  } else {
+    const r = await window.supabaseClient.from('horarios').insert([payload]);
+    err = r.error;
+  }
+
+  if(err){ alert('Error al guardar: '+(err.message||err)); console.error(err); return; }
+
+  await loadHorarioOverridesFromSupabase();
+  closeModal('cobertura');
+  toast(`${coachNom} cubrió la clase ✅`,'👤');
+  renderHorarioMensual();
+  renderQuincenaKPI();
+}
+
+async function removeCobertura(){
+  const fechaStr = document.getElementById('cob-fecha').value;
+  const hora     = document.getElementById('cob-hora').value;
+  const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+  if(!existing){ closeModal('cobertura'); return; }
+
+  const { error } = await window.supabaseClient.from('horarios').delete().eq('id', existing.id);
+  if(error){ console.error('Error removing coverage:', error); return; }
+  horarioOverrides = horarioOverrides.filter(o=>String(o.id)!==String(existing.id));
+  closeModal('cobertura');
+  toast('Cobertura removida ↩','↩');
+  renderHorarioMensual();
+  renderQuincenaKPI();
 }
 
 function renderQuincenaKPI(){
