@@ -1939,6 +1939,12 @@ select option{background:#10101c;color:var(--text);}
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar CSV
         </button>
+        <button onclick="openModal('solo-cliente')"
+          style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;
+                 background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:700;
+                 border:1px solid rgba(0,180,216,.3);cursor:pointer;white-space:nowrap;">
+          + Agregar Cliente
+        </button>
       </div>
 
       <!-- Filtro por TIPO (paquete vs pase) -->
@@ -2656,6 +2662,43 @@ select option{background:#10101c;color:var(--text);}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('pago')">Cancelar</button>
       <button class="btn btn-primary" onclick="savePago()">Registrar Pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar Cliente (sin pago / migración) -->
+<div class="modal-overlay" id="modal-solo-cliente">
+  <div class="modal" style="width:420px;">
+    <div class="modal-head">
+      <div class="modal-title">👤 Agregar Cliente</div>
+      <button class="modal-close" onclick="closeModal('solo-cliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.2);border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--text2);">
+        Registra un cliente en el directorio sin asociar un pago. Útil para migrar tu base de datos existente. Puedes asignarle una membresía después.
+      </div>
+      <div class="field">
+        <label>Nombre completo *</label>
+        <input id="sc-nombre" type="text" placeholder="Nombre del cliente"/>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>📱 WhatsApp (10 dígitos)</label>
+          <input id="sc-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+        </div>
+        <div class="field">
+          <label>🎂 Fecha de nacimiento</label>
+          <input id="sc-cumpleanos" type="date"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notas</label>
+        <input id="sc-notas" type="text" placeholder="Observaciones, referido por..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('solo-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClienteSinPago()">Agregar Cliente</button>
     </div>
   </div>
 </div>
@@ -5618,7 +5661,7 @@ function renderDashboard(){
   const in30  = new Date(now); in30.setDate(now.getDate()+30);
   // Ingresos del mes (pagos registrados en el mes actual)
   const thisMonth = now.toISOString().slice(0,7); // "2026-04"
-  const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMonth));
+  const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMonth) && p.notas!=='__sin_pago__');
   const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+p.monto,0);
   // Total ingresos
   const totalIngresos = pagos.reduce((s,p)=>s+p.monto,0);
@@ -5881,7 +5924,7 @@ function renderGastos(){
   // ─ KPIs ─
   const now = new Date(); now.setHours(0,0,0,0);
   const thisMes = now.toISOString().slice(0,7);
-  const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMes));
+  const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMes) && p.notas!=='__sin_pago__');
   const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+(p.monto||0),0);
 
   // Coach nomina (sum from localStorage for this month)
@@ -6287,6 +6330,40 @@ async function savePago(){
   renderClientes();
 }
 
+async function saveClienteSinPago(){
+  const nombre = document.getElementById('sc-nombre').value.trim();
+  if(!nombre){ toast('El nombre es obligatorio','⚠️'); return; }
+
+  // Check if client already exists
+  const existe = pagos.some(p=>(p.cliente||'').trim().toLowerCase()===nombre.toLowerCase());
+  if(existe){
+    if(!confirm(`Ya existe un cliente llamado "${nombre}". ¿Deseas agregarlo de todas formas?`)) return;
+  }
+
+  const hoy = new Date().toISOString().slice(0,10);
+  const payload = {
+    cliente:    nombre,
+    monto:      0,
+    fecha:      hoy,
+    plan:       'Sin membresía',
+    metodo:     '',
+    vence:      null,
+    notas:      '__sin_pago__',
+    telefono:   document.getElementById('sc-telefono').value.trim(),
+    cumpleanos: document.getElementById('sc-cumpleanos').value || null,
+  };
+
+  const { error } = await window.supabaseClient.from('pagos').insert([payload]);
+  if(error){ console.error('Error guardando cliente:', error); alert('No se pudo guardar el cliente.'); return; }
+
+  await loadPagosFromSupabase();
+  closeModal('solo-cliente');
+  ['sc-nombre','sc-telefono','sc-notas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sc-cumpleanos').value='';
+  toast(`Cliente "${nombre}" agregado al directorio ✅`,'👤');
+  renderClientes();
+}
+
 async function deletePago(id){
   if(!confirm('¿Eliminar este pago?')) return;
   const { error } = await window.supabaseClient.from('pagos').delete().eq('id', id);
@@ -6405,8 +6482,8 @@ function renderPagos(){
     return;
   }
 
-  // Apply filters
-  let filtered = [...pagos];
+  // Apply filters (exclude client-only records with no payment)
+  let filtered = pagos.filter(p=>p.notas!=='__sin_pago__');
   if(pagoFilter.estado !== 'todos'){
     filtered = filtered.filter(p=>{
       const est = getPagoEstado(p, today, in7);
