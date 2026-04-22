@@ -3912,38 +3912,32 @@ select option{background:#10101c;color:var(--text);}
 // When MULTI_TENANT is set to true AND gym_id columns exist in the DB,
 // flip MT_ENABLED to true to activate per-gym data isolation.
 // ─────────────────────────────────────────────────────────────────
-const MT_ENABLED = false; // Set to true when DB schema includes gym_id columns
+const MT_ENABLED = true; // Multi-tenant active — DB schema includes gym_id columns
 
-let MOVE_GYM_ID = null; // Loaded from gym_config.gym_id on init
+let MOVE_GYM_ID = null; // Set from currentUser.gym_id after login
 
-// Query builder wrapper — applies gym_id filter when multi-tenant is active
-// Usage: qb('pagos').select('*') instead of supabaseClient.from('pagos').select('*')
-function qb(table){
-  const q = window.supabaseClient.from(table);
-  if(MT_ENABLED && MOVE_GYM_ID) return { ...q, _gymId: MOVE_GYM_ID };
-  return q;
+// qb() — convenience alias for supabaseClient.from()
+function qb(table){ return window.supabaseClient.from(table); }
+
+// gf(query) — applies gym_id filter to a query that has called .select() / .delete()
+// Usage: gf(qb('pagos').select('*')).order(...)
+function gf(query){
+  return (MT_ENABLED && MOVE_GYM_ID) ? query.eq('gym_id', MOVE_GYM_ID) : query;
 }
 
-// Adds gym_id to an insert payload when MT is active
+// Adds gym_id to an insert/upsert payload when MT is active
 function withGymId(payload){
   if(!MT_ENABLED || !MOVE_GYM_ID) return payload;
   if(Array.isArray(payload)) return payload.map(p=>({ ...p, gym_id: MOVE_GYM_ID }));
   return { ...payload, gym_id: MOVE_GYM_ID };
 }
 
-// Generate or retrieve a stable gym identifier
+// Set MOVE_GYM_ID from the authenticated user record
 function ensureGymId(){
-  if(gymConfig.gym_id){ MOVE_GYM_ID = gymConfig.gym_id; return; }
-  // Generate a new ID and persist it
-  const newId = 'gym_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
-  MOVE_GYM_ID = newId;
-  gymConfig.gym_id = newId;
-  // Persist async (fire-and-forget)
-  if(window.supabaseClient){
-    window.supabaseClient.from('gym_config').upsert({key:'gym_id',value:newId},{onConflict:'key'}).then(()=>{
-      console.log('[MOVE MT] gym_id generado y guardado:', newId);
-    });
-  }
+  if(currentUser && currentUser.gym_id){ MOVE_GYM_ID = currentUser.gym_id; return; }
+  // Superadmin may have null gym_id — default to gym 1 (MOVE)
+  MOVE_GYM_ID = 1;
+  console.log('[MOVE MT] gym_id set to 1 (default)');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3996,9 +3990,10 @@ async function doLogin(){
       .from('usuarios').select('*').eq('email', email).eq('password', pass).eq('activo', true).single();
     if(error||!data){ errEl.textContent='Correo o contraseña incorrectos.'; errEl.classList.add('show'); }
     else{
-      const session = { id: data.id, nombre: data.nombre, email: data.email, rol: data.rol };
+      const session = { id: data.id, nombre: data.nombre, email: data.email, rol: data.rol, gym_id: data.gym_id || 1 };
       setSession(session);
       currentUser = session;
+      MOVE_GYM_ID = session.gym_id;
       showApp();
     }
   } catch(e){ errEl.textContent='Error de conexión. Verifica Supabase.'; errEl.classList.add('show'); }
@@ -4336,9 +4331,9 @@ function updateSidebarUser(){
 // SUPABASE — usuarios
 // ═══════════════════════════════════════════════════════════════════
 async function loadUsuariosFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('usuarios').select('*').order('created_at');
+  const { data, error } = await gf(window.supabaseClient.from('usuarios').select('*')).order('created_at');
   if(error){ console.error('Error cargando usuarios:', error); return; }
-  usuarios = (data||[]).map(u=>({ id:u.id, nombre:u.nombre, email:u.email, password:u.password, rol:u.rol, activo:u.activo }));
+  usuarios = (data||[]).map(u=>({ id:u.id, nombre:u.nombre, email:u.email, password:u.password, rol:u.rol, activo:u.activo, gym_id:u.gym_id }));
 }
 
 function renderUsuarios(){
@@ -4375,7 +4370,7 @@ async function saveNewUser(){
   const rol    = document.getElementById('nu-rol').value;
   if(!nombre||!email||!pass){ alert('Completa todos los campos.'); return; }
   if(pass.length<6){ alert('La contraseña debe tener al menos 6 caracteres.'); return; }
-  const { error } = await window.supabaseClient.from('usuarios').insert([{nombre, email, password:pass, rol, activo:true}]);
+  const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, password:pass, rol, activo:true})]);
   if(error){ toast('Error al crear usuario ❌','✕'); console.error(error); return; }
   closeModal('add-user');
   await loadUsuariosFromSupabase();
@@ -4715,7 +4710,7 @@ function saveState(){ /* data is managed in Supabase */ }
 // ═══════════════════════════════════════════════════════════════════
 async function loadLeadsFromSupabase(){
   if(!window.supabaseClient){ console.warn('Supabase no está listo todavía'); return; }
-  const { data, error } = await window.supabaseClient.from('leads').select('*').order('created_at', { ascending: false });
+  const { data, error } = await gf(window.supabaseClient.from('leads').select('*')).order('created_at', { ascending: false });
   if(error){ console.error('Error cargando leads:', error); return; }
   leads = (data || []).map(l => ({
     id:           l.id,
@@ -4736,7 +4731,7 @@ async function loadLeadsFromSupabase(){
 }
 
 async function loadCoachesFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('coaches').select('*').order('created_at');
+  const { data, error } = await gf(window.supabaseClient.from('coaches').select('*')).order('created_at');
   if(error){ console.error('Error cargando coaches:', error); return; }
   coaches = (data||[]).map(c=>({
     id: c.id, nombre: c.nombre||'', tel: c.tel||'', email: c.email||'',
@@ -4745,7 +4740,7 @@ async function loadCoachesFromSupabase(){
 }
 
 async function loadEvalsFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('evaluaciones').select('*').order('created_at', {ascending: false});
+  const { data, error } = await gf(window.supabaseClient.from('evaluaciones').select('*')).order('created_at', {ascending: false});
   if(error){ console.error('Error cargando evaluaciones:', error); return; }
   evals = (data||[]).map(e=>({
     id: e.id,
@@ -4759,7 +4754,7 @@ async function loadEvalsFromSupabase(){
 }
 
 async function loadPagosFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('pagos').select('*').order('created_at', {ascending: false});
+  const { data, error } = await gf(window.supabaseClient.from('pagos').select('*')).order('created_at', {ascending: false});
   if(error){ console.error('Error cargando pagos:', error); return; }
   pagos = (data||[]).map(p=>({
     id: p.id, cliente: p.cliente||'', monto: p.monto||0, fecha: p.fecha||'',
@@ -4770,13 +4765,13 @@ async function loadPagosFromSupabase(){
 }
 
 async function loadClientesFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('clientes').select('*').order('nombre');
+  const { data, error } = await gf(window.supabaseClient.from('clientes').select('*')).order('nombre');
   if(error){ console.error('Error cargando clientes:', error); clientesDB=[]; return; }
   clientesDB = data||[];
 }
 
 async function loadCampanasFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('campanas').select('*').order('created_at', {ascending: false});
+  const { data, error } = await gf(window.supabaseClient.from('campanas').select('*')).order('created_at', {ascending: false});
   if(error){ console.error('Error cargando campañas:', error); return; }
   campanas = (data||[]).map(c=>({
     id: c.id, nombre: c.nombre||'', canal: c.canal||'', estado: c.estado||'Activa',
@@ -4788,7 +4783,7 @@ async function loadCampanasFromSupabase(){
 }
 
 async function loadSolicitudesFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('solicitudes').select('*').order('created_at', {ascending: false});
+  const { data, error } = await gf(window.supabaseClient.from('solicitudes').select('*')).order('created_at', {ascending: false});
   if(error){ console.error('Error cargando solicitudes:', error); return; }
   solicitudes = (data||[]).map(s=>({
     id: s.id, titulo: s.titulo||'', tipo: s.tipo||'', quien: s.quien||'',
@@ -4797,7 +4792,7 @@ async function loadSolicitudesFromSupabase(){
 }
 
 async function loadContenidosFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('contenidos').select('*').order('dia');
+  const { data, error } = await gf(window.supabaseClient.from('contenidos').select('*')).order('dia');
   if(error){ console.error('Error cargando contenidos:', error); return; }
   contenidos = (data||[]).map(c=>({
     id: c.id, dia: c.dia||1, tipo: c.tipo||'', titulo: c.titulo||''
@@ -4809,7 +4804,7 @@ async function loadContenidosFromSupabase(){
 // ═══════════════════════════════════════════════════════════════════
 async function loadHorarioFromSupabase(){
   if(!window.supabaseClient){ return; }
-  const { data, error } = await window.supabaseClient.from('horarios').select('*').order('hora');
+  const { data, error } = await gf(window.supabaseClient.from('horarios').select('*')).order('hora');
   if(error){ console.error('Error cargando horario:', error); return; }
   // Base template = records where fecha is null, empty, or not a date (YYYY-MM-DD format)
   horario = (data||[]).filter(h=>!h.fecha || h.fecha==='' || !/^\d{4}-\d{2}-\d{2}$/.test(h.fecha)).map(h=>({
@@ -5604,7 +5599,7 @@ async function saveLead(){
     notes:    document.getElementById('l-notas').value.trim(),
     historial: [],
   };
-  const { data, error } = await window.supabaseClient.from('leads').insert([payload]).select();
+  const { data, error } = await window.supabaseClient.from('leads').insert([withGymId(payload)]).select();
   if(error){ console.error('Error guardando lead:',error); alert('No se pudo guardar el prospecto.'); return; }
   await loadLeadsFromSupabase();
   closeModal('lead');
@@ -5825,7 +5820,7 @@ async function saveCoach(){
     activo: true,
     notas:  document.getElementById('c-notas').value.trim()
   };
-  const { error } = await window.supabaseClient.from('coaches').insert([payload]);
+  const { error } = await window.supabaseClient.from('coaches').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'); return; }
   await loadCoachesFromSupabase();
   closeModal('coach');
@@ -5963,7 +5958,7 @@ async function saveEval(){
     notas:    document.getElementById('eval-notas').value.trim(),
     fecha:    new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
   };
-  const { error } = await window.supabaseClient.from('evaluaciones').insert([payload]);
+  const { error } = await window.supabaseClient.from('evaluaciones').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando evaluación:', error); alert('No se pudo guardar la evaluación.'); return; }
   await loadEvalsFromSupabase();
   // Reset stars + notes
@@ -6373,7 +6368,7 @@ async function saveEditarCliente(){
     const r = await window.supabaseClient.from('clientes').update(payload).eq('id', id);
     err = r.error;
   } else {
-    const r = await window.supabaseClient.from('clientes').insert([payload]);
+    const r = await window.supabaseClient.from('clientes').insert([withGymId(payload)]);
     err = r.error;
   }
   if(err){ alert('Error al guardar: '+(err.message||err)); return; }
@@ -6616,9 +6611,7 @@ async function loadClienteAsistencia(nombre){
   if(!statsEl||!listEl) return;
 
   try{
-    const { data, error } = await window.supabaseClient
-      .from('qr_checkins')
-      .select('*')
+    const { data, error } = await gf(window.supabaseClient.from('qr_checkins').select('*'))
       .eq('nombre', nombre)
       .order('fecha', {ascending:false})
       .order('created_at', {ascending:false})
@@ -6700,8 +6693,7 @@ async function loadClienteAsistencia(nombre){
 
 async function loadClienteNotas(nombre){
   _clienteNotasNombre = nombre;
-  const { data, error } = await window.supabaseClient
-    .from('cliente_notas').select('*').eq('cliente', nombre).order('fecha', {ascending:false}).order('created_at', {ascending:false});
+  const { data, error } = await gf(window.supabaseClient.from('cliente_notas').select('*')).eq('cliente', nombre).order('fecha', {ascending:false}).order('created_at', {ascending:false});
   if(error){ console.error('Error cargando notas:', error); _clienteNotasActual=[]; }
   else _clienteNotasActual = data||[];
   renderClienteNotas();
@@ -6733,9 +6725,9 @@ async function saveClienteNota(){
   if(!texto){ toast('Escribe una nota antes de guardar','⚠️'); return; }
   if(!fecha){ toast('Selecciona la fecha','⚠️'); return; }
 
-  const { error } = await window.supabaseClient.from('cliente_notas').insert([{
+  const { error } = await window.supabaseClient.from('cliente_notas').insert([withGymId({
     cliente: _clienteNotasNombre, tipo, fecha, nota: texto
-  }]);
+  })]);
   if(error){ console.error('Error guardando nota:', error); toast('No se pudo guardar','❌'); return; }
 
   document.getElementById('cpanel-nota-texto').value = '';
@@ -6884,7 +6876,7 @@ async function ejecutarRenovacionMasiva(){
   const btn = document.getElementById('rm-exec-btn');
   if(btn){ btn.disabled=true; btn.textContent='Renovando...'; }
 
-  const inserts = seleccionados.map(c=>({
+  const inserts = seleccionados.map(c=>withGymId({
     cliente:   c.nombre,
     monto:     monto,
     fecha:     fecha,
@@ -7801,7 +7793,7 @@ function updateBadges(){
 // GASTOS — Supabase CRUD + render
 // ═══════════════════════════════════════════════════════════════════
 async function loadGastosFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('gastos').select('*').order('fecha',{ascending:false});
+  const { data, error } = await gf(window.supabaseClient.from('gastos').select('*')).order('fecha',{ascending:false});
   if(error){ console.error('Error cargando gastos:', error); return; }
   gastos = (data||[]).map(g=>({
     id: g.id, descripcion: g.descripcion||'', monto: parseFloat(g.monto)||0,
@@ -7825,119 +7817,229 @@ function setGastoFilter(key, val){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SUPER ADMIN PANEL (#33)
+// SUPER ADMIN PANEL — Multi-tenant Gym Management (#34)
 // ═══════════════════════════════════════════════════════════════════
 async function renderSuperAdmin(){
-  // Security guard: only superadmin can see this
+  // Security guard
   if(!currentUser || currentUser.rol !== 'superadmin'){
     document.getElementById('sa-kpis').innerHTML='<div style="color:var(--danger);padding:16px;">🚫 Acceso denegado.</div>';
     return;
   }
 
-  // ── System KPIs from current data ──
-  const totalClientes = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]).size;
-  const totalPagos    = pagos.filter(p=>p.notas!=='__sin_pago__').length;
-  const ingresosTotal = pagos.filter(p=>p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0);
-  const gymId         = MOVE_GYM_ID || gymConfig.gym_id || '—';
-  const gymNombre     = gymConfig.gym_nombre || 'MOVE';
-  const gymVersion    = '1.33.0'; // incremented with this build
+  // ── Fetch all gyms (no gym_id filter — superadmin sees all) ──
+  const { data: gymsData, error: gymsErr } = await window.supabaseClient
+    .from('gyms').select('*').order('id');
+  if(gymsErr){ console.error('Error cargando gyms:', gymsErr); }
+  const allGyms = gymsData || [];
+  const gymVersion = '2.0.0-saas';
 
+  // ── KPIs ──
   document.getElementById('sa-kpis').innerHTML = `
     <div class="kpi-card" style="--kpi-color:#ef4444">
-      <div class="kpi-label">Gym Activo</div>
-      <div class="kpi-value" style="font-size:16px;">${esc(gymNombre)}</div>
-      <div class="kpi-meta">Instancia única</div>
+      <div class="kpi-label">Gyms Registrados</div>
+      <div class="kpi-value">${allGyms.length}</div>
+      <div class="kpi-meta">${allGyms.filter(g=>g.activo).length} activos</div>
     </div>
     <div class="kpi-card" style="--kpi-color:var(--accent)">
-      <div class="kpi-label">Total Clientes</div>
-      <div class="kpi-value">${totalClientes}</div>
-      <div class="kpi-meta">En directorio</div>
+      <div class="kpi-label">Gym Activo Ahora</div>
+      <div class="kpi-value" style="font-size:15px;">${esc(allGyms.find(g=>g.id===MOVE_GYM_ID)?.nombre || 'MOVE')}</div>
+      <div class="kpi-meta">ID: ${MOVE_GYM_ID}</div>
     </div>
     <div class="kpi-card" style="--kpi-color:var(--ok)">
-      <div class="kpi-label">Total Ingresos</div>
-      <div class="kpi-value">$${ingresosTotal.toLocaleString('es-MX')}</div>
-      <div class="kpi-meta">${totalPagos} pagos registrados</div>
+      <div class="kpi-label">Multi-Tenant</div>
+      <div class="kpi-value" style="font-size:15px;">✅ Activo</div>
+      <div class="kpi-meta">gym_id en ${['clientes','pagos','leads','coaches','horarios','gastos','usuarios'].length} tablas</div>
     </div>
     <div class="kpi-card" style="--kpi-color:#a78bfa">
-      <div class="kpi-label">Versión App</div>
-      <div class="kpi-value" style="font-size:16px;">v${gymVersion}</div>
+      <div class="kpi-label">Versión SaaS</div>
+      <div class="kpi-value" style="font-size:13px;">v${gymVersion}</div>
       <div class="kpi-meta">${new Date().toLocaleDateString('es-MX')}</div>
     </div>`;
 
-  // ── Gym Details ──
-  document.getElementById('sa-gyms-list').innerHTML = `
-    <div style="padding:16px;">
-      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:260px;">
-          <div style="margin-bottom:14px;">
-            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Gym ID</div>
-            <code style="font-size:12px;color:var(--accent);background:var(--accent-bg);padding:5px 10px;border-radius:6px;border:1px solid var(--accent);">${esc(gymId)}</code>
+  // ── Gym List ──
+  const PLAN_COLOR = { pro:'var(--ok)', basic:'var(--accent)', free:'var(--text3)' };
+  const gymsRows = allGyms.map(g=>{
+    const isCurrent = g.id === MOVE_GYM_ID;
+    const planColor = PLAN_COLOR[g.plan] || 'var(--text3)';
+    const created = g.created_at ? new Date(g.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+    return `
+    <tr style="border-bottom:1px solid var(--border);${isCurrent?'background:rgba(0,180,216,.06);':''}">
+      <td style="padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${g.activo?'var(--ok)':'var(--danger)'};" title="${g.activo?'Activo':'Inactivo'}"></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(g.nombre)}${isCurrent?' <span style="font-size:10px;color:var(--accent);font-weight:500;">(tú)</span>':''}</div>
+            <div style="font-size:11px;color:var(--text3);">/${esc(g.slug||'')} · ${esc(g.owner_email||'—')}</div>
           </div>
-          <div style="margin-bottom:14px;">
-            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Multi-tenant</div>
-            <span style="font-size:12px;padding:3px 10px;border-radius:8px;background:${MT_ENABLED?'rgba(16,185,129,.15)':'rgba(100,116,139,.12)'};color:${MT_ENABLED?'var(--ok)':'var(--text3)'};font-weight:700;">${MT_ENABLED?'✅ Activo':'⏳ Pendiente (MT_ENABLED = false)'}</span>
+        </div>
+      </td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--text3);">ID ${g.id}</td>
+      <td style="padding:10px 12px;">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,.2);color:${planColor};">${(g.plan||'basic').toUpperCase()}</span>
+      </td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--text3);">${created}</td>
+      <td style="padding:10px 12px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" title="Ver datos de este gym">🔄 Cambiar</button>` : '<span style="font-size:11px;color:var(--accent);">● Activo</span>'}
+          <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:10px;">${g.activo?'⏸ Pausar':'▶ Activar'}</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('sa-gyms-list').innerHTML = `
+    <div style="padding:16px 16px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;color:var(--text3);">${allGyms.length} gym${allGyms.length!==1?'s':''} registrados</div>
+        <button class="btn btn-sm" onclick="saToggleCreateForm()" id="sa-create-btn" style="font-size:11px;">+ Nuevo Gym</button>
+      </div>
+
+      <!-- Create gym inline form -->
+      <div id="sa-create-form" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">🏋️ Crear nuevo gym</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:10px;color:var(--text3);font-weight:600;">NOMBRE</label>
+            <input id="sa-g-nombre" type="text" placeholder="CrossFit Monterrey" class="form-input" style="margin-top:4px;">
           </div>
           <div>
-            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Tablas con datos</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              ${['pagos','clientes','coaches','leads','horarios','gastos','usuarios'].map(t=>`<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--border);color:var(--text3);">${t}</span>`).join('')}
-            </div>
+            <label style="font-size:10px;color:var(--text3);font-weight:600;">SLUG (URL)</label>
+            <input id="sa-g-slug" type="text" placeholder="crossfit-mty" class="form-input" style="margin-top:4px;">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--text3);font-weight:600;">EMAIL DEL DUEÑO</label>
+            <input id="sa-g-email" type="email" placeholder="admin@gym.com" class="form-input" style="margin-top:4px;">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--text3);font-weight:600;">PLAN</label>
+            <select id="sa-g-plan" class="form-input" style="margin-top:4px;">
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="free">Free</option>
+            </select>
           </div>
         </div>
-        <div style="flex:1;min-width:220px;">
-          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Usuarios del sistema</div>
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
-            <thead><tr style="color:var(--text3);border-bottom:1px solid var(--border);">
-              <th style="text-align:left;padding:5px 8px;">Nombre</th>
-              <th style="text-align:left;padding:5px 8px;">Email</th>
-              <th style="text-align:left;padding:5px 8px;">Rol</th>
-            </tr></thead>
-            <tbody>
-              ${usuarios.map(u=>`<tr style="border-bottom:1px solid var(--border);">
-                <td style="padding:6px 8px;">${esc(u.nombre)}</td>
-                <td style="padding:6px 8px;color:var(--text3);">${esc(u.email)}</td>
-                <td style="padding:6px 8px;"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-              </tr>`).join('')||'<tr><td colspan="3" style="padding:12px;text-align:center;color:var(--text3);">Sin usuarios cargados</td></tr>'}
-            </tbody>
-          </table>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" onclick="saCreateGym()" style="font-size:12px;">Crear Gym</button>
+          <button class="btn btn-outline" onclick="saToggleCreateForm()" style="font-size:12px;">Cancelar</button>
         </div>
+      </div>
+
+      <!-- Gym table -->
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Gym</th>
+            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">ID</th>
+            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Plan</th>
+            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Creado</th>
+            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Acciones</th>
+          </tr></thead>
+          <tbody>${gymsRows || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text3);">Sin gyms registrados.</td></tr>'}</tbody>
+        </table>
       </div>
     </div>`;
 
-  // ── System metrics ──
+  // ── Metrics for current gym context ──
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const mesStr = hoy.toISOString().slice(0,7);
   const pagosMes = pagos.filter(p=>p.notas!=='__sin_pago__'&&(p.fecha||'').startsWith(mesStr));
   const ingresosMes = pagosMes.reduce((s,p)=>s+(p.monto||0),0);
+  const totalClientes = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]).size;
   const nuevosClientes = clientesDB.filter(c=>c.created_at&&c.created_at.startsWith(mesStr)).length;
   const leads30 = leads.filter(l=>{ const d=new Date(l.created_at||''); return (hoy-d)<30*24*60*60*1000; }).length;
+  const ingresosTotal = pagos.filter(p=>p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0);
+
+  const currentGymName = allGyms.find(g=>g.id===MOVE_GYM_ID)?.nombre || 'MOVE';
 
   document.getElementById('sa-metrics').innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px;">
-      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">💰 Ingresos este mes</div>
-        <div style="font-size:18px;font-weight:800;color:var(--ok);">$${ingresosMes.toLocaleString('es-MX')}</div>
-        <div style="font-size:11px;color:var(--text4);">${pagosMes.length} pagos</div>
+    <div style="padding:12px 16px 8px;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">📍 Contexto actual: <strong style="color:var(--accent);">${esc(currentGymName)}</strong> (ID ${MOVE_GYM_ID})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
+        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">💰 Ingresos este mes</div>
+          <div style="font-size:18px;font-weight:800;color:var(--ok);">$${ingresosMes.toLocaleString('es-MX')}</div>
+          <div style="font-size:11px;color:var(--text4);">${pagosMes.length} pagos</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">👥 Total clientes</div>
+          <div style="font-size:18px;font-weight:800;color:var(--accent);">${totalClientes}</div>
+          <div style="font-size:11px;color:var(--text4);">+${nuevosClientes} este mes</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">💵 Ingresos totales</div>
+          <div style="font-size:18px;font-weight:800;color:var(--ok);">$${ingresosTotal.toLocaleString('es-MX')}</div>
+          <div style="font-size:11px;color:var(--text4);">Histórico</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">📋 Leads (30d)</div>
+          <div style="font-size:18px;font-weight:800;color:#a78bfa;">${leads30}</div>
+          <div style="font-size:11px;color:var(--text4);">Últimos 30 días</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">🏋️ Coaches</div>
+          <div style="font-size:18px;font-weight:800;color:var(--warn);">${coaches.length}</div>
+          <div style="font-size:11px;color:var(--text4);">Activos</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">👤 Usuarios</div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);">${usuarios.length}</div>
+          <div style="font-size:11px;color:var(--text4);">En este gym</div>
+        </div>
       </div>
-      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">👥 Nuevos clientes</div>
-        <div style="font-size:18px;font-weight:800;color:var(--accent);">${nuevosClientes}</div>
-        <div style="font-size:11px;color:var(--text4);">Este mes</div>
-      </div>
-      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">📋 Leads (30d)</div>
-        <div style="font-size:18px;font-weight:800;color:#a78bfa;">${leads30}</div>
-        <div style="font-size:11px;color:var(--text4);">Últimos 30 días</div>
-      </div>
-      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">🏋️ Coaches activos</div>
-        <div style="font-size:18px;font-weight:800;color:var(--warn);">${coaches.length}</div>
-        <div style="font-size:11px;color:var(--text4);">Registrados</div>
-      </div>
-    </div>
-    <div style="padding:0 16px 16px;font-size:11px;color:var(--text4);border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
-      📌 Para habilitar la gestión de múltiples gyms, activa <code style="background:var(--card2);padding:1px 5px;border-radius:4px;">MT_ENABLED = true</code> y asegúrate de que las tablas tienen la columna <code style="background:var(--card2);padding:1px 5px;border-radius:4px;">gym_id</code>.
     </div>`;
+}
+
+function saToggleCreateForm(){
+  const f = document.getElementById('sa-create-form');
+  if(!f) return;
+  f.style.display = f.style.display==='none' ? '' : 'none';
+}
+
+async function saCreateGym(){
+  const nombre = (document.getElementById('sa-g-nombre').value||'').trim();
+  const slug   = (document.getElementById('sa-g-slug').value||'').trim().toLowerCase().replace(/\s+/g,'-');
+  const email  = (document.getElementById('sa-g-email').value||'').trim().toLowerCase();
+  const plan   = document.getElementById('sa-g-plan').value || 'basic';
+  if(!nombre){ toast('El nombre del gym es obligatorio.','⚠️'); return; }
+  if(!slug){ toast('El slug es obligatorio.','⚠️'); return; }
+  const { data, error } = await window.supabaseClient.from('gyms').insert([{
+    nombre, slug, activo: true, plan, owner_email: email||null
+  }]).select().single();
+  if(error){ toast('Error al crear gym: '+(error.message||'').slice(0,60),'❌'); console.error(error); return; }
+  toast(`Gym "${nombre}" creado con ID ${data.id} ✅`,'🏋️');
+  ['sa-g-nombre','sa-g-slug','sa-g-email'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  saToggleCreateForm();
+  renderSuperAdmin();
+}
+
+async function saToggleGym(gymId, nuevoEstado){
+  const label = nuevoEstado ? 'activar' : 'pausar';
+  if(!await confirmDialog(`¿Deseas ${label} este gym?`, {title:`${nuevoEstado?'Activar':'Pausar'} gym`, danger:!nuevoEstado, confirmText:nuevoEstado?'Activar':'Pausar', icon:nuevoEstado?'▶':'⏸'})) return;
+  const { error } = await window.supabaseClient.from('gyms').update({activo: nuevoEstado}).eq('id', gymId);
+  if(error){ toast('Error al actualizar gym','❌'); return; }
+  toast(nuevoEstado ? 'Gym activado ✓' : 'Gym pausado ✓', nuevoEstado?'▶':'⏸');
+  renderSuperAdmin();
+}
+
+async function saContextSwitch(gymId){
+  if(gymId === MOVE_GYM_ID){ toast('Ya estás en ese gym.','ℹ️'); return; }
+  MOVE_GYM_ID = gymId;
+  if(currentUser) currentUser.gym_id = gymId;
+  const session = { ...getSession(), gym_id: gymId };
+  setSession(session);
+  toast('Cambiando contexto al gym '+gymId+'…','🔄');
+  // Reload all data for new gym context
+  await Promise.all([
+    loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
+    loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
+    loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
+    loadGastosFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
+    loadUsuariosFromSupabase()
+  ]);
+  renderDashboard();
+  renderSuperAdmin();
+  toast('Contexto cambiado ✅ Ahora ves el Gym ID '+gymId,'🏋️');
 }
 
 function renderGastos(){
@@ -8032,7 +8134,7 @@ async function saveGasto(){
     const r = await window.supabaseClient.from('gastos').update(payload).eq('id', id);
     err = r.error;
   } else {
-    const r = await window.supabaseClient.from('gastos').insert([payload]);
+    const r = await window.supabaseClient.from('gastos').insert([withGymId(payload)]);
     err = r.error;
   }
   if(err){ toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
@@ -8060,7 +8162,7 @@ async function deleteGasto(id){
 let progConfig = {}; // loaded from Supabase config_programas table
 
 async function loadProgConfigFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('config_programas').select('*');
+  const { data, error } = await gf(window.supabaseClient.from('config_programas').select('*'));
   if(error){ console.warn('config_programas table may not exist yet:', error.message); return; }
   progConfig = {};
   (data||[]).forEach(row=>{ progConfig[row.tipo] = row; });
@@ -8110,7 +8212,7 @@ async function saveProgConfig(){
       const r = await window.supabaseClient.from('config_programas').update(row).eq('id', existing.id);
       err = r.error;
     } else {
-      const r = await window.supabaseClient.from('config_programas').insert([row]);
+      const r = await window.supabaseClient.from('config_programas').insert([withGymId(row)]);
       err = r.error;
     }
     if(err){ console.error('Error saving config for', row.tipo, err); anyError = true; }
@@ -8123,7 +8225,7 @@ async function saveProgConfig(){
 }
 
 async function loadProgramasFromSupabase(){
-  const { data, error } = await window.supabaseClient.from('programas').select('*').order('fecha');
+  const { data, error } = await gf(window.supabaseClient.from('programas').select('*')).order('fecha');
   if(error){ console.error('Error cargando programas:', error); return; }
   programas = (data||[]).map(p=>({
     id: p.id, tipo: p.tipo||'Strength', fecha: p.fecha||'', contenido: p.contenido||'', notas: p.notas||''
@@ -8233,7 +8335,7 @@ async function savePrograma(){
     const r = await window.supabaseClient.from('programas').update(payload).eq('id', id);
     err = r.error;
   } else {
-    const r = await window.supabaseClient.from('programas').insert([payload]);
+    const r = await window.supabaseClient.from('programas').insert([withGymId(payload)]);
     err = r.error;
   }
   if(err){ toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
@@ -8379,7 +8481,7 @@ async function savePago(){
     telefono:   document.getElementById('p-telefono').value.trim(),
     cumpleanos: document.getElementById('p-cumpleanos').value||null,
   };
-  const { error } = await window.supabaseClient.from('pagos').insert([payload]);
+  const { error } = await window.supabaseClient.from('pagos').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando pago:', error); alert('No se pudo guardar el pago.'); return; }
   await Promise.all([loadPagosFromSupabase(), loadClientesFromSupabase()]);
   closeModal('pago');
@@ -8414,7 +8516,7 @@ async function saveClienteSinPago(){
     notas:      document.getElementById('sc-notas').value.trim(),
   };
 
-  const { error } = await window.supabaseClient.from('clientes').insert([payload]);
+  const { error } = await window.supabaseClient.from('clientes').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando cliente:', error); alert('No se pudo guardar el cliente.'); return; }
 
   await loadClientesFromSupabase();
@@ -8610,7 +8712,7 @@ async function saveCampana(){
     leads_count: 0, conversiones: 0,
     notas:        document.getElementById('ca-notas').value.trim(),
   };
-  const { error } = await window.supabaseClient.from('campanas').insert([payload]);
+  const { error } = await window.supabaseClient.from('campanas').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando campaña:', error); alert('No se pudo guardar la campaña.'); return; }
   await loadCampanasFromSupabase();
   closeModal('campana');
@@ -8724,7 +8826,7 @@ async function saveSolicitud(){
     vence:  document.getElementById('s-vence').value,
     estado: 'Nueva', notas: ''
   };
-  const { error } = await window.supabaseClient.from('solicitudes').insert([payload]);
+  const { error } = await window.supabaseClient.from('solicitudes').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando solicitud:', error); alert('No se pudo guardar.'); return; }
   await loadSolicitudesFromSupabase();
   closeModal('solicitud');
@@ -8799,7 +8901,7 @@ async function saveContenido(){
   if(!titulo){ alert('El título es obligatorio.'); return; }
   if(!dia||dia<1||dia>31){ alert('El día debe ser entre 1 y 31.'); return; }
   const payload = { titulo, dia, tipo: document.getElementById('co-tipo').value };
-  const { error } = await window.supabaseClient.from('contenidos').insert([payload]);
+  const { error } = await window.supabaseClient.from('contenidos').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando contenido:', error); alert('No se pudo guardar.'); return; }
   await loadContenidosFromSupabase();
   closeModal('contenido');
@@ -8938,8 +9040,7 @@ async function loadHorarioOverridesFromSupabase(){
   const start = `${hvYear}-${mm}-01`;
   const end   = `${hvYear}-${mm}-31`;
   // Overrides = records in the same 'horarios' table that have a specific fecha
-  const { data, error } = await window.supabaseClient
-    .from('horarios').select('*').gte('fecha', start).lte('fecha', end).not('fecha','is',null);
+  const { data, error } = await gf(window.supabaseClient.from('horarios').select('*')).gte('fecha', start).lte('fecha', end).not('fecha','is',null);
   if(error){ console.error('Error cargando overrides:', error); horarioOverrides=[]; return; }
   horarioOverrides = (data||[]).filter(o=>o.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(o.fecha)).map(o=>({
     id: o.id, fecha: o.fecha, hora: o.hora,
@@ -9143,7 +9244,7 @@ async function saveHorarioOverride(){
     const r = await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id);
     err = r.error;
   } else {
-    const r = await window.supabaseClient.from('horarios').insert([payload]);
+    const r = await window.supabaseClient.from('horarios').insert([withGymId(payload)]);
     err = r.error;
   }
 
@@ -9246,7 +9347,7 @@ async function saveCobertura(){
     const r = await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id);
     err = r.error;
   } else {
-    const r = await window.supabaseClient.from('horarios').insert([payload]);
+    const r = await window.supabaseClient.from('horarios').insert([withGymId(payload)]);
     err = r.error;
   }
 
@@ -9507,7 +9608,7 @@ async function saveClase(){
 
   const coachObj = coaches.find(c=>String(c.id)===String(cid));
   // Build one payload per day; fecha='' marks it as base template (not a specific date override)
-  const payloads = dias.map(dia=>({
+  const payloads = dias.map(dia=>withGymId({
     dia, hora, tipo,
     fecha:        '',             // empty string = base template (avoids PK null violation)
     coach_id:     cid||null,
@@ -9731,6 +9832,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // Auth check
   if(session){
     currentUser = session;
+    MOVE_GYM_ID = session.gym_id || 1;
     showApp();
   }
   // else: login screen remains visible (it's shown by default in CSS)
@@ -10067,8 +10169,7 @@ async function loadQRCheckinsHoy(){
   const hoy = new Date().toISOString().slice(0,10);
   if(lbl) lbl.textContent = `Hoy · ${hoy}`;
   try{
-    const { data, error } = await window.supabaseClient
-      .from('qr_checkins').select('*').eq('fecha', hoy).order('created_at', {ascending:false});
+    const { data, error } = await gf(window.supabaseClient.from('qr_checkins').select('*')).eq('fecha', hoy).order('created_at', {ascending:false});
     if(error) throw error;
     const checkins = data||[];
     if(lbl) lbl.textContent = `Hoy · ${checkins.length} check-in${checkins.length!==1?'s':''}`;
