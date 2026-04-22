@@ -1,5 +1,5 @@
 // move-login — Edge Function para autenticación de MOVE Sistema Interno
-// Valida credenciales, genera JWT firmado con MOVE_JWT_SECRET para RLS.
+// v2: rate limiting (5 intentos / 15 min por email+IP) + pw_version en JWT
 // deploy: supabase functions deploy move-login --no-verify-jwt
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -10,6 +10,9 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
+
+const MAX_ATTEMPTS   = 5;
+const WINDOW_MINUTES = 15;
 
 // ── Pure Web Crypto JWT signer (HS256) ───────────────────────────────
 async function signJWT(payload: Record<string, unknown>, secret: string): Promise<string> {
@@ -37,6 +40,8 @@ async function signJWT(payload: Record<string, unknown>, secret: string): Promis
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+
   try {
     const { email, pw_hash } = await req.json();
 
@@ -46,10 +51,11 @@ serve(async (req) => {
       });
     }
 
-    // ── Init service-role client (bypasses RLS for credential check) ──
+    const normalizedEmail = email.toLowerCase().trim();
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const jwtSecret   = Deno.env.get('MOVE_JWT_SECRET')!;
+    const jwtSecret   = Deno.env.get('MOVE_JWT_SECRET');
 
     if (!jwtSecret) {
       console.error('MOVE_JWT_SECRET not set');
@@ -62,11 +68,37 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // ── Look up user by email + pw_hash ────────────────────────────────
+    // ── Rate limiting: check recent failed attempts ────────────────────
+    const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString();
+
+    const { count: emailAttempts } = await db
+      .from('login_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', normalizedEmail)
+      .eq('success', false)
+      .gte('attempted_at', windowStart);
+
+    const { count: ipAttempts } = await db
+      .from('login_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip', ip)
+      .eq('success', false)
+      .gte('attempted_at', windowStart);
+
+    if ((emailAttempts ?? 0) >= MAX_ATTEMPTS || (ipAttempts ?? 0) >= MAX_ATTEMPTS * 2) {
+      return new Response(JSON.stringify({
+        error: `Demasiados intentos fallidos. Espera ${WINDOW_MINUTES} minutos e intenta de nuevo.`,
+        locked: true,
+      }), {
+        status: 429, headers: { ...CORS, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Validate credentials ──────────────────────────────────────────
     const { data: user, error } = await db
       .from('usuarios')
-      .select('id, nombre, email, rol, gym_id, activo')
-      .eq('email', email.toLowerCase().trim())
+      .select('id, nombre, email, rol, gym_id, activo, pw_version')
+      .eq('email', normalizedEmail)
       .eq('pw_hash', pw_hash)
       .eq('activo', true)
       .maybeSingle();
@@ -79,23 +111,29 @@ serve(async (req) => {
     }
 
     if (!user) {
+      // Log failed attempt
+      await db.from('login_attempts').insert({ email: normalizedEmail, ip, success: false });
       return new Response(JSON.stringify({ error: 'Correo o contraseña incorrectos.' }), {
         status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
       });
     }
 
-    // ── Build JWT payload (Supabase RLS compatible) ────────────────────
+    // Log successful attempt
+    await db.from('login_attempts').insert({ email: normalizedEmail, ip, success: true });
+
+    // ── Build JWT (Supabase RLS compatible) + pw_version ─────────────
     const now = Math.floor(Date.now() / 1000);
     const payload = {
       aud: 'authenticated',
       iss: 'supabase',
       iat: now,
-      exp: now + 60 * 60 * 24, // 24 hours
+      exp: now + 60 * 60 * 24,
       sub: String(user.id),
       email: user.email,
       role: 'authenticated',
       gym_id: user.gym_id,
       app_rol: user.rol,
+      pw_version: user.pw_version ?? 1,
     };
 
     const token = await signJWT(payload, jwtSecret);
@@ -108,6 +146,7 @@ serve(async (req) => {
         email: user.email,
         rol: user.rol,
         gym_id: user.gym_id,
+        pw_version: user.pw_version ?? 1,
       },
     }), {
       status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },

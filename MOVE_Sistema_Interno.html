@@ -4538,21 +4538,23 @@ async function saveMiCuenta(){
     const updates = { nombre };
     if(newPass){
       updates.pw_hash = await hashPassword(newPass);
-      updates.password = updates.pw_hash; // keep both in sync
+      updates.password = updates.pw_hash;
+      updates.pw_version = (currentUser.pw_version || 1) + 1; // invalidate other sessions
     }
     const { error } = await window.supabaseClient
       .from('usuarios').update(updates).eq('id', currentUser.id);
     if(error){ msgEl.textContent='Error: '+error.message; msgEl.style.color='var(--danger)'; return; }
-    // Update local session
+    // Update local session + pw_version
     currentUser.nombre = nombre;
+    if(newPass) currentUser.pw_version = updates.pw_version;
     const sess = getSession();
-    if(sess){ setSession({...sess, nombre}); }
+    if(sess){ setSession({...sess, nombre, ...(newPass ? {pw_version: updates.pw_version} : {})}); }
     updateSidebarUser();
     if(passEl) passEl.value = '';
     msgEl.textContent='✅ Cambios guardados';
     msgEl.style.color='var(--ok)';
     setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 3000);
-    auditLog('UPDATE','usuarios',currentUser.id,'Actualizó su perfil');
+    auditLog('UPDATE','usuarios',currentUser.id, newPass ? 'Actualizó perfil y contraseña' : 'Actualizó su perfil');
   } catch(e){
     msgEl.textContent='Error inesperado: '+e.message;
     msgEl.style.color='var(--danger)';
@@ -4589,6 +4591,7 @@ function renderUsuarios(){
       ${u.activo ? '' : '<span class="badge b-danger">Inactivo</span>'}
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button class="btn btn-outline btn-sm" onclick="openEditUser('${u.id}')">✏️</button>
+        <button class="btn btn-outline btn-sm" onclick="saResetUserPassword('${u.id}','${esc(u.nombre)}')" title="Resetear contraseña" style="color:var(--accent);">🔑</button>
         ${!isMe ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑</button>` : ''}
       </div>
     </div>`;
@@ -4635,13 +4638,16 @@ async function saveEditUser(){
   const payload = {nombre, email, rol, activo};
   if(pass){
     if(pass.length<6){ alert('Contraseña mínimo 6 caracteres.'); return; }
-    payload.pw_hash = await hashPassword(pass);
-    payload.password = null; // clear plaintext
+    payload.pw_hash  = await hashPassword(pass);
+    payload.password = payload.pw_hash;
+    // Increment pw_version to invalidate active sessions
+    const u = usuarios.find(x=>String(x.id)===String(id));
+    payload.pw_version = (u?.pw_version || 1) + 1;
   }
   const { error } = await window.supabaseClient.from('usuarios').update(payload).eq('id', id);
   if(error){ toast('Error al guardar ❌','✕'); return; }
   // update session if editing self
-  if(currentUser && id===currentUser.id){
+  if(currentUser && String(id)===String(currentUser.id)){
     currentUser = {...currentUser, nombre, email, rol};
     setSession(currentUser);
     updateSidebarUser();
@@ -4650,6 +4656,56 @@ async function saveEditUser(){
   await loadUsuariosFromSupabase();
   renderUsuarios();
   toast(`Usuario actualizado ✓`);
+}
+
+// ── SA: Reset password for any user ──────────────────────────────────
+function saResetUserPassword(userId, userName){
+  const existing = document.getElementById('sa-reset-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'sa-reset-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:#0f1726;border:1px solid rgba(0,180,216,.25);border-radius:18px;padding:28px;width:100%;max-width:380px;">
+      <div style="font-size:22px;margin-bottom:8px;">🔑</div>
+      <div style="font-size:15px;font-weight:700;color:#e8edf5;margin-bottom:4px;">Resetear contraseña</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:20px;">Usuario: <strong style="color:var(--accent);">${userName}</strong></div>
+      <label style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nueva contraseña</label>
+      <input id="sa-reset-pass" type="password" placeholder="Mínimo 8 caracteres"
+        style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;color:#e8edf5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px;"/>
+      <label style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Confirmar</label>
+      <input id="sa-reset-pass2" type="password" placeholder="Repite la contraseña"
+        style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;color:#e8edf5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:16px;"/>
+      <div id="sa-reset-msg" style="font-size:12px;color:#f87171;min-height:16px;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('sa-reset-modal').remove()"
+          style="flex:1;padding:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;font-size:13px;color:#94a3b8;cursor:pointer;">Cancelar</button>
+        <button onclick="_saDoResetPassword('${userId}','${userName}')"
+          style="flex:1;padding:11px;background:var(--accent);border:none;border-radius:8px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>{ document.getElementById('sa-reset-pass')?.focus(); }, 80);
+}
+
+async function _saDoResetPassword(userId, userName){
+  const pass  = document.getElementById('sa-reset-pass')?.value || '';
+  const pass2 = document.getElementById('sa-reset-pass2')?.value || '';
+  const msg   = document.getElementById('sa-reset-msg');
+  if(pass.length < 8){ msg.textContent='Mínimo 8 caracteres.'; return; }
+  if(pass !== pass2){ msg.textContent='Las contraseñas no coinciden.'; return; }
+  msg.textContent='Guardando…'; msg.style.color='#94a3b8';
+  const pw_hash = await hashPassword(pass);
+  const u = usuarios.find(x=>String(x.id)===String(userId));
+  const pw_version = (u?.pw_version || 1) + 1;
+  const { error } = await window.supabaseClient
+    .from('usuarios').update({ pw_hash, password: pw_hash, pw_version }).eq('id', userId);
+  if(error){ msg.textContent='Error: '+error.message; msg.style.color='#f87171'; return; }
+  document.getElementById('sa-reset-modal')?.remove();
+  await loadUsuariosFromSupabase();
+  renderUsuarios();
+  toast(`Contraseña de ${userName} reseteada ✓ La sesión activa de ese usuario se invalidará.`,'🔑');
+  auditLog('RESET_PASSWORD','usuarios', userId, `SA reseteó contraseña de ${userName}`);
 }
 
 async function deleteUser(id){
@@ -10332,12 +10388,21 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     }
     try{
       const { data: freshUser } = await window.supabaseClient
-        .from('usuarios').select('id,nombre,email,rol,gym_id').eq('email', session.email).eq('activo', true).single();
+        .from('usuarios').select('id,nombre,email,rol,gym_id,pw_version').eq('email', session.email).eq('activo', true).single();
       if(freshUser){
-        const updated = { ...session, id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1 };
-        setSession(updated);
-        currentUser = updated;
-        MOVE_GYM_ID = updated.gym_id;
+        // ── pw_version check: if password changed elsewhere, force logout ──
+        const sessionPwVersion = session.pw_version ?? 1;
+        const dbPwVersion      = freshUser.pw_version ?? 1;
+        if(dbPwVersion !== sessionPwVersion){
+          clearSession();
+          currentUser = null;
+          toast('Tu contraseña fue cambiada. Por favor vuelve a iniciar sesión.','🔒');
+        } else {
+          const updated = { ...session, id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1, pw_version: dbPwVersion };
+          setSession(updated);
+          currentUser = updated;
+          MOVE_GYM_ID = updated.gym_id;
+        }
       } else {
         clearSession();
         currentUser = null;
