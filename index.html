@@ -1721,9 +1721,23 @@ select option{background:#10101c;color:var(--text);}
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">MOVE</div>
-    <div class="login-sub">Sistema Interno</div>
+    <div class="login-sub">Gestión inteligente para tu gym</div>
+
+    <!-- Benefits strip -->
+    <div style="display:flex;justify-content:center;gap:18px;margin-bottom:24px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.5);">
+        <span style="color:var(--accent);">✓</span> Clientes &amp; membresías
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.5);">
+        <span style="color:var(--accent);">✓</span> Check-in por QR
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.5);">
+        <span style="color:var(--accent);">✓</span> Reportes en tiempo real
+      </div>
+    </div>
+
     <div class="login-card">
-      <div class="login-title">Bienvenido</div>
+      <div class="login-title">Bienvenido de vuelta</div>
       <div class="login-hint">Ingresa tus credenciales para continuar</div>
       <div class="login-field">
         <label>Correo electrónico</label>
@@ -1735,8 +1749,11 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <button class="login-btn" onclick="doLogin()">ENTRAR</button>
       <div class="login-error" id="login-error">Correo o contraseña incorrectos</div>
+      <div style="text-align:center;margin-top:12px;">
+        <a href="#" onclick="showPasswordReset();return false;" style="font-size:12px;color:rgba(255,255,255,.3);text-decoration:none;">¿Olvidaste tu contraseña?</a>
+      </div>
     </div>
-    <div style="text-align:center;margin-top:18px;font-size:12px;color:rgba(255,255,255,.35);">
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.3);">
       ¿Eres un nuevo gym? <a href="registro.html" style="color:var(--accent);text-decoration:none;font-weight:600;">Regístrate aquí →</a>
     </div>
   </div>
@@ -1869,6 +1886,16 @@ select option{background:#10101c;color:var(--text);}
         <span id="search-clear" style="display:none;cursor:pointer;color:var(--text3);font-size:12px;padding:0 2px;" onclick="closeSearch()">✕</span>
         <!-- Dropdown results -->
         <div class="search-results" id="search-results-panel"></div>
+      </div>
+      <!-- SA Gym context switcher — only visible for superadmin -->
+      <div id="sa-ctx-switcher" style="display:none;position:relative;">
+        <button onclick="toggleSaCtxDropdown()" style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">
+          🏋️ <span id="sa-ctx-gym-name">—</span> <span style="opacity:.6;font-size:10px;">▾</span>
+        </button>
+        <div id="sa-ctx-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:200px;background:var(--white);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:500;overflow:hidden;" id="sa-ctx-dropdown">
+          <div style="padding:8px 12px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);">Cambiar contexto de gym</div>
+          <div id="sa-ctx-gym-list" style="max-height:220px;overflow-y:auto;"></div>
+        </div>
       </div>
       <button class="btn btn-primary" id="topBtn" onclick="openModal('lead')">+ Nuevo Lead</button>
       <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
@@ -2989,6 +3016,16 @@ select option{background:#10101c;color:var(--text);}
         </div>
         <div id="sa-metrics"></div>
       </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-title">🗂️ Audit Log</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="card-sub" id="sa-audit-count">—</span>
+            <button class="btn btn-sm btn-outline" onclick="renderSaAuditLog()" style="font-size:10px;padding:3px 10px;">↺ Refrescar</button>
+          </div>
+        </div>
+        <div id="sa-audit-log"><div style="color:var(--text3);font-size:12px;padding:8px 0;">Cargando…</div></div>
+      </div>
     </div>
 
 <!-- ═══ MODALS ═══ -->
@@ -4092,6 +4129,51 @@ async function doLogin(){
   btn.textContent = 'ENTRAR'; btn.disabled = false;
 }
 
+function showPasswordReset(){
+  const existing = document.getElementById('pw-reset-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'pw-reset-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:#0f1726;border:1px solid rgba(0,180,216,.2);border-radius:18px;padding:30px 28px;width:100%;max-width:380px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:12px;">🔑</div>
+      <div style="font-size:16px;font-weight:700;color:#e8edf5;margin-bottom:8px;">Recuperar contraseña</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:22px;line-height:1.6;">
+        Ingresa tu email y si existe una cuenta activa el administrador de tu gym puede restablecerla desde <strong style="color:var(--accent);">Configuración → Usuarios</strong>.
+      </div>
+      <input id="pw-reset-email" type="email" placeholder="tu@email.com"
+        style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;color:#e8edf5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:16px;"
+        value="${(document.getElementById('login-email')?.value||'')}"/>
+      <div id="pw-reset-msg" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('pw-reset-modal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;font-size:13px;color:#94a3b8;cursor:pointer;">Cancelar</button>
+        <button onclick="_submitPasswordReset()" style="flex:1;padding:11px;background:var(--accent);border:none;border-radius:8px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">Enviar solicitud</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>{ const i=document.getElementById('pw-reset-email'); if(i) i.focus(); },80);
+}
+
+async function _submitPasswordReset(){
+  const email = (document.getElementById('pw-reset-email')?.value||'').trim().toLowerCase();
+  const msg = document.getElementById('pw-reset-msg');
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    msg.style.color='#f87171'; msg.textContent='Ingresa un email válido.'; return;
+  }
+  // Check if user exists (without leaking information)
+  try {
+    const { data } = await window.supabaseClient.from('usuarios').select('id').eq('email',email).eq('activo',true).maybeSingle();
+    msg.style.color='#6ee7b7';
+    if(data){
+      msg.textContent='✓ Cuenta encontrada. El admin del gym puede restablecer tu contraseña desde Configuración → Usuarios.';
+    } else {
+      msg.textContent='No encontramos una cuenta activa con ese email.';
+      msg.style.color='#fca5a5';
+    }
+  } catch(e){ msg.style.color='#f87171'; msg.textContent='Error de conexión.'; }
+}
+
 function doLogout(){
   clearSession();
   currentUser = null;
@@ -4410,6 +4492,12 @@ function updateSidebarUser(){
   // Show super-admin nav only for superadmin role
   const saNav = document.getElementById('nav-superadmin');
   if(saNav) saNav.style.display = currentUser.rol==='superadmin' ? '' : 'none';
+  // Show SA context switcher in topbar only for superadmin
+  const saSwitcher = document.getElementById('sa-ctx-switcher');
+  if(saSwitcher){
+    saSwitcher.style.display = currentUser.rol==='superadmin' ? 'block' : 'none';
+    updateSaCtxLabel();
+  }
   // My account section in settings
   const mn = document.getElementById('cfg-mi-nombre');
   const me = document.getElementById('cfg-mi-email');
@@ -8069,6 +8157,8 @@ async function renderSuperAdmin(){
     .from('gyms').select('*').order('id');
   if(gymsErr){ console.error('Error cargando gyms:', gymsErr); }
   const allGyms = gymsData || [];
+  _saGymsCache = allGyms; // cache for context switcher dropdown
+  updateSaCtxLabel();
   const gymVersion = '2.0.0-saas';
 
   // ── KPIs ──
@@ -8236,6 +8326,9 @@ async function renderSuperAdmin(){
   const metricsCtxEl = document.getElementById('sa-metrics-ctx');
   if(metricsCtxEl) metricsCtxEl.innerHTML = `📍 ${esc(currentGymName)} &middot; ID ${MOVE_GYM_ID}`;
 
+  // Load audit log
+  renderSaAuditLog();
+
   document.getElementById('sa-metrics').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
       ${statBox('💰','Ingresos mes','$'+ingresosMes.toLocaleString('es-MX'),pagosMes.length+' pagos','var(--ok)')}
@@ -8280,13 +8373,13 @@ async function saToggleGym(gymId, nuevoEstado){
 }
 
 async function saContextSwitch(gymId){
-  if(gymId === MOVE_GYM_ID){ toast('Ya estás en ese gym.','ℹ️'); return; }
+  if(gymId === MOVE_GYM_ID){ toast('Ya estás en ese gym.','ℹ️'); closeSaCtxDropdown(); return; }
   MOVE_GYM_ID = gymId;
   if(currentUser) currentUser.gym_id = gymId;
   const session = { ...getSession(), gym_id: gymId };
   setSession(session);
+  closeSaCtxDropdown();
   toast('Cambiando contexto al gym '+gymId+'…','🔄');
-  // Reload all data for new gym context
   await Promise.all([
     loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
     loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
@@ -8294,9 +8387,103 @@ async function saContextSwitch(gymId){
     loadGastosFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
     loadUsuariosFromSupabase()
   ]);
+  updateSaCtxLabel();
   renderDashboard();
   renderSuperAdmin();
   toast('Contexto cambiado ✅ Ahora ves el Gym ID '+gymId,'🏋️');
+}
+
+// ── SA Context Switcher helpers ────────────────────────────────────
+let _saGymsCache = [];
+function updateSaCtxLabel(){
+  const lbl = document.getElementById('sa-ctx-gym-name');
+  if(!lbl) return;
+  const gym = _saGymsCache.find(g=>g.id===MOVE_GYM_ID);
+  lbl.textContent = gym ? gym.nombre : ('Gym #'+MOVE_GYM_ID);
+}
+function toggleSaCtxDropdown(){
+  const dd = document.getElementById('sa-ctx-dropdown');
+  if(!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  if(isOpen){ dd.style.display='none'; return; }
+  // Populate list
+  const list = document.getElementById('sa-ctx-gym-list');
+  if(list && _saGymsCache.length){
+    list.innerHTML = _saGymsCache.map(g=>{
+      const isCurr = g.id === MOVE_GYM_ID;
+      return `<div onclick="saContextSwitch(${g.id})" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;${isCurr?'background:rgba(0,180,216,.08);':''}" onmouseenter="this.style.background='rgba(0,180,216,.06)'" onmouseleave="this.style.background='${isCurr?'rgba(0,180,216,.08)':'transparent'}'">
+        <span style="width:7px;height:7px;border-radius:50%;background:${g.activo?'var(--ok)':'var(--text4)'};flex-shrink:0;"></span>
+        <span style="flex:1;color:var(--text);font-weight:${isCurr?700:400};">${esc(g.nombre)}</span>
+        <span style="font-size:10px;color:var(--text3);">${(g.plan||'basic').toUpperCase()}</span>
+        ${isCurr?'<span style="font-size:10px;color:var(--accent);">●</span>':''}
+      </div>`;
+    }).join('');
+  } else if(list){
+    list.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text3);">Cargando gyms...</div>';
+    // Try loading from SA
+    window.supabaseClient.from('gyms').select('*').order('id').then(({data})=>{
+      if(data){ _saGymsCache = data; toggleSaCtxDropdown(); }
+    });
+  }
+  dd.style.display = 'block';
+  // Close on outside click
+  setTimeout(()=>{
+    const handler = (e)=>{
+      if(!document.getElementById('sa-ctx-switcher')?.contains(e.target)){
+        closeSaCtxDropdown();
+        document.removeEventListener('click', handler);
+      }
+    };
+    document.addEventListener('click', handler);
+  }, 50);
+}
+function closeSaCtxDropdown(){
+  const dd = document.getElementById('sa-ctx-dropdown');
+  if(dd) dd.style.display='none';
+}
+
+// ── Audit Log UI ───────────────────────────────────────────────────
+async function renderSaAuditLog(){
+  const el = document.getElementById('sa-audit-log');
+  const cnt = document.getElementById('sa-audit-count');
+  if(!el) return;
+  el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">Cargando…</div>';
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('audit_log').select('*').order('created_at',{ascending:false}).limit(100);
+    if(error){ el.innerHTML=`<div style="color:var(--danger);font-size:12px;">${error.message}</div>`; return; }
+    const rows = data || [];
+    if(cnt) cnt.textContent = `${rows.length} entradas recientes`;
+    if(!rows.length){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0;">Sin registros en audit log.</div>'; return; }
+    const GYM_COLORS = {};
+    _saGymsCache.forEach(g=>{ GYM_COLORS[g.id] = g.nombre; });
+    el.innerHTML = `<div style="margin:0 -22px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:600px;">
+        <thead><tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);">
+          <th style="text-align:left;padding:8px 22px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;">Fecha</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Gym</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Usuario</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Acción</th>
+          <th style="text-align:left;padding:8px 22px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Detalle</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>{
+            const d = r.created_at ? new Date(r.created_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+            const gymName = GYM_COLORS[r.gym_id] || ('Gym #'+(r.gym_id||'—'));
+            const actionColors = {LOGIN:'#60a5fa',LOGOUT:'#94a3b8',INSERT:'#34d399',UPDATE:'#f59e0b',DELETE:'#f87171'};
+            const aColor = actionColors[(r.accion||'').toUpperCase()] || 'var(--text2)';
+            return `<tr style="border-bottom:1px solid var(--border);" onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
+              <td style="padding:8px 22px;color:var(--text3);white-space:nowrap;">${d}</td>
+              <td style="padding:8px 10px;font-size:10px;color:var(--accent);">${esc(gymName)}</td>
+              <td style="padding:8px 10px;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.usuario_email||'')}">${esc(r.usuario_email||'—')}</td>
+              <td style="padding:8px 10px;"><span style="font-weight:700;color:${aColor};font-size:10px;">${esc(r.accion||'—')}</span>${r.tabla?'<span style="color:var(--text4);margin-left:4px;">'+esc(r.tabla)+'</span>':''}</td>
+              <td style="padding:8px 22px;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.detalle||'')}">${esc(r.detalle||'—')}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch(e){ el.innerHTML=`<div style="color:var(--danger);font-size:12px;">Error: ${e.message}</div>`; }
 }
 
 function renderGastos(){
@@ -10133,6 +10320,37 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   };
   _wireDebounce('clientes-search', renderClientes);
   _wireDebounce('asist-buscar', renderAsistencia);
+
+  // ── PWA Install Prompt ──────────────────────────────────────────
+  let _pwaPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    _pwaPrompt = e;
+    // Show install banner if not dismissed before
+    if(localStorage.getItem('move_pwa_dismissed')) return;
+    setTimeout(()=>{
+      const existing = document.getElementById('pwa-install-banner');
+      if(existing) return;
+      const banner = document.createElement('div');
+      banner.id = 'pwa-install-banner';
+      banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:8000;display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid rgba(0,180,216,.3);border-radius:14px;padding:12px 16px;box-shadow:0 8px 32px rgba(0,0,0,.35);max-width:360px;width:calc(100% - 32px);backdrop-filter:blur(8px);animation:slideUp .3s ease;';
+      banner.innerHTML = `
+        <div style="font-size:28px;">📱</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);">Instala MOVE en tu teléfono</div>
+          <div style="font-size:11px;color:var(--text3);">Acceso rápido desde la pantalla de inicio, sin browser.</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="document.getElementById('pwa-install-banner').remove();localStorage.setItem('move_pwa_dismissed','1');" style="padding:6px 10px;background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text3);cursor:pointer;">Ahora no</button>
+          <button id="pwa-install-btn" style="padding:6px 12px;background:var(--accent);border:none;border-radius:6px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;">Instalar</button>
+        </div>`;
+      document.body.appendChild(banner);
+      document.getElementById('pwa-install-btn').addEventListener('click', async()=>{
+        if(_pwaPrompt){ await _pwaPrompt.prompt(); _pwaPrompt=null; }
+        banner.remove();
+      });
+    }, 3000); // Show after 3s so user is settled
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -10723,6 +10941,46 @@ function closeOnboarding(){
   closeOnboardingForGym();
 }
 
+function showFirstStepsModal(){
+  const existing = document.getElementById('first-steps-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'first-steps-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9990;padding:20px;';
+  const gymName = gymConfig.gym_nombre || 'MOVE';
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px;padding:32px 28px;width:100%;max-width:420px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5);">
+      <div style="font-size:40px;margin-bottom:12px;">🎉</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px;">¡${esc(gymName)} está listo!</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:24px;line-height:1.6;">Tu gym ya está configurado. ¿Por dónde quieres empezar?</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <button onclick="go('clientes',document.getElementById('nav-clientes'));document.getElementById('first-steps-modal').remove();" style="padding:13px 16px;background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.2);border-radius:10px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;font-family:var(--font);">
+          <span style="font-size:22px;">👥</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Agregar mi primer cliente</div>
+            <div style="font-size:11px;color:var(--text3);">Registra nombre, membresía y fecha de vencimiento</div>
+          </div>
+        </button>
+        <button onclick="go('settings',document.getElementById('nav-settings'));document.getElementById('first-steps-modal').remove();" style="padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;font-family:var(--font);">
+          <span style="font-size:22px;">💳</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Configurar planes y precios</div>
+            <div style="font-size:11px;color:var(--text3);">Define tus paquetes: mensual, trimestral, anual…</div>
+          </div>
+        </button>
+        <button onclick="abrirKiosco();document.getElementById('first-steps-modal').remove();" style="padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;font-family:var(--font);">
+          <span style="font-size:22px;">📱</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Abrir kiosco de check-in QR</div>
+            <div style="font-size:11px;color:var(--text3);">Empieza a registrar entradas desde hoy</div>
+          </div>
+        </button>
+      </div>
+      <button onclick="document.getElementById('first-steps-modal').remove()" style="padding:10px 24px;background:none;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text3);cursor:pointer;font-family:var(--font);">Explorar solo</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
 function renderObStep(){
   const titles    = ['','¡Bienvenido!','Elige tu tema','Meta mensual','¡Todo listo!'];
   const subtitles = ['',
@@ -10787,6 +11045,7 @@ async function obNext(){
     await saveObConfig();
     closeOnboarding();
     renderDashboard();
+    showFirstStepsModal();
     return;
   }
   _obStep++;
