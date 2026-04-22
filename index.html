@@ -9829,11 +9829,28 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderCalendario();
   updateBadges();
 
-  // Auth check
+  // Auth check — re-validate session from DB to pick up role/gym_id changes
   if(session){
-    currentUser = session;
-    MOVE_GYM_ID = session.gym_id || 1;
-    showApp();
+    try{
+      const { data: freshUser } = await window.supabaseClient
+        .from('usuarios').select('*').eq('email', session.email).eq('activo', true).single();
+      if(freshUser){
+        // Refresh session with latest data from DB
+        const updated = { id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1 };
+        setSession(updated);
+        currentUser = updated;
+        MOVE_GYM_ID = updated.gym_id;
+      } else {
+        // User deactivated or removed — log out
+        clearSession();
+        currentUser = null;
+      }
+    } catch(e){
+      // DB unreachable — fall back to cached session
+      currentUser = session;
+      MOVE_GYM_ID = session.gym_id || 1;
+    }
+    if(currentUser) showApp();
   }
   // else: login screen remains visible (it's shown by default in CSS)
 
