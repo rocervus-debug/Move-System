@@ -104,6 +104,40 @@
   --font-display:'Barlow Condensed',system-ui,sans-serif;
 }
 
+/* ══════════════════════════════════
+   LIGHT MODE — body.light-mode overrides
+══════════════════════════════════ */
+body.light-mode{
+  --bg:#f0f2f6;
+  --white:#f7f8fb;
+  --border:rgba(0,0,0,.09);
+  --border2:rgba(0,0,0,.16);
+  --text:#1a2535;
+  --text2:#334a60;
+  --text3:#7a8fa8;
+  --text4:#a8bccb;
+  --sidebar-bg:#161f2c;
+  --sidebar-text:rgba(180,210,230,.55);
+  --sidebar-text-active:#ffffff;
+  background-image:none;
+}
+body.light-mode .card{
+  background:rgba(255,255,255,.92);
+  border-color:rgba(0,0,0,.07);
+  box-shadow:0 1px 6px rgba(0,0,0,.08);
+}
+body.light-mode .modal{
+  background:#ffffff;
+  border-color:rgba(0,0,0,.1);
+}
+body.light-mode .form-input{
+  background:#f5f7fa;
+  border-color:rgba(0,0,0,.12);
+  color:#1a2535;
+}
+body.light-mode .tbl tr:nth-child(even){ background:rgba(0,0,0,.02); }
+body.light-mode .kpi-card{ background:rgba(255,255,255,.9); }
+
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   font-family:var(--font);
@@ -1702,6 +1736,9 @@ select option{background:#10101c;color:var(--text);}
       <button class="login-btn" onclick="doLogin()">ENTRAR</button>
       <div class="login-error" id="login-error">Correo o contraseña incorrectos</div>
     </div>
+    <div style="text-align:center;margin-top:18px;font-size:12px;color:rgba(255,255,255,.35);">
+      ¿Eres un nuevo gym? <a href="registro.html" style="color:var(--accent);text-decoration:none;font-weight:600;">Regístrate aquí →</a>
+    </div>
   </div>
 </div>
 
@@ -1983,7 +2020,7 @@ select option{background:#10101c;color:var(--text);}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">⏰ Próximos Vencimientos</div><span class="card-sub">30 días</span></div>
+          <div class="card-header"><div class="card-title">⏰ Próximos Vencimientos</div><div style="display:flex;align-items:center;gap:8px;"><span class="card-sub">30 días</span><button id="btn-notif-email" onclick="openEmailReminderModal()" style="display:none;font-size:10px;padding:3px 9px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">📧 Notificar</button></div></div>
           <div id="dash-vencimientos">
             <div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">Los pagos por vencer en los próximos 30 días aparecerán aquí.</div></div>
           </div>
@@ -2068,7 +2105,7 @@ select option{background:#10101c;color:var(--text);}
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="card-sub" id="asist-qr-label">—</span>
             <button onclick="loadQRCheckinsHoy()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">↺ Actualizar</button>
-            <a href="checkin.html?kiosko=1" target="_blank" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;font-weight:700;text-decoration:none;white-space:nowrap;">📱 Abrir Kiosco</a>
+            <button onclick="abrirKiosco()" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;font-weight:700;text-decoration:none;white-space:nowrap;cursor:pointer;">📱 Abrir Kiosco</button>
           </div>
         </div>
         <div id="asist-qr-hoy" style="min-height:48px;"></div>
@@ -2613,6 +2650,15 @@ select option{background:#10101c;color:var(--text);}
             </div>
           </div>
 
+          <!-- ── MODO COLOR ── -->
+          <div class="gym-section-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div class="gym-section-title" style="margin-bottom:4px;">Modo de interfaz</div>
+              <div style="font-size:12px;color:var(--text3);">Alterna entre modo oscuro y claro según tu preferencia.</div>
+            </div>
+            <button id="cfg-mode-btn" class="btn btn-outline" onclick="toggleColorMode()" style="min-width:148px;">☀️ Modo Claro</button>
+          </div>
+
           <!-- ── IDENTIDAD ── -->
           <div class="gym-section-card">
             <div class="gym-section-title">Identidad</div>
@@ -2707,6 +2753,23 @@ select option{background:#10101c;color:var(--text);}
           <div style="margin-top:14px;padding:10px 14px;background:rgba(0,180,216,.06);border-radius:8px;border:1px solid rgba(0,180,216,.15);font-size:11px;color:var(--text3);line-height:1.6;">
             <strong style="color:var(--accent);">Escáner USB:</strong> conecta el escáner a la tablet/PC, abre <code>checkin.html</code> en Chrome y listo — no necesita cámara ni internet constante.<br>
             <strong style="color:var(--accent);">Vercel (gratis):</strong> sube los archivos HTML a <a href="https://vercel.com" target="_blank" style="color:var(--accent);">vercel.com</a> → los clientes hacen check-in desde su celular sin kiosco.
+          </div>
+
+          <!-- ── PIN DE KIOSCO ── -->
+          <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:18px;">
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">🔐 PIN de seguridad del kiosco</div>
+                <div class="settings-desc">Si configuras un PIN (4–6 dígitos), se pedirá antes de abrir el kiosco. Déjalo vacío para acceso sin PIN.</div>
+              </div>
+              <div class="settings-control" style="flex:1;max-width:240px;">
+                <input class="settings-input" style="width:100%;letter-spacing:6px;font-size:18px;text-align:center;" id="cfg-kiosco-pin" type="password" inputmode="numeric" maxlength="6" placeholder="——"/>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <button class="btn btn-primary btn-sm" onclick="saveKioscoPin()">Guardar PIN</button>
+                  <button class="btn btn-outline btn-sm" onclick="clearKioscoPin()">Quitar PIN</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2909,8 +2972,15 @@ select option{background:#10101c;color:var(--text);}
         <div class="sh"><div class="sh-title">🏋️ Gyms Registrados</div></div>
         <div id="sa-gyms-list"></div>
       </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="sh">
+          <div class="sh-title">📊 Comparativa por Gym</div>
+          <span style="font-size:11px;color:var(--text3);">Todos los gyms · sin filtro</span>
+        </div>
+        <div id="sa-cross-gym"></div>
+      </div>
       <div class="card">
-        <div class="sh"><div class="sh-title">📊 Métricas del Sistema</div></div>
+        <div class="sh"><div class="sh-title">📈 Métricas del Gym Activo</div></div>
         <div id="sa-metrics"></div>
       </div>
     </div>
@@ -3986,17 +4056,33 @@ async function doLogin(){
   const btn = document.querySelector('.login-btn');
   btn.textContent = 'Verificando…'; btn.disabled = true;
   try{
+    // Fetch user record by email only (never send password in filter for hashed flow)
     const { data, error } = await window.supabaseClient
-      .from('usuarios').select('*').eq('email', email).eq('password', pass).eq('activo', true).single();
-    if(error||!data){ errEl.textContent='Correo o contraseña incorrectos.'; errEl.classList.add('show'); }
+      .from('usuarios').select('*').eq('email', email).eq('activo', true).single();
+    let authenticated = false;
+    if(!error && data){
+      const passHash = await hashPassword(pass);
+      if(data.pw_hash && data.pw_hash === passHash){
+        // ✅ Hashed match
+        authenticated = true;
+      } else if(!data.pw_hash && data.password === pass){
+        // ⬆️ Backwards compat: plaintext match → upgrade to hash silently
+        authenticated = true;
+        window.supabaseClient.from('usuarios')
+          .update({ pw_hash: passHash, password: null })
+          .eq('id', data.id).then(()=>console.log('[Auth] Password upgraded to hash'));
+      }
+    }
+    if(!authenticated){ errEl.textContent='Correo o contraseña incorrectos.'; errEl.classList.add('show'); }
     else{
       const session = { id: data.id, nombre: data.nombre, email: data.email, rol: data.rol, gym_id: data.gym_id || 1 };
       setSession(session);
       currentUser = session;
       MOVE_GYM_ID = session.gym_id;
+      auditLog('LOGIN', 'usuarios', data.id, `Login desde ${navigator.platform||'web'}`);
       showApp();
     }
-  } catch(e){ errEl.textContent='Error de conexión. Verifica Supabase.'; errEl.classList.add('show'); }
+  } catch(e){ errEl.textContent='Error de conexión. Verifica Supabase.'; errEl.classList.add('show'); console.error(e); }
   btn.textContent = 'ENTRAR'; btn.disabled = false;
 }
 
@@ -4370,8 +4456,10 @@ async function saveNewUser(){
   const rol    = document.getElementById('nu-rol').value;
   if(!nombre||!email||!pass){ alert('Completa todos los campos.'); return; }
   if(pass.length<6){ alert('La contraseña debe tener al menos 6 caracteres.'); return; }
-  const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, password:pass, rol, activo:true})]);
+  const pw_hash = await hashPassword(pass);
+  const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: null, rol, activo:true})]);
   if(error){ toast('Error al crear usuario ❌','✕'); console.error(error); return; }
+  auditLog('CREAR_USUARIO', 'usuarios', '', `Nuevo usuario: ${email} (${rol})`);
   closeModal('add-user');
   await loadUsuariosFromSupabase();
   renderUsuarios();
@@ -4399,7 +4487,11 @@ async function saveEditUser(){
   const activo = document.getElementById('eu-activo').value === 'true';
   if(!nombre||!email){ alert('Nombre y correo son obligatorios.'); return; }
   const payload = {nombre, email, rol, activo};
-  if(pass){ if(pass.length<6){ alert('Contraseña mínimo 6 caracteres.'); return; } payload.password=pass; }
+  if(pass){
+    if(pass.length<6){ alert('Contraseña mínimo 6 caracteres.'); return; }
+    payload.pw_hash = await hashPassword(pass);
+    payload.password = null; // clear plaintext
+  }
   const { error } = await window.supabaseClient.from('usuarios').update(payload).eq('id', id);
   if(error){ toast('Error al guardar ❌','✕'); return; }
   // update session if editing self
@@ -4467,6 +4559,12 @@ async function loadConfigFromSupabase(){
   gymConfig = {};
   (data||[]).forEach(row => { gymConfig[row.key] = row.value||''; });
   ensureGymId(); // Multi-tenant groundwork: establish gym identity
+  // Load gym plan from gyms table for PLAN_LIMITS
+  if(MOVE_GYM_ID && !gymConfig.gym_plan){
+    window.supabaseClient.from('gyms').select('plan,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
+      if(g){ gymConfig.gym_plan = g.plan || 'basic'; }
+    });
+  }
   applyGymConfig();
   renderThemeGrid();
 }
@@ -4913,7 +5011,7 @@ function go(id, el){
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa')    { renderProgramaCalendar(); }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); }
+  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
 
@@ -5604,6 +5702,7 @@ async function saveLead(){
   await loadLeadsFromSupabase();
   closeModal('lead');
   clearLeadForm();
+  auditLog('CREAR_LEAD', 'leads', data?.[0]?.id||'', `Nuevo prospecto: ${nombre}`);
   toast(`Prospecto "${nombre}" agregado correctamente.`);
   renderCRM('prospectos');
   renderPipeline();
@@ -5766,6 +5865,71 @@ function renderCRM(tab){
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ═══════════════════════════════════════════════════════════════════
+// UTILITIES — debounce, hashPassword, auditLog, planCheck
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── Dark / Light mode ───────────────────────────────────────────
+function applyColorMode(mode){
+  document.body.classList.toggle('light-mode', mode === 'light');
+  const btn = document.getElementById('cfg-mode-btn');
+  if(btn){ btn.textContent = mode === 'light' ? '🌙 Modo Oscuro' : '☀️ Modo Claro'; }
+}
+function toggleColorMode(){
+  const isLight = document.body.classList.contains('light-mode');
+  const next = isLight ? 'dark' : 'light';
+  localStorage.setItem('move_color_mode', next);
+  applyColorMode(next);
+}
+
+// debounce — wrap a fn so it fires only after `ms` ms of silence
+function debounce(fn, ms=300){
+  let t;
+  return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), ms); };
+}
+
+// SHA-256 hash via Web Crypto API (async)
+async function hashPassword(pass){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Audit log — fire-and-forget, never blocks the UI
+function auditLog(accion, tabla='', registroId='', detalle=''){
+  if(!window.supabaseClient || !currentUser) return;
+  const gymId = MOVE_GYM_ID || null;
+  window.supabaseClient.from('audit_log').insert([{
+    gym_id: gymId,
+    usuario_id: currentUser.id || null,
+    usuario_email: currentUser.email || '',
+    accion, tabla,
+    registro_id: String(registroId),
+    detalle: detalle.slice(0,500)
+  }]).then(({error})=>{ if(error) console.warn('[Audit]', error.message); });
+}
+
+// Plan limits — controls feature gates per gym plan
+const PLAN_LIMITS = {
+  free:  { clientes: 50,   coaches: 2,  campanas: 3  },
+  basic: { clientes: 200,  coaches: 5,  campanas: 10 },
+  pro:   { clientes: 9999, coaches: 99, campanas: 999 }
+};
+
+// Returns {ok:true} or {ok:false, msg:'...'} based on plan
+function checkPlanLimit(recurso){
+  const plan  = (gymConfig.plan || gymConfig.gym_plan || 'basic').toLowerCase();
+  const limit = (PLAN_LIMITS[plan] || PLAN_LIMITS.basic)[recurso] ?? 9999;
+  let current = 0;
+  if(recurso === 'clientes') current = clientesDB.length;
+  if(recurso === 'coaches')  current = coaches.length;
+  if(recurso === 'campanas') current = campanas.length;
+  if(current >= limit){
+    const planLabel = plan === 'free' ? 'Free' : plan === 'basic' ? 'Basic' : 'Pro';
+    return { ok: false, msg: `Límite de plan ${planLabel}: máximo ${limit} ${recurso}. Actualiza tu plan para continuar.` };
+  }
+  return { ok: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // RENDER PIPELINE KANBAN
 // ═══════════════════════════════════════════════════════════════════
 const PIPELINE_STAGES = [
@@ -5811,6 +5975,8 @@ const COACH_COLORS = ['#0ea5e9','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899
 async function saveCoach(){
   const nombre = document.getElementById('c-nombre').value.trim();
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  const planCheck = checkPlanLimit('coaches');
+  if(!planCheck.ok){ toast(planCheck.msg,'🔒'); return; }
   const payload = {
     nombre,
     tel:    document.getElementById('c-tel').value.trim(),
@@ -5825,6 +5991,7 @@ async function saveCoach(){
   await loadCoachesFromSupabase();
   closeModal('coach');
   ['c-nombre','c-tel','c-email','c-rol','c-clases'].forEach(id=>document.getElementById(id).value='');
+  auditLog('CREAR_COACH', 'coaches', '', `Nuevo coach: ${nombre}`);
   toast(`Coach "${nombre}" agregado.`,'✓');
   renderCoaches();
   renderEvalSelects();
@@ -6355,6 +6522,10 @@ async function saveEditarCliente(){
   const id     = document.getElementById('cli-id').value;
   const nombre = document.getElementById('cli-nombre').value.trim();
   if(!nombre){ toast('El nombre es obligatorio','⚠️'); return; }
+  if(!id){ // new client — check plan limit
+    const planCheck = checkPlanLimit('clientes');
+    if(!planCheck.ok){ toast(planCheck.msg,'🔒'); return; }
+  }
   const payload = {
     nombre,
     telefono:   document.getElementById('cli-telefono').value.trim(),
@@ -7199,6 +7370,65 @@ function getKioskoUrl(){
   return (localStorage.getItem('move_kiosko_url')||'').trim();
 }
 
+// ─── PIN Kiosco ────────────────────────────────────────────────────
+function saveKioscoPin(){
+  const val = (document.getElementById('cfg-kiosco-pin').value||'').trim();
+  if(val && (val.length < 4 || !/^\d+$/.test(val))){
+    toast('El PIN debe ser de 4–6 dígitos numéricos','⚠️'); return;
+  }
+  localStorage.setItem('move_kiosco_pin', val);
+  document.getElementById('cfg-kiosco-pin').value = '';
+  toast(val ? `PIN del kiosco guardado (${val.length} dígitos) 🔐` : 'PIN eliminado','🔐');
+}
+function clearKioscoPin(){
+  localStorage.removeItem('move_kiosco_pin');
+  document.getElementById('cfg-kiosco-pin').value = '';
+  toast('PIN del kiosco eliminado','🔓');
+}
+function getKioscoPin(){
+  return localStorage.getItem('move_kiosco_pin') || '';
+}
+function abrirKiosco(){
+  const pin = getKioscoPin();
+  if(!pin){ window.open('checkin.html?kiosko=1','_blank'); return; }
+  // Show PIN entry modal
+  const existing = document.getElementById('kiosco-pin-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'kiosco-pin-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:18px;padding:32px 28px;width:320px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.45);">
+      <div style="font-size:36px;margin-bottom:10px;">🔐</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">PIN del Kiosco</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:20px;">Ingresa el PIN para abrir el kiosco de check-in.</div>
+      <input id="kiosco-pin-input" type="password" inputmode="numeric" maxlength="6"
+        style="width:100%;text-align:center;letter-spacing:8px;font-size:22px;padding:12px 10px;background:rgba(255,255,255,.05);border:2px solid var(--border2);border-radius:10px;color:var(--text);outline:none;font-family:var(--font);box-sizing:border-box;"
+        placeholder="·  ·  ·  ·"
+        onkeydown="if(event.key==='Enter') _kioscoSubmitPin()"
+        oninput="document.getElementById('kiosco-pin-err').textContent=''"/>
+      <div id="kiosco-pin-err" style="color:#f87171;font-size:12px;min-height:18px;margin-top:6px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('kiosco-pin-modal').remove()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="_kioscoSubmitPin()">Entrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>{ const inp = document.getElementById('kiosco-pin-input'); if(inp) inp.focus(); }, 80);
+}
+function _kioscoSubmitPin(){
+  const entered = (document.getElementById('kiosco-pin-input').value||'').trim();
+  const pin = getKioscoPin();
+  if(entered === pin){
+    document.getElementById('kiosco-pin-modal').remove();
+    window.open('checkin.html?kiosko=1','_blank');
+  } else {
+    document.getElementById('kiosco-pin-err').textContent = 'PIN incorrecto. Inténtalo de nuevo.';
+    document.getElementById('kiosco-pin-input').value = '';
+    document.getElementById('kiosco-pin-input').focus();
+  }
+}
+
 function saveMetaMensual(){
   const val = parseFloat(document.getElementById('cfg-meta-mensual').value)||0;
   localStorage.setItem('move_meta_mensual', val);
@@ -7595,6 +7825,8 @@ function renderDashboard(){
   // ─── Próximos Vencimientos list ───
   const vencEl = document.getElementById('dash-vencimientos');
   if(vencEl){
+    const notifBtn = document.getElementById('btn-notif-email');
+    if(notifBtn) notifBtn.style.display = porVencer30.length ? 'inline-flex' : 'none';
     if(!porVencer30.length){
       vencEl.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">No hay membresías por vencer en los próximos 30 días.</div></div>`;
     } else {
@@ -7863,81 +8095,65 @@ async function renderSuperAdmin(){
     const planColor = PLAN_COLOR[g.plan] || 'var(--text3)';
     const created = g.created_at ? new Date(g.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
     return `
-    <tr style="border-bottom:1px solid var(--border);${isCurrent?'background:rgba(0,180,216,.06);':''}">
-      <td style="padding:10px 12px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:${g.activo?'var(--ok)':'var(--danger)'};" title="${g.activo?'Activo':'Inactivo'}"></div>
+    <tr style="border-bottom:1px solid var(--border);${isCurrent?'background:rgba(0,180,216,.05);':''}">
+      <td style="padding:11px 22px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${g.activo?'var(--ok)':'var(--danger)'};" title="${g.activo?'Activo':'Inactivo'}"></div>
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(g.nombre)}${isCurrent?' <span style="font-size:10px;color:var(--accent);font-weight:500;">(tú)</span>':''}</div>
-            <div style="font-size:11px;color:var(--text3);">/${esc(g.slug||'')} · ${esc(g.owner_email||'—')}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.3;">${esc(g.nombre)}${isCurrent?'&nbsp;<span style="font-size:10px;color:var(--accent);">● actual</span>':''}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;">ID&nbsp;${g.id} &middot; /${esc(g.slug||'')} &middot; ${esc(g.owner_email||'—')}</div>
           </div>
         </div>
       </td>
-      <td style="padding:10px 12px;font-size:12px;color:var(--text3);">ID ${g.id}</td>
-      <td style="padding:10px 12px;">
-        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,.2);color:${planColor};">${(g.plan||'basic').toUpperCase()}</span>
+      <td style="padding:11px 12px;">
+        <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;">${(g.plan||'basic').toUpperCase()}</span>
       </td>
-      <td style="padding:10px 12px;font-size:11px;color:var(--text3);">${created}</td>
-      <td style="padding:10px 12px;">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" title="Ver datos de este gym">🔄 Cambiar</button>` : '<span style="font-size:11px;color:var(--accent);">● Activo</span>'}
-          <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:10px;">${g.activo?'⏸ Pausar':'▶ Activar'}</button>
+      <td style="padding:11px 12px;font-size:11px;color:var(--text3);">${created}</td>
+      <td style="padding:11px 22px;text-align:right;">
+        <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" style="font-size:10px;padding:4px 10px;">🔄 Cambiar</button>` : ''}
+          <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:10px;padding:4px 10px;">${g.activo?'⏸ Pausar':'▶ Activar'}</button>
         </div>
       </td>
     </tr>`;
   }).join('');
 
   document.getElementById('sa-gyms-list').innerHTML = `
-    <div style="padding:16px 16px 0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:12px;color:var(--text3);">${allGyms.length} gym${allGyms.length!==1?'s':''} registrados</div>
-        <button class="btn btn-sm" onclick="saToggleCreateForm()" id="sa-create-btn" style="font-size:11px;">+ Nuevo Gym</button>
-      </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <span style="font-size:12px;color:var(--text3);">${allGyms.length} gym${allGyms.length!==1?'s':''} registrado${allGyms.length!==1?'s':''}</span>
+      <button class="btn btn-sm" onclick="saToggleCreateForm()" style="font-size:11px;padding:5px 14px;">+ Nuevo Gym</button>
+    </div>
 
-      <!-- Create gym inline form -->
-      <div id="sa-create-form" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">🏋️ Crear nuevo gym</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-          <div>
-            <label style="font-size:10px;color:var(--text3);font-weight:600;">NOMBRE</label>
-            <input id="sa-g-nombre" type="text" placeholder="CrossFit Monterrey" class="form-input" style="margin-top:4px;">
-          </div>
-          <div>
-            <label style="font-size:10px;color:var(--text3);font-weight:600;">SLUG (URL)</label>
-            <input id="sa-g-slug" type="text" placeholder="crossfit-mty" class="form-input" style="margin-top:4px;">
-          </div>
-          <div>
-            <label style="font-size:10px;color:var(--text3);font-weight:600;">EMAIL DEL DUEÑO</label>
-            <input id="sa-g-email" type="email" placeholder="admin@gym.com" class="form-input" style="margin-top:4px;">
-          </div>
-          <div>
-            <label style="font-size:10px;color:var(--text3);font-weight:600;">PLAN</label>
-            <select id="sa-g-plan" class="form-input" style="margin-top:4px;">
-              <option value="basic">Basic</option>
-              <option value="pro">Pro</option>
-              <option value="free">Free</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn" onclick="saCreateGym()" style="font-size:12px;">Crear Gym</button>
-          <button class="btn btn-outline" onclick="saToggleCreateForm()" style="font-size:12px;">Cancelar</button>
-        </div>
+    <div id="sa-create-form" style="display:none;background:rgba(0,180,216,.05);border:1px solid rgba(0,180,216,.2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">🏋️ Crear nuevo gym</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">NOMBRE</label>
+          <input id="sa-g-nombre" type="text" placeholder="CrossFit Monterrey" class="form-input"></div>
+        <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">SLUG</label>
+          <input id="sa-g-slug" type="text" placeholder="crossfit-mty" class="form-input"></div>
+        <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">EMAIL DUEÑO</label>
+          <input id="sa-g-email" type="email" placeholder="admin@gym.com" class="form-input"></div>
+        <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">PLAN</label>
+          <select id="sa-g-plan" class="form-input">
+            <option value="basic">Basic</option><option value="pro">Pro</option><option value="free">Free</option>
+          </select></div>
       </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="saCreateGym()">Crear Gym</button>
+        <button class="btn btn-sm btn-outline" onclick="saToggleCreateForm()">Cancelar</button>
+      </div>
+    </div>
 
-      <!-- Gym table -->
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr style="border-bottom:1px solid var(--border);">
-            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Gym</th>
-            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">ID</th>
-            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Plan</th>
-            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Creado</th>
-            <th style="text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Acciones</th>
-          </tr></thead>
-          <tbody>${gymsRows || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text3);">Sin gyms registrados.</td></tr>'}</tbody>
-        </table>
-      </div>
+    <div style="margin:0 -22px;border-top:1px solid var(--border);">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);">
+          <th style="text-align:left;padding:9px 22px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Gym</th>
+          <th style="text-align:left;padding:9px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Plan</th>
+          <th style="text-align:left;padding:9px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Creado</th>
+          <th style="text-align:right;padding:9px 22px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Acciones</th>
+        </tr></thead>
+        <tbody>${gymsRows || '<tr><td colspan="4" style="padding:24px 22px;text-align:center;color:var(--text3);">Sin gyms registrados.</td></tr>'}</tbody>
+      </table>
     </div>`;
 
   // ── Metrics for current gym context ──
@@ -7952,41 +8168,72 @@ async function renderSuperAdmin(){
 
   const currentGymName = allGyms.find(g=>g.id===MOVE_GYM_ID)?.nombre || 'MOVE';
 
-  document.getElementById('sa-metrics').innerHTML = `
-    <div style="padding:12px 16px 8px;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">📍 Contexto actual: <strong style="color:var(--accent);">${esc(currentGymName)}</strong> (ID ${MOVE_GYM_ID})</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
-        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">💰 Ingresos este mes</div>
-          <div style="font-size:18px;font-weight:800;color:var(--ok);">$${ingresosMes.toLocaleString('es-MX')}</div>
-          <div style="font-size:11px;color:var(--text4);">${pagosMes.length} pagos</div>
-        </div>
-        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">👥 Total clientes</div>
-          <div style="font-size:18px;font-weight:800;color:var(--accent);">${totalClientes}</div>
-          <div style="font-size:11px;color:var(--text4);">+${nuevosClientes} este mes</div>
-        </div>
-        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">💵 Ingresos totales</div>
-          <div style="font-size:18px;font-weight:800;color:var(--ok);">$${ingresosTotal.toLocaleString('es-MX')}</div>
-          <div style="font-size:11px;color:var(--text4);">Histórico</div>
-        </div>
-        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">📋 Leads (30d)</div>
-          <div style="font-size:18px;font-weight:800;color:#a78bfa;">${leads30}</div>
-          <div style="font-size:11px;color:var(--text4);">Últimos 30 días</div>
-        </div>
-        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">🏋️ Coaches</div>
-          <div style="font-size:18px;font-weight:800;color:var(--warn);">${coaches.length}</div>
-          <div style="font-size:11px;color:var(--text4);">Activos</div>
-        </div>
-        <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">👤 Usuarios</div>
-          <div style="font-size:18px;font-weight:800;color:var(--text);">${usuarios.length}</div>
-          <div style="font-size:11px;color:var(--text4);">En este gym</div>
-        </div>
+  // ── Cross-gym aggregate stats (no gym_id filter) ──
+  const cgEl = document.getElementById('sa-cross-gym');
+  if(cgEl){
+    const [{ data: allClientes }, { data: allPagos }, { data: allLeads }] = await Promise.all([
+      window.supabaseClient.from('clientes').select('gym_id'),
+      window.supabaseClient.from('pagos').select('gym_id, monto').neq('notas','__sin_pago__'),
+      window.supabaseClient.from('leads').select('gym_id')
+    ]);
+    // Build per-gym map
+    const gymMap = {};
+    allGyms.forEach(g=>{ gymMap[g.id] = { nombre: g.nombre, plan: g.plan, clientes: 0, ingresos: 0, leads: 0 }; });
+    (allClientes||[]).forEach(r=>{ if(gymMap[r.gym_id]) gymMap[r.gym_id].clientes++; });
+    (allPagos||[]).forEach(r=>{ if(gymMap[r.gym_id]) gymMap[r.gym_id].ingresos += (parseFloat(r.monto)||0); });
+    (allLeads||[]).forEach(r=>{ if(gymMap[r.gym_id]) gymMap[r.gym_id].leads++; });
+
+    const rows = Object.entries(gymMap).map(([gid, g])=>{
+      const isCurr = parseInt(gid) === MOVE_GYM_ID;
+      const PLAN_COLOR = { pro:'var(--ok)', basic:'var(--accent)', free:'var(--text3)' };
+      return `<tr style="border-bottom:1px solid var(--border);${isCurr?'background:rgba(0,180,216,.04);':''}">
+        <td style="padding:10px 22px;font-size:13px;font-weight:600;color:var(--text);">${esc(g.nombre)}${isCurr?' <span style="font-size:10px;color:var(--accent);">●</span>':''}</td>
+        <td style="padding:10px 12px;"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.06);color:${PLAN_COLOR[g.plan]||'var(--text3)'};">${(g.plan||'basic').toUpperCase()}</span></td>
+        <td style="padding:10px 12px;font-size:13px;font-weight:700;color:var(--accent);">${g.clientes}</td>
+        <td style="padding:10px 12px;font-size:13px;font-weight:700;color:var(--ok);">$${g.ingresos.toLocaleString('es-MX')}</td>
+        <td style="padding:10px 22px;font-size:13px;color:var(--text3);">${g.leads}</td>
+      </tr>`;
+    }).join('');
+
+    const totClientes = (allClientes||[]).length;
+    const totIngresos = (allPagos||[]).reduce((s,r)=>s+(parseFloat(r.monto)||0),0);
+
+    cgEl.innerHTML = `
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+        Plataforma completa: <strong style="color:var(--text);">${totClientes}</strong> clientes · <strong style="color:var(--ok);">$${totIngresos.toLocaleString('es-MX')}</strong> ingresos totales
       </div>
+      <div style="margin:0 -22px;border-top:1px solid var(--border);">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);">
+            <th style="text-align:left;padding:9px 22px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">Gym</th>
+            <th style="text-align:left;padding:9px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">Plan</th>
+            <th style="text-align:left;padding:9px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">Clientes</th>
+            <th style="text-align:left;padding:9px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">Ingresos</th>
+            <th style="text-align:left;padding:9px 22px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">Leads</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  const statBox = (icon, label, val, sub, color) =>
+    `<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;">${icon} ${label}</div>
+      <div style="font-size:20px;font-weight:800;color:${color};line-height:1;">${val}</div>
+      <div style="font-size:11px;color:var(--text4);margin-top:4px;">${sub}</div>
+    </div>`;
+
+  document.getElementById('sa-metrics').innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">
+      📍 Contexto: <strong style="color:var(--accent);">${esc(currentGymName)}</strong>&nbsp;&middot;&nbsp;ID ${MOVE_GYM_ID}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
+      ${statBox('💰','Ingresos mes','$'+ingresosMes.toLocaleString('es-MX'),pagosMes.length+' pagos','var(--ok)')}
+      ${statBox('💵','Ingresos total','$'+ingresosTotal.toLocaleString('es-MX'),'Histórico','var(--ok)')}
+      ${statBox('👥','Clientes',totalClientes,'+'+nuevosClientes+' este mes','var(--accent)')}
+      ${statBox('📋','Leads 30d',leads30,'Últimos 30 días','#a78bfa')}
+      ${statBox('🏋️','Coaches',coaches.length,'Activos','var(--warn)')}
+      ${statBox('👤','Usuarios',usuarios.length,'En este gym','var(--text)')}
     </div>`;
 }
 
@@ -8494,6 +8741,7 @@ async function savePago(){
   document.getElementById('p-metodo').selectedIndex=0;
   setPagoTipo('completo'); // reset toggle
   const tipoLabel = _pagoTipo==='abono' ? 'Abono' : 'Pago';
+  auditLog('CREAR_PAGO', 'pagos', '', `${tipoLabel} $${monto} para ${cliente}`);
   toast(`${tipoLabel} de $${monto.toLocaleString('es-MX')} registrado para ${cliente}.`,'💳');
   renderPagos();
   renderMembresiasAlert();
@@ -8503,6 +8751,8 @@ async function savePago(){
 async function saveClienteSinPago(){
   const nombre = document.getElementById('sc-nombre').value.trim();
   if(!nombre){ toast('El nombre es obligatorio','⚠️'); return; }
+  const planCheck = checkPlanLimit('clientes');
+  if(!planCheck.ok){ toast(planCheck.msg,'🔒'); return; }
 
   const existe = clientesDB.some(c=>(c.nombre||'').toLowerCase()===nombre.toLowerCase());
   if(existe){
@@ -8523,6 +8773,7 @@ async function saveClienteSinPago(){
   closeModal('solo-cliente');
   ['sc-nombre','sc-telefono','sc-notas'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('sc-cumpleanos').value='';
+  auditLog('CREAR_CLIENTE', 'clientes', '', `Nuevo cliente: ${nombre}`);
   toast(`Cliente "${nombre}" agregado al directorio ✅`,'👤');
   renderClientes();
 }
@@ -9795,6 +10046,10 @@ document.addEventListener('click', e=>{
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Apply stored color mode immediately to avoid flash
+  const storedMode = localStorage.getItem('move_color_mode') || 'dark';
+  applyColorMode(storedMode);
+
   await new Promise(r => setTimeout(r, 150));
 
   // Check existing session
@@ -9858,7 +10113,130 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td')&&!e.target.closest('.pipe-card'))
       closeDetail();
   });
+
+  // ── Debounce search inputs so mobile doesn't lag ──
+  const _wireDebounce = (id, fn, ms=280) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.removeAttribute('oninput');
+    el.addEventListener('input', debounce(fn, ms));
+  };
+  _wireDebounce('clientes-search', renderClientes);
+  _wireDebounce('asist-buscar', renderAsistencia);
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// EMAIL REMINDERS — Notificaciones de vencimiento
+// ═══════════════════════════════════════════════════════════════════
+function openEmailReminderModal(){
+  const now   = new Date();
+  const in30  = new Date(now); in30.setDate(now.getDate()+30);
+  const in3   = new Date(now); in3.setDate(now.getDate()+3);
+
+  const porVencer = pagos.filter(p=>{
+    if(!p.vence||p.vence==='—') return false;
+    const v = new Date(p.vence+'T12:00:00'); return v>=now && v<=in30;
+  }).sort((a,b)=>(a.vence||'').localeCompare(b.vence||''));
+
+  if(!porVencer.length){ toast('No hay vencimientos próximos','📅'); return; }
+
+  const gymNombre = gymConfig.gym_nombre || 'MOVE';
+
+  // Build rows
+  const rows = porVencer.map(p=>{
+    const v = new Date(p.vence+'T12:00:00');
+    const diffDays = Math.round((v-now)/(1000*60*60*24));
+    const urgent = diffDays <= 3;
+    const urgColor = diffDays<=3 ? '#ef4444' : diffDays<=7 ? '#f59e0b' : '#10b981';
+    const urgLabel = diffDays===0 ? 'HOY' : diffDays===1 ? 'Mañana' : `${diffDays} días`;
+    const vFmt = v.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    // Find client email
+    const cliRec = clientesDB.find(c=>(c.nombre||'').trim()===(p.cliente||'').trim());
+    const clientEmail = cliRec?.email || '';
+    return { ...p, diffDays, urgColor, urgLabel, vFmt, urgent, clientEmail };
+  });
+
+  const withEmail = rows.filter(r=>r.clientEmail);
+  const withoutEmail = rows.filter(r=>!r.clientEmail);
+
+  // Build mailto: for bulk send to admin
+  const gymEmail = currentUser?.email || '';
+  const subject = encodeURIComponent(`[${gymNombre}] Resumen de vencimientos próximos — ${new Date().toLocaleDateString('es-MX')}`);
+  const bodyLines = [
+    `Hola,`,
+    ``,
+    `Este es el resumen de membresías próximas a vencer en ${gymNombre}:`,
+    ``,
+    ...rows.map(r=>`• ${r.cliente} — Vence: ${r.vFmt} (${r.urgLabel})${r.clientEmail?' — '+r.clientEmail:''}`),
+    ``,
+    `Total: ${rows.length} membresía(s) por vencer.`,
+    ``,
+    `— Sistema MOVE`
+  ];
+  const adminMailto = `mailto:${gymEmail}?subject=${subject}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+
+  const existing = document.getElementById('email-reminder-modal');
+  if(existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'email-reminder-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;';
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:18px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.45);">
+      <div style="padding:22px 24px 0;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);">📧 Notificaciones de Vencimiento</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">${rows.length} membresía${rows.length>1?'s':''} por vencer en 30 días</div>
+        </div>
+        <button onclick="document.getElementById('email-reminder-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">✕</button>
+      </div>
+
+      <div style="padding:16px 24px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:7px 8px;color:var(--text3);font-weight:600;">Cliente</th>
+              <th style="text-align:left;padding:7px 8px;color:var(--text3);font-weight:600;">Vence</th>
+              <th style="text-align:center;padding:7px 8px;color:var(--text3);font-weight:600;">Días</th>
+              <th style="text-align:left;padding:7px 8px;color:var(--text3);font-weight:600;">Email</th>
+              <th style="padding:7px 8px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r=>{
+              const indivSubj = encodeURIComponent(`[${gymNombre}] Tu membresía vence en ${r.urgLabel}`);
+              const indivBody = encodeURIComponent(
+                `Hola ${r.cliente},\n\nTe recordamos que tu membresía en ${gymNombre} vence el ${r.vFmt}.\n\n¡Renuévala para seguir entrenando sin interrupciones!\n\nSaludos,\n${gymNombre}`
+              );
+              const indivLink = r.clientEmail ? `mailto:${r.clientEmail}?subject=${indivSubj}&body=${indivBody}` : '';
+              return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:8px 8px;font-weight:600;color:var(--text);">${esc(r.cliente)}</td>
+                <td style="padding:8px 8px;color:var(--text2);">${r.vFmt}</td>
+                <td style="padding:8px 8px;text-align:center;font-weight:700;color:${r.urgColor};">${r.urgLabel}</td>
+                <td style="padding:8px 8px;color:var(--text3);font-size:11px;">${r.clientEmail ? esc(r.clientEmail) : '<em>Sin email</em>'}</td>
+                <td style="padding:8px 8px;">
+                  ${r.clientEmail
+                    ? `<a href="${indivLink}" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(0,180,216,.12);color:var(--accent);border:1px solid rgba(0,180,216,.25);text-decoration:none;font-weight:700;white-space:nowrap;">Enviar</a>`
+                    : `<span style="font-size:10px;color:var(--text4);">—</span>`}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+
+        ${withoutEmail.length ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--text3);">
+          ⚠️ <strong style="color:var(--warn);">${withoutEmail.length}</strong> cliente${withoutEmail.length>1?'s':''} sin email registrado. Agrégalo en su ficha para poder notificarlos.
+        </div>` : ''}
+
+        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
+          ${gymEmail ? `<a href="${adminMailto}" style="flex:1;min-width:160px;padding:11px;text-align:center;background:var(--accent);color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;">📩 Enviar resumen a mi correo</a>` : ''}
+          <button onclick="document.getElementById('email-reminder-modal').remove()" style="flex:1;min-width:100px;padding:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Cerrar</button>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text4);text-align:center;">Los botones "Enviar" abren tu cliente de correo predeterminado con el mensaje prellenado.</div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
 </script>
 
 <!-- ═══ SUPABASE SDK + INIT ═══ -->
@@ -10309,10 +10687,19 @@ let _obStep = 1;
 const OB_STEPS = 4;
 
 function checkOnboarding(){
-  if(currentUser && currentUser.rol !== 'admin') return;
-  if(localStorage.getItem('move_onboarding_done')) return;
-  if(gymConfig.gym_nombre && gymConfig.gym_nombre !== 'MOVE') return;
+  if(!currentUser || currentUser.rol !== 'admin') return;
+  // Key = scoped to gym so each new gym gets its own onboarding
+  const obKey = `move_onboarding_done_gym${MOVE_GYM_ID||1}`;
+  if(localStorage.getItem(obKey)) return;
+  // Show if gym has no custom name configured (fresh gym)
+  const hasConfig = gymConfig.gym_nombre && gymConfig.gym_nombre.trim() !== '' && gymConfig.gym_nombre !== 'MOVE';
+  if(hasConfig){ localStorage.setItem(obKey,'1'); return; } // already configured
   showOnboarding();
+}
+
+function closeOnboardingForGym(){
+  const obKey = `move_onboarding_done_gym${MOVE_GYM_ID||1}`;
+  localStorage.setItem(obKey,'1');
 }
 
 function showOnboarding(){
@@ -10323,7 +10710,7 @@ function showOnboarding(){
 
 function closeOnboarding(){
   document.getElementById('onboarding-wizard').style.display = 'none';
-  localStorage.setItem('move_onboarding_done','1');
+  closeOnboardingForGym();
 }
 
 function renderObStep(){
@@ -10413,7 +10800,7 @@ async function saveObConfig(){
   }
   applyGymConfig();
   renderThemeGrid();
-  localStorage.setItem('move_onboarding_done','1');
+  closeOnboardingForGym();
 }
 
 </script>
