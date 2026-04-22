@@ -312,6 +312,15 @@ body{
 }
 .kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
 .kpi-value{font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.5px;}
+.kpi-trend{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10.5px;font-weight:800;padding:2px 8px;
+  border-radius:99px;margin-top:7px;letter-spacing:.3px;
+  transition:all .2s;
+}
+.kpi-trend.up  {background:rgba(16,232,160,.13);color:#10e8a0;}
+.kpi-trend.down{background:rgba(248,113,113,.12);color:#f87171;}
+.kpi-trend.flat{background:rgba(144,168,184,.09);color:#90a8b8;}
 .kpi-meta{font-size:11px;color:var(--text4);margin-top:6px;display:flex;align-items:center;gap:4px;}
 .kpi-up{color:var(--ok);}
 .kpi-down{color:var(--danger);}
@@ -1809,6 +1818,7 @@ select option{background:#10101c;color:var(--text);}
         <div class="kpi-card" style="--kpi-color:#7c3aed">
           <div class="kpi-label">Leads Este Mes</div>
           <div class="kpi-value" id="kpi-leads">0</div>
+          <div class="kpi-trend" id="kpi-leads-trend" style="display:none;"></div>
           <div class="kpi-meta">Prospectos ingresados</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--ok)">
@@ -1819,6 +1829,7 @@ select option{background:#10101c;color:var(--text);}
         <div class="kpi-card" style="--kpi-color:var(--warn)">
           <div class="kpi-label">Ingresos del Mes</div>
           <div class="kpi-value" id="kpi-ingresos-mes">$0</div>
+          <div class="kpi-trend" id="kpi-ingresos-trend" style="display:none;"></div>
           <div class="kpi-meta" id="kpi-ingresos-meta">Pagos registrados</div>
         </div>
       </div>
@@ -1832,11 +1843,13 @@ select option{background:#10101c;color:var(--text);}
         <div class="kpi-card" style="--kpi-color:#22c55e">
           <div class="kpi-label">🆕 Socios Nuevos</div>
           <div class="kpi-value" id="kpi-socios-nuevos">0</div>
+          <div class="kpi-trend" id="kpi-socios-trend" style="display:none;"></div>
           <div class="kpi-meta">Primer pago este mes</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--danger)">
           <div class="kpi-label">📉 Membresías Vencidas</div>
           <div class="kpi-value" id="kpi-vencidas">0</div>
+          <div class="kpi-trend" id="kpi-vencidas-trend" style="display:none;"></div>
           <div class="kpi-meta">Sin renovar</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--warn)">
@@ -2654,6 +2667,13 @@ select option{background:#10101c;color:var(--text);}
       <div id="cpanel-qr-body"></div>
     </div>
 
+    <!-- Historial de Asistencia -->
+    <div class="detail-section" id="cpanel-asistencia-section">
+      <div class="detail-section-title">🏃 Asistencia</div>
+      <div id="cpanel-asistencia-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;"></div>
+      <div id="cpanel-asistencia-list"></div>
+    </div>
+
     <!-- Seguimiento del cliente -->
     <div class="detail-section">
       <div class="detail-section-title">📋 Seguimiento</div>
@@ -2690,6 +2710,26 @@ select option{background:#10101c;color:var(--text);}
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:459;"></div>
 
 <!-- ═══ MODALS ═══ -->
+
+<!-- Modal: Confirmación de seguridad -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="modal-title" id="confirm-title">¿Confirmar?</div>
+      <button class="modal-close" onclick="_confirmResolveWith(false)">✕</button>
+    </div>
+    <div class="modal-body" style="padding-top:8px;padding-bottom:20px;">
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <div id="confirm-icon" style="width:40px;height:40px;border-radius:10px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🗑</div>
+        <p id="confirm-message" style="font-size:13.5px;color:var(--text2);line-height:1.6;margin-top:8px;"></p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding:0 20px 20px;">
+      <button id="confirm-cancel-btn" class="btn btn-outline" onclick="_confirmResolveWith(false)">Cancelar</button>
+      <button id="confirm-ok-btn" class="btn btn-danger" onclick="_confirmResolveWith(true)">Eliminar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Nuevo Lead -->
 <div class="modal-overlay" id="modal-lead">
@@ -4054,7 +4094,7 @@ async function saveEditUser(){
 }
 
 async function deleteUser(id){
-  if(!confirm('¿Eliminar este usuario? Perderá acceso al sistema.')) return;
+  if(!await confirmDialog('¿Eliminar este usuario? Perderá acceso al sistema.', {title:'Eliminar usuario', icon:'👤'})) return;
   const { error } = await window.supabaseClient.from('usuarios').delete().eq('id', id);
   if(error){ toast('Error al eliminar ❌','✕'); return; }
   await loadUsuariosFromSupabase();
@@ -4555,6 +4595,38 @@ function toast(msg, icon='✓'){
 // ═══════════════════════════════════════════════════════════════════
 function openModal(id){ document.getElementById('modal-'+id).classList.add('open'); }
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
+
+// ─── Confirm Dialog (reemplaza window.confirm) ───
+let _confirmResolve = null;
+
+function confirmDialog(message, {
+  title       = '¿Confirmar acción?',
+  danger      = true,
+  confirmText = 'Eliminar',
+  cancelText  = 'Cancelar',
+  icon        = '🗑'
+} = {}) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirm-title').textContent   = title;
+    document.getElementById('confirm-message').textContent = message;
+    document.getElementById('confirm-icon').textContent    = icon;
+    document.getElementById('confirm-icon').style.background = danger
+      ? 'rgba(248,113,113,.12)' : 'rgba(0,180,216,.1)';
+    document.getElementById('confirm-icon').style.borderColor = danger
+      ? 'rgba(248,113,113,.25)' : 'rgba(0,180,216,.2)';
+    const okBtn = document.getElementById('confirm-ok-btn');
+    okBtn.textContent = confirmText;
+    okBtn.className   = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
+    document.getElementById('confirm-cancel-btn').textContent = cancelText;
+    openModal('confirm');
+  });
+}
+
+function _confirmResolveWith(val){
+  closeModal('confirm');
+  if(_confirmResolve){ _confirmResolve(val); _confirmResolve = null; }
+}
 document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
 });
@@ -4615,7 +4687,7 @@ function clearLeadForm(){
 }
 
 async function deleteLead(id){
-  if(!confirm('¿Eliminar este prospecto permanentemente?')) return;
+  if(!await confirmDialog('¿Eliminar este prospecto permanentemente?', {title:'Eliminar prospecto', icon:'👤'})) return;
   const { error } = await window.supabaseClient.from('leads').delete().eq('id', id);
   if(error){ console.error('Error eliminando lead:',error); alert('No se pudo eliminar el prospecto.'); return; }
   leads = leads.filter(l=>l.id!==id);
@@ -4834,7 +4906,7 @@ function clearCoachForm(){
 }
 
 async function deleteCoach(id){
-  if(!confirm('¿Eliminar este coach?')) return;
+  if(!await confirmDialog('¿Eliminar este coach?', {title:'Eliminar coach', icon:'🏋️'})) return;
   const { error } = await window.supabaseClient.from('coaches').delete().eq('id', id);
   if(error){ console.error('Error eliminando coach:', error); alert('No se pudo eliminar.'); return; }
   coaches = coaches.filter(c=>c.id!==id);
@@ -4993,7 +5065,7 @@ function renderEvalHistory(){
 }
 
 async function deleteEval(id){
-  if(!confirm('¿Eliminar esta evaluación?')) return;
+  if(!await confirmDialog('¿Eliminar esta evaluación?', {title:'Eliminar evaluación', icon:'📋'})) return;
   const { error } = await window.supabaseClient.from('evaluaciones').delete().eq('id', id);
   if(error){ console.error('Error eliminando evaluación:', error); alert('No se pudo eliminar.'); return; }
   evals = evals.filter(e=>e.id!==id);
@@ -5544,6 +5616,10 @@ function openClientePanel(nombreCliente){
   document.getElementById('cpanel-notas-list').innerHTML = `<div style="text-align:center;padding:12px;color:var(--text3);font-size:11px;">Cargando...</div>`;
   loadClienteNotas(nombreCliente);
 
+  // Cargar asistencia
+  document.getElementById('cpanel-asistencia-stats').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:10px;color:var(--text3);font-size:11px;">Cargando...</div>`;
+  loadClienteAsistencia(nombreCliente);
+
   // Abrir panel
   document.getElementById('clientePanel').classList.add('open');
   document.getElementById('cliente-panel-overlay').style.display = 'block';
@@ -5593,6 +5669,94 @@ function closeClientePanel(){
 let _clienteNotasActual = []; // cache de notas del cliente abierto
 let _clienteNotasNombre = '';
 
+async function loadClienteAsistencia(nombre){
+  const statsEl = document.getElementById('cpanel-asistencia-stats');
+  const listEl  = document.getElementById('cpanel-asistencia-list');
+  if(!statsEl||!listEl) return;
+
+  try{
+    const { data, error } = await window.supabaseClient
+      .from('qr_checkins')
+      .select('*')
+      .eq('nombre', nombre)
+      .order('fecha', {ascending:false})
+      .order('created_at', {ascending:false})
+      .limit(60);
+
+    if(error) throw error;
+
+    const checkins = data||[];
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const thisMonth = new Date().toISOString().slice(0,7);
+
+    const totalAll  = checkins.length;
+    const esteMes   = checkins.filter(c=>(c.fecha||'').startsWith(thisMonth)).length;
+    const ultimaVez = checkins.length>0 ? checkins[0].fecha : null;
+
+    // Días desde última visita
+    let ultimaLabel = '—';
+    if(ultimaVez){
+      const d = new Date(ultimaVez+'T12:00:00');
+      const diff = Math.round((hoy - d)/(1000*60*60*24));
+      ultimaLabel = diff===0 ? 'Hoy' : diff===1 ? 'Ayer' : `Hace ${diff} días`;
+    }
+
+    // Stat cards
+    statsEl.innerHTML = [
+      { label:'Este mes',   val:esteMes,      icon:'📅', color:'var(--accent)' },
+      { label:'Total clases', val:totalAll,   icon:'🏋️', color:'var(--ok)'    },
+      { label:'Última visita',val:ultimaLabel, icon:'⏱', color:'var(--warn)'  },
+    ].map(s=>`
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 10px 8px;text-align:center;">
+        <div style="font-size:16px;margin-bottom:4px;">${s.icon}</div>
+        <div style="font-size:18px;font-weight:800;color:${s.color};font-family:var(--font-display);line-height:1;">${s.val}</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-top:3px;">${s.label}</div>
+      </div>
+    `).join('');
+
+    if(!checkins.length){
+      listEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">Sin check-ins registrados vía QR aún.</div>`;
+      return;
+    }
+
+    // Group by month
+    const byMonth = {};
+    checkins.forEach(c=>{
+      const m = (c.fecha||'').slice(0,7);
+      if(!byMonth[m]) byMonth[m]=[];
+      byMonth[m].push(c);
+    });
+
+    listEl.innerHTML = Object.entries(byMonth).map(([mes, items])=>{
+      const [y,m] = mes.split('-');
+      const mesLabel = `${MESES_ES[parseInt(m)-1]} ${y}`;
+      const rows = items.map(c=>{
+        const hora = c.created_at ? new Date(c.created_at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+        const fechaFmt = new Date((c.fecha||'')+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <div style="width:24px;height:24px;border-radius:6px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">✓</div>
+          <div style="flex:1;">
+            <span style="font-size:12px;color:var(--text);font-weight:600;">${fechaFmt}</span>
+            ${c.clase?`<span style="font-size:10px;color:var(--text3);margin-left:5px;">· ${esc(c.clase)}</span>`:''}
+          </div>
+          ${hora?`<div style="font-size:10px;color:var(--text3);flex-shrink:0;">${hora}</div>`:''}
+        </div>`;
+      }).join('');
+      return `<div style="margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:800;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          ${mesLabel} <span style="font-size:9px;color:var(--text3);font-weight:600;background:var(--card2);padding:1px 6px;border-radius:99px;">${items.length} visitas</span>
+        </div>
+        ${rows}
+      </div>`;
+    }).join('');
+
+  } catch(e){
+    console.error('Error cargando asistencia:', e);
+    statsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:10px;color:var(--text3);font-size:11px;">No se pudieron cargar los datos de asistencia.</div>`;
+    listEl.innerHTML = '';
+  }
+}
+
 async function loadClienteNotas(nombre){
   _clienteNotasNombre = nombre;
   const { data, error } = await window.supabaseClient
@@ -5639,7 +5803,7 @@ async function saveClienteNota(){
 }
 
 async function deleteClienteNota(id){
-  if(!confirm('¿Eliminar esta nota?')) return;
+  if(!await confirmDialog('¿Eliminar esta nota?', {title:'Eliminar nota', icon:'📝'})) return;
   const { error } = await window.supabaseClient.from('cliente_notas').delete().eq('id', id);
   if(error){ console.error('Error eliminando nota:', error); return; }
   _clienteNotasActual = _clienteNotasActual.filter(n=>String(n.id)!==String(id));
@@ -5767,7 +5931,7 @@ function guardarAsistencia(){
 }
 
 function eliminarAsistencia(id){
-  if(!confirm('¿Eliminar este registro de asistencia?')) return;
+  if(!await confirmDialog('¿Eliminar este registro de asistencia?', {title:'Eliminar asistencia', icon:'📅'})) return;
   const data = loadAsistencia().filter(r=>r.id!==id);
   saveAsistenciaLS(data);
   renderAsistencia();
@@ -6224,10 +6388,56 @@ function renderDashboard(){
     const v = new Date(p.vence); return v>=now && v<=in30;
   });
 
+  // ─── Mes anterior (para trends) ───
+  const prevDate = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const lastMonth = prevDate.toISOString().slice(0,7);
+  const pagosLastMes = pagos.filter(p=>(p.fecha||'').startsWith(lastMonth) && p.notas!=='__sin_pago__');
+  const ingresosLastMes = pagosLastMes.reduce((s,p)=>s+p.monto,0);
+
+  // Socios nuevos mes anterior
+  const clientesNuevosLast = new Set();
+  pagosLastMes.forEach(p=>{
+    const tieneAntes = pagos.some(x=>x.cliente===p.cliente && (x.fecha||'')<(p.fecha||'') && !(x.fecha||'').startsWith(lastMonth));
+    if(!tieneAntes) clientesNuevosLast.add(p.cliente);
+  });
+
+  // Leads mes anterior
+  const leadsLastMes = leads.filter(l=>{
+    const f = l.fecha||l.created_at||'';
+    return f.startsWith(lastMonth);
+  }).length;
+  const leadsEsteMes = leads.filter(l=>{
+    const f = l.fecha||l.created_at||'';
+    return f.startsWith(thisMonth);
+  }).length;
+
+  // Vencidas mes anterior (vencieron en lastMonth)
+  const vencidasLastMes = pagos.filter(p=>p.vence&&p.vence!=='—'&&(p.vence||'').startsWith(lastMonth)).length;
+  const vencidasEsteMes = pagos.filter(p=>p.vence&&p.vence!=='—'&&(p.vence||'').startsWith(thisMonth)).length;
+
+  // Helper: renderiza badge de trend
+  function setTrend(elId, current, prev, invertido){
+    const el = document.getElementById(elId);
+    if(!el) return;
+    if(prev===0 && current===0){ el.style.display='none'; return; }
+    const diff = current - prev;
+    let pct;
+    if(prev===0)       pct = current>0 ? '+100%' : '0%';
+    else               pct = (diff>=0?'+':'') + Math.round((diff/prev)*100)+'%';
+    let cls, arrow;
+    if(diff===0)      { cls='flat'; arrow='→'; }
+    else if(!invertido){ cls=diff>0?'up':'down'; arrow=diff>0?'↑':'↓'; }
+    else              { cls=diff>0?'down':'up'; arrow=diff>0?'↑':'↓'; } // invertido: más vencidas = malo
+    el.className = `kpi-trend ${cls}`;
+    el.style.display = 'inline-flex';
+    el.textContent = `${arrow} ${pct} vs mes ant.`;
+  }
+
   const ki = document.getElementById('kpi-ingresos-mes');
   const km = document.getElementById('kpi-ingresos-meta');
   if(ki) ki.textContent = '$'+ingresosMes.toLocaleString('es-MX');
   if(km) km.textContent = pagosEsteMes.length+' pago'+(pagosEsteMes.length!==1?'s':'');
+  setTrend('kpi-ingresos-trend', ingresosMes, ingresosLastMes, false);
 
   const kti = document.getElementById('kpi-total-ingresos');
   const ktim= document.getElementById('kpi-total-ingresos-meta');
@@ -6236,12 +6446,17 @@ function renderDashboard(){
 
   const ksn = document.getElementById('kpi-socios-nuevos');
   if(ksn) ksn.textContent = clientesNuevos.size;
+  setTrend('kpi-socios-trend', clientesNuevos.size, clientesNuevosLast.size, false);
 
   const kv = document.getElementById('kpi-vencidas');
   if(kv) kv.textContent = vencidasCount;
+  setTrend('kpi-vencidas-trend', vencidasEsteMes, vencidasLastMes, true); // invertido: más = peor
 
   const kpv = document.getElementById('kpi-por-vencer');
   if(kpv) kpv.textContent = porVencer30.length;
+
+  // Leads trend (el valor ya se seteó arriba con `total`)
+  setTrend('kpi-leads-trend', leadsEsteMes, leadsLastMes, false);
 
   // ─── Próximos Vencimientos list ───
   const vencEl = document.getElementById('dash-vencimientos');
@@ -6569,7 +6784,7 @@ async function saveGasto(){
 }
 
 async function deleteGasto(id){
-  if(!confirm('¿Eliminar este gasto?')) return;
+  if(!await confirmDialog('¿Eliminar este gasto?', {title:'Eliminar gasto', icon:'💸'})) return;
   const { error } = await window.supabaseClient.from('gastos').delete().eq('id', id);
   if(error){ toast('Error al eliminar','✕'); return; }
   gastos = gastos.filter(g=>String(g.id)!==String(id));
@@ -6771,7 +6986,7 @@ async function savePrograma(){
 async function deletePrograma(){
   const id = document.getElementById('prog-id-input').value;
   if(!id) return;
-  if(!confirm('¿Eliminar el entrenamiento de este día?')) return;
+  if(!await confirmDialog('¿Eliminar el entrenamiento de este día?', {title:'Eliminar entrenamiento', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('programas').delete().eq('id', id);
   if(error){ toast('Error al eliminar','✕'); return; }
   programas = programas.filter(p=>String(p.id)!==String(id));
@@ -6881,7 +7096,7 @@ async function saveClienteSinPago(){
 
   const existe = clientesDB.some(c=>(c.nombre||'').toLowerCase()===nombre.toLowerCase());
   if(existe){
-    if(!confirm(`Ya existe un cliente llamado "${nombre}". ¿Deseas agregarlo de todas formas?`)) return;
+    if(!await confirmDialog(`Ya existe un cliente llamado "${nombre}". ¿Deseas agregarlo de todas formas?`, {title:'Cliente duplicado', danger:false, confirmText:'Agregar de todas formas', icon:'👤'})) return;
   }
 
   const payload = {
@@ -6903,7 +7118,7 @@ async function saveClienteSinPago(){
 }
 
 async function deletePago(id){
-  if(!confirm('¿Eliminar este pago?')) return;
+  if(!await confirmDialog('¿Eliminar este pago? Esta acción no se puede deshacer.', {title:'Eliminar pago', icon:'💳'})) return;
   const { error } = await window.supabaseClient.from('pagos').delete().eq('id', id);
   if(error){ console.error('Error eliminando pago:', error); alert('No se pudo eliminar.'); return; }
   pagos = pagos.filter(p=>String(p.id)!==String(id));
@@ -7098,7 +7313,7 @@ async function saveCampana(){
 }
 
 async function deleteCampana(id){
-  if(!confirm('¿Eliminar esta campaña?')) return;
+  if(!await confirmDialog('¿Eliminar esta campaña?', {title:'Eliminar campaña', icon:'📢'})) return;
   const { error } = await window.supabaseClient.from('campanas').delete().eq('id', id);
   if(error){ console.error('Error eliminando campaña:', error); alert('No se pudo eliminar.'); return; }
   campanas = campanas.filter(c=>c.id!==id);
@@ -7220,7 +7435,7 @@ async function updateSolicitudEstado(id, nuevoEstado){
 }
 
 async function deleteSolicitud(id){
-  if(!confirm('¿Eliminar esta solicitud?')) return;
+  if(!await confirmDialog('¿Eliminar esta solicitud?', {title:'Eliminar solicitud', icon:'📋'})) return;
   const { error } = await window.supabaseClient.from('solicitudes').delete().eq('id', id);
   if(error){ console.error('Error eliminando solicitud:', error); alert('No se pudo eliminar.'); return; }
   solicitudes = solicitudes.filter(s=>s.id!==id);
@@ -7285,7 +7500,7 @@ async function saveContenido(){
 }
 
 async function deleteContenido(id){
-  if(!confirm('¿Eliminar este contenido?')) return;
+  if(!await confirmDialog('¿Eliminar este contenido?', {title:'Eliminar contenido', icon:'📄'})) return;
   const { error } = await window.supabaseClient.from('contenidos').delete().eq('id', id);
   if(error){ console.error('Error eliminando contenido:', error); alert('No se pudo eliminar.'); return; }
   contenidos = contenidos.filter(c=>String(c.id)!==String(id));
@@ -8050,7 +8265,7 @@ async function saveEditClase(){
 }
 
 async function deleteClase(id){
-  if(!confirm('¿Eliminar esta clase del horario?')) return;
+  if(!await confirmDialog('¿Eliminar esta clase del horario?', {title:'Eliminar clase', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', id);
   if(error){ toast('Error al eliminar ❌','✕'); return; }
   await loadHorarioFromSupabase();
@@ -8601,6 +8816,142 @@ function checkMembresiasNotificaciones(){
   }
   localStorage.setItem('move_notif_last', todayStr);
 }
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ONBOARDING WIZARD
+// ═══════════════════════════════════════════════════════════════════
+let _obStep = 1;
+const OB_STEPS = 4;
+
+function checkOnboarding(){
+  if(currentUser && currentUser.rol !== 'admin') return;
+  if(localStorage.getItem('move_onboarding_done')) return;
+  if(gymConfig.gym_nombre && gymConfig.gym_nombre !== 'MOVE') return;
+  showOnboarding();
+}
+
+function showOnboarding(){
+  _obStep = 1;
+  renderObStep();
+  document.getElementById('onboarding-wizard').style.display = 'flex';
+}
+
+function closeOnboarding(){
+  document.getElementById('onboarding-wizard').style.display = 'none';
+  localStorage.setItem('move_onboarding_done','1');
+}
+
+function renderObStep(){
+  const titles    = ['','¡Bienvenido!','Elige tu tema','Meta mensual','¡Todo listo!'];
+  const subtitles = ['',
+    'Personaliza cómo se verá tu gym en el sistema.',
+    'Elige el color que mejor represente tu marca.',
+    'Define tu objetivo de ingresos mensuales.',
+    'Tu sistema está configurado y listo para usar.'
+  ];
+  let dots = '';
+  for(let i=1;i<=OB_STEPS;i++){
+    dots += '<div style="width:'+(i===_obStep?24:8)+'px;height:8px;border-radius:4px;background:'+(i===_obStep?'var(--accent)':i<_obStep?'var(--accent-bg2)':'rgba(255,255,255,.12)')+';transition:all .3s;"></div>';
+  }
+  let body = '';
+  if(_obStep===1){
+    const curNombre = gymConfig.gym_nombre||'';
+    const curTag    = gymConfig.gym_tagline||'';
+    body = '<div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;margin-bottom:8px;">🏋️</div><div style="font-size:13px;color:var(--text3);line-height:1.6;">Antes de empezar, cuéntanos el nombre de tu gym.<br>Puedes cambiar esto después en Configuración.</div></div><div style="display:flex;flex-direction:column;gap:14px;"><div><label style="display:block;font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px;">Nombre del gym *</label><input id="ob-nombre" type="text" placeholder="Ej: MOVE, FitZone, Iron Club…" value="'+esc(curNombre)+'" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:15px;font-family:var(--font);outline:none;box-sizing:border-box;" oninput="this.style.borderColor='var(--accent)'"/></div><div><label style="display:block;font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px;">Subtítulo</label><input id="ob-tagline" type="text" placeholder="Ej: Fitness Center, Studio…" value="'+esc(curTag)+'" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box;" oninput="this.style.borderColor='var(--accent)'"/></div></div>';
+  } else if(_obStep===2){
+    const current = gymConfig.gym_theme||'cyan';
+    const grid = GYM_THEMES.map(t=>'<div class="theme-card '+(t.id===current?'t-active':'')+'" onclick="obSelectTheme(''+t.id+'')" title="'+t.name+'"><div class="tc-preview"><div class="tc-sidebar-strip"><div class="tc-dot" style="background:'+t.accent+';"></div><div class="tc-dot"></div><div class="tc-dot"></div><div class="tc-dot"></div></div><div class="tc-main-area"><div class="tc-top-bar" style="background:'+t.accent+';"></div><div class="tc-row"><div class="tc-mini"><div class="tc-mini-line" style="background:'+t.accent+';"></div></div><div class="tc-mini"><div class="tc-mini-line" style="background:'+t.accent+';opacity:.5;"></div></div><div class="tc-mini"></div></div><div style="display:flex;justify-content:flex-end;margin-top:2px;"><div class="tc-btn-mini" style="background:'+t.accent+';"></div></div></div></div><div class="theme-card-lbl">'+t.name+'</div></div>').join('');
+    body = '<div class="theme-picker-grid" style="margin:0 0 8px;">'+grid+'</div><div style="font-size:11px;color:var(--text3);text-align:center;">Haz click en cualquier tema para previsualizarlo al instante</div>';
+  } else if(_obStep===3){
+    const curMeta = localStorage.getItem('move_meta_mensual')||'';
+    body = '<div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;margin-bottom:8px;">🎯</div><div style="font-size:13px;color:var(--text3);line-height:1.6;">¿Cuánto quieres generar al mes?<br>Te mostramos tu avance en el dashboard.</div></div><div><label style="display:block;font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px;">Meta de ingresos mensuales (MXN)</label><div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;font-weight:700;">$</span><input id="ob-meta" type="number" min="0" placeholder="50000" value="'+curMeta+'" style="width:100%;padding:12px 14px 12px 28px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:22px;font-weight:700;font-family:var(--font-display);outline:none;box-sizing:border-box;" oninput="this.style.borderColor='var(--accent)'"/></div><div style="font-size:11px;color:var(--text3);margin-top:8px;">Puedes cambiarlo después en Configuración → Meta mensual.</div></div>';
+  } else if(_obStep===4){
+    const nombre = gymConfig.gym_nombre||'tu gym';
+    const steps = ['➕ Registra tus primeros clientes en la sección <strong>Clientes</strong>','💳 Agrega pagos en <strong>Pagos & Renovaciones</strong>','🗓 Crea el horario semanal en <strong>Horario</strong>','📱 Activa el <strong>Kiosco QR</strong> para registro de asistencia'];
+    body = '<div style="text-align:center;"><div style="font-size:56px;margin-bottom:12px;">🚀</div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px;">¡'+esc(nombre)+' está listo!</div><div style="font-size:13px;color:var(--text3);line-height:1.7;margin-bottom:24px;">Tu sistema de gestión ya está configurado.<br>Aquí te dejamos tus primeros pasos:</div><div style="display:flex;flex-direction:column;gap:8px;text-align:left;max-width:320px;margin:0 auto;">'+steps.map(s=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid var(--accent-bg2);border-radius:9px;font-size:12.5px;color:var(--text);">'+s+'</div>').join('')+'</div></div>';
+  }
+  document.getElementById('ob-body').innerHTML        = body;
+  document.getElementById('ob-title').textContent     = titles[_obStep];
+  document.getElementById('ob-subtitle').textContent  = subtitles[_obStep];
+  document.getElementById('ob-dots').innerHTML        = dots;
+  document.getElementById('ob-back').style.display    = _obStep>1 ? 'inline-flex' : 'none';
+  const nextBtn = document.getElementById('ob-next');
+  nextBtn.textContent = _obStep===OB_STEPS ? '🚀 Comenzar' : 'Siguiente →';
+  nextBtn.style.background = _obStep===OB_STEPS ? 'var(--ok)' : 'var(--accent)';
+}
+
+function obSelectTheme(id){
+  applyThemePreset(id);
+  document.querySelectorAll('#ob-body .theme-card').forEach(c=>{
+    c.classList.toggle('t-active', c.getAttribute('onclick')==="obSelectTheme('"+id+"')");
+  });
+}
+
+async function obNext(){
+  if(_obStep===1){
+    const nombre  = (document.getElementById('ob-nombre')?.value||'').trim();
+    const tagline = (document.getElementById('ob-tagline')?.value||'').trim();
+    if(!nombre){ document.getElementById('ob-nombre').style.borderColor='var(--danger)'; return; }
+    gymConfig.gym_nombre  = nombre;
+    gymConfig.gym_tagline = tagline||'Fitness Center';
+    const sNombre  = document.getElementById('sidebar-gym-nombre');
+    const sTagline = document.getElementById('sidebar-gym-tagline');
+    if(sNombre)  sNombre.textContent  = nombre;
+    if(sTagline) sTagline.textContent = gymConfig.gym_tagline;
+  } else if(_obStep===3){
+    const meta = document.getElementById('ob-meta')?.value||'';
+    if(meta) localStorage.setItem('move_meta_mensual', meta);
+  } else if(_obStep===OB_STEPS){
+    await saveObConfig();
+    closeOnboarding();
+    renderDashboard();
+    return;
+  }
+  _obStep++;
+  renderObStep();
+}
+
+function obBack(){
+  if(_obStep>1){ _obStep--; renderObStep(); }
+}
+
+async function saveObConfig(){
+  const rows = [
+    { key:'gym_nombre',   value: gymConfig.gym_nombre  ||'MOVE'           },
+    { key:'gym_tagline',  value: gymConfig.gym_tagline ||'Fitness Center'  },
+    { key:'gym_color',    value: gymConfig.gym_color   ||'#00b4d8'         },
+    { key:'gym_theme',    value: gymConfig.gym_theme   ||'cyan'            },
+    { key:'gym_logo_url', value: gymConfig.gym_logo_url||''                },
+  ];
+  for(const row of rows){
+    await window.supabaseClient.from('gym_config').upsert(row,{onConflict:'key'});
+  }
+  applyGymConfig();
+  renderThemeGrid();
+  localStorage.setItem('move_onboarding_done','1');
+}
+
 </script>
+
+<!-- ═══════════════════════════════════════
+     ONBOARDING WIZARD
+═══════════════════════════════════════ -->
+<div id="onboarding-wizard" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(4,4,12,.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:20px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06);overflow:hidden;">
+    <div style="padding:24px 28px 0;">
+      <div style="display:flex;gap:5px;margin-bottom:22px;" id="ob-dots"></div>
+      <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;font-family:var(--font-display);" id="ob-title"></div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;" id="ob-subtitle"></div>
+    </div>
+    <div style="padding:0 28px;min-height:200px;" id="ob-body"></div>
+    <div style="padding:20px 28px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin-top:20px;">
+      <button id="ob-back" onclick="obBack()" style="display:none;padding:9px 16px;background:none;border:1.5px solid var(--border2);border-radius:9px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);">← Atrás</button>
+      <button onclick="closeOnboarding()" style="padding:9px 16px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font);">Omitir</button>
+      <button id="ob-next" onclick="obNext()" style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .2s;">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
