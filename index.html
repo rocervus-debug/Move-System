@@ -3720,6 +3720,8 @@ function showApp(){
     applyStoredSettings();
     if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
     else document.getElementById('users-section').style.display='none';
+    // Show onboarding wizard for new gyms
+    setTimeout(checkOnboarding, 800);
   }
 }
 
@@ -5930,7 +5932,7 @@ function guardarAsistencia(){
   renderAsistencia();
 }
 
-function eliminarAsistencia(id){
+async function eliminarAsistencia(id){
   if(!await confirmDialog('¿Eliminar este registro de asistencia?', {title:'Eliminar asistencia', icon:'📅'})) return;
   const data = loadAsistencia().filter(r=>r.id!==id);
   saveAsistenciaLS(data);
