@@ -1544,8 +1544,8 @@ select option{background:#10101c;color:var(--text);}
 ═══════════════════════════════════════ -->
 <aside class="sidebar">
   <div class="logo">
-    <div class="logo-mark">MOVE</div>
-    <div class="logo-tagline">Sistema Interno · 2026</div>
+    <div class="logo-mark" id="sidebar-gym-nombre">MOVE</div>
+    <div class="logo-tagline" id="sidebar-gym-tagline">Sistema Interno · 2026</div>
     <div style="margin-top:10px;display:flex;gap:4px;">
       <div style="width:28px;height:2px;background:rgba(255,255,255,.3);border-radius:2px;"></div>
       <div style="width:12px;height:2px;background:rgba(255,255,255,.12);border-radius:2px;"></div>
@@ -2317,16 +2317,65 @@ select option{background:#10101c;color:var(--text);}
           </div>
         </div>
         <div class="settings-section" style="margin-top:20px;margin-bottom:0;">
-          <div class="settings-section-title">🏷 Identidad</div>
+          <div class="settings-section-title">🏷 Identidad del Gym</div>
+
+          <!-- Nombre del gym -->
           <div class="settings-row">
             <div>
-              <div class="settings-label">Subtítulo del gym</div>
-              <div class="settings-desc">Se muestra debajo del logo en el hero banner</div>
+              <div class="settings-label">Nombre del gym</div>
+              <div class="settings-desc">Aparece en el sidebar y como título de la app</div>
+            </div>
+            <div class="settings-control">
+              <input class="settings-input" id="cfg-gym-nombre" type="text" placeholder="MOVE" value="MOVE"/>
+            </div>
+          </div>
+
+          <!-- Subtítulo / tagline -->
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Subtítulo</div>
+              <div class="settings-desc">Se muestra debajo del nombre en el sidebar y el hero banner</div>
             </div>
             <div class="settings-control">
               <input class="settings-input" id="cfg-tagline" type="text" placeholder="Fitness Center" value="Fitness Center"/>
-              <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveTagline()">Guardar</button>
             </div>
+          </div>
+
+          <!-- Color de acento -->
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Color principal</div>
+              <div class="settings-desc">Define el color de acento de toda la interfaz</div>
+            </div>
+            <div class="settings-control" style="display:flex;align-items:center;gap:10px;">
+              <input id="cfg-gym-color" type="color" value="#00b4d8"
+                style="width:44px;height:36px;border:none;background:none;cursor:pointer;border-radius:6px;padding:2px;"
+                oninput="previewGymColor(this.value)"/>
+              <input class="settings-input" id="cfg-gym-color-hex" type="text" placeholder="#00b4d8" value="#00b4d8"
+                style="width:100px;" oninput="syncColorPicker(this.value)"/>
+              <div id="cfg-color-preview" style="width:32px;height:32px;border-radius:6px;background:#00b4d8;border:1px solid rgba(255,255,255,.12);flex-shrink:0;"></div>
+            </div>
+          </div>
+
+          <!-- Logo URL -->
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">URL del logo</div>
+              <div class="settings-desc">Imagen cuadrada preferida. Déjalo vacío para usar el texto.</div>
+            </div>
+            <div class="settings-control" style="flex:1;max-width:340px;">
+              <input class="settings-input" style="width:100%;" id="cfg-gym-logo" type="text" placeholder="https://..." oninput="previewLogoUrl(this.value)"/>
+              <div id="cfg-logo-preview" style="display:none;margin-top:8px;">
+                <img id="cfg-logo-img" src="" alt="Logo preview"
+                  style="height:48px;border-radius:8px;border:1px solid rgba(255,255,255,.12);"
+                  onerror="document.getElementById('cfg-logo-preview').style.display='none'"/>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-outline btn-sm" onclick="resetGymConfig()">Restaurar defaults</button>
+            <button class="btn btn-primary btn-sm" onclick="saveGymConfig()">💾 Guardar identidad</button>
           </div>
         </div>
       </div>
@@ -3463,6 +3512,7 @@ select option{background:#10101c;color:var(--text);}
 // ═══════════════════════════════════════════════════════════════════
 // STATE — All data loaded from Supabase on initialization
 // ═══════════════════════════════════════════════════════════════════
+let gymConfig  = {}; // loaded from gym_config table
 let leads      = []; // loaded from Supabase
 let coaches    = []; // loaded from Supabase
 let evals      = []; // loaded from Supabase
@@ -3941,7 +3991,7 @@ async function deleteUser(id){
 // ═══════════════════════════════════════════════════════════════════
 function applyStoredSettings(){
   const url     = localStorage.getItem('move_photo_url')||'';
-  const tagline = localStorage.getItem('move_tagline')||'Fitness Center';
+  const tagline = localStorage.getItem('move_tagline')||gymConfig.gym_tagline||'Fitness Center';
   if(url){ document.documentElement.style.setProperty('--hero-photo', `url('${url}')`); }
   const tEl = document.getElementById('hero-tagline');
   if(tEl) tEl.textContent = tagline;
@@ -3953,6 +4003,170 @@ function applyStoredSettings(){
   const meta = localStorage.getItem('move_meta_mensual')||'';
   const cfgMeta = document.getElementById('cfg-meta-mensual');
   if(cfgMeta && meta) cfgMeta.value = meta;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GYM CONFIG — Personalización (nombre, color, logo)
+// ═══════════════════════════════════════════════════════════════════
+async function loadConfigFromSupabase(){
+  if(!window.supabaseClient){ return; }
+  const { data, error } = await window.supabaseClient
+    .from('gym_config').select('key,value');
+  if(error){ console.error('Error cargando gym_config:', error); return; }
+  // Build map
+  gymConfig = {};
+  (data||[]).forEach(row => { gymConfig[row.key] = row.value||''; });
+  applyGymConfig();
+}
+
+function applyGymConfig(){
+  const nombre  = gymConfig.gym_nombre  || 'MOVE';
+  const tagline = gymConfig.gym_tagline || 'Fitness Center';
+  const color   = gymConfig.gym_color   || '#00b4d8';
+  const logo    = gymConfig.gym_logo_url|| '';
+
+  // ── Sidebar brand ──
+  const sNombre  = document.getElementById('sidebar-gym-nombre');
+  const sTagline = document.getElementById('sidebar-gym-tagline');
+  if(sNombre) sNombre.textContent = logo ? '' : nombre;
+  if(sTagline) sTagline.textContent = tagline;
+
+  // ── If logo URL, show img inside sidebar brand ──
+  if(logo && sNombre){
+    if(!document.getElementById('sidebar-gym-logo')){
+      const img = document.createElement('img');
+      img.id = 'sidebar-gym-logo';
+      img.style.cssText = 'height:36px;max-width:120px;object-fit:contain;border-radius:4px;';
+      img.onerror = function(){ this.style.display='none'; sNombre.textContent = nombre; };
+      sNombre.appendChild(img);
+    }
+    const logoEl = document.getElementById('sidebar-gym-logo');
+    if(logoEl){ logoEl.src = logo; logoEl.style.display = 'block'; }
+  } else {
+    const logoEl = document.getElementById('sidebar-gym-logo');
+    if(logoEl){ logoEl.style.display = 'none'; }
+    if(sNombre) sNombre.textContent = nombre;
+  }
+
+  // ── CSS accent color ──
+  document.documentElement.style.setProperty('--accent', color);
+  // Derive hover (+20% brightness) and bg (10% opacity)
+  document.documentElement.style.setProperty('--accent-hover', lightenColor(color, 20));
+  document.documentElement.style.setProperty('--accent-bg',  hexToRgba(color, 0.09));
+  document.documentElement.style.setProperty('--accent-bg2', hexToRgba(color, 0.16));
+
+  // ── Hero tagline ──
+  const heroTag = document.getElementById('hero-tagline');
+  if(heroTag && !localStorage.getItem('move_tagline')) heroTag.textContent = tagline;
+
+  // ── Sync settings form ──
+  const fNombre = document.getElementById('cfg-gym-nombre');
+  const fTag    = document.getElementById('cfg-tagline');
+  const fColor  = document.getElementById('cfg-gym-color');
+  const fHex    = document.getElementById('cfg-gym-color-hex');
+  const fLogo   = document.getElementById('cfg-gym-logo');
+  const fPrev   = document.getElementById('cfg-color-preview');
+  if(fNombre) fNombre.value = nombre;
+  if(fTag)    fTag.value    = tagline;
+  if(fColor)  fColor.value  = color;
+  if(fHex)    fHex.value    = color;
+  if(fLogo)   fLogo.value   = logo;
+  if(fPrev)   fPrev.style.background = color;
+  // Logo preview
+  if(logo){
+    const lp = document.getElementById('cfg-logo-preview');
+    const li = document.getElementById('cfg-logo-img');
+    if(lp && li){ li.src = logo; lp.style.display = 'block'; }
+  }
+}
+
+async function saveGymConfig(){
+  const nombre  = (document.getElementById('cfg-gym-nombre')?.value||'').trim()||'MOVE';
+  const tagline = (document.getElementById('cfg-tagline')?.value||'').trim()||'Fitness Center';
+  const color   = document.getElementById('cfg-gym-color')?.value||'#00b4d8';
+  const logo    = (document.getElementById('cfg-gym-logo')?.value||'').trim();
+
+  const rows = [
+    { key:'gym_nombre',   value: nombre  },
+    { key:'gym_tagline',  value: tagline },
+    { key:'gym_color',    value: color   },
+    { key:'gym_logo_url', value: logo    },
+  ];
+
+  for(const row of rows){
+    const { error } = await window.supabaseClient
+      .from('gym_config')
+      .upsert(row, { onConflict: 'key' });
+    if(error){ console.error('Error guardando gym_config:', error); toast('Error al guardar ✗','danger'); return; }
+    gymConfig[row.key] = row.value;
+  }
+
+  // Also persist tagline locally (backward compat)
+  localStorage.setItem('move_tagline', tagline);
+
+  applyGymConfig();
+  toast(`Identidad guardada ✓`);
+}
+
+async function resetGymConfig(){
+  const defaults = { gym_nombre:'MOVE', gym_tagline:'Fitness Center', gym_color:'#00b4d8', gym_logo_url:'' };
+  for(const [key,value] of Object.entries(defaults)){
+    await window.supabaseClient.from('gym_config').upsert({key,value},{onConflict:'key'});
+    gymConfig[key] = value;
+  }
+  applyGymConfig();
+  toast('Identidad restaurada');
+}
+
+function previewGymColor(color){
+  const hexInput = document.getElementById('cfg-gym-color-hex');
+  const preview  = document.getElementById('cfg-color-preview');
+  if(hexInput) hexInput.value = color;
+  if(preview)  preview.style.background = color;
+  // Live preview on page
+  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent-hover', lightenColor(color, 20));
+  document.documentElement.style.setProperty('--accent-bg',  hexToRgba(color, 0.09));
+  document.documentElement.style.setProperty('--accent-bg2', hexToRgba(color, 0.16));
+}
+
+function syncColorPicker(hex){
+  const picker = document.getElementById('cfg-gym-color');
+  const preview= document.getElementById('cfg-color-preview');
+  if(/^#[0-9a-fA-F]{6}$/.test(hex)){
+    if(picker)  picker.value  = hex;
+    if(preview) preview.style.background = hex;
+    previewGymColor(hex);
+  }
+}
+
+function previewLogoUrl(url){
+  const lp = document.getElementById('cfg-logo-preview');
+  const li = document.getElementById('cfg-logo-img');
+  if(!lp||!li) return;
+  if(url && url.startsWith('http')){
+    li.src = url;
+    lp.style.display = 'block';
+  } else {
+    lp.style.display = 'none';
+  }
+}
+
+// ── Color utilities ──
+function hexToRgba(hex, alpha){
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function lightenColor(hex, pct){
+  let r = parseInt(hex.slice(1,3),16);
+  let g = parseInt(hex.slice(3,5),16);
+  let b = parseInt(hex.slice(5,7),16);
+  r = Math.min(255, Math.round(r + (255-r)*(pct/100)));
+  g = Math.min(255, Math.round(g + (255-g)*(pct/100)));
+  b = Math.min(255, Math.round(b + (255-b)*(pct/100)));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
 function previewPhoto(url){
@@ -3983,11 +4197,8 @@ function clearPhoto(){
 }
 
 function saveTagline(){
-  const tag = document.getElementById('cfg-tagline').value.trim()||'Fitness Center';
-  localStorage.setItem('move_tagline', tag);
-  const tEl = document.getElementById('hero-tagline');
-  if(tEl) tEl.textContent = tag;
-  toast('Guardado ✓');
+  // Now handled by saveGymConfig(); kept for backward compatibility
+  saveGymConfig();
 }
 
 function saveState(){ /* data is managed in Supabase */ }
@@ -7772,6 +7983,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Load all data in parallel (always, so app is ready when user logs in)
   await Promise.all([
+    loadConfigFromSupabase(),
     loadLeadsFromSupabase(),
     loadCoachesFromSupabase(),
     loadEvalsFromSupabase(),
