@@ -2705,6 +2705,45 @@ select option{background:#10101c;color:var(--text);}
   </div>
 </div>
 
+<!-- Modal: Editar Cliente -->
+<div class="modal-overlay" id="modal-editar-cliente">
+  <div class="modal" style="width:420px;">
+    <div class="modal-head">
+      <div class="modal-title">✏️ Editar Cliente</div>
+      <button class="modal-close" onclick="closeModal('editar-cliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cli-id"/>
+      <div class="field">
+        <label>Nombre completo *</label>
+        <input id="cli-nombre" type="text" placeholder="Nombre del cliente"/>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>📱 WhatsApp (10 dígitos)</label>
+          <input id="cli-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+        </div>
+        <div class="field">
+          <label>🎂 Fecha de nacimiento</label>
+          <input id="cli-cumpleanos" type="date"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="cli-email" type="email" placeholder="correo@ejemplo.com"/>
+      </div>
+      <div class="field">
+        <label>Notas internas</label>
+        <input id="cli-notas" type="text" placeholder="Referido por, condición especial..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editar-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditarCliente()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Agregar Cliente (sin pago / migración) -->
 <div class="modal-overlay" id="modal-solo-cliente">
   <div class="modal" style="width:420px;">
@@ -3428,6 +3467,7 @@ let leads      = []; // loaded from Supabase
 let coaches    = []; // loaded from Supabase
 let evals      = []; // loaded from Supabase
 let pagos      = []; // loaded from Supabase
+let clientesDB = []; // loaded from clientes table
 let campanas   = []; // loaded from Supabase
 let solicitudes= []; // loaded from Supabase
 let contenidos = []; // loaded from Supabase
@@ -4009,6 +4049,12 @@ async function loadPagosFromSupabase(){
     telefono:   p.telefono||'',
     cumpleanos: p.cumpleanos||''
   }));
+}
+
+async function loadClientesFromSupabase(){
+  const { data, error } = await window.supabaseClient.from('clientes').select('*').order('nombre');
+  if(error){ console.error('Error cargando clientes:', error); clientesDB=[]; return; }
+  clientesDB = data||[];
 }
 
 async function loadCampanasFromSupabase(){
@@ -4744,46 +4790,48 @@ function renderClientes(){
 
   const hoy = new Date(); hoy.setHours(0,0,0,0);
 
-  // ── Agrupar todos los pagos por cliente ──────────────────────────
-  // Contamos cuántos pagos tiene cada cliente y guardamos el más reciente
-  const mapaConteo = {};  // nombre → { ultimo: pago, total: n }
-  pagos.forEach(p => {
-    const nombre = (p.cliente||'').trim();
-    if(!nombre) return;
-    if(!mapaConteo[nombre]) {
-      mapaConteo[nombre] = { ultimo: p, total: 1 };
-    } else {
-      mapaConteo[nombre].total++;
-      const aVence = mapaConteo[nombre].ultimo.vence||'';
-      const bVence = p.vence||'';
-      if(bVence > aVence) { mapaConteo[nombre].ultimo = p; }
-      else if(bVence === aVence && (p.fecha||'') > (mapaConteo[nombre].ultimo.fecha||'')) {
-        mapaConteo[nombre].ultimo = p;
-      }
-    }
-  });
+  // ── Construir set de nombres únicos: clientes tabla + pagos (por si acaso) ──
+  const nombresSet = new Set();
+  clientesDB.forEach(c => { if(c.nombre) nombresSet.add(c.nombre.trim()); });
+  pagos.forEach(p => { const n=(p.cliente||'').trim(); if(n) nombresSet.add(n); });
 
   // ── Construir lista de clientes con estado y tipo ────────────────
-  let clientes = Object.entries(mapaConteo).map(([nombre, datos]) => {
-    const c    = datos.ultimo;
-    const total= datos.total;
+  let clientes = [...nombresSet].map(nombre => {
+    // Identidad desde tabla clientes
+    const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
+    const telefono  = cliRec.telefono || '';
+    const cumpleanos = cliRec.cumpleanos || null;
+    const cliId = cliRec.id || null;
+
+    // Pagos reales (excluir __sin_pago__)
+    const todosPagos = pagos.filter(p=>(p.cliente||'').trim()===nombre && p.notas!=='__sin_pago__');
+    const pagosOrd   = [...todosPagos].sort((a,b)=>{
+      const av=a.vence||'', bv=b.vence||'';
+      if(bv!==av) return bv.localeCompare(av);
+      return (b.fecha||'').localeCompare(a.fecha||'');
+    });
+    const ultimo = pagosOrd[0]||null;
+    const total  = todosPagos.length;
 
     // Estado membresía
-    let estado = 'sin-fecha';
-    let diff   = null;
-    if(c.vence && c.vence.length >= 10){
-      const vDate = new Date(c.vence + 'T12:00:00');
-      diff = Math.ceil((vDate - hoy) / (1000*60*60*24));
-      estado = diff < 0 ? 'vencido' : diff <= 14 ? 'por-vencer' : 'activo';
+    let estado = 'sin-fecha', diff = null;
+    if(ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'){
+      const vDate = new Date(ultimo.vence+'T12:00:00');
+      diff = Math.ceil((vDate-hoy)/(1000*60*60*24));
+      estado = diff<0?'vencido':diff<=14?'por-vencer':'activo';
     }
 
-    // Tipo: pase de día vs paquete
-    // Si TODOS sus pagos son pases → pase; si alguno es paquete → paquete
-    const todosPagos = pagos.filter(p=>(p.cliente||'').trim()===nombre);
+    // Tipo
     const tienePaquete = todosPagos.some(p=>!esPaseDia(p.plan));
-    const tipo = tienePaquete ? 'paquete' : 'pase';
+    const tipo = !total ? 'paquete' : (tienePaquete?'paquete':'pase');
 
-    return { ...c, nombre, total, estado, diff, tipo };
+    return {
+      nombre, telefono, cumpleanos, cliId,
+      plan:  ultimo?ultimo.plan:'Sin membresía',
+      vence: ultimo?ultimo.vence:null,
+      monto: ultimo?ultimo.monto:0,
+      total, estado, diff, tipo
+    };
   });
 
   // ── KPIs generales (siempre sobre todos los clientes) ────────────
@@ -4798,7 +4846,7 @@ function renderClientes(){
     <div class="kpi-card" style="--kpi-color:var(--accent)">
       <div class="kpi-label">Total Clientes</div>
       <div class="kpi-value">${totalC}</div>
-      <div class="kpi-meta">Con al menos 1 pago</div>
+      <div class="kpi-meta">En el directorio</div>
     </div>
     <div class="kpi-card" style="--kpi-color:#a78bfa">
       <div class="kpi-label">🏋️ Paquetes</div>
@@ -4935,30 +4983,73 @@ function renderClientes(){
   }).join('');
 }
 
-function abrirEditarTelefono(nombreCliente){
-  const ultimoPago = pagos
-    .filter(p=>(p.cliente||'').trim()===nombreCliente)
-    .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))
-    [0];
-  if(ultimoPago){ openEditPago(ultimoPago.id); }
-  else { toast('No se encontró un pago para editar.','⚠️'); }
+function abrirEditarTelefono(nombreCliente){ abrirEditarCliente(nombreCliente); }
+
+function abrirEditarCliente(nombreCliente){
+  const cliRec = clientesDB.find(c=>c.nombre===nombreCliente);
+  if(!cliRec){
+    document.getElementById('cli-id').value        = '';
+    document.getElementById('cli-nombre').value    = nombreCliente;
+    document.getElementById('cli-telefono').value  = '';
+    document.getElementById('cli-email').value     = '';
+    document.getElementById('cli-cumpleanos').value= '';
+    document.getElementById('cli-notas').value     = '';
+  } else {
+    document.getElementById('cli-id').value        = cliRec.id||'';
+    document.getElementById('cli-nombre').value    = cliRec.nombre||'';
+    document.getElementById('cli-telefono').value  = cliRec.telefono||'';
+    document.getElementById('cli-email').value     = cliRec.email||'';
+    document.getElementById('cli-cumpleanos').value= cliRec.cumpleanos||'';
+    document.getElementById('cli-notas').value     = cliRec.notas||'';
+  }
+  openModal('editar-cliente');
+}
+
+async function saveEditarCliente(){
+  const id     = document.getElementById('cli-id').value;
+  const nombre = document.getElementById('cli-nombre').value.trim();
+  if(!nombre){ toast('El nombre es obligatorio','⚠️'); return; }
+  const payload = {
+    nombre,
+    telefono:   document.getElementById('cli-telefono').value.trim(),
+    email:      document.getElementById('cli-email').value.trim(),
+    cumpleanos: document.getElementById('cli-cumpleanos').value||null,
+    notas:      document.getElementById('cli-notas').value.trim(),
+    updated_at: new Date().toISOString(),
+  };
+  let err;
+  if(id){
+    const r = await window.supabaseClient.from('clientes').update(payload).eq('id', id);
+    err = r.error;
+  } else {
+    const r = await window.supabaseClient.from('clientes').insert([payload]);
+    err = r.error;
+  }
+  if(err){ alert('Error al guardar: '+(err.message||err)); return; }
+  await loadClientesFromSupabase();
+  closeModal('editar-cliente');
+  toast(`Datos de ${nombre} actualizados ✅`,'✏️');
+  renderClientes();
+  const panelNombre = document.getElementById('cpanel-nombre').textContent;
+  if(panelNombre === nombre) openClientePanel(nombre);
 }
 
 // ─── Panel de detalle de cliente ──────────────────────────────────
 function openClientePanel(nombreCliente){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
+  // Identity data from clientes table
+  const cliRec = clientesDB.find(c=>c.nombre===nombreCliente)||{};
   const historial = pagos
-    .filter(p=>(p.cliente||'').trim()===nombreCliente)
+    .filter(p=>(p.cliente||'').trim()===nombreCliente && p.notas!=='__sin_pago__')
     .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-  if(!historial.length) return;
 
-  const ultimo = historial[0];
+  const ultimo     = historial[0]||null;
   const totalPagado = historial.reduce((s,p)=>s+p.monto,0);
-  const primerPago  = historial[historial.length-1];
+  const primerPago  = historial[historial.length-1]||null;
 
   // Estado membresía
   let estado='sin-fecha', diff=null;
-  if(ultimo.vence && ultimo.vence.length>=10){
+  if(ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'){
     const vDate=new Date(ultimo.vence+'T12:00:00');
     diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
     estado= diff<0?'vencido':diff<=14?'por-vencer':'activo';
@@ -4967,10 +5058,12 @@ function openClientePanel(nombreCliente){
     activo:      {color:'var(--ok)',     label:'Activo',     icon:'✅'},
     'por-vencer':{color:'var(--warn)',   label:'Por vencer', icon:'⚠️'},
     vencido:     {color:'var(--danger)', label:'Vencido',    icon:'🔴'},
-    'sin-fecha': {color:'var(--text3)',  label:'Sin fecha',  icon:'📅'},
+    'sin-fecha': {color:'var(--text3)',  label:'Sin membresía',  icon:'📅'},
   };
-  const cfg = esCfg[estado];
-  const tipo = historial.some(p=>!esPaseDia(p.plan)) ? 'Paquete / Membresía' : 'Pase de Día';
+  const cfg  = esCfg[estado];
+  const tipo = historial.some(p=>!esPaseDia(p.plan)) ? 'Paquete / Membresía' : (historial.length?'Pase de Día':'Sin membresía');
+  // Use clientes table for contact info (more reliable than pagos)
+  const tel = (cliRec.telefono||(ultimo?ultimo.telefono:'')||'').replace(/\D/g,'');
 
   // Header
   document.getElementById('cpanel-nombre').textContent = nombreCliente;
@@ -4978,9 +5071,9 @@ function openClientePanel(nombreCliente){
 
   // KPIs
   const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const fechaPrimero = primerPago.fecha
+  const fechaPrimero = primerPago && primerPago.fecha
     ? (() => { const d=new Date(primerPago.fecha+'T12:00:00'); return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`; })()
-    : '—';
+    : (cliRec.created_at ? (() => { const d=new Date(cliRec.created_at); return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`; })() : '—');
   document.getElementById('cpanel-kpis').innerHTML = `
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
       <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">💰 Total pagado</div>
@@ -5000,17 +5093,16 @@ function openClientePanel(nombreCliente){
     </div>`;
 
   // Membresía actual
-  const venceFmt = ultimo.vence && ultimo.vence.length>=10
+  const venceFmt = ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'
     ? (() => { const [y,m,d]=ultimo.vence.split('-'); const ms=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return `${parseInt(d)} de ${ms[parseInt(m)-1]} de ${y}`; })()
     : '—';
   const diasLabel = diff!==null
     ? (diff<0?`Venció hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`:diff===0?'Vence hoy':`Vence en ${diff} día${diff!==1?'s':''}`)
-    : 'Sin fecha de vencimiento';
-  const tel = (ultimo.telefono||'').replace(/\D/g,'');
+    : 'Sin membresía activa';
   document.getElementById('cpanel-membresia').innerHTML = `
     <div style="background:${cfg.color}11;border:1px solid ${cfg.color}33;border-radius:10px;padding:14px;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${esc(ultimo.plan||'—')}</div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:3px;">Vencimiento: <strong style="color:${cfg.color};">${venceFmt}</strong></div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${esc(ultimo?ultimo.plan:'Sin membresía')}</div>
+      ${ultimo?`<div style="font-size:12px;color:var(--text3);margin-bottom:3px;">Vencimiento: <strong style="color:${cfg.color};">${venceFmt}</strong></div>`:''}
       <div style="font-size:12px;color:${cfg.color};font-weight:700;">${diasLabel}</div>
       ${tel?`<div style="font-size:11px;color:var(--text3);margin-top:6px;">📱 ${tel}</div>`:''}
     </div>`;
@@ -5020,18 +5112,18 @@ function openClientePanel(nombreCliente){
   const numWA = tel.length===10?'52'+tel:tel;
   const accs = [];
   if(numWA.length>=12){
-    const msgWA = encodeURIComponent(buildWAMsg(nombreCliente, ultimo.plan, ultimo.vence));
+    const msgWA = encodeURIComponent(buildWAMsg(nombreCliente, ultimo?ultimo.plan:'', ultimo?ultimo.vence:''));
     accs.push(`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
       style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
              background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
              text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WhatsApp</a>`);
   }
-  accs.push(`<button onclick="abrirEditarTelefono('${esc(nombreCliente)}')"
+  accs.push(`<button onclick="abrirEditarCliente('${esc(nombreCliente)}')"
     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
            background:var(--card2);color:var(--text);font-size:12px;font-weight:600;
            border:1px solid var(--border);cursor:pointer;">
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    Editar pago</button>`);
+    Editar cliente</button>`);
   accs.push(`<button onclick="openModal('pago');document.getElementById('p-cliente').value='${esc(nombreCliente)}';closeClientePanel();"
     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
            background:rgba(0,180,216,.12);color:var(--accent);font-size:12px;font-weight:600;
@@ -6422,7 +6514,7 @@ async function savePago(){
   };
   const { error } = await window.supabaseClient.from('pagos').insert([payload]);
   if(error){ console.error('Error guardando pago:', error); alert('No se pudo guardar el pago.'); return; }
-  await loadPagosFromSupabase();
+  await Promise.all([loadPagosFromSupabase(), loadClientesFromSupabase()]);
   closeModal('pago');
   ['p-cliente','p-monto','p-notas','p-telefono'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('p-fecha').value='';
@@ -6439,29 +6531,22 @@ async function saveClienteSinPago(){
   const nombre = document.getElementById('sc-nombre').value.trim();
   if(!nombre){ toast('El nombre es obligatorio','⚠️'); return; }
 
-  // Check if client already exists
-  const existe = pagos.some(p=>(p.cliente||'').trim().toLowerCase()===nombre.toLowerCase());
+  const existe = clientesDB.some(c=>(c.nombre||'').toLowerCase()===nombre.toLowerCase());
   if(existe){
     if(!confirm(`Ya existe un cliente llamado "${nombre}". ¿Deseas agregarlo de todas formas?`)) return;
   }
 
-  const hoy = new Date().toISOString().slice(0,10);
   const payload = {
-    cliente:    nombre,
-    monto:      0,
-    fecha:      hoy,
-    plan:       'Sin membresía',
-    metodo:     '',
-    vence:      null,
-    notas:      '__sin_pago__',
+    nombre,
     telefono:   document.getElementById('sc-telefono').value.trim(),
-    cumpleanos: document.getElementById('sc-cumpleanos').value || null,
+    cumpleanos: document.getElementById('sc-cumpleanos').value||null,
+    notas:      document.getElementById('sc-notas').value.trim(),
   };
 
-  const { error } = await window.supabaseClient.from('pagos').insert([payload]);
+  const { error } = await window.supabaseClient.from('clientes').insert([payload]);
   if(error){ console.error('Error guardando cliente:', error); alert('No se pudo guardar el cliente.'); return; }
 
-  await loadPagosFromSupabase();
+  await loadClientesFromSupabase();
   closeModal('solo-cliente');
   ['sc-nombre','sc-telefono','sc-notas'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('sc-cumpleanos').value='';
@@ -7691,6 +7776,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadCoachesFromSupabase(),
     loadEvalsFromSupabase(),
     loadPagosFromSupabase(),
+    loadClientesFromSupabase(),
     loadCampanasFromSupabase(),
     loadSolicitudesFromSupabase(),
     loadContenidosFromSupabase(),
