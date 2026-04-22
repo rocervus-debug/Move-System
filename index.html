@@ -611,6 +611,20 @@ select option{background:#10101c;color:var(--text);}
 .detail-body{padding:20px;}
 .detail-section{margin-bottom:22px;}
 .detail-section-title{font-size:9px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+/* Notas de seguimiento */
+.nota-card{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;position:relative;}
+.nota-card:hover .nota-delete{opacity:1;}
+.nota-tipo-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.3px;border-radius:5px;padding:2px 7px;margin-bottom:5px;text-transform:uppercase;}
+.nota-tipo-Contacto{background:rgba(0,180,216,.15);color:#00b4d8;}
+.nota-tipo-Llamada{background:rgba(96,165,250,.15);color:#60a5fa;}
+.nota-tipo-Mensaje{background:rgba(192,132,252,.15);color:#c084fc;}
+.nota-tipo-Visita{background:rgba(16,232,160,.15);color:#10e8a0;}
+.nota-tipo-Renovación{background:rgba(251,191,36,.15);color:#fbbf24;}
+.nota-tipo-Nota{background:rgba(144,168,184,.12);color:#90a8b8;}
+.nota-texto{font-size:12px;color:var(--text);line-height:1.5;}
+.nota-fecha{font-size:10px;color:var(--text3);margin-top:4px;}
+.nota-delete{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s;padding:2px 5px;border-radius:4px;}
+.nota-delete:hover{color:var(--danger);background:var(--danger-bg);}
 .detail-field{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;}
 .detail-field-label{font-size:11px;color:var(--text3);width:120px;flex-shrink:0;padding-top:1px;}
 .detail-field-value{font-size:12px;font-weight:600;color:var(--text);flex:1;}
@@ -2513,6 +2527,31 @@ select option{background:#10101c;color:var(--text);}
     <div class="detail-section" id="cpanel-qr-section">
       <div class="detail-section-title">📱 QR Personal de Check-in</div>
       <div id="cpanel-qr-body"></div>
+    </div>
+
+    <!-- Seguimiento del cliente -->
+    <div class="detail-section">
+      <div class="detail-section-title">📋 Seguimiento</div>
+
+      <!-- Formulario rápido -->
+      <div id="cpanel-nota-form" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+          <select id="cpanel-nota-tipo" style="flex:1;min-width:110px;padding:6px 8px;background:var(--white);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;">
+            <option value="Contacto">📞 Contacto</option>
+            <option value="Llamada">📱 Llamada</option>
+            <option value="Mensaje">💬 Mensaje</option>
+            <option value="Visita">🏋️ Visita</option>
+            <option value="Renovación">💳 Renovación</option>
+            <option value="Nota">📝 Nota</option>
+          </select>
+          <input id="cpanel-nota-fecha" type="date" style="padding:6px 8px;background:var(--white);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;"/>
+        </div>
+        <textarea id="cpanel-nota-texto" rows="2" placeholder="¿Qué pasó? Ej: Mandé mensaje, dijo que vuelve en mayo..." style="width:100%;box-sizing:border-box;padding:8px 10px;background:var(--white);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;resize:vertical;outline:none;margin-bottom:8px;font-family:inherit;"></textarea>
+        <button onclick="saveClienteNota()" style="width:100%;padding:7px;background:var(--accent-bg2);color:var(--accent);border:1px solid rgba(0,180,216,.3);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">+ Agregar nota</button>
+      </div>
+
+      <!-- Lista de notas -->
+      <div id="cpanel-notas-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
     <!-- Historial completo de pagos -->
@@ -5058,6 +5097,13 @@ function openClientePanel(nombreCliente){
       </div>
     </div>`;
 
+  // Cargar notas de seguimiento
+  const hoyStr = new Date().toISOString().slice(0,10);
+  const notaFechaEl = document.getElementById('cpanel-nota-fecha');
+  if(notaFechaEl) notaFechaEl.value = hoyStr;
+  document.getElementById('cpanel-notas-list').innerHTML = `<div style="text-align:center;padding:12px;color:var(--text3);font-size:11px;">Cargando...</div>`;
+  loadClienteNotas(nombreCliente);
+
   // Abrir panel
   document.getElementById('clientePanel').classList.add('open');
   document.getElementById('cliente-panel-overlay').style.display = 'block';
@@ -5100,6 +5146,65 @@ function imprimirQRCliente(nombre){
 function closeClientePanel(){
   document.getElementById('clientePanel').classList.remove('open');
   document.getElementById('cliente-panel-overlay').style.display = 'none';
+}
+
+// ─── Seguimiento por cliente (notas de contacto) ──────────────────
+
+let _clienteNotasActual = []; // cache de notas del cliente abierto
+let _clienteNotasNombre = '';
+
+async function loadClienteNotas(nombre){
+  _clienteNotasNombre = nombre;
+  const { data, error } = await window.supabaseClient
+    .from('cliente_notas').select('*').eq('cliente', nombre).order('fecha', {ascending:false}).order('created_at', {ascending:false});
+  if(error){ console.error('Error cargando notas:', error); _clienteNotasActual=[]; }
+  else _clienteNotasActual = data||[];
+  renderClienteNotas();
+}
+
+function renderClienteNotas(){
+  const el = document.getElementById('cpanel-notas-list');
+  if(!el) return;
+  if(!_clienteNotasActual.length){
+    el.innerHTML = `<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:12px;">Sin seguimiento registrado aún.</div>`;
+    return;
+  }
+  el.innerHTML = _clienteNotasActual.map(n=>{
+    const tipoClass = `nota-tipo-${(n.tipo||'Nota').replace(/[^a-zA-ZÀ-ú]/g,'')}`;
+    const fechaLabel = n.fecha ? new Date(n.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    return `<div class="nota-card">
+      <button class="nota-delete" onclick="deleteClienteNota(${n.id})" title="Eliminar">✕</button>
+      <div class="nota-tipo-badge ${tipoClass}">${esc(n.tipo||'Nota')}</div>
+      <div class="nota-texto">${esc(n.nota)}</div>
+      <div class="nota-fecha">${fechaLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+async function saveClienteNota(){
+  const tipo  = document.getElementById('cpanel-nota-tipo').value;
+  const fecha = document.getElementById('cpanel-nota-fecha').value;
+  const texto = document.getElementById('cpanel-nota-texto').value.trim();
+  if(!texto){ toast('Escribe una nota antes de guardar','⚠️'); return; }
+  if(!fecha){ toast('Selecciona la fecha','⚠️'); return; }
+
+  const { error } = await window.supabaseClient.from('cliente_notas').insert([{
+    cliente: _clienteNotasNombre, tipo, fecha, nota: texto
+  }]);
+  if(error){ console.error('Error guardando nota:', error); toast('No se pudo guardar','❌'); return; }
+
+  document.getElementById('cpanel-nota-texto').value = '';
+  toast('Nota guardada ✅','📋');
+  await loadClienteNotas(_clienteNotasNombre);
+}
+
+async function deleteClienteNota(id){
+  if(!confirm('¿Eliminar esta nota?')) return;
+  const { error } = await window.supabaseClient.from('cliente_notas').delete().eq('id', id);
+  if(error){ console.error('Error eliminando nota:', error); return; }
+  _clienteNotasActual = _clienteNotasActual.filter(n=>String(n.id)!==String(id));
+  renderClienteNotas();
+  toast('Nota eliminada','🗑');
 }
 
 // ─── WhatsApp en masa ──────────────────────────────────────────────
