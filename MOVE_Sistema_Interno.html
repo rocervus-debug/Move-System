@@ -1745,7 +1745,10 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="login-field">
         <label>Contraseña</label>
-        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()"/>
+        <div style="position:relative;">
+          <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()" style="width:100%;padding-right:42px;"/>
+          <button type="button" onclick="(function(){const i=document.getElementById('login-pass');const b=document.getElementById('login-pass-toggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈';})()" id="login-pass-toggle" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:rgba(255,255,255,.4);padding:4px;line-height:1;">👁</button>
+        </div>
       </div>
       <button class="login-btn" onclick="doLogin()">ENTRAR</button>
       <div class="login-error" id="login-error">Correo o contraseña incorrectos</div>
@@ -4109,41 +4112,37 @@ async function doLogin(){
   const btn = document.querySelector('.login-btn');
   btn.textContent = 'Verificando…'; btn.disabled = true;
   try{
-    // Fetch user record by email only (never send password in filter for hashed flow)
-    const { data, error } = await window.supabaseClient
-      .from('usuarios').select('*').eq('email', email).eq('activo', true).single();
-    let authenticated = false;
-    if(!error && data){
-      const passHash = await hashPassword(pass);
-      if(data.pw_hash && data.pw_hash === passHash){
-        // ✅ Hashed match
-        authenticated = true;
-      } else if(!data.pw_hash && data.password === pass){
-        // ⬆️ Backwards compat: plaintext match → upgrade to hash silently
-        authenticated = true;
-        window.supabaseClient.from('usuarios')
-          .update({ pw_hash: passHash, password: null })
-          .eq('id', data.id).then(()=>console.log('[Auth] Password upgraded to hash'));
-      }
+    const pw_hash = await hashPassword(pass);
+    // ── Call Edge Function: validates credentials, returns signed JWT ──
+    const res = await fetch(EDGE_LOGIN_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, pw_hash })
+    });
+    const result = await res.json();
+    if(!res.ok || !result.token){
+      errEl.textContent = result.error || 'Correo o contraseña incorrectos.';
+      errEl.classList.add('show');
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      return;
     }
-    if(!authenticated){ errEl.textContent='Correo o contraseña incorrectos.'; errEl.classList.add('show'); }
-    else{
-      const session = { id: data.id, nombre: data.nombre, email: data.email, rol: data.rol, gym_id: data.gym_id || 1 };
-      setSession(session);
-      currentUser = session;
-      MOVE_GYM_ID = session.gym_id;
-      auditLog('LOGIN', 'usuarios', data.id, `Login desde ${navigator.platform||'web'}`);
-      // Reload all data filtered by the correct gym_id before showing app
-      await Promise.all([
-        loadConfigFromSupabase(), loadLeadsFromSupabase(), loadCoachesFromSupabase(),
-        loadEvalsFromSupabase(), loadPagosFromSupabase(), loadClientesFromSupabase(),
-        loadCampanasFromSupabase(), loadSolicitudesFromSupabase(), loadContenidosFromSupabase(),
-        loadHorarioFromSupabase(), loadGastosFromSupabase(), loadProgramasFromSupabase(),
-        loadProgConfigFromSupabase(), loadUsuariosFromSupabase()
-      ]);
-      showApp();
-    }
-  } catch(e){ errEl.textContent='Error de conexión. Verifica Supabase.'; errEl.classList.add('show'); console.error(e); }
+    // ── Init authenticated Supabase client with signed JWT (RLS now enforced) ──
+    initAuthClient(result.token);
+    const session = { ...result.user, jwt: result.token };
+    setSession(session);
+    currentUser = session;
+    MOVE_GYM_ID = session.gym_id;
+    auditLog('LOGIN','usuarios', session.id, `Login desde ${navigator.platform||'web'}`);
+    // Reload all data filtered by the correct gym_id before showing app
+    await Promise.all([
+      loadConfigFromSupabase(), loadLeadsFromSupabase(), loadCoachesFromSupabase(),
+      loadEvalsFromSupabase(), loadPagosFromSupabase(), loadClientesFromSupabase(),
+      loadCampanasFromSupabase(), loadSolicitudesFromSupabase(), loadContenidosFromSupabase(),
+      loadHorarioFromSupabase(), loadGastosFromSupabase(), loadProgramasFromSupabase(),
+      loadProgConfigFromSupabase(), loadUsuariosFromSupabase()
+    ]);
+    showApp();
+  } catch(e){ errEl.textContent='Error de conexión.'; errEl.classList.add('show'); console.error(e); }
   btn.textContent = 'ENTRAR'; btn.disabled = false;
 }
 
@@ -4604,7 +4603,7 @@ async function saveNewUser(){
   if(!nombre||!email||!pass){ alert('Completa todos los campos.'); return; }
   if(pass.length<6){ alert('La contraseña debe tener al menos 6 caracteres.'); return; }
   const pw_hash = await hashPassword(pass);
-  const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: null, rol, activo:true})]);
+  const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: pw_hash, rol, activo:true})]);
   if(error){ toast('Error al crear usuario ❌','✕'); console.error(error); return; }
   auditLog('CREAR_USUARIO', 'usuarios', '', `Nuevo usuario: ${email} (${rol})`);
   closeModal('add-user');
@@ -4700,12 +4699,14 @@ const GYM_THEMES = [
 
 async function loadConfigFromSupabase(){
   if(!window.supabaseClient){ return; }
+  // MULTI-TENANT: filter gym_config by current gym_id
+  const gymIdFilter = MOVE_GYM_ID || 1;
   const { data, error } = await window.supabaseClient
-    .from('gym_config').select('key,value');
+    .from('gym_config').select('key,value').eq('gym_id', gymIdFilter);
   if(error){ console.error('Error cargando gym_config:', error); return; }
   gymConfig = {};
   (data||[]).forEach(row => { gymConfig[row.key] = row.value||''; });
-  ensureGymId(); // Multi-tenant groundwork: establish gym identity
+  ensureGymId();
   // Load gym plan from gyms table for PLAN_LIMITS
   if(MOVE_GYM_ID && !gymConfig.gym_plan){
     window.supabaseClient.from('gyms').select('plan,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
@@ -4846,17 +4847,19 @@ async function saveGymConfig(){
   const logo    = (document.getElementById('cfg-gym-logo')?.value||'').trim();
   const theme   = gymConfig.gym_theme||'custom';
 
+  const gid = MOVE_GYM_ID || 1;
   const rows = [
-    { key:'gym_nombre',   value:nombre  },
-    { key:'gym_tagline',  value:tagline },
-    { key:'gym_color',    value:color   },
-    { key:'gym_logo_url', value:logo    },
-    { key:'gym_theme',    value:theme   },
+    { key:'gym_nombre',   value:nombre,  gym_id:gid },
+    { key:'gym_tagline',  value:tagline, gym_id:gid },
+    { key:'gym_color',    value:color,   gym_id:gid },
+    { key:'gym_logo_url', value:logo,    gym_id:gid },
+    { key:'gym_theme',    value:theme,   gym_id:gid },
   ];
   for(const row of rows){
-    const { error } = await window.supabaseClient
-      .from('gym_config').upsert(row,{onConflict:'key'});
-    if(error){ toast('Error al guardar ✗','danger'); return; }
+    // Delete existing row for this gym+key then insert (avoids unique constraint issues)
+    await window.supabaseClient.from('gym_config').delete().eq('key', row.key).eq('gym_id', gid);
+    const { error } = await window.supabaseClient.from('gym_config').insert(row);
+    if(error){ toast('Error al guardar ✗','danger'); console.error(error); return; }
     gymConfig[row.key]=row.value;
   }
   localStorage.setItem('move_tagline', tagline);
@@ -4866,9 +4869,11 @@ async function saveGymConfig(){
 }
 
 async function resetGymConfig(){
+  const gid = MOVE_GYM_ID || 1;
   const defaults={gym_nombre:'MOVE',gym_tagline:'Fitness Center',gym_color:'#00b4d8',gym_logo_url:'',gym_theme:'cyan'};
   for(const [key,value] of Object.entries(defaults)){
-    await window.supabaseClient.from('gym_config').upsert({key,value},{onConflict:'key'});
+    await window.supabaseClient.from('gym_config').delete().eq('key',key).eq('gym_id',gid);
+    await window.supabaseClient.from('gym_config').insert({key,value,gym_id:gid});
     gymConfig[key]=value;
   }
   applyGymConfig(); renderThemeGrid();
@@ -10307,11 +10312,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // If data loads before knowing which gym, ALL gyms' data leaks in (multi-tenancy breach).
   const session = getSession();
   if(session){
+    // Restore JWT-authenticated client if we have a stored token
+    if(session.jwt){
+      initAuthClient(session.jwt);
+    }
     try{
       const { data: freshUser } = await window.supabaseClient
-        .from('usuarios').select('*').eq('email', session.email).eq('activo', true).single();
+        .from('usuarios').select('id,nombre,email,rol,gym_id').eq('email', session.email).eq('activo', true).single();
       if(freshUser){
-        const updated = { id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1 };
+        const updated = { ...session, id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1 };
         setSession(updated);
         currentUser = updated;
         MOVE_GYM_ID = updated.gym_id;
@@ -10525,7 +10534,16 @@ function openEmailReminderModal(){
 <script>
   const supabaseUrl = 'https://savzjanpydyjtrgdkllx.supabase.co';
   const supabaseKey = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
+  const EDGE_LOGIN_URL = `${supabaseUrl}/functions/v1/move-login`;
   window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  // Re-initialize Supabase client with a JWT after login (enforces RLS)
+  function initAuthClient(jwt){
+    window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+      auth:   { persistSession: false, autoRefreshToken: false }
+    });
+  }
 </script>
 
 <!-- ═══ REPORTE MENSUAL ═══ -->
