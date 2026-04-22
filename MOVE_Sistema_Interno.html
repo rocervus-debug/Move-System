@@ -2834,19 +2834,29 @@ select option{background:#10101c;color:var(--text);}
       <!-- Mi cuenta -->
       <div class="card" style="margin-top:18px;">
         <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">🔐 Mi Cuenta</div>
-          <div class="settings-row">
+          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>🔐 Mi Cuenta</span>
+            <span class="role-badge" id="cfg-mi-rol">—</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
             <div>
-              <div class="settings-label" id="cfg-mi-nombre">—</div>
-              <div class="settings-desc" id="cfg-mi-email">—</div>
+              <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre</label>
+              <input id="cfg-mi-nombre-input" type="text" class="settings-input" style="width:100%;" placeholder="Tu nombre"/>
             </div>
             <div>
-              <span class="role-badge" id="cfg-mi-rol">—</span>
+              <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Email</label>
+              <input id="cfg-mi-email" type="text" class="settings-input" style="width:100%;opacity:.6;cursor:not-allowed;" readonly/>
             </div>
           </div>
-          <div style="margin-top:16px;">
-            <button class="btn btn-danger" onclick="doLogout()">🚪 Cerrar Sesión</button>
+          <div style="margin-top:6px;">
+            <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nueva contraseña <span style="font-weight:400;text-transform:none;">(dejar vacío para no cambiar)</span></label>
+            <input id="cfg-mi-pass" type="password" class="settings-input" style="width:100%;max-width:320px;" placeholder="••••••••  (mínimo 8 caracteres)"/>
           </div>
+          <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="saveMiCuenta()">💾 Guardar cambios</button>
+            <button class="btn btn-danger btn-sm" onclick="doLogout()">🚪 Cerrar Sesión</button>
+          </div>
+          <div id="cfg-cuenta-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
         </div>
       </div>
     </div>
@@ -4123,6 +4133,14 @@ async function doLogin(){
       currentUser = session;
       MOVE_GYM_ID = session.gym_id;
       auditLog('LOGIN', 'usuarios', data.id, `Login desde ${navigator.platform||'web'}`);
+      // Reload all data filtered by the correct gym_id before showing app
+      await Promise.all([
+        loadConfigFromSupabase(), loadLeadsFromSupabase(), loadCoachesFromSupabase(),
+        loadEvalsFromSupabase(), loadPagosFromSupabase(), loadClientesFromSupabase(),
+        loadCampanasFromSupabase(), loadSolicitudesFromSupabase(), loadContenidosFromSupabase(),
+        loadHorarioFromSupabase(), loadGastosFromSupabase(), loadProgramasFromSupabase(),
+        loadProgConfigFromSupabase(), loadUsuariosFromSupabase()
+      ]);
       showApp();
     }
   } catch(e){ errEl.textContent='Error de conexión. Verifica Supabase.'; errEl.classList.add('show'); console.error(e); }
@@ -4499,12 +4517,47 @@ function updateSidebarUser(){
     updateSaCtxLabel();
   }
   // My account section in settings
-  const mn = document.getElementById('cfg-mi-nombre');
+  const mn = document.getElementById('cfg-mi-nombre-input');
   const me = document.getElementById('cfg-mi-email');
   const mr = document.getElementById('cfg-mi-rol');
-  if(mn) mn.textContent = currentUser.nombre;
-  if(me) me.textContent = currentUser.email;
+  if(mn) mn.value = currentUser.nombre;
+  if(me) me.value = currentUser.email;
   if(mr){ mr.textContent = rolLabel[currentUser.rol]||currentUser.rol; mr.className='role-badge role-'+currentUser.rol; }
+}
+
+// ── Save Mi Cuenta (nombre + optional password) ─────────────────────
+async function saveMiCuenta(){
+  const nombreEl = document.getElementById('cfg-mi-nombre-input');
+  const passEl   = document.getElementById('cfg-mi-pass');
+  const msgEl    = document.getElementById('cfg-cuenta-msg');
+  const nombre   = nombreEl ? nombreEl.value.trim() : '';
+  const newPass  = passEl ? passEl.value : '';
+  if(!nombre){ msgEl.textContent='El nombre no puede estar vacío.'; msgEl.style.color='var(--danger)'; return; }
+  if(newPass && newPass.length < 8){ msgEl.textContent='La contraseña debe tener al menos 8 caracteres.'; msgEl.style.color='var(--danger)'; return; }
+  msgEl.textContent = 'Guardando…'; msgEl.style.color='var(--text3)';
+  try{
+    const updates = { nombre };
+    if(newPass){
+      updates.pw_hash = await hashPassword(newPass);
+      updates.password = updates.pw_hash; // keep both in sync
+    }
+    const { error } = await window.supabaseClient
+      .from('usuarios').update(updates).eq('id', currentUser.id);
+    if(error){ msgEl.textContent='Error: '+error.message; msgEl.style.color='var(--danger)'; return; }
+    // Update local session
+    currentUser.nombre = nombre;
+    const sess = getSession();
+    if(sess){ setSession({...sess, nombre}); }
+    updateSidebarUser();
+    if(passEl) passEl.value = '';
+    msgEl.textContent='✅ Cambios guardados';
+    msgEl.style.color='var(--ok)';
+    setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 3000);
+    auditLog('UPDATE','usuarios',currentUser.id,'Actualizó su perfil');
+  } catch(e){
+    msgEl.textContent='Error inesperado: '+e.message;
+    msgEl.style.color='var(--danger)';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -10249,10 +10302,31 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   await new Promise(r => setTimeout(r, 150));
 
-  // Check existing session
+  // ── STEP 1: Auth check FIRST — set MOVE_GYM_ID before any data load ──
+  // CRITICAL: gf() uses MOVE_GYM_ID to filter queries by gym.
+  // If data loads before knowing which gym, ALL gyms' data leaks in (multi-tenancy breach).
   const session = getSession();
+  if(session){
+    try{
+      const { data: freshUser } = await window.supabaseClient
+        .from('usuarios').select('*').eq('email', session.email).eq('activo', true).single();
+      if(freshUser){
+        const updated = { id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1 };
+        setSession(updated);
+        currentUser = updated;
+        MOVE_GYM_ID = updated.gym_id;
+      } else {
+        clearSession();
+        currentUser = null;
+      }
+    } catch(e){
+      // DB unreachable — fall back to cached session
+      currentUser = session;
+      MOVE_GYM_ID = session.gym_id || 1;
+    }
+  }
 
-  // Load all data in parallel (always, so app is ready when user logs in)
+  // ── STEP 2: Load data — MOVE_GYM_ID is now set, gf() will filter correctly ──
   await Promise.all([
     loadConfigFromSupabase(),
     loadLeadsFromSupabase(),
@@ -10281,29 +10355,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderCalendario();
   updateBadges();
 
-  // Auth check — re-validate session from DB to pick up role/gym_id changes
-  if(session){
-    try{
-      const { data: freshUser } = await window.supabaseClient
-        .from('usuarios').select('*').eq('email', session.email).eq('activo', true).single();
-      if(freshUser){
-        // Refresh session with latest data from DB
-        const updated = { id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1 };
-        setSession(updated);
-        currentUser = updated;
-        MOVE_GYM_ID = updated.gym_id;
-      } else {
-        // User deactivated or removed — log out
-        clearSession();
-        currentUser = null;
-      }
-    } catch(e){
-      // DB unreachable — fall back to cached session
-      currentUser = session;
-      MOVE_GYM_ID = session.gym_id || 1;
-    }
-    if(currentUser) showApp();
-  }
+  // ── STEP 3: Show app ──
+  if(currentUser) showApp();
   // else: login screen remains visible (it's shown by default in CSS)
 
   document.addEventListener('click',e=>{
