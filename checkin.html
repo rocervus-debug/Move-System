@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MOVE — Check-in</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080d1a;
+  --card:#0f172a;
+  --accent:#00b4d8;
+  --ok:#10b981;
+  --danger:#ef4444;
+  --warn:#f59e0b;
+  --text:#e8edf5;
+  --text2:#94a3b8;
+  --font:'Inter',system-ui,sans-serif;
+}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background-image:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(0,180,216,.15),transparent);
+}
+.container{width:100%;max-width:420px;text-align:center;}
+.logo{font-size:22px;font-weight:900;letter-spacing:5px;color:#fff;margin-bottom:4px;}
+.logo-sub{font-size:11px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px;}
+
+/* ── Loading ── */
+.loading{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.spinner{width:48px;height:48px;border:3px solid rgba(0,180,216,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Card ── */
+.card{
+  background:rgba(15,23,42,.97);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:20px;
+  padding:32px 28px;
+  position:relative;
+  overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 40% at 50% 0%,var(--glow,rgba(0,180,216,.08)),transparent);
+  pointer-events:none;
+}
+.status-ring{
+  width:100px;height:100px;
+  border-radius:50%;
+  border:4px solid var(--ring-color,var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;
+  font-size:42px;
+  background:var(--ring-bg,rgba(0,180,216,.08));
+  box-shadow:0 0 40px var(--ring-glow,rgba(0,180,216,.2));
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 30px var(--ring-glow,rgba(0,180,216,.2));}
+  50%{box-shadow:0 0 60px var(--ring-glow,rgba(0,180,216,.35));}
+}
+.status-badge{
+  display:inline-block;
+  padding:5px 14px;
+  border-radius:50px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.badge-ok   {background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.badge-warn {background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.25);}
+.badge-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+
+.client-name{font-size:26px;font-weight:800;color:#fff;margin-bottom:4px;letter-spacing:.5px;}
+.client-plan{font-size:13px;color:var(--text2);margin-bottom:24px;}
+
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.info-row:last-child{border-bottom:none;}
+.info-label{font-size:12px;color:var(--text2);}
+.info-value{font-size:13px;font-weight:600;color:var(--text);}
+
+.historial{margin-top:20px;text-align:left;}
+.historial-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.visit-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:8px;padding:6px 10px;
+  font-size:11px;color:var(--text2);
+  margin:3px;
+}
+
+/* ── Error card ── */
+.error-card{
+  background:rgba(239,68,68,.08);
+  border:1px solid rgba(239,68,68,.2);
+  border-radius:20px;padding:32px 28px;text-align:center;
+}
+.error-icon{font-size:48px;margin-bottom:16px;}
+.error-title{font-size:18px;font-weight:700;color:#f87171;margin-bottom:8px;}
+.error-msg{font-size:13px;color:rgba(248,113,113,.7);line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">MOVE</div>
+  <div class="logo-sub" id="gym-sub">Check-in</div>
+  <div id="root"><div class="loading"><div class="spinner"></div><div style="font-size:13px;color:var(--text2);">Verificando acceso…</div></div></div>
+</div>
+
+<script>
+const CHECKIN_URL = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move-checkin';
+
+function fmt(dateStr){
+  if(!dateStr) return '—';
+  const d = new Date(dateStr+'T12:00:00');
+  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+}
+function fmtTime(t){
+  if(!t) return '';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr>12?hr-12:hr||12}:${m} ${hr>=12?'PM':'AM'}`;
+}
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T12:00:00');
+  const diff = Math.round((d-new Date())/(1000*60*60*24));
+  return diff;
+}
+
+async function doCheckin(token){
+  try{
+    const res = await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if(!res.ok || !data.ok){ renderError(data.error||'QR inválido'); return; }
+    renderSuccess(data);
+  } catch(e){
+    renderError('Error de conexión. Intenta de nuevo.');
+  }
+}
+
+function renderSuccess(data){
+  const { cliente, membership_ok, already_checked_in, check_in_time, historial } = data;
+  const dias = daysUntil(cliente.vence);
+  const root = document.getElementById('root');
+
+  let statusIcon, statusClass, badgeClass, badgeText, glow, ringColor, ringBg;
+  if(membership_ok && already_checked_in){
+    statusIcon='✅'; statusClass='ok'; badgeClass='badge-ok'; badgeText='Ya registrado hoy';
+    glow='rgba(16,185,129,.25)'; ringColor='var(--ok)'; ringBg='rgba(16,185,129,.08)';
+  } else if(membership_ok){
+    statusIcon='🏋️'; statusClass='ok'; badgeClass='badge-ok'; badgeText='Acceso permitido';
+    glow='rgba(16,185,129,.25)'; ringColor='var(--ok)'; ringBg='rgba(16,185,129,.08)';
+  } else if(dias !== null && dias >= 0 && dias <= 3){
+    statusIcon='⚠️'; statusClass='warn'; badgeClass='badge-warn'; badgeText=`Vence en ${dias} día${dias!==1?'s':''}`;
+    glow='rgba(245,158,11,.25)'; ringColor='var(--warn)'; ringBg='rgba(245,158,11,.08)';
+  } else {
+    statusIcon='🚫'; statusClass='danger'; badgeClass='badge-danger'; badgeText='Membresía vencida';
+    glow='rgba(239,68,68,.25)'; ringColor='var(--danger)'; ringBg='rgba(239,68,68,.08)';
+  }
+
+  const histHTML = historial.length ? `
+    <div class="historial">
+      <div class="historial-title">Últimas visitas</div>
+      ${historial.map(v=>`<span class="visit-chip">📅 ${fmt(v.fecha)} <span style="color:var(--text3);font-size:10px;">${fmtTime(v.hora)}</span></span>`).join('')}
+    </div>` : '';
+
+  root.innerHTML = `
+    <div class="card" style="--glow:${glow};">
+      <div class="status-ring" style="--ring-color:${ringColor};--ring-bg:${ringBg};--ring-glow:${glow};">${statusIcon}</div>
+      <span class="status-badge ${badgeClass}">${badgeText}</span>
+      <div class="client-name">${cliente.nombre}</div>
+      <div class="client-plan">${cliente.membresia||'Membresía'}</div>
+      <div>
+        <div class="info-row">
+          <span class="info-label">Vencimiento</span>
+          <span class="info-value" style="color:${dias!==null&&dias<0?'var(--danger)':dias!==null&&dias<=7?'var(--warn)':'var(--text)'};">${fmt(cliente.vence)}</span>
+        </div>
+        ${check_in_time ? `<div class="info-row">
+          <span class="info-label">Check-in hoy</span>
+          <span class="info-value" style="color:var(--ok);">⏱ ${fmtTime(check_in_time)}</span>
+        </div>` : ''}
+        <div class="info-row">
+          <span class="info-label">Total visitas</span>
+          <span class="info-value">${historial.length > 0 ? historial.length + (historial.length === 5 ? '+' : '') : '0'}</span>
+        </div>
+      </div>
+      ${histHTML}
+    </div>`;
+}
+
+function renderError(msg){
+  document.getElementById('root').innerHTML = `
+    <div class="error-card">
+      <div class="error-icon">❌</div>
+      <div class="error-title">Acceso no válido</div>
+      <div class="error-msg">${msg}</div>
+    </div>`;
+}
+
+// ── Init: read token from URL ─────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const token  = params.get('token');
+if(!token){ renderError('QR inválido. Escanea tu código QR personal.'); }
+else       { doCheckin(token); }
+</script>
+</body>
+</html>
