@@ -8450,6 +8450,7 @@ async function saContextSwitch(gymId){
   closeSaCtxDropdown();
   toast('Cambiando contexto al gym '+gymId+'…','🔄');
   await Promise.all([
+    loadConfigFromSupabase(),
     loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
     loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
     loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
@@ -8459,7 +8460,7 @@ async function saContextSwitch(gymId){
   updateSaCtxLabel();
   renderDashboard();
   renderSuperAdmin();
-  toast('Contexto cambiado ✅ Ahora ves el Gym ID '+gymId,'🏋️');
+  toast('Contexto cambiado ✅ Ahora ves: '+(gymConfig.gym_nombre||'Gym #'+gymId),'🏋️');
 }
 
 // ── SA Context Switcher helpers ────────────────────────────────────

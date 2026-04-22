@@ -146,30 +146,11 @@ body{
 </div>
 
 <script>
-// ── Supabase config (same as main app) ──────────────────────────────
+// ── Supabase config ──────────────────────────────────────────────────
 const SUPA_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
-const SUPA_KEY = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
+const REGISTER_URL = `${SUPA_URL}/functions/v1/move-register`;
 
-async function supa(table){ return { url: SUPA_URL, key: SUPA_KEY, table }; }
-
-async function supaFetch(path, opts={}){
-  const res = await fetch(`${SUPA_URL}${path}`, {
-    ...opts,
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': opts.prefer || '',
-      ...(opts.headers||{})
-    }
-  });
-  const text = await res.text();
-  let data = null;
-  try{ data = JSON.parse(text); }catch(e){}
-  return { ok: res.ok, status: res.status, data };
-}
-
-// SHA-256 hash
+// SHA-256 hash (misma que en el app principal)
 async function hashPassword(pass){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -216,7 +197,7 @@ async function doRegistro(){
   const pass      = document.getElementById('r-pass').value;
   const pass2     = document.getElementById('r-pass2').value;
 
-  // Validations
+  // Validaciones cliente
   if(!gymNombre || !nombre || !email || !pass){ showError('Por favor completa todos los campos obligatorios.'); return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showError('Ingresa un correo electrónico válido.'); return; }
   if(pass.length < 8){ showError('La contraseña debe tener al menos 8 caracteres.'); return; }
@@ -227,87 +208,45 @@ async function doRegistro(){
   btn.textContent = 'CREANDO...';
 
   try {
-    // 1. Check if email already exists
-    const checkRes = await supaFetch(`/rest/v1/usuarios?email=eq.${encodeURIComponent(email)}&select=id`);
-    if(checkRes.ok && checkRes.data && checkRes.data.length > 0){
-      showError('Este correo ya está registrado. Intenta con otro o inicia sesión.');
-      btn.disabled = false; btn.textContent = 'CREAR MI GYM';
-      return;
-    }
+    // Hash password antes de enviar (nunca se manda en texto plano)
+    const pw_hash = await hashPassword(pass);
 
-    // 2. Generate slug from gym name
-    const slug = gymNombre.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
-      .substring(0,30) + '-' + Math.random().toString(36).substring(2,6);
-
-    // 3. Create gym
-    const gymRes = await supaFetch('/rest/v1/gyms', {
-      method:'POST',
-      prefer:'return=representation',
-      body: JSON.stringify({
-        nombre: gymNombre,
-        slug,
-        plan,
-        owner_email: email,
-        activo: true,
-        max_clientes: plan==='free' ? 50 : plan==='basic' ? 200 : 9999
-      })
+    // Llamar Edge Function move-register (usa service_role, bypasea RLS)
+    const res = await fetch(REGISTER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gymNombre, plan, nombre, email, pw_hash })
     });
-    if(!gymRes.ok){
-      showError('Error creando el gym: ' + (gymRes.data?.message || gymRes.status));
+
+    const result = await res.json();
+
+    if(!res.ok || !result.ok){
+      showError(result.error || 'Error al crear el gym. Intenta de nuevo.');
       btn.disabled = false; btn.textContent = 'CREAR MI GYM';
       return;
     }
-    const newGym = Array.isArray(gymRes.data) ? gymRes.data[0] : gymRes.data;
-    const gymId  = newGym.id;
 
-    // 4. Hash password
-    const pwHash = await hashPassword(pass);
-
-    // 5. Create admin user
-    const userRes = await supaFetch('/rest/v1/usuarios', {
-      method:'POST',
-      prefer:'return=representation',
-      body: JSON.stringify({
-        nombre,
-        email,
-        pw_hash: pwHash,
-        rol: 'admin',
-        activo: true,
-        gym_id: gymId
-      })
-    });
-    if(!userRes.ok){
-      // Rollback: delete the gym if user creation failed
-      await supaFetch(`/rest/v1/gyms?id=eq.${gymId}`, { method:'DELETE' });
-      showError('Error creando el usuario: ' + (userRes.data?.message || userRes.status));
-      btn.disabled = false; btn.textContent = 'CREAR MI GYM';
-      return;
-    }
-    const newUser = Array.isArray(userRes.data) ? userRes.data[0] : userRes.data;
-
-    // 6. Save session and redirect
+    // Guardar sesión (sin JWT: el usuario tendrá que hacer login para obtenerlo)
     const session = {
-      id: newUser.id,
-      nombre: newUser.nombre,
-      email: newUser.email,
-      rol: 'admin',
-      gym_id: gymId
+      id:     result.user.id,
+      nombre: result.user.nombre,
+      email:  result.user.email,
+      rol:    result.user.rol,
+      gym_id: result.gym_id,
     };
     localStorage.setItem('move_session', JSON.stringify(session));
 
-    // Show success
+    // Mostrar éxito
     document.getElementById('reg-form-card').style.display = 'none';
     const succ = document.getElementById('reg-success');
     succ.style.display = 'block';
     document.getElementById('reg-success-msg').innerHTML =
-      `Bienvenido/a, <strong>${nombre}</strong>.<br>Tu gym <strong>${gymNombre}</strong> está listo.<br><br>Redirigiendo...`;
+      `Bienvenido/a, <strong>${nombre}</strong>.<br>Tu gym <strong>${gymNombre}</strong> está listo.<br><br>Redirigiendo al login...`;
 
     setTimeout(()=>{ window.location.href = 'MOVE_Sistema_Interno.html'; }, 2800);
 
   } catch(e){
-    showError('Error inesperado: ' + e.message);
+    showError('Error de conexión: ' + e.message);
     btn.disabled = false;
     btn.textContent = 'CREAR MI GYM';
   }
