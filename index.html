@@ -26,6 +26,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ═══════════════════════════════════════
    MOVE — DARK PREMIUM DESIGN SYSTEM v3
@@ -233,11 +234,43 @@ body{
 .search-wrap{
   display:flex;align-items:center;gap:8px;
   background:rgba(255,255,255,.04);border:1px solid var(--border);
-  border-radius:8px;padding:7px 13px;width:230px;transition:all .18s;
+  border-radius:8px;padding:7px 13px;width:260px;transition:all .18s;
+  position:relative;
 }
 .search-wrap:focus-within{border-color:var(--accent);background:rgba(0,180,216,.05);box-shadow:0 0 0 3px rgba(0,180,216,.1), var(--glow);}
 .search-wrap input{background:none;border:none;outline:none;font-size:13px;color:var(--text);font-family:var(--font);flex:1;}
 .search-wrap input::placeholder{color:var(--text4);}
+/* Global search dropdown */
+.search-results{
+  position:absolute;top:calc(100% + 8px);left:-10px;right:-10px;
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.6);
+  z-index:850;max-height:400px;overflow-y:auto;display:none;
+  animation:srFadeIn .12s ease;
+}
+.search-results.open{display:block;}
+@keyframes srFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.sr-cat{
+  font-size:9px;font-weight:800;color:var(--text3);letter-spacing:1px;
+  text-transform:uppercase;padding:8px 14px 4px;
+  border-top:1px solid var(--border);
+}
+.sr-cat:first-child{border-top:none;}
+.sr-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;cursor:pointer;transition:background .12s;
+}
+.sr-item:hover{background:var(--accent-bg);}
+.sr-item:last-child{border-radius:0 0 14px 14px;}
+.sr-item-label{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sr-item-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.sr-empty{padding:20px 14px;text-align:center;font-size:12px;color:var(--text3);}
+.sr-kbd{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:9px;color:var(--text3);background:rgba(255,255,255,.05);
+  border:1px solid var(--border);border-radius:4px;padding:1px 5px;
+  font-family:var(--font);flex-shrink:0;
+}
 
 .btn{
   display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;
@@ -550,16 +583,52 @@ select option{background:#10101c;color:var(--text);}
 
 /* Notif panel */
 .notif-panel{
-  position:fixed;top:62px;right:16px;width:340px;
-  background:rgba(12,12,22,.96);border:1px solid rgba(0,180,216,.15);
-  border-radius:12px;box-shadow:var(--shadow-lg), 0 0 40px rgba(0,0,0,.6);
+  position:fixed;top:62px;right:16px;width:360px;
+  background:rgba(10,10,18,.97);border:1px solid var(--border2);
+  border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
   z-index:400;display:none;
-  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
 }
 .notif-panel.open{display:block;animation:modal-in .18s ease;}
-.notif-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
-.notif-list{max-height:360px;overflow-y:auto;padding:8px;}
-.notif-item{padding:10px;border-radius:8px;margin-bottom:4px;}
+.notif-head{
+  padding:14px 16px 10px;border-bottom:1px solid var(--border);
+  font-size:13px;font-weight:700;color:var(--text);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.notif-badge-count{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 5px;border-radius:99px;
+  background:var(--danger);color:#fff;font-size:10px;font-weight:800;
+}
+.notif-list{max-height:420px;overflow-y:auto;padding:6px 8px 8px;}
+.notif-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px;border-radius:10px;margin-bottom:4px;
+  transition:background .12s;cursor:default;
+}
+.notif-item:hover{background:rgba(255,255,255,.04);}
+.notif-item.a-danger{border-left:3px solid var(--danger);}
+.notif-item.a-warn{border-left:3px solid var(--warn);}
+.notif-item.a-info{border-left:3px solid var(--accent);}
+.notif-item.a-ok{border-left:3px solid var(--ok);}
+.notif-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.notif-icon-danger{background:rgba(248,113,113,.12);}
+.notif-icon-warn{background:rgba(251,191,36,.1);}
+.notif-icon-info{background:rgba(0,180,216,.1);}
+.notif-icon-ok{background:rgba(16,232,160,.1);}
+.alert-title{font-size:12.5px;font-weight:600;color:var(--text);}
+.alert-desc{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.45;}
+.notif-empty{text-align:center;padding:28px 16px;color:var(--text3);font-size:12px;}
+.notif-section-label{
+  font-size:9px;font-weight:800;color:var(--text3);letter-spacing:.8px;
+  text-transform:uppercase;padding:8px 6px 4px;
+}
+/* Avatar with initials */
+.cli-avatar{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:50%;font-family:var(--font-display);font-weight:800;
+  flex-shrink:0;line-height:1;
+}
 
 /* Toast */
 .toast{
@@ -1674,6 +1743,12 @@ select option{background:#10101c;color:var(--text);}
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span> Clientes
         <span class="nav-badge blue" id="badge-clientes" style="display:none;">0</span>
       </div>
+      <div class="nav-item" id="nav-retencion" onclick="go('retencion',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Retención & Churn
+      </div>
+      <div class="nav-item" id="nav-calendario-venc" onclick="go('calendario-venc',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Calendario Vencimientos
+      </div>
     </div>
 
     <div class="nav-section">
@@ -1718,6 +1793,9 @@ select option{background:#10101c;color:var(--text);}
 
     <div class="nav-section">
       <div class="nav-label">Sistema</div>
+      <div class="nav-item" id="nav-superadmin" onclick="go('superadmin',this)" style="display:none;">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Super Admin
+      </div>
       <div class="nav-item" id="nav-settings" onclick="go('settings',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuración
       </div>
@@ -1745,18 +1823,39 @@ select option{background:#10101c;color:var(--text);}
     <div class="topbar-divider"></div>
     <span class="topbar-sub" id="topSub">Lunes 6 de Abril, 2026</span>
     <div class="topbar-right">
-      <div class="search-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="globalSearch" placeholder="Buscar en CRM…" oninput="handleSearch(this.value)"/></div>
+      <div class="search-wrap" id="search-wrap-global">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="globalSearch" placeholder="Buscar clientes, pagos, leads…"
+          oninput="handleGlobalSearch(this.value)"
+          onkeydown="handleSearchKey(event)"
+          autocomplete="off" spellcheck="false"/>
+        <span id="search-clear" style="display:none;cursor:pointer;color:var(--text3);font-size:12px;padding:0 2px;" onclick="closeSearch()">✕</span>
+        <!-- Dropdown results -->
+        <div class="search-results" id="search-results-panel"></div>
+      </div>
       <button class="btn btn-primary" id="topBtn" onclick="openModal('lead')">+ Nuevo Lead</button>
-      <div class="notif-btn" onclick="toggleNotif()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot"></span></div>
+      <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-dot" id="notif-dot" style="display:none;"></span>
+        <span id="notif-count" style="display:none;position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center;"></span>
+      </div>
     </div>
   </div>
 
   <!-- Notification panel -->
   <div class="notif-panel" id="notifPanel">
-    <div class="notif-head">Alertas <span onclick="toggleNotif()" style="cursor:pointer;color:var(--text3);font-weight:400">✕</span></div>
-    <div class="notif-list">
-      <div class="notif-item a-warn"><div class="alert-title">Planeación semana sin cargar</div><div class="alert-desc">Head Coach: semana del 13 Abr</div></div>
-      <div class="notif-item a-info"><div class="alert-title">3 solicitudes pendientes en Marketing</div><div class="alert-desc">Revisa el módulo de Solicitudes</div></div>
+    <div class="notif-head">
+      <div style="display:flex;align-items:center;gap:8px;">
+        🔔 Alertas
+        <span id="notif-panel-count" class="notif-badge-count" style="display:none;">0</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="markAllNotifsRead()" style="font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--font);font-weight:600;">Marcar leídas</button>
+        <span onclick="toggleNotif()" style="cursor:pointer;color:var(--text3);">✕</span>
+      </div>
+    </div>
+    <div class="notif-list" id="notif-list-body">
+      <div class="notif-empty">Cargando alertas…</div>
     </div>
   </div>
 
@@ -2052,7 +2151,20 @@ select option{background:#10101c;color:var(--text);}
                  background:var(--card2);color:var(--text);font-size:12px;font-weight:600;
                  border:1px solid var(--border);cursor:pointer;white-space:nowrap;">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar CSV
+          CSV
+        </button>
+        <button onclick="exportarClientesXLSX()"
+          style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;
+                 background:rgba(16,185,129,.12);color:var(--ok);font-size:12px;font-weight:700;
+                 border:1px solid rgba(16,185,129,.3);cursor:pointer;white-space:nowrap;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Excel
+        </button>
+        <button onclick="abrirRenovacionMasiva()"
+          style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;
+                 background:rgba(249,115,22,.12);color:#f97316;font-size:12px;font-weight:700;
+                 border:1px solid rgba(249,115,22,.3);cursor:pointer;white-space:nowrap;">
+          🔄 Renovación Masiva
         </button>
         <button onclick="openModal('solo-cliente')"
           style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;
@@ -2104,6 +2216,53 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="card" id="crm-table-wrap">
         <div id="crm-content"></div>
+      </div>
+    </div>
+
+    <!-- ══ RETENCIÓN & CHURN ══ -->
+    <div class="view" id="v-retencion">
+      <div id="retencion-kpis" class="kpi-grid" style="margin-bottom:20px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="card" id="ret-chart-wrap">
+          <div class="sh"><div class="sh-title">Retención mensual (últimos 6 meses)</div></div>
+          <div id="ret-chart"></div>
+        </div>
+        <div class="card" id="churn-chart-wrap">
+          <div class="sh"><div class="sh-title">Churn mensual (bajas)</div></div>
+          <div id="churn-chart"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sh">
+          <div class="sh-title">⚠️ Clientes en Riesgo</div>
+          <span style="font-size:11px;color:var(--text3);">Membresía vencida hace +15 días sin renovar</span>
+        </div>
+        <div id="riesgo-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ CALENDARIO VENCIMIENTOS ══ -->
+    <div class="view" id="v-calendario-venc">
+      <div class="sh" style="flex-wrap:wrap;gap:10px;align-items:center;">
+        <div class="sh-title">Calendario de Vencimientos</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="calVencPrevMonth()" style="padding:6px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:14px;">‹</button>
+          <span id="calVencLabel" style="font-size:14px;font-weight:700;color:var(--text);min-width:120px;text-align:center;">—</span>
+          <button onclick="calVencNextMonth()" style="padding:6px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:14px;">›</button>
+          <button onclick="calVencGoToday()" style="padding:6px 12px;border-radius:8px;background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-size:12px;font-weight:700;">Hoy</button>
+        </div>
+      </div>
+      <!-- Legend -->
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--ok);display:inline-block;"></span>Activo</span>
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--warn);display:inline-block;"></span>Vence pronto</span>
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--danger);display:inline-block;"></span>Vencido</span>
+      </div>
+      <div id="calVencGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+      <!-- Day detail panel -->
+      <div id="calVencDetail" style="display:none;margin-top:16px;" class="card">
+        <div class="sh"><div class="sh-title" id="calVencDetailTitle">—</div></div>
+        <div id="calVencDetailList"></div>
       </div>
     </div>
 
@@ -2258,6 +2417,19 @@ select option{background:#10101c;color:var(--text);}
         <div class="card" style="grid-column:1/-1;">
           <div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Agrega a tu equipo de coaches. Sus perfiles son completamente independientes de los clientes.</div></div>
         </div>
+      </div>
+
+      <!-- ── REPORTE POR COACH ── -->
+      <div class="card" style="margin-top:18px;">
+        <div class="sh" style="flex-wrap:wrap;gap:8px;align-items:center;">
+          <div class="sh-title">📊 Reporte por Coach</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label style="font-size:12px;color:var(--text3);">Mes:</label>
+            <select id="coach-report-mes" onchange="renderReporteCoach()"
+              style="padding:5px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:12px;cursor:pointer;"></select>
+          </div>
+        </div>
+        <div id="coach-report-body"></div>
       </div>
 
       <!-- ── METAS POR COACH ── -->
@@ -2462,6 +2634,15 @@ select option{background:#10101c;color:var(--text);}
             </div>
           </div>
 
+          <!-- Gym ID (read-only, for multi-tenant reference) -->
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">🔑 Gym ID (multi-tenant)</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <code id="cfg-gym-id-display" style="font-size:11px;color:var(--accent);background:var(--accent-bg);padding:3px 8px;border-radius:5px;border:1px solid var(--accent);letter-spacing:.5px;">—</code>
+              <span style="font-size:10px;color:var(--text4);">Identificador único de tu gym. No lo compartas.</span>
+            </div>
+          </div>
+
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
             <button class="btn btn-outline btn-sm" onclick="resetGymConfig()">↩ Defaults</button>
             <button class="btn btn-primary btn-sm" onclick="saveGymConfig()">💾 Guardar cambios</button>
@@ -2642,8 +2823,13 @@ select option{background:#10101c;color:var(--text);}
   <div class="detail-head">
     <button class="detail-close" onclick="closeClientePanel()">✕</button>
     <div style="font-size:10px;color:var(--sidebar-text);text-transform:uppercase;letter-spacing:1px;">Cliente</div>
-    <div class="detail-name" id="cpanel-nombre">—</div>
-    <div class="detail-sub" id="cpanel-sub">—</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+      <div id="cpanel-avatar"></div>
+      <div>
+        <div class="detail-name" id="cpanel-nombre" style="margin-top:0;">—</div>
+        <div class="detail-sub" id="cpanel-sub">—</div>
+      </div>
+    </div>
   </div>
   <div class="detail-body">
     <!-- KPIs del cliente -->
@@ -2708,6 +2894,26 @@ select option{background:#10101c;color:var(--text);}
 </div>
 <div id="cliente-panel-overlay" onclick="closeClientePanel()"
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:459;"></div>
+
+    <!-- ══ SUPER ADMIN ══ -->
+    <div class="view" id="v-superadmin">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">🛡️</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#ef4444;">Modo Super Admin</div>
+          <div style="font-size:11px;color:var(--text3);">Acceso restringido. Solo visible para usuarios con rol superadmin.</div>
+        </div>
+      </div>
+      <div id="sa-kpis" class="kpi-grid" style="margin-bottom:20px;"></div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="sh"><div class="sh-title">🏋️ Gyms Registrados</div></div>
+        <div id="sa-gyms-list"></div>
+      </div>
+      <div class="card">
+        <div class="sh"><div class="sh-title">📊 Métricas del Sistema</div></div>
+        <div id="sa-metrics"></div>
+      </div>
+    </div>
 
 <!-- ═══ MODALS ═══ -->
 
@@ -2832,9 +3038,35 @@ select option{background:#10101c;color:var(--text);}
       <button class="modal-close" onclick="closeModal('pago')">✕</button>
     </div>
     <div class="modal-body">
+      <!-- Tipo de pago toggle -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--card2);border-radius:10px;padding:4px;">
+        <button id="p-tipo-completo" onclick="setPagoTipo('completo')"
+          style="flex:1;padding:7px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:var(--accent);color:#fff;transition:all .15s;">
+          💳 Pago Completo
+        </button>
+        <button id="p-tipo-abono" onclick="setPagoTipo('abono')"
+          style="flex:1;padding:7px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text3);transition:all .15s;">
+          🪙 Abono Parcial
+        </button>
+      </div>
       <div class="field-grid">
         <div class="field"><label>Cliente *</label><input id="p-cliente" type="text" placeholder="Nombre del cliente"/></div>
-        <div class="field"><label>Monto (MXN) *</label><input id="p-monto" type="number" placeholder="1200" min="0"/></div>
+        <div class="field"><label id="p-monto-label">Monto (MXN) *</label><input id="p-monto" type="number" placeholder="1200" min="0" oninput="recalcSaldo()"/></div>
+      </div>
+      <!-- Abono extra fields -->
+      <div id="p-abono-row" style="display:none;">
+        <div class="field-grid">
+          <div class="field">
+            <label>Monto total del plan</label>
+            <input id="p-monto-total" type="number" placeholder="2400" min="0" oninput="recalcSaldo()"/>
+          </div>
+          <div class="field">
+            <label>Saldo pendiente</label>
+            <div id="p-saldo-display"
+               style="padding:9px 12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);
+                      font-size:14px;font-weight:700;color:var(--warn);line-height:1.4;">—</div>
+          </div>
+        </div>
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
@@ -2865,7 +3097,7 @@ select option{background:#10101c;color:var(--text);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('pago')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savePago()">Registrar Pago</button>
+      <button class="btn btn-primary" id="p-save-btn" onclick="savePago()">Registrar Pago</button>
     </div>
   </div>
 </div>
@@ -3123,6 +3355,54 @@ select option{background:#10101c;color:var(--text);}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('edit-coach')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveEditCoach()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Renovación Masiva -->
+<div class="modal-overlay" id="modal-renovacion-masiva">
+  <div class="modal" style="width:600px;max-width:96vw;">
+    <div class="modal-head">
+      <div class="modal-title">🔄 Renovación Masiva</div>
+      <button class="modal-close" onclick="closeModal('renovacion-masiva')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Plan settings -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Configuración de renovación</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Plan a renovar</label>
+            <select id="rm-plan" onchange="onPlanChange('rm-plan','rm-monto','rm-vence-base')">
+              <option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option>
+            </select>
+          </div>
+          <div class="field"><label>Monto (MXN)</label><input id="rm-monto" type="number" placeholder="1200" min="0"/></div>
+        </div>
+        <div class="field-grid">
+          <div class="field"><label>Fecha de inicio</label><input id="rm-fecha" type="date"/></div>
+          <div class="field"><label>Método de pago</label>
+            <select id="rm-metodo">
+              <option>Transferencia</option><option>Efectivo</option><option>Tarjeta</option><option>TotalPass</option><option>Nessty</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="rm-vence-base"/>
+      </div>
+      <!-- Client selection -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;">Clientes a renovar</div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="rmSelectAll(true)" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text3);font-size:11px;cursor:pointer;">Todos</button>
+          <button onclick="rmSelectAll(false)" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text3);font-size:11px;cursor:pointer;">Ninguno</button>
+        </div>
+      </div>
+      <div id="rm-client-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;"></div>
+      <div id="rm-summary" style="margin-top:10px;font-size:12px;color:var(--text3);text-align:center;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('renovacion-masiva')">Cancelar</button>
+      <button class="btn btn-primary" onclick="ejecutarRenovacionMasiva()" id="rm-exec-btn">🔄 Renovar Seleccionados</button>
     </div>
   </div>
 </div>
@@ -3626,6 +3906,47 @@ select option{background:#10101c;color:var(--text);}
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// MULTI-TENANT GROUNDWORK (#32)
+// ─────────────────────────────────────────────────────────────────
+// When MULTI_TENANT is set to true AND gym_id columns exist in the DB,
+// flip MT_ENABLED to true to activate per-gym data isolation.
+// ─────────────────────────────────────────────────────────────────
+const MT_ENABLED = false; // Set to true when DB schema includes gym_id columns
+
+let MOVE_GYM_ID = null; // Loaded from gym_config.gym_id on init
+
+// Query builder wrapper — applies gym_id filter when multi-tenant is active
+// Usage: qb('pagos').select('*') instead of supabaseClient.from('pagos').select('*')
+function qb(table){
+  const q = window.supabaseClient.from(table);
+  if(MT_ENABLED && MOVE_GYM_ID) return { ...q, _gymId: MOVE_GYM_ID };
+  return q;
+}
+
+// Adds gym_id to an insert payload when MT is active
+function withGymId(payload){
+  if(!MT_ENABLED || !MOVE_GYM_ID) return payload;
+  if(Array.isArray(payload)) return payload.map(p=>({ ...p, gym_id: MOVE_GYM_ID }));
+  return { ...payload, gym_id: MOVE_GYM_ID };
+}
+
+// Generate or retrieve a stable gym identifier
+function ensureGymId(){
+  if(gymConfig.gym_id){ MOVE_GYM_ID = gymConfig.gym_id; return; }
+  // Generate a new ID and persist it
+  const newId = 'gym_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+  MOVE_GYM_ID = newId;
+  gymConfig.gym_id = newId;
+  // Persist async (fire-and-forget)
+  if(window.supabaseClient){
+    window.supabaseClient.from('gym_config').upsert({key:'gym_id',value:newId},{onConflict:'key'}).then(()=>{
+      console.log('[MOVE MT] gym_id generado y guardado:', newId);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // STATE — All data loaded from Supabase on initialization
 // ═══════════════════════════════════════════════════════════════════
 let gymConfig  = {}; // loaded from gym_config table
@@ -3999,6 +4320,9 @@ function updateSidebarUser(){
   document.getElementById('sidebar-nombre').textContent = currentUser.nombre;
   const rolLabel = {admin:'Administrador',coach:'Coach',marketing:'Marketing',operaciones:'Operaciones'};
   document.getElementById('sidebar-rol').textContent    = rolLabel[currentUser.rol]||currentUser.rol;
+  // Show super-admin nav only for superadmin role
+  const saNav = document.getElementById('nav-superadmin');
+  if(saNav) saNav.style.display = currentUser.rol==='superadmin' ? '' : 'none';
   // My account section in settings
   const mn = document.getElementById('cfg-mi-nombre');
   const me = document.getElementById('cfg-mi-email');
@@ -4147,6 +4471,7 @@ async function loadConfigFromSupabase(){
   if(error){ console.error('Error cargando gym_config:', error); return; }
   gymConfig = {};
   (data||[]).forEach(row => { gymConfig[row.key] = row.value||''; });
+  ensureGymId(); // Multi-tenant groundwork: establish gym identity
   applyGymConfig();
   renderThemeGrid();
 }
@@ -4269,6 +4594,9 @@ function applyGymConfig(){
   if(el('cfg-gym-color-hex')) el('cfg-gym-color-hex').value = usedColor;
   if(el('cfg-color-preview')) el('cfg-color-preview').style.background = usedColor;
   if(logo && el('cfg-logo-img')){ el('cfg-logo-img').src=logo; el('cfg-logo-img').style.display='block'; }
+  // Show gym_id
+  const gymIdEl = el('cfg-gym-id-display');
+  if(gymIdEl) gymIdEl.textContent = MOVE_GYM_ID || gymConfig.gym_id || 'Cargando...';
 }
 
 async function saveGymConfig(){
@@ -4514,6 +4842,9 @@ const topTitles = {
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
   gastos:      ['Gastos & Balance',          'Control de egresos y balance financiero mensual'],
   programa:    ['Programa de Entrenamiento', 'Calendario de entrenamientos por disciplina'],
+  retencion:         ['Retención & Churn',          'Análisis de bajas, renovaciones y clientes en riesgo'],
+  'calendario-venc': ['Calendario de Vencimientos', 'Vista mensual de membresías que vencen'],
+  superadmin:  ['Super Admin',               '🛡️ Gestión de gyms · Multi-tenant'],
   settings:    ['Configuración',             'Apariencia · Usuarios · Mi cuenta'],
 };
 const topBtnLabels = {
@@ -4531,6 +4862,9 @@ const topBtnLabels = {
   evaluaciones:'+ Evaluar Coach',
   gastos:      '+ Nuevo Gasto',
   programa:    '+ Entrenamiento',
+  retencion:         '↗ Exportar',
+  'calendario-venc': 'Hoy',
+  superadmin:  '↻ Actualizar',
   settings:    '+ Nuevo Usuario',
 };
 const topBtnActions = {
@@ -4548,6 +4882,9 @@ const topBtnActions = {
   horario:     ()=>{ switchHorTab('plantilla'); setTimeout(openAddClaseModal,50); },
   gastos:      ()=>openGastoModal(),
   programa:    ()=>openProgramaModal(''),
+  retencion:         ()=>exportRetencionCSV(),
+  'calendario-venc': ()=>calVencGoToday(),
+  superadmin:  ()=>renderSuperAdmin(),
   settings:    ()=>{ if(currentUser&&currentUser.rol==='admin') openModal('add-user'); },
 };
 
@@ -4567,11 +4904,13 @@ function go(id, el){
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
-  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); }
+  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); renderReporteCoach(); }
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
   if(id==='clientes')    renderClientes();
+  if(id==='retencion')       renderRetencion();
+  if(id==='calendario-venc') renderCalVenc();
   if(id==='asistencia')  { renderAsistencia(); loadQRCheckinsHoy(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
@@ -4580,6 +4919,7 @@ function go(id, el){
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa')    { renderProgramaCalendar(); }
   if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); }
+  if(id==='superadmin'){ renderSuperAdmin(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -4636,11 +4976,604 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 // ═══════════════════════════════════════════════════════════════════
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════
-function toggleNotif(){ document.getElementById('notifPanel').classList.toggle('open'); }
+// ═══════════════════════════════════════════════════════════════════
+// AVATAR HELPER (#25)
+// ═══════════════════════════════════════════════════════════════════
+const AVATAR_COLORS = [
+  '#00b4d8','#a855f7','#10b981','#f97316','#ec4899',
+  '#ef4444','#f59e0b','#6366f1','#84cc16','#f43f5e',
+  '#06b6d4','#8b5cf6','#14b8a6','#fb923c','#e879f9'
+];
+
+function getAvatarColor(nombre){
+  const sum = (nombre||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
+function getAvatarHTML(nombre, size=34){
+  const initials = (nombre||'?').split(' ').slice(0,2).map(w=>(w[0]||'').toUpperCase()).join('');
+  const color = getAvatarColor(nombre);
+  const fs = Math.round(size * 0.37);
+  return `<div class="cli-avatar" style="width:${size}px;height:${size}px;background:${color}1a;border:1.5px solid ${color}44;font-size:${fs}px;color:${color};">${initials}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NOTIFICACIONES IN-APP (#24)
+// ═══════════════════════════════════════════════════════════════════
+let _notifReadAt = null; // timestamp of last "mark all read"
+
+function buildNotifAlerts(){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const todayStr = now.toISOString().slice(0,10);
+  const in3 = new Date(now); in3.setDate(now.getDate()+3);
+
+  const alerts = [];
+
+  // ── Membresías vencidas ──
+  const vencidas = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now && p.notas!=='__sin_pago__');
+  if(vencidas.length){
+    alerts.push({
+      type:'danger', icon:'🔴', iconCls:'notif-icon-danger',
+      title:`${vencidas.length} membresía${vencidas.length>1?'s':''} vencida${vencidas.length>1?'s':''}`,
+      desc: vencidas.slice(0,3).map(p=>p.cliente).join(', ')+(vencidas.length>3?` y ${vencidas.length-3} más`:''),
+      action:`go('clientes',document.getElementById('nav-clientes'))`,
+    });
+  }
+
+  // ── Por vencer en 3 días ──
+  const pronto = pagos.filter(p=>{
+    if(!p.vence||p.vence==='—') return false;
+    const v=new Date(p.vence+'T12:00:00'); return v>=now && v<=in3;
+  });
+  if(pronto.length){
+    alerts.push({
+      type:'warn', icon:'⏰', iconCls:'notif-icon-warn',
+      title:`${pronto.length} membresía${pronto.length>1?'s':''} vence${pronto.length>1?'n':''} en 3 días`,
+      desc: pronto.slice(0,3).map(p=>p.cliente).join(', ')+(pronto.length>3?` y ${pronto.length-3} más`:''),
+      action:`go('clientes',document.getElementById('nav-clientes'))`,
+    });
+  }
+
+  // ── Cumpleaños hoy ──
+  const hoyMD = todayStr.slice(5); // MM-DD
+  const cumples = pagos.filter(p=>p.cumpleanos&&(p.cumpleanos||'').slice(5)===hoyMD);
+  const cumpleNames = [...new Set(cumples.map(p=>p.cliente))];
+  if(cumpleNames.length){
+    alerts.push({
+      type:'ok', icon:'🎂', iconCls:'notif-icon-ok',
+      title:`Cumpleaños hoy 🎉`,
+      desc: cumpleNames.join(', '),
+      action:`go('clientes',document.getElementById('nav-clientes'))`,
+    });
+  }
+
+  // ── Clientes sin pago hace 30+ días ──
+  const hace30 = new Date(now); hace30.setDate(now.getDate()-30);
+  const sinRenovar = [];
+  const clientNombres = [...new Set([...clientesDB.map(c=>c.nombre), ...pagos.map(p=>p.cliente)])].filter(Boolean);
+  clientNombres.forEach(nombre=>{
+    const ultPago = pagos.filter(p=>p.cliente===nombre&&p.notas!=='__sin_pago__').sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
+    if(ultPago && new Date(ultPago.fecha||'') < hace30) sinRenovar.push(nombre);
+  });
+  if(sinRenovar.length>2){
+    alerts.push({
+      type:'info', icon:'📋', iconCls:'notif-icon-info',
+      title:`${sinRenovar.length} clientes sin pago en +30 días`,
+      desc:'Considera contactarlos para renovar',
+      action:`go('clientes',document.getElementById('nav-clientes'))`,
+    });
+  }
+
+  return alerts;
+}
+
+function renderNotifPanel(){
+  const alerts = buildNotifAlerts();
+  const listEl = document.getElementById('notif-list-body');
+  const countEl= document.getElementById('notif-panel-count');
+  const dotEl  = document.getElementById('notif-dot');
+  const btnCount = document.getElementById('notif-count');
+
+  // Update badge
+  if(countEl){ countEl.textContent=alerts.length; countEl.style.display=alerts.length?'inline-flex':'none'; }
+  if(dotEl)  { dotEl.style.display = alerts.length ? 'block' : 'none'; }
+  if(btnCount){ btnCount.textContent=alerts.length; btnCount.style.display=alerts.length?'inline-flex':'none'; }
+
+  if(!listEl) return;
+  if(!alerts.length){
+    listEl.innerHTML = `<div class="notif-empty">✅ Todo al día — sin alertas pendientes</div>`;
+    return;
+  }
+
+  listEl.innerHTML = alerts.map(a=>`
+    <div class="notif-item a-${a.type}" onclick="${a.action};toggleNotif()" style="cursor:pointer;">
+      <div class="notif-icon ${a.iconCls}">${a.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-desc">${esc(a.desc)}</div>
+      </div>
+    </div>
+  `).join('') + `<div style="padding:8px 6px 0;font-size:10px;color:var(--text3);text-align:center;">Actualizado ahora</div>`;
+}
+
+function toggleNotif(){
+  const panel = document.getElementById('notifPanel');
+  const isOpen = panel.classList.contains('open');
+  if(!isOpen){ renderNotifPanel(); }
+  panel.classList.toggle('open');
+}
+
+function markAllNotifsRead(){
+  _notifReadAt = Date.now();
+  const dotEl  = document.getElementById('notif-dot');
+  const countEl= document.getElementById('notif-panel-count');
+  const btnCount = document.getElementById('notif-count');
+  if(dotEl)   dotEl.style.display='none';
+  if(countEl) { countEl.style.display='none'; }
+  if(btnCount){ btnCount.style.display='none'; }
+  const listEl = document.getElementById('notif-list-body');
+  if(listEl) listEl.innerHTML = `<div class="notif-empty">✅ Alertas marcadas como leídas</div>`;
+  setTimeout(()=>toggleNotif(), 800);
+}
 document.addEventListener('click',e=>{
   if(!e.target.closest('.notif-btn')&&!e.target.closest('#notifPanel'))
     document.getElementById('notifPanel').classList.remove('open');
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// RETENCIÓN & CHURN
+// ═══════════════════════════════════════════════════════════════════
+function renderRetencion(){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  // ── Construir lista única de clientes ──
+  const nombresSet = new Set([
+    ...clientesDB.map(c=>c.nombre).filter(Boolean),
+    ...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)
+  ]);
+  const todosClientes = [...nombresSet];
+
+  // ── Cómputos generales ──
+  // LTV promedio: total pagado / clientes con al menos 1 pago
+  const clientesConPago = todosClientes.filter(n=>pagos.some(p=>(p.cliente||'').trim()===n&&p.notas!=='__sin_pago__'));
+  const ltvMap = {};
+  clientesConPago.forEach(n=>{
+    ltvMap[n] = pagos.filter(p=>(p.cliente||'').trim()===n&&p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0);
+  });
+  const ltvProm = clientesConPago.length ? Math.round(Object.values(ltvMap).reduce((a,b)=>a+b,0)/clientesConPago.length) : 0;
+
+  // Activos ahora (vence en el futuro)
+  const activosHoy = todosClientes.filter(n=>{
+    const ultPago = pagos.filter(p=>(p.cliente||'').trim()===n&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''))[0];
+    if(!ultPago) return false;
+    return new Date(ultPago.vence+'T12:00:00') >= hoy;
+  }).length;
+
+  // Clientes en riesgo: vencido hace +15 días sin renovar
+  const hace15 = new Date(hoy); hace15.setDate(hoy.getDate()-15);
+  const enRiesgo = todosClientes.map(nombre=>{
+    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ult = ps[0]||null;
+    if(!ult||!ult.vence||ult.vence==='—') return null;
+    const vDate = new Date(ult.vence+'T12:00:00');
+    const diasVen = Math.floor((hoy-vDate)/(1000*60*60*24));
+    if(diasVen < 15) return null;
+    const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
+    const tel = (cliRec.telefono||(ult.telefono)||'').replace(/\D/g,'');
+    return { nombre, diasVencido: diasVen, plan: ult.plan||'—', vence: ult.vence, tel, ltv: ltvMap[nombre]||0 };
+  }).filter(Boolean).sort((a,b)=>b.diasVencido-a.diasVencido);
+
+  // ── Retención/Churn por mes (últimos 6 meses) ──
+  const meses6 = [];
+  for(let i=5;i>=0;i--){
+    const d = new Date(hoy.getFullYear(), hoy.getMonth()-i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const mesKey = `${y}-${String(m+1).padStart(2,'0')}`;
+    const inicioMes = new Date(y,m,1);
+    const finMes    = new Date(y,m+1,0,23,59,59);
+
+    // Activos en ese mes = tenían un pago vigente ese mes
+    const activosEseMes = todosClientes.filter(nombre=>{
+      return pagos.some(p=>{
+        if((p.cliente||'').trim()!==nombre||!p.vence||p.vence==='—'||p.notas==='__sin_pago__') return false;
+        const vDate=new Date(p.vence+'T12:00:00');
+        const fDate=new Date((p.fecha||p.vence)+'T00:00:00');
+        return fDate<=finMes && vDate>=inicioMes;
+      });
+    });
+    const total = activosEseMes.length;
+
+    // Renovaron ese mes = hicieron un pago dentro de ese mes
+    const renovaron = activosEseMes.filter(nombre=>{
+      return pagos.some(p=>{
+        if((p.cliente||'').trim()!==nombre||!p.fecha||p.notas==='__sin_pago__') return false;
+        const pDate=new Date(p.fecha+'T00:00:00');
+        return pDate>=inicioMes && pDate<=finMes;
+      });
+    }).length;
+
+    const tasa = total>0 ? Math.round((renovaron/total)*100) : 0;
+    const churn = total - renovaron;
+    const nombreMes = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][m];
+    meses6.push({ mesKey, label:`${nombreMes} ${y}`, total, renovaron, tasa, churn });
+  }
+
+  const tasaProm = meses6.length ? Math.round(meses6.reduce((s,m)=>s+m.tasa,0)/meses6.length) : 0;
+  const churnMes = meses6[meses6.length-1]?.churn || 0;
+
+  // ── KPIs ──
+  document.getElementById('retencion-kpis').innerHTML = `
+    <div class="kpi-card" style="--kpi-color:var(--ok)">
+      <div class="kpi-label">Retención Promedio</div>
+      <div class="kpi-value">${tasaProm}%</div>
+      <div class="kpi-meta">Últimos 6 meses</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--danger)">
+      <div class="kpi-label">Churn Este Mes</div>
+      <div class="kpi-value">${churnMes}</div>
+      <div class="kpi-meta">No renovaron</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--accent)">
+      <div class="kpi-label">Activos Hoy</div>
+      <div class="kpi-value">${activosHoy}</div>
+      <div class="kpi-meta">Membresía vigente</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#a78bfa">
+      <div class="kpi-label">LTV Promedio</div>
+      <div class="kpi-value">$${ltvProm.toLocaleString('es-MX')}</div>
+      <div class="kpi-meta">Por cliente</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--warn)">
+      <div class="kpi-label">En Riesgo</div>
+      <div class="kpi-value">${enRiesgo.length}</div>
+      <div class="kpi-meta">Vencidos +15 días</div>
+    </div>`;
+
+  // ── Gráfica retención ──
+  const maxTasa = 100;
+  const retChart = document.getElementById('ret-chart');
+  if(retChart){
+    retChart.innerHTML = `<div style="display:flex;align-items:flex-end;gap:10px;height:120px;padding:10px 0 0;">` +
+      meses6.map(m=>{
+        const h = Math.max(4, Math.round((m.tasa/maxTasa)*100));
+        const color = m.tasa>=70?'var(--ok)':m.tasa>=50?'var(--warn)':'var(--danger)';
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text3);font-weight:700;">${m.tasa}%</span>
+          <div style="width:100%;height:${h}px;background:${color};border-radius:4px 4px 0 0;transition:height .3s;"></div>
+          <span style="font-size:9px;color:var(--text4);text-align:center;line-height:1.2;">${m.label}</span>
+        </div>`;
+      }).join('') +
+    `</div>`;
+  }
+
+  // ── Gráfica churn ──
+  const maxChurn = Math.max(...meses6.map(m=>m.churn), 1);
+  const churnChart = document.getElementById('churn-chart');
+  if(churnChart){
+    churnChart.innerHTML = `<div style="display:flex;align-items:flex-end;gap:10px;height:120px;padding:10px 0 0;">` +
+      meses6.map(m=>{
+        const h = Math.max(m.churn>0?4:0, Math.round((m.churn/maxChurn)*100));
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text3);font-weight:700;">${m.churn}</span>
+          <div style="width:100%;height:${h}px;background:var(--danger);border-radius:4px 4px 0 0;opacity:.75;transition:height .3s;"></div>
+          <span style="font-size:9px;color:var(--text4);text-align:center;line-height:1.2;">${m.label}</span>
+        </div>`;
+      }).join('') +
+    `</div>`;
+  }
+
+  // ── Tabla en riesgo ──
+  const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
+  const riesgoEl = document.getElementById('riesgo-list');
+  if(riesgoEl){
+    if(!enRiesgo.length){
+      riesgoEl.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">Sin clientes en riesgo</div><div class="empty-sub">Todos renovaron recientemente.</div></div>`;
+    } else {
+      riesgoEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="color:var(--text3);border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:8px 12px;font-weight:600;">Cliente</th>
+          <th style="text-align:left;padding:8px 12px;font-weight:600;">Último plan</th>
+          <th style="text-align:left;padding:8px 12px;font-weight:600;">Venció</th>
+          <th style="text-align:left;padding:8px 12px;font-weight:600;">Días sin renovar</th>
+          <th style="text-align:left;padding:8px 12px;font-weight:600;">LTV</th>
+          <th style="padding:8px 12px;"></th>
+        </tr></thead>
+        <tbody>` +
+        enRiesgo.map(c=>{
+          const numWA = c.tel.length===10?'52'+c.tel:c.tel;
+          const msgWA = encodeURIComponent(`Hola ${c.nombre}! 👋 Tu membresía venció hace ${c.diasVencido} días. ¿Te podemos ayudar a renovar?`);
+          const waBtn = numWA.length>=12
+            ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
+                 style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;background:rgba(37,211,102,.15);color:#25d366;font-size:11px;font-weight:700;text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WA</a>`
+            : `<button onclick="openClientePanel('${esc(c.nombre)}')"
+                 style="padding:5px 10px;border-radius:7px;background:var(--card2);color:var(--text3);font-size:11px;font-weight:600;border:1px dashed var(--border);cursor:pointer;">Ver</button>`;
+          const urgColor = c.diasVencido>45?'var(--danger)':c.diasVencido>30?'var(--warn)':'var(--text)';
+          return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="go('clientes',document.getElementById('nav-clientes'));setTimeout(()=>openClientePanel('${esc(c.nombre)}'),180)">
+            <td style="padding:10px 12px;font-weight:700;color:var(--text);">
+              <div style="display:flex;align-items:center;gap:8px;">${getAvatarHTML(c.nombre,28)} ${esc(c.nombre)}</div>
+            </td>
+            <td style="padding:10px 12px;color:var(--text3);">${esc(c.plan)}</td>
+            <td style="padding:10px 12px;color:var(--text3);">${c.vence}</td>
+            <td style="padding:10px 12px;font-weight:700;color:${urgColor};">${c.diasVencido}d</td>
+            <td style="padding:10px 12px;color:var(--ok);font-weight:700;">$${c.ltv.toLocaleString('es-MX')}</td>
+            <td style="padding:10px 12px;" onclick="event.stopPropagation()">${waBtn}</td>
+          </tr>`;
+        }).join('') +
+      `</tbody></table>`;
+    }
+  }
+}
+
+function exportRetencionCSV(){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const nombresSet = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
+  const hace15 = new Date(hoy); hace15.setDate(hoy.getDate()-15);
+  const rows = [['Cliente','Plan','Vencimiento','Días vencido','LTV ($)']];
+  [...nombresSet].forEach(nombre=>{
+    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ult = ps[0]||null;
+    if(!ult||!ult.vence||ult.vence==='—') return;
+    const vDate = new Date(ult.vence+'T12:00:00');
+    const dias = Math.floor((hoy-vDate)/(1000*60*60*24));
+    if(dias<15) return;
+    const ltv = ps.reduce((s,p)=>s+(p.monto||0),0);
+    rows.push([nombre, ult.plan||'—', ult.vence, dias, ltv]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download = `clientes_en_riesgo_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSV exportado', '📥');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CALENDARIO DE VENCIMIENTOS
+// ═══════════════════════════════════════════════════════════════════
+let _calVencYear  = new Date().getFullYear();
+let _calVencMonth = new Date().getMonth(); // 0-indexed
+
+function calVencGoToday(){ _calVencYear=new Date().getFullYear(); _calVencMonth=new Date().getMonth(); renderCalVenc(); }
+function calVencPrevMonth(){ _calVencMonth--; if(_calVencMonth<0){_calVencMonth=11;_calVencYear--;} renderCalVenc(); }
+function calVencNextMonth(){ _calVencMonth++; if(_calVencMonth>11){_calVencMonth=0;_calVencYear++;} renderCalVenc(); }
+
+function renderCalVenc(){
+  const y=_calVencYear, m=_calVencMonth;
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+
+  const mesNombres=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const labelEl=document.getElementById('calVencLabel');
+  if(labelEl) labelEl.textContent=`${mesNombres[m]} ${y}`;
+
+  // Build map: day → [{nombre, estado, plan, tel}]
+  const dayMap={};
+  const mesStr=`${y}-${String(m+1).padStart(2,'0')}`;
+
+  // For each cliente, find their latest pago and check if it vence this month
+  const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
+  [...nombresSet].forEach(nombre=>{
+    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    if(!ps.length) return;
+    const ult=ps[0];
+    if(!(ult.vence||'').startsWith(mesStr)) return;
+    const day=parseInt((ult.vence||'').slice(8,10));
+    if(!day||isNaN(day)) return;
+    const vDate=new Date(ult.vence+'T12:00:00');
+    const diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
+    const estado=diff<0?'vencido':diff<=3?'urgente':diff<=14?'pronto':'activo';
+    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
+    const tel=(cliRec.telefono||'').replace(/\D/g,'');
+    if(!dayMap[day]) dayMap[day]=[];
+    dayMap[day].push({nombre,estado,plan:ult.plan||'—',vence:ult.vence,tel,diff});
+  });
+
+  // Build calendar
+  const firstDay=new Date(y,m,1).getDay(); // 0=Sun
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const dayLabels=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  const stateColor={vencido:'var(--danger)',urgente:'#ff6b35',pronto:'var(--warn)',activo:'var(--ok)'};
+
+  let html='';
+  // Header row
+  dayLabels.forEach(d=>{
+    html+=`<div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px 0;border-bottom:1px solid var(--border);">${d}</div>`;
+  });
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++){
+    html+=`<div style="min-height:70px;"></div>`;
+  }
+  // Day cells
+  const todayDay = (hoy.getFullYear()===y && hoy.getMonth()===m) ? hoy.getDate() : -1;
+  for(let d=1;d<=daysInMonth;d++){
+    const events=dayMap[d]||[];
+    const isToday=d===todayDay;
+    const hasEvents=events.length>0;
+    const maxShow=3;
+    const eventDots=events.slice(0,maxShow).map(e=>`
+      <div onclick="event.stopPropagation();calVencShowDay(${d})" title="${esc(e.nombre)}"
+           style="font-size:9px;padding:1px 4px;border-radius:4px;background:${stateColor[e.estado]}22;
+                  color:${stateColor[e.estado]};border-left:2px solid ${stateColor[e.estado]};
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:pointer;">
+        ${esc(e.nombre.split(' ')[0])}
+      </div>`).join('');
+    const moreLabel=events.length>maxShow?`<div style="font-size:9px;color:var(--text3);padding:1px 2px;">+${events.length-maxShow} más</div>`:'';
+
+    html+=`<div onclick="calVencShowDay(${d})"
+               style="min-height:70px;padding:4px;border-radius:8px;cursor:${hasEvents?'pointer':'default'};
+                      background:${isToday?'var(--accent-bg)':'var(--card)'};
+                      border:1px solid ${isToday?'var(--accent)':'var(--border)'};
+                      transition:background .15s;"
+               onmouseenter="if(${hasEvents})this.style.background='var(--card2)'"
+               onmouseleave="this.style.background='${isToday?'var(--accent-bg)':'var(--card)'}'">
+        <div style="font-size:11px;font-weight:${isToday?'800':'600'};color:${isToday?'var(--accent)':'var(--text3)'};margin-bottom:3px;">${d}</div>
+        <div style="display:flex;flex-direction:column;gap:2px;">${eventDots}${moreLabel}</div>
+      </div>`;
+  }
+
+  const grid=document.getElementById('calVencGrid');
+  if(grid) grid.innerHTML=html;
+
+  // Hide detail panel when month changes
+  const det=document.getElementById('calVencDetail');
+  if(det) det.style.display='none';
+}
+
+function calVencShowDay(day){
+  const y=_calVencYear, m=_calVencMonth;
+  const mesStr=`${y}-${String(m+1).padStart(2,'0')}`;
+  const dayStr=`${mesStr}-${String(day).padStart(2,'0')}`;
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+
+  const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
+  const events=[];
+  [...nombresSet].forEach(nombre=>{
+    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence===dayStr&&p.notas!=='__sin_pago__');
+    if(!ps.length) return;
+    const ult=ps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
+    const vDate=new Date(dayStr+'T12:00:00');
+    const diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
+    const estado=diff<0?'vencido':diff<=3?'urgente':diff<=14?'pronto':'activo';
+    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
+    const tel=(cliRec.telefono||'').replace(/\D/g,'');
+    events.push({nombre,estado,plan:ult.plan||'—',vence:dayStr,tel,diff});
+  });
+
+  const detEl=document.getElementById('calVencDetail');
+  const titleEl=document.getElementById('calVencDetailTitle');
+  const listEl=document.getElementById('calVencDetailList');
+  if(!detEl||!listEl) return;
+
+  const mesNombres=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  if(titleEl) titleEl.textContent=`Vencimientos: ${day} de ${mesNombres[m]} de ${y} (${events.length})`;
+
+  if(!events.length){
+    listEl.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:13px;">Sin vencimientos ese día.</div>`;
+  } else {
+    const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
+    const stateColor={vencido:'var(--danger)',urgente:'#ff6b35',pronto:'var(--warn)',activo:'var(--ok)'};
+    const stateLabel={vencido:'Vencido',urgente:'Vence hoy/mañana',pronto:'Por vencer',activo:'Activo'};
+    listEl.innerHTML=events.map(e=>{
+      const numWA=e.tel.length===10?'52'+e.tel:e.tel;
+      const msgWA=encodeURIComponent(buildWAMsg(e.nombre,e.plan,e.vence));
+      const waBtn=numWA.length>=12
+        ?`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
+              style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;background:rgba(37,211,102,.15);color:#25d366;font-size:11px;font-weight:700;text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WA</a>`
+        :`<button onclick="openClientePanel('${esc(e.nombre)}')"
+              style="padding:5px 10px;border-radius:7px;background:var(--card2);color:var(--text3);font-size:11px;font-weight:600;border:1px dashed var(--border);cursor:pointer;">Ver</button>`;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;"
+                   onclick="go('clientes',document.getElementById('nav-clientes'));setTimeout(()=>openClientePanel('${esc(e.nombre)}'),180)">
+        ${getAvatarHTML(e.nombre,32)}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(e.nombre)}</div>
+          <div style="font-size:11px;color:var(--text3);">${esc(e.plan)}</div>
+        </div>
+        <span style="font-size:11px;padding:3px 8px;border-radius:8px;background:${stateColor[e.estado]}18;color:${stateColor[e.estado]};font-weight:700;">${stateLabel[e.estado]}</span>
+        <div onclick="event.stopPropagation()">${waBtn}</div>
+      </div>`;
+    }).join('');
+  }
+  detEl.style.display='block';
+  setTimeout(()=>detEl.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REPORTE POR COACH
+// ═══════════════════════════════════════════════════════════════════
+function initCoachReportMes(){
+  const sel = document.getElementById('coach-report-mes');
+  if(!sel || sel.options.length > 1) return; // already populated
+  const now = new Date();
+  const opts = [];
+  for(let i=0;i<6;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const key = `${y}-${String(m+1).padStart(2,'0')}`;
+    const label = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][m]+' '+y;
+    opts.push(`<option value="${key}"${i===0?' selected':''}>${label}</option>`);
+  }
+  sel.innerHTML = opts.join('');
+}
+
+function renderReporteCoach(){
+  const sel = document.getElementById('coach-report-mes');
+  const mesKey = sel ? sel.value : new Date().toISOString().slice(0,7);
+  const bodyEl = document.getElementById('coach-report-body');
+  if(!bodyEl) return;
+
+  if(!coaches || coaches.length === 0){
+    bodyEl.innerHTML = `<div style="padding:16px;color:var(--text3);font-size:13px;">Sin coaches registrados.</div>`;
+    return;
+  }
+
+  // Build rows: one per coach
+  const rows = coaches.map(coach=>{
+    const nombre = coach.nombre || coach.name || '—';
+    // Count clases impartidas this month from horarios
+    const clasesEseMes = (horarios||[]).filter(h=>{
+      if(!h.fecha) return false;
+      const coachMatch = (h.coach_id && h.coach_id === coach.id) ||
+                         (h.coach   && h.coach   === nombre)    ||
+                         (h.nombre  && h.nombre  === nombre);
+      return h.fecha.startsWith(mesKey) && coachMatch;
+    });
+
+    // Count asistentes from qr_checkins (by clase instructor - we match by coach name in clase field)
+    const clasesNombres = clasesEseMes.map(h=>h.clase||h.tipo||'').filter(Boolean);
+    const checkins = (qrCheckins||[]).filter(c=>
+      c.fecha && c.fecha.startsWith(mesKey) &&
+      clasesNombres.some(cn=>(c.clase||'').toLowerCase().includes(cn.toLowerCase()) || cn.toLowerCase().includes((c.clase||'').toLowerCase()))
+    );
+
+    // Compute LTV of coach's clients (clients who attended their classes)
+    const clientesDelCoach = [...new Set(checkins.map(c=>(c.nombre||'').trim()).filter(Boolean))];
+    const ltv = clientesDelCoach.reduce((sum,nombre)=>{
+      const totalPagado = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0);
+      return sum + totalPagado;
+    },0);
+
+    const claseCount = clasesEseMes.length;
+    const asistentes = checkins.length;
+    const promedio   = claseCount > 0 ? (asistentes/claseCount).toFixed(1) : '—';
+
+    return { coach, nombre, claseCount, asistentes, promedio, clientesDelCoach, ltv };
+  });
+
+  if(!rows.length){
+    bodyEl.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:13px;">Sin datos para este mes.</div>`;
+    return;
+  }
+
+  bodyEl.innerHTML = `<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="color:var(--text3);border-bottom:1px solid var(--border);">
+        <th style="text-align:left;padding:10px 12px;font-weight:600;">Coach</th>
+        <th style="text-align:center;padding:10px 8px;font-weight:600;">Clases</th>
+        <th style="text-align:center;padding:10px 8px;font-weight:600;">Asistentes</th>
+        <th style="text-align:center;padding:10px 8px;font-weight:600;">Prom/Clase</th>
+        <th style="text-align:center;padding:10px 8px;font-weight:600;">Alumnos únicos</th>
+        <th style="text-align:right;padding:10px 12px;font-weight:600;">LTV alumnos</th>
+      </tr></thead>
+      <tbody>` +
+      rows.map(r=>`
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${getAvatarHTML(r.nombre,30)}
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(r.nombre)}</div>
+                <div style="font-size:10px;color:var(--text3);">${esc(r.coach.especialidad||r.coach.rol||'Coach')}</div>
+              </div>
+            </div>
+          </td>
+          <td style="text-align:center;padding:12px 8px;font-size:16px;font-weight:800;color:var(--accent);">${r.claseCount}</td>
+          <td style="text-align:center;padding:12px 8px;font-size:16px;font-weight:800;color:var(--ok);">${r.asistentes}</td>
+          <td style="text-align:center;padding:12px 8px;font-size:14px;font-weight:700;color:var(--text);">${r.promedio}</td>
+          <td style="text-align:center;padding:12px 8px;font-size:14px;font-weight:700;color:#a78bfa;">${r.clientesDelCoach.length}</td>
+          <td style="text-align:right;padding:12px;font-size:14px;font-weight:700;color:var(--ok);">$${r.ltv.toLocaleString('es-MX')}</td>
+        </tr>`).join('') +
+    `</tbody></table></div>`;
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // LEADS CRUD
@@ -5380,11 +6313,7 @@ function renderClientes(){
                          background:var(--card);border:1px solid var(--border);border-radius:12px;
                          border-left:3px solid ${cfg.color};cursor:pointer;transition:background .15s;"
                  onmouseenter="this.style.background='var(--card2)'" onmouseleave="this.style.background='var(--card)'">
-      <div style="width:42px;height:42px;border-radius:50%;background:${cfg.bg};
-                  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;
-                  color:${cfg.color};flex-shrink:0;border:2px solid ${cfg.color}44;">
-        ${c.nombre.trim().charAt(0).toUpperCase()}
-      </div>
+      ${getAvatarHTML(c.nombre, 42)}
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px;">
           <span style="font-size:14px;font-weight:700;color:var(--text);">${esc(c.nombre)}</span>
@@ -5488,6 +6417,8 @@ function openClientePanel(nombreCliente){
   const tel = (cliRec.telefono||(ultimo?ultimo.telefono:'')||'').replace(/\D/g,'');
 
   // Header
+  const avatarEl = document.getElementById('cpanel-avatar');
+  if(avatarEl) avatarEl.innerHTML = getAvatarHTML(nombreCliente, 52);
   document.getElementById('cpanel-nombre').textContent = nombreCliente;
   document.getElementById('cpanel-sub').textContent = `${tipo} · ${historial.length} pago${historial.length!==1?'s':''} registrados`;
 
@@ -5561,19 +6492,27 @@ function openClientePanel(nombreCliente){
         const fmtFecha = p.fecha && p.fecha.length>=10
           ? (()=>{const d=new Date(p.fecha+'T12:00:00');return `${d.getDate()} ${mesesES[d.getMonth()]} ${d.getFullYear()}`;})()
           : p.fecha||'—';
+        const esAbonoPago = (p.notas||'').startsWith('[ABONO');
+        const abonoInfo = esAbonoPago ? (p.notas||'').match(/\[ABONO ([^\]]+)\]/) : null;
+        const abonoText = abonoInfo ? abonoInfo[1] : '';
         return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-                             background:${esUltimo?'rgba(0,180,216,.06)':'var(--card2)'};
-                             border:1px solid ${esUltimo?'rgba(0,180,216,.2)':'var(--border)'};
+                             background:${esUltimo?'rgba(0,180,216,.06)':esAbonoPago?'rgba(251,191,36,.05)':'var(--card2)'};
+                             border:1px solid ${esUltimo?'rgba(0,180,216,.2)':esAbonoPago?'rgba(251,191,36,.25)':'var(--border)'};
                              border-radius:8px;">
           <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
               <span style="font-size:12px;font-weight:700;color:var(--text);">${esc(p.plan||'—')}</span>
               ${esUltimo?'<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(0,180,216,.15);color:var(--accent);">Último</span>':''}
+              ${esAbonoPago?'<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(251,191,36,.15);color:var(--warn);font-weight:700;">🪙 Abono</span>':''}
             </div>
-            <div style="font-size:11px;color:var(--text3);">${fmtFecha} · ${esc(p.metodo||'—')} ${p.notas?`· ${esc(p.notas)}`:''}</div>
+            <div style="font-size:11px;color:var(--text3);">
+              ${fmtFecha} · ${esc(p.metodo||'—')}
+              ${esAbonoPago&&abonoText?`<span style="color:var(--warn);font-weight:600;"> · ${esc(abonoText)}</span>`:''}
+              ${!esAbonoPago&&p.notas?`· ${esc(p.notas)}`:''}
+            </div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:14px;font-weight:800;color:var(--ok);">$${(p.monto||0).toLocaleString('es-MX')}</div>
+            <div style="font-size:14px;font-weight:800;color:${esAbonoPago?'var(--warn)':'var(--ok)'};">$${(p.monto||0).toLocaleString('es-MX')}</div>
             ${p.vence&&p.vence.length>=10?`<div style="font-size:10px;color:var(--text3);">Vence ${p.vence}</div>`:''}
           </div>
         </div>`;
@@ -5848,6 +6787,141 @@ function waEnMasa(){
   });
 }
 
+// ─── Renovación Masiva ─────────────────────────────────────────────
+function abrirRenovacionMasiva(){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const todayStr = hoy.toISOString().slice(0,10);
+  const in14 = new Date(hoy); in14.setDate(hoy.getDate()+14);
+
+  // Pre-fill today's date
+  const fechaEl = document.getElementById('rm-fecha');
+  if(fechaEl) fechaEl.value = todayStr;
+
+  // Build list of expired + expiring soon clients
+  const nombresSet = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
+  const candidatos = [];
+  [...nombresSet].forEach(nombre=>{
+    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ult = ps[0]||null;
+    if(!ult) return;
+    const vDate = new Date(ult.vence+'T12:00:00');
+    const diff  = Math.ceil((vDate-hoy)/(1000*60*60*24));
+    if(diff > 14) return; // only expired or expiring within 14 days
+    const estado = diff < 0 ? 'vencido' : 'por-vencer';
+    const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
+    candidatos.push({nombre, vence:ult.vence, plan:ult.plan, diff, estado, telefono:cliRec.telefono||ult.telefono||''});
+  });
+
+  candidatos.sort((a,b)=>a.diff-b.diff);
+
+  const listEl = document.getElementById('rm-client-list');
+  if(listEl){
+    if(!candidatos.length){
+      listEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">✅ Sin clientes vencidos o por vencer pronto.</div>`;
+    } else {
+      const stateColor={vencido:'var(--danger)','por-vencer':'var(--warn)'};
+      const stateLabel={vencido:'Vencido','por-vencer':'Por vencer'};
+      listEl.innerHTML = candidatos.map((c,idx)=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;
+               border-bottom:1px solid var(--border);transition:background .12s;"
+               onmouseenter="this.style.background='var(--card2)'" onmouseleave="this.style.background=''">
+          <input type="checkbox" checked data-rm-idx="${idx}"
+            style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;" onchange="rmUpdateSummary()"/>
+          ${getAvatarHTML(c.nombre, 28)}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(c.nombre)}</div>
+            <div style="font-size:11px;color:var(--text3);">${esc(c.plan)} · Vence ${c.vence}</div>
+          </div>
+          <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${stateColor[c.estado]}18;color:${stateColor[c.estado]};font-weight:700;white-space:nowrap;">
+            ${c.diff<0?`hace ${Math.abs(c.diff)}d`:c.diff===0?'hoy':`en ${c.diff}d`}
+          </span>
+        </label>`).join('');
+    }
+  }
+  // Store candidates on window for access in execute
+  window._rmCandidatos = candidatos;
+  rmUpdateSummary();
+  openModal('renovacion-masiva');
+}
+
+function rmSelectAll(checked){
+  document.querySelectorAll('#rm-client-list input[type="checkbox"]').forEach(cb=>{ cb.checked=checked; });
+  rmUpdateSummary();
+}
+
+function rmUpdateSummary(){
+  const checked = document.querySelectorAll('#rm-client-list input[type="checkbox"]:checked').length;
+  const monto   = parseFloat(document.getElementById('rm-monto')?.value)||0;
+  const sumEl   = document.getElementById('rm-summary');
+  if(sumEl){
+    sumEl.textContent = checked
+      ? `${checked} cliente${checked!==1?'s':''} seleccionado${checked!==1?'s':''} · Total estimado: $${(checked*monto).toLocaleString('es-MX')}`
+      : 'Selecciona al menos un cliente.';
+  }
+  const btn = document.getElementById('rm-exec-btn');
+  if(btn) btn.disabled = checked===0;
+}
+
+async function ejecutarRenovacionMasiva(){
+  const candidatos = window._rmCandidatos||[];
+  const checkboxes = document.querySelectorAll('#rm-client-list input[type="checkbox"]');
+  const seleccionados = [...checkboxes].map((cb,i)=>cb.checked?candidatos[i]:null).filter(Boolean);
+  if(!seleccionados.length){ toast('Selecciona al menos un cliente.','⚠️'); return; }
+
+  const monto  = parseFloat(document.getElementById('rm-monto').value)||0;
+  const fecha  = document.getElementById('rm-fecha').value;
+  const plan   = document.getElementById('rm-plan').value;
+  const metodo = document.getElementById('rm-metodo').value;
+  if(!monto||monto<=0){ toast('Ingresa un monto válido.','⚠️'); return; }
+  if(!fecha){ toast('Ingresa la fecha de pago.','⚠️'); return; }
+
+  const confirmMsg = `¿Renovar ${seleccionados.length} cliente${seleccionados.length!==1?'s':''} con el plan "${plan}" por $${monto.toLocaleString('es-MX')} cada uno?\n\nTotal: $${(seleccionados.length*monto).toLocaleString('es-MX')}`;
+  if(!await confirmDialog(confirmMsg, {title:'Confirmar renovación masiva',danger:false,confirmText:'Renovar todos',icon:'🔄'})) return;
+
+  // Compute vencimiento based on plan
+  const newVence = calcVencimiento(fecha, plan);
+
+  const btn = document.getElementById('rm-exec-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Renovando...'; }
+
+  const inserts = seleccionados.map(c=>({
+    cliente:   c.nombre,
+    monto:     monto,
+    fecha:     fecha,
+    plan:      plan,
+    metodo:    metodo,
+    vence:     newVence,
+    telefono:  (c.telefono||'').replace(/\D/g,''),
+    notas:     'Renovación masiva'
+  }));
+
+  const { error } = await window.supabaseClient.from('pagos').insert(inserts);
+  if(error){ console.error('Error renovación masiva:', error); toast('Error al guardar pagos.','❌'); if(btn){btn.disabled=false;btn.textContent='🔄 Renovar Seleccionados';} return; }
+
+  await Promise.all([loadPagosFromSupabase(), loadClientesFromSupabase()]);
+  closeModal('renovacion-masiva');
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Renovar Seleccionados'; }
+  toast(`✅ ${seleccionados.length} cliente${seleccionados.length!==1?'s':''} renovados`,'🔄');
+  renderClientes();
+  renderPagos();
+  renderMembresiasAlert();
+}
+
+// Helper: calculate vencimiento date from plan string + start date
+function calcVencimiento(fecha, plan){
+  if(!fecha) return null;
+  const d = new Date(fecha+'T12:00:00');
+  const planL = (plan||'').toLowerCase();
+  if(planL.includes('quincenal') || planL.includes('15')) d.setDate(d.getDate()+15);
+  else if(planL.includes('trimestral') || planL.includes('3 mes')) d.setMonth(d.getMonth()+3);
+  else if(planL.includes('semestral') || planL.includes('6 mes')) d.setMonth(d.getMonth()+6);
+  else if(planL.includes('anual') || planL.includes('12 mes')) d.setFullYear(d.getFullYear()+1);
+  else if(planL.includes('semanal') || planL.includes('7 d')) d.setDate(d.getDate()+7);
+  else if(planL.includes('pase') || planL.includes('día') || planL.includes('dia')) d.setDate(d.getDate()+1);
+  else d.setMonth(d.getMonth()+1); // default mensual
+  return d.toISOString().slice(0,10);
+}
+
 // ─── Exportar CSV de clientes ──────────────────────────────────────
 function exportarClientesCSV(){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
@@ -5879,6 +6953,72 @@ function exportarClientesCSV(){
   a.href=url; a.download=`MOVE_Clientes_${new Date().toISOString().slice(0,10)}.csv`;
   a.click(); URL.revokeObjectURL(url);
   toast('Clientes exportados ✓','📥');
+}
+
+// ─── Exportar Excel (XLSX) de clientes ────────────────────────────
+function exportarClientesXLSX(){
+  if(typeof XLSX === 'undefined'){ toast('Cargando librería Excel...','⏳'); return; }
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  // ── Hoja 1: Directorio ──
+  const dirRows = [['Nombre','Teléfono','Email','Cumpleaños','Plan Actual','Vencimiento','Estado','Total Pagos','Total Pagado ($)','Tipo','LTV ($)']];
+  const nombresSet = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
+  [...nombresSet].forEach(nombre=>{
+    const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
+    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ult = ps[0]||null;
+    let estado='Sin fecha';
+    if(ult&&ult.vence&&ult.vence.length>=10){
+      const diff=Math.ceil((new Date(ult.vence+'T12:00:00')-hoy)/(1000*60*60*24));
+      estado=diff<0?'Vencido':diff<=14?'Por vencer':'Activo';
+    }
+    const tipo = ps.some(p=>!esPaseDia(p.plan))?'Paquete':'Pase de Día';
+    const ltv  = ps.reduce((s,p)=>s+p.monto,0);
+    dirRows.push([
+      nombre, cliRec.telefono||'', cliRec.email||'', cliRec.cumpleanos||'',
+      ult?ult.plan:'—', ult?ult.vence||'—':'—', estado, ps.length, ltv, tipo, ltv
+    ]);
+  });
+
+  // ── Hoja 2: Todos los pagos ──
+  const pagosRows = [['Fecha','Cliente','Plan','Monto ($)','Método','Vencimiento','Teléfono','Tipo Pago','Notas']];
+  [...pagos].filter(p=>p.notas!=='__sin_pago__').sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).forEach(p=>{
+    const esAbono = (p.notas||'').startsWith('[ABONO');
+    const notasClean = esAbono ? (p.notas||'').replace(/\[ABONO[^\]]*\]\s*/,'') : (p.notas||'');
+    pagosRows.push([p.fecha||'',p.cliente||'',p.plan||'',p.monto||0,p.metodo||'',p.vence||'',p.telefono||'',esAbono?'Abono':'Completo',notasClean]);
+  });
+
+  // ── Hoja 3: En riesgo (vencidos +15 días) ──
+  const hace15=new Date(hoy); hace15.setDate(hoy.getDate()-15);
+  const riesgoRows=[['Cliente','Plan','Vencimiento','Días vencido','LTV ($)','Teléfono']];
+  [...nombresSet].forEach(nombre=>{
+    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ult=ps[0]||null;
+    if(!ult||!ult.vence||ult.vence==='—') return;
+    const dias=Math.floor((hoy-new Date(ult.vence+'T12:00:00'))/(1000*60*60*24));
+    if(dias<15) return;
+    const ltv=ps.reduce((s,p)=>s+p.monto,0);
+    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
+    riesgoRows.push([nombre,ult.plan||'—',ult.vence,dias,ltv,cliRec.telefono||'']);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(dirRows);
+  const ws2 = XLSX.utils.aoa_to_sheet(pagosRows);
+  const ws3 = XLSX.utils.aoa_to_sheet(riesgoRows);
+
+  // Set column widths
+  ws1['!cols'] = [{wch:22},{wch:14},{wch:20},{wch:12},{wch:18},{wch:12},{wch:10},{wch:10},{wch:14},{wch:12},{wch:10}];
+  ws2['!cols'] = [{wch:12},{wch:22},{wch:18},{wch:10},{wch:14},{wch:12},{wch:14},{wch:12},{wch:25}];
+  ws3['!cols'] = [{wch:22},{wch:18},{wch:12},{wch:12},{wch:12},{wch:14}];
+
+  XLSX.utils.book_append_sheet(wb, ws1, 'Directorio');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Pagos');
+  XLSX.utils.book_append_sheet(wb, ws3, 'En Riesgo');
+
+  const gymNombre = (gymConfig.gym_nombre||'MOVE').replace(/[^a-zA-Z0-9]/g,'_');
+  XLSX.writeFile(wb, `${gymNombre}_Clientes_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exportado (3 hojas) ✓','📊');
 }
 
 // ─── Exportar CSV de pagos ─────────────────────────────────────────
@@ -6653,6 +7793,8 @@ function updateBadges(){
   const badgeEl = document.getElementById('badge-leads');
   badgeEl.textContent = pending;
   badgeEl.style.display = pending>0 ? 'inline' : 'none';
+  // Update notification bell badge on load
+  renderNotifPanel();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -6680,6 +7822,122 @@ function setGastoFilter(key, val){
     });
   }
   renderGastos();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SUPER ADMIN PANEL (#33)
+// ═══════════════════════════════════════════════════════════════════
+async function renderSuperAdmin(){
+  // Security guard: only superadmin can see this
+  if(!currentUser || currentUser.rol !== 'superadmin'){
+    document.getElementById('sa-kpis').innerHTML='<div style="color:var(--danger);padding:16px;">🚫 Acceso denegado.</div>';
+    return;
+  }
+
+  // ── System KPIs from current data ──
+  const totalClientes = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]).size;
+  const totalPagos    = pagos.filter(p=>p.notas!=='__sin_pago__').length;
+  const ingresosTotal = pagos.filter(p=>p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0);
+  const gymId         = MOVE_GYM_ID || gymConfig.gym_id || '—';
+  const gymNombre     = gymConfig.gym_nombre || 'MOVE';
+  const gymVersion    = '1.33.0'; // incremented with this build
+
+  document.getElementById('sa-kpis').innerHTML = `
+    <div class="kpi-card" style="--kpi-color:#ef4444">
+      <div class="kpi-label">Gym Activo</div>
+      <div class="kpi-value" style="font-size:16px;">${esc(gymNombre)}</div>
+      <div class="kpi-meta">Instancia única</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--accent)">
+      <div class="kpi-label">Total Clientes</div>
+      <div class="kpi-value">${totalClientes}</div>
+      <div class="kpi-meta">En directorio</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:var(--ok)">
+      <div class="kpi-label">Total Ingresos</div>
+      <div class="kpi-value">$${ingresosTotal.toLocaleString('es-MX')}</div>
+      <div class="kpi-meta">${totalPagos} pagos registrados</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#a78bfa">
+      <div class="kpi-label">Versión App</div>
+      <div class="kpi-value" style="font-size:16px;">v${gymVersion}</div>
+      <div class="kpi-meta">${new Date().toLocaleDateString('es-MX')}</div>
+    </div>`;
+
+  // ── Gym Details ──
+  document.getElementById('sa-gyms-list').innerHTML = `
+    <div style="padding:16px;">
+      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px;">
+          <div style="margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Gym ID</div>
+            <code style="font-size:12px;color:var(--accent);background:var(--accent-bg);padding:5px 10px;border-radius:6px;border:1px solid var(--accent);">${esc(gymId)}</code>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Multi-tenant</div>
+            <span style="font-size:12px;padding:3px 10px;border-radius:8px;background:${MT_ENABLED?'rgba(16,185,129,.15)':'rgba(100,116,139,.12)'};color:${MT_ENABLED?'var(--ok)':'var(--text3)'};font-weight:700;">${MT_ENABLED?'✅ Activo':'⏳ Pendiente (MT_ENABLED = false)'}</span>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Tablas con datos</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${['pagos','clientes','coaches','leads','horarios','gastos','usuarios'].map(t=>`<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--border);color:var(--text3);">${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Usuarios del sistema</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr style="color:var(--text3);border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:5px 8px;">Nombre</th>
+              <th style="text-align:left;padding:5px 8px;">Email</th>
+              <th style="text-align:left;padding:5px 8px;">Rol</th>
+            </tr></thead>
+            <tbody>
+              ${usuarios.map(u=>`<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;">${esc(u.nombre)}</td>
+                <td style="padding:6px 8px;color:var(--text3);">${esc(u.email)}</td>
+                <td style="padding:6px 8px;"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
+              </tr>`).join('')||'<tr><td colspan="3" style="padding:12px;text-align:center;color:var(--text3);">Sin usuarios cargados</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  // ── System metrics ──
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const mesStr = hoy.toISOString().slice(0,7);
+  const pagosMes = pagos.filter(p=>p.notas!=='__sin_pago__'&&(p.fecha||'').startsWith(mesStr));
+  const ingresosMes = pagosMes.reduce((s,p)=>s+(p.monto||0),0);
+  const nuevosClientes = clientesDB.filter(c=>c.created_at&&c.created_at.startsWith(mesStr)).length;
+  const leads30 = leads.filter(l=>{ const d=new Date(l.created_at||''); return (hoy-d)<30*24*60*60*1000; }).length;
+
+  document.getElementById('sa-metrics').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px;">
+      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">💰 Ingresos este mes</div>
+        <div style="font-size:18px;font-weight:800;color:var(--ok);">$${ingresosMes.toLocaleString('es-MX')}</div>
+        <div style="font-size:11px;color:var(--text4);">${pagosMes.length} pagos</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">👥 Nuevos clientes</div>
+        <div style="font-size:18px;font-weight:800;color:var(--accent);">${nuevosClientes}</div>
+        <div style="font-size:11px;color:var(--text4);">Este mes</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">📋 Leads (30d)</div>
+        <div style="font-size:18px;font-weight:800;color:#a78bfa;">${leads30}</div>
+        <div style="font-size:11px;color:var(--text4);">Últimos 30 días</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:5px;">🏋️ Coaches activos</div>
+        <div style="font-size:18px;font-weight:800;color:var(--warn);">${coaches.length}</div>
+        <div style="font-size:11px;color:var(--text4);">Registrados</div>
+      </div>
+    </div>
+    <div style="padding:0 16px 16px;font-size:11px;color:var(--text4);border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+      📌 Para habilitar la gestión de múltiples gyms, activa <code style="background:var(--card2);padding:1px 5px;border-radius:4px;">MT_ENABLED = true</code> y asegúrate de que las tablas tienen la columna <code style="background:var(--card2);padding:1px 5px;border-radius:4px;">gym_id</code>.
+    </div>`;
 }
 
 function renderGastos(){
@@ -7061,6 +8319,42 @@ async function saveEditLead(){
 // ═══════════════════════════════════════════════════════════════════
 // PAGOS CRUD
 // ═══════════════════════════════════════════════════════════════════
+// ── Abono / Pago parcial helpers ──
+let _pagoTipo = 'completo';
+function setPagoTipo(tipo){
+  _pagoTipo = tipo;
+  const btnC = document.getElementById('p-tipo-completo');
+  const btnA = document.getElementById('p-tipo-abono');
+  const row  = document.getElementById('p-abono-row');
+  const lbl  = document.getElementById('p-monto-label');
+  const saveBtn = document.getElementById('p-save-btn');
+  if(tipo==='completo'){
+    btnC.style.background='var(--accent)'; btnC.style.color='#fff'; btnC.style.fontWeight='700';
+    btnA.style.background='transparent'; btnA.style.color='var(--text3)'; btnA.style.fontWeight='600';
+    if(row) row.style.display='none';
+    if(lbl) lbl.textContent='Monto (MXN) *';
+    if(saveBtn) saveBtn.textContent='Registrar Pago';
+  } else {
+    btnA.style.background='var(--warn)'; btnA.style.color='#fff'; btnA.style.fontWeight='700';
+    btnC.style.background='transparent'; btnC.style.color='var(--text3)'; btnC.style.fontWeight='600';
+    if(row) row.style.display='block';
+    if(lbl) lbl.textContent='Monto abonado *';
+    if(saveBtn) saveBtn.textContent='Registrar Abono';
+  }
+  recalcSaldo();
+}
+function recalcSaldo(){
+  if(_pagoTipo!=='abono') return;
+  const abonado = parseFloat(document.getElementById('p-monto').value)||0;
+  const total   = parseFloat(document.getElementById('p-monto-total').value)||0;
+  const saldo   = total - abonado;
+  const disp    = document.getElementById('p-saldo-display');
+  if(!disp) return;
+  if(total<=0){ disp.textContent='—'; disp.style.color='var(--text3)'; return; }
+  if(saldo<=0){ disp.textContent='✅ Saldo cubierto'; disp.style.color='var(--ok)'; }
+  else { disp.textContent=`$${saldo.toLocaleString('es-MX')} pendiente`; disp.style.color='var(--warn)'; }
+}
+
 async function savePago(){
   const cliente = document.getElementById('p-cliente').value.trim();
   const monto   = parseFloat(document.getElementById('p-monto').value);
@@ -7068,12 +8362,20 @@ async function savePago(){
   if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
   if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
   if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
+  // Build notas: prepend abono info if applicable
+  let notasBase = document.getElementById('p-notas').value.trim();
+  let abonoPrefix = '';
+  if(_pagoTipo==='abono'){
+    const montoTotal = parseFloat(document.getElementById('p-monto-total').value)||0;
+    const saldo = montoTotal - monto;
+    abonoPrefix = `[ABONO ${monto.toLocaleString('es-MX')} / ${montoTotal.toLocaleString('es-MX')}${saldo>0?' · Saldo: $'+saldo.toLocaleString('es-MX'):''}] `;
+  }
   const payload = {
     cliente, monto, fecha,
     plan:      document.getElementById('p-plan').value,
     metodo:    document.getElementById('p-metodo').value,
     vence:     document.getElementById('p-vence').value||null,
-    notas:      document.getElementById('p-notas').value.trim(),
+    notas:      abonoPrefix + notasBase,
     telefono:   document.getElementById('p-telefono').value.trim(),
     cumpleanos: document.getElementById('p-cumpleanos').value||null,
   };
@@ -7084,9 +8386,13 @@ async function savePago(){
   ['p-cliente','p-monto','p-notas','p-telefono'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('p-fecha').value='';
   document.getElementById('p-vence').value='';
+  document.getElementById('p-cumpleanos').value='';
+  if(document.getElementById('p-monto-total')) document.getElementById('p-monto-total').value='';
   document.getElementById('p-plan').selectedIndex=0;
   document.getElementById('p-metodo').selectedIndex=0;
-  toast(`Pago de $${monto.toLocaleString('es-MX')} registrado para ${cliente}.`,'💳');
+  setPagoTipo('completo'); // reset toggle
+  const tipoLabel = _pagoTipo==='abono' ? 'Abono' : 'Pago';
+  toast(`${tipoLabel} de $${monto.toLocaleString('es-MX')} registrado para ${cliente}.`,'💳');
   renderPagos();
   renderMembresiasAlert();
   renderClientes();
@@ -7266,10 +8572,12 @@ function renderPagos(){
     const vBadge  = vencido?'<span class="badge b-danger">Vencido</span>':porVenc?'<span class="badge b-warn">Por vencer</span>':p.vence&&p.vence!=='—'?'<span class="badge b-ok">Vigente</span>':'—';
     const fechaFmt = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
     const venceFmt = p.vence&&p.vence!=='—' ? new Date(p.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const esAbono = (p.notas||'').startsWith('[ABONO');
+    const abonoTag = esAbono ? `<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(251,191,36,.15);color:var(--warn);font-weight:700;border:1px solid rgba(251,191,36,.3);vertical-align:middle;">🪙 Abono</span> ` : '';
     html += `<tr>
       <td class="name">${esc(p.cliente)}</td>
       <td>${esc(p.plan)}</td>
-      <td style="font-weight:700;color:var(--ok);">$${p.monto.toLocaleString('es-MX')}</td>
+      <td style="font-weight:700;color:var(--ok);">${abonoTag}$${p.monto.toLocaleString('es-MX')}</td>
       <td>${metodoBadge(p.metodo)}</td>
       <td>${fechaFmt}</td>
       <td>${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span></td>
@@ -8276,55 +9584,111 @@ async function deleteClase(id){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SEARCH
+// BÚSQUEDA GLOBAL
 // ═══════════════════════════════════════════════════════════════════
-function handleSearch(q){
+let _srSelectedIdx = -1;
+
+function handleGlobalSearch(q){
+  const clearBtn = document.getElementById('search-clear');
+  if(clearBtn) clearBtn.style.display = q ? 'inline' : 'none';
   q = q.trim().toLowerCase();
-  // Only filter CRM table if active; otherwise just highlight
-  const crmActive = document.getElementById('v-crm').classList.contains('active');
-  if(!crmActive){
-    // navigate to CRM and search there
-    go('crm', document.getElementById('nav-crm'));
-  }
-  const wrap = document.getElementById('crm-content');
-  if(!q){ renderCRM(currentCRMTab); return; }
-  const filtered = leads.filter(l=>
-    (l.nombre||'').toLowerCase().includes(q) ||
-    (l.tel||'').toLowerCase().includes(q) ||
-    (l.email||'').toLowerCase().includes(q) ||
-    (l.fuente||'').toLowerCase().includes(q) ||
-    (l.estado||'').toLowerCase().includes(q)
-  );
-  if(!filtered.length){
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">No se encontraron prospectos para "${q}".</div></div>`;
+  const panel = document.getElementById('search-results-panel');
+  _srSelectedIdx = -1;
+  if(!q || q.length < 1){ panel.classList.remove('open'); return; }
+
+  const results = [];
+
+  // ── Clientes (union of clientesDB + pagos names) ──
+  const clientNames = new Set();
+  clientesDB.forEach(c=>{ if(c.nombre) clientNames.add(c.nombre); });
+  pagos.forEach(p=>{ if(p.cliente) clientNames.add(p.cliente); });
+  [...clientNames].filter(n=>n.toLowerCase().includes(q)).slice(0,5).forEach(nombre=>{
+    const rec = clientesDB.find(c=>c.nombre===nombre)||{};
+    const tel = rec.telefono||'';
+    results.push({ cat:'Clientes', icon:'👤', label:nombre, sub: tel||'Sin teléfono',
+      action:`go('clientes',document.getElementById('nav-clientes'));setTimeout(()=>openClientePanel('${nombre.replace(/'/g,"\\'")}'),150)` });
+  });
+
+  // ── Leads / CRM ──
+  leads.filter(l=>(l.nombre||'').toLowerCase().includes(q)||(l.tel||'').toLowerCase().includes(q)||(l.email||'').toLowerCase().includes(q)).slice(0,4).forEach(l=>{
+    results.push({ cat:'CRM & Prospectos', icon:'📊', label:l.nombre, sub:l.estado||'',
+      action:`go('crm',document.getElementById('nav-crm'));setTimeout(()=>openDetail('${l.id}'),150)` });
+  });
+
+  // ── Coaches ──
+  coaches.filter(c=>(c.nombre||'').toLowerCase().includes(q)).slice(0,3).forEach(c=>{
+    results.push({ cat:'Coaches', icon:'🏋️', label:c.nombre, sub:c.rol||'',
+      action:`go('coaches',document.getElementById('nav-coaches'));setTimeout(()=>openCoachDetail('${c.id}'),150)` });
+  });
+
+  // ── Pagos (nombres que no están ya en clientes) ──
+  const pagoNombres = [...new Set(pagos.filter(p=>(p.cliente||'').toLowerCase().includes(q)).map(p=>p.cliente))];
+  pagoNombres.filter(n=>![...clientNames].includes(n)).slice(0,3).forEach(nombre=>{
+    results.push({ cat:'Pagos', icon:'💳', label:nombre, sub:'Ver historial de pagos',
+      action:`go('pagos',document.getElementById('nav-pagos'));` });
+  });
+
+  if(!results.length){
+    panel.innerHTML = `<div class="sr-empty">Sin resultados para "<strong>${esc(q)}</strong>"</div>`;
+    panel.classList.add('open');
     return;
   }
-  let html = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr>
-    <th>Nombre</th><th>Fuente</th><th>Clase</th><th>Estado</th>
-    <th>Fecha ingreso</th><th>Teléfono</th><th></th>
-  </tr></thead><tbody>`;
-  filtered.forEach(l=>{
-    const cb = CLASE_BADGE[l.clase]||'b-gray';
-    const eb = ESTADO_BADGE[l.estado]||'b-gray';
-    html += `<tr>
-      <td class="name" style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.nombre)}</td>
-      <td>${esc(l.fuente)}</td>
-      <td><span class="badge ${cb}">${esc(l.clase)}</span></td>
-      <td><span class="badge ${eb}">${esc(l.estado)}</span></td>
-      <td>${esc(l.fechaIngreso)}</td>
-      <td>${esc(l.tel)}</td>
-      <td class="tbl-action">
-        <button class="btn btn-outline btn-sm" onclick="openDetail('${l.id}')">Ver</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditLead('${l.id}')">✏️ Editar</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditEstado('${l.id}')">Estado</button>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLead('${l.id}')">🗑</button>
-      </td>
-    </tr>`;
-  });
-  html += '</tbody></table></div>';
-  html += `<div style="padding:8px 14px;font-size:11px;color:var(--text3);">🔍 ${filtered.length} resultado(s) para "${q}"</div>`;
-  wrap.innerHTML = html;
+
+  // Group by category
+  const byCat = {};
+  results.forEach(r=>{ if(!byCat[r.cat]) byCat[r.cat]=[]; byCat[r.cat].push(r); });
+
+  let allItems = [];
+  panel.innerHTML = Object.entries(byCat).map(([cat, items])=>{
+    return `<div class="sr-cat">${cat}</div>` +
+      items.map(r=>{
+        const idx = allItems.length;
+        allItems.push(r.action);
+        return `<div class="sr-item" data-idx="${idx}" onclick="${r.action.replace(/"/g,'&quot;')};closeSearch()">
+          <span style="font-size:15px;flex-shrink:0;">${r.icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div class="sr-item-label">${esc(r.label)}</div>
+            ${r.sub?`<div class="sr-item-sub">${esc(r.sub)}</div>`:''}
+          </div>
+          <span class="sr-kbd">↵</span>
+        </div>`;
+      }).join('');
+  }).join('');
+  panel.dataset.items = JSON.stringify(allItems);
+  panel.classList.add('open');
 }
+
+function handleSearchKey(e){
+  const panel = document.getElementById('search-results-panel');
+  if(!panel.classList.contains('open')) return;
+  const items = panel.querySelectorAll('.sr-item');
+  if(e.key==='ArrowDown'){ e.preventDefault(); _srSelectedIdx=Math.min(_srSelectedIdx+1,items.length-1); _srHighlight(items); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); _srSelectedIdx=Math.max(_srSelectedIdx-1,0); _srHighlight(items); }
+  else if(e.key==='Enter' && _srSelectedIdx>=0){ e.preventDefault(); items[_srSelectedIdx]?.click(); }
+  else if(e.key==='Escape'){ closeSearch(); }
+}
+
+function _srHighlight(items){
+  items.forEach((el,i)=>{
+    el.style.background = i===_srSelectedIdx ? 'var(--accent-bg2)' : '';
+  });
+  if(_srSelectedIdx>=0) items[_srSelectedIdx]?.scrollIntoView({block:'nearest'});
+}
+
+function closeSearch(){
+  const inp = document.getElementById('globalSearch');
+  const panel = document.getElementById('search-results-panel');
+  const clearBtn = document.getElementById('search-clear');
+  if(inp) inp.value='';
+  if(panel) panel.classList.remove('open');
+  if(clearBtn) clearBtn.style.display='none';
+  _srSelectedIdx = -1;
+}
+
+// Close search when clicking outside
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#search-wrap-global')) closeSearch();
+}, true);
 
 // ═══════════════════════════════════════════════════════════════════
 // INIT
