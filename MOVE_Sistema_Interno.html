@@ -812,24 +812,26 @@ select option{background:#10101c;color:var(--text);}
 /* Toast */
 .toast{
   position:fixed;
-  /* Sit above bottom nav on mobile */
   bottom:24px;right:24px;
   background:var(--move-darkest);color:#fff;
   padding:12px 20px;border-radius:10px;
   font-size:13px;font-weight:500;
   box-shadow:var(--shadow-lg);z-index:9999;
   transform:translateY(80px);opacity:0;
+  /* CRÍTICO: invisible = no intercepta touch events */
+  pointer-events:none;
   transition:all .3s cubic-bezier(.34,1.56,.64,1);
   display:flex;align-items:center;gap:8px;
   border:1px solid rgba(255,255,255,.06);
   max-width:calc(100vw - 32px);
-  /* GPU layer */
   -webkit-transform:translateY(80px);
 }
 .toast.show{
+  transform:translateY(0);
   -webkit-transform:translateY(0);
+  opacity:1;
+  pointer-events:auto;
 }
-.toast.show{transform:translateY(0);opacity:1;}
 @media(max-width:768px){
   .toast{ top:14px; bottom:auto; right:12px; left:12px; font-size:12px; justify-content:center; border-radius:12px; }
 }
