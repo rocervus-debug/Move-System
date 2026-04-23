@@ -1860,6 +1860,17 @@ select option{background:#10101c;color:var(--text);}
   </nav>
 
   <div class="sidebar-bottom">
+    <!-- Dark/Light mode toggle -->
+    <button onclick="toggleColorMode()" id="sidebar-mode-btn"
+      style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 14px;
+             background:transparent;border:none;border-radius:8px;
+             color:var(--sidebar-text);font-size:12px;font-family:var(--font);
+             cursor:pointer;transition:background .15s;margin-bottom:6px;text-align:left;"
+      onmouseenter="this.style.background='var(--sidebar-hover)'"
+      onmouseleave="this.style.background='transparent'">
+      <span id="sidebar-mode-icon" style="font-size:15px;">☀️</span>
+      <span id="sidebar-mode-label">Modo Claro</span>
+    </button>
     <div class="user-card" onclick="go('settings', document.getElementById('nav-settings'))">
       <div class="user-av" id="sidebar-av">?</div>
       <div style="flex:1;min-width:0;">
@@ -2142,6 +2153,16 @@ select option{background:#10101c;color:var(--text);}
       </div>
 
       <div id="asist-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;"></div>
+
+      <!-- ── Gráfica Check-ins QR últimos 14 días ── -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-header">
+          <div class="card-title">📊 Check-ins QR — Últimos 14 días</div>
+          <span class="card-sub" id="checkins-chart-total">—</span>
+        </div>
+        <div style="height:160px;"><canvas id="checkinsChart"></canvas></div>
+      </div>
+
       <div class="g2" style="margin-bottom:18px;">
         <div class="card">
           <div class="card-header"><div class="card-title">📋 Registrar Asistencia</div></div>
@@ -5324,7 +5345,7 @@ function go(id, el){
   if(id==='clientes')    renderClientes();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { renderAsistencia(); loadQRCheckinsHoy(); }
+  if(id==='asistencia')  { renderAsistencia(); loadQRCheckinsHoy(); renderCheckinsChart(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
@@ -6190,9 +6211,19 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 
 // ─── Dark / Light mode ───────────────────────────────────────────
 function applyColorMode(mode){
-  document.body.classList.toggle('light-mode', mode === 'light');
+  const isLight = mode === 'light';
+  document.body.classList.toggle('light-mode', isLight);
+  // Settings button
   const btn = document.getElementById('cfg-mode-btn');
-  if(btn){ btn.textContent = mode === 'light' ? '🌙 Modo Oscuro' : '☀️ Modo Claro'; }
+  if(btn) btn.textContent = isLight ? '🌙 Modo Oscuro' : '☀️ Modo Claro';
+  // Sidebar toggle
+  const icon  = document.getElementById('sidebar-mode-icon');
+  const label = document.getElementById('sidebar-mode-label');
+  if(icon)  icon.textContent  = isLight ? '🌙' : '☀️';
+  if(label) label.textContent = isLight ? 'Modo Oscuro' : 'Modo Claro';
+  // Update PWA theme-color meta
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) metaTheme.content = isLight ? '#f0f2f6' : '#00b4d8';
 }
 function toggleColorMode(){
   const isLight = document.body.classList.contains('light-mode');
@@ -8032,6 +8063,73 @@ function renderHistIngresos(){
       scales:{
         x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}} },
         y:{ grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}, callback: v=>'$'+v.toLocaleString('es-MX')} }
+      }
+    }
+  });
+}
+
+// ─── Gráfica check-ins QR últimos 14 días ─────────────────────────
+async function renderCheckinsChart(){
+  const canvas = document.getElementById('checkinsChart');
+  const lbl    = document.getElementById('checkins-chart-total');
+  if(!canvas) return;
+
+  const isLight = document.body.classList.contains('light-mode');
+  const gridColor  = isLight ? 'rgba(0,0,0,.06)'  : 'rgba(255,255,255,.05)';
+  const tickColor  = isLight ? 'rgba(30,45,60,.5)' : 'rgba(210,224,238,.5)';
+
+  // Build last 14 days labels
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = [], labels = [];
+  const diasES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  for(let i=13; i>=0; i--){
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    days.push(d.toISOString().slice(0,10));
+    labels.push(i===0 ? 'Hoy' : `${diasES[d.getDay()]} ${d.getDate()}`);
+  }
+
+  // Query asistencias from Supabase (last 14 days, QR only)
+  let counts = new Array(14).fill(0);
+  try{
+    const { data } = await window.supabaseClient
+      .from('asistencias')
+      .select('fecha')
+      .eq('metodo','qr')
+      .gte('fecha', days[0]);
+    if(data){
+      data.forEach(r=>{
+        const idx = days.indexOf(r.fecha);
+        if(idx>=0) counts[idx]++;
+      });
+    }
+  } catch(e){ /* no asistencias yet */ }
+
+  const total = counts.reduce((s,v)=>s+v,0);
+  if(lbl) lbl.textContent = `${total} check-in${total!==1?'s':''} en 14 días`;
+
+  if(window._checkinsChart) window._checkinsChart.destroy();
+  window._checkinsChart = new Chart(canvas, {
+    type: 'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Check-ins',
+        data: counts,
+        fill: true,
+        backgroundColor: 'rgba(0,180,216,.08)',
+        borderColor: 'rgba(0,180,216,.8)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(0,180,216,1)',
+        pointRadius: 3,
+        tension: 0.35,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>`${ctx.raw} check-in${ctx.raw!==1?'s':''}` } } },
+      scales:{
+        x:{ grid:{color:gridColor}, ticks:{color:tickColor,font:{size:10},maxRotation:45} },
+        y:{ grid:{color:gridColor}, ticks:{color:tickColor,font:{size:10},stepSize:1}, beginAtZero:true }
       }
     }
   });
@@ -10801,53 +10899,79 @@ function generarReporteMensual(){
   const pctColor = pctMeta===null ? '#60a5fa' : pctMeta>=100 ? '#10e8a0' : pctMeta>=70 ? '#fbbf24' : '#f87171';
   const retColor = tasaRet===null ? '#60a5fa' : tasaRet>=70 ? '#10e8a0' : tasaRet>=40 ? '#fbbf24' : '#f87171';
 
+  // ─ Membresías por vencer en 30 días ─
+  const hoyMs = new Date(); hoyMs.setHours(0,0,0,0);
+  const en30  = new Date(hoyMs); en30.setDate(hoyMs.getDate()+30);
+  const porVencer30 = Object.entries(mapaUltimo)
+    .filter(([,p])=>{
+      if(!p.vence||p.vence.length<10) return false;
+      const v = new Date(p.vence+'T12:00:00');
+      return v>=hoyMs && v<=en30;
+    })
+    .sort((a,b)=>(a[1].vence||'').localeCompare(b[1].vence||''))
+    .slice(0,10);
+
+  // ─ Ingresos mes anterior (para variación) ─
+  const pagosAnt  = pagos.filter(p=>(p.fecha||'').startsWith(mesAntStr));
+  const ingresosAnt = pagosAnt.reduce((s,p)=>s+(p.monto||0),0);
+  const variacion = ingresosAnt>0 ? Math.round(((ingresosMes-ingresosAnt)/ingresosAnt)*100) : null;
+  const varSign   = variacion===null ? '' : variacion>=0 ? `▲ ${variacion}%` : `▼ ${Math.abs(variacion)}%`;
+  const varColor  = variacion===null ? '#9ca3af' : variacion>=0 ? '#059669' : '#dc2626';
+  const gymNombreRep = gymConfig.gym_nombre || 'MOVE';
+  const accentColor  = gymConfig.gym_color  || '#00b4d8';
+
   const html = `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/>
-<title>Reporte Mensual — MOVE ${mesNombre} ${year}</title>
+<title>Reporte Mensual — ${gymNombreRep} ${mesNombre} ${year}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Barlow',sans-serif;background:#fff;color:#111;font-size:14px;padding:32px;}
-  @media print{body{padding:0;} .no-print{display:none!important;}}
-  h1{font-size:28px;font-weight:800;letter-spacing:1px;color:#04040c;}
-  h2{font-size:14px;font-weight:700;color:#04040c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;}
-  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #00b4d8;}
-  .brand-tag{font-size:10px;font-weight:700;color:#00b4d8;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
+  body{font-family:'Barlow',sans-serif;background:#fff;color:#111;font-size:14px;padding:32px;max-width:900px;margin:0 auto;}
+  @media print{body{padding:16px;max-width:none;} .no-print{display:none!important;} @page{margin:1.5cm;}}
+  h1{font-size:32px;font-weight:800;letter-spacing:1px;color:#04040c;}
+  h2{font-size:12px;font-weight:700;color:#04040c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:8px;}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:24px;border-bottom:4px solid ${accentColor};}
+  .brand-tag{font-size:10px;font-weight:700;color:${accentColor};letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
   .meta-tag{font-size:12px;color:#6b7280;margin-top:4px;}
-  .print-btn{background:#00b4d8;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+  .print-btn{background:${accentColor};color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
   .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
-  .kpi{background:#f9fafb;border-radius:10px;padding:16px;border:1px solid #e5e7eb;text-align:center;}
-  .kpi-val{font-size:28px;font-weight:800;color:#04040c;line-height:1;}
-  .kpi-lbl{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
-  .kpi-sub{font-size:11px;color:#6b7280;margin-top:2px;}
+  .kpi{background:#f9fafb;border-radius:10px;padding:18px 14px;border:1px solid #e5e7eb;text-align:center;}
+  .kpi-val{font-size:26px;font-weight:800;color:#04040c;line-height:1;}
+  .kpi-lbl{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-top:6px;}
+  .kpi-sub{font-size:11px;color:#6b7280;margin-top:3px;}
   .section{margin-bottom:28px;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th{background:#f3f4f6;padding:9px 12px;text-align:left;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;}
   td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151;}
   tr:last-child td{border-bottom:none;}
   .amt{font-weight:700;color:#04040c;text-align:right;}
-  .progress{background:#e5e7eb;border-radius:99px;height:8px;margin-top:8px;}
-  .progress-bar{height:8px;border-radius:99px;background:#00b4d8;}
+  .progress{background:#e5e7eb;border-radius:99px;height:6px;margin-top:6px;}
+  .progress-bar{height:6px;border-radius:99px;background:${accentColor};}
   .bal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:14px;}
   .bal-row:last-child{border-bottom:none;border-top:2px solid #04040c;margin-top:6px;padding-top:14px;font-size:16px;font-weight:800;}
   .ok{color:#059669;} .danger{color:#dc2626;} .warn{color:#d97706;}
+  .chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+  .chip-ok{background:rgba(5,150,105,.1);color:#059669;}
+  .chip-warn{background:rgba(217,119,6,.1);color:#d97706;}
+  .chip-danger{background:rgba(220,38,38,.1);color:#dc2626;}
   .footer{margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center;}
 </style>
 </head><body>
 <div class="header">
   <div>
-    <div class="brand-tag">Sistema Interno</div>
-    <h1>MOVE</h1>
-    <div class="meta-tag">Reporte Mensual · ${mesNombre} ${year}</div>
+    <div class="brand-tag">Sistema Interno · MOVE</div>
+    <h1>${gymNombreRep}</h1>
+    <div class="meta-tag" style="font-size:15px;font-weight:600;color:#374151;margin-top:4px;">Reporte Mensual · ${mesNombre} ${year}</div>
     <div class="meta-tag">Generado el ${hoy.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
   </div>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
 </div>
 
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-val">$${ingresosMes.toLocaleString('es-MX')}</div>
     <div class="kpi-lbl">Ingresos del Mes</div>
+    ${varSign?`<div class="kpi-sub" style="color:${varColor};font-weight:700;">${varSign} vs mes anterior</div>`:''}
     ${meta>0?`<div class="kpi-sub">Meta: $${meta.toLocaleString('es-MX')}</div>`:''}
   </div>
   <div class="kpi">
@@ -10911,7 +11035,19 @@ ${pagosMes.length?`
   </tbody></table>
 </div>`:''}
 
-<div class="footer">MOVE Fitness Center · Reporte Mensual ${mesNombre} ${year} · Sistema Interno</div>
+${porVencer30.length?`
+<div class="section">
+  <h2>⏰ Membresías Por Vencer — Próximos 30 días (${porVencer30.length})</h2>
+  <table><thead><tr><th>Cliente</th><th>Plan</th><th>Vencimiento</th><th>Días restantes</th></tr></thead><tbody>
+  ${porVencer30.map(([nombre,p])=>{
+    const dias = Math.round((new Date(p.vence+'T12:00:00')-hoyMs)/(1000*60*60*24));
+    const dColor = dias<=7?'#dc2626':dias<=14?'#d97706':'#374151';
+    return `<tr><td>${nombre}</td><td>${p.plan||'—'}</td><td>${p.vence}</td><td style="font-weight:700;color:${dColor};">${dias} día${dias!==1?'s':''}</td></tr>`;
+  }).join('')}
+  </tbody></table>
+</div>`:''}
+
+<div class="footer">${gymNombreRep} · Reporte Mensual ${mesNombre} ${year} · Sistema Interno</div>
 </body></html>`;
 
   const win = window.open('','_blank');
