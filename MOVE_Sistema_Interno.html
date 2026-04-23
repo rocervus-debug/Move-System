@@ -412,7 +412,11 @@ body{
   color:var(--text3);transition:all .15s;
 }
 .dash-customize-active .dash-widget-toggle{display:flex;align-items:center;gap:4px;}
-.dash-widget.widget-hidden{opacity:.35;filter:saturate(0);}
+/* Widget oculto: realmente invisible en modo normal, dimmed en customize */
+.dash-widget.widget-hidden{display:none;}
+.dash-customize-active .dash-widget.widget-hidden{display:block;opacity:.28;filter:saturate(0);pointer-events:none;}
+.dash-customize-active .dash-widget.widget-hidden .dash-widget-handle,
+.dash-customize-active .dash-widget.widget-hidden .dash-widget-toggle{pointer-events:auto;}
 .dash-widget.widget-hidden .dash-widget-toggle{color:var(--danger);}
 
 /* ── Customize toolbar ── */
@@ -2187,6 +2191,15 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- ── Botón personalizar (siempre visible arriba) ── -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+        <button onclick="toggleDashCustomize()" id="dash-customize-btn"
+          style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:9px;
+                 background:rgba(255,255,255,.06);color:var(--text3);border:1px solid var(--border);
+                 cursor:pointer;font-weight:700;font-size:12px;font-family:var(--font);
+                 transition:all .18s;">🎛 Personalizar dashboard</button>
+      </div>
+
       <!-- ── Customize toolbar ── -->
       <div class="dash-customize-bar" id="dash-customize-bar">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -2229,15 +2242,28 @@ select option{background:#10101c;color:var(--text);}
         <div class="dash-widget-handle">⠿ Mover</div>
         <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
         <div class="g2">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Estado Coaches</div></div>
-            <div id="dash-coaches">
+          <div class="card" style="display:flex;flex-direction:column;">
+            <div class="card-header" style="flex-shrink:0;">
+              <div class="card-title">Estado Coaches</div>
+              <div id="dash-coaches-nav" style="display:none;align-items:center;gap:6px;">
+                <button onclick="_dashCoachPage(-1)" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--text2);cursor:pointer;font-size:12px;">‹</button>
+                <span id="dash-coaches-page" style="font-size:11px;color:var(--text3);"></span>
+                <button onclick="_dashCoachPage(1)" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--text2);cursor:pointer;font-size:12px;">›</button>
+              </div>
+            </div>
+            <div id="dash-coaches" style="flex:1;overflow:hidden;min-height:0;max-height:260px;overflow-y:auto;">
               <div class="empty-state" style="padding:24px;"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Ve a Coaches para añadir tu equipo.</div></div>
             </div>
           </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Próximos Vencimientos</div><div style="display:flex;align-items:center;gap:8px;"><span class="card-sub">30 días</span><button id="btn-notif-email" onclick="openEmailReminderModal()" style="display:none;font-size:10px;padding:3px 9px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">📧 Notificar</button></div></div>
-            <div id="dash-vencimientos">
+          <div class="card" style="display:flex;flex-direction:column;">
+            <div class="card-header" style="flex-shrink:0;">
+              <div class="card-title">Próximos Vencimientos</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="card-sub">30 días</span>
+                <button id="btn-notif-email" onclick="openEmailReminderModal()" style="display:none;font-size:10px;padding:3px 9px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">📧 Notificar</button>
+              </div>
+            </div>
+            <div id="dash-vencimientos" style="flex:1;overflow:hidden;min-height:0;max-height:260px;overflow-y:auto;">
               <div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">Los pagos por vencer en los próximos 30 días aparecerán aquí.</div></div>
             </div>
           </div>
@@ -2317,8 +2343,7 @@ select option{background:#10101c;color:var(--text);}
             <div class="card-title">📊 Balance General del Mes</div>
             <div style="display:flex;align-items:center;gap:10px;">
               <span class="card-sub" id="dash-balance-mes-label">—</span>
-              <button onclick="toggleDashCustomize()" id="dash-customize-btn" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(255,255,255,.06);color:var(--text3);border:1px solid var(--border);cursor:pointer;font-weight:700;white-space:nowrap;">🎛 Personalizar</button>
-          <button onclick="generarReporteMensual()" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(0,180,216,.12);color:var(--accent);border:1px solid rgba(0,180,216,.28);cursor:pointer;font-weight:700;white-space:nowrap;">📄 Reporte Mensual</button>
+              <button onclick="generarReporteMensual()" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(0,180,216,.12);color:var(--accent);border:1px solid rgba(0,180,216,.28);cursor:pointer;font-weight:700;white-space:nowrap;">📄 Reporte Mensual</button>
             </div>
           </div>
           <div id="dash-balance-body"></div>
@@ -6539,21 +6564,79 @@ function initDashboardCustomize(){
 
 function toggleDashCustomize(){
   _dashCustomizeActive = !_dashCustomizeActive;
-  const dash   = document.getElementById('v-dashboard');
-  const bar    = document.getElementById('dash-customize-bar');
-  const btn    = document.getElementById('dash-customize-btn');
+  const dash = document.getElementById('v-dashboard');
+  const bar  = document.getElementById('dash-customize-bar');
+  const btn  = document.getElementById('dash-customize-btn');
+  const grid = document.getElementById('dash-widgets-grid');
 
   dash.classList.toggle('dash-customize-active', _dashCustomizeActive);
   bar.classList.toggle('visible', _dashCustomizeActive);
 
-  if(_dashSortable) _dashSortable.option('disabled', !_dashCustomizeActive);
+  // Lazy-init Sortable si no estaba listo antes
+  if(_dashCustomizeActive && !_dashSortable && window.Sortable && grid){
+    _dashSortable = Sortable.create(grid, {
+      group:     'dash-widgets',
+      animation: 220,
+      handle:    '.dash-widget-handle',
+      ghostClass:'sortable-ghost',
+      dragClass: 'sortable-drag',
+      onEnd: () => _saveDashLayout()
+    });
+  } else if(_dashSortable){
+    _dashSortable.option('disabled', !_dashCustomizeActive);
+  }
 
   if(btn){
-    btn.textContent   = _dashCustomizeActive ? '✓ Listo' : '🎛 Personalizar';
-    btn.style.color   = _dashCustomizeActive ? 'var(--accent)' : '';
-    btn.style.borderColor = _dashCustomizeActive ? 'rgba(0,180,216,.4)' : '';
-    btn.style.background  = _dashCustomizeActive ? 'rgba(0,180,216,.1)' : '';
+    btn.textContent   = _dashCustomizeActive ? '✓ Listo' : '🎛 Personalizar dashboard';
+    btn.style.color        = _dashCustomizeActive ? 'var(--accent)' : '';
+    btn.style.borderColor  = _dashCustomizeActive ? 'rgba(0,180,216,.4)' : '';
+    btn.style.background   = _dashCustomizeActive ? 'rgba(0,180,216,.1)' : '';
   }
+}
+
+// ── Coaches dashboard paginación ────────────────────────────────────
+const DASH_COACHES_PER_PAGE = 4;
+function _renderDashCoaches(){
+  const coachEl = document.getElementById('dash-coaches');
+  const navEl   = document.getElementById('dash-coaches-nav');
+  const pageEl  = document.getElementById('dash-coaches-page');
+  if(!coachEl) return;
+  const list = window._dashCoachesData || [];
+  if(!list.length){
+    coachEl.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches</div></div>`;
+    if(navEl) navEl.style.display = 'none';
+    return;
+  }
+  const totalPages = Math.ceil(list.length / DASH_COACHES_PER_PAGE);
+  const page = Math.max(0, Math.min(window._dashCoachCurPage||0, totalPages-1));
+  window._dashCoachCurPage = page;
+  const slice = list.slice(page * DASH_COACHES_PER_PAGE, (page+1) * DASH_COACHES_PER_PAGE);
+
+  coachEl.innerHTML = '<div style="padding:4px 0;">' + slice.map((c, i)=>{
+    const idx   = list.indexOf(c);
+    const color = COACH_COLORS[idx % COACH_COLORS.length];
+    const initials = (c.nombre||'?').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
+    const evalData = evals.filter(e=>e.coachId===c.id);
+    const avg = evalData.length ? Math.round(evalData.reduce((a,b)=>a+b.total,0)/evalData.length) : null;
+    const semLabel = avg===null?'Sin eval':avg>=32?'Verde':avg>=24?'Amarillo':'Rojo';
+    const badgeC   = avg===null?'b-gray':avg>=32?'b-ok':avg>=24?'b-warn':'b-danger';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="width:30px;height:30px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">${initials}</div>
+      <span style="font-size:13px;flex:1;color:var(--text);font-weight:500;">${esc(c.nombre)}</span>
+      <span style="font-size:11px;font-weight:700;color:var(--text2);">${avg!==null?avg+'/40':'—'}</span>
+      <span class="badge ${badgeC}" style="font-size:10px;">${semLabel}</span>
+    </div>`;
+  }).join('') + '</div>';
+
+  if(navEl){
+    navEl.style.display = totalPages > 1 ? 'flex' : 'none';
+    if(pageEl) pageEl.textContent = `${page+1} / ${totalPages}`;
+  }
+}
+function _dashCoachPage(dir){
+  const total = Math.ceil((window._dashCoachesData||[]).length / DASH_COACHES_PER_PAGE);
+  window._dashCoachCurPage = Math.max(0, Math.min((window._dashCoachCurPage||0) + dir, total-1));
+  _renderDashCoaches();
 }
 
 function toggleWidgetVisibility(btn){
@@ -9060,27 +9143,10 @@ function renderDashboard(){
     }).join('');
   }
 
-  // Coaches semáforo
-  const coachEl = document.getElementById('dash-coaches');
-  if(!coaches.length){
-    coachEl.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches</div></div>`;
-  } else {
-    coachEl.innerHTML = coaches.map((c, idx)=>{
-      const color = COACH_COLORS[idx % COACH_COLORS.length];
-      const initials = (c.nombre||'?').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
-      const evalData = evals.filter(e=>e.coachId===c.id);
-      const avg = evalData.length ? Math.round(evalData.reduce((a,b)=>a+b.total,0)/evalData.length) : null;
-      const semClass = avg===null?'s-ok s' : avg>=32?'s-ok':avg>=24?'s-warn':'s-danger';
-      const semLabel = avg===null?'Sin eval':avg>=32?'Verde':avg>=24?'Amarillo':'Rojo';
-      const badgeC   = avg===null?'b-gray':avg>=32?'b-ok':avg>=24?'b-warn':'b-danger';
-      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <div style="width:28px;height:28px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">${initials}</div>
-        <span style="font-size:13px;flex:1;">${esc(c.nombre)}</span>
-        <span style="font-size:12px;font-weight:700;color:var(--text2);">${avg!==null?avg+'/40':'—'}</span>
-        <span class="badge ${badgeC}" style="font-size:10px;">${semLabel}</span>
-      </div>`;
-    }).join('');
-  }
+  // Coaches semáforo con paginación
+  window._dashCoachesData = coaches; // guardar para paginación
+  window._dashCoachCurPage = window._dashCoachCurPage || 0;
+  _renderDashCoaches();
 
   // Fuente chart
   const fuenteMap = {};
