@@ -474,6 +474,27 @@ body{
   pointer-events:none;z-index:99999;
   animation:confetti-fall linear forwards;
 }
+/* ── Offline banner ── */
+#offline-banner{
+  position:fixed;top:0;left:0;right:0;
+  background:rgba(248,113,113,.95);color:#fff;
+  text-align:center;font-size:13px;font-weight:700;
+  padding:10px 16px;z-index:99998;
+  transform:translateY(-100%);transition:transform .3s ease;
+  backdrop-filter:blur(8px);letter-spacing:.3px;
+}
+#offline-banner.visible{transform:translateY(0);}
+
+/* ── Check-in celebration flash ── */
+@keyframes checkin-flash{
+  0%{opacity:.7}50%{opacity:0}100%{opacity:0}
+}
+.checkin-flash{
+  position:fixed;inset:0;z-index:99997;
+  background:var(--ok);pointer-events:none;
+  animation:checkin-flash .6s ease-out forwards;
+}
+
 @keyframes confetti-fall{
   0%  {transform:translate(0,0) rotate(0deg);opacity:1;}
   100%{transform:translate(var(--cx,0px),100vh) rotate(720deg);opacity:0;}
@@ -1910,6 +1931,9 @@ select option{background:#10101c;color:var(--text);}
     <div class="coach-detail-body" id="coach-detail-body">—</div>
   </div>
 </div>
+
+<!-- Banner de conexión perdida -->
+<div id="offline-banner">📡 Sin conexión — Algunas funciones no estarán disponibles</div>
 
 <div id="login-screen">
   <div class="login-box">
@@ -4515,6 +4539,46 @@ async function doLogin(){
 }
 
 // ── Supabase Realtime — live check-in counter ──────────────────────
+// ── Offline / Online indicator ───────────────────────────────────────
+(function initOfflineDetection(){
+  const banner = () => document.getElementById('offline-banner');
+  function show(){ banner()?.classList.add('visible'); }
+  function hide(){ banner()?.classList.remove('visible'); }
+  window.addEventListener('offline', show);
+  window.addEventListener('online',  ()=>{ hide(); toast('Conexión restaurada ✓','📡',2000); });
+  if(!navigator.onLine) show();
+})();
+
+// ── Check-in celebration ─────────────────────────────────────────────
+function celebrateCheckin(clientName){
+  // Flash verde
+  const flash = document.createElement('div');
+  flash.className = 'checkin-flash';
+  document.body.appendChild(flash);
+  setTimeout(()=>flash.remove(), 700);
+
+  // Confetti
+  launchConfetti(document.getElementById('checkins-hoy-count'));
+
+  // Sonido (Web Audio API — beep corto)
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+.3);
+    osc.start(); osc.stop(ctx.currentTime+.3);
+  }catch(e){}
+
+  // Haptic
+  navigator.vibrate?.([100, 30, 100, 30, 200]);
+
+  // Toast prominente
+  toast(`🏋️ Check-in: ${clientName||'Atleta'} ✓`, '✅', 3500);
+}
+
 function initRealtimeSubscriptions(){
   if(!window.supabaseClient || !MOVE_GYM_ID) return;
   try {
@@ -4526,22 +4590,18 @@ function initRealtimeSubscriptions(){
         table: 'asistencias',
         filter: `gym_id=eq.${MOVE_GYM_ID}`
       }, payload => {
-        // Update check-in counter live without full reload
         const today = new Date().toISOString().slice(0,10);
         if(payload.new?.fecha === today){
           const el = document.getElementById('checkins-hoy-count');
           if(el){
             const cur = parseInt(el.textContent)||0;
             countUp(el, cur+1, {duration:300});
-            // Pulse animation
-            el.style.transform='scale(1.18)';
+            el.style.transform='scale(1.3)';
             el.style.color='var(--ok)';
-            setTimeout(()=>{ el.style.transform=''; el.style.color=''; }, 400);
+            setTimeout(()=>{ el.style.transform=''; el.style.color=''; }, 500);
           }
-          navigator.vibrate?.([80, 40, 200]);
-          toast(`Check-in registrado ✓`,'🏋️',2500);
+          celebrateCheckin(payload.new?.cliente_id||'');
         }
-        // Refresh chart if visible
         if(document.getElementById('v-asistencia')?.classList.contains('active')){
           renderCheckinsChart();
         }
@@ -12436,16 +12496,32 @@ if ('serviceWorker' in navigator) {
 })();
 
 async function solicitarPermisosNotificaciones(){
-  if(!('Notification' in window)){
-    toast('Este dispositivo no soporta notificaciones.','ℹ️'); return;
+  if(typeof Notification === 'undefined' || !('Notification' in window)){
+    toast('Este dispositivo no soporta notificaciones push.','ℹ️');
+    return;
   }
+  if(Notification.permission === 'granted'){
+    toast('Notificaciones ya están activadas ✓','🔔');
+    checkMembresiasNotificaciones();
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    toast('Notificaciones bloqueadas — actívalas en Configuración del navegador.','⚠️');
+    return;
+  }
+  // Solo pedimos permiso con interacción del usuario (requerido por iOS)
   const perm = await Notification.requestPermission();
   if(perm === 'granted'){
     toast('Notificaciones activadas ✓','🔔');
-    new Notification('VELUM', { body: 'Recibirás alertas de membresías por vencer.', icon: './move-icon-192.png' });
+    try{
+      new Notification('VELUM', {
+        body: 'Recibirás alertas de membresías por vencer.',
+        icon: './move-icon-192.png'
+      });
+    }catch(e){}
     checkMembresiasNotificaciones();
   } else {
-    toast('Permiso denegado. Actívalas desde el navegador.','⚠️');
+    toast('Sin permiso de notificaciones.','⚠️');
   }
 }
 
