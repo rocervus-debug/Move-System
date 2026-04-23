@@ -4690,6 +4690,7 @@ function showApp(){
     
     updateSidebarUser();
     applyStoredSettings();
+    setTimeout(applyPlanGates, 200); // Después de que gymConfig cargue
     if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
     else document.getElementById('users-section').style.display='none';
     // Dashboard ya fue inicializado en DOMContentLoaded; solo re-renderiza con datos reales
@@ -7276,6 +7277,89 @@ function isPlanMax(){
   return getPlan() === 'max';
 }
 
+// ── Feature gates: aplica restricciones visuales según plan ──────────
+function applyPlanGates(){
+  const isMax = isPlanMax();
+  const plan  = getPlan();
+
+  // Items del sidebar: mostrar/ocultar según plan
+  const proItems = ['nav-retencion']; // Solo Max
+  proItems.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(!isMax){
+      el.style.opacity = '.4';
+      el.style.pointerEvents = 'none';
+      el.title = '🔒 Disponible en Plan Max';
+      // Badge visual
+      if(!el.querySelector('.plan-lock')){
+        const badge = document.createElement('span');
+        badge.className = 'plan-lock';
+        badge.style.cssText = 'font-size:9px;background:rgba(192,132,252,.15);color:#c084fc;border:1px solid rgba(192,132,252,.2);border-radius:4px;padding:1px 5px;margin-left:auto;';
+        badge.textContent = 'MAX';
+        el.appendChild(badge);
+      }
+    } else {
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+      el.title = '';
+      el.querySelector('.plan-lock')?.remove();
+    }
+  });
+
+  // Botones de exportación: solo Max
+  ['exportarClientesCSV','exportarClientesXLSX','exportarPagosCSV'].forEach(fnName => {
+    document.querySelectorAll(`[onclick*="${fnName}"]`).forEach(btn => {
+      if(!isMax){
+        btn.onclick = null;
+        btn.addEventListener('click', ()=>toast('Exportación disponible en Plan Max 🔒','📋'));
+        btn.style.opacity = '.5';
+        btn.title = '🔒 Plan Max';
+      }
+    });
+  });
+
+  // Notificaciones email: solo Max
+  const notifEmailBtn = document.getElementById('btn-notif-email-sa') || document.querySelector('[onclick="solicitarPermisosNotificaciones()"]');
+  // (el botón ya se muestra condicionalmente, pero reforzamos)
+
+  // Programa de entrenamiento nav: solo Max
+  const navPrograma = document.getElementById('nav-programa');
+  if(navPrograma){
+    if(!isMax){
+      navPrograma.style.opacity = '.4';
+      navPrograma.style.pointerEvents = 'none';
+      navPrograma.title = '🔒 Disponible en Plan Max';
+      if(!navPrograma.querySelector('.plan-lock')){
+        const badge = document.createElement('span');
+        badge.className = 'plan-lock';
+        badge.style.cssText = 'font-size:9px;background:rgba(192,132,252,.15);color:#c084fc;border:1px solid rgba(192,132,252,.2);border-radius:4px;padding:1px 5px;margin-left:auto;';
+        badge.textContent = 'MAX';
+        navPrograma.appendChild(badge);
+      }
+    } else {
+      navPrograma.style.opacity = '';
+      navPrograma.style.pointerEvents = '';
+      navPrograma.title = '';
+      navPrograma.querySelector('.plan-lock')?.remove();
+    }
+  }
+
+  // Banner de plan en el sidebar si es Pro
+  const existing = document.getElementById('plan-banner-sidebar');
+  if(!isMax && !existing){
+    const banner = document.createElement('div');
+    banner.id = 'plan-banner-sidebar';
+    banner.style.cssText = 'margin:8px 12px;padding:8px 12px;background:rgba(192,132,252,.08);border:1px solid rgba(192,132,252,.2);border-radius:8px;font-size:11px;color:#c084fc;cursor:pointer;';
+    banner.innerHTML = `<div style="font-weight:700;margin-bottom:2px;">Plan Pro activo</div><div style="opacity:.7;font-size:10px;">Actualiza a Max para desbloquear todas las funciones →</div>`;
+    banner.onclick = () => window.open('https://myvelum.app/registro.html?plan=max', '_blank');
+    const sidebarBottom = document.querySelector('.sidebar-bottom');
+    if(sidebarBottom) sidebarBottom.insertBefore(banner, sidebarBottom.firstChild);
+  } else if(isMax && existing){
+    existing.remove();
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // RENDER PIPELINE KANBAN
 // ═══════════════════════════════════════════════════════════════════
@@ -9699,8 +9783,20 @@ async function renderSuperAdmin(){
           <input id="sa-g-email" type="email" placeholder="admin@gym.com" class="form-input"></div>
         <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">PLAN</label>
           <select id="sa-g-plan" class="form-input">
-            <option value="basic">Basic</option><option value="pro">Pro</option><option value="free">Free</option>
+            <option value="pro">Pro — $599/mes</option>
+            <option value="max">Max — $999/mes</option>
           </select></div>
+      </div>
+      <!-- Tipo de acceso -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text2);">
+          <input type="radio" name="sa-g-status" id="sa-g-status-active" value="active" checked style="accent-color:var(--accent);cursor:pointer;"/>
+          <span><strong style="color:var(--text);">Cliente activo</strong> — acceso habilitado manualmente (sin Stripe)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text2);">
+          <input type="radio" name="sa-g-status" id="sa-g-status-owner" value="owner" style="accent-color:#c084fc;cursor:pointer;"/>
+          <span><strong style="color:#c084fc;">🏠 Gym propio</strong> — siempre activo, nunca bloqueado</span>
+        </label>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-sm" onclick="saCreateGym()">Crear Gym</button>
@@ -9819,10 +9915,12 @@ async function saCreateGym(){
   const plan   = document.getElementById('sa-g-plan').value || 'pro';
   if(!nombre){ toast('El nombre del gym es obligatorio.','⚠️'); return; }
   if(!slug){ toast('El slug es obligatorio.','⚠️'); return; }
+  const statusEl = document.querySelector('input[name="sa-g-status"]:checked');
+  const subStatus = statusEl?.value || 'active';
   const { data, error } = await window.supabaseClient.from('gyms').insert([{
     nombre, slug, activo: true, plan,
     owner_email: email||null,
-    subscription_status: 'owner', // Gyms creados desde SA = propios, siempre activos
+    subscription_status: subStatus,
   }]).select().single();
   if(error){ toast('Error al crear gym: '+(error.message||'').slice(0,60),'❌'); console.error(error); return; }
   toast(`Gym "${nombre}" creado con ID ${data.id} ✅`,'🏋️');
@@ -9911,6 +10009,7 @@ async function saContextSwitch(gymId){
     renderDashboard();
     renderSuperAdmin();
     toast('Contexto cambiado ✅ Ahora ves: '+(gymConfig.gym_nombre||'Gym #'+gymId),'🏋️');
+    setTimeout(applyPlanGates, 300);
   } catch(e) {
     console.error('[saContextSwitch] Error:', e);
     toast('Error al cambiar de gym. Revisa la conexión.','❌');
