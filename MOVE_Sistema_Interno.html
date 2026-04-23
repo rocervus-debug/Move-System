@@ -164,14 +164,14 @@ body{
   color:var(--text);
   font-size:14px;
   -webkit-font-smoothing:antialiased;
-  /* Login state: body es una página normal — iOS Safari puede manejar inputs sin restricciones */
 }
-/* App state: se activa con JS después del login */
-body.app-mode{
-  display:flex;
+/* App wrapper — contiene sidebar + main, nunca el body */
+#app-wrapper{
+  display:none;
+  flex-direction:row;
+  width:100%;
   height:100vh;
-  /* Sin overflow:hidden — iOS Safari bloquea touch events con esta propiedad en body */
-  overflow-x:hidden;
+  overflow:hidden;
 }
 
 /* ── SCROLLBAR ─ */
@@ -1972,7 +1972,8 @@ select option{background:#10101c;color:var(--text);}
 <!-- ═══════════════════════════════════════
      SIDEBAR
 ═══════════════════════════════════════ -->
-<aside class="sidebar" style="display:none;">
+<div id="app-wrapper" style="display:none;flex:1;height:100vh;overflow:hidden;flex-direction:row;">
+<aside class="sidebar">
   <div class="logo">
     <div class="logo-velum">
       <svg width="22" height="28" viewBox="0 0 22 28" style="flex-shrink:0;">
@@ -2099,7 +2100,7 @@ select option{background:#10101c;color:var(--text);}
 <!-- ═══════════════════════════════════════
      MAIN
 ═══════════════════════════════════════ -->
-<div class="main" style="display:none;">
+<div class="main">
   <div class="topbar">
     <span class="topbar-title" id="topTitle">Dashboard General</span>
     <div class="topbar-divider"></div>
@@ -3275,6 +3276,7 @@ select option{background:#10101c;color:var(--text);}
 
   </div><!-- /content -->
 </div><!-- /main -->
+</div><!-- /app-wrapper -->
 
 <!-- ═══ QR CHECK-IN MODAL ═══ -->
 <div class="modal-overlay" id="modal-qr" onclick="closeModal('qr')">
@@ -4601,14 +4603,11 @@ function doLogout(){
   document.getElementById('coach-screen').classList.remove('visible');
   closeCoachDetail();
   // Restore admin layout elements (in case coach was logged in)
-  const sb = document.querySelector('aside.sidebar');
-  const mn = document.querySelector('div.main');
-  if(sb) sb.style.display = '';
-  if(mn) mn.style.display = '';
+  const aw = document.getElementById('app-wrapper');
+  if(aw) aw.style.display = 'flex';
 
 
   document.getElementById('login-screen').classList.remove('hidden');
-  document.body.classList.remove('app-mode');
   document.getElementById('login-email').value='';
   document.getElementById('login-pass').value='';
   // Reset main app nav
@@ -4620,7 +4619,7 @@ function doLogout(){
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
-  document.body.classList.add('app-mode');
+
 
 
   // Actualizar topbar con fecha real al cargar
@@ -4630,10 +4629,8 @@ function showApp(){
     showCoachView();
   } else {
     // Show admin layout (sidebar + main)
-    const sb = document.querySelector('aside.sidebar');
-    const mn = document.querySelector('div.main');
-    if(sb) sb.style.display = '';
-    if(mn) mn.style.display = '';
+    
+    
     updateSidebarUser();
     applyStoredSettings();
     if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
@@ -4657,10 +4654,8 @@ let coachProgMonth = new Date().getMonth();
 function showCoachView(){
   document.getElementById('coach-screen').classList.add('visible');
   // Hide the entire admin layout (sidebar + main content)
-  const sb = document.querySelector('aside.sidebar');
-  const mn = document.querySelector('div.main');
-  if(sb) sb.style.display = 'none';
-  if(mn) mn.style.display = 'none';
+  const aw = document.getElementById('app-wrapper');
+  if(aw) aw.style.display = 'none';
   const nombre = currentUser.nombre || 'Coach';
   document.getElementById('coach-nombre').textContent = nombre;
   switchCoachTab('horario');
