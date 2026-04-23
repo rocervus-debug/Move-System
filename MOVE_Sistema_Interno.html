@@ -3182,6 +3182,24 @@ select option{background:#10101c;color:var(--text);}
         </div>
         <div id="sa-metrics"></div>
       </div>
+      <!-- ── Error Monitor ── -->
+      <div class="card" style="margin-top:16px;border:1px solid rgba(248,113,113,.15);">
+        <div class="card-header">
+          <div class="card-title">🔍 Monitor de Errores</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="card-sub" id="sa-monitor-status" style="font-weight:700;">Cargando…</span>
+            <button class="btn btn-sm btn-outline" onclick="renderErrorMonitor()" style="font-size:10px;padding:3px 10px;">↺ Refrescar</button>
+            <a href="https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move-health-check?hours=24" target="_blank"
+               style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);text-decoration:none;font-weight:700;">
+              📊 Reporte JSON
+            </a>
+          </div>
+        </div>
+        <div id="sa-error-monitor" style="min-height:60px;">
+          <div style="color:var(--text3);font-size:12px;padding:8px 0;">Cargando monitor…</div>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:16px;">
         <div class="card-header">
           <div class="card-title">🗂️ Audit Log</div>
@@ -9493,6 +9511,7 @@ async function renderSuperAdmin(){
 
   // Load audit log
   renderSaAuditLog();
+  renderErrorMonitor();
 
   document.getElementById('sa-metrics').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
@@ -9632,6 +9651,64 @@ function closeSaCtxDropdown(){
 }
 
 // ── Audit Log UI ───────────────────────────────────────────────────
+async function renderErrorMonitor(){
+  const el  = document.getElementById('sa-error-monitor');
+  const lbl = document.getElementById('sa-monitor-status');
+  if(!el) return;
+
+  try {
+    const res = await fetch('https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move-health-check?hours=24');
+    const data = await res.json();
+
+    const scoreColor = data.health_score>=80?'var(--ok)':data.health_score>=50?'var(--warn)':'var(--danger)';
+    const statusIcon = data.status==='healthy'?'✅':data.status==='degraded'?'⚠️':'🚨';
+
+    if(lbl){
+      lbl.textContent = `${statusIcon} Score: ${data.health_score}/100`;
+      lbl.style.color = scoreColor;
+    }
+
+    const s = data.summary || {};
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:${scoreColor};">${data.health_score}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:2px;">Health Score</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:${s.total_errors>20?'var(--danger)':s.total_errors>5?'var(--warn)':'var(--ok)'};">${s.total_errors||0}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:2px;">Errores 24h</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:var(--accent);">${s.active_gyms||0}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:2px;">Gyms Activos</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:var(--ok);">${s.checkins_today||0}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:2px;">Check-ins Hoy</div>
+        </div>
+      </div>
+      ${(data.top_errors||[]).length===0
+        ? `<div style="text-align:center;padding:12px;color:var(--ok);font-size:13px;">✅ Sin errores críticos en las últimas 24 horas</div>`
+        : `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Top Errores</div>
+           <div style="display:flex;flex-direction:column;gap:6px;">
+           ${(data.top_errors||[]).slice(0,6).map(e=>`
+             <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:8px;">
+               <span style="background:rgba(248,113,113,.2);color:var(--danger);font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;white-space:nowrap;">${e.count}x</span>
+               <div style="flex:1;min-width:0;">
+                 <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(e.message)}</div>
+                 <div style="font-size:10px;color:var(--text3);">${e.error_type} · sección: ${e.section||'—'} · ${e.affected_users} usuario${e.affected_users!==1?'s':''}</div>
+               </div>
+             </div>`).join('')}
+           </div>`}
+      <div style="font-size:10px;color:var(--text4);margin-top:10px;text-align:right;">Actualizado: ${new Date(data.timestamp).toLocaleTimeString('es-MX')}</div>`;
+
+  } catch(e){
+    if(lbl){ lbl.textContent='❌ Error al cargar'; lbl.style.color='var(--danger)'; }
+    el.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px;">No se pudo conectar al monitor.</div>`;
+  }
+}
+
 async function renderSaAuditLog(){
   const el = document.getElementById('sa-audit-log');
   const cnt = document.getElementById('sa-audit-count');
@@ -12189,6 +12266,76 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.warn('[MOVE PWA] Error SW:', err));
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// MOVE ERROR MONITOR — captura errores JS en tiempo real → Supabase
+// ═══════════════════════════════════════════════════════════════════
+(function initErrorMonitor() {
+  const SUPA_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
+  const ANON_KEY = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
+  let _errQueue = [];
+  let _errFlushing = false;
+
+  function getActiveSection(){
+    const active = document.querySelector('.view.active');
+    return active ? active.id.replace('v-','') : 'unknown';
+  }
+
+  async function flushErrors(){
+    if(_errFlushing || !_errQueue.length) return;
+    _errFlushing = true;
+    const batch = _errQueue.splice(0, 10);
+    try {
+      await fetch(`${SUPA_URL}/rest/v1/error_logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': ANON_KEY,
+          'Authorization': `Bearer ${ANON_KEY}`,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(batch),
+      });
+    } catch(e) { /* silencioso — no queremos loops */ }
+    _errFlushing = false;
+    if(_errQueue.length) setTimeout(flushErrors, 2000);
+  }
+
+  function logError(type, message, stack = '') {
+    // No loguear errores triviales de red o extensiones
+    if(/extension|chrome-extension|moz-extension|ResizeObserver/i.test(message)) return;
+    const session = (() => { try { return JSON.parse(localStorage.getItem('move_session')||'null'); } catch(e){ return null; } })();
+    _errQueue.push({
+      gym_id:     session?.gym_id || null,
+      user_id:    session?.id || null,
+      user_email: session?.email || null,
+      error_type: type,
+      message:    String(message).slice(0, 500),
+      stack:      String(stack).slice(0, 1000),
+      section:    getActiveSection(),
+      url:        window.location.href.slice(0, 200),
+      user_agent: navigator.userAgent.slice(0, 200),
+    });
+    if(_errQueue.length === 1) setTimeout(flushErrors, 1500);
+  }
+
+  // Capturar errores JS síncronos
+  window.onerror = (msg, src, line, col, err) => {
+    logError('js_error', `${msg} (${src}:${line}:${col})`, err?.stack || '');
+    return false; // no suprimir
+  };
+
+  // Capturar promesas rechazadas
+  window.addEventListener('unhandledrejection', e => {
+    const msg = e.reason?.message || String(e.reason) || 'Unhandled promise rejection';
+    logError('promise_rejection', msg, e.reason?.stack || '');
+  });
+
+  // Exponer función para loguear errores de API manualmente
+  window.logMoveError = (msg, section, stack) => logError('api_error', msg, stack);
+
+  console.log('[MOVE Monitor] Error tracking activo ✓');
+})();
 
 async function solicitarPermisosNotificaciones(){
   if(!('Notification' in window)){
