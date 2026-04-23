@@ -195,7 +195,7 @@ body{
 /* Nav */
 .nav{padding:12px 0;flex:1;}
 .nav-section{padding:0 12px;margin-bottom:4px;}
-.nav-label{font-size:9px;font-weight:700;color:rgba(210,224,238,.18);letter-spacing:2.5px;text-transform:uppercase;padding:14px 10px 5px;}
+.nav-label{font-size:9px;font-weight:700;color:rgba(210,224,238,.32);letter-spacing:2.5px;text-transform:uppercase;padding:18px 10px 5px;border-top:1px solid rgba(255,255,255,.04);margin-top:4px;}
 .nav-item{
   display:flex;align-items:center;gap:10px;padding:9px 11px;
   border-radius:8px;cursor:pointer;
@@ -268,10 +268,15 @@ body{
 .search-wrap{
   display:flex;align-items:center;gap:8px;
   background:rgba(255,255,255,.04);border:1px solid var(--border);
-  border-radius:8px;padding:7px 13px;width:260px;transition:all .18s;
+  border-radius:8px;padding:7px 13px;width:260px;
+  transition:width .28s cubic-bezier(.4,0,.2,1), border-color .18s, background .18s, box-shadow .18s;
   position:relative;
 }
-.search-wrap:focus-within{border-color:var(--accent);background:rgba(0,180,216,.05);box-shadow:0 0 0 3px rgba(0,180,216,.1), var(--glow);}
+.search-wrap:focus-within{
+  width:380px;
+  border-color:var(--accent);background:rgba(0,180,216,.05);
+  box-shadow:0 0 0 3px rgba(0,180,216,.1), var(--glow);
+}
 .search-wrap input{background:none;border:none;outline:none;font-size:13px;color:var(--text);font-family:var(--font);flex:1;}
 .search-wrap input::placeholder{color:var(--text4);}
 /* Global search dropdown */
@@ -321,7 +326,8 @@ body{
   transform:translateY(-1px);
   box-shadow:0 4px 20px rgba(0,180,216,.45), 0 0 32px rgba(0,180,216,.2);
 }
-.btn-primary:active{transform:translateY(0);box-shadow:var(--shadow-btn);}
+.btn-primary:active{transform:translateY(0) scale(.96);box-shadow:var(--shadow-btn);}
+.btn:active{transform:scale(.96);transition:transform .08s;}
 .btn-outline{
   background:rgba(255,255,255,.05);color:var(--text2);
   border:1px solid var(--border);
@@ -342,7 +348,15 @@ body{
 /* Content */
 .content{flex:1;overflow-y:auto;padding:24px;}
 .view{display:none;}
-.view.active{display:block;}
+.view.active{display:block;animation:view-in .18s ease;}
+@keyframes view-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Skeleton loading */
+.skel{display:inline-block;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:skel-shine 1.4s infinite;border-radius:6px;}
+@keyframes skel-shine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-kpi{width:70%;height:32px;margin-bottom:6px;}
+.skel-line{width:55%;height:10px;}
+.skel-line-sm{width:35%;height:9px;margin-top:4px;}
 
 /* ══════════════════════════════════
    COMPONENTS
@@ -374,7 +388,7 @@ body{
 .kpi-card::after{
   content:'';position:absolute;
   top:0;left:0;right:0;bottom:0;
-  background:radial-gradient(ellipse at 50% 0%, rgba(0,180,216,.04) 0%, transparent 70%);
+  background:radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--kpi-color,var(--accent)) 8%, transparent) 0%, transparent 70%);
   pointer-events:none;
 }
 .kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
@@ -434,8 +448,13 @@ body{
 }
 .tbl td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text2);vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
-.tbl tr:hover td{background:rgba(0,180,216,.04);}
+.tbl tbody tr:nth-child(even) td{background:rgba(255,255,255,.015);}
+.tbl tr:hover td{background:rgba(0,180,216,.05) !important;cursor:pointer;}
 .tbl td.name{font-weight:600;color:var(--text);}
+.tbl th.sortable{cursor:pointer;user-select:none;}
+.tbl th.sortable:hover{color:var(--accent);}
+.tbl th.sort-asc::after{content:' ↑';color:var(--accent);}
+.tbl th.sort-desc::after{content:' ↓';color:var(--accent);}
 
 /* Alert items */
 .alert-item{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:9px;border:1px solid transparent;margin-bottom:7px;}
@@ -448,14 +467,15 @@ body{
 .alert-desc{font-size:11px;color:var(--text3);margin-top:2px;}
 
 /* Progress */
-.prog{height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
-.prog-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.prog{height:7px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.22,.68,0,1.2);}
 
 /* Semáforo */
 .sem{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.s-ok{background:var(--ok);}
+.s-ok{background:var(--ok);box-shadow:0 0 6px rgba(16,232,160,.5);animation:pulse-ok 2.4s ease-in-out infinite;}
 .s-warn{background:var(--warn);}
-.s-danger{background:var(--danger);}
+.s-danger{background:var(--danger);box-shadow:0 0 6px rgba(248,113,113,.4);}
+@keyframes pulse-ok{0%,100%{box-shadow:0 0 4px rgba(16,232,160,.4);}50%{box-shadow:0 0 10px rgba(16,232,160,.75);}}
 
 /* Tabs */
 .tabs{display:flex;gap:2px;background:rgba(255,255,255,.04);padding:3px;border-radius:9px;margin-bottom:20px;border:1px solid var(--border);}
@@ -464,7 +484,7 @@ body{
 .tab:hover:not(.active){color:var(--text2);background:rgba(255,255,255,.04);}
 
 /* Chart wrapper */
-.chart-wrap{position:relative;height:186px;}
+.chart-wrap{position:relative;height:240px;}
 
 /* Section header */
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
@@ -559,9 +579,9 @@ body{
 
 /* Empty state */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px;text-align:center;}
-.empty-icon{font-size:44px;margin-bottom:18px;opacity:.22;}
-.empty-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text2);margin-bottom:7px;}
-.empty-sub{font-size:13px;color:var(--text3);max-width:320px;line-height:1.6;}
+.empty-icon{font-size:52px;margin-bottom:20px;opacity:.45;filter:grayscale(.3);}
+.empty-title{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--text2);margin-bottom:8px;letter-spacing:.2px;}
+.empty-sub{font-size:13px;color:var(--text3);max-width:340px;line-height:1.7;}
 
 /* ══════════════════════════════════
    MODAL SYSTEM — Dark glass
@@ -2040,24 +2060,24 @@ select option{background:#10101c;color:var(--text);}
       <!-- Payment stats row -->
       <div class="kpi-grid" style="margin-bottom:18px;">
         <div class="kpi-card" style="--kpi-color:var(--ok)">
-          <div class="kpi-label">💰 Ingresos Totales</div>
+          <div class="kpi-label">Ingresos Totales</div>
           <div class="kpi-value" id="kpi-total-ingresos">$0</div>
           <div class="kpi-meta" id="kpi-total-ingresos-meta">Todos los pagos</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
-          <div class="kpi-label">🆕 Socios Nuevos</div>
+          <div class="kpi-label">Socios Nuevos</div>
           <div class="kpi-value" id="kpi-socios-nuevos">0</div>
           <div class="kpi-trend" id="kpi-socios-trend" style="display:none;"></div>
           <div class="kpi-meta">Primer pago este mes</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--danger)">
-          <div class="kpi-label">📉 Membresías Vencidas</div>
+          <div class="kpi-label">Membresías Vencidas</div>
           <div class="kpi-value" id="kpi-vencidas">0</div>
           <div class="kpi-trend" id="kpi-vencidas-trend" style="display:none;"></div>
           <div class="kpi-meta">Sin renovar</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--warn)">
-          <div class="kpi-label">⏰ Por Vencer (30 días)</div>
+          <div class="kpi-label">Por Vencer — 30 días</div>
           <div class="kpi-value" id="kpi-por-vencer">0</div>
           <div class="kpi-meta">Requieren atención</div>
         </div>
@@ -2185,7 +2205,7 @@ select option{background:#10101c;color:var(--text);}
       <div class="card" style="margin-bottom:18px;">
         <div class="card-header">
           <div class="card-title">📊 Check-ins QR — Últimos 14 días</div>
-          <span class="card-sub" id="checkins-chart-total">—</span>
+          <span class="card-sub">Hoy: <span id="checkins-hoy-count" style="font-weight:700;color:var(--ok);transition:transform .3s,color .3s;">—</span>&nbsp; Total: <span id="checkins-chart-total">—</span></span>
         </div>
         <div style="height:160px;"><canvas id="checkinsChart"></canvas></div>
       </div>
@@ -4196,8 +4216,44 @@ async function doLogin(){
       loadProgConfigFromSupabase(), loadUsuariosFromSupabase()
     ]);
     showApp();
+    initRealtimeSubscriptions();
   } catch(e){ errEl.textContent='Error de conexión.'; errEl.classList.add('show'); console.error(e); }
   btn.textContent = 'ENTRAR'; btn.disabled = false;
+}
+
+// ── Supabase Realtime — live check-in counter ──────────────────────
+function initRealtimeSubscriptions(){
+  if(!window.supabaseClient || !MOVE_GYM_ID) return;
+  try {
+    window.supabaseClient
+      .channel('move-asistencias-live')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'asistencias',
+        filter: `gym_id=eq.${MOVE_GYM_ID}`
+      }, payload => {
+        // Update check-in counter live without full reload
+        const today = new Date().toISOString().slice(0,10);
+        if(payload.new?.fecha === today){
+          const el = document.getElementById('checkins-hoy-count');
+          if(el){
+            const cur = parseInt(el.textContent)||0;
+            countUp(el, cur+1, {duration:300});
+            // Pulse animation
+            el.style.transform='scale(1.18)';
+            el.style.color='var(--ok)';
+            setTimeout(()=>{ el.style.transform=''; el.style.color=''; }, 400);
+          }
+          toast(`Check-in: ${payload.new.cliente_id||'Cliente'} ✓`,'🏋️',2500);
+        }
+        // Refresh chart if visible
+        if(document.getElementById('v-asistencia')?.classList.contains('active')){
+          renderCheckinsChart();
+        }
+      })
+      .subscribe();
+  } catch(e){ console.warn('[Realtime] No disponible:', e); }
 }
 
 function showPasswordReset(){
@@ -5457,10 +5513,17 @@ function getAvatarColor(nombre){
   return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }
 
-function getAvatarHTML(nombre, size=34){
+function getAvatarHTML(nombre, size=34, fotoUrl=null){
   const initials = (nombre||'?').split(' ').slice(0,2).map(w=>(w[0]||'').toUpperCase()).join('');
   const color = getAvatarColor(nombre);
   const fs = Math.round(size * 0.37);
+  if(fotoUrl){
+    return `<div class="cli-avatar" style="width:${size}px;height:${size}px;padding:0;overflow:hidden;border:1.5px solid ${color}44;">
+      <img src="${fotoUrl}" alt="${esc(nombre)}" loading="lazy"
+        style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+        onerror="this.parentElement.innerHTML='${initials}';this.parentElement.style.fontSize='${fs}px';this.parentElement.style.color='${color}';this.parentElement.style.background='${color}1a';"/>
+    </div>`;
+  }
   return `<div class="cli-avatar" style="width:${size}px;height:${size}px;background:${color}1a;border:1.5px solid ${color}44;font-size:${fs}px;color:${color};">${initials}</div>`;
 }
 
@@ -6239,8 +6302,84 @@ function renderCRM(tab){
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ═══════════════════════════════════════════════════════════════════
-// UTILITIES — debounce, hashPassword, auditLog, planCheck
+// UTILITIES — debounce, hashPassword, auditLog, planCheck, countUp
 // ═══════════════════════════════════════════════════════════════════
+
+// ── Count-up animation — makes numeric KPIs feel alive ─────────────
+function countUp(el, target, opts = {}) {
+  if (!el) return;
+  const {
+    duration = 600,
+    prefix   = '',
+    suffix   = '',
+    decimals = 0,
+    locale   = 'es-MX',
+    easing   = t => t < .5 ? 2*t*t : -1+(4-2*t)*t  // ease-in-out
+  } = opts;
+
+  const start     = performance.now();
+  const startVal  = parseFloat(el.getAttribute('data-count-from') || '0') || 0;
+  const isCurrency= prefix === '$';
+
+  function fmt(v) {
+    if (isCurrency) return '$' + Math.round(v).toLocaleString(locale) + suffix;
+    if (decimals)   return prefix + v.toFixed(decimals) + suffix;
+    return prefix + Math.round(v).toLocaleString(locale) + suffix;
+  }
+
+  el.setAttribute('data-count-from', String(target));
+
+  // Skip animation if already at target or target is 0
+  if (target === 0 || target === startVal) { el.textContent = fmt(target); return; }
+
+  function step(now) {
+    const elapsed  = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const value    = startVal + (target - startVal) * easing(progress);
+    el.textContent = fmt(value);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── Skeleton loading helpers ────────────────────────────────────────
+function showKpiSkeleton(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<span class="skel skel-kpi"></span>';
+      el.style.minHeight = '32px';
+    }
+  });
+}
+function hideKpiSkeleton() {
+  document.querySelectorAll('.skel').forEach(s => s.remove());
+}
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────
+(function initKeyboardShortcuts() {
+  document.addEventListener('keydown', e => {
+    const mod = e.metaKey || e.ctrlKey;
+    // Cmd/Ctrl+K → open search
+    if (mod && e.key === 'k') {
+      e.preventDefault();
+      const s = document.getElementById('globalSearch');
+      if (s) { s.focus(); s.select(); }
+    }
+    // Cmd/Ctrl+N → nuevo lead
+    if (mod && e.key === 'n') {
+      e.preventDefault();
+      if (typeof openModal === 'function') openModal('lead');
+    }
+    // Escape → cerrar modales abiertos
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+      document.querySelectorAll('[id$="-overlay"]').forEach(ov => {
+        if (ov.style.display === 'block') ov.style.display = 'none';
+      });
+    }
+  });
+})();
 
 // ─── Dark / Light mode ───────────────────────────────────────────
 function applyColorMode(mode){
@@ -6870,7 +7009,7 @@ function renderClientes(){
                          background:var(--card);border:1px solid var(--border);border-radius:12px;
                          border-left:3px solid ${cfg.color};cursor:pointer;transition:background .15s;"
                  onmouseenter="this.style.background='var(--card2)'" onmouseleave="this.style.background='var(--card)'">
-      ${getAvatarHTML(c.nombre, 42)}
+      ${getAvatarHTML(c.nombre, 42, c.foto_url||null)}
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px;">
           <span style="font-size:14px;font-weight:700;color:var(--text);">${esc(c.nombre)}</span>
@@ -8142,7 +8281,10 @@ async function renderCheckinsChart(){
   } catch(e){ /* no asistencias yet */ }
 
   const total = counts.reduce((s,v)=>s+v,0);
+  const todayCount = counts[counts.length-1]||0;
   if(lbl) lbl.textContent = `${total} check-in${total!==1?'s':''} en 14 días`;
+  const hoyEl = document.getElementById('checkins-hoy-count');
+  if(hoyEl) countUp(hoyEl, todayCount, {duration:500});
 
   if(window._checkinsChart) window._checkinsChart.destroy();
   window._checkinsChart = new Chart(canvas, {
@@ -8175,12 +8317,15 @@ async function renderCheckinsChart(){
 // DASHBOARD RENDER
 // ═══════════════════════════════════════════════════════════════════
 function renderDashboard(){
+  // Show skeleton in KPI values while computing
+  showKpiSkeleton(['kpi-activos','kpi-leads','kpi-ingresos-mes','kpi-total-ingresos','kpi-socios-nuevos','kpi-vencidas','kpi-por-vencer']);
+
   const total   = leads.length;
   const activos = leads.filter(l=>l.estado==='Cerrado – Ganado').length;
   const conv    = total>0 ? Math.round((activos/total)*100)+'%' : '—';
 
-  document.getElementById('kpi-leads').textContent   = total;
-  document.getElementById('kpi-activos').textContent = activos;
+  countUp(document.getElementById('kpi-leads'), total);
+  countUp(document.getElementById('kpi-activos'), activos);
   document.getElementById('kpi-conv').textContent    = conv;
   document.getElementById('mkt-leads').textContent   = total;
 
@@ -8188,9 +8333,9 @@ function renderDashboard(){
   const hc = document.getElementById('hero-coaches');
   const hl = document.getElementById('hero-leads');
   const hcl= document.getElementById('hero-clases');
-  if(hc)  hc.textContent  = coaches.length || '0';
-  if(hl)  hl.textContent  = total || '0';
-  if(hcl) hcl.textContent = horario.filter(h=>h.tipo!=='CERRADO').length || '0';
+  countUp(hc,  coaches.length || 0, {duration:500});
+  countUp(hl,  total || 0, {duration:600});
+  countUp(hcl, horario.filter(h=>h.tipo!=='CERRADO').length || 0, {duration:550});
 
   // ─── Payment KPIs ───
   const now   = new Date(); now.setHours(0,0,0,0);
@@ -8262,25 +8407,21 @@ function renderDashboard(){
 
   const ki = document.getElementById('kpi-ingresos-mes');
   const km = document.getElementById('kpi-ingresos-meta');
-  if(ki) ki.textContent = '$'+ingresosMes.toLocaleString('es-MX');
   if(km) km.textContent = pagosEsteMes.length+' pago'+(pagosEsteMes.length!==1?'s':'');
+  countUp(document.getElementById('kpi-ingresos-mes'), ingresosMes, {prefix:'$', duration:700});
   setTrend('kpi-ingresos-trend', ingresosMes, ingresosLastMes, false);
 
-  const kti = document.getElementById('kpi-total-ingresos');
   const ktim= document.getElementById('kpi-total-ingresos-meta');
-  if(kti) kti.textContent  = '$'+totalIngresos.toLocaleString('es-MX');
   if(ktim) ktim.textContent= pagos.length+' pago'+(pagos.length!==1?'s':'');
+  countUp(document.getElementById('kpi-total-ingresos'), totalIngresos, {prefix:'$', duration:800});
 
-  const ksn = document.getElementById('kpi-socios-nuevos');
-  if(ksn) ksn.textContent = clientesNuevos.size;
+  countUp(document.getElementById('kpi-socios-nuevos'), clientesNuevos.size, {duration:500});
   setTrend('kpi-socios-trend', clientesNuevos.size, clientesNuevosLast.size, false);
 
-  const kv = document.getElementById('kpi-vencidas');
-  if(kv) kv.textContent = vencidasCount;
-  setTrend('kpi-vencidas-trend', vencidasEsteMes, vencidasLastMes, true); // invertido: más = peor
+  countUp(document.getElementById('kpi-vencidas'), vencidasCount, {duration:500});
+  setTrend('kpi-vencidas-trend', vencidasEsteMes, vencidasLastMes, true);
 
-  const kpv = document.getElementById('kpi-por-vencer');
-  if(kpv) kpv.textContent = porVencer30.length;
+  countUp(document.getElementById('kpi-por-vencer'), porVencer30.length, {duration:500});
 
   // Leads trend (el valor ya se seteó arriba con `total`)
   setTrend('kpi-leads-trend', leadsEsteMes, leadsLastMes, false);
