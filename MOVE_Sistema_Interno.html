@@ -163,6 +163,8 @@ body{
     radial-gradient(ellipse at 50% 0%, rgba(15,110,86,.06) 0%, transparent 40%);
   color:var(--text);
   display:flex;height:100vh;overflow:hidden;font-size:14px;
+  /* iOS Safari: en modo login el body NO debe tener overflow:hidden */
+body.login-mode{overflow:auto!important;height:auto!important;display:block!important;}
   -webkit-font-smoothing:antialiased;
 }
 
@@ -887,23 +889,22 @@ select option{background:#10101c;color:var(--text);}
    LOGIN SCREEN
 ═══════════════════════════════════════════════════════════════ */
 #login-screen{
-  position:fixed;inset:0;z-index:9500;
-  display:flex;align-items:flex-start;justify-content:center;
-  /* iOS Safari fix: overflow-y:auto allows keyboard to push content up */
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  touch-action:pan-y;
+  /* En modo login: pantalla completa relativa al body (iOS Safari safe) */
+  position:relative;
+  min-height:100vh;
+  width:100%;
+  display:flex;align-items:center;justify-content:center;
   background:#04140f;
   background-image:
     radial-gradient(ellipse at 20% 30%, rgba(29,158,117,.12) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 70%, rgba(93,202,165,.05) 0%, transparent 50%);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 #login-screen.hidden{display:none;}
 .login-box{
   width:100%;max-width:400px;
-  padding:env(safe-area-inset-top, 40px) 20px 40px;
-  min-height:100%;
-  display:flex;flex-direction:column;justify-content:center;
+  padding:40px 20px;
 }
 .login-logo{
   font-family:var(--font-display);font-size:42px;font-weight:800;
@@ -4589,7 +4590,8 @@ function doLogout(){
   const mn = document.querySelector('div.main');
   if(sb) sb.style.display = '';
   if(mn) mn.style.display = '';
-  // Show login
+  // Show login — restaurar body a login-mode para iOS Safari
+  document.body.classList.add('login-mode');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-email').value='';
   document.getElementById('login-pass').value='';
@@ -4602,6 +4604,8 @@ function doLogout(){
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
+  // Restaurar body a modo app (overflow:hidden para el shell)
+  document.body.classList.remove('login-mode');
   // Actualizar topbar con fecha real al cargar
   const topSub = document.getElementById('topSub');
   if(topSub) topSub.textContent = `Resumen ejecutivo · ${_todayLabel()}`;
@@ -11653,6 +11657,9 @@ document.addEventListener('click', e=>{
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // iOS Safari fix: body en modo login permite que los inputs funcionen
+  document.body.classList.add('login-mode');
+
   // Apply stored color mode immediately to avoid flash
   const storedMode = localStorage.getItem('move_color_mode') || 'dark';
   applyColorMode(storedMode);
