@@ -5604,8 +5604,96 @@ function _renderQR(url){
 // ── Kiosco mode ───────────────────────────────────────────────────────
 function launchKiosco(){
   const existing = document.getElementById('kiosco-overlay');
-  if(existing){ existing.remove(); return; }
+  if(existing){
+    // Salir del kiosco — pedir PIN si está configurado
+    const pin = getKioscoPin();
+    if(pin){
+      _pedirPinParaSalir(()=>{ existing.remove(); try{ document.exitFullscreen?.(); }catch(e){} });
+    } else {
+      existing.remove();
+      try{ document.exitFullscreen?.(); }catch(e){}
+    }
+    return;
+  }
+  // Entrar al kiosco — pedir PIN si está configurado
+  const pin = getKioscoPin();
+  if(pin){
+    _pedirPinParaEntrar(pin, ()=>_iniciarKiosco());
+    return;
+  }
+  _iniciarKiosco();
+}
 
+function _pedirPinParaEntrar(pinCorrecto, onSuccess){
+  const modal = document.createElement('div');
+  modal.id = 'kiosco-entry-pin';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10001;';
+  modal.innerHTML = `
+    <div style="background:#0f1726;border:1px solid rgba(29,158,117,.2);border-radius:18px;padding:32px 28px;width:300px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:10px;">🔐</div>
+      <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:16px;">PIN del Kiosco</div>
+      <input id="kp-enter-input" type="password" inputmode="numeric" maxlength="6"
+        style="width:100%;text-align:center;letter-spacing:8px;font-size:22px;padding:12px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;outline:none;font-family:inherit;box-sizing:border-box;"
+        placeholder="·  ·  ·  ·" ontouchstart=""
+        onkeydown="if(event.key==='Enter')_kpEnterCheck(this,'${pinCorrecto}')"/>
+      <div id="kp-enter-err" style="color:#f87171;font-size:12px;min-height:18px;margin-top:6px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('kiosco-entry-pin').remove()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;" ontouchstart="" onclick="_kpEnterCheck(document.getElementById('kp-enter-input'),'${pinCorrecto}')">Entrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>document.getElementById('kp-enter-input')?.focus(), 100);
+  window._kpSuccess = onSuccess;
+}
+function _kpEnterCheck(input, pinCorrecto){
+  if((input.value||'').trim() === pinCorrecto){
+    document.getElementById('kiosco-entry-pin')?.remove();
+    window._kpSuccess?.();
+  } else {
+    document.getElementById('kp-enter-err').textContent = 'PIN incorrecto';
+    input.value = '';
+    input.style.borderColor = '#f87171';
+    setTimeout(()=>{ input.style.borderColor=''; }, 1000);
+  }
+}
+
+function _pedirPinParaSalir(onSuccess){
+  const pin = getKioscoPin();
+  const modal = document.createElement('div');
+  modal.id = 'kiosco-exit-pin';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10002;';
+  modal.innerHTML = `
+    <div style="background:#0f1726;border:1px solid rgba(29,158,117,.2);border-radius:18px;padding:32px 28px;width:300px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:10px;">🔒</div>
+      <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:16px;">PIN para salir</div>
+      <input id="kp-exit-input" type="password" inputmode="numeric" maxlength="6"
+        style="width:100%;text-align:center;letter-spacing:8px;font-size:22px;padding:12px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;outline:none;font-family:inherit;box-sizing:border-box;"
+        placeholder="·  ·  ·  ·" ontouchstart=""
+        onkeydown="if(event.key==='Enter')_kpExitCheck(this,'${pin}')"/>
+      <div id="kp-exit-err" style="color:#f87171;font-size:12px;min-height:18px;margin-top:6px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('kiosco-exit-pin').remove()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;" ontouchstart="" onclick="_kpExitCheck(document.getElementById('kp-exit-input'),'${pin}')">Salir</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>document.getElementById('kp-exit-input')?.focus(), 100);
+  window._kpExitSuccess = onSuccess;
+}
+function _kpExitCheck(input, pinCorrecto){
+  if((input.value||'').trim() === pinCorrecto){
+    document.getElementById('kiosco-exit-pin')?.remove();
+    window._kpExitSuccess?.();
+  } else {
+    document.getElementById('kp-exit-err').textContent = 'PIN incorrecto';
+    input.value = '';
+    input.style.borderColor = '#f87171';
+    setTimeout(()=>{ input.style.borderColor=''; }, 1000);
+  }
+}
+
+function _iniciarKiosco(){
   const gymNombre = gymConfig.gym_nombre || 'MOVE';
   const checkinBase = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'checkin.html';
 
@@ -5621,9 +5709,9 @@ function launchKiosco(){
       <div style="font-size:14px;color:rgba(255,255,255,.5);">Abre la app de tu cámara y apunta al código QR de tu tarjeta</div>
     </div>
     <div id="kiosco-result" style="min-height:80px;text-align:center;"></div>
-    <button onclick="document.getElementById('kiosco-overlay').remove()"
+    <button onclick="launchKiosco()"
       style="position:fixed;top:20px;right:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 18px;color:#94a3b8;font-size:13px;cursor:pointer;font-family:inherit;">
-      ✕ Salir del kiosco
+      🔒 Salir del kiosco
     </button>`;
 
   const style = document.createElement('style');
@@ -11963,13 +12051,42 @@ function openEmailReminderModal(){
         </div>` : ''}
 
         <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
-          ${gymEmail ? `<a href="${adminMailto}" style="flex:1;min-width:160px;padding:11px;text-align:center;background:var(--accent);color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;">📩 Enviar resumen a mi correo</a>` : ''}
+          ${withEmail.length ? `<button onclick="enviarEmailsVencimiento()" id="btn-send-emails" style="flex:1;min-width:160px;padding:11px;text-align:center;background:var(--accent);color:#fff;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;">🚀 Enviar ${withEmail.length} email${withEmail.length>1?'s':''} automáticos</button>` : ''}
+          ${gymEmail ? `<a href="${adminMailto}" style="flex:1;min-width:160px;padding:11px;text-align:center;background:rgba(255,255,255,.06);color:var(--text2);border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;border:1px solid var(--border);cursor:pointer;">📩 Resumen a mi correo</a>` : ''}
           <button onclick="document.getElementById('email-reminder-modal').remove()" style="flex:1;min-width:100px;padding:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Cerrar</button>
         </div>
-        <div style="margin-top:10px;font-size:10px;color:var(--text4);text-align:center;">Los botones "Enviar" abren tu cliente de correo predeterminado con el mensaje prellenado.</div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text4);text-align:center;">Emails automáticos requieren configurar RESEND_API_KEY en Supabase Secrets.</div>
       </div>
     </div>`;
   document.body.appendChild(modal);
+}
+
+async function enviarEmailsVencimiento(){
+  const btn = document.getElementById('btn-send-emails');
+  if(btn){ btn.textContent='Enviando...'; btn.disabled=true; }
+  try{
+    const res = await fetch('https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move-email-reminder', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        gym_id: MOVE_GYM_ID,
+        dias: 30,
+        gym_nombre: gymConfig.gym_nombre || 'Tu Gym',
+        from_email: gymConfig.gym_email || 'noreply@myvelum.app'
+      })
+    });
+    const data = await res.json();
+    if(data.ok){
+      toast(`✓ ${data.enviados} emails enviados correctamente`,'📧',4000);
+      document.getElementById('email-reminder-modal')?.remove();
+    } else {
+      toast(data.error || 'Error al enviar emails','❌',4000);
+      if(btn){ btn.textContent='Reintentar'; btn.disabled=false; }
+    }
+  }catch(e){
+    toast('Error de conexión','❌');
+    if(btn){ btn.textContent='Reintentar'; btn.disabled=false; }
+  }
 }
 </script>
 
