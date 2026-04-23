@@ -4709,8 +4709,12 @@ function showApp(){
     updateSidebarUser();
     applyStoredSettings();
     setTimeout(applyPlanGates, 200); // Después de que gymConfig cargue
-    if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
-    else document.getElementById('users-section').style.display='none';
+    // Admin y superadmin pueden gestionar usuarios; coaches y otros roles no
+    if(currentUser.rol==='admin' || currentUser.rol==='superadmin'){
+      loadUsuariosFromSupabase().then(renderUsuarios);
+    } else {
+      document.getElementById('users-section').style.display='none';
+    }
     // Dashboard ya fue inicializado en DOMContentLoaded; solo re-renderiza con datos reales
     renderDashboard();
     // Show onboarding wizard for new gyms
@@ -5907,8 +5911,8 @@ function go(id, el){
   const topBtn = document.getElementById('topBtn');
   topBtn.textContent = topBtnLabels[id]||'Nuevo';
   topBtn.onclick = topBtnActions[id]||null;
-  // Hide + button in settings for non-admins
-  if(id==='settings') topBtn.style.display = (currentUser&&currentUser.rol==='admin') ? 'inline-flex' : 'none';
+  // Hide + button in settings for non-admins (coaches, marketing, etc.)
+  if(id==='settings') topBtn.style.display = (currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) ? 'inline-flex' : 'none';
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
@@ -5926,7 +5930,7 @@ function go(id, el){
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa')    { renderProgramaCalendar(); }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&currentUser.rol==='admin') renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
+  if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
 
