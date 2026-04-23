@@ -365,6 +365,89 @@ body{
 .skel-line{width:55%;height:10px;}
 .skel-line-sm{width:35%;height:9px;margin-top:4px;}
 
+/* ── KPI card staggered entrance ── */
+@keyframes kpi-in{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.kpi-card{animation:kpi-in .38s cubic-bezier(.22,.68,0,1.2) both;}
+.kpi-card:nth-child(1){animation-delay:.04s}
+.kpi-card:nth-child(2){animation-delay:.10s}
+.kpi-card:nth-child(3){animation-delay:.16s}
+.kpi-card:nth-child(4){animation-delay:.22s}
+
+/* ── Scroll reveal (JS adds .sr-visible) ── */
+.sr{opacity:0;transform:translateY(20px);transition:opacity .45s cubic-bezier(.22,.68,0,1.2),transform .45s cubic-bezier(.22,.68,0,1.2);}
+.sr.sr-visible{opacity:1;transform:none;}
+.sr-delay-1{transition-delay:.06s}
+.sr-delay-2{transition-delay:.12s}
+.sr-delay-3{transition-delay:.18s}
+
+/* ── Dashboard widget (drag-and-drop) ── */
+.dash-widget{position:relative;transition:box-shadow .2s,transform .2s;}
+.dash-widget.sortable-ghost{opacity:.3;background:rgba(0,180,216,.05);border-radius:14px;}
+.dash-widget.sortable-drag{box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 40px rgba(0,180,216,.2);transform:scale(1.02);z-index:100;}
+.dash-customize-active .dash-widget{cursor:grab;}
+.dash-customize-active .dash-widget:hover{box-shadow:0 0 0 2px rgba(0,180,216,.4),0 8px 32px rgba(0,0,0,.4);}
+.dash-widget-handle{
+  display:none;position:absolute;top:12px;right:12px;z-index:10;
+  background:rgba(0,180,216,.15);border:1px solid rgba(0,180,216,.3);
+  border-radius:7px;padding:5px 8px;cursor:grab;font-size:13px;
+  color:var(--accent);font-weight:700;letter-spacing:1px;
+  backdrop-filter:blur(4px);transition:background .15s;
+}
+.dash-customize-active .dash-widget-handle{display:flex;align-items:center;gap:4px;}
+.dash-widget-handle:hover{background:rgba(0,180,216,.28);}
+.dash-widget-toggle{
+  display:none;position:absolute;top:12px;right:80px;z-index:10;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  border-radius:7px;padding:5px 10px;cursor:pointer;font-size:11px;
+  color:var(--text3);transition:all .15s;
+}
+.dash-customize-active .dash-widget-toggle{display:flex;align-items:center;gap:4px;}
+.dash-widget.widget-hidden{opacity:.35;filter:saturate(0);}
+.dash-widget.widget-hidden .dash-widget-toggle{color:var(--danger);}
+
+/* ── Customize toolbar ── */
+.dash-customize-bar{
+  display:none;position:sticky;top:0;z-index:200;
+  background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.3);
+  border-radius:12px;padding:10px 16px;margin-bottom:16px;
+  backdrop-filter:blur(12px);
+  align-items:center;justify-content:space-between;gap:10px;
+  animation:kpi-in .25s ease;
+}
+.dash-customize-bar.visible{display:flex;}
+
+/* ── Button ripple ── */
+.btn{overflow:hidden;}
+.btn .ripple{
+  position:absolute;border-radius:50%;
+  background:rgba(255,255,255,.28);
+  transform:scale(0);animation:ripple-out .55s linear;
+  pointer-events:none;
+}
+@keyframes ripple-out{to{transform:scale(4);opacity:0;}}
+
+/* ── Toast spring ── */
+.toast{transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;}
+
+/* ── Trend badge slide-in ── */
+.kpi-trend{animation:trend-in .3s cubic-bezier(.34,1.56,.64,1) .5s both;}
+@keyframes trend-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+
+/* ── Pipeline 3D tilt ── */
+.pipe-card{transform-style:preserve-3d;transition:transform .12s ease,box-shadow .18s,border-color .18s;}
+.pipe-card:hover{transform:perspective(600px) rotateX(3deg) rotateY(-3deg) translateY(-3px);}
+
+/* ── Confetti particle ── */
+.confetti-piece{
+  position:fixed;width:10px;height:10px;border-radius:2px;
+  pointer-events:none;z-index:99999;
+  animation:confetti-fall linear forwards;
+}
+@keyframes confetti-fall{
+  0%  {transform:translate(0,0) rotate(0deg);opacity:1;}
+  100%{transform:translate(var(--cx,0px),100vh) rotate(720deg);opacity:0;}
+}
+
 /* ══════════════════════════════════
    COMPONENTS
 ══════════════════════════════════ */
@@ -2094,6 +2177,25 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- ── Customize toolbar ── -->
+      <div class="dash-customize-bar" id="dash-customize-bar">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:15px;">🎛</span>
+          <span style="font-size:13px;font-weight:700;color:var(--accent);">Modo personalización</span>
+          <span style="font-size:11px;color:var(--text3);">Arrastra los widgets para reordenarlos</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="resetDashLayout()" class="btn btn-outline btn-sm">↺ Restablecer</button>
+          <button onclick="toggleDashCustomize()" class="btn btn-primary btn-sm">✓ Listo</button>
+        </div>
+      </div>
+
+      <!-- ── Widget grid (reorderable) ── -->
+      <div id="dash-widgets-grid">
+
+      <div class="dash-widget sr" data-widget-id="pipeline">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
       <div class="g2" style="margin-bottom:18px;">
         <div class="card">
           <div class="card-header"><div class="card-title">Pipeline de Ventas</div><span class="card-sub">Estado actual</span></div>
@@ -2111,88 +2213,110 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
-      <div class="g2">
+      </div><!-- /pipeline widget -->
+
+      <div class="dash-widget sr sr-delay-1" data-widget-id="coaches-venc" style="margin-top:18px;">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Estado Coaches</div></div>
+            <div id="dash-coaches">
+              <div class="empty-state" style="padding:24px;"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Ve a Coaches para añadir tu equipo.</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Próximos Vencimientos</div><div style="display:flex;align-items:center;gap:8px;"><span class="card-sub">30 días</span><button id="btn-notif-email" onclick="openEmailReminderModal()" style="display:none;font-size:10px;padding:3px 9px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">📧 Notificar</button></div></div>
+            <div id="dash-vencimientos">
+              <div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">Los pagos por vencer en los próximos 30 días aparecerán aquí.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-widget sr sr-delay-2" data-widget-id="meta-ret" style="margin-top:18px;">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="dash-meta-ret-grid">
+          <div class="card" id="dash-meta-card">
+            <div class="card-header">
+              <div class="card-title">🎯 Meta del Mes</div>
+              <span class="card-sub" id="dash-meta-label">—</span>
+            </div>
+            <div id="dash-meta-body" style="padding:4px 0 8px;">
+              <div style="color:var(--text3);font-size:12px;">Configura tu meta en Ajustes.</div>
+            </div>
+          </div>
+          <div class="card" id="dash-retencion-card">
+            <div class="card-header">
+              <div class="card-title">🔄 Retención</div>
+              <span class="card-sub" id="dash-ret-label">vs mes anterior</span>
+            </div>
+            <div id="dash-ret-body" style="padding:4px 0 8px;">
+              <div style="color:var(--text3);font-size:12px;">Calculando...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-widget sr sr-delay-3" data-widget-id="hist" style="margin-top:18px;">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
         <div class="card">
-          <div class="card-header"><div class="card-title">Estado Coaches</div></div>
-          <div id="dash-coaches">
-            <div class="empty-state" style="padding:24px;"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Ve a Coaches para añadir tu equipo.</div></div>
+          <div class="card-header">
+            <div class="card-title">📈 Ingresos Últimos 6 Meses</div>
+            <span class="card-sub" id="dash-hist-total">—</span>
           </div>
+          <div class="chart-wrap" style="height:200px;"><canvas id="histIngrChart"></canvas></div>
         </div>
+      </div>
+
+      <div class="dash-widget sr" data-widget-id="alerts" style="margin-top:18px;">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
         <div class="card">
-          <div class="card-header"><div class="card-title">⏰ Próximos Vencimientos</div><div style="display:flex;align-items:center;gap:8px;"><span class="card-sub">30 días</span><button id="btn-notif-email" onclick="openEmailReminderModal()" style="display:none;font-size:10px;padding:3px 9px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">📧 Notificar</button></div></div>
-          <div id="dash-vencimientos">
-            <div class="empty-state" style="padding:24px;"><div class="empty-icon">📅</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">Los pagos por vencer en los próximos 30 días aparecerán aquí.</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── CUMPLEAÑOS ── -->
-      <div class="card" style="margin-top:18px;" id="dash-cumple-card">
-        <div class="card-header">
-          <div class="card-title">🎂 Cumpleaños esta semana</div>
-          <span class="card-sub" id="dash-cumple-sub">—</span>
-        </div>
-        <div id="dash-cumple-body"></div>
-      </div>
-
-      <!-- ── ALERTAS DE MEMBRESÍAS ── -->
-      <div class="card" style="margin-top:18px;">
-        <div class="card-header">
-          <div class="card-title">🔔 Alertas de Membresías</div>
-          <span class="card-sub">Próximos 14 días + vencidas</span>
-        </div>
-        <div id="dash-membresias-alert">
-          <div style="padding:16px 20px;color:var(--text3);font-size:13px;text-align:center;">
-            <span style="font-size:22px;">✅</span><br>Sin membresías por vencer esta quincena.
-          </div>
-        </div>
-      </div>
-
-      <!-- ── META MENSUAL + RETENCIÓN ── -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;" id="dash-meta-ret-grid">
-        <div class="card" id="dash-meta-card">
           <div class="card-header">
-            <div class="card-title">🎯 Meta del Mes</div>
-            <span class="card-sub" id="dash-meta-label">—</span>
+            <div class="card-title">🔔 Alertas de Membresías</div>
+            <span class="card-sub">Próximos 14 días + vencidas</span>
           </div>
-          <div id="dash-meta-body" style="padding:4px 0 8px;">
-            <div style="color:var(--text3);font-size:12px;">Configura tu meta en Ajustes.</div>
+          <div id="dash-membresias-alert">
+            <div style="padding:16px 20px;color:var(--text3);font-size:13px;text-align:center;">
+              <span style="font-size:22px;">✅</span><br>Sin membresías por vencer esta quincena.
+            </div>
           </div>
         </div>
-        <div class="card" id="dash-retencion-card">
+      </div>
+
+      <div class="dash-widget sr" data-widget-id="cumple" style="margin-top:18px;">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
+        <div class="card" id="dash-cumple-card">
           <div class="card-header">
-            <div class="card-title">🔄 Retención</div>
-            <span class="card-sub" id="dash-ret-label">vs mes anterior</span>
+            <div class="card-title">🎂 Cumpleaños esta semana</div>
+            <span class="card-sub" id="dash-cumple-sub">—</span>
           </div>
-          <div id="dash-ret-body" style="padding:4px 0 8px;">
-            <div style="color:var(--text3);font-size:12px;">Calculando...</div>
-          </div>
+          <div id="dash-cumple-body"></div>
         </div>
       </div>
 
-      <!-- ── GRÁFICA HISTÓRICA DE INGRESOS ── -->
-      <div class="card" style="margin-top:18px;">
-        <div class="card-header">
-          <div class="card-title">📈 Ingresos Últimos 6 Meses</div>
-          <span class="card-sub" id="dash-hist-total">—</span>
+      <div class="dash-widget sr" data-widget-id="balance" style="margin-top:18px;">
+        <div class="dash-widget-handle">⠿ Mover</div>
+        <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
+        <div class="card" id="dash-balance-card">
+          <div class="card-header">
+            <div class="card-title">📊 Balance General del Mes</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="card-sub" id="dash-balance-mes-label">—</span>
+              <button onclick="toggleDashCustomize()" id="dash-customize-btn" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(255,255,255,.06);color:var(--text3);border:1px solid var(--border);cursor:pointer;font-weight:700;white-space:nowrap;">🎛 Personalizar</button>
+          <button onclick="generarReporteMensual()" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(0,180,216,.12);color:var(--accent);border:1px solid rgba(0,180,216,.28);cursor:pointer;font-weight:700;white-space:nowrap;">📄 Reporte Mensual</button>
+            </div>
+          </div>
+          <div id="dash-balance-body"></div>
         </div>
-        <div class="chart-wrap" style="height:200px;"><canvas id="histIngrChart"></canvas></div>
       </div>
 
-      <!-- ── BALANCE GENERAL DEL MES ── -->
-      <div class="card" style="margin-top:18px;" id="dash-balance-card">
-        <div class="card-header">
-          <div class="card-title">📊 Balance General del Mes</div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span class="card-sub" id="dash-balance-mes-label">—</span>
-            <button onclick="generarReporteMensual()" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:7px;background:rgba(0,180,216,.12);color:var(--accent);border:1px solid rgba(0,180,216,.28);cursor:pointer;font-weight:700;white-space:nowrap;">📄 Reporte Mensual</button>
-          </div>
-        </div>
-        <div id="dash-balance-body">
-          <!-- Rendered by renderDashboard() -->
-        </div>
-      </div>
-    </div>
+      </div><!-- /dash-widgets-grid -->
+    </div><!-- /v-dashboard -->
 
     <!-- ══ ASISTENCIA ══ -->
     <div class="view" id="v-asistencia">
@@ -4353,6 +4477,8 @@ function showApp(){
     applyStoredSettings();
     if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
     else document.getElementById('users-section').style.display='none';
+    // Init dashboard layout + scroll reveal
+    setTimeout(()=>{ initDashboardCustomize(); renderDashboard(); }, 100);
     // Show onboarding wizard for new gyms
     setTimeout(checkOnboarding, 800);
   }
@@ -6358,6 +6484,146 @@ function countUp(el, target, opts = {}) {
   requestAnimationFrame(step);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// DASHBOARD CUSTOMIZATION — drag-and-drop widget layout
+// ═══════════════════════════════════════════════════════════════════
+const DASH_WIDGET_DEFAULT = ['pipeline','coaches-venc','meta-ret','hist','alerts','cumple','balance'];
+let _dashCustomizeActive = false;
+let _dashSortable = null;
+
+function initDashboardCustomize(){
+  const grid = document.getElementById('dash-widgets-grid');
+  if(!grid || !window.Sortable) return;
+
+  // Restore saved order
+  const saved = _loadDashLayout();
+  if(saved.order.length){
+    const refs = {};
+    grid.querySelectorAll('.dash-widget').forEach(w => refs[w.dataset.widgetId] = w);
+    saved.order.forEach(id => { if(refs[id]) grid.appendChild(refs[id]); });
+  }
+  // Restore hidden state
+  if(saved.hidden.length){
+    grid.querySelectorAll('.dash-widget').forEach(w => {
+      if(saved.hidden.includes(w.dataset.widgetId)) w.classList.add('widget-hidden');
+    });
+  }
+
+  _dashSortable = Sortable.create(grid, {
+    group: 'dash-widgets',
+    animation: 220,
+    handle: '.dash-widget-handle',
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    disabled: true,
+    onEnd: () => _saveDashLayout()
+  });
+
+  initScrollReveal();
+}
+
+function toggleDashCustomize(){
+  _dashCustomizeActive = !_dashCustomizeActive;
+  const dash   = document.getElementById('v-dashboard');
+  const bar    = document.getElementById('dash-customize-bar');
+  const btn    = document.getElementById('dash-customize-btn');
+
+  dash.classList.toggle('dash-customize-active', _dashCustomizeActive);
+  bar.classList.toggle('visible', _dashCustomizeActive);
+
+  if(_dashSortable) _dashSortable.option('disabled', !_dashCustomizeActive);
+
+  if(btn){
+    btn.textContent   = _dashCustomizeActive ? '✓ Listo' : '🎛 Personalizar';
+    btn.style.color   = _dashCustomizeActive ? 'var(--accent)' : '';
+    btn.style.borderColor = _dashCustomizeActive ? 'rgba(0,180,216,.4)' : '';
+    btn.style.background  = _dashCustomizeActive ? 'rgba(0,180,216,.1)' : '';
+  }
+}
+
+function toggleWidgetVisibility(btn){
+  const widget = btn.closest('.dash-widget');
+  if(!widget) return;
+  const hidden = widget.classList.toggle('widget-hidden');
+  btn.textContent = hidden ? '👁 Mostrar' : '👁 Ocultar';
+  _saveDashLayout();
+}
+
+function resetDashLayout(){
+  localStorage.removeItem('move_dash_layout');
+  const grid = document.getElementById('dash-widgets-grid');
+  if(!grid) return;
+  // Restore default order
+  const refs = {};
+  grid.querySelectorAll('.dash-widget').forEach(w => { refs[w.dataset.widgetId]=w; w.classList.remove('widget-hidden'); });
+  DASH_WIDGET_DEFAULT.forEach(id => { if(refs[id]) grid.appendChild(refs[id]); });
+  // Reset toggle button text
+  grid.querySelectorAll('.dash-widget-toggle').forEach(b => b.textContent = '👁 Ocultar');
+  toast('Layout restablecido','↺');
+}
+
+function _saveDashLayout(){
+  const grid = document.getElementById('dash-widgets-grid');
+  if(!grid) return;
+  const order  = [...grid.querySelectorAll('.dash-widget')].map(w=>w.dataset.widgetId);
+  const hidden = [...grid.querySelectorAll('.dash-widget.widget-hidden')].map(w=>w.dataset.widgetId);
+  localStorage.setItem('move_dash_layout', JSON.stringify({order, hidden}));
+}
+
+function _loadDashLayout(){
+  try { return JSON.parse(localStorage.getItem('move_dash_layout')||'{}'); }
+  catch(e){ return {}; }
+}
+
+// ── Scroll reveal — IntersectionObserver ────────────────────────────
+function initScrollReveal(){
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('sr-visible'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.sr').forEach(el => obs.observe(el));
+}
+
+// ── Confetti burst — celebración de meta alcanzada ───────────────────
+function launchConfetti(originEl){
+  const colors = ['#00b4d8','#10e8a0','#c084fc','#fbbf24','#f87171','#60a5fa','#ffffff'];
+  const rect = originEl ? originEl.getBoundingClientRect() : {left: window.innerWidth/2, top: window.innerHeight/3};
+  const cx = rect.left + (rect.width||0)/2;
+  const cy = rect.top  + (rect.height||0)/2;
+
+  for(let i=0; i<60; i++){
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    const size  = 6 + Math.random()*8;
+    const offsetX = (Math.random()-0.5)*window.innerWidth*0.9;
+    const dur   = 1.2 + Math.random()*1.4;
+    const delay = Math.random()*0.5;
+    piece.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${dur}s;animation-delay:${delay}s;`;
+    piece.style.setProperty('--cx', `${offsetX}px`);
+    document.body.appendChild(piece);
+    piece.addEventListener('animationend', ()=>piece.remove());
+  }
+}
+
+// ── Button ripple — efecto Material Design ───────────────────────────
+(function initRipple(){
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if(!btn) return;
+    const rect   = btn.getBoundingClientRect();
+    const size   = Math.max(rect.width, rect.height) * 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;position:absolute;`;
+    btn.style.position = 'relative';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', ()=>ripple.remove());
+  });
+})();
+
 // ── Date formatting — helper centralizado ───────────────────────────
 // Formato estándar: "22 abr 2026"  (es-MX, día·mes·año)
 // opts: { short: true } → "22 abr"  |  { long: true } → "lunes 22 de abril de 2026"
@@ -8169,8 +8435,9 @@ function renderMetaMensual(ingresosMes){
   }
   const pct = Math.min(100, Math.round((ingresosMes/meta)*100));
   const color = pct>=100?'var(--ok)':pct>=70?'var(--warn)':'var(--danger)';
-  const faltaLabel = ingresosMes>=meta
-    ? `¡Meta superada! +$${(ingresosMes-meta).toLocaleString('es-MX')}`
+  const goalHit = ingresosMes >= meta;
+  const faltaLabel = goalHit
+    ? `🎉 ¡Meta superada! +$${(ingresosMes-meta).toLocaleString('es-MX')}`
     : `Faltan $${(meta-ingresosMes).toLocaleString('es-MX')}`;
   if(lbl) lbl.textContent = `${pct}% completado`;
   el.innerHTML=`
@@ -8179,9 +8446,15 @@ function renderMetaMensual(ingresosMes){
       <span style="font-size:12px;color:var(--text3);">de $${meta.toLocaleString('es-MX')}</span>
     </div>
     <div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden;margin-bottom:8px;">
-      <div style="width:${pct}%;height:100%;background:${color};border-radius:6px;transition:width .5s ease;"></div>
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:6px;transition:width .8s cubic-bezier(.22,.68,0,1.2);"></div>
     </div>
     <div style="font-size:11px;color:${color};font-weight:700;">${faltaLabel}</div>`;
+
+  // Confetti al alcanzar meta (una sola vez por sesión)
+  if(goalHit && !sessionStorage.getItem('move_confetti_'+meta)){
+    sessionStorage.setItem('move_confetti_'+meta, '1');
+    setTimeout(()=>launchConfetti(el), 400);
+  }
 }
 
 // ─── Tasa de retención ─────────────────────────────────────────────
