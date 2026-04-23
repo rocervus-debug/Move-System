@@ -162,8 +162,15 @@ body{
     radial-gradient(ellipse at 85% 85%, rgba(93,202,165,.04) 0%, transparent 55%),
     radial-gradient(ellipse at 50% 0%, rgba(15,110,86,.06) 0%, transparent 40%);
   color:var(--text);
-  display:flex;height:100vh;overflow:clip;font-size:14px;
+  font-size:14px;
   -webkit-font-smoothing:antialiased;
+  /* Login state: body es una página normal — iOS Safari puede manejar inputs sin restricciones */
+}
+/* App state: se activa con JS después del login */
+body.app-mode{
+  display:flex;
+  height:100vh;
+  overflow:hidden;
 }
 
 /* ── SCROLLBAR ─ */
@@ -887,25 +894,20 @@ select option{background:#10101c;color:var(--text);}
    LOGIN SCREEN
 ═══════════════════════════════════════════════════════════════ */
 #login-screen{
-  position:fixed;
-  top:0;left:0;right:0;bottom:0;
-  z-index:9999;
-  overflow-y:scroll;
-  -webkit-overflow-scrolling:touch;
+  /* Login: pantalla simple, sin trucos — iOS Safari lo maneja nativamente */
+  min-height:100vh;
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content:center;
   background:#04140f;
   background-image:
     radial-gradient(ellipse at 20% 30%, rgba(29,158,117,.12) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 70%, rgba(93,202,165,.05) 0%, transparent 50%);
+  padding:20px;
 }
 #login-screen.hidden{display:none;}
 .login-box{
   width:100%;max-width:400px;
-  padding:60px 20px 80px;
-  min-height:100vh;
-  display:flex;flex-direction:column;justify-content:center;
 }
 .login-logo{
   font-family:var(--font-display);font-size:42px;font-weight:800;
@@ -4605,6 +4607,7 @@ function doLogout(){
 
 
   document.getElementById('login-screen').classList.remove('hidden');
+  document.body.classList.remove('app-mode');
   document.getElementById('login-email').value='';
   document.getElementById('login-pass').value='';
   // Reset main app nav
@@ -4616,6 +4619,7 @@ function doLogout(){
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
+  document.body.classList.add('app-mode');
 
 
   // Actualizar topbar con fecha real al cargar
