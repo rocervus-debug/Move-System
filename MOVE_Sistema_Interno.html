@@ -12931,13 +12931,12 @@ if ('serviceWorker' in navigator) {
 })();
 
 async function solicitarPermisosNotificaciones(){
-  if(typeof Notification === 'undefined' || !('Notification' in window)){
-    toast('Este dispositivo no soporta notificaciones push.','ℹ️');
-    return;
-  }
-  if(typeof Notification === 'undefined'){
-    toast('Este navegador no soporta notificaciones.','ℹ️'); return;
-  }
+  try{
+    if(typeof Notification === 'undefined' || !('Notification' in window)){
+      toast('Este dispositivo no soporta notificaciones push.','ℹ️');
+      return;
+    }
+  }catch(e){ toast('Este dispositivo no soporta notificaciones.','ℹ️'); return; }
   if(Notification.permission === 'granted'){
     toast('Notificaciones ya están activadas ✓','🔔');
     checkMembresiasNotificaciones();
@@ -12964,7 +12963,9 @@ async function solicitarPermisosNotificaciones(){
 }
 
 function checkMembresiasNotificaciones(){
-  if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  try{
+    if(typeof Notification === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return;
+  }catch(e){ return; }
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const todayStr = hoy.toISOString().slice(0,10);
   const lastCheck = localStorage.getItem('move_notif_last')||'';
@@ -12987,19 +12988,23 @@ function checkMembresiasNotificaciones(){
     return diff<0;
   });
 
-  if(urgentes.length>0){
-    new Notification('⚠️ VELUM — Membresías por vencer', {
-      body: `${urgentes.length} membresía${urgentes.length!==1?'s':''} vence${urgentes.length===1?'':'n'} en 3 días o menos: ${urgentes.slice(0,3).map(p=>p.cliente).join(', ')}${urgentes.length>3?'...':''}`,
-      icon: './move-icon-192.png',
-      badge: './move-icon-192.png',
-    });
-  }
-  if(vencidos.length>0){
-    setTimeout(()=>new Notification('🔴 VELUM — Membresías vencidas', {
-      body: `${vencidos.length} cliente${vencidos.length!==1?'s':''} con membresía vencida: ${vencidos.slice(0,3).map(p=>p.cliente).join(', ')}${vencidos.length>3?'...':''}`,
-      icon: './move-icon-192.png',
-    }), 1500);
-  }
+  try{
+    if(urgentes.length>0){
+      new Notification('⚠️ VELUM — Membresías por vencer', {
+        body: `${urgentes.length} membresía${urgentes.length!==1?'s':''} vence${urgentes.length===1?'':'n'} en 3 días o menos: ${urgentes.slice(0,3).map(p=>p.cliente).join(', ')}${urgentes.length>3?'...':''}`,
+        icon: './move-icon-192.png',
+        badge: './move-icon-192.png',
+      });
+    }
+    if(vencidos.length>0){
+      setTimeout(()=>{
+        try{ new Notification('🔴 VELUM — Membresías vencidas', {
+          body: `${vencidos.length} cliente${vencidos.length!==1?'s':''} con membresía vencida: ${vencidos.slice(0,3).map(p=>p.cliente).join(', ')}${vencidos.length>3?'...':''}`,
+          icon: './move-icon-192.png',
+        }); }catch(e){}
+      }, 1500);
+    }
+  }catch(e){}
   localStorage.setItem('move_notif_last', todayStr);
 }
 

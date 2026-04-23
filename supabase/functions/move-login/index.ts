@@ -1,5 +1,5 @@
 // move-login — Edge Function para autenticación de MOVE Sistema Interno
-// v2: rate limiting (5 intentos / 15 min por email+IP) + pw_version en JWT
+// v11: usa SUPABASE_JWT_SECRET para firmar (PostgREST lo verifica con la misma key → RLS gym_id funciona)
 // deploy: supabase functions deploy move-login --no-verify-jwt
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -55,10 +55,12 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const jwtSecret   = Deno.env.get('MOVE_JWT_SECRET');
+    // PostgREST verifica JWTs con SUPABASE_JWT_SECRET — debemos firmar con la misma key
+    // para que auth.jwt() retorne nuestros claims (gym_id, app_rol) en las políticas RLS.
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('MOVE_JWT_SECRET');
 
     if (!jwtSecret) {
-      console.error('MOVE_JWT_SECRET not set');
+      console.error('JWT secret not set (SUPABASE_JWT_SECRET or MOVE_JWT_SECRET)');
       return new Response(JSON.stringify({ error: 'Configuración de servidor incompleta.' }), {
         status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
       });
