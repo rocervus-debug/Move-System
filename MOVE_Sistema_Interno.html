@@ -888,7 +888,11 @@ select option{background:#10101c;color:var(--text);}
 ═══════════════════════════════════════════════════════════════ */
 #login-screen{
   position:fixed;inset:0;z-index:9500;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:flex-start;justify-content:center;
+  /* iOS Safari fix: overflow-y:auto allows keyboard to push content up */
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
   background:#04140f;
   background-image:
     radial-gradient(ellipse at 20% 30%, rgba(29,158,117,.12) 0%, transparent 50%),
@@ -896,7 +900,10 @@ select option{background:#10101c;color:var(--text);}
 }
 #login-screen.hidden{display:none;}
 .login-box{
-  width:100%;max-width:400px;padding:20px;
+  width:100%;max-width:400px;
+  padding:env(safe-area-inset-top, 40px) 20px 40px;
+  min-height:100%;
+  display:flex;flex-direction:column;justify-content:center;
 }
 .login-logo{
   font-family:var(--font-display);font-size:42px;font-weight:800;
@@ -910,6 +917,10 @@ select option{background:#10101c;color:var(--text);}
   background:rgba(4,31,24,.95);border:1px solid rgba(29,158,117,.18);
   border-radius:16px;padding:32px;
   box-shadow:0 24px 80px rgba(0,0,0,.8), 0 0 60px rgba(29,158,117,.08);
+  /* Forzar capa GPU propia — evita problemas de interactividad en iOS */
+  transform:translate3d(0,0,0);
+  -webkit-transform:translate3d(0,0,0);
+  position:relative;z-index:1;
 }
 .login-title{
   font-family:var(--font-display);font-size:20px;font-weight:700;
@@ -921,16 +932,26 @@ select option{background:#10101c;color:var(--text);}
 .login-field input{
   width:100%;padding:11px 14px;
   border:1.5px solid rgba(255,255,255,.08);border-radius:8px;
-  font-size:14px;font-family:var(--font);color:var(--text);
+  /* font-size:16px evita el auto-zoom de iOS Safari en inputs */
+  font-size:16px;font-family:var(--font);color:var(--text);
   background:rgba(255,255,255,.04);outline:none;transition:all .18s;
+  /* iOS Safari: habilitamos interacción directa */
+  -webkit-user-select:text;
+  touch-action:manipulation;
+  -webkit-appearance:none;
 }
 .login-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
 .login-btn{
-  width:100%;padding:13px;margin-top:8px;
+  width:100%;padding:14px;margin-top:8px;
   background:linear-gradient(135deg,#1D9E75,#0F6E56);
-  color:#000;font-weight:800;font-size:15px;font-family:var(--font-display);
+  color:#000;font-weight:800;font-size:16px;font-family:var(--font-display);
   border:none;border-radius:10px;cursor:pointer;letter-spacing:1px;
   box-shadow:0 0 30px rgba(29,158,117,.3);transition:all .2s;
+  /* iOS Safari: touch-action:manipulation evita delay de 300ms */
+  touch-action:manipulation;
+  -webkit-appearance:none;
+  /* Mínimo de 44pt para Apple HIG */
+  min-height:44px;
 }
 .login-btn:hover{background:linear-gradient(135deg,#5DCAA5,#1D9E75);box-shadow:0 0 40px rgba(29,158,117,.5);}
 .login-error{
