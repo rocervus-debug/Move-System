@@ -7,283 +7,222 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --accent:#1D9E75;
-  --bg:#0b0f1a;
-  --card:#11172a;
+  --accent:#1D9E75;--accent2:#5DCAA5;
+  --bg:#06100d;
   --border:rgba(29,158,117,.18);
-  --text:#e8edf5;
-  --text2:#94a3b8;
-  --text3:#64748b;
-  --font:'Inter',system-ui,sans-serif;
-  --radius:12px;
+  --text:#e8edf5;--text2:#9DC8BB;--text3:#4a7265;
+  --font:'Inter',system-ui,sans-serif;--radius:12px;
 }
 body{
-  font-family:var(--font);
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  font-family:var(--font);background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
   padding:24px 16px;
   background-image:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(29,158,117,.12),transparent);
 }
-.box{width:100%;max-width:460px;}
-.logo{
-  font-size:28px;font-weight:900;letter-spacing:6px;
-  text-align:center;color:#fff;text-transform:uppercase;margin-bottom:6px;
+.box{width:100%;max-width:860px;}
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;}
+.logo-word{font-size:24px;font-weight:800;letter-spacing:5px;color:#fff;}
+.sub{text-align:center;font-size:13px;color:var(--text2);margin-bottom:36px;}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;}
+.plan{
+  background:rgba(12,30,24,.9);border:1.5px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:28px;cursor:pointer;transition:all .2s;position:relative;
 }
-.sub{text-align:center;font-size:13px;color:var(--text2);margin-bottom:28px;}
-.card{
-  background:rgba(14,14,24,.97);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:32px 28px;
+.plan:hover{border-color:rgba(29,158,117,.4);transform:translateY(-2px);}
+.plan.max-plan{border-color:rgba(29,158,117,.3);}
+.plan-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+  padding:4px 16px;border-radius:99px;white-space:nowrap;
 }
-.card-title{font-size:17px;font-weight:700;margin-bottom:4px;}
-.card-desc{font-size:12px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+.plan-name{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.plan-price{font-size:36px;font-weight:900;color:#fff;line-height:1;}
+.plan-period{font-size:12px;color:var(--text3);margin-bottom:18px;margin-top:2px;}
+.plan-feat{font-size:12px;color:var(--text2);margin-bottom:6px;display:flex;gap:7px;}
+.plan-feat::before{content:"✓";color:var(--accent);font-weight:700;flex-shrink:0;}
+.plan-feat.no{color:var(--text3);}
+.plan-feat.no::before{content:"—";color:var(--text3);}
+.plan-cta{
+  display:block;width:100%;padding:13px;margin-top:20px;
+  text-align:center;border-radius:10px;font-size:14px;font-weight:700;
+  border:none;cursor:pointer;transition:all .2s;font-family:var(--font);
+}
+.cta-max{background:var(--accent);color:#fff;box-shadow:0 0 24px rgba(29,158,117,.3);}
+.cta-max:hover{background:var(--accent2);}
+.cta-pro{background:rgba(255,255,255,.07);color:var(--text);border:1px solid rgba(255,255,255,.12);}
+.cta-pro:hover{border-color:var(--accent);color:var(--accent2);}
+.form-card{
+  background:rgba(12,30,24,.95);border:1px solid var(--border);
+  border-radius:var(--radius);padding:32px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
+.form-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+.form-sub{font-size:12px;color:var(--text2);margin-bottom:20px;}
+.plan-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.3);
+  border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;color:var(--accent2);
+  margin-bottom:20px;
+}
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
-.field input,.field select{
+.field input{
   width:100%;padding:11px 14px;
-  background:rgba(255,255,255,.05);
-  border:1.5px solid rgba(255,255,255,.09);
-  border-radius:8px;color:var(--text);
-  font-size:14px;font-family:var(--font);outline:none;
-  transition:border-color .2s;
+  background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);
+  border-radius:8px;font-size:16px;font-family:var(--font);color:var(--text);
+  outline:none;transition:border-color .18s;
 }
-.field input:focus,.field select:focus{border-color:var(--accent);}
+.field input:focus{border-color:var(--accent);}
 .field input::placeholder{color:var(--text3);}
-.field select option{background:#1a2035;}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.btn{
-  width:100%;padding:13px;
-  background:var(--accent);color:#fff;
-  border:none;border-radius:8px;
-  font-size:14px;font-weight:700;font-family:var(--font);
-  cursor:pointer;transition:opacity .2s,transform .1s;
-  text-transform:uppercase;letter-spacing:.5px;
-  margin-top:8px;
+.btn-submit{
+  width:100%;padding:14px;margin-top:8px;
+  background:linear-gradient(135deg,var(--accent),#0F6E56);
+  color:#fff;font-weight:800;font-size:16px;font-family:var(--font);
+  border:none;border-radius:10px;cursor:pointer;
+  box-shadow:0 0 30px rgba(29,158,117,.3);transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
 }
-.btn:hover{opacity:.9;}
-.btn:active{transform:scale(.98);}
-.btn:disabled{opacity:.5;cursor:not-allowed;}
-.error{
-  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
-  border-radius:8px;padding:10px 14px;
-  font-size:12px;color:#fca5a5;margin-top:12px;display:none;
+.btn-submit:hover{background:linear-gradient(135deg,var(--accent2),var(--accent));}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;}
+.err{color:#f87171;font-size:12px;margin-top:8px;text-align:center;min-height:16px;}
+.secure-note{font-size:11px;color:var(--text3);text-align:center;margin-top:12px;}
+.back{text-align:center;margin-top:20px;font-size:12px;color:var(--text3);}
+.back a{color:var(--accent2);text-decoration:none;}
+#step-form{display:none;}
+@media(max-width:600px){
+  .plans{grid-template-columns:1fr;}
+  .form-card{padding:24px 20px;}
 }
-.success{
-  background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);
-  border-radius:8px;padding:16px 14px;
-  font-size:13px;color:#6ee7b7;text-align:center;display:none;
-}
-.back{display:block;text-align:center;margin-top:18px;font-size:12px;color:var(--text3);}
-.back a{color:var(--accent);text-decoration:none;font-weight:600;}
-.hint{font-size:11px;color:var(--text3);margin-top:5px;}
-.strength-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:6px;overflow:hidden;}
-.strength-bar-fill{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0;}
 </style>
 </head>
 <body>
 <div class="box">
-  <div class="logo" style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;letter-spacing:5px;">'<svg width="18" height="24" viewBox="0 0 18 24"><polygon points="9,1 3,22 9,18 15,22" fill="#5DCAA5"/><polygon points="9,1 15,22 9,18 3,22" fill="#1D9E75" opacity=".55"/><circle cx="9" cy="11" r="2" fill="#04140f"/></svg>' VELUM</div>
-  <div class="sub">Sistema de Gestión para Gyms</div>
+  <div class="logo">
+    <svg width="22" height="28" viewBox="0 0 22 28">
+      <polygon points="11,1 5,26 11,21 17,26" fill="#5DCAA5"/>
+      <polygon points="11,1 17,26 11,21 5,26" fill="#1D9E75" opacity=".55"/>
+      <circle cx="11" cy="13" r="2" fill="#06100d"/>
+    </svg>
+    <div class="logo-word">VELUM</div>
+  </div>
+  <div class="sub">Elige tu plan y empieza a gestionar tu gym hoy</div>
 
-  <div class="card" id="reg-form-card">
-    <div class="card-title">Registra tu Gym</div>
-    <div class="card-desc">Crea tu cuenta de administrador y empieza gratis. Sin tarjeta de crédito.</div>
-
-    <div class="row2">
-      <div class="field">
-        <label>Nombre del Gym *</label>
-        <input id="r-gym" type="text" placeholder="Ej. Titan Gym"/>
+  <div id="step-plans">
+    <div class="plans">
+      <div class="plan max-plan" id="card-max">
+        <div class="plan-badge">⭐ Recomendado</div>
+        <div class="plan-name">Max</div>
+        <div class="plan-price">$999<span style="font-size:15px;color:var(--text3);font-weight:400;"> MXN</span></div>
+        <div class="plan-period">por mes · experiencia completa</div>
+        <div class="plan-feat">Clientes ilimitados</div>
+        <div class="plan-feat">Coaches ilimitados</div>
+        <div class="plan-feat">Check-in QR + kiosco PIN</div>
+        <div class="plan-feat">Dashboard personalizable</div>
+        <div class="plan-feat">Exportación CSV / Excel</div>
+        <div class="plan-feat">Marketing & campañas ilimitadas</div>
+        <div class="plan-feat">Programa de entrenamiento</div>
+        <div class="plan-feat">Notificaciones email automáticas</div>
+        <div class="plan-feat">Retención & churn analytics</div>
+        <button class="plan-cta cta-max" onclick="selectPlan('max')">Empezar con Max →</button>
       </div>
-      <div class="field">
-        <label>Plan</label>
-        <select id="r-plan" onchange="updatePlanDesc(this.value)">
-          <option value="free">Free — Hasta 50 clientes</option>
-          <option value="basic" selected>Basic — Hasta 200 clientes</option>
-          <option value="pro">Pro — Ilimitado</option>
-        </select>
-        <div id="plan-desc" style="margin-top:8px;padding:8px 12px;border-radius:7px;font-size:11px;line-height:1.6;transition:all .2s;"></div>
+      <div class="plan" id="card-pro">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$599<span style="font-size:15px;color:var(--text3);font-weight:400;"> MXN</span></div>
+        <div class="plan-period">por mes · para gyms que empiezan</div>
+        <div class="plan-feat">Hasta 100 clientes</div>
+        <div class="plan-feat">Hasta 3 coaches</div>
+        <div class="plan-feat">Check-in QR básico</div>
+        <div class="plan-feat">Dashboard & KPIs</div>
+        <div class="plan-feat">Pagos básico</div>
+        <div class="plan-feat no">Sin exportación</div>
+        <div class="plan-feat no">Sin marketing avanzado</div>
+        <div class="plan-feat no">Sin programa de entrenamiento</div>
+        <div class="plan-feat no">Sin notificaciones email</div>
+        <button class="plan-cta cta-pro" onclick="selectPlan('pro')">Empezar con Pro</button>
       </div>
     </div>
-
-    <div class="row2">
-      <div class="field">
-        <label>Tu Nombre *</label>
-        <input id="r-nombre" type="text" placeholder="Ej. Carlos López"/>
-      </div>
-      <div class="field">
-        <label>Tu Email *</label>
-        <input id="r-email" type="email" placeholder="admin@tugym.com"/>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Contraseña *</label>
-      <input id="r-pass" type="password" placeholder="Mínimo 8 caracteres" oninput="checkStrength(this.value)"/>
-      <div class="strength-bar"><div class="strength-bar-fill" id="str-fill"></div></div>
-      <div class="hint" id="str-label"> </div>
-    </div>
-    <div class="field">
-      <label>Confirmar Contraseña *</label>
-      <input id="r-pass2" type="password" placeholder="Repite la contraseña"/>
-    </div>
-
-    <button class="btn" id="reg-btn" onclick="doRegistro()">CREAR MI GYM</button>
-    <div class="error" id="reg-error"></div>
+    <div class="back"><a href="index.html">← Volver al inicio</a></div>
   </div>
 
-  <div class="success" id="reg-success">
-    <div style="font-size:28px;margin-bottom:10px;">🎉</div>
-    <div style="font-size:15px;font-weight:700;margin-bottom:6px;">¡Gym registrado con éxito!</div>
-    <div id="reg-success-msg">Tu cuenta ha sido creada. Redirigiendo al sistema...</div>
+  <div id="step-form">
+    <div class="form-card">
+      <div class="form-title">Crea tu cuenta</div>
+      <div class="form-sub">Completa los datos — serás redirigido a Stripe para el pago seguro.</div>
+      <div id="plan-tag" class="plan-tag">⭐ Plan Max — $999 MXN/mes</div>
+      <div class="field"><label>Nombre del gym *</label><input type="text" id="f-gym" placeholder="Ej: MOVE Fitness, CrossZone..." autocomplete="organization" ontouchstart=""/></div>
+      <div class="field"><label>Tu nombre completo *</label><input type="text" id="f-nombre" placeholder="Ej: Carlos Rodríguez" autocomplete="name" ontouchstart=""/></div>
+      <div class="field"><label>Email *</label><input type="email" id="f-email" placeholder="tu@email.com" autocomplete="email" autocapitalize="off" ontouchstart=""/></div>
+      <div class="field"><label>Contraseña *</label><input type="password" id="f-pass" placeholder="Mínimo 8 caracteres" autocomplete="new-password" ontouchstart=""/></div>
+      <button class="btn-submit" id="btn-pagar" onclick="irAPagar()" ontouchstart="">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Pagar con Stripe →
+      </button>
+      <div class="err" id="f-err"></div>
+      <div class="secure-note">🔒 Pago 100% seguro vía Stripe · VELUM no almacena datos de tarjeta</div>
+    </div>
+    <div class="back">
+      <a href="#" onclick="document.getElementById('step-plans').style.display='block';document.getElementById('step-form').style.display='none';">← Cambiar plan</a>
+      &nbsp;·&nbsp;
+      <a href="MOVE_Sistema_Interno.html">Ya tengo cuenta → Iniciar sesión</a>
+    </div>
   </div>
-
-  <div class="back"><a href="MOVE_Sistema_Interno.html">← Volver al login</a></div>
 </div>
 
 <script>
-// ── Supabase config ──────────────────────────────────────────────────
 const SUPA_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
-const REGISTER_URL = `${SUPA_URL}/functions/v1/move-register`;
+let selectedPlan = 'max';
 
-// SHA-256 hash (misma que en el app principal)
+function selectPlan(plan){
+  selectedPlan = plan;
+  document.getElementById('plan-tag').textContent =
+    plan === 'max' ? '⭐ Plan Max — $999 MXN/mes' : 'Plan Pro — $599 MXN/mes';
+  document.getElementById('step-plans').style.display = 'none';
+  document.getElementById('step-form').style.display = 'block';
+}
+
+const urlPlan = new URLSearchParams(window.location.search).get('plan');
+if(urlPlan === 'pro' || urlPlan === 'max') selectPlan(urlPlan);
+
 async function hashPassword(pass){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-// Password strength
-function checkStrength(pass){
-  const fill = document.getElementById('str-fill');
-  const lbl  = document.getElementById('str-label');
-  if(!pass){ fill.style.width='0'; lbl.textContent=' '; return; }
-  let score = 0;
-  if(pass.length >= 8) score++;
-  if(pass.length >= 12) score++;
-  if(/[A-Z]/.test(pass)) score++;
-  if(/[0-9]/.test(pass)) score++;
-  if(/[^a-zA-Z0-9]/.test(pass)) score++;
-  const levels = [
-    {w:'20%',c:'#ef4444',t:'Muy débil'},
-    {w:'40%',c:'#f97316',t:'Débil'},
-    {w:'60%',c:'#f59e0b',t:'Regular'},
-    {w:'80%',c:'#10b981',t:'Fuerte'},
-    {w:'100%',c:'#1D9E75',t:'Muy fuerte'}
-  ];
-  const l = levels[Math.min(score-1,4)] || levels[0];
-  fill.style.width = l.w;
-  fill.style.background = l.c;
-  lbl.textContent = l.t;
-  lbl.style.color = l.c;
-}
-
-function showError(msg){
-  const el = document.getElementById('reg-error');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-function hideError(){ document.getElementById('reg-error').style.display='none'; }
-
-async function doRegistro(){
-  hideError();
-  const gymNombre = document.getElementById('r-gym').value.trim();
-  const plan      = document.getElementById('r-plan').value;
-  const nombre    = document.getElementById('r-nombre').value.trim();
-  const email     = document.getElementById('r-email').value.trim().toLowerCase();
-  const pass      = document.getElementById('r-pass').value;
-  const pass2     = document.getElementById('r-pass2').value;
-
-  // Validaciones cliente
-  if(!gymNombre || !nombre || !email || !pass){ showError('Por favor completa todos los campos obligatorios.'); return; }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showError('Ingresa un correo electrónico válido.'); return; }
-  if(pass.length < 8){ showError('La contraseña debe tener al menos 8 caracteres.'); return; }
-  if(pass !== pass2){ showError('Las contraseñas no coinciden.'); return; }
-
-  const btn = document.getElementById('reg-btn');
+async function irAPagar(){
+  const gymNombre = document.getElementById('f-gym').value.trim();
+  const nombre    = document.getElementById('f-nombre').value.trim();
+  const email     = document.getElementById('f-email').value.trim().toLowerCase();
+  const pass      = document.getElementById('f-pass').value;
+  const errEl     = document.getElementById('f-err');
+  errEl.textContent = '';
+  if(!gymNombre){ errEl.textContent='Ingresa el nombre del gym.'; return; }
+  if(!nombre){ errEl.textContent='Ingresa tu nombre.'; return; }
+  if(!email || !email.includes('@')){ errEl.textContent='Email inválido.'; return; }
+  if(pass.length < 8){ errEl.textContent='La contraseña debe tener al menos 8 caracteres.'; return; }
+  const btn = document.getElementById('btn-pagar');
   btn.disabled = true;
-  btn.textContent = 'CREANDO...';
-
-  try {
-    // Hash password antes de enviar (nunca se manda en texto plano)
+  btn.innerHTML = '<span style="opacity:.7">Preparando pago seguro...</span>';
+  try{
     const pw_hash = await hashPassword(pass);
-
-    // Llamar Edge Function move-register (usa service_role, bypasea RLS)
-    const res = await fetch(REGISTER_URL, {
+    const res = await fetch(SUPA_URL + '/functions/v1/move-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gymNombre, plan, nombre, email, pw_hash })
+      body: JSON.stringify({ plan: selectedPlan, gym_nombre: gymNombre, email, pw_hash, nombre_admin: nombre })
     });
-
-    const result = await res.json();
-
-    if(!res.ok || !result.ok){
-      showError(result.error || 'Error al crear el gym. Intenta de nuevo.');
-      btn.disabled = false; btn.textContent = 'CREAR MI GYM';
+    const data = await res.json();
+    if(!res.ok || !data.url){
+      errEl.textContent = data.error || 'Error al procesar. Intenta de nuevo.';
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar con Stripe →';
       return;
     }
-
-    // Guardar sesión (sin JWT: el usuario tendrá que hacer login para obtenerlo)
-    const session = {
-      id:     result.user.id,
-      nombre: result.user.nombre,
-      email:  result.user.email,
-      rol:    result.user.rol,
-      gym_id: result.gym_id,
-    };
-    localStorage.setItem('move_session', JSON.stringify(session));
-
-    // Mostrar éxito
-    document.getElementById('reg-form-card').style.display = 'none';
-    const succ = document.getElementById('reg-success');
-    succ.style.display = 'block';
-    document.getElementById('reg-success-msg').innerHTML =
-      `Bienvenido/a, <strong>${nombre}</strong>.<br>Tu gym <strong>${gymNombre}</strong> está listo.<br><br>Redirigiendo al login...`;
-
-    setTimeout(()=>{ window.location.href = 'MOVE_Sistema_Interno.html'; }, 2800);
-
-  } catch(e){
-    showError('Error de conexión: ' + e.message);
+    window.location.href = data.url;
+  }catch(e){
+    errEl.textContent = 'Error de conexión. Verifica tu internet.';
     btn.disabled = false;
-    btn.textContent = 'CREAR MI GYM';
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar con Stripe →';
   }
 }
-
-// Plan descriptions
-const PLAN_INFO = {
-  free:  { color:'rgba(100,116,139,.2)', border:'rgba(100,116,139,.3)', text:'#94a3b8', label:'Gratis para siempre', desc:'Hasta 50 clientes · 2 coaches · funciones esenciales. Ideal para empezar.' },
-  basic: { color:'rgba(29,158,117,.1)',   border:'rgba(29,158,117,.25)', text:'#1D9E75', label:'$499 MXN/mes',        desc:'Hasta 200 clientes · 5 coaches · marketing y exportación. El más popular.' },
-  pro:   { color:'rgba(16,185,129,.1)',  border:'rgba(16,185,129,.25)', text:'#10b981', label:'$999 MXN/mes',       desc:'Clientes ilimitados · coaches ilimitados · múltiples sucursales y todo desbloqueado.' },
-};
-function updatePlanDesc(plan){
-  const info = PLAN_INFO[plan] || PLAN_INFO.basic;
-  const el = document.getElementById('plan-desc');
-  if(!el) return;
-  el.style.background = info.color;
-  el.style.border = `1px solid ${info.border}`;
-  el.innerHTML = `<strong style="color:${info.text};">${info.label}</strong> — ${info.desc}`;
-}
-
-// Read ?plan= from URL
-(function(){
-  const params = new URLSearchParams(location.search);
-  const plan = params.get('plan');
-  if(plan && ['free','basic','pro'].includes(plan)){
-    const sel = document.getElementById('r-plan');
-    if(sel) sel.value = plan;
-  }
-  // Init plan desc on load
-  const sel = document.getElementById('r-plan');
-  if(sel) updatePlanDesc(sel.value);
-})();
-
-// Allow Enter key
-document.addEventListener('keydown', e => {
-  if(e.key === 'Enter' && !document.getElementById('reg-btn').disabled) doRegistro();
-});
 </script>
 </body>
 </html>

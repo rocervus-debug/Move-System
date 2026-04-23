@@ -7218,25 +7218,62 @@ function auditLog(accion, tabla='', registroId='', detalle=''){
 }
 
 // Plan limits — controls feature gates per gym plan
+// ─── VELUM PLAN LIMITS (Pro=$599 / Max=$999) ─────────────────────────
 const PLAN_LIMITS = {
-  free:  { clientes: 50,   coaches: 2,  campanas: 3  },
-  basic: { clientes: 200,  coaches: 5,  campanas: 10 },
-  pro:   { clientes: 9999, coaches: 99, campanas: 999 }
+  // Plan Pro — básico, incentiva a subir a Max
+  pro: {
+    clientes:  100,   // máx 100 clientes
+    coaches:   3,     // máx 3 coaches
+    campanas:  5,     // máx 5 campañas
+    // Features deshabilitadas en Pro:
+    exportacion: false,
+    marketing_avanzado: false,
+    programa_entrenamiento: false,
+    notif_email: false,
+    kiosco_pin: false,
+    dashboard_personalizable: false,
+    retencion_analytics: false,
+  },
+  // Plan Max — experiencia completa
+  max: {
+    clientes:  99999,
+    coaches:   99999,
+    campanas:  99999,
+    exportacion: true,
+    marketing_avanzado: true,
+    programa_entrenamiento: true,
+    notif_email: true,
+    kiosco_pin: true,
+    dashboard_personalizable: true,
+    retencion_analytics: true,
+  },
+  // Aliases para compatibilidad con registros existentes
+  basic: { clientes:100, coaches:3, campanas:5 },
+  free:  { clientes:50,  coaches:2, campanas:3 },
 };
 
-// Returns {ok:true} or {ok:false, msg:'...'} based on plan
+function getPlan(){
+  const p = (gymConfig.plan || gymConfig.gym_plan || 'max').toLowerCase();
+  return p === 'basic' ? 'pro' : p === 'free' ? 'pro' : p;
+}
+
 function checkPlanLimit(recurso){
-  const plan  = (gymConfig.plan || gymConfig.gym_plan || 'basic').toLowerCase();
-  const limit = (PLAN_LIMITS[plan] || PLAN_LIMITS.basic)[recurso] ?? 9999;
+  const plan  = getPlan();
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.max;
+  const limit = typeof limits[recurso] === 'number' ? limits[recurso] : 9999;
   let current = 0;
   if(recurso === 'clientes') current = clientesDB.length;
   if(recurso === 'coaches')  current = coaches.length;
   if(recurso === 'campanas') current = campanas.length;
   if(current >= limit){
-    const planLabel = plan === 'free' ? 'Free' : plan === 'basic' ? 'Basic' : 'Pro';
-    return { ok: false, msg: `Límite de plan ${planLabel}: máximo ${limit} ${recurso}. Actualiza tu plan para continuar.` };
+    const planLabel = plan === 'pro' ? 'Pro' : 'Max';
+    return { ok: false, msg: `Límite de plan ${planLabel} (${ plan==='pro'?'599':'999' } MXN): máximo ${limit} ${recurso}. Actualiza a Max para continuar.` };
   }
   return { ok: true };
+}
+
+function isPlanMax(){
+  return getPlan() === 'max';
 }
 
 // ═══════════════════════════════════════════════════════════════════
