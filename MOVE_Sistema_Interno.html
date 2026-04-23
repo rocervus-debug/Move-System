@@ -4477,8 +4477,8 @@ function showApp(){
     applyStoredSettings();
     if(currentUser.rol==='admin') loadUsuariosFromSupabase().then(renderUsuarios);
     else document.getElementById('users-section').style.display='none';
-    // Init dashboard layout + scroll reveal
-    setTimeout(()=>{ initDashboardCustomize(); renderDashboard(); }, 100);
+    // Dashboard ya fue inicializado en DOMContentLoaded; solo re-renderiza con datos reales
+    renderDashboard();
     // Show onboarding wizard for new gyms
     setTimeout(checkOnboarding, 800);
   }
@@ -6588,10 +6588,17 @@ function initScrollReveal(){
 
   document.querySelectorAll('.sr').forEach(el => obs.observe(el));
 
-  // Fallback: si en 900ms algún elemento .sr sigue sin revelarse, lo fuerza
+  // Fallback inmediato: revela los ya visibles ahora mismo
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.sr').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if(rect.top < window.innerHeight + 100) el.classList.add('sr-visible');
+    });
+  });
+  // Fallback secundario: fuerza todo lo que quede después de 400ms
   setTimeout(()=>{
     document.querySelectorAll('.sr:not(.sr-visible)').forEach(el => el.classList.add('sr-visible'));
-  }, 900);
+  }, 400);
 }
 
 // ── Confetti burst — celebración de meta alcanzada ───────────────────
@@ -11303,6 +11310,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderSolicitudes();
   renderCalendario();
   updateBadges();
+
+  // Init dashboard layout (after render so elements exist)
+  try { initDashboardCustomize(); } catch(e){ console.warn('dash init:', e); }
 
   // ── STEP 3: Show app ──
   if(currentUser) showApp();
