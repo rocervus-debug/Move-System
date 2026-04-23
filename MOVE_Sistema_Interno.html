@@ -353,7 +353,7 @@ body{
 .notif-dot{position:absolute;top:8px;right:8px;width:6px;height:6px;background:var(--danger);border-radius:50%;border:2px solid var(--move-dark);box-shadow:0 0 6px rgba(248,113,113,.5);}
 
 /* Content */
-.content{flex:1;overflow-y:auto;padding:24px;}
+.content{flex:1;overflow-y:auto;padding:24px;touch-action:pan-y;overscroll-behavior-y:contain;}
 .view{display:none;}
 .view.active{display:block;animation:view-in .18s ease;}
 @keyframes view-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -1387,6 +1387,9 @@ select option{background:#10101c;color:var(--text);}
     align-items: center !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
+    /* Solo captura gestos horizontales — no bloquea el scroll vertical del contenido */
+    touch-action: pan-x !important;
+    overscroll-behavior-x: contain !important;
     /* Styling */
     z-index: 9000 !important;
     border-right: none !important;
@@ -9551,19 +9554,32 @@ async function saContextSwitch(gymId){
     <div style="font-size:14px;color:rgba(255,255,255,.7);font-weight:600;">Cambiando contexto…</div>`;
   document.body.appendChild(ov);
 
-  await Promise.all([
-    loadConfigFromSupabase(),
-    loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
-    loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
-    loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
-    loadGastosFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
-    loadUsuariosFromSupabase()
-  ]);
-  updateSaCtxLabel();
-  renderDashboard();
-  renderSuperAdmin();
-  document.getElementById('sa-switch-overlay')?.remove();
-  toast('Contexto cambiado ✅ Ahora ves: '+(gymConfig.gym_nombre||'Gym #'+gymId),'🏋️');
+  // Timeout de seguridad: si tarda más de 12s, cancelar overlay y mostrar error
+  const _saTimeout = setTimeout(()=>{
+    document.getElementById('sa-switch-overlay')?.remove();
+    toast('Timeout al cambiar de gym. Intenta de nuevo.','⚠️');
+  }, 12000);
+
+  try {
+    await Promise.all([
+      loadConfigFromSupabase(),
+      loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
+      loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
+      loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
+      loadGastosFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
+      loadUsuariosFromSupabase()
+    ]);
+    updateSaCtxLabel();
+    renderDashboard();
+    renderSuperAdmin();
+    toast('Contexto cambiado ✅ Ahora ves: '+(gymConfig.gym_nombre||'Gym #'+gymId),'🏋️');
+  } catch(e) {
+    console.error('[saContextSwitch] Error:', e);
+    toast('Error al cambiar de gym. Revisa la conexión.','❌');
+  } finally {
+    clearTimeout(_saTimeout);
+    document.getElementById('sa-switch-overlay')?.remove();
+  }
 }
 
 // ── SA Context Switcher helpers ────────────────────────────────────
@@ -10317,8 +10333,17 @@ function renderPagos(){
   const vmMeta = document.getElementById('pagos-kpi-vencidas-meta');
   if(vmMeta) vmMeta.textContent = `sin renovar`;
 
-  // Trend ingresos vs mes anterior
-  setTrend('pagos-kpi-cobrado-trend', ingresosMes, ingresosMesAnt, false);
+  // Trend ingresos vs mes anterior (inline — setTrend es función local en renderDashboard)
+  const _trendEl = document.getElementById('pagos-kpi-cobrado-trend');
+  if(_trendEl && ingresosMesAnt > 0){
+    const _diff = ingresosMes - ingresosMesAnt;
+    const _pct  = Math.round((_diff/ingresosMesAnt)*100);
+    const _cls  = _diff>0?'up':_diff<0?'down':'flat';
+    const _arrow= _diff>0?'↑':_diff<0?'↓':'→';
+    _trendEl.className = `kpi-trend ${_cls}`;
+    _trendEl.style.display = 'inline-flex';
+    _trendEl.textContent = `${_arrow} ${_pct>0?'+':''}${_pct}% vs mes ant.`;
+  }
 
   const el = document.getElementById('pagos-list');
   if(!pagos.length){
