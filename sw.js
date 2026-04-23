@@ -5,7 +5,7 @@
                Offline fallback para el app shell
 ═══════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'velum-v1';
+const CACHE_VERSION = 'velum-v3';
 const CACHE_STATIC  = `move-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [

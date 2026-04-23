@@ -12329,9 +12329,19 @@ if ('serviceWorker' in navigator) {
           const nw = reg.installing;
           nw.addEventListener('statechange', () => {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[VELUM PWA] Nueva versión disponible');
+              console.log('[VELUM PWA] Nueva versión — recargando...');
+              // Forzar reload para que el usuario siempre tenga la versión más reciente
+              window.location.reload();
             }
           });
+        });
+
+        // Detectar cuando el SW toma control (primera instalación o activación)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if(!window._swReloading){
+            window._swReloading = true;
+            window.location.reload();
+          }
         });
         // Verificar membresías al cargar (con delay para que datos estén listos)
         setTimeout(checkMembresiasNotificaciones, 4000);
