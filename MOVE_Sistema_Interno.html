@@ -1916,41 +1916,49 @@ select option{background:#10101c;color:var(--text);}
     </div>
     <div class="login-sub">Gestión que te lleva lejos</div>
 
-    <!-- Benefits strip -->
-    <div style="display:flex;justify-content:center;gap:18px;margin-bottom:24px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.5);">
-        <span style="color:var(--accent);">✓</span> Clientes &amp; membresías
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.5);">
-        <span style="color:var(--accent);">✓</span> Check-in por QR
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.5);">
-        <span style="color:var(--accent);">✓</span> Reportes en tiempo real
-      </div>
-    </div>
-
-    <div class="login-card">
+    <!-- iOS Safari: form element mejora el manejo del teclado virtual -->
+    <form class="login-card" onsubmit="doLogin();return false;" autocomplete="on">
       <div class="login-title">Bienvenido de vuelta</div>
       <div class="login-hint">Ingresa tus credenciales para continuar</div>
       <div class="login-field">
-        <label>Correo electrónico</label>
-        <input type="email" id="login-email" placeholder="tu@email.com" onkeydown="if(event.key==='Enter') doLogin()"/>
+        <label for="login-email">Correo electrónico</label>
+        <!-- ontouchstart="" = iOS Safari hack: hace el elemento "touchable" -->
+        <input
+          type="email"
+          id="login-email"
+          name="email"
+          placeholder="tu@email.com"
+          autocomplete="email"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          tabindex="1"
+          ontouchstart=""
+          style="cursor:text;"
+        />
       </div>
       <div class="login-field">
-        <label>Contraseña</label>
-        <div style="position:relative;">
-          <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()" style="width:100%;padding-right:42px;"/>
-          <button type="button" onclick="(function(){const i=document.getElementById('login-pass');const b=document.getElementById('login-pass-toggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈';})()" id="login-pass-toggle" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:rgba(255,255,255,.4);padding:4px;line-height:1;">👁</button>
-        </div>
+        <label for="login-pass">Contraseña</label>
+        <input
+          type="password"
+          id="login-pass"
+          name="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          tabindex="2"
+          ontouchstart=""
+          style="cursor:text;"
+        />
       </div>
-      <button class="login-btn" onclick="doLogin()">ENTRAR</button>
+      <!-- type="submit" → iOS Safari lo trata como botón de acción nativo -->
+      <button type="submit" class="login-btn" tabindex="3" ontouchstart="">ENTRAR</button>
       <div class="login-error" id="login-error">Correo o contraseña incorrectos</div>
       <div style="text-align:center;margin-top:12px;">
-        <a href="#" onclick="showPasswordReset();return false;" style="font-size:12px;color:rgba(255,255,255,.3);text-decoration:none;">¿Olvidaste tu contraseña?</a>
+        <a href="#" ontouchstart="" onclick="showPasswordReset();return false;" style="font-size:12px;color:rgba(255,255,255,.3);text-decoration:none;cursor:pointer;">¿Olvidaste tu contraseña?</a>
       </div>
-    </div>
+    </form>
     <div style="text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.3);">
-      ¿Eres un nuevo gym? <a href="registro.html" style="color:var(--accent);text-decoration:none;font-weight:600;">Regístrate aquí →</a>
+      ¿Eres un nuevo gym? <a href="registro.html" ontouchstart="" style="color:var(--accent);text-decoration:none;font-weight:600;cursor:pointer;">Regístrate aquí →</a>
     </div>
   </div>
 </div>
