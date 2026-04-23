@@ -51,11 +51,11 @@
 
   /* Sidebar */
   --sidebar-bg:#06060d;
-  --sidebar-hover:rgba(0,180,216,.09);
-  --sidebar-active:rgba(0,180,216,.16);
-  --sidebar-text:rgba(180,210,230,.35);
+  --sidebar-hover:rgba(0,180,216,.12);
+  --sidebar-active:rgba(0,180,216,.18);
+  --sidebar-text:rgba(200,220,235,.68);
   --sidebar-text-active:#ffffff;
-  --sidebar-border:rgba(255,255,255,.04);
+  --sidebar-border:rgba(255,255,255,.06);
 
   /* Content areas */
   --bg:#0a0a12;
@@ -217,7 +217,7 @@ body{
 }
 .nav-icon{
   width:20px;height:20px;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;opacity:.5;transition:opacity .18s;
+  flex-shrink:0;opacity:.7;transition:opacity .18s;
 }
 .nav-item:hover .nav-icon,.nav-item.active .nav-icon{opacity:1;}
 .nav-icon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2;}
@@ -686,7 +686,7 @@ select option{background:#10101c;color:var(--text);}
 }
 .toast.show{transform:translateY(0);opacity:1;}
 @media(max-width:768px){
-  .toast{ bottom:96px; right:12px; left:12px; font-size:12px; justify-content:center; }
+  .toast{ top:14px; bottom:auto; right:12px; left:12px; font-size:12px; justify-content:center; border-radius:12px; }
 }
 
 /* Status pills in table action col */
@@ -1315,7 +1315,7 @@ select option{background:#10101c;color:var(--text);}
     /* Text node (label) inherits this: */
     font-size: 9px !important;
     font-weight: 700 !important;
-    color: rgba(255,255,255,.38) !important;
+    color: rgba(255,255,255,.65) !important;
     white-space: nowrap !important;
     letter-spacing: .2px !important;
     line-height: 1.2;
@@ -1335,7 +1335,7 @@ select option{background:#10101c;color:var(--text);}
     opacity: 1 !important;
     filter: drop-shadow(0 0 5px rgba(0,180,216,.7)) !important;
   }
-  .nav-item:not(.active) .nav-icon { opacity: .55 !important; }
+  .nav-item:not(.active) .nav-icon { opacity: .70 !important; }
 
   /* Nav icon: bigger on mobile */
   .nav-item .nav-icon {
@@ -1397,6 +1397,7 @@ select option{background:#10101c;color:var(--text);}
   }
   .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
   #globalSearch { display: none !important; }
+  #topbar-mode-btn { display: inline-flex !important; } /* visible solo en mobile */
 
   .content { padding: 12px; }
 
@@ -1586,6 +1587,21 @@ select option{background:#10101c;color:var(--text);}
   .user-row { flex-wrap: wrap; }
 }
 
+/* ── Bottom nav: fade-right scroll hint ── */
+@media (max-width: 768px) {
+  .sidebar::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 36px;
+    height: 64px;
+    background: linear-gradient(to left, rgba(5,5,12,.95) 20%, transparent);
+    pointer-events: none;
+    z-index: 9001;
+  }
+}
+
 /* ── 480px breakpoint ── */
 @media (max-width: 480px) {
 
@@ -1624,6 +1640,12 @@ select option{background:#10101c;color:var(--text);}
   .modal-header { padding: 14px 14px 10px; }
   .modal-body   { padding: 12px 14px; }
   .modal-footer { padding: 10px 14px; }
+}
+
+/* ── 390px: tap targets mínimos Apple (44pt) ── */
+@media (max-width: 390px) {
+  .nav-item { min-width: 44px !important; padding: 5px 4px 3px !important; font-size: 8px !important; }
+  .nav-item .nav-icon { width: 20px !important; height: 20px !important; }
 }
 
 /* ── Clientes: tabs de filtro ── */
@@ -1911,6 +1933,11 @@ select option{background:#10101c;color:var(--text);}
           <div id="sa-ctx-gym-list" style="max-height:220px;overflow-y:auto;"></div>
         </div>
       </div>
+      <!-- Dark/light toggle — solo visible en mobile (sidebar-bottom está oculto) -->
+      <button onclick="toggleColorMode()" id="topbar-mode-btn"
+        title="Cambiar modo"
+        style="display:none;background:transparent;border:none;cursor:pointer;padding:8px;border-radius:8px;color:var(--text3);font-size:17px;line-height:1;transition:background .15s;"
+        onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='transparent'">☀️</button>
       <button class="btn btn-primary" id="topBtn" onclick="openModal('lead')">+ Nuevo Lead</button>
       <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -5193,12 +5220,18 @@ function launchKiosco(){
   overlay.appendChild(style);
   document.body.appendChild(overlay);
 
-  // Try to enter fullscreen
-  try{ document.documentElement.requestFullscreen?.(); }catch(e){}
+  // Detección iOS — fullscreen API no existe en Safari
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if(isIOS){
+    const iosBanner = document.createElement('div');
+    iosBanner.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:12px 20px;font-size:12px;color:rgba(255,255,255,.8);text-align:center;max-width:320px;z-index:10002;line-height:1.6;';
+    iosBanner.innerHTML = '📱 Para pantalla completa en iOS:<br><strong style="color:#fbbf24;">Safari → Compartir → Agregar a pantalla de inicio</strong>';
+    overlay.appendChild(iosBanner);
+  } else {
+    try{ document.documentElement.requestFullscreen?.(); }catch(e){}
+  }
 
-  // Poll for QR from camera — not possible in browser without special API
-  // Instead, show instructions and the checkin URL as QR for admins to share
-  toast('Modo Kiosco activado. Presiona ESC o el botón ✕ para salir.','🖥️');
+  toast('Modo Kiosco activado. Toca ✕ para salir.','🖥️');
 
   document.addEventListener('keydown', function _escKiosco(e){
     if(e.key==='Escape'){
@@ -6221,6 +6254,9 @@ function applyColorMode(mode){
   const label = document.getElementById('sidebar-mode-label');
   if(icon)  icon.textContent  = isLight ? '🌙' : '☀️';
   if(label) label.textContent = isLight ? 'Modo Oscuro' : 'Modo Claro';
+  // Topbar mode btn (mobile only)
+  const topbarBtn = document.getElementById('topbar-mode-btn');
+  if(topbarBtn) topbarBtn.textContent = isLight ? '🌙' : '☀️';
   // Update PWA theme-color meta
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if(metaTheme) metaTheme.content = isLight ? '#f0f2f6' : '#00b4d8';
@@ -7092,6 +7128,8 @@ function openClientePanel(nombreCliente){
 }
 
 function imprimirQRCliente(nombre){
+  const win = window.open('', '_blank'); // iOS Safari: abrir antes de cualquier cómputo
+  if(!win){ toast('Permite ventanas emergentes para imprimir el QR.','⚠️'); return; }
   const kioskoBase = getKioskoUrl();
   const qrContent  = kioskoBase
     ? `${kioskoBase}/checkin.html?nombre=${encodeURIComponent(nombre)}`
@@ -7121,8 +7159,7 @@ function imprimirQRCliente(nombre){
   <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
 </div>
 </body></html>`;
-  const win = window.open('','_blank');
-  if(win){ win.document.write(html); win.document.close(); }
+  win.document.write(html); win.document.close();
 }
 
 function closeClientePanel(){
@@ -10833,6 +10870,10 @@ function openEmailReminderModal(){
 <!-- ═══ REPORTE MENSUAL ═══ -->
 <script>
 function generarReporteMensual(){
+  // Abrir ventana ANTES de cualquier cómputo — iOS Safari bloquea window.open después de async/awaits
+  const win = window.open('', '_blank');
+  if(!win){ toast('Permite ventanas emergentes para generar el reporte.','⚠️'); return; }
+
   const hoy = new Date();
   const year = hoy.getFullYear();
   const month = hoy.getMonth();
@@ -11050,9 +11091,7 @@ ${porVencer30.length?`
 <div class="footer">${gymNombreRep} · Reporte Mensual ${mesNombre} ${year} · Sistema Interno</div>
 </body></html>`;
 
-  const win = window.open('','_blank');
-  if(win){ win.document.write(html); win.document.close(); }
-  else toast('Permite ventanas emergentes para generar el reporte.','⚠️');
+  win.document.write(html); win.document.close();
 }
 </script>
 
