@@ -12193,13 +12193,9 @@ async function enviarEmailsVencimiento(){
 
   // Re-initialize Supabase client with a JWT after login (enforces RLS)
   // Usamos el mismo cliente base y actualizamos el header — evita múltiples instancias GoTrueClient
+  // Siempre crear cliente nuevo con JWT — el warning de GoTrueClient es inofensivo
+  // El problema de múltiples instancias es cosmético; NO aplicar el JWT sí rompe RLS
   function initAuthClient(jwt){
-    // Si ya existe un cliente, actualizar el header en lugar de crear uno nuevo
-    if(window.supabaseClient && window.supabaseClient.rest){
-      window.supabaseClient.rest.headers['Authorization'] = `Bearer ${jwt}`;
-      window.supabaseClient.realtime.setAuth(jwt);
-      return;
-    }
     window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
       auth:   { persistSession: false, autoRefreshToken: false }
