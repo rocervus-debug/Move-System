@@ -9957,34 +9957,54 @@ async function saSetGymOwner(gymId){
   renderSuperAdmin();
 }
 
-// ── Reset contraseña del admin de un gym ─────────────────────────────
+// ── Reset/crear contraseña del admin de un gym ───────────────────────
 async function saResetGymPassword(gymId, ownerEmail){
+  // Verificar si ya tiene admin
+  const { data: existingUsers } = await window.supabaseClient
+    .from('usuarios').select('id,nombre,email').eq('gym_id', gymId).eq('rol','admin').limit(1);
+  const hasAdmin = existingUsers?.length > 0;
+  const adminEmail = existingUsers?.[0]?.email || ownerEmail || '';
+
   const modal = document.createElement('div');
   modal.id = 'sa-reset-pw-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
   modal.innerHTML = `
-    <div style="background:var(--white);border:1px solid rgba(29,158,117,.2);border-radius:16px;padding:28px;width:340px;text-align:center;">
-      <div style="font-size:28px;margin-bottom:10px;">🔑</div>
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Cambiar contraseña del admin</div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">${esc(ownerEmail||'Gym ID: '+gymId)}</div>
-      <input id="sa-new-pw" type="password" placeholder="Nueva contraseña (mín. 8 caracteres)"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;margin-bottom:6px;box-sizing:border-box;"
-        oninput="document.getElementById('sa-pw-strength').textContent=this.value.length>=12?'💪 Fuerte':this.value.length>=8?'✓ Aceptable':'⚠️ Muy corta'"
-        ontouchstart=""/>
-      <div id="sa-pw-strength" style="font-size:11px;color:var(--text3);margin-bottom:14px;text-align:left;">Mínimo 8 caracteres</div>
+    <div style="background:var(--white);border:1px solid rgba(29,158,117,.2);border-radius:16px;padding:28px;width:100%;max-width:360px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:10px;">${hasAdmin ? '🔑' : '👤'}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">${hasAdmin ? 'Cambiar contraseña del admin' : 'Crear admin para este gym'}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">${hasAdmin ? esc(adminEmail) : 'Este gym no tiene admin — crea uno ahora'}</div>
+      ${!hasAdmin ? `
+      <div style="margin-bottom:12px;text-align:left;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Email del admin *</label>
+        <input id="sa-admin-email" type="email" placeholder="admin@gymname.com" value="${esc(ownerEmail||'')}"
+          style="width:100%;padding:10px 12px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box;" ontouchstart=""/>
+      </div>
+      <div style="margin-bottom:12px;text-align:left;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Nombre del admin</label>
+        <input id="sa-admin-nombre" type="text" placeholder="Nombre completo"
+          style="width:100%;padding:10px 12px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box;" ontouchstart=""/>
+      </div>` : ''}
+      <div style="margin-bottom:6px;text-align:left;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Contraseña *</label>
+        <input id="sa-new-pw" type="password" placeholder="Mínimo 8 caracteres"
+          style="width:100%;padding:10px 12px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box;"
+          oninput="document.getElementById('sa-pw-strength').textContent=this.value.length>=12?'💪 Fuerte':this.value.length>=8?'✓ Aceptable':'⚠️ Muy corta'"
+          ontouchstart=""/>
+      </div>
+      <div id="sa-pw-strength" style="font-size:11px;color:var(--text3);margin-bottom:12px;text-align:left;">Mínimo 8 caracteres</div>
       <div id="sa-pw-err" style="color:#f87171;font-size:12px;min-height:16px;margin-bottom:8px;"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('sa-reset-pw-modal').remove()">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="_saDoResetGymPw(${gymId})" ontouchstart="">Cambiar</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="_saDoResetGymPw(${gymId},${hasAdmin})" ontouchstart="">${hasAdmin ? 'Cambiar' : 'Crear admin'}</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
   setTimeout(()=>document.getElementById('sa-new-pw')?.focus(), 80);
 }
 
-async function _saDoResetGymPw(gymId){
-  const newPass = (document.getElementById('sa-new-pw').value||'').trim();
-  const errEl  = document.getElementById('sa-pw-err');
+async function _saDoResetGymPw(gymId, hasAdmin){
+  const newPass  = (document.getElementById('sa-new-pw').value||'').trim();
+  const errEl    = document.getElementById('sa-pw-err');
   if(newPass.length < 8){ errEl.textContent='Mínimo 8 caracteres.'; return; }
 
   const btn = document.querySelector('#sa-reset-pw-modal .btn-primary');
@@ -9992,24 +10012,39 @@ async function _saDoResetGymPw(gymId){
 
   try{
     const pw_hash = await hashPassword(newPass);
-    // Buscar usuario admin del gym
-    const { data: users } = await window.supabaseClient
-      .from('usuarios').select('id').eq('gym_id', gymId).eq('rol','admin').limit(1);
-    if(!users?.length){ errEl.textContent='No se encontró admin para este gym.'; if(btn){btn.disabled=false;btn.textContent='Cambiar';} return; }
 
-    const { error } = await window.supabaseClient
-      .from('usuarios')
-      .update({ pw_hash, password: pw_hash, pw_version: (new Date().getTime() % 9999) })
-      .eq('id', users[0].id);
+    if(hasAdmin){
+      // Actualizar contraseña del admin existente
+      const { data: users } = await window.supabaseClient
+        .from('usuarios').select('id').eq('gym_id', gymId).eq('rol','admin').limit(1);
+      if(!users?.length){ errEl.textContent='Admin no encontrado.'; if(btn){btn.disabled=false;btn.textContent='Cambiar';} return; }
+      const { error } = await window.supabaseClient.from('usuarios')
+        .update({ pw_hash, password: pw_hash, pw_version: Math.floor(Date.now()/1000)%99999 })
+        .eq('id', users[0].id);
+      if(error) throw error;
+      toast('Contraseña actualizada ✓ — el admin debe iniciar sesión de nuevo','🔑',4000);
+      auditLog('SA_RESET_GYM_PW','usuarios',users[0].id,`Reset PW admin gym ${gymId}`);
+    } else {
+      // Crear admin nuevo
+      const emailEl  = document.getElementById('sa-admin-email');
+      const nombreEl = document.getElementById('sa-admin-nombre');
+      const email  = (emailEl?.value||'').trim().toLowerCase();
+      const nombre = (nombreEl?.value||'').trim() || email.split('@')[0];
+      if(!email || !email.includes('@')){ errEl.textContent='Email inválido.'; if(btn){btn.disabled=false;btn.textContent='Crear admin';} return; }
 
-    if(error){ errEl.textContent='Error al actualizar: '+error.message.slice(0,50); if(btn){btn.disabled=false;btn.textContent='Cambiar';} return; }
+      const { error } = await window.supabaseClient.from('usuarios').insert({
+        gym_id: gymId, nombre, email, pw_hash, password: pw_hash,
+        rol: 'admin', activo: true, pw_version: 1,
+      });
+      if(error) throw error;
+      toast(`Admin creado: ${email} ✓ — ya puede iniciar sesión`,'👤',4000);
+      auditLog('SA_CREATE_GYM_ADMIN','usuarios',null,`Creó admin ${email} para gym ${gymId}`);
+    }
 
     document.getElementById('sa-reset-pw-modal').remove();
-    toast('Contraseña del admin actualizada ✓ — deberán iniciar sesión de nuevo','🔑',4000);
-    auditLog('SA_RESET_GYM_PW','usuarios',users[0].id,`Reset contraseña admin gym ${gymId}`);
   }catch(e){
-    errEl.textContent='Error: '+e.message;
-    if(btn){btn.disabled=false;btn.textContent='Cambiar';}
+    errEl.textContent='Error: '+(e.message||'').slice(0,60);
+    if(btn){btn.disabled=false;btn.textContent=hasAdmin?'Cambiar':'Crear admin';}
   }
 }
 
