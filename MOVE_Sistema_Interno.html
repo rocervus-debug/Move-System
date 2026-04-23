@@ -2589,14 +2589,42 @@ select option{background:#10101c;color:var(--text);}
 
     <!-- ══ PAGOS ══ -->
     <div class="view" id="v-pagos">
-      <div class="kpi-grid">
-        <div class="kpi-card" style="--kpi-color:var(--ok)"><div class="kpi-label">Ingresos Cobrados</div><div class="kpi-value">$0</div><div class="kpi-meta">Pendiente configurar</div></div>
-        <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Por Vencer (7 días)</div><div class="kpi-value">$0</div><div class="kpi-meta">0 membresías</div></div>
-        <div class="kpi-card" style="--kpi-color:var(--danger)"><div class="kpi-label">Vencidas sin Renovar</div><div class="kpi-value">$0</div><div class="kpi-meta">0 membresías</div></div>
-        <div class="kpi-card" style="--kpi-color:var(--accent)"><div class="kpi-label">Proyección del Mes</div><div class="kpi-value">$0</div><div class="kpi-meta">Ingresa tus pagos</div></div>
+      <div class="kpi-grid" style="margin-bottom:18px;">
+        <div class="kpi-card" style="--kpi-color:var(--ok)">
+          <div class="kpi-label">Ingresos del Mes</div>
+          <div class="kpi-value" id="pagos-kpi-cobrado">$0</div>
+          <div class="kpi-trend" id="pagos-kpi-cobrado-trend" style="display:none;"></div>
+          <div class="kpi-meta" id="pagos-kpi-cobrado-meta">Este mes</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--warn)">
+          <div class="kpi-label">En Riesgo (7 días)</div>
+          <div class="kpi-value" id="pagos-kpi-pvencer">$0</div>
+          <div class="kpi-meta" id="pagos-kpi-pvencer-meta">0 membresías</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--danger)">
+          <div class="kpi-label">Vencidas sin Renovar</div>
+          <div class="kpi-value" id="pagos-kpi-vencidas">0</div>
+          <div class="kpi-meta" id="pagos-kpi-vencidas-meta">socios</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--accent)">
+          <div class="kpi-label">Proyección Próx. Mes</div>
+          <div class="kpi-value" id="pagos-kpi-proyeccion">$0</div>
+          <div class="kpi-meta" id="pagos-kpi-proyeccion-meta">Prom. 3 meses</div>
+        </div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">💳 Registro de Pagos</div><div style="display:flex;gap:8px;"><button class="btn btn-outline btn-sm" onclick="exportarPagosCSV()">📥 Exportar CSV</button><button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button></div></div>
+        <div class="card-header">
+          <div class="card-title">💳 Registro de Pagos</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div style="position:relative;">
+              <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--text4);fill:none;stroke-width:2;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="pagos-search" placeholder="Buscar cliente…" oninput="renderPagos()"
+                style="padding:6px 10px 6px 28px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;width:160px;font-family:var(--font);"/>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="exportarPagosCSV()">📥 CSV</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button>
+          </div>
+        </div>
         <!-- Filters -->
         <div id="pagos-filters" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 0 14px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -2634,9 +2662,9 @@ select option{background:#10101c;color:var(--text);}
     <div class="view" id="v-marketing">
       <div class="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--accent)"><div class="kpi-label">Leads del Mes</div><div class="kpi-value" id="mkt-leads">0</div><div class="kpi-meta">Del CRM</div></div>
-        <div class="kpi-card" style="--kpi-color:#7c3aed"><div class="kpi-label">Contenidos Publicados</div><div class="kpi-value">0/0</div><div class="kpi-meta">Del calendario</div></div>
-        <div class="kpi-card" style="--kpi-color:var(--ok)"><div class="kpi-label">Campañas Activas</div><div class="kpi-value">0</div><div class="kpi-meta">Ingresa en Campañas</div></div>
-        <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value">3</div><div class="kpi-meta">Ver en Solicitudes</div></div>
+        <div class="kpi-card" style="--kpi-color:#7c3aed"><div class="kpi-label">Contenidos Publicados</div><div class="kpi-value" id="mkt-contenidos">0</div><div class="kpi-meta" id="mkt-contenidos-meta">Este mes</div></div>
+        <div class="kpi-card" style="--kpi-color:var(--ok)"><div class="kpi-label">Campañas Activas</div><div class="kpi-value" id="mkt-campanas">0</div><div class="kpi-meta" id="mkt-campanas-meta">En curso</div></div>
+        <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value" id="mkt-solicitudes">0</div><div class="kpi-meta">Sin responder</div></div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">📅 Calendario de Contenido — Abril 2026</div><button class="btn btn-primary btn-sm" onclick="openModal('contenido')">+ Agregar</button></div>
@@ -2791,7 +2819,7 @@ select option{background:#10101c;color:var(--text);}
         <div class="card">
           <div class="card-header"><div class="card-title">📊 Historial</div></div>
           <div id="eval-history">
-            <div class="empty-state" style="padding:30px;"><div class="empty-icon">📊</div><div class="empty-title">Sin evaluaciones aún</div><div class="empty-sub">Evalúa a tus coaches para ver el historial aquí.</div></div>
+            <div class="empty-state" style="padding:30px;"><div class="empty-icon">📊</div><div class="empty-title">Sin evaluaciones aún</div><div class="empty-sub">Evalúa a tus coaches para ver el historial aquí.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('eval')">+ Nueva Evaluación</button></div>
           </div>
         </div>
       </div>
@@ -2843,8 +2871,16 @@ select option{background:#10101c;color:var(--text);}
           <span class="card-sub" id="gastos-count">0 gastos</span>
         </div>
         <div id="gastos-list">
-          <div class="empty-state"><div class="empty-icon">💸</div><div class="empty-title">Sin gastos registrados</div><div class="empty-sub">Presiona "+ Nuevo Gasto" para agregar.</div></div>
+          <div class="empty-state"><div class="empty-icon">💸</div><div class="empty-title">Sin gastos registrados</div><div class="empty-sub">Registra tus egresos para ver el balance real del gym.</div></div>
         </div>
+      </div>
+      <!-- ── Gráfica burn rate últimos 6 meses ── -->
+      <div class="card" style="margin-top:18px;" id="gastos-chart-card">
+        <div class="card-header">
+          <div class="card-title">📉 Balance Mensual — Últimos 6 Meses</div>
+          <span class="card-sub" id="gastos-chart-sub">Ingresos vs Gastos</span>
+        </div>
+        <div class="chart-wrap" style="height:200px;"><canvas id="gastosChart"></canvas></div>
       </div>
     </div>
 
@@ -6444,11 +6480,24 @@ function renderCRM(tab){
       exclientes: ['Sin exclientes','Los leads marcados como "Cerrado – Perdido" aparecerán aquí.'],
     };
     const m = msgs[tab]||['Sin datos',''];
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">${m[0]}</div><div class="empty-sub">${m[1]}</div></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">${m[0]}</div><div class="empty-sub">${m[1]}</div>${tab==='prospectos'?`<button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('lead')">+ Nuevo Prospecto</button>`:''}</div>`;
     return;
   }
 
-  let html = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr>
+  // ── Bulk action toolbar ──────────────────────────────────────────
+  let html = `
+  <div id="crm-bulk-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.25);border-radius:10px;margin-bottom:12px;">
+    <span id="crm-bulk-count" style="font-size:13px;font-weight:700;color:var(--accent);">0 seleccionados</span>
+    <div style="flex:1;"></div>
+    <select id="crm-bulk-estado" style="padding:6px 10px;background:var(--white);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;font-family:var(--font);">
+      <option value="">— Cambiar estado a… —</option>
+      ${Object.keys(ESTADO_BADGE).map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('')}
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="applyBulkEstado()">✓ Aplicar</button>
+    <button class="btn btn-outline btn-sm" onclick="clearCRMSelection()">✕ Cancelar</button>
+  </div>
+  <div style="overflow-x:auto;"><table class="tbl"><thead><tr>
+    <th style="width:32px;"><input type="checkbox" id="crm-select-all" onchange="toggleAllCRM(this)" style="cursor:pointer;accent-color:var(--accent);"></th>
     <th>Nombre</th><th>Fuente</th><th>Clase</th><th>Estado</th>
     <th>Fecha ingreso</th><th>Teléfono</th><th></th>
   </tr></thead><tbody>`;
@@ -6457,6 +6506,7 @@ function renderCRM(tab){
     const cb = CLASE_BADGE[l.clase]||'b-gray';
     const eb = ESTADO_BADGE[l.estado]||'b-gray';
     html += `<tr>
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="crm-row-check" data-id="${l.id}" onchange="updateCRMBulkBar()" style="cursor:pointer;accent-color:var(--accent);"></td>
       <td class="name" style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.nombre)}</td>
       <td>${esc(l.fuente)}</td>
       <td><span class="badge ${cb}">${esc(l.clase)}</span></td>
@@ -6465,7 +6515,7 @@ function renderCRM(tab){
       <td>${esc(l.tel)}</td>
       <td class="tbl-action">
         <button class="btn btn-outline btn-sm" onclick="openDetail('${l.id}')">Ver</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditLead('${l.id}')">✏️ Editar</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditLead('${l.id}')">✏️</button>
         <button class="btn btn-outline btn-sm" onclick="openEditEstado('${l.id}')">Estado</button>
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLead('${l.id}')">🗑</button>
       </td>
@@ -6474,6 +6524,41 @@ function renderCRM(tab){
 
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
+}
+
+function updateCRMBulkBar(){
+  const checked = document.querySelectorAll('.crm-row-check:checked');
+  const bar = document.getElementById('crm-bulk-bar');
+  const cnt = document.getElementById('crm-bulk-count');
+  if(bar) bar.style.display = checked.length ? 'flex' : 'none';
+  if(cnt) cnt.textContent = `${checked.length} seleccionado${checked.length!==1?'s':''}`;
+  const all = document.getElementById('crm-select-all');
+  if(all){ const total=document.querySelectorAll('.crm-row-check').length; all.indeterminate=checked.length>0&&checked.length<total; all.checked=checked.length===total; }
+}
+function toggleAllCRM(chk){
+  document.querySelectorAll('.crm-row-check').forEach(c=>c.checked=chk.checked);
+  updateCRMBulkBar();
+}
+function clearCRMSelection(){
+  document.querySelectorAll('.crm-row-check').forEach(c=>c.checked=false);
+  const all=document.getElementById('crm-select-all'); if(all) all.checked=false;
+  updateCRMBulkBar();
+}
+async function applyBulkEstado(){
+  const estado = document.getElementById('crm-bulk-estado')?.value;
+  if(!estado){ toast('Selecciona un estado primero.','⚠️'); return; }
+  const ids = [...document.querySelectorAll('.crm-row-check:checked')].map(c=>c.dataset.id);
+  if(!ids.length) return;
+  const btn = document.querySelector('#crm-bulk-bar .btn-primary');
+  if(btn){ btn.textContent='Aplicando…'; btn.disabled=true; }
+  const { error } = await window.supabaseClient.from('leads').update({ status: estado }).in('id', ids);
+  if(error){ toast('Error al actualizar.','❌'); if(btn){btn.textContent='✓ Aplicar';btn.disabled=false;} return; }
+  ids.forEach(id=>{ const l=leads.find(x=>String(x.id)===String(id)); if(l) l.estado=estado; });
+  toast(`${ids.length} leads → ${estado}`,'✓');
+  clearCRMSelection();
+  renderCRM(currentCRMTab);
+  renderPipeline();
+  renderDashboard();
 }
 
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -7077,7 +7162,7 @@ async function saveEditCoach(){
 function renderCoaches(){
   const grid = document.getElementById('coaches-grid');
   if(!coaches.length){
-    grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Agrega a tu equipo de coaches. Sus perfiles son completamente independientes de los clientes del CRM.</div></div></div>`;
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Agrega coaches para asignarles clases y medir su rendimiento.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('coach')">+ Agregar Coach</button></div></div></div>`;
     return;
   }
   grid.innerHTML = coaches.map((c, idx)=>{
@@ -8899,7 +8984,19 @@ function renderDashboard(){
   countUp(document.getElementById('kpi-leads'), total);
   countUp(document.getElementById('kpi-activos'), activos);
   document.getElementById('kpi-conv').textContent    = conv;
-  document.getElementById('mkt-leads').textContent   = total;
+  countUp(document.getElementById('mkt-leads'), total, {duration:500});
+
+  // Marketing KPIs — conectar a datos reales
+  const mktCamp = campanas.filter(c=>c.estado==='Activa').length;
+  const mktSol  = solicitudes.filter(s=>s.estado==='Nueva'||s.estado==='Pendiente').length;
+  const mesStr2 = new Date().toISOString().slice(0,7);
+  const mktCont = (contenidos||[]).filter(c=>(c.fecha||'').startsWith(mesStr2)&&c.estado==='Publicado').length;
+  const mktContTot = (contenidos||[]).filter(c=>(c.fecha||'').startsWith(mesStr2)).length;
+  countUp(document.getElementById('mkt-campanas'), mktCamp, {duration:400});
+  countUp(document.getElementById('mkt-solicitudes'), mktSol, {duration:400});
+  countUp(document.getElementById('mkt-contenidos'), mktCont, {duration:400});
+  const contMeta = document.getElementById('mkt-contenidos-meta');
+  if(contMeta) contMeta.textContent = mktContTot>0 ? `${mktCont} de ${mktContTot} publicados` : 'Este mes';
 
   // Hero banner stats
   const hc = document.getElementById('hero-coaches');
@@ -9625,6 +9722,46 @@ function renderGastos(){
       </div>
     </div>`;
   }).join('');
+
+  // ── Gráfica burn rate 6 meses ────────────────────────────────────
+  renderGastosChart();
+}
+
+function renderGastosChart(){
+  const canvas = document.getElementById('gastosChart');
+  if(!canvas || !window.Chart) return;
+  const isLight = document.body.classList.contains('light-mode');
+  const gridColor = isLight ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)';
+  const tickColor = isLight ? 'rgba(30,45,60,.5)' : 'rgba(210,224,238,.5)';
+  const today = new Date();
+  const meses = [], labels = [];
+  for(let i=5; i>=0; i--){
+    const d = new Date(today); d.setMonth(d.getMonth()-i);
+    meses.push(d.toISOString().slice(0,7));
+    labels.push(d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'}));
+  }
+  const dataIngresos = meses.map(m=>pagos.filter(p=>(p.fecha||'').startsWith(m)&&p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0));
+  const dataGastos   = meses.map(m=>gastos.filter(g=>(g.fecha||'').startsWith(m)).reduce((s,g)=>s+(g.monto||0),0));
+  const dataBalance  = dataIngresos.map((v,i)=>v-dataGastos[i]);
+
+  if(window._gastosChart) window._gastosChart.destroy();
+  window._gastosChart = new Chart(canvas, {
+    type:'bar',
+    data:{ labels,
+      datasets:[
+        { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(16,232,160,.35)', borderColor:'rgba(16,232,160,.8)', borderWidth:2, borderRadius:6 },
+        { label:'Gastos',   data:dataGastos,   backgroundColor:'rgba(248,113,113,.3)',  borderColor:'rgba(248,113,113,.7)', borderWidth:2, borderRadius:6 },
+        { label:'Balance',  data:dataBalance,  type:'line', borderColor:'rgba(0,180,216,.9)', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.35 }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:tickColor, font:{size:11} } } },
+      scales:{
+        x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:11} } },
+        y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:11}, callback:v=>'$'+v.toLocaleString('es-MX') } }
+      }
+    }
+  });
 }
 
 function openGastoModal(id=''){
@@ -10149,28 +10286,50 @@ function getPagoEstado(p, today, in7){
 }
 
 function renderPagos(){
-  // Update KPIs
+  // ─── KPIs reales ────────────────────────────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
   const in7   = new Date(today); in7.setDate(today.getDate()+7);
-  const totalCobrado  = pagos.reduce((s,p)=>s+p.monto,0);
-  const porVencer     = pagos.filter(p=>{ if(!p.vence||p.vence==='—') return false; const v=new Date(p.vence); return v>=today&&v<=in7; });
-  const vencidas      = pagos.filter(p=>{ if(!p.vence||p.vence==='—') return false; return new Date(p.vence)<today; });
-  const porVencerVal  = porVencer.reduce((s,p)=>s+p.monto,0);
-  const vencidasVal   = vencidas.reduce((s,p)=>s+p.monto,0);
-  const kpis = document.querySelectorAll('#v-pagos .kpi-value');
-  if(kpis[0]) kpis[0].textContent = '$'+totalCobrado.toLocaleString('es-MX');
-  if(kpis[1]){ kpis[1].textContent = '$'+porVencerVal.toLocaleString('es-MX'); kpis[1].closest('.kpi-card').querySelector('.kpi-meta').textContent = porVencer.length+' membresías'; }
-  if(kpis[2]){ kpis[2].textContent = '$'+vencidasVal.toLocaleString('es-MX'); kpis[2].closest('.kpi-card').querySelector('.kpi-meta').textContent = vencidas.length+' membresías'; }
-  if(kpis[3]){ const proj = Math.round(totalCobrado * 1.15); kpis[3].textContent = '$'+proj.toLocaleString('es-MX'); kpis[3].closest('.kpi-card').querySelector('.kpi-meta').textContent = 'Estimado +15%'; }
+  const thisMonth = today.toISOString().slice(0,7);
+
+  const pagosSinAbono = pagos.filter(p=>p.notas!=='__sin_pago__');
+  const ingresosMes   = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(thisMonth)).reduce((s,p)=>s+(p.monto||0),0);
+
+  // Proyección: promedio de últimos 3 meses
+  const proyMeses = [1,2,3].map(i=>{ const d=new Date(today); d.setMonth(d.getMonth()-i); return d.toISOString().slice(0,7); });
+  const proyeccion = Math.round(proyMeses.map(m=>pagosSinAbono.filter(p=>(p.fecha||'').startsWith(m)).reduce((s,p)=>s+(p.monto||0),0)).reduce((a,b)=>a+b,0)/3);
+
+  // Clientes únicos vencidos (sin renovar)
+  const mapaUlt = {}; pagosSinAbono.forEach(p=>{ if(!mapaUlt[p.cliente]||(p.vence||'')>(mapaUlt[p.cliente]||'')) mapaUlt[p.cliente]=p.vence; });
+  const vencidasCount = Object.values(mapaUlt).filter(v=>v&&v!=='—'&&new Date(v+'T12:00:00')<today).length;
+  const enRiesgoClientes = [...new Set(pagosSinAbono.filter(p=>{ if(!p.vence||p.vence==='—') return false; const v=new Date(p.vence+'T12:00:00'); return v>=today&&v<=in7; }).map(p=>p.cliente))];
+
+  // Mes anterior (para trend)
+  const mesAnt = (()=>{ const d=new Date(today); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
+  const ingresosMesAnt = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(mesAnt)).reduce((s,p)=>s+(p.monto||0),0);
+
+  countUp(document.getElementById('pagos-kpi-cobrado'), ingresosMes, {prefix:'$', duration:600});
+  countUp(document.getElementById('pagos-kpi-pvencer'), enRiesgoClientes.length, {duration:400});
+  countUp(document.getElementById('pagos-kpi-vencidas'), vencidasCount, {duration:400});
+  countUp(document.getElementById('pagos-kpi-proyeccion'), proyeccion, {prefix:'$', duration:700});
+
+  const pvMeta = document.getElementById('pagos-kpi-pvencer-meta');
+  if(pvMeta) pvMeta.textContent = `${enRiesgoClientes.length} cliente${enRiesgoClientes.length!==1?'s':''}`;
+  const vmMeta = document.getElementById('pagos-kpi-vencidas-meta');
+  if(vmMeta) vmMeta.textContent = `sin renovar`;
+
+  // Trend ingresos vs mes anterior
+  setTrend('pagos-kpi-cobrado-trend', ingresosMes, ingresosMesAnt, false);
 
   const el = document.getElementById('pagos-list');
   if(!pagos.length){
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Registra los pagos de tus clientes para llevar control de ingresos y renovaciones.</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Lleva control de ingresos y renovaciones registrando cada pago.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('pago')">+ Registrar primer pago</button></div>`;
     return;
   }
 
-  // Apply filters (exclude client-only records with no payment)
-  let filtered = pagos.filter(p=>p.notas!=='__sin_pago__');
+  // Apply filters + text search
+  const searchQ = (document.getElementById('pagos-search')?.value||'').toLowerCase().trim();
+  let filtered = pagosSinAbono;
+  if(searchQ) filtered = filtered.filter(p=>(p.cliente||'').toLowerCase().includes(searchQ));
   if(pagoFilter.estado !== 'todos'){
     filtered = filtered.filter(p=>{
       const est = getPagoEstado(p, today, in7);
@@ -10305,7 +10464,7 @@ async function saveEditCampana(){
 function renderCampanas(){
   const el = document.getElementById('campanas-list');
   if(!campanas.length){
-    el.innerHTML = `<div class="empty-state card"><div class="empty-icon">🎯</div><div class="empty-title">Sin campañas registradas</div><div class="empty-sub">Crea tu primera campaña para medir el rendimiento de tus canales de adquisición.</div></div>`;
+    el.innerHTML = `<div class="empty-state card"><div class="empty-icon">🎯</div><div class="empty-title">Sin campañas registradas</div><div class="empty-sub">Crea tu primera campaña para medir el rendimiento de tus canales de adquisición.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('campana')">+ Nueva Campaña</button></div>`;
     return;
   }
   el.innerHTML = campanas.map(c=>{
@@ -11224,11 +11383,22 @@ function handleGlobalSearch(q){
 
   const results = [];
 
+  // ── Fuzzy match helper ────────────────────────────────────────────
+  const fuzzy = (str, pattern) => {
+    str = (str||'').toLowerCase(); pattern = pattern.toLowerCase();
+    if(str.startsWith(pattern)) return 3;   // starts-with: highest score
+    if(str.includes(pattern)) return 2;     // substring: good
+    // fuzzy: all pattern chars appear in order
+    let pi=0;
+    for(let si=0; si<str.length && pi<pattern.length; si++) if(str[si]===pattern[pi]) pi++;
+    return pi===pattern.length ? 1 : 0;     // fuzzy match: lowest score, 0 = no match
+  };
+
   // ── Clientes (union of clientesDB + pagos names) ──
   const clientNames = new Set();
   clientesDB.forEach(c=>{ if(c.nombre) clientNames.add(c.nombre); });
   pagos.forEach(p=>{ if(p.cliente) clientNames.add(p.cliente); });
-  [...clientNames].filter(n=>n.toLowerCase().includes(q)).slice(0,5).forEach(nombre=>{
+  [...clientNames].map(n=>({n, s:fuzzy(n,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.n).forEach(nombre=>{
     const rec = clientesDB.find(c=>c.nombre===nombre)||{};
     const tel = rec.telefono||'';
     results.push({ cat:'Clientes', icon:'👤', label:nombre, sub: tel||'Sin teléfono',
@@ -11236,13 +11406,13 @@ function handleGlobalSearch(q){
   });
 
   // ── Leads / CRM ──
-  leads.filter(l=>(l.nombre||'').toLowerCase().includes(q)||(l.tel||'').toLowerCase().includes(q)||(l.email||'').toLowerCase().includes(q)).slice(0,4).forEach(l=>{
+  leads.map(l=>({l, s:Math.max(fuzzy(l.nombre,q), fuzzy(l.tel,q), fuzzy(l.email,q))})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,4).map(x=>x.l).forEach(l=>{
     results.push({ cat:'CRM & Prospectos', icon:'📊', label:l.nombre, sub:l.estado||'',
       action:`go('crm',document.getElementById('nav-crm'));setTimeout(()=>openDetail('${l.id}'),150)` });
   });
 
   // ── Coaches ──
-  coaches.filter(c=>(c.nombre||'').toLowerCase().includes(q)).slice(0,3).forEach(c=>{
+  coaches.map(c=>({c, s:fuzzy(c.nombre,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,3).map(x=>x.c).forEach(c=>{
     results.push({ cat:'Coaches', icon:'🏋️', label:c.nombre, sub:c.rol||'',
       action:`go('coaches',document.getElementById('nav-coaches'));setTimeout(()=>openCoachDetail('${c.id}'),150)` });
   });
