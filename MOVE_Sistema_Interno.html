@@ -27,6 +27,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <style>
 /* ═══════════════════════════════════════
    MOVE — DARK PREMIUM DESIGN SYSTEM v3
@@ -137,6 +138,12 @@ body.light-mode .form-input{
 }
 body.light-mode .tbl tr:nth-child(even){ background:rgba(0,0,0,.02); }
 body.light-mode .kpi-card{ background:rgba(255,255,255,.9); }
+body.light-mode .pipe-col{ background:rgba(230,234,240,.7); border-color:rgba(0,0,0,.08); }
+body.light-mode .pipe-card{ background:#ffffff; border-color:rgba(0,0,0,.08); }
+body.light-mode .pipe-card:hover{ border-color:rgba(0,180,216,.35); }
+body.light-mode .coach-card{ background:#ffffff; border-color:rgba(0,0,0,.08); }
+body.light-mode .camp-card{ background:#ffffff; border-color:rgba(0,0,0,.08); }
+body.light-mode .sol-item{ border-color:rgba(0,0,0,.07); }
 
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -498,6 +505,10 @@ body{
 .pipe-count{background:rgba(255,255,255,.06);color:var(--text3);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--border);}
 .pipe-card{background:rgba(20,20,35,.9);border-radius:8px;padding:11px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .18s;}
 .pipe-card:hover{box-shadow:var(--shadow-md), 0 0 20px rgba(0,180,216,.08);transform:translateY(-2px);border-color:rgba(0,180,216,.2);}
+.pipe-card.sortable-ghost{opacity:.35;background:rgba(0,180,216,.08);border:2px dashed rgba(0,180,216,.4);transform:none;}
+.pipe-card.sortable-drag{box-shadow:0 16px 48px rgba(0,0,0,.7),0 0 32px rgba(0,180,216,.25);transform:rotate(1.5deg) scale(1.03);cursor:grabbing;}
+.pipe-col.drag-over{background:rgba(0,180,216,.06);border-color:rgba(0,180,216,.25);}
+.pipe-card{cursor:grab;}
 .pc-name{font-size:12px;font-weight:600;color:var(--text);}
 .pc-meta{font-size:11px;color:var(--text3);margin-top:3px;}
 
@@ -2193,6 +2204,7 @@ select option{background:#10101c;color:var(--text);}
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="card-sub" id="asist-qr-label">—</span>
             <button onclick="loadQRCheckinsHoy()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);cursor:pointer;font-weight:700;">↺ Actualizar</button>
+            <button onclick="exportAsistenciasCSV()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(255,255,255,.05);color:var(--text2);border:1px solid var(--border);cursor:pointer;font-weight:700;">📥 CSV</button>
             <button onclick="abrirKiosco()" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;font-weight:700;text-decoration:none;white-space:nowrap;cursor:pointer;">📱 Abrir Kiosco</button>
           </div>
         </div>
@@ -2347,7 +2359,10 @@ select option{background:#10101c;color:var(--text);}
     <div class="view" id="v-crm">
       <div class="sh">
         <div class="sh-title">CRM & Prospectos</div>
-        <button class="btn btn-primary" onclick="openModal('lead')">+ Nuevo Prospecto</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="exportLeadsCSV()">📥 Exportar CSV</button>
+          <button class="btn btn-primary" onclick="openModal('lead')">+ Nuevo Prospecto</button>
+        </div>
       </div>
       <div class="tabs">
         <div class="tab active" id="tab-btn-prospectos" onclick="switchCRMTab('prospectos')">Prospectos <span id="cnt-prospectos" style="opacity:.6"></span></div>
@@ -4245,7 +4260,8 @@ function initRealtimeSubscriptions(){
             el.style.color='var(--ok)';
             setTimeout(()=>{ el.style.transform=''; el.style.color=''; }, 400);
           }
-          toast(`Check-in: ${payload.new.cliente_id||'Cliente'} ✓`,'🏋️',2500);
+          navigator.vibrate?.([80, 40, 200]);
+          toast(`Check-in registrado ✓`,'🏋️',2500);
         }
         // Refresh chart if visible
         if(document.getElementById('v-asistencia')?.classList.contains('active')){
@@ -5153,7 +5169,7 @@ async function loadLeadsFromSupabase(){
     notas:        l.notes    || '',
     historial:    l.historial || [],
     fechaIngreso: l.created_at
-      ? new Date(l.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+      ? fmtDate(l.created_at)
       : '',
     assigned_to:  l.assigned_to || '',
   }));
@@ -6342,6 +6358,67 @@ function countUp(el, target, opts = {}) {
   requestAnimationFrame(step);
 }
 
+// ── Date formatting — helper centralizado ───────────────────────────
+// Formato estándar: "22 abr 2026"  (es-MX, día·mes·año)
+// opts: { short: true } → "22 abr"  |  { long: true } → "lunes 22 de abril de 2026"
+function fmtDate(str, opts = {}) {
+  if(!str || str === '—' || str === 'undefined') return '—';
+  // Accept 'YYYY-MM-DD' or ISO
+  const d = new Date((str.length === 10 ? str + 'T12:00:00' : str));
+  if(isNaN(d.getTime())) return str;
+  if(opts.long)  return d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(opts.short) return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+  if(opts.rel) {
+    const diff = Math.round((d - new Date().setHours(0,0,0,0)) / 86400000);
+    if(diff === 0) return 'Hoy';
+    if(diff === 1) return 'Mañana';
+    if(diff === -1) return 'Ayer';
+    if(diff > 0 && diff <= 7) return `en ${diff} días`;
+    if(diff < 0 && diff >= -7) return `hace ${Math.abs(diff)} días`;
+  }
+  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ── Table sorting — genérico, aplica a cualquier <table> ────────────
+function makeSortable(tableEl) {
+  if(!tableEl) return;
+  const headers = tableEl.querySelectorAll('th');
+  headers.forEach((th, colIdx) => {
+    th.classList.add('sortable');
+    th.style.cursor = 'pointer';
+    th.style.userSelect = 'none';
+    th._sortDir = 0; // 0=none, 1=asc, -1=desc
+    th.addEventListener('click', () => {
+      // Toggle direction
+      headers.forEach(h => { if(h !== th){ h._sortDir=0; h.classList.remove('sort-asc','sort-desc'); } });
+      th._sortDir = th._sortDir === 1 ? -1 : 1;
+      th.classList.toggle('sort-asc',  th._sortDir ===  1);
+      th.classList.toggle('sort-desc', th._sortDir === -1);
+
+      const tbody = tableEl.querySelector('tbody');
+      if(!tbody) return;
+      const rows = [...tbody.querySelectorAll('tr')];
+      rows.sort((a, b) => {
+        const av = (a.cells[colIdx]?.textContent||'').trim();
+        const bv = (b.cells[colIdx]?.textContent||'').trim();
+        // Try numeric sort first
+        const an = parseFloat(av.replace(/[$,%\s]/g,''));
+        const bn = parseFloat(bv.replace(/[$,%\s]/g,''));
+        const cmp = (!isNaN(an) && !isNaN(bn))
+          ? an - bn
+          : av.localeCompare(bv, 'es', {sensitivity:'base'});
+        return cmp * th._sortDir;
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}
+
+// Auto-wire sortable to any table with class .tbl after render
+function wireSortableTables(containerEl) {
+  (containerEl||document).querySelectorAll('table.tbl').forEach(t => makeSortable(t));
+}
+
 // ── Skeleton loading helpers ────────────────────────────────────────
 function showKpiSkeleton(ids) {
   ids.forEach(id => {
@@ -6469,28 +6546,74 @@ function renderPipeline(){
     kanban.innerHTML = `<div class="card" style="flex:1;"><div class="empty-state"><div class="empty-icon">⟶</div><div class="empty-title">Pipeline vacío</div><div class="empty-sub">Agrega tus primeros leads desde el CRM.</div></div></div>`;
     return;
   }
-  let html = '';
+
+  kanban.innerHTML = '';
   PIPELINE_STAGES.forEach(stage=>{
     const stageleads = leads.filter(l=>l.estado===stage);
-    html += `<div class="pipe-col">
+    const col = document.createElement('div');
+    col.className = 'pipe-col';
+    col.dataset.stage = stage;
+    col.innerHTML = `
       <div class="pipe-col-head">
         <span class="pipe-col-name">${stage}</span>
-        <span class="pipe-count">${stageleads.length}</span>
+        <span class="pipe-count" id="pipe-count-${stage.replace(/\s+/g,'_')}">${stageleads.length}</span>
+      </div>
+      <div class="pipe-cards-body" data-stage="${stage}">
+        ${!stageleads.length ? `<div class="pipe-empty-hint" style="font-size:11px;color:var(--text4);text-align:center;padding:20px 0;border:2px dashed rgba(255,255,255,.05);border-radius:8px;">Arrastra aquí</div>` : ''}
+        ${stageleads.map(l=>{
+          const cb = CLASE_BADGE[l.clase]||'b-gray';
+          return `<div class="pipe-card" data-id="${l.id}" onclick="openDetail('${l.id}')">
+            <div class="pc-name">${esc(l.nombre)}</div>
+            <div class="pc-meta">${esc(l.fuente||'—')}</div>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:5px;">
+              <span class="badge ${cb}" style="font-size:9px;">${esc(l.clase)}</span>
+              ${l.valor ? `<span style="font-size:9px;color:var(--ok);font-weight:700;">$${Number(l.valor).toLocaleString('es-MX')}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
       </div>`;
-    if(!stageleads.length){
-      html += `<div style="font-size:11px;color:var(--text4);text-align:center;padding:16px 0;">Vacío</div>`;
+    kanban.appendChild(col);
+
+    // Init SortableJS on each column body
+    if(window.Sortable) {
+      Sortable.create(col.querySelector('.pipe-cards-body'), {
+        group:     'pipeline',
+        animation: 180,
+        ghostClass:'sortable-ghost',
+        dragClass: 'sortable-drag',
+        delay:     80,
+        delayOnTouchOnly: true,
+        onAdd: async (evt) => {
+          const leadId   = evt.item.dataset.id;
+          const newStage = evt.to.dataset.stage;
+          const oldStage = evt.from.dataset.stage;
+          if(newStage === oldStage) return;
+
+          // Optimistic UI: update counts
+          const fromCount = document.getElementById('pipe-count-'+oldStage.replace(/\s+/g,'_'));
+          const toCount   = document.getElementById('pipe-count-'+newStage.replace(/\s+/g,'_'));
+          if(fromCount) fromCount.textContent = Math.max(0, parseInt(fromCount.textContent)-1);
+          if(toCount)   toCount.textContent   = parseInt(toCount.textContent||0)+1;
+
+          // Persist to Supabase
+          const lead = leads.find(l=>String(l.id)===String(leadId));
+          if(!lead){ toast('Lead no encontrado','⚠️'); return; }
+          lead.estado = newStage;
+          const { error } = await window.supabaseClient
+            .from('leads').update({ estado: newStage }).eq('id', leadId);
+          if(error){
+            toast('Error al mover lead','❌');
+            lead.estado = oldStage;
+            renderPipeline();
+          } else {
+            auditLog('MOVER_LEAD','leads', leadId, `${oldStage} → ${newStage}`);
+            toast(`${lead.nombre} → ${newStage}`,'✓', 2000);
+            renderDashboard();
+          }
+        }
+      });
     }
-    stageleads.forEach(l=>{
-      const cb = CLASE_BADGE[l.clase]||'b-gray';
-      html += `<div class="pipe-card" onclick="openDetail('${l.id}')">
-        <div class="pc-name">${esc(l.nombre)}</div>
-        <div class="pc-meta">${esc(l.fuente)}</div>
-        <div style="margin-top:6px;"><span class="badge ${cb}" style="font-size:9px;">${esc(l.clase)}</span></div>
-      </div>`;
-    });
-    html += `</div>`;
   });
-  kanban.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -6931,8 +7054,17 @@ function renderClientes(){
 
   if(!lista.length){
     listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">Prueba con otro filtro o término de búsqueda.</div></div>`;
+    document.getElementById('clientes-pagination')?.remove();
     return;
   }
+
+  // ── Paginación ───────────────────────────────────────────────────
+  const PAGE = 50;
+  if(typeof _cliPage === 'undefined' || window._cliLastTotal !== lista.length) _cliPage = 0;
+  window._cliLastTotal = lista.length;
+  const totalPages = Math.ceil(lista.length / PAGE);
+  _cliPage = Math.min(_cliPage, totalPages - 1);
+  const paginated = lista.slice(_cliPage * PAGE, (_cliPage + 1) * PAGE);
 
   // ── Render tarjetas ──────────────────────────────────────────────
   const WA_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
@@ -6944,11 +7076,11 @@ function renderClientes(){
     'sin-fecha': { color:'var(--text3)',  bg:'rgba(100,116,139,.10)', label:'Sin fecha',  icon:'📅' },
   };
 
-  listEl.innerHTML = lista.map(c => {
+  listEl.innerHTML = paginated.map(c => {
     const cfg = esCfg[c.estado] || esCfg['sin-fecha'];
 
     const venceFmt = c.vence && c.vence.length >= 10
-      ? new Date(c.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+      ? fmtDate(c.vence)
       : '—';
     const diasLabel = c.diff !== null
       ? (c.diff < 0 ? `Venció hace ${Math.abs(c.diff)}d` : c.diff===0 ? 'Vence hoy' : `Vence en ${c.diff}d`)
@@ -7028,8 +7160,29 @@ function renderClientes(){
       <div style="flex-shrink:0;" onclick="event.stopPropagation()">${waBtn}</div>
     </div>`;
   }).join('');
+
+  // ── Render pagination controls ───────────────────────────────────
+  let pag = document.getElementById('clientes-pagination');
+  if(!pag){ pag = document.createElement('div'); pag.id='clientes-pagination'; listEl.after(pag); }
+  if(totalPages <= 1){ pag.innerHTML=''; }
+  else {
+    const start = _cliPage * PAGE + 1;
+    const end   = Math.min((_cliPage + 1) * PAGE, lista.length);
+    pag.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 4px;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text3);">Mostrando <strong style="color:var(--text);">${start}–${end}</strong> de <strong style="color:var(--text);">${lista.length}</strong> clientes</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button onclick="_cliPage=Math.max(0,_cliPage-1);renderClientes()" ${_cliPage===0?'disabled':''} class="btn btn-outline btn-sm" style="padding:5px 12px;">← Anterior</button>
+          ${Array.from({length:totalPages},(_,i)=>`
+            <button onclick="_cliPage=${i};renderClientes()" class="btn btn-sm" style="padding:5px 10px;min-width:32px;${i===_cliPage?'background:var(--accent);color:#000;font-weight:700;':''}">${i+1}</button>
+          `).join('')}
+          <button onclick="_cliPage=Math.min(totalPages-1,_cliPage+1);renderClientes()" ${_cliPage===totalPages-1?'disabled':''} class="btn btn-outline btn-sm" style="padding:5px 12px;">Siguiente →</button>
+        </div>
+      </div>`;
+  }
 }
 
+let _cliPage = 0;
 function abrirEditarTelefono(nombreCliente){ abrirEditarCliente(nombreCliente); }
 
 function abrirEditarCliente(nombreCliente){
@@ -7414,7 +7567,7 @@ function renderClienteNotas(){
   }
   el.innerHTML = _clienteNotasActual.map(n=>{
     const tipoClass = `nota-tipo-${(n.tipo||'Nota').replace(/[^a-zA-ZÀ-ú]/g,'')}`;
-    const fechaLabel = n.fecha ? new Date(n.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    const fechaLabel = n.fecha ? fmtDate(n.fecha) : '';
     return `<div class="nota-card">
       <button class="nota-delete" onclick="deleteClienteNota(${n.id})" title="Eliminar">✕</button>
       <div class="nota-tipo-badge ${tipoClass}">${esc(n.tipo||'Nota')}</div>
@@ -7733,6 +7886,38 @@ function exportarPagosCSV(){
   toast('Pagos exportados ✓','📥');
 }
 
+// ─── Exportar CSV de Leads ────────────────────────────────────────
+function exportLeadsCSV(){
+  const gymNombre = (gymConfig.gym_nombre||'MOVE').replace(/\s+/g,'_');
+  const filas = [['Nombre','Email','Teléfono','Clase','Fuente','Estado','Fecha','Valor','Notas']];
+  [...leads].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).forEach(l=>{
+    filas.push([l.nombre||'',l.email||'',l.tel||'',l.clase||'',l.fuente||'',l.estado||'',l.fecha||'',l.valor||'',l.notas||'']);
+  });
+  const csv = filas.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${gymNombre}_Leads_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast(`${leads.length} leads exportados ✓`,'📥');
+}
+
+// ─── Exportar CSV de Asistencias (Supabase) ──────────────────────
+async function exportAsistenciasCSV(){
+  toast('Descargando asistencias…','⏳');
+  const gymNombre = (gymConfig.gym_nombre||'MOVE').replace(/\s+/g,'_');
+  const { data, error } = await gf(window.supabaseClient.from('asistencias').select('fecha,hora,metodo,cliente_id')).order('fecha',{ascending:false}).limit(2000);
+  if(error || !data){ toast('Error al exportar asistencias','❌'); return; }
+  const filas = [['Fecha','Hora','Método','Cliente ID']];
+  data.forEach(r => filas.push([r.fecha||'', r.hora||'', r.metodo||'', r.cliente_id||'']));
+  const csv = filas.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `${gymNombre}_Asistencias_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast(`${data.length} registros exportados ✓`,'📥');
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // ASISTENCIA (localStorage — no requiere nueva tabla en Supabase)
 // ═══════════════════════════════════════════════════════════════════
@@ -7766,6 +7951,7 @@ function guardarAsistencia(){
 
   document.getElementById('asist-clase').value = '';
   document.getElementById('asist-participantes').value = '';
+  navigator.vibrate?.([100, 50, 100]); // haptic feedback en mobile
   toast(`Asistencia guardada: ${participantes.length} participante${participantes.length!==1?'s':''}. ✓`,'✅');
   renderAsistencia();
 }
@@ -8889,7 +9075,16 @@ async function saContextSwitch(gymId){
   const session = { ...getSession(), gym_id: gymId };
   setSession(session);
   closeSaCtxDropdown();
-  toast('Cambiando contexto al gym '+gymId+'…','🔄');
+
+  // Loading overlay mientras cambia el contexto
+  const ov = document.createElement('div');
+  ov.id = 'sa-switch-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(4,4,12,.85);backdrop-filter:blur(12px);z-index:20000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+  ov.innerHTML = `
+    <div style="width:44px;height:44px;border:3px solid rgba(0,180,216,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;"></div>
+    <div style="font-size:14px;color:rgba(255,255,255,.7);font-weight:600;">Cambiando contexto…</div>`;
+  document.body.appendChild(ov);
+
   await Promise.all([
     loadConfigFromSupabase(),
     loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
@@ -8901,6 +9096,7 @@ async function saContextSwitch(gymId){
   updateSaCtxLabel();
   renderDashboard();
   renderSuperAdmin();
+  document.getElementById('sa-switch-overlay')?.remove();
   toast('Contexto cambiado ✅ Ahora ves: '+(gymConfig.gym_nombre||'Gym #'+gymId),'🏋️');
 }
 
@@ -9631,8 +9827,8 @@ function renderPagos(){
     const vencido = p.vence&&p.vence!=='—'&&new Date(p.vence)<new Date();
     const porVenc = p.vence&&p.vence!=='—'&&new Date(p.vence)<=in7&&new Date(p.vence)>=today;
     const vBadge  = vencido?'<span class="badge b-danger">Vencido</span>':porVenc?'<span class="badge b-warn">Por vencer</span>':p.vence&&p.vence!=='—'?'<span class="badge b-ok">Vigente</span>':'—';
-    const fechaFmt = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-    const venceFmt = p.vence&&p.vence!=='—' ? new Date(p.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const fechaFmt = p.fecha ? fmtDate(p.fecha) : '—';
+    const venceFmt = p.vence&&p.vence!=='—' ? fmtDate(p.vence) : '—';
     const esAbono = (p.notas||'').startsWith('[ABONO');
     const abonoTag = esAbono ? `<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(251,191,36,.15);color:var(--warn);font-weight:700;border:1px solid rgba(251,191,36,.3);vertical-align:middle;">🪙 Abono</span> ` : '';
     html += `<tr>
@@ -9650,6 +9846,7 @@ function renderPagos(){
   });
   html += '</tbody></table></div>';
   el.innerHTML = html;
+  wireSortableTables(el);
 }
 
 // ═══════════════════════════════════════════════════════════════════
