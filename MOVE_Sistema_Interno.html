@@ -11,13 +11,13 @@
 <!-- ═══ PWA — iOS Safari (Apple) ═══ -->
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="MOVE"/>
+<meta name="apple-mobile-web-app-title" content="VELUM"/>
 <link rel="apple-touch-icon" href="move-icon-180.png"/>
 
 <!-- ═══ PWA — Tema y splash ═══ -->
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="application-name" content="MOVE"/>
+<meta name="application-name" content="VELUM"/>
 <meta name="msapplication-TileColor" content="#06060e"/>
 <meta name="msapplication-TileImage" content="move-icon-192.png"/>
 
@@ -1945,7 +1945,7 @@ select option{background:#10101c;color:var(--text);}
       </svg>
       <div class="logo-velum-wordmark" id="sidebar-gym-nombre">VELUM</div>
     </div>
-    <div class="logo-tagline" id="sidebar-gym-tagline">Gestión Fitness · 2026</div>
+    <div class="logo-tagline" id="sidebar-gym-tagline">Gestión Fitness</div>
     <div style="margin-top:10px;display:flex;gap:4px;">
       <div style="width:28px;height:2px;background:rgba(255,255,255,.3);border-radius:2px;"></div>
       <div style="width:12px;height:2px;background:rgba(255,255,255,.12);border-radius:2px;"></div>
@@ -2066,7 +2066,7 @@ select option{background:#10101c;color:var(--text);}
   <div class="topbar">
     <span class="topbar-title" id="topTitle">Dashboard General</span>
     <div class="topbar-divider"></div>
-    <span class="topbar-sub" id="topSub">Lunes 6 de Abril, 2026</span>
+    <span class="topbar-sub" id="topSub">—</span>
     <div class="topbar-right">
       <div class="search-wrap" id="search-wrap-global">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -2694,7 +2694,7 @@ select option{background:#10101c;color:var(--text);}
         <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value" id="mkt-solicitudes">0</div><div class="kpi-meta">Sin responder</div></div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">📅 Calendario de Contenido — Abril 2026</div><button class="btn btn-primary btn-sm" onclick="openModal('contenido')">+ Agregar</button></div>
+        <div class="card-header"><div class="card-title">📅 Calendario de Contenido</div><button class="btn btn-primary btn-sm" onclick="openModal('contenido')">+ Agregar</button></div>
         <div class="cal-grid" id="cal-grid"></div>
         <div style="display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
           <span class="cal-post cp-reel" style="display:inline;">🎬 Reel</span>
@@ -4581,6 +4581,9 @@ function doLogout(){
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
+  // Actualizar topbar con fecha real al cargar
+  const topSub = document.getElementById('topSub');
+  if(topSub) topSub.textContent = `Resumen ejecutivo · ${_todayLabel()}`;
   if(currentUser.rol === 'coach'){
     showCoachView();
   } else {
@@ -5608,23 +5611,36 @@ async function loadHorarioFromSupabase(){
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
+// ── Fecha dinámica para el topbar ────────────────────────────────
+function _todayLabel(){
+  const d = new Date();
+  const dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}, ${d.getFullYear()}`;
+}
+function _mesLabel(){
+  const d=new Date();
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return `${meses[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 const topTitles = {
-  dashboard:   ['Dashboard General',        'Resumen ejecutivo · Abril 2026'],
+  dashboard:   ['Dashboard General',        ()=>`Resumen ejecutivo · ${_todayLabel()}`],
   crm:         ['CRM & Prospectos',          'Gestión comercial de clientes y prospectos'],
   pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
-  pagos:       ['Pagos & Renovaciones',      'Control de ingresos y membresías'],
+  pagos:       ['Pagos & Renovaciones',      ()=>`Control de ingresos · ${_mesLabel()}`],
   clientes:    ['Clientes',                  'Directorio de socios activos y membresías'],
-  asistencia:  ['Asistencia',               'Registro de asistencia por clase'],
+  asistencia:  ['Asistencia',               ()=>`Registro de asistencia · ${_todayLabel()}`],
   marketing:   ['Hub de Marketing',          'Calendario de contenido y campañas'],
   campanas:    ['Campañas',                  'Resultados y métricas por campaña'],
   solicitudes: ['Solicitudes Internas',      'Pedidos de apoyo a Marketing'],
-  horario:     ['Calendario de Clases',      'Vista mensual · Plantilla · Nómina'],
+  horario:     ['Calendario de Clases',      ()=>`Vista mensual · ${_mesLabel()}`],
   coaches:     ['Equipo de Coaches',         'Perfiles del equipo de entrenamiento'],
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
-  gastos:      ['Gastos & Balance',          'Control de egresos y balance financiero mensual'],
+  gastos:      ['Gastos & Balance',          ()=>`Balance financiero · ${_mesLabel()}`],
   programa:    ['Programa de Entrenamiento', 'Calendario de entrenamientos por disciplina'],
   retencion:         ['Retención & Churn',          'Análisis de bajas, renovaciones y clientes en riesgo'],
-  'calendario-venc': ['Calendario de Vencimientos', 'Vista mensual de membresías que vencen'],
+  'calendario-venc': ['Calendario de Vencimientos', ()=>`Vista mensual · ${_mesLabel()}`],
   superadmin:  ['Super Admin',               '🛡️ Gestión de gyms · Multi-tenant'],
   settings:    ['Configuración',             'Apariencia · Usuarios · Mi cuenta'],
 };
@@ -5676,7 +5692,7 @@ function go(id, el){
   if(el) el.classList.add('active');
   const t = topTitles[id]||[id,''];
   document.getElementById('topTitle').textContent = t[0];
-  document.getElementById('topSub').textContent = t[1];
+  document.getElementById('topSub').textContent = typeof t[1]==='function' ? t[1]() : t[1];
   const topBtn = document.getElementById('topBtn');
   topBtn.textContent = topBtnLabels[id]||'Nuevo';
   topBtn.onclick = topBtnActions[id]||null;
@@ -12006,7 +12022,7 @@ function generarReporteMensual(){
 </head><body>
 <div class="header">
   <div>
-    <div class="brand-tag">Sistema Interno · MOVE</div>
+    <div class="brand-tag">VELUM Platform</div>
     <h1>${gymNombreRep}</h1>
     <div class="meta-tag" style="font-size:15px;font-weight:600;color:#374151;margin-top:4px;">Reporte Mensual · ${mesNombre} ${year}</div>
     <div class="meta-tag">Generado el ${hoy.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
@@ -12094,7 +12110,7 @@ ${porVencer30.length?`
   </tbody></table>
 </div>`:''}
 
-<div class="footer">${gymNombreRep} · Reporte Mensual ${mesNombre} ${year} · Sistema Interno</div>
+<div class="footer">${gymNombreRep} · Reporte Mensual ${mesNombre} ${year} · VELUM</div>
 </body></html>`;
 
   win.document.write(html); win.document.close();
@@ -12275,19 +12291,19 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => {
         _swRegistration = reg;
-        console.log('[MOVE PWA] Service worker registrado:', reg.scope);
+        console.log('[VELUM PWA] Service worker registrado:', reg.scope);
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
           nw.addEventListener('statechange', () => {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[MOVE PWA] Nueva versión disponible');
+              console.log('[VELUM PWA] Nueva versión disponible');
             }
           });
         });
         // Verificar membresías al cargar (con delay para que datos estén listos)
         setTimeout(checkMembresiasNotificaciones, 4000);
       })
-      .catch(err => console.warn('[MOVE PWA] Error SW:', err));
+      .catch(err => console.warn('[VELUM PWA] Error SW:', err));
   });
 }
 
@@ -12368,7 +12384,7 @@ async function solicitarPermisosNotificaciones(){
   const perm = await Notification.requestPermission();
   if(perm === 'granted'){
     toast('Notificaciones activadas ✓','🔔');
-    new Notification('MOVE Sistema', { body: 'Recibirás alertas de membresías por vencer.', icon: './move-icon-192.png' });
+    new Notification('VELUM', { body: 'Recibirás alertas de membresías por vencer.', icon: './move-icon-192.png' });
     checkMembresiasNotificaciones();
   } else {
     toast('Permiso denegado. Actívalas desde el navegador.','⚠️');
