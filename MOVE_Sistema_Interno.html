@@ -9757,6 +9757,7 @@ async function renderSuperAdmin(){
               ? `<button class="btn btn-sm btn-outline" onclick="saSetGymOwner(${g.id})" style="font-size:10px;padding:4px 10px;" title="Marcar como gym propio (sin pago)">🏠 Propio</button>`
               : `<span style="font-size:10px;color:#c084fc;">🏠 Gym propio</span>`
           }
+          <button class="btn btn-sm btn-outline" onclick="saResetGymPassword(${g.id},'${esc(g.owner_email||'')}')" style="font-size:10px;padding:4px 10px;" title="Cambiar contraseña del admin">🔑</button>
           <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:10px;padding:4px 10px;">${g.activo?'⏸':'▶'}</button>
         </div>
       </td>
@@ -9954,6 +9955,62 @@ async function saSetGymOwner(gymId){
   if(error){ toast('Error','❌'); return; }
   toast('Gym marcado como propio 🏠 — nunca se bloquea','🏠');
   renderSuperAdmin();
+}
+
+// ── Reset contraseña del admin de un gym ─────────────────────────────
+async function saResetGymPassword(gymId, ownerEmail){
+  const modal = document.createElement('div');
+  modal.id = 'sa-reset-pw-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.innerHTML = `
+    <div style="background:var(--white);border:1px solid rgba(29,158,117,.2);border-radius:16px;padding:28px;width:340px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:10px;">🔑</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Cambiar contraseña del admin</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">${esc(ownerEmail||'Gym ID: '+gymId)}</div>
+      <input id="sa-new-pw" type="password" placeholder="Nueva contraseña (mín. 8 caracteres)"
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;margin-bottom:6px;box-sizing:border-box;"
+        oninput="document.getElementById('sa-pw-strength').textContent=this.value.length>=12?'💪 Fuerte':this.value.length>=8?'✓ Aceptable':'⚠️ Muy corta'"
+        ontouchstart=""/>
+      <div id="sa-pw-strength" style="font-size:11px;color:var(--text3);margin-bottom:14px;text-align:left;">Mínimo 8 caracteres</div>
+      <div id="sa-pw-err" style="color:#f87171;font-size:12px;min-height:16px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('sa-reset-pw-modal').remove()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="_saDoResetGymPw(${gymId})" ontouchstart="">Cambiar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>document.getElementById('sa-new-pw')?.focus(), 80);
+}
+
+async function _saDoResetGymPw(gymId){
+  const newPass = (document.getElementById('sa-new-pw').value||'').trim();
+  const errEl  = document.getElementById('sa-pw-err');
+  if(newPass.length < 8){ errEl.textContent='Mínimo 8 caracteres.'; return; }
+
+  const btn = document.querySelector('#sa-reset-pw-modal .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
+
+  try{
+    const pw_hash = await hashPassword(newPass);
+    // Buscar usuario admin del gym
+    const { data: users } = await window.supabaseClient
+      .from('usuarios').select('id').eq('gym_id', gymId).eq('rol','admin').limit(1);
+    if(!users?.length){ errEl.textContent='No se encontró admin para este gym.'; if(btn){btn.disabled=false;btn.textContent='Cambiar';} return; }
+
+    const { error } = await window.supabaseClient
+      .from('usuarios')
+      .update({ pw_hash, password: pw_hash, pw_version: (new Date().getTime() % 9999) })
+      .eq('id', users[0].id);
+
+    if(error){ errEl.textContent='Error al actualizar: '+error.message.slice(0,50); if(btn){btn.disabled=false;btn.textContent='Cambiar';} return; }
+
+    document.getElementById('sa-reset-pw-modal').remove();
+    toast('Contraseña del admin actualizada ✓ — deberán iniciar sesión de nuevo','🔑',4000);
+    auditLog('SA_RESET_GYM_PW','usuarios',users[0].id,`Reset contraseña admin gym ${gymId}`);
+  }catch(e){
+    errEl.textContent='Error: '+e.message;
+    if(btn){btn.disabled=false;btn.textContent='Cambiar';}
+  }
 }
 
 // ── Cambiar plan de un gym ───────────────────────────────────────────
@@ -12805,6 +12862,9 @@ async function solicitarPermisosNotificaciones(){
     toast('Este dispositivo no soporta notificaciones push.','ℹ️');
     return;
   }
+  if(typeof Notification === 'undefined'){
+    toast('Este navegador no soporta notificaciones.','ℹ️'); return;
+  }
   if(Notification.permission === 'granted'){
     toast('Notificaciones ya están activadas ✓','🔔');
     checkMembresiasNotificaciones();
@@ -12819,7 +12879,7 @@ async function solicitarPermisosNotificaciones(){
   if(perm === 'granted'){
     toast('Notificaciones activadas ✓','🔔');
     try{
-      new Notification('VELUM', {
+      if(typeof Notification !== 'undefined') new Notification('VELUM', {
         body: 'Recibirás alertas de membresías por vencer.',
         icon: './move-icon-192.png'
       });
