@@ -5229,14 +5229,22 @@ async function loadConfigFromSupabase(){
   gymConfig = {};
   (data||[]).forEach(row => { gymConfig[row.key] = row.value||''; });
   ensureGymId();
-  // If no gym_nombre stored yet, pull it from the gyms table as fallback
+  // Si no hay gym_config, cargar nombre y tagline del gym de la tabla gyms
   if(!gymConfig.gym_nombre && MOVE_GYM_ID){
-    window.supabaseClient.from('gyms').select('nombre').eq('id', MOVE_GYM_ID).single()
+    window.supabaseClient.from('gyms').select('nombre,plan').eq('id', MOVE_GYM_ID).single()
       .then(({data:g})=>{
-        if(g?.nombre && !gymConfig.gym_nombre){
+        if(g?.nombre){
           gymConfig.gym_nombre = g.nombre;
-          const el = document.getElementById('sidebar-gym-nombre');
-          if(el) el.textContent = g.nombre;
+          gymConfig.gym_plan   = g.plan || 'max';
+          // Actualizar TODOS los elementos de nombre del gym
+          ['sidebar-gym-nombre','hero-gym-nombre'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.textContent = g.nombre;
+          });
+          const tagEl = document.getElementById('hero-tagline');
+          if(tagEl && !gymConfig.gym_tagline) tagEl.textContent = 'Fitness Center';
+          // Re-aplicar config con el nombre correcto
+          applyGymConfig();
         }
       });
   }
@@ -5320,7 +5328,9 @@ function applyCustomColor(){
 }
 
 function applyGymConfig(){
-  const nombre  = gymConfig.gym_nombre  || 'MOVE';
+  // Fallback: usar nombre del gym de la tabla gyms, no 'MOVE' hardcodeado
+  const gymRow = typeof allGyms !== 'undefined' ? allGyms.find(g=>g.id===MOVE_GYM_ID) : null;
+  const nombre  = gymConfig.gym_nombre || gymRow?.nombre || '—';
   const tagline = gymConfig.gym_tagline || 'Fitness Center';
   const logo    = gymConfig.gym_logo_url|| '';
   const themeId = gymConfig.gym_theme   || 'cyan';
@@ -9924,6 +9934,16 @@ async function saCreateGym(){
     subscription_status: subStatus,
   }]).select().single();
   if(error){ toast('Error al crear gym: '+(error.message||'').slice(0,60),'❌'); console.error(error); return; }
+
+  // Sembrar gym_config con valores por defecto (igual que el webhook de Stripe)
+  await window.supabaseClient.from('gym_config').insert([
+    { gym_id: data.id, key: 'gym_nombre',  value: nombre },
+    { gym_id: data.id, key: 'gym_tagline', value: 'Fitness Center' },
+    { gym_id: data.id, key: 'gym_color',   value: '#1D9E75' },
+    { gym_id: data.id, key: 'gym_theme',   value: 'teal' },
+    { gym_id: data.id, key: 'meta_mensual',value: '0' },
+  ]).then(({error:e})=>{ if(e) console.warn('gym_config seed error:', e.message); });
+
   toast(`Gym "${nombre}" creado con ID ${data.id} ✅`,'🏋️');
   ['sa-g-nombre','sa-g-slug','sa-g-email'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   saToggleCreateForm();
