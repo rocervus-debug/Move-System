@@ -9636,25 +9636,44 @@ async function renderSuperAdmin(){
     const isCurrent = g.id === MOVE_GYM_ID;
     const planColor = PLAN_COLOR[g.plan] || 'var(--text3)';
     const created = g.created_at ? new Date(g.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+    // Subscription status badge
+    const subStatus = g.subscription_status || 'pending';
+    const subColors = { active:'var(--ok)', past_due:'var(--warn)', cancelled:'var(--danger)', pending:'var(--text3)', owner:'#c084fc' };
+    const subLabels = { active:'Activo', past_due:'Pago pendiente', cancelled:'Cancelado', pending:'Sin pago', owner:'Propietario' };
+    const subColor = subColors[subStatus] || 'var(--text3)';
+    const subLabel = subLabels[subStatus] || subStatus;
+    const isOwner = subStatus === 'owner';
     return `
     <tr style="border-bottom:1px solid var(--border);${isCurrent?'background:rgba(29,158,117,.05);':''}">
       <td style="padding:11px 22px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${g.activo?'var(--ok)':'var(--danger)'};" title="${g.activo?'Activo':'Inactivo'}"></div>
+          <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${subColor};" title="${subLabel}"></div>
           <div>
             <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.3;">${esc(g.nombre)}${isCurrent?'&nbsp;<span style="font-size:10px;color:var(--accent);">● actual</span>':''}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:1px;">ID&nbsp;${g.id} &middot; /${esc(g.slug||'')} &middot; ${esc(g.owner_email||'—')}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;">ID&nbsp;${g.id} &middot; ${esc(g.owner_email||'—')} &middot; <span style="color:${subColor};font-weight:600;">${subLabel}</span></div>
           </div>
         </div>
       </td>
       <td style="padding:11px 12px;">
-        <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;">${(g.plan||'basic').toUpperCase()}</span>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;display:inline-block;">${(g.plan||'pro').toUpperCase()}</span>
+          <select onchange="saUpdateGymPlan(${g.id},this.value)" style="font-size:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:5px;color:var(--text3);padding:2px 4px;cursor:pointer;font-family:var(--font);">
+            <option value="pro" ${(g.plan||'pro')==='pro'?'selected':''}>Pro $599</option>
+            <option value="max" ${g.plan==='max'?'selected':''}>Max $999</option>
+          </select>
+        </div>
       </td>
       <td style="padding:11px 12px;font-size:11px;color:var(--text3);">${created}</td>
       <td style="padding:11px 22px;text-align:right;">
-        <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
-          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" style="font-size:10px;padding:4px 10px;">🔄 Cambiar</button>` : ''}
-          <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:10px;padding:4px 10px;">${g.activo?'⏸ Pausar':'▶ Activar'}</button>
+        <div style="display:flex;gap:5px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" style="font-size:10px;padding:4px 10px;">🔄 Ver</button>` : ''}
+          ${!['active','owner'].includes(subStatus)
+            ? `<button class="btn btn-sm" onclick="saActivateGym(${g.id})" style="font-size:10px;padding:4px 10px;background:rgba(29,158,117,.15);color:var(--ok);border:1px solid rgba(29,158,117,.3);">✅ Activar</button>`
+            : subStatus==='active'
+              ? `<button class="btn btn-sm btn-outline" onclick="saSetGymOwner(${g.id})" style="font-size:10px;padding:4px 10px;" title="Marcar como gym propio (sin pago)">🏠 Propio</button>`
+              : `<span style="font-size:10px;color:#c084fc;">🏠 Gym propio</span>`
+          }
+          <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:10px;padding:4px 10px;">${g.activo?'⏸':'▶'}</button>
         </div>
       </td>
     </tr>`;
@@ -9797,16 +9816,53 @@ async function saCreateGym(){
   const nombre = (document.getElementById('sa-g-nombre').value||'').trim();
   const slug   = (document.getElementById('sa-g-slug').value||'').trim().toLowerCase().replace(/\s+/g,'-');
   const email  = (document.getElementById('sa-g-email').value||'').trim().toLowerCase();
-  const plan   = document.getElementById('sa-g-plan').value || 'basic';
+  const plan   = document.getElementById('sa-g-plan').value || 'pro';
   if(!nombre){ toast('El nombre del gym es obligatorio.','⚠️'); return; }
   if(!slug){ toast('El slug es obligatorio.','⚠️'); return; }
   const { data, error } = await window.supabaseClient.from('gyms').insert([{
-    nombre, slug, activo: true, plan, owner_email: email||null
+    nombre, slug, activo: true, plan,
+    owner_email: email||null,
+    subscription_status: 'owner', // Gyms creados desde SA = propios, siempre activos
   }]).select().single();
   if(error){ toast('Error al crear gym: '+(error.message||'').slice(0,60),'❌'); console.error(error); return; }
   toast(`Gym "${nombre}" creado con ID ${data.id} ✅`,'🏋️');
   ['sa-g-nombre','sa-g-slug','sa-g-email'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   saToggleCreateForm();
+  renderSuperAdmin();
+}
+
+// ── Activar gym manualmente (sin Stripe) ─────────────────────────────
+async function saActivateGym(gymId){
+  if(!await confirmDialog('¿Activar este gym sin pago? El acceso quedará habilitado permanentemente hasta que lo desactives.', {
+    title:'Activar gym (sin pago)', danger:false, confirmText:'Activar ahora', icon:'✅'
+  })) return;
+  const { error } = await window.supabaseClient.from('gyms').update({
+    subscription_status: 'active', activo: true
+  }).eq('id', gymId);
+  if(error){ toast('Error al activar','❌'); return; }
+  toast('Gym activado ✅ — acceso habilitado sin pago','✅');
+  auditLog('SA_ACTIVATE_GYM','gyms',gymId,'Activación manual sin Stripe');
+  renderSuperAdmin();
+}
+
+// ── Marcar gym como "propio" (tuyo, sin Stripe nunca) ────────────────
+async function saSetGymOwner(gymId){
+  if(!await confirmDialog('¿Marcar este gym como "Propio"? Quedará activo permanentemente sin requerir suscripción.', {
+    title:'Gym propio', danger:false, confirmText:'Marcar como propio', icon:'🏠'
+  })) return;
+  const { error } = await window.supabaseClient.from('gyms').update({
+    subscription_status: 'owner', activo: true
+  }).eq('id', gymId);
+  if(error){ toast('Error','❌'); return; }
+  toast('Gym marcado como propio 🏠 — nunca se bloquea','🏠');
+  renderSuperAdmin();
+}
+
+// ── Cambiar plan de un gym ───────────────────────────────────────────
+async function saUpdateGymPlan(gymId, newPlan){
+  const { error } = await window.supabaseClient.from('gyms').update({ plan: newPlan }).eq('id', gymId);
+  if(error){ toast('Error al cambiar plan','❌'); return; }
+  toast(`Plan cambiado a ${newPlan.toUpperCase()} ✓`,'📋');
   renderSuperAdmin();
 }
 
