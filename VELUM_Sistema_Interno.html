@@ -4869,8 +4869,9 @@ function showApp(){
     }
     // Dashboard ya fue inicializado en DOMContentLoaded; solo re-renderiza con datos reales
     renderDashboard();
-    // Show onboarding wizard for new gyms
-    setTimeout(checkOnboarding, 800);
+    // Show onboarding wizard — forzado si viene de success.html (?onboarding=true)
+    const forceOnboarding = new URLSearchParams(location.search).get('onboarding') === 'true';
+    setTimeout(() => checkOnboarding(forceOnboarding), 800);
     // Inicializar VELUM Assistant (solo admin/superadmin)
     setTimeout(vaInit, 500);
   }
@@ -13173,14 +13174,18 @@ function checkMembresiasNotificaciones(){
 let _obStep = 1;
 const OB_STEPS = 4;
 
-function checkOnboarding(){
-  if(!currentUser || currentUser.rol !== 'admin') return;
-  // Key = scoped to gym so each new gym gets its own onboarding
+function checkOnboarding(force = false){
+  if(!currentUser || (currentUser.rol !== 'admin' && currentUser.rol !== 'superadmin')) return;
   const obKey = `move_onboarding_done_gym${MOVE_GYM_ID||1}`;
-  if(localStorage.getItem(obKey)) return;
-  // Show if gym has no custom name configured (fresh gym)
+  if(!force && localStorage.getItem(obKey)) return;
+  if(force){
+    // Viene de success.html — siempre mostrar el wizard al nuevo suscriptor
+    localStorage.removeItem(obKey);
+    showOnboarding();
+    return;
+  }
   const hasConfig = gymConfig.gym_nombre && gymConfig.gym_nombre.trim() !== '' && gymConfig.gym_nombre !== 'MOVE';
-  if(hasConfig){ localStorage.setItem(obKey,'1'); return; } // already configured
+  if(hasConfig){ localStorage.setItem(obKey,'1'); return; }
   showOnboarding();
 }
 
