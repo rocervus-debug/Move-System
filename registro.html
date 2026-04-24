@@ -4,6 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>VELUM — Registra tu Gym</title>
+<meta name="description" content="Registra tu gym en VELUM. Elige tu plan y empieza a gestionar membresías, coaches y check-in QR hoy mismo."/>
+<meta property="og:type"        content="website"/>
+<meta property="og:url"         content="https://myvelum.app/registro"/>
+<meta property="og:title"       content="Registra tu gym en VELUM"/>
+<meta property="og:description" content="Elige tu plan y empieza hoy. Desde $599 MXN/mes. Sin contrato anual."/>
+<meta property="og:image"       content="https://myvelum.app/og-image.png"/>
+<link rel="canonical" href="https://myvelum.app/registro"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -153,12 +160,18 @@ body{
       <div class="field"><label>Tu nombre completo *</label><input type="text" id="f-nombre" placeholder="Ej: Carlos Rodríguez" autocomplete="name" ontouchstart=""/></div>
       <div class="field"><label>Email *</label><input type="email" id="f-email" placeholder="tu@email.com" autocomplete="email" autocapitalize="off" ontouchstart=""/></div>
       <div class="field"><label>Contraseña *</label><input type="password" id="f-pass" placeholder="Mínimo 8 caracteres" autocomplete="new-password" ontouchstart=""/></div>
+      <div class="field"><label>WhatsApp <span style="font-weight:400;color:var(--text3);">(opcional — para soporte de onboarding)</span></label><input type="tel" id="f-tel" placeholder="+52 55 1234 5678" autocomplete="tel" ontouchstart=""/></div>
       <button class="btn-submit" id="btn-pagar" onclick="irAPagar()" ontouchstart="">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         Pagar con Stripe →
       </button>
       <div class="err" id="f-err"></div>
       <div class="secure-note">🔒 Pago 100% seguro vía Stripe · VELUM no almacena datos de tarjeta</div>
+      <div style="display:flex;justify-content:center;gap:20px;margin-top:14px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;">✓ Sin contrato anual</span>
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;">✓ Cancela cuando quieras</span>
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;">✓ Acceso inmediato</span>
+      </div>
     </div>
     <div class="back">
       <a href="#" onclick="document.getElementById('step-plans').style.display='block';document.getElementById('step-form').style.display='none';">← Cambiar plan</a>
@@ -193,6 +206,7 @@ async function irAPagar(){
   const nombre    = document.getElementById('f-nombre').value.trim();
   const email     = document.getElementById('f-email').value.trim().toLowerCase();
   const pass      = document.getElementById('f-pass').value;
+  const tel       = (document.getElementById('f-tel')?.value||'').trim();
   const errEl     = document.getElementById('f-err');
   errEl.textContent = '';
   if(!gymNombre){ errEl.textContent='Ingresa el nombre del gym.'; return; }
@@ -207,7 +221,7 @@ async function irAPagar(){
     const res = await fetch(SUPA_URL + '/functions/v1/velum-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: selectedPlan, gym_nombre: gymNombre, email, pw_hash, nombre_admin: nombre })
+      body: JSON.stringify({ plan: selectedPlan, gym_nombre: gymNombre, email, pw_hash, nombre_admin: nombre, tel_whatsapp: tel })
     });
     const data = await res.json();
     if(!res.ok || !data.url){

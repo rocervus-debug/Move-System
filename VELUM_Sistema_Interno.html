@@ -2327,6 +2327,11 @@ select option{background:#10101c;color:var(--text);}
         <span class="notif-dot" id="notif-dot" style="display:none;"></span>
         <span id="notif-count" style="display:none;position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center;"></span>
       </div>
+      <!-- VELUM Assistant shortcut -->
+      <button id="va-topbar-btn" onclick="vaToggle()" title="VELUM Assistant IA"
+        style="display:none;align-items:center;gap:6px;padding:6px 12px;background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.3);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s;">
+        <span style="font-size:14px;">✦</span> Asistente
+      </button>
     </div>
   </div>
 
@@ -3124,7 +3129,7 @@ select option{background:#10101c;color:var(--text);}
           <span class="card-sub" id="gastos-count">0 gastos</span>
         </div>
         <div id="gastos-list">
-          <div class="empty-state"><div class="empty-icon">💸</div><div class="empty-title">Sin gastos registrados</div><div class="empty-sub">Registra tus egresos para ver el balance real del gym.</div></div>
+          <div class="empty-state"><div class="empty-icon">💸</div><div class="empty-title">Control de gastos</div><div class="empty-sub">Registra tus egresos para ver el balance real del gym. Sin gastos registrados no puedes saber tu margen real de rentabilidad.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openGastoModal()">+ Registrar primer gasto →</button></div>
         </div>
       </div>
       <!-- ── Gráfica burn rate últimos 6 meses ── -->
@@ -6899,7 +6904,7 @@ function renderCRM(tab){
 
   if(data.length===0){
     const msgs = {
-      prospectos: ['Sin prospectos aún','Agrega tu primer prospecto con el botón "+ Nuevo Prospecto".'],
+      prospectos: ['Sin leads aún','Agrega tu primer prospecto. Cada lead entra al pipeline para hacerle seguimiento hasta convertirlo en cliente.'],
       activos:    ['Sin clientes activos','Los prospectos marcados como "Cerrado – Ganado" aparecerán aquí.'],
       riesgo:     ['Sin clientes en riesgo','¡Bien! Ningún cliente activo está en riesgo por ahora.'],
       exclientes: ['Sin exclientes','Los leads marcados como "Cerrado – Perdido" aparecerán aquí.'],
@@ -7707,7 +7712,7 @@ async function saveEditCoach(){
 function renderCoaches(){
   const grid = document.getElementById('coaches-grid');
   if(!coaches.length){
-    grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Sin coaches registrados</div><div class="empty-sub">Agrega coaches para asignarles clases y medir su rendimiento.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('coach')">+ Agregar Coach</button></div></div></div>`;
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">🏋</div><div class="empty-title">Tu equipo de coaches</div><div class="empty-sub">Agrega a tu equipo para asignarles clases, evaluar su desempeño y conectarlos al horario. Sus perfiles son independientes de los clientes.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('coach')">+ Agregar primer coach →</button></div></div></div>`;
     return;
   }
   grid.innerHTML = coaches.map((c, idx)=>{
@@ -11125,7 +11130,7 @@ function renderPagos(){
 
   const el = document.getElementById('pagos-list');
   if(!pagos.length){
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Lleva control de ingresos y renovaciones registrando cada pago.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('pago')">+ Registrar primer pago</button></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Registra tu primer pago</div><div class="empty-sub">Aquí verás el historial de ingresos, renovaciones y membresías. Cada pago registrado activa alertas de vencimiento automáticas.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('pago')">+ Registrar primer pago →</button></div>`;
     return;
   }
 
@@ -13381,10 +13386,26 @@ async function saveObConfig(){
 // VELUM ASSISTANT
 // ═══════════════════════════════════════════════════════════════════
 const VA_URL = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/velum-assistant';
-let vaHistory   = [];   // { role, content }[]
+let vaHistory   = [];
 let vaOpen      = false;
 let vaBusy      = false;
 let vaGreeted   = false;
+
+function vaSaveHistory(){
+  try{
+    const today = new Date().toISOString().slice(0,10);
+    localStorage.setItem('velum_va_history', JSON.stringify(vaHistory.slice(-20)));
+    localStorage.setItem('velum_va_date', today);
+  }catch(e){}
+}
+function vaLoadHistory(){
+  try{
+    const today = new Date().toISOString().slice(0,10);
+    if(localStorage.getItem('velum_va_date') !== today){ localStorage.removeItem('velum_va_history'); return []; }
+    const saved = localStorage.getItem('velum_va_history');
+    return saved ? JSON.parse(saved) : [];
+  }catch(e){ return []; }
+}
 
 const VA_SUGGESTIONS = [
   '¿Cómo van mis membresías este mes?',
@@ -13400,6 +13421,17 @@ function vaInit(){
   if(rol !== 'admin' && rol !== 'superadmin') return;
   const btn = document.getElementById('va-btn');
   if(btn){ btn.style.display = 'flex'; }
+  const topBtn = document.getElementById('va-topbar-btn');
+  if(topBtn){ topBtn.style.display = 'inline-flex'; }
+  // Coachmark en primer uso
+  const key = 'velum_va_discovered';
+  if(!localStorage.getItem(key)){
+    localStorage.setItem(key,'1');
+    setTimeout(()=>{
+      if(topBtn) topBtn.style.boxShadow = '0 0 0 3px rgba(29,158,117,.4)';
+      setTimeout(()=>{ if(topBtn) topBtn.style.boxShadow=''; }, 3000);
+    }, 1500);
+  }
 }
 
 function vaToggle(){
@@ -13414,7 +13446,20 @@ function vaToggle(){
     const notif = document.getElementById('va-notif');
     if(notif) notif.style.display = 'none';
     // Mensaje de bienvenida la primera vez
-    if(!vaGreeted){ vaGreet(); vaGreeted = true; }
+    if(!vaGreeted){
+    // Restaurar historial del día
+    const saved = vaLoadHistory();
+    if(saved.length > 0){
+      vaHistory = saved;
+      const container = document.getElementById('va-msgs');
+      if(container){
+        saved.forEach(m => vaAddMsg(m.role === 'user' ? 'user' : 'ai', m.content));
+      }
+      vaGreeted = true;
+    } else {
+      vaGreet(); vaGreeted = true;
+    }
+  }
     setTimeout(()=>{ const inp = document.getElementById('va-input'); if(inp) inp.focus(); }, 150);
   }
 }
@@ -13574,6 +13619,7 @@ async function vaSend(){
     const reply = data.reply || data.error || 'Sin respuesta del asistente.';
     vaAddMsg('ai', reply);
     vaHistory.push({ role: 'assistant', content: reply });
+    vaSaveHistory();
 
     // Mostrar sugerencias después de respuesta
     if(vaHistory.length <= 4) vaShowSuggestions();
