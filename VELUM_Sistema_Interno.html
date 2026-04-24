@@ -1885,6 +1885,151 @@ select option{background:#10101c;color:var(--text);}
   color: var(--accent);
   border-color: rgba(29,158,117,.4);
 }
+
+/* ═══════════════════════════════════════════════════
+   VELUM ASSISTANT — Chat Widget
+═══════════════════════════════════════════════════ */
+#va-btn{
+  position:fixed;bottom:24px;right:24px;z-index:8000;
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#0F6E56);
+  border:none;cursor:pointer;
+  box-shadow:0 4px 20px rgba(29,158,117,.45);
+  display:none;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+  color:#fff;font-size:22px;
+}
+#va-btn:hover{ transform:scale(1.08); box-shadow:0 6px 28px rgba(29,158,117,.6); }
+#va-btn .va-notif{
+  position:absolute;top:2px;right:2px;
+  width:10px;height:10px;border-radius:50%;
+  background:#f87171;border:2px solid var(--bg);
+  display:none;
+}
+#va-panel{
+  position:fixed;bottom:88px;right:24px;z-index:8000;
+  width:360px;max-height:540px;
+  background:rgba(8,22,18,.97);
+  border:1px solid rgba(29,158,117,.25);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  display:none;flex-direction:column;
+  overflow:hidden;
+  backdrop-filter:blur(20px);
+}
+@media(max-width:420px){
+  #va-panel{ right:12px;left:12px;width:auto;bottom:82px; }
+}
+.va-head{
+  padding:14px 16px;
+  background:linear-gradient(135deg,rgba(29,158,117,.18),rgba(29,158,117,.08));
+  border-bottom:1px solid rgba(29,158,117,.15);
+  display:flex;align-items:center;gap:10px;
+}
+.va-head-icon{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#0F6E56);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.va-head-info{ flex:1;min-width:0; }
+.va-head-name{ font-size:13px;font-weight:700;color:#fff; }
+.va-head-status{ font-size:11px;color:var(--accent);display:flex;align-items:center;gap:5px; }
+.va-head-status::before{ content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0; }
+.va-close{
+  background:none;border:none;color:var(--text3);cursor:pointer;
+  font-size:18px;padding:4px;border-radius:6px;transition:color .15s;
+}
+.va-close:hover{ color:var(--text); }
+#va-msgs{
+  flex:1;overflow-y:auto;padding:14px 12px;
+  display:flex;flex-direction:column;gap:10px;
+  min-height:0;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(29,158,117,.2) transparent;
+}
+.va-msg{
+  max-width:88%;
+  padding:10px 13px;
+  border-radius:14px;
+  font-size:13px;line-height:1.55;
+  animation:vaFadeIn .2s ease;
+}
+@keyframes vaFadeIn{ from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
+.va-msg.user{
+  align-self:flex-end;
+  background:linear-gradient(135deg,var(--accent),#0F6E56);
+  color:#fff;
+  border-bottom-right-radius:4px;
+}
+.va-msg.ai{
+  align-self:flex-start;
+  background:rgba(255,255,255,.07);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.08);
+  border-bottom-left-radius:4px;
+}
+.va-msg.ai p{ margin:0 0 6px; }
+.va-msg.ai p:last-child{ margin:0; }
+.va-msg.ai ul,.va-msg.ai ol{ margin:4px 0 4px 16px;padding:0; }
+.va-msg.ai li{ margin-bottom:3px; }
+.va-msg.ai strong{ color:#5DCAA5; }
+.va-typing{
+  align-self:flex-start;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;border-bottom-left-radius:4px;
+  padding:12px 16px;
+  display:flex;gap:5px;align-items:center;
+}
+.va-typing span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--accent);opacity:.6;
+  animation:vaBounce 1.2s infinite;
+}
+.va-typing span:nth-child(2){ animation-delay:.2s; }
+.va-typing span:nth-child(3){ animation-delay:.4s; }
+@keyframes vaBounce{
+  0%,80%,100%{ transform:translateY(0); }
+  40%{ transform:translateY(-6px);opacity:1; }
+}
+.va-suggestions{
+  display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 10px;
+}
+.va-sug{
+  font-size:11px;padding:5px 10px;
+  background:rgba(29,158,117,.1);
+  border:1px solid rgba(29,158,117,.25);
+  border-radius:20px;color:var(--accent);
+  cursor:pointer;transition:background .15s;white-space:nowrap;
+}
+.va-sug:hover{ background:rgba(29,158,117,.2); }
+.va-foot{
+  padding:10px 12px;
+  border-top:1px solid rgba(255,255,255,.07);
+  display:flex;gap:8px;align-items:flex-end;
+}
+#va-input{
+  flex:1;background:rgba(255,255,255,.06);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:9px 12px;
+  font-size:13px;font-family:var(--font);
+  color:var(--text);outline:none;
+  resize:none;min-height:38px;max-height:90px;
+  transition:border-color .18s;
+  -webkit-text-fill-color:var(--text);
+  line-height:1.4;
+}
+#va-input:focus{ border-color:rgba(29,158,117,.5); }
+#va-input::placeholder{ color:rgba(157,200,187,.35); }
+#va-send{
+  width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:var(--accent);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+#va-send:hover{ background:#5DCAA5; }
+#va-send:disabled{ opacity:.4;cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -4719,6 +4864,8 @@ function showApp(){
     renderDashboard();
     // Show onboarding wizard for new gyms
     setTimeout(checkOnboarding, 800);
+    // Inicializar VELUM Assistant (solo admin/superadmin)
+    setTimeout(vaInit, 500);
   }
 }
 
@@ -13197,6 +13344,251 @@ async function saveObConfig(){
     </div>
   </div>
 </div>
+
+<!-- ═══ VELUM ASSISTANT WIDGET ═══ -->
+<button id="va-btn" title="VELUM Assistant" onclick="vaToggle()">
+  <span style="font-size:20px;">✦</span>
+  <div class="va-notif" id="va-notif"></div>
+</button>
+
+<div id="va-panel">
+  <div class="va-head">
+    <div class="va-head-icon">✦</div>
+    <div class="va-head-info">
+      <div class="va-head-name">VELUM Assistant</div>
+      <div class="va-head-status">En línea · IA</div>
+    </div>
+    <button class="va-close" onclick="vaToggle()" title="Cerrar">✕</button>
+  </div>
+  <div id="va-msgs"></div>
+  <div class="va-suggestions" id="va-sugs"></div>
+  <div class="va-foot">
+    <textarea id="va-input" placeholder="Pregúntame algo sobre tu gym…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();vaSend();}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px'"></textarea>
+    <button id="va-send" onclick="vaSend()" title="Enviar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// VELUM ASSISTANT
+// ═══════════════════════════════════════════════════════════════════
+const VA_URL = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/velum-assistant';
+let vaHistory   = [];   // { role, content }[]
+let vaOpen      = false;
+let vaBusy      = false;
+let vaGreeted   = false;
+
+const VA_SUGGESTIONS = [
+  '¿Cómo van mis membresías este mes?',
+  'Analiza mi retención de clientes',
+  '¿Cómo agrego un coach nuevo?',
+  'Tengo leads sin convertir, ¿qué hago?',
+  '¿Cómo funciona el check-in QR?',
+  'Dame un resumen de mi gym',
+];
+
+function vaInit(){
+  const rol = currentUser?.rol;
+  if(rol !== 'admin' && rol !== 'superadmin') return;
+  const btn = document.getElementById('va-btn');
+  if(btn){ btn.style.display = 'flex'; }
+}
+
+function vaToggle(){
+  vaOpen = !vaOpen;
+  const panel = document.getElementById('va-panel');
+  const btn   = document.getElementById('va-btn');
+  if(!panel || !btn) return;
+
+  panel.style.display = vaOpen ? 'flex' : 'none';
+  if(vaOpen){
+    // Quitar notif dot
+    const notif = document.getElementById('va-notif');
+    if(notif) notif.style.display = 'none';
+    // Mensaje de bienvenida la primera vez
+    if(!vaGreeted){ vaGreet(); vaGreeted = true; }
+    setTimeout(()=>{ const inp = document.getElementById('va-input'); if(inp) inp.focus(); }, 150);
+  }
+}
+
+function vaGreet(){
+  const gymNombre = gymConfig?.gym_nombre || currentUser?.gym_nombre || 'tu gym';
+  const ctx = vaGetContext();
+  let greeting = `¡Hola! Soy tu asistente de **${gymNombre}** 👋\n\nPuedo ayudarte a analizar el desempeño de tu gym, resolver dudas de VELUM y darte recomendaciones concretas.`;
+
+  // Agrega insight rápido si hay datos
+  if(ctx.membresias_vencidas > 0 || ctx.vencimientos_proximos > 0){
+    greeting += `\n\n⚡ Veo que tienes **${ctx.membresias_vencidas} membresías vencidas** y **${ctx.vencimientos_proximos} por vencer** esta semana. ¿Quieres que te ayude con una estrategia de reactivación?`;
+  }
+
+  vaAddMsg('ai', greeting);
+  vaShowSuggestions();
+}
+
+function vaGetContext(){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const mesStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+  // Clientes activos (membresía vigente)
+  const mapaUltimo = {};
+  (pagos||[]).forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    if(!mapaUltimo[n]||((p.vence||'')>(mapaUltimo[n].vence||''))) mapaUltimo[n]=p;
+  });
+  const activos = Object.values(mapaUltimo).filter(p=>{
+    if(!p.vence||p.vence.length<10) return false;
+    return Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/86400000)>=0;
+  }).length;
+  const vencidas = Object.values(mapaUltimo).filter(p=>{
+    if(!p.vence||p.vence.length<10) return false;
+    return Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/86400000)<0;
+  }).length;
+  const proxVencer = Object.values(mapaUltimo).filter(p=>{
+    if(!p.vence||p.vence.length<10) return false;
+    const d=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/86400000);
+    return d>=0 && d<=7;
+  }).length;
+
+  // Ingresos del mes
+  const ingresosMes = (pagos||[])
+    .filter(p=>(p.fecha||'').startsWith(mesStr) && p.notas!=='__sin_pago__')
+    .reduce((s,p)=>s+(p.monto||0),0);
+
+  // Leads del mes
+  const leadsMes = (leads||[]).filter(l=>(l.fecha_creacion||l.created_at||'').startsWith(mesStr)).length;
+
+  return {
+    nombre:               gymConfig?.gym_nombre || 'Mi Gym',
+    plan:                 gymConfig?.plan || gymConfig?.gym_plan || 'max',
+    clientes_activos:     activos,
+    total_clientes:       (clientesDB||[]).length,
+    coaches:              (coaches||[]).length,
+    ingresos_mes:         ingresosMes,
+    membresias_vencidas:  vencidas,
+    vencimientos_proximos:proxVencer,
+    leads_mes:            leadsMes,
+    leads_total:          (leads||[]).length,
+  };
+}
+
+function vaAddMsg(role, text){
+  const container = document.getElementById('va-msgs');
+  if(!container) return;
+  const div = document.createElement('div');
+  div.className = `va-msg ${role}`;
+  // Render markdown básico para mensajes AI
+  if(role === 'ai'){
+    div.innerHTML = vaMarkdown(text);
+  } else {
+    div.textContent = text;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  // Ocultar suggestions cuando el usuario escribe
+  if(role === 'user') vaHideSuggestions();
+}
+
+function vaMarkdown(text){
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px;font-size:12px;">$1</code>')
+    .replace(/^## (.+)$/gm,'<div style="font-weight:700;color:#5DCAA5;margin:8px 0 4px;">$1</div>')
+    .replace(/^- (.+)$/gm,'<div style="padding-left:12px;">• $1</div>')
+    .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')
+    .replace(/^(.)/,'<p>$1').replace(/(.)$/,'$1</p>');
+}
+
+function vaShowTyping(){
+  const container = document.getElementById('va-msgs');
+  if(!container) return;
+  const div = document.createElement('div');
+  div.className = 'va-typing';
+  div.id = 'va-typing';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function vaRemoveTyping(){
+  document.getElementById('va-typing')?.remove();
+}
+
+function vaShowSuggestions(){
+  const el = document.getElementById('va-sugs');
+  if(!el) return;
+  el.innerHTML = VA_SUGGESTIONS.slice(0,4).map(s=>
+    `<button class="va-sug" onclick="vaUseSuggestion(this.textContent)">${s}</button>`
+  ).join('');
+}
+
+function vaHideSuggestions(){
+  const el = document.getElementById('va-sugs');
+  if(el) el.innerHTML = '';
+}
+
+function vaUseSuggestion(text){
+  const inp = document.getElementById('va-input');
+  if(inp){ inp.value = text; }
+  vaSend();
+}
+
+async function vaSend(){
+  if(vaBusy) return;
+  const inp  = document.getElementById('va-input');
+  const send = document.getElementById('va-send');
+  if(!inp) return;
+  const text = inp.value.trim();
+  if(!text) return;
+
+  inp.value = '';
+  inp.style.height = 'auto';
+  vaAddMsg('user', text);
+  vaHistory.push({ role: 'user', content: text });
+
+  vaBusy = true;
+  if(send) send.disabled = true;
+  vaShowTyping();
+
+  try {
+    const res = await fetch(VA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: vaHistory,
+        gym_context: vaGetContext(),
+      }),
+    });
+    const data = await res.json();
+    vaRemoveTyping();
+
+    const reply = data.reply || data.error || 'Sin respuesta del asistente.';
+    vaAddMsg('ai', reply);
+    vaHistory.push({ role: 'assistant', content: reply });
+
+    // Mostrar sugerencias después de respuesta
+    if(vaHistory.length <= 4) vaShowSuggestions();
+
+  } catch(e){
+    vaRemoveTyping();
+    vaAddMsg('ai', 'Error de conexión. Verifica tu internet e intenta de nuevo.');
+  }
+
+  vaBusy = false;
+  if(send) send.disabled = false;
+  setTimeout(()=>{ if(inp) inp.focus(); }, 100);
+}
+
+// Inicializar cuando el app esté listo
+document.addEventListener('velumAppReady', vaInit);
+</script>
 
 </body>
 </html>
