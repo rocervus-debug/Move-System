@@ -2076,11 +2076,8 @@ select option{background:#10101c;color:var(--text);}
     </div>
     <!-- Programa panel -->
     <div id="cpanel-programa" style="display:none;">
-      <div class="coach-sub-tabs">
-        <div class="coach-sub-tab active" id="cstab-Strength"  onclick="switchCoachProgTab('Strength')">💪 Strength</div>
-        <div class="coach-sub-tab" id="cstab-Hyrox"     onclick="switchCoachProgTab('Hyrox')">🏁 Hyrox</div>
-        <div class="coach-sub-tab" id="cstab-Endurance" onclick="switchCoachProgTab('Endurance')">🏃 Endurance</div>
-      </div>
+      <!-- Coach discipline tabs — rendered dynamically by renderCoachProgTabs() -->
+      <div class="coach-sub-tabs" id="coach-prog-tabs-container"></div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
         <button class="btn btn-outline btn-sm" onclick="coachProgNav(-1)">‹</button>
         <span style="font-size:14px;font-weight:700;flex:1;text-align:center;" id="coach-prog-label">—</span>
@@ -3163,11 +3160,8 @@ select option{background:#10101c;color:var(--text);}
         <button class="btn btn-outline btn-sm" onclick="openProgConfig()" style="border-color:rgba(139,92,246,.5);color:#8b5cf6;white-space:nowrap;">⚙️ Configurar IA</button>
       </div>
 
-      <div class="tabs" style="margin-bottom:16px;">
-        <div class="tab active" id="prog-tab-Strength"   onclick="switchProgTab('Strength')">💪 Strength</div>
-        <div class="tab" id="prog-tab-Hyrox"      onclick="switchProgTab('Hyrox')">🏁 Hyrox</div>
-        <div class="tab" id="prog-tab-Endurance"  onclick="switchProgTab('Endurance')">🏃 Endurance</div>
-      </div>
+      <!-- Discipline tabs — rendered dynamically by renderProgTabs() -->
+      <div class="tabs" style="margin-bottom:16px;flex-wrap:wrap;" id="prog-tabs-container"></div>
 
       <!-- Month nav -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -4609,65 +4603,25 @@ select option{background:#10101c;color:var(--text);}
 
 <!-- ══ MODAL: CONFIG ASISTENTE IA ══ -->
 <div class="modal-overlay" id="modal-prog-config">
-  <div class="modal" style="max-width:640px;">
+  <div class="modal" style="max-width:700px;">
     <div class="modal-header">
-      <div class="modal-title">🤖 Configurar Asistente IA</div>
+      <div class="modal-title">🤖 Disciplinas &amp; Configuración IA</div>
       <button class="modal-close" onclick="closeModal('prog-config')">✕</button>
     </div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:16px;padding:10px 12px;background:var(--card2);border-radius:8px;border:1px solid var(--border);">
-      Esta configuración le indica al asistente qué equipo tienen disponible, cuál es el objetivo de cada programa y en qué fase del ciclo están. Se usa cada semana para generar entrenamientos progresivos y evitar repetición.
+      Activa las disciplinas que ofrece tu gym, configura los días de entrenamiento por semana y añade contexto para que la IA genere meses completos con un clic.
     </div>
 
     <!-- Equipo general -->
-    <div class="field">
+    <div class="field" style="margin-bottom:18px;">
       <label>🏋️ Equipo disponible en el gimnasio</label>
-      <textarea id="cfg-equipo" rows="3" placeholder="Ej: Barbell, mancuernas 5-40kg, kettlebells, pull-up bar, assault bike, rower, ski erg, sled, sandbags, TRX, cajones pliométricos, wall balls, cuerdas de batalla..."></textarea>
+      <textarea id="cfg-equipo" rows="2" placeholder="Ej: Barbell, mancuernas 5-40kg, kettlebells, pull-up bar, assault bike, rower, ski erg, sled, TRX, cajones pliométricos..."></textarea>
     </div>
 
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:16px 0 10px;">Objetivos por Disciplina</div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Disciplinas disponibles en tu gym</div>
 
-    <div class="tabs" style="margin-bottom:14px;" id="cfg-tabs">
-      <div class="tab active" id="cfg-tab-Strength"  onclick="switchCfgTab('Strength')">💪 Strength</div>
-      <div class="tab" id="cfg-tab-Hyrox"     onclick="switchCfgTab('Hyrox')">🏁 Hyrox</div>
-      <div class="tab" id="cfg-tab-Endurance" onclick="switchCfgTab('Endurance')">🏃 Endurance</div>
-    </div>
-
-    <div id="cfg-panel-Strength">
-      <div class="field-row">
-        <div class="field"><label>Bloque actual</label>
-          <select id="cfg-str-bloque"><option>Base</option><option>Hipertrofia</option><option>Fuerza</option><option>Pico</option><option>Deload</option></select></div>
-        <div class="field"><label>Nivel de clientes</label>
-          <select id="cfg-str-nivel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option><option>Mixto</option></select></div>
-      </div>
-      <div class="field"><label>Objetivo del programa</label>
-        <textarea id="cfg-str-objetivo" rows="2" placeholder="Ej: Desarrollar fuerza funcional e hipertrofia. Progresión lineal de cargas. Énfasis en patrones de empuje, jalón, bisagra y sentadilla."></textarea></div>
-      <div class="field"><label>Notas para el asistente</label>
-        <textarea id="cfg-str-notas" rows="2" placeholder="Ej: Los clientes entrenan 3-4 días/semana. Sesiones de máximo 60 min. Evitar movimientos olímpicos complejos."></textarea></div>
-    </div>
-    <div id="cfg-panel-Hyrox" style="display:none;">
-      <div class="field-row">
-        <div class="field"><label>Bloque actual</label>
-          <select id="cfg-hyr-bloque"><option>Base</option><option>Acumulación</option><option>Intensificación</option><option>Pico competitivo</option><option>Deload</option></select></div>
-        <div class="field"><label>Nivel de clientes</label>
-          <select id="cfg-hyr-nivel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option><option>Mixto</option></select></div>
-      </div>
-      <div class="field"><label>Objetivo del programa</label>
-        <textarea id="cfg-hyr-objetivo" rows="2" placeholder="Ej: Preparación para competencia Hyrox. Desarrollar capacidad en las 8 estaciones + running. Simular el formato de carrera."></textarea></div>
-      <div class="field"><label>Notas para el asistente</label>
-        <textarea id="cfg-hyr-notas" rows="2" placeholder="Ej: Próxima competencia en X fecha. Trabajar debilidades en sled push y burpee broad jump."></textarea></div>
-    </div>
-    <div id="cfg-panel-Endurance" style="display:none;">
-      <div class="field-row">
-        <div class="field"><label>Bloque actual</label>
-          <select id="cfg-end-bloque"><option>Base aeróbica</option><option>Volumen</option><option>Intervalos</option><option>Pico</option><option>Recuperación</option></select></div>
-        <div class="field"><label>Nivel de clientes</label>
-          <select id="cfg-end-nivel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option><option>Mixto</option></select></div>
-      </div>
-      <div class="field"><label>Objetivo del programa</label>
-        <textarea id="cfg-end-objetivo" rows="2" placeholder="Ej: Construir base aeróbica sólida. Mejorar VO2max. Alternar: rowing, bike, ski erg, running."></textarea></div>
-      <div class="field"><label>Notas para el asistente</label>
-        <textarea id="cfg-end-notas" rows="2" placeholder="Ej: Sesiones de Z2 los miércoles de 45-60 min. Intervalos los martes. Long session los sábados."></textarea></div>
-    </div>
+    <!-- Discipline catalog — rendered by renderDisciplinaCatalog() -->
+    <div id="cfg-disciplinas-catalog" style="max-height:460px;overflow-y:auto;"></div>
 
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('prog-config')">Cancelar</button>
@@ -4686,9 +4640,8 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <select id="prog-tipo-sel" style="font-size:12px;padding:4px 8px;border-radius:7px;background:var(--card2);border:1px solid var(--border);color:var(--text2);">
+          <!-- Populated dynamically by populateProgTipoSel() -->
           <option value="Strength">💪 Strength</option>
-          <option value="Hyrox">🏁 Hyrox</option>
-          <option value="Endurance">🏃 Endurance</option>
         </select>
         <button class="modal-close" onclick="closeModal('programa')">✕</button>
       </div>
@@ -5025,7 +4978,7 @@ function switchCoachTab(tab){
     document.getElementById('cpanel-'+t).style.display = t===tab ? '' : 'none';
   });
   if(tab==='horario') renderCoachHorario();
-  if(tab==='programa') renderCoachPrograma();
+  if(tab==='programa'){ renderCoachProgTabs(); renderCoachPrograma(); }
 }
 
 function coachHorNav(dir){
@@ -5164,10 +5117,22 @@ function openCoachHorDetail(fechaStr, hora, title, tipo, coach, cupo){
   document.getElementById('coach-detail-overlay').classList.add('open');
 }
 
+function renderCoachProgTabs(){
+  const container = document.getElementById('coach-prog-tabs-container');
+  if(!container) return;
+  const active = getActiveDisciplinas();
+  if(!active.length) return;
+  if(!active.find(d=>d.id===coachProgTabActive)) coachProgTabActive = active[0].id;
+  container.innerHTML = active.map(d=>`
+    <div class="coach-sub-tab${d.id===coachProgTabActive?' active':''}" id="cstab-${d.id}" onclick="switchCoachProgTab('${d.id}')">${d.emoji} ${d.nombre}</div>
+  `).join('');
+}
+
 function switchCoachProgTab(tab){
   coachProgTabActive = tab;
-  ['Strength','Hyrox','Endurance'].forEach(t=>{
-    document.getElementById('cstab-'+t).classList.toggle('active', t===tab);
+  getActiveDisciplinas().forEach(d=>{
+    const el = document.getElementById('cstab-'+d.id);
+    if(el) el.classList.toggle('active', d.id===tab);
   });
   renderCoachPrograma();
 }
@@ -5213,7 +5178,7 @@ function renderCoachPrograma(){
     html += `<div class="${cls}" onclick="${hasContent ? `openCoachProgDetail('${fStr}')` : ''}">
       <div class="prog-day-num" style="font-size:11px;font-weight:700;color:${isToday?'var(--accent)':'var(--text3)'};margin-bottom:3px;">${day}</div>
       ${hasContent
-        ? `<span class="prog-day-tag prog-tag-${coachProgTabActive}">${coachProgTabActive}</span>
+        ? `<span class="prog-day-tag" style="background:${getDisciplinaColor(coachProgTabActive)}22;color:${getDisciplinaColor(coachProgTabActive)};border:1px solid ${getDisciplinaColor(coachProgTabActive)}44;">${(VELUM_DISCIPLINAS.find(d=>d.id===coachProgTabActive)||{emoji:'',nombre:coachProgTabActive}).emoji} ${coachProgTabActive}</span>
            <div style="font-size:9px;color:var(--text3);line-height:1.4;margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${preview}</div>`
         : `<div style="color:var(--border);font-size:13px;text-align:center;margin-top:10px;">—</div>`
       }
@@ -5228,8 +5193,7 @@ function openCoachProgDetail(fechaStr){
   if(!prog) return;
   const dt = new Date(fechaStr+'T12:00:00');
   const fmtDate = dt.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const tagColors = {Strength:'#8b5cf6',Hyrox:'#ef4444',Endurance:'#10b981'};
-  const tagColor  = tagColors[coachProgTabActive]||'var(--accent)';
+  const tagColor = getDisciplinaColor(coachProgTabActive);
 
   document.getElementById('coach-detail-title').innerHTML =
     `<span style="color:${tagColor};">${coachProgTabActive}</span> · ${dt.getDate()} ${MESES_CORTO_ES ? MESES_CORTO_ES[dt.getMonth()] : ''}`;
@@ -6209,7 +6173,17 @@ function go(id, el){
   if(id==='marketing')   renderCalendario();
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
-  if(id==='programa')    { renderProgramaCalendar(); }
+  if(id==='programa'){
+    renderProgTabs();
+    renderProgramaCalendar();
+    const statusEl = document.getElementById('prog-ai-status');
+    if(statusEl){
+      const active = getActiveDisciplinas();
+      if(active.length){
+        statusEl.textContent = `${active.length} disciplina${active.length!==1?'s':''} activa${active.length!==1?'s':''}: ${active.map(d=>d.emoji+' '+d.nombre).join(', ')} · Usa "🤖 Generar Mes Completo" para llenar el calendario automáticamente.`;
+      }
+    }
+  }
   if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); renderStripeSettings(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
@@ -10771,6 +10745,50 @@ async function deleteGasto(id){
 // PROGRAMAS DE ENTRENAMIENTO — Supabase CRUD + render
 // ═══════════════════════════════════════════════════════════════════
 // ─── Configuración del Asistente IA ───
+// ═══════════════════════════════════════════════════════════════════
+// DISCIPLINAS CATALOG — 25 disciplines available in VELUM
+// ═══════════════════════════════════════════════════════════════════
+const VELUM_DISCIPLINAS = [
+  // Fuerza
+  {id:'Strength',    emoji:'💪', nombre:'Strength',     cat:'Fuerza',          defaultDias:[0,2,4]},
+  {id:'Powerlifting',emoji:'🏋️', nombre:'Powerlifting', cat:'Fuerza',          defaultDias:[0,2,4]},
+  {id:'Halterofilia',emoji:'🎽', nombre:'Halterofilia', cat:'Fuerza',          defaultDias:[0,2,4]},
+  {id:'Hipertrofia', emoji:'🔥', nombre:'Hipertrofia',  cat:'Fuerza',          defaultDias:[0,1,2,3,4]},
+  {id:'Calistenia',  emoji:'🤸', nombre:'Calistenia',   cat:'Fuerza',          defaultDias:[0,2,4]},
+  // Cardio & Resistencia
+  {id:'Endurance',   emoji:'🏃', nombre:'Endurance',    cat:'Cardio',          defaultDias:[1,3,5]},
+  {id:'Hyrox',       emoji:'🏁', nombre:'Hyrox',        cat:'Cardio',          defaultDias:[0,2,4]},
+  {id:'Triatlon',    emoji:'🏊', nombre:'Triatlón',     cat:'Cardio',          defaultDias:[0,1,2,3,4,5]},
+  {id:'Spinning',    emoji:'🚴', nombre:'Spinning',     cat:'Cardio',          defaultDias:[0,2,4]},
+  // Funcional & HIIT
+  {id:'CrossFit',    emoji:'⚡', nombre:'CrossFit/WOD', cat:'Funcional',       defaultDias:[0,1,2,4,5]},
+  {id:'HIIT',        emoji:'💥', nombre:'HIIT',         cat:'Funcional',       defaultDias:[0,2,4]},
+  {id:'Funcional',   emoji:'🏗', nombre:'Funcional',    cat:'Funcional',       defaultDias:[0,2,4]},
+  {id:'Kettlebell',  emoji:'🔔', nombre:'Kettlebell',   cat:'Funcional',       defaultDias:[1,3,5]},
+  // Artes Marciales
+  {id:'Box',         emoji:'🥊', nombre:'Box',          cat:'Artes Marciales', defaultDias:[0,2,4]},
+  {id:'MuayThai',    emoji:'🦵', nombre:'Muay Thai',    cat:'Artes Marciales', defaultDias:[0,2,4]},
+  {id:'MMA',         emoji:'🛡', nombre:'MMA',          cat:'Artes Marciales', defaultDias:[0,2,4,5]},
+  {id:'JiuJitsu',    emoji:'🥋', nombre:'Jiu-Jitsu',   cat:'Artes Marciales', defaultDias:[0,2,4]},
+  {id:'Kickboxing',  emoji:'🦶', nombre:'Kickboxing',   cat:'Artes Marciales', defaultDias:[0,2,4]},
+  // Mente & Cuerpo
+  {id:'Yoga',        emoji:'🧘', nombre:'Yoga',         cat:'Mente & Cuerpo',  defaultDias:[0,2,4,6]},
+  {id:'Pilates',     emoji:'🌀', nombre:'Pilates',      cat:'Mente & Cuerpo',  defaultDias:[0,2,4]},
+  {id:'Movilidad',   emoji:'🦾', nombre:'Movilidad',    cat:'Mente & Cuerpo',  defaultDias:[0,2,4,6]},
+  // Deportivo
+  {id:'Futbol',      emoji:'⚽', nombre:'Fútbol/Soccer',cat:'Deportivo',       defaultDias:[0,2,4]},
+  {id:'Basquetbol',  emoji:'🏀', nombre:'Basquetbol',   cat:'Deportivo',       defaultDias:[0,2,4]},
+  {id:'PrepAtletica',emoji:'🏆', nombre:'Prep Atlética',cat:'Deportivo',       defaultDias:[0,1,2,3,4]},
+];
+
+// Helper: get color for a discipline (cycling through a palette)
+function getDisciplinaColor(id){
+  const palette = ['#8b5cf6','#ef4444','#10b981','#f59e0b','#3b82f6','#ec4899','#06b6d4',
+                   '#84cc16','#f97316','#a855f7','#14b8a6','#fb923c','#6366f1','#e11d48'];
+  const idx = VELUM_DISCIPLINAS.findIndex(d=>d.id===id);
+  return palette[idx % palette.length] || 'var(--accent)';
+}
+
 let progConfig = {}; // loaded from Supabase config_programas table
 
 async function loadProgConfigFromSupabase(){
@@ -10778,44 +10796,189 @@ async function loadProgConfigFromSupabase(){
   if(error){ console.warn('config_programas table may not exist yet:', error.message); return; }
   progConfig = {};
   (data||[]).forEach(row=>{ progConfig[row.tipo] = row; });
+  // Set initial progTab to first active discipline (or legacy defaults)
+  const firstActive = VELUM_DISCIPLINAS.find(d=>{
+    const cfg = progConfig[d.id];
+    return cfg ? cfg.activa !== false : ['Strength','Hyrox','Endurance'].includes(d.id);
+  });
+  if(firstActive && progTab === 'Strength') progTab = firstActive.id;
 }
 
-function switchCfgTab(tab){
-  ['Strength','Hyrox','Endurance'].forEach(t=>{
-    document.getElementById('cfg-tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('cfg-panel-'+t).style.display = t===tab ? '' : 'none';
+// Returns active disciplines for this gym (default: Strength/Hyrox/Endurance for legacy)
+function getActiveDisciplinas(){
+  // If config has been saved, use activa flag
+  const hasConfig = Object.keys(progConfig).some(k => k !== 'gym' && progConfig[k].activa !== undefined);
+  if(hasConfig){
+    return VELUM_DISCIPLINAS.filter(d=>{
+      const cfg = progConfig[d.id];
+      return cfg && cfg.activa !== false;
+    });
+  }
+  // Legacy: default to the 3 original disciplines if any exist in config
+  const legacyIds = ['Strength','Hyrox','Endurance'];
+  const hasLegacy = legacyIds.some(id => progConfig[id]);
+  if(hasLegacy) return VELUM_DISCIPLINAS.filter(d=>legacyIds.includes(d.id));
+  // Fallback: just Strength
+  return VELUM_DISCIPLINAS.filter(d=>d.id==='Strength');
+}
+
+function getDisciplinaDias(id){
+  const cfg = progConfig[id];
+  if(cfg && cfg.dias_semana){
+    const ds = typeof cfg.dias_semana === 'string' ? JSON.parse(cfg.dias_semana) : cfg.dias_semana;
+    if(Array.isArray(ds) && ds.length > 0) return ds;
+  }
+  const def = VELUM_DISCIPLINAS.find(d=>d.id===id);
+  return def ? def.defaultDias : [0,2,4];
+}
+
+function renderDisciplinaCatalog(){
+  const catalog = document.getElementById('cfg-disciplinas-catalog');
+  if(!catalog) return;
+  // Group by category
+  const cats = [...new Set(VELUM_DISCIPLINAS.map(d=>d.cat))];
+  const DIAS_NAMES = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  let html = '';
+  cats.forEach(cat=>{
+    html += `<div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 6px;padding:0 2px;">${cat}</div>`;
+    VELUM_DISCIPLINAS.filter(d=>d.cat===cat).forEach(disc=>{
+      const cfg = progConfig[disc.id]||{};
+      const isActive = cfg.activa !== false && (cfg.activa === true || ['Strength','Hyrox','Endurance'].includes(disc.id) && !Object.keys(progConfig).some(k=>k!=='gym' && progConfig[k].activa !== undefined));
+      const color = getDisciplinaColor(disc.id);
+      const dias = getDisciplinaDias(disc.id);
+      const objVal = cfg.objetivo||'';
+      const notasVal = cfg.notas||'';
+      const bloqueVal = cfg.bloque||'Base';
+      const nivelVal = cfg.nivel||'Mixto';
+      html += `
+      <div id="cfg-disc-${disc.id}" style="border:1px solid ${isActive ? color+'55' : 'var(--border)'};border-radius:10px;margin-bottom:8px;background:${isActive ? color+'0a' : 'var(--card2)'};overflow:hidden;transition:all .2s;">
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;" onclick="toggleDiscConfig('${disc.id}')">
+          <span style="font-size:20px;width:26px;text-align:center;">${disc.emoji}</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:${isActive ? 'var(--text)' : 'var(--text3)'};">${disc.nombre}</div>
+            <div style="font-size:10px;color:var(--text3);">${disc.cat}</div>
+          </div>
+          <!-- Toggle switch -->
+          <label onclick="event.stopPropagation()" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;gap:6px;">
+            <input type="checkbox" id="cfg-activa-${disc.id}" ${isActive?'checked':''} onchange="onDiscActivaChange('${disc.id}')"
+              style="position:absolute;opacity:0;width:0;height:0;">
+            <div id="cfg-toggle-${disc.id}" style="width:36px;height:20px;border-radius:10px;background:${isActive?color:'var(--border)'};transition:background .2s;position:relative;flex-shrink:0;">
+              <div style="position:absolute;top:2px;left:${isActive?'18px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;" id="cfg-knob-${disc.id}"></div>
+            </div>
+            <span style="font-size:11px;color:${isActive?color:'var(--text3)'};" id="cfg-toggle-lbl-${disc.id}">${isActive?'Activo':'Inactivo'}</span>
+          </label>
+        </div>
+        <!-- Expanded config (visible when active) -->
+        <div id="cfg-detail-${disc.id}" style="display:${isActive?'block':'none'};padding:0 14px 14px;">
+          <!-- Days of week -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;">Días de entrenamiento por semana:</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${DIAS_NAMES.map((dn,i)=>`
+              <label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+                <input type="checkbox" id="cfg-dia-${disc.id}-${i}" ${dias.includes(i)?'checked':''} style="accent-color:${color};width:16px;height:16px;">
+                <span style="font-size:10px;color:var(--text3);">${dn}</span>
+              </label>`).join('')}
+            </div>
+          </div>
+          <!-- Objetivo + Bloque/Nivel -->
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div class="field" style="flex:1;margin:0;">
+              <label style="font-size:10px;">Bloque actual</label>
+              <select id="cfg-bloque-${disc.id}" style="font-size:12px;padding:4px 6px;">
+                ${['Base','Acumulación','Hipertrofia','Fuerza','Intensificación','Pico','Deload'].map(b=>`<option ${bloqueVal===b?'selected':''}>${b}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field" style="flex:1;margin:0;">
+              <label style="font-size:10px;">Nivel</label>
+              <select id="cfg-nivel-${disc.id}" style="font-size:12px;padding:4px 6px;">
+                ${['Principiante','Intermedio','Avanzado','Mixto'].map(n=>`<option ${nivelVal===n?'selected':''}>${n}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin:0 0 6px;">
+            <label style="font-size:10px;">Objetivo del programa</label>
+            <textarea id="cfg-obj-${disc.id}" rows="2" style="font-size:12px;" placeholder="Ej: Desarrollar fuerza funcional, progresión lineal de cargas...">${objVal}</textarea>
+          </div>
+          <div class="field" style="margin:0;">
+            <label style="font-size:10px;">Notas para el asistente IA</label>
+            <textarea id="cfg-notas-${disc.id}" rows="1" style="font-size:12px;" placeholder="Ej: Sesiones de máx 60 min. Evitar movimientos olímpicos...">${notasVal}</textarea>
+          </div>
+        </div>
+      </div>`;
+    });
   });
+  catalog.innerHTML = html;
+}
+
+function toggleDiscConfig(id){
+  const detail = document.getElementById('cfg-detail-'+id);
+  const cb = document.getElementById('cfg-activa-'+id);
+  if(!detail) return;
+  // Only toggle panel if discipline is active
+  if(cb && cb.checked){
+    detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+function onDiscActivaChange(id){
+  const cb = document.getElementById('cfg-activa-'+id);
+  const disc = VELUM_DISCIPLINAS.find(d=>d.id===id);
+  if(!disc) return;
+  const color = getDisciplinaColor(id);
+  const isActive = cb.checked;
+  const wrapper = document.getElementById('cfg-disc-'+id);
+  const toggle = document.getElementById('cfg-toggle-'+id);
+  const knob = document.getElementById('cfg-knob-'+id);
+  const lbl = document.getElementById('cfg-toggle-lbl-'+id);
+  const detail = document.getElementById('cfg-detail-'+id);
+  if(wrapper){ wrapper.style.border = `1px solid ${isActive?color+'55':'var(--border)'}`;  wrapper.style.background = isActive ? color+'0a' : 'var(--card2)'; }
+  if(toggle) toggle.style.background = isActive ? color : 'var(--border)';
+  if(knob)   knob.style.left = isActive ? '18px' : '2px';
+  if(lbl){   lbl.textContent = isActive ? 'Activo' : 'Inactivo'; lbl.style.color = isActive ? color : 'var(--text3)'; }
+  if(detail) detail.style.display = isActive ? 'block' : 'none';
 }
 
 function openProgConfig(){
-  // Pre-fill from loaded config
   const gym = progConfig['gym']||{};
-  const str = progConfig['Strength']||{};
-  const hyr = progConfig['Hyrox']||{};
-  const end = progConfig['Endurance']||{};
   const sv = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
   sv('cfg-equipo', gym.equipo||'');
-  sv('cfg-str-objetivo', str.objetivo||''); sv('cfg-str-notas', str.notas||'');
-  if(str.bloque)  setSelectVal('cfg-str-bloque', str.bloque);
-  if(str.nivel)   setSelectVal('cfg-str-nivel',  str.nivel);
-  sv('cfg-hyr-objetivo', hyr.objetivo||''); sv('cfg-hyr-notas', hyr.notas||'');
-  if(hyr.bloque)  setSelectVal('cfg-hyr-bloque', hyr.bloque);
-  if(hyr.nivel)   setSelectVal('cfg-hyr-nivel',  hyr.nivel);
-  sv('cfg-end-objetivo', end.objetivo||''); sv('cfg-end-notas', end.notas||'');
-  if(end.bloque)  setSelectVal('cfg-end-bloque', end.bloque);
-  if(end.nivel)   setSelectVal('cfg-end-nivel',  end.nivel);
-  switchCfgTab('Strength');
+  renderDisciplinaCatalog();
   openModal('prog-config');
 }
 
 async function saveProgConfig(){
   const gv = id => (document.getElementById(id)||{}).value||'';
-  const rows = [
-    { tipo:'gym',       equipo: gv('cfg-equipo'), objetivo:'', bloque:'', nivel:'', notas:'' },
-    { tipo:'Strength',  equipo:'', objetivo: gv('cfg-str-objetivo'), bloque: gv('cfg-str-bloque'), nivel: gv('cfg-str-nivel'), notas: gv('cfg-str-notas') },
-    { tipo:'Hyrox',     equipo:'', objetivo: gv('cfg-hyr-objetivo'), bloque: gv('cfg-hyr-bloque'), nivel: gv('cfg-hyr-nivel'), notas: gv('cfg-hyr-notas') },
-    { tipo:'Endurance', equipo:'', objetivo: gv('cfg-end-objetivo'), bloque: gv('cfg-end-bloque'), nivel: gv('cfg-end-nivel'), notas: gv('cfg-end-notas') },
-  ];
+  const rows = [];
+
+  // Gym equipment row
+  rows.push({ tipo:'gym', equipo: gv('cfg-equipo'), activa: true, dias_semana: null });
+
+  // Each discipline
+  for(const disc of VELUM_DISCIPLINAS){
+    const cbEl = document.getElementById('cfg-activa-'+disc.id);
+    if(!cbEl) continue; // not rendered
+    const isActiva = cbEl.checked;
+    // Read dias_semana checkboxes
+    const diasArr = [];
+    for(let i=0;i<7;i++){
+      const dayEl = document.getElementById(`cfg-dia-${disc.id}-${i}`);
+      if(dayEl && dayEl.checked) diasArr.push(i);
+    }
+    const dias = diasArr.length > 0 ? diasArr : disc.defaultDias;
+    rows.push({
+      tipo:       disc.id,
+      equipo:     '',
+      activa:     isActiva,
+      dias_semana: dias,
+      objetivo:   gv('cfg-obj-'+disc.id),
+      bloque:     gv('cfg-bloque-'+disc.id),
+      nivel:      gv('cfg-nivel-'+disc.id),
+      notas:      gv('cfg-notas-'+disc.id),
+    });
+  }
+
   let anyError = false;
   for(const row of rows){
     const existing = progConfig[row.tipo];
@@ -10832,8 +10995,17 @@ async function saveProgConfig(){
   if(anyError){ toast('Error guardando config ❌','✕'); return; }
   await loadProgConfigFromSupabase();
   closeModal('prog-config');
-  toast('Configuración guardada ✓ El asistente usará esto cada semana.','🤖');
-  document.getElementById('prog-ai-status').textContent = 'Configuración actualizada ✓ — El asistente generará entrenamientos cada domingo.';
+  // Refresh tabs with new active disciplines
+  renderProgTabs();
+  renderCoachProgTabs();
+  populateProgTipoSel();
+  renderProgramaCalendar();
+  toast('Configuración guardada ✓','🤖');
+  const statusEl = document.getElementById('prog-ai-status');
+  if(statusEl){
+    const active = getActiveDisciplinas();
+    statusEl.textContent = `${active.length} disciplina${active.length!==1?'s':''} activa${active.length!==1?'s':''}: ${active.map(d=>d.nombre).join(', ')}`;
+  }
 }
 
 async function loadProgramasFromSupabase(){
@@ -10844,11 +11016,33 @@ async function loadProgramasFromSupabase(){
   }));
 }
 
+function renderProgTabs(){
+  const container = document.getElementById('prog-tabs-container');
+  if(!container) return;
+  const active = getActiveDisciplinas();
+  if(!active.length) return;
+  // Make sure progTab is valid
+  if(!active.find(d=>d.id===progTab)) progTab = active[0].id;
+  container.innerHTML = active.map(d=>`
+    <div class="tab${d.id===progTab?' active':''}" id="prog-tab-${d.id}" onclick="switchProgTab('${d.id}')">${d.emoji} ${d.nombre}</div>
+  `).join('');
+  // Also refresh prog-tipo-sel
+  populateProgTipoSel();
+}
+
+function populateProgTipoSel(){
+  const sel = document.getElementById('prog-tipo-sel');
+  if(!sel) return;
+  const active = getActiveDisciplinas();
+  sel.innerHTML = active.map(d=>`<option value="${d.id}">${d.emoji} ${d.nombre}</option>`).join('');
+  if(progTab) setSelectVal('prog-tipo-sel', progTab);
+}
+
 function switchProgTab(tab){
   progTab = tab;
-  ['Strength','Hyrox','Endurance'].forEach(t=>{
-    const el = document.getElementById('prog-tab-'+t);
-    if(el) el.classList.toggle('active', t===tab);
+  getActiveDisciplinas().forEach(d=>{
+    const el = document.getElementById('prog-tab-'+d.id);
+    if(el) el.classList.toggle('active', d.id===tab);
   });
   renderProgramaCalendar();
 }
@@ -10899,13 +11093,87 @@ function renderProgramaCalendar(){
     html += `<div class="${cls}" onclick="openProgramaModal('${fStr}')">
       <div class="prog-day-num">${day}</div>
       ${hasContent
-        ? `<span class="prog-day-tag prog-tag-${progTab}">${progTab}</span><div class="prog-day-content">${preview}</div>`
+        ? `<span class="prog-day-tag" style="background:${getDisciplinaColor(progTab)}22;color:${getDisciplinaColor(progTab)};border:1px solid ${getDisciplinaColor(progTab)}44;">${(VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'',nombre:progTab}).emoji} ${progTab}</span><div class="prog-day-content">${preview}</div>`
         : `<div style="color:var(--border);font-size:18px;line-height:1;margin-top:8px;text-align:center;">+</div>`
       }
     </div>`;
   });
   html += '</div>';
   grid.innerHTML = html;
+}
+
+async function generateMesCompleto(){
+  const disc = VELUM_DISCIPLINAS.find(d=>d.id===progTab);
+  if(!disc){ toast('Selecciona una disciplina primero','⚠️'); return; }
+  const cfg = progConfig[progTab]||{};
+  const dias = getDisciplinaDias(progTab);
+  if(!dias.length){ toast('Configura al menos un día de entrenamiento en ⚙️ Configurar IA','⚠️'); return; }
+
+  const gymCfg = progConfig['gym']||{};
+  const DIAS_ES = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+  const diasNombres = dias.map(i=>DIAS_ES[i]).join(', ');
+
+  const btn = document.getElementById('btn-generar-mes');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Generando…'; }
+
+  try {
+    const session = getSession();
+    const gym_id = session ? (session.gym_id||session.id||'') : '';
+    const { data: fnData, error: fnErr } = await window.supabaseClient.functions.invoke('velum-prog-generate', {
+      body: {
+        tipo:       disc.id,
+        año:        progYear,
+        mes:        progMonth,
+        dias_semana: dias,
+        equipo:     gymCfg.equipo||'',
+        objetivo:   cfg.objetivo||'',
+        bloque:     cfg.bloque||'Base',
+        nivel:      cfg.nivel||'Mixto',
+        notas:      cfg.notas||'',
+      }
+    });
+
+    if(fnErr) throw new Error(fnErr.message || 'Error en velum-prog-generate');
+    const result = fnData || {};
+    if(result.error) throw new Error(result.error);
+    const generados = result.programas||[];
+    if(!generados.length){ toast('La IA no generó sesiones para este mes ⚠️','⚠️'); return; }
+
+    // Upsert each generated day into Supabase
+    let saved = 0;
+    let errors = 0;
+    for(const prog of generados){
+      const existing = programas.find(p=>p.fecha===prog.fecha && p.tipo===disc.id);
+      const payload = {
+        tipo:      disc.id,
+        fecha:     prog.fecha,
+        contenido: prog.contenido||'',
+        notas:     prog.notas ? `Generado automáticamente · ${prog.notas}` : 'Generado automáticamente',
+      };
+      let err;
+      if(existing && existing.id){
+        const r = await window.supabaseClient.from('programas').update(payload).eq('id', existing.id);
+        err = r.error;
+      } else {
+        const r = await window.supabaseClient.from('programas').insert([withGymId(payload)]);
+        err = r.error;
+      }
+      if(err){ console.error('Error saving programa', prog.fecha, err); errors++; } else { saved++; }
+    }
+
+    await loadProgramasFromSupabase();
+    renderProgramaCalendar();
+    if(errors > 0){
+      toast(`${saved} sesiones guardadas, ${errors} con error ⚠️`,'⚠️');
+    } else {
+      toast(`✅ ${saved} sesiones generadas para ${disc.emoji} ${disc.nombre} — ${MESES_ES[progMonth]} ${progYear}`,'🤖');
+    }
+  } catch(err){
+    console.error('generateMesCompleto error:', err);
+    toast('Error generando programa: '+(err.message||'').slice(0,60),'✕');
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='🤖 Generar Mes Completo'; }
+  }
 }
 
 function openProgramaModal(fechaStr){
