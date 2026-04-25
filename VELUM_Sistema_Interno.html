@@ -1890,7 +1890,7 @@ select option{background:#10101c;color:var(--text);}
    VELUM ASSISTANT — Chat Widget
 ═══════════════════════════════════════════════════ */
 #va-btn{
-  position:fixed;bottom:24px;right:24px;z-index:8000;
+  position:fixed;bottom:24px;right:24px;z-index:9500;
   width:52px;height:52px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent),#0F6E56);
   border:none;cursor:pointer;
@@ -1898,6 +1898,7 @@ select option{background:#10101c;color:var(--text);}
   display:none;align-items:center;justify-content:center;
   transition:transform .2s,box-shadow .2s;
   color:#fff;font-size:22px;
+  -webkit-transform:translateZ(0);transform:translateZ(0);
 }
 #va-btn:hover{ transform:scale(1.08); box-shadow:0 6px 28px rgba(29,158,117,.6); }
 #va-btn .va-notif{
@@ -1907,7 +1908,7 @@ select option{background:#10101c;color:var(--text);}
   display:none;
 }
 #va-panel{
-  position:fixed;bottom:88px;right:24px;z-index:8000;
+  position:fixed;bottom:88px;right:24px;z-index:9500;
   width:360px;max-height:540px;
   background:rgba(8,22,18,.97);
   border:1px solid rgba(29,158,117,.25);
@@ -1917,8 +1918,15 @@ select option{background:#10101c;color:var(--text);}
   overflow:hidden;
   backdrop-filter:blur(20px);
 }
+/* Mobile: subir botón sobre la bottom nav (aprox 70px de altura) */
+@media(max-width:768px){
+  #va-btn{ bottom:82px !important; right:16px !important; }
+  #va-panel{ bottom:146px !important; right:12px; left:12px; width:auto; }
+  .pkg-bar{ display:none !important; }
+}
 @media(max-width:420px){
-  #va-panel{ right:12px;left:12px;width:auto;bottom:82px; }
+  #va-btn{ bottom:80px !important; right:12px !important; }
+  #va-panel{ right:8px;left:8px;width:auto;bottom:144px !important; }
 }
 .va-head{
   padding:14px 16px;
@@ -2900,6 +2908,7 @@ select option{background:#10101c;color:var(--text);}
             <button class="pf-btn" data-filter="plan" data-val="Trimestral" onclick="setPagoFilter('plan','Trimestral',this)">Trimestral</button>
             <button class="pf-btn" data-filter="plan" data-val="Semestral" onclick="setPagoFilter('plan','Semestral',this)">Semestral</button>
             <button class="pf-btn" data-filter="plan" data-val="Anual" onclick="setPagoFilter('plan','Anual',this)">Anual</button>
+            <button class="pf-btn" data-filter="plan" data-val="__paquete_activo__" onclick="setPagoFilter('plan','__paquete_activo__',this)" style="border-color:rgba(93,202,165,.4);color:var(--accent-light);">📦 Paquetes activos</button>
           </div>
           <div style="width:1px;background:var(--border);margin:0 4px;"></div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -3346,6 +3355,17 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- ── Stripe Connect ── -->
+      <div class="card" style="margin-bottom:18px;" id="stripe-settings-card">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title">💳 Pagos en Línea — Stripe</div>
+          <div id="stripe-connect-status">
+            <!-- populated by renderStripeSettings() -->
+            <div style="color:var(--text3);font-size:13px;">Cargando estado de Stripe...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Meta mensual -->
       <div class="card" style="margin-bottom:18px;">
         <div class="settings-section" style="margin-bottom:0;">
@@ -3757,7 +3777,7 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
-          <select id="p-plan" onchange="onPlanChange('p-plan','p-monto','p-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option></select>
+          <select id="p-plan" onchange="onPlanChange('p-plan','p-monto','p-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option><option value="Paquete de Clases">📦 Paquete de Clases</option></select>
         </div>
         <div class="field"><label>Método de pago</label>
           <select id="p-metodo">
@@ -3770,9 +3790,25 @@ select option{background:#10101c;color:var(--text);}
           </select>
         </div>
       </div>
+      <!-- Fila de clases — visible solo cuando plan = "Paquete de Clases" -->
+      <div id="p-clases-row" style="display:none;">
+        <div class="field-grid">
+          <div class="field">
+            <label>📦 Número de clases del paquete *</label>
+            <input id="p-clases-totales" type="number" min="1" max="999" placeholder="Ej: 10, 20, 50"/>
+          </div>
+          <div class="field">
+            <label style="color:var(--text2);">Clases usadas al registrar</label>
+            <input id="p-clases-usadas-init" type="number" min="0" value="0" placeholder="0"/>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:rgba(29,158,117,.07);border-radius:8px;border:1px solid rgba(29,158,117,.15);">
+          ✦ Cada check-in descuenta automáticamente 1 clase. También puedes descontar manualmente desde la lista de pagos.
+        </div>
+      </div>
       <div class="field-grid">
         <div class="field"><label>Fecha de pago *</label><input id="p-fecha" type="date"/></div>
-        <div class="field"><label>Fecha de vencimiento</label><input id="p-vence" type="date"/></div>
+        <div class="field"><label>Fecha de vencimiento <span style="font-size:10px;color:var(--text3);">(opcional para paquetes)</span></label><input id="p-vence" type="date"/></div>
       </div>
       <div class="field-grid">
         <div class="field"><label>📱 WhatsApp (10 dígitos)</label><input id="p-telefono" type="tel" placeholder="5512345678" maxlength="15"/></div>
@@ -4109,7 +4145,7 @@ select option{background:#10101c;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
-          <select id="ep-plan" onchange="onPlanChange('ep-plan','ep-monto','ep-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option></select>
+          <select id="ep-plan" onchange="onPlanChange('ep-plan','ep-monto','ep-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option><option value="Paquete de Clases">📦 Paquete de Clases</option></select>
         </div>
         <div class="field"><label>Método de pago</label>
           <select id="ep-metodo">
@@ -4120,6 +4156,19 @@ select option{background:#10101c;color:var(--text);}
             <option>Nessty</option>
             <option>Otro</option>
           </select>
+        </div>
+      </div>
+      <!-- Clases (editar) -->
+      <div id="ep-clases-row" style="display:none;">
+        <div class="field-grid">
+          <div class="field">
+            <label>📦 Clases totales del paquete</label>
+            <input id="ep-clases-totales" type="number" min="1" max="999" placeholder="Ej: 10"/>
+          </div>
+          <div class="field">
+            <label>Clases ya usadas</label>
+            <input id="ep-clases-usadas" type="number" min="0" placeholder="0"/>
+          </div>
         </div>
       </div>
       <div class="field-grid">
@@ -4137,6 +4186,80 @@ select option{background:#10101c;color:var(--text);}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('edit-pago')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveEditPago()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cobrar a atleta (Stripe) -->
+<div class="modal-overlay" id="modal-stripe-charge">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-head">
+      <div class="modal-title">💳 Generar cobro</div>
+      <button class="modal-close" onclick="closeModal('stripe-charge')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--text2);">
+        Se generará un link de Stripe Checkout. El cliente lo abre, ingresa su tarjeta y paga — el dinero va directamente a tu cuenta Stripe.
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Cliente *</label>
+          <input id="sc-cliente" type="text" placeholder="Nombre del cliente"/>
+        </div>
+        <div class="field">
+          <label>Email (opcional — para envío automático)</label>
+          <input id="sc-email" type="email" placeholder="cliente@email.com" autocapitalize="off"/>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Monto (MXN) *</label>
+          <input id="sc-monto" type="number" min="10" placeholder="999"/>
+        </div>
+        <div class="field">
+          <label>Tipo de cobro</label>
+          <select id="sc-tipo" onchange="onStripeChargeTypeChange()">
+            <option value="pago_unico">Pago único (membresía / paquete)</option>
+            <option value="suscripcion">Cargo automático mensual</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Descripción (aparece en el link de pago) *</label>
+        <input id="sc-desc" type="text" placeholder="Ej: Mensualidad Mayo 2026 — Box CrossFit"/>
+      </div>
+      <div id="sc-intervalo-row" style="display:none;">
+        <div class="field">
+          <label>Frecuencia de cobro automático</label>
+          <select id="sc-intervalo">
+            <option value="month">Mensual</option>
+            <option value="week">Semanal</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:rgba(99,102,241,.07);border-radius:8px;border:1px solid rgba(99,102,241,.2);">
+          ℹ️ El cliente recibirá un email de Stripe para autorizar los cobros automáticos. Puede cancelar en cualquier momento desde su email.
+        </div>
+      </div>
+      <div id="sc-link-result" style="display:none;margin-top:4px;">
+        <div style="background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.25);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">✅ Link generado</div>
+          <input id="sc-link-url" type="text" readonly
+            style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--font);"/>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button onclick="copyStripeLink()" class="btn btn-primary btn-sm" style="font-size:12px;">📋 Copiar link</button>
+            <button onclick="openStripeLink()" class="btn btn-outline btn-sm" style="font-size:12px;">🔗 Abrir en navegador</button>
+            <button onclick="whatsAppStripeLink()" class="btn btn-outline btn-sm" style="font-size:12px;border-color:var(--ok);color:var(--ok);">💬 Enviar por WhatsApp</button>
+          </div>
+        </div>
+      </div>
+      <div class="err" id="sc-err"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('stripe-charge')">Cerrar</button>
+      <button class="btn btn-primary" id="sc-btn" onclick="generarStripeLink()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:5px;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Generar link de pago
+      </button>
     </div>
   </div>
 </div>
@@ -5731,8 +5854,10 @@ async function loadPagosFromSupabase(){
   pagos = (data||[]).map(p=>({
     id: p.id, cliente: p.cliente||'', monto: p.monto||0, fecha: p.fecha||'',
     plan: p.plan||'', metodo: p.metodo||'', vence: p.vence||'—', notas: p.notas||'',
-    telefono:   p.telefono||'',
-    cumpleanos: p.cumpleanos||''
+    telefono:    p.telefono||'',
+    cumpleanos:  p.cumpleanos||'',
+    clases_totales: p.clases_totales ?? null,
+    clases_usadas:  p.clases_usadas  ?? 0,
   }));
 }
 
@@ -6085,7 +6210,7 @@ function go(id, el){
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa')    { renderProgramaCalendar(); }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
+  if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); renderStripeSettings(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
 
@@ -7864,6 +7989,31 @@ function renderMembresiasAlert(){
     return;
   }
 
+  // ── Paquetes por agotarse (≤2 clases restantes) ──────────────────
+  const paquetesLow = pagos.filter(p =>
+    p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales &&
+    (p.clases_totales - (p.clases_usadas ?? 0)) <= 2
+  );
+
+  let paquetesHtml = '';
+  if(paquetesLow.length){
+    paquetesHtml = `<div style="padding:8px 16px 4px;font-size:10px;font-weight:800;color:var(--warn);letter-spacing:.8px;text-transform:uppercase;border-top:1px solid var(--border);margin-top:4px;">
+      📦 Paquetes por agotarse
+    </div>` + paquetesLow.map(p => {
+      const restantes = p.clases_totales - (p.clases_usadas ?? 0);
+      const colorPkg = restantes === 0 ? 'var(--danger)' : 'var(--warn)';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;
+                           border-bottom:1px solid var(--border);background:rgba(251,191,36,.06);">
+        <div style="width:8px;height:8px;border-radius:50%;background:${colorPkg};flex-shrink:0;box-shadow:0 0 6px ${colorPkg};"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(p.cliente)}</div>
+          <div style="font-size:11px;color:var(--text3);">${esc(p.plan||'Paquete')} · <span style="color:${colorPkg};font-weight:700;">${restantes === 0 ? 'Agotado' : restantes === 1 ? '1 clase restante' : '2 clases restantes'}</span></div>
+        </div>
+        <button onclick="go('pagos',document.querySelector('[data-nav=pagos]'))" style="font-size:10px;padding:5px 10px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);border-radius:6px;color:var(--warn);cursor:pointer;font-family:var(--font);font-weight:700;">Ver pago</button>
+      </div>`;
+    }).join('');
+  }
+
   el.innerHTML = alertas.map(p => {
     const isVencida  = p.diff < 0;
     const isUrgente  = p.diff <= 3;
@@ -7903,7 +8053,7 @@ function renderMembresiasAlert(){
       </div>
       ${waBtn}
     </div>`;
-  }).join('');
+  }).join('') + paquetesHtml;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -9328,6 +9478,11 @@ function onPlanChange(selectId, montoId, venceId){
   const opt = sel.options[sel.selectedIndex];
   const precio = parseFloat(opt.dataset.precio||'0');
   const dias   = parseInt(opt.dataset.dias||'0');
+  const esPaquete = (opt.value||opt.text||'').includes('Paquete');
+  // Mostrar/ocultar campo de clases
+  const rowId = selectId === 'p-plan' ? 'p-clases-row' : 'ep-clases-row';
+  const rowEl = document.getElementById(rowId);
+  if(rowEl) rowEl.style.display = esPaquete ? 'block' : 'none';
   if(precio){
     const montoEl=document.getElementById(montoId);
     if(montoEl&&!montoEl.value) montoEl.value=precio;
@@ -10929,14 +11084,20 @@ async function savePago(){
     const saldo = montoTotal - monto;
     abonoPrefix = `[ABONO ${monto.toLocaleString('es-MX')} / ${montoTotal.toLocaleString('es-MX')}${saldo>0?' · Saldo: $'+saldo.toLocaleString('es-MX'):''}] `;
   }
+  const planVal = document.getElementById('p-plan').value;
+  const esPaquete = planVal.includes('Paquete');
+  const clases_totales = esPaquete ? (parseInt(document.getElementById('p-clases-totales')?.value)||null) : null;
+  const clases_usadas  = esPaquete ? (parseInt(document.getElementById('p-clases-usadas-init')?.value)||0) : 0;
+  if(esPaquete && (!clases_totales || clases_totales < 1)){ alert('Ingresa el número de clases del paquete.'); return; }
   const payload = {
     cliente, monto, fecha,
-    plan:      document.getElementById('p-plan').value,
+    plan:      planVal,
     metodo:    document.getElementById('p-metodo').value,
     vence:     document.getElementById('p-vence').value||null,
     notas:      abonoPrefix + notasBase,
     telefono:   document.getElementById('p-telefono').value.trim(),
     cumpleanos: document.getElementById('p-cumpleanos').value||null,
+    ...(esPaquete ? { clases_totales, clases_usadas } : {}),
   };
   const { error } = await window.supabaseClient.from('pagos').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando pago:', error); alert('No se pudo guardar el pago.'); return; }
@@ -10997,6 +11158,27 @@ async function deletePago(id){
   renderPagos();
 }
 
+/// ── Descontar clase de un paquete ────────────────────────────────────
+async function descontarClase(id){
+  const p = pagos.find(x=>String(x.id)===String(id));
+  if(!p){ toast('Paquete no encontrado ❌','✕'); return; }
+  const restantes = (p.clases_totales||0) - (p.clases_usadas||0);
+  if(restantes <= 0){ toast('Este paquete ya no tiene clases disponibles.','⚠️'); return; }
+  const nuevasUsadas = (p.clases_usadas||0) + 1;
+  const { error } = await window.supabaseClient.from('pagos')
+    .update({ clases_usadas: nuevasUsadas })
+    .eq('id', id);
+  if(error){ toast('No se pudo descontar la clase ❌','✕'); return; }
+  p.clases_usadas = nuevasUsadas;
+  const ahoraRestantes = (p.clases_totales||0) - nuevasUsadas;
+  if(ahoraRestantes === 0){
+    toast(`✅ Última clase de ${p.cliente} usada — paquete agotado`, '📦');
+  } else {
+    toast(`✅ 1 clase descontada — ${ahoraRestantes} restantes para ${p.cliente}`, '📦');
+  }
+  renderPagos();
+}
+
 // Helper: set a select value, adding the option dynamically if it's missing
 function setSelectVal(selId, val){
   const sel = document.getElementById(selId);
@@ -11025,6 +11207,16 @@ function openEditPago(id){
   document.getElementById('ep-cumpleanos').value = p.cumpleanos||'';
   setSelectVal('ep-plan',   p.plan   || 'Mensual');
   setSelectVal('ep-metodo', p.metodo || 'Transferencia');
+  // Mostrar/ocultar campos de paquete
+  const esPaquete = (p.plan||'').includes('Paquete');
+  const epClasesRow = document.getElementById('ep-clases-row');
+  if(epClasesRow) epClasesRow.style.display = esPaquete ? 'block' : 'none';
+  if(esPaquete){
+    const epTot = document.getElementById('ep-clases-totales');
+    const epUsd = document.getElementById('ep-clases-usadas');
+    if(epTot) epTot.value = p.clases_totales ?? '';
+    if(epUsd) epUsd.value = p.clases_usadas  ?? 0;
+  }
   openModal('edit-pago');
 }
 
@@ -11036,14 +11228,20 @@ async function saveEditPago(){
   if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
   if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
   if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
+  const epPlan = document.getElementById('ep-plan').value;
+  const epEsPaquete = epPlan.includes('Paquete');
+  const epClasesTot = epEsPaquete ? (parseInt(document.getElementById('ep-clases-totales')?.value)||null) : null;
+  const epClasesUsd = epEsPaquete ? (parseInt(document.getElementById('ep-clases-usadas')?.value)||0)   : 0;
   const updates = {
     cliente, monto, fecha,
-    plan:      document.getElementById('ep-plan').value,
+    plan:      epPlan,
     metodo:    document.getElementById('ep-metodo').value,
     vence:     document.getElementById('ep-vence').value || null,
     notas:      document.getElementById('ep-notas').value.trim(),
     telefono:   document.getElementById('ep-telefono').value.trim(),
     cumpleanos: document.getElementById('ep-cumpleanos').value||null,
+    clases_totales: epClasesTot,
+    clases_usadas:  epEsPaquete ? epClasesUsd : 0,
   };
   const { error } = await window.supabaseClient.from('pagos').update(updates).eq('id', id);
   if(error){ console.error('Error actualizando pago:', error); toast('No se pudo actualizar el pago ❌','✕'); return; }
@@ -11145,8 +11343,11 @@ function renderPagos(){
       return est === pagoFilter.estado;
     });
   }
-  if(pagoFilter.plan !== 'todos'){
-    filtered = filtered.filter(p=>(p.plan||'') === pagoFilter.plan);
+  if(pagoFilter.plan === '__paquete_activo__'){
+    // Show only active packages (clases_totales set AND clases restantes > 0)
+    filtered = filtered.filter(p => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales);
+  } else if(pagoFilter.plan !== 'todos'){
+    filtered = filtered.filter(p=>(p.plan||'').includes(pagoFilter.plan));
   }
   if(pagoFilter.metodo !== 'todos'){
     filtered = filtered.filter(p=>(p.metodo||'') === pagoFilter.metodo);
@@ -11157,10 +11358,13 @@ function renderPagos(){
     el.innerHTML = `<div class="empty-state" style="padding:30px;"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">No hay pagos que coincidan con los filtros seleccionados.</div></div>`;
     return;
   }
+  // Stripe quick-charge button (only show if gym has Stripe connected)
+  const gymStripeId = gymConfig?.stripe_account_id || null;
   let html = `<div style="overflow-x:auto;"><table class="tbl"><thead><tr>
-    <th>Cliente</th><th>Plan</th><th>Monto</th><th>Método</th><th>Fecha Pago</th><th>Vencimiento</th><th></th>
+    <th>Cliente</th><th>Plan</th><th>Monto</th><th>Método</th><th>Fecha Pago</th><th>Vencimiento / Clases</th><th></th>
   </tr></thead><tbody>`;
   sorted.forEach(p=>{
+    const esPaquete = (p.plan||'').includes('Paquete');
     const vencido = p.vence&&p.vence!=='—'&&new Date(p.vence)<new Date();
     const porVenc = p.vence&&p.vence!=='—'&&new Date(p.vence)<=in7&&new Date(p.vence)>=today;
     const vBadge  = vencido?'<span class="badge b-danger">Vencido</span>':porVenc?'<span class="badge b-warn">Por vencer</span>':p.vence&&p.vence!=='—'?'<span class="badge b-ok">Vigente</span>':'—';
@@ -11168,14 +11372,38 @@ function renderPagos(){
     const venceFmt = p.vence&&p.vence!=='—' ? fmtDate(p.vence) : '—';
     const esAbono = (p.notas||'').startsWith('[ABONO');
     const abonoTag = esAbono ? `<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(251,191,36,.15);color:var(--warn);font-weight:700;border:1px solid rgba(251,191,36,.3);vertical-align:middle;">🪙 Abono</span> ` : '';
+    // Columna de vencimiento / clases
+    let venceCol = '';
+    if(esPaquete && p.clases_totales){
+      const restantes = (p.clases_totales - p.clases_usadas);
+      const pct = Math.max(0, Math.round((restantes/p.clases_totales)*100));
+      const colorBar = restantes <= 0 ? 'var(--danger)' : restantes <= Math.ceil(p.clases_totales*0.2) ? 'var(--warn)' : 'var(--ok)';
+      const estadoBadge = restantes <= 0
+        ? '<span class="badge b-danger">Agotado</span>'
+        : restantes <= Math.ceil(p.clases_totales*0.2)
+          ? `<span class="badge b-warn">${restantes} restantes</span>`
+          : `<span class="badge b-ok">${restantes} restantes</span>`;
+      venceCol = `${estadoBadge}
+        <div class="pkg-bar" style="margin-top:4px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;width:80px;">
+          <div style="height:4px;border-radius:2px;background:${colorBar};width:${pct}%;transition:width .3s;"></div>
+        </div>
+        <div class="pkg-bar" style="font-size:9px;color:var(--text3);margin-top:2px;">${p.clases_usadas}/${p.clases_totales} clases</div>`;
+    } else {
+      venceCol = `${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span>`;
+    }
+    const descontarBtn = esPaquete
+      ? `<button class="btn btn-outline btn-sm" onclick="descontarClase('${p.id}')" title="Descontar 1 clase" style="font-size:10px;padding:3px 8px;border-color:var(--accent);color:var(--accent);">−1 clase</button>`
+      : '';
     html += `<tr>
       <td class="name">${esc(p.cliente)}</td>
       <td>${esc(p.plan)}</td>
       <td style="font-weight:700;color:var(--ok);">${abonoTag}$${p.monto.toLocaleString('es-MX')}</td>
       <td>${metodoBadge(p.metodo)}</td>
       <td>${fechaFmt}</td>
-      <td>${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span></td>
+      <td>${venceCol}</td>
       <td class="tbl-action">
+        ${descontarBtn}
+        ${gymStripeId ? `<button class="btn btn-outline btn-sm" onclick="openStripeCharge('${esc(p.cliente)}',${p.monto},'${esc(p.plan)}')" title="Generar link de cobro Stripe" style="font-size:10px;padding:3px 8px;border-color:#7c3aed;color:#a78bfa;">💳 Cobrar</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="openEditPago('${p.id}')" style="font-size:10px;padding:3px 8px;">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deletePago('${p.id}')" style="font-size:10px;padding:3px 8px;">🗑</button>
       </td>
@@ -13271,8 +13499,8 @@ function renderObStep(){
     body = '<div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;margin-bottom:8px;">🎯</div><div style="font-size:13px;color:var(--text3);line-height:1.6;">¿Cuánto quieres generar al mes?<br>Te mostramos tu avance en el dashboard.</div></div><div><label style="display:block;font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px;">Meta de ingresos mensuales (MXN)</label><div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;font-weight:700;">$</span><input id="ob-meta" type="number" min="0" placeholder="50000" value="'+curMeta+'" style="width:100%;padding:12px 14px 12px 28px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:22px;font-weight:700;font-family:var(--font-display);outline:none;box-sizing:border-box;" oninput="this.style.borderColor=\"var(--accent)\""/></div><div style="font-size:11px;color:var(--text3);margin-top:8px;">Puedes cambiarlo después en Configuración → Meta mensual.</div></div>';
   } else if(_obStep===4){
     const nombre = gymConfig.gym_nombre||'tu gym';
-    const steps = ['➕ Registra tus primeros clientes en la sección <strong>Clientes</strong>','💳 Agrega pagos en <strong>Pagos & Renovaciones</strong>','🗓 Crea el horario semanal en <strong>Horario</strong>','📱 Activa el <strong>Kiosco QR</strong> para registro de asistencia'];
-    body = '<div style="text-align:center;"><div style="font-size:56px;margin-bottom:12px;">🚀</div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px;">¡'+esc(nombre)+' está listo!</div><div style="font-size:13px;color:var(--text3);line-height:1.7;margin-bottom:24px;">Tu sistema de gestión ya está configurado.<br>Aquí te dejamos tus primeros pasos:</div><div style="display:flex;flex-direction:column;gap:8px;text-align:left;max-width:320px;margin:0 auto;">'+steps.map(s=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid var(--accent-bg2);border-radius:9px;font-size:12.5px;color:var(--text);">'+s+'</div>').join('')+'</div></div>';
+    const steps = ['➕ Registra tus primeros clientes en la sección <strong>Clientes</strong>','💳 Agrega pagos en <strong>Pagos & Renovaciones</strong> — membresías mensuales o <strong>📦 Paquetes de Clases</strong>','🗓 Crea el horario semanal en <strong>Horario</strong>','📱 Activa el <strong>Kiosco QR</strong> para registro de asistencia'];
+    body = '<div style="text-align:center;"><div style="font-size:56px;margin-bottom:12px;">🚀</div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px;">¡'+esc(nombre)+' está listo!</div><div style="font-size:13px;color:var(--text3);line-height:1.7;margin-bottom:16px;">Tu sistema de gestión ya está configurado.<br>Aquí te dejamos tus primeros pasos:</div><div style="display:flex;flex-direction:column;gap:8px;text-align:left;max-width:360px;margin:0 auto;">'+steps.map(s=>'<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid var(--accent-bg2);border-radius:9px;font-size:12px;color:var(--text);">'+s+'</div>').join('')+'</div><div style="margin-top:14px;padding:10px 14px;background:rgba(93,202,165,.06);border:1px solid rgba(93,202,165,.15);border-radius:9px;font-size:11px;color:var(--text2);text-align:left;max-width:360px;margin:14px auto 0;">📦 <strong style="color:var(--accent-light);">¿Tu gym opera por clases?</strong> Selecciona "Paquete de Clases" al registrar un pago e indica cuántas clases incluye — VELUM descuenta una automáticamente en cada check-in QR.</div></div>';
   }
   document.getElementById('ob-body').innerHTML        = body;
   document.getElementById('ob-title').textContent     = titles[_obStep];
@@ -13638,6 +13866,190 @@ async function vaSend(){
   if(send) send.disabled = false;
   setTimeout(()=>{ if(inp) inp.focus(); }, 100);
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// STRIPE CONNECT — Cobros en línea a atletas
+// ═══════════════════════════════════════════════════════════════════
+const SUPA_STRIPE_CALLBACK = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/velum-stripe-callback';
+const SUPA_STRIPE_CHARGE   = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/velum-stripe-charge';
+// Client ID de tu plataforma Stripe Connect (Stripe Dashboard → Settings → Connect → Get started)
+// Reemplaza con tu real STRIPE_CLIENT_ID cuando lo tengas:
+const STRIPE_PLATFORM_CLIENT_ID = 'ca_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+
+// ── Render Stripe settings block ──────────────────────────────────
+function renderStripeSettings(){
+  const el = document.getElementById('stripe-connect-status');
+  if(!el) return;
+  const acct = gymConfig?.stripe_account_id || null;
+  if(acct){
+    const connected_at = gymConfig?.stripe_account_connected_at
+      ? new Date(gymConfig.stripe_account_connected_at).toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric'})
+      : '';
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0;"></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">Stripe conectado</div>
+            <div style="font-size:11px;color:var(--text3);">${acct} · conectado ${connected_at}</div>
+          </div>
+        </div>
+        <button onclick="desconectarStripe()" class="btn btn-outline btn-sm" style="font-size:11px;border-color:var(--danger);color:var(--danger);">Desconectar</button>
+      </div>
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.15);border-radius:9px;padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">💳</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);">Links de pago</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Activo ✓</div>
+        </div>
+        <div style="background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.15);border-radius:9px;padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">🔄</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);">Cobro mensual</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Activo ✓</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">🖥</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);">Terminal / TPV</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Requiere hardware</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3);">
+        Para cobrar: ve a <strong style="color:var(--text2);">Pagos → 💳</strong> junto a cualquier cliente, o abre el perfil del atleta.
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">
+        Conecta tu cuenta Stripe para generar links de pago, cobros automáticos mensuales y gestionar pagos de atletas desde VELUM.<br>
+        <span style="font-size:11px;color:var(--text3);">El dinero va directo a tu cuenta Stripe. VELUM cobra 1.5% de comisión por transacción procesada.</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="conectarStripe()" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Ya tengo Stripe → Conectar
+        </button>
+        <a href="https://stripe.com/mx" target="_blank" class="btn btn-outline" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Crear cuenta Stripe primero →
+        </a>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(93,202,165,.05);border:1px solid rgba(93,202,165,.15);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7;">
+        <strong style="color:var(--accent-light);">¿No tienes cuenta Stripe?</strong> Créala gratis en <a href="https://stripe.com/mx" target="_blank" style="color:var(--accent);">stripe.com/mx</a> — toma ~10 minutos. Necesitas: <strong>RFC</strong> e <strong>IBAN de cuenta bancaria mexicana</strong>. Cuando la tengas, regresa aquí y haz clic en "Ya tengo Stripe → Conectar".
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;font-size:11px;color:#fbbf24;">
+        ⚠️ Antes de conectar: asegúrate de que en tu Stripe Dashboard estén habilitados <strong>Connect</strong> (Settings → Connect) y que <strong>https://myvelum.app/stripe-callback</strong> esté en la lista de redirect URIs permitidas.
+      </div>`;
+  }
+}
+
+function conectarStripe(){
+  const gymId = currentUser?.gym_id || MOVE_GYM_ID;
+  if(!gymId){ toast('No se pudo determinar el gym.','❌'); return; }
+  if(STRIPE_PLATFORM_CLIENT_ID.includes('XXXX')){
+    toast('Configura STRIPE_PLATFORM_CLIENT_ID en el código primero.','⚠️');
+    alert('Para conectar Stripe necesitas:\n\n1. Ir a dashboard.stripe.com → Settings → Connect → Get started\n2. Copiar tu Client ID (empieza con "ca_")\n3. Reemplazar STRIPE_PLATFORM_CLIENT_ID en VELUM_Sistema_Interno.html\n4. Agregar https://myvelum.app/stripe-callback como redirect_uri en Stripe');
+    return;
+  }
+  const redirectUri = encodeURIComponent('https://myvelum.app/stripe-callback');
+  const oauthUrl = `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${STRIPE_PLATFORM_CLIENT_ID}&scope=read_write&state=${gymId}&redirect_uri=${redirectUri}`;
+  window.location.href = oauthUrl;
+}
+
+async function desconectarStripe(){
+  if(!await confirmDialog('¿Desconectar Stripe? Ya no podrás generar links de pago ni cobros automáticos.', {title:'Desconectar Stripe', icon:'💳'})) return;
+  const gymId = currentUser?.gym_id || MOVE_GYM_ID;
+  const { error } = await window.supabaseClient.from('gym_config')
+    .update({ stripe_account_id: null, stripe_account_connected_at: null })
+    .eq('gym_id', gymId);
+  if(error){ toast('Error al desconectar.','❌'); return; }
+  if(gymConfig) gymConfig.stripe_account_id = null;
+  toast('Stripe desconectado.','🔌');
+  renderStripeSettings();
+  renderPagos();
+}
+
+// ── Open charge modal ─────────────────────────────────────────────
+function openStripeCharge(clienteNombre = '', monto = '', plan = ''){
+  document.getElementById('sc-cliente').value = clienteNombre;
+  document.getElementById('sc-monto').value   = monto || '';
+  document.getElementById('sc-desc').value    = plan ? `${plan} — ${clienteNombre}` : '';
+  document.getElementById('sc-email').value   = '';
+  document.getElementById('sc-tipo').value    = 'pago_unico';
+  document.getElementById('sc-intervalo-row').style.display = 'none';
+  document.getElementById('sc-link-result').style.display   = 'none';
+  document.getElementById('sc-err').textContent = '';
+  const btn = document.getElementById('sc-btn');
+  if(btn){ btn.disabled=false; btn.textContent='Generar link de pago'; }
+  openModal('stripe-charge');
+}
+
+function onStripeChargeTypeChange(){
+  const tipo = document.getElementById('sc-tipo').value;
+  document.getElementById('sc-intervalo-row').style.display = tipo === 'suscripcion' ? 'block' : 'none';
+}
+
+async function generarStripeLink(){
+  const cliente   = document.getElementById('sc-cliente').value.trim();
+  const email     = document.getElementById('sc-email').value.trim();
+  const monto     = parseFloat(document.getElementById('sc-monto').value);
+  const desc      = document.getElementById('sc-desc').value.trim();
+  const tipo      = document.getElementById('sc-tipo').value;
+  const intervalo = document.getElementById('sc-intervalo').value;
+  const errEl     = document.getElementById('sc-err');
+  errEl.textContent = '';
+
+  if(!cliente){ errEl.textContent='Ingresa el nombre del cliente.'; return; }
+  if(!monto || monto < 10){ errEl.textContent='Monto mínimo: $10 MXN.'; return; }
+  if(!desc){ errEl.textContent='Ingresa una descripción para el link.'; return; }
+
+  const gymId = currentUser?.gym_id || MOVE_GYM_ID;
+  const btn = document.getElementById('sc-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
+  document.getElementById('sc-link-result').style.display = 'none';
+
+  try{
+    const res = await fetch(SUPA_STRIPE_CHARGE, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ gym_id: gymId, tipo, monto, descripcion: desc,
+        cliente_nombre: cliente, cliente_email: email || undefined, intervalo }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.ok){
+      errEl.textContent = data.error || 'Error al generar el link.';
+      if(btn){ btn.disabled=false; btn.textContent='Generar link de pago'; }
+      return;
+    }
+    // Show result
+    document.getElementById('sc-link-url').value = data.url;
+    document.getElementById('sc-link-result').style.display = 'block';
+    if(btn){ btn.disabled=false; btn.textContent='Generar nuevo link'; }
+    toast(`✅ Link generado para ${cliente}`, '💳');
+  }catch(e){
+    errEl.textContent = 'Error de conexión. Verifica tu internet.';
+    if(btn){ btn.disabled=false; btn.textContent='Generar link de pago'; }
+  }
+}
+
+function copyStripeLink(){
+  const url = document.getElementById('sc-link-url').value;
+  navigator.clipboard.writeText(url).then(()=>toast('Link copiado al portapapeles 📋')).catch(()=>{
+    document.getElementById('sc-link-url').select();
+    document.execCommand('copy');
+    toast('Link copiado 📋');
+  });
+}
+function openStripeLink(){ window.open(document.getElementById('sc-link-url').value,'_blank'); }
+function whatsAppStripeLink(){
+  const url   = encodeURIComponent(document.getElementById('sc-link-url').value);
+  const cliente = encodeURIComponent(document.getElementById('sc-cliente').value);
+  const monto = document.getElementById('sc-monto').value;
+  const msg = encodeURIComponent(`Hola ${document.getElementById('sc-cliente').value}! Te comparto el link para tu pago de $${monto} MXN: ${document.getElementById('sc-link-url').value}`);
+  const tel = clientesDB.find(c=>c.nombre===document.getElementById('sc-cliente').value)?.telefono||'';
+  window.open(`https://wa.me/${tel.replace(/\D/g,'')}?text=${msg}`,'_blank');
+}
+
+// Hook renderStripeSettings into settings tab
+document.addEventListener('velumAppReady', ()=>{ renderStripeSettings(); });
 
 // Inicializar cuando el app esté listo
 document.addEventListener('velumAppReady', vaInit);

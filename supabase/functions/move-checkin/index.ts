@@ -1,5 +1,6 @@
 // move-checkin — Edge Function pública para check-in via QR
 // Lookup por qr_token, verifica membresía, registra asistencia.
+// Si el cliente tiene un paquete de clases activo, descuenta 1 clase.
 // No requiere JWT — acceso público con rate limiting básico.
 // deploy: supabase functions deploy move-checkin --no-verify-jwt
 
@@ -43,16 +44,38 @@ serve(async (req) => {
     });
   }
 
+  // ── Look up active class package for this client ──────────────────
+  // A paquete is active if clases_usadas < clases_totales (not exhausted)
+  const { data: paquetes } = await db
+    .from('pagos')
+    .select('id, clases_totales, clases_usadas, plan')
+    .eq('gym_id', cliente.gym_id)
+    .eq('cliente', cliente.nombre)
+    .not('clases_totales', 'is', null)
+    .order('created_at', { ascending: false });
+
+  // Find the most recent non-exhausted paquete
+  const paqueteActivo = (paquetes || []).find(
+    p => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales
+  ) ?? null;
+
   // ── Check membership status ───────────────────────────────────────
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
   const venceDate = cliente.vence ? new Date(cliente.vence) : null;
   const isActivo = cliente.estado === 'Activo' || cliente.estado === 'Cerrado – Ganado';
+
+  // If the client has ANY package history (even exhausted), only paqueteActivo counts.
+  // This prevents a client with an exhausted package from entering free via an old vence date.
+  const hasPaqueteActivo = paqueteActivo !== null;
+  const hayHistorialPaquetes = (paquetes || []).some(p => p.clases_totales !== null);
   const isVigente = venceDate ? venceDate >= today : false;
-  const membershipOk = isActivo && isVigente;
+  // membershipOk: if client is a "paquete" client → only active paquete counts
+  //               if client is a "membresía" client → vence date counts
+  const membershipOk = isActivo && (hayHistorialPaquetes ? hasPaqueteActivo : (isVigente || hasPaqueteActivo));
 
   // ── Check for duplicate check-in today ───────────────────────────
-  const todayStr = today.toISOString().slice(0, 10);
   const { data: existing } = await db
     .from('asistencias')
     .select('id, hora')
@@ -65,6 +88,9 @@ serve(async (req) => {
   let checkInTime = alreadyCheckedIn ? existing[0].hora : null;
 
   // ── Register check-in if membership valid and not already in today ─
+  let clasesRestantes: number | null = null;
+  let paqueteAgotado = false;
+
   if (membershipOk && !alreadyCheckedIn) {
     const now = new Date();
     const hora = now.toTimeString().slice(0, 8);
@@ -76,6 +102,19 @@ serve(async (req) => {
       metodo: 'qr',
     });
     checkInTime = hora;
+
+    // ── Decrement class package if applicable ──────────────────────
+    if (paqueteActivo) {
+      const nuevasUsadas = (paqueteActivo.clases_usadas ?? 0) + 1;
+      await db.from('pagos')
+        .update({ clases_usadas: nuevasUsadas })
+        .eq('id', paqueteActivo.id);
+      clasesRestantes = paqueteActivo.clases_totales - nuevasUsadas;
+      paqueteAgotado  = clasesRestantes <= 0;
+    }
+  } else if (paqueteActivo) {
+    // Already checked in or read-only — just return current count
+    clasesRestantes = paqueteActivo.clases_totales - (paqueteActivo.clases_usadas ?? 0);
   }
 
   // ── Get last 5 visits ─────────────────────────────────────────────
@@ -101,6 +140,12 @@ serve(async (req) => {
     check_in_time: checkInTime,
     vence_date: cliente.vence,
     historial: historial || [],
+    // Paquete info
+    paquete: paqueteActivo ? {
+      clases_totales:  paqueteActivo.clases_totales,
+      clases_restantes: clasesRestantes,
+      agotado: paqueteAgotado,
+    } : null,
   }), {
     status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
   });

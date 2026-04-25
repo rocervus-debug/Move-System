@@ -150,7 +150,7 @@ async function doCheckin(token){
 }
 
 function renderSuccess(data){
-  const { cliente, membership_ok, already_checked_in, check_in_time, historial } = data;
+  const { cliente, membership_ok, already_checked_in, check_in_time, historial, paquete } = data;
   const dias = daysUntil(cliente.vence);
   const root = document.getElementById('root');
 
@@ -194,6 +194,13 @@ function renderSuccess(data){
           <span class="info-label">Total visitas</span>
           <span class="info-value">${historial.length > 0 ? historial.length + (historial.length === 5 ? '+' : '') : '0'}</span>
         </div>
+        ${paquete ? `
+        <div class="info-row">
+          <span class="info-label">📦 Clases restantes</span>
+          <span class="info-value" style="color:${paquete.agotado ? 'var(--danger)' : paquete.clases_restantes <= Math.ceil(paquete.clases_totales * 0.2) ? 'var(--warn)' : 'var(--ok)'};">
+            ${paquete.agotado ? '0 — paquete agotado' : paquete.clases_restantes + ' de ' + paquete.clases_totales}
+          </span>
+        </div>` : ''}
       </div>
       ${histHTML}
     </div>`;
