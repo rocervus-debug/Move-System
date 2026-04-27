@@ -4,1216 +4,1653 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>VELUM — Portal Atleta</title>
-
-<!-- PWA -->
 <link rel="manifest" href="manifest.json"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="VELUM"/>
 <link rel="apple-touch-icon" href="move-icon-180.png"/>
 <meta name="theme-color" content="#04120f"/>
-
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet"/>
-
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
+/* ═══════════════════════════════════════════
+   VELUM PORTAL — Premium v4
+   Mobile-first + Full Desktop Layout
+═══════════════════════════════════════════ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
   --accent:#1D9E75;
   --accent-light:#5DCAA5;
-  --accent-glow:rgba(29,158,117,.18);
-  --bg:#04120f;
-  --bg2:#071a14;
-  --card:rgba(255,255,255,.04);
-  --card-hover:rgba(255,255,255,.06);
-  --border:rgba(255,255,255,.07);
-  --border-accent:rgba(29,158,117,.25);
-  --text:#d0dce8;
-  --text2:#9DC8BB;
-  --text3:#4a7265;
-  --ok:#10e8a0;
-  --warn:#fbbf24;
-  --danger:#f87171;
+  --accent-dim:rgba(29,158,117,.15);
+  --accent-glow:rgba(29,158,117,.28);
+  --bg:#030e0a;
+  --bg2:#050f0b;
+  --bg3:#0a1c14;
+  --surface:rgba(255,255,255,.036);
+  --surface-hover:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.068);
+  --border-strong:rgba(255,255,255,.12);
+  --border-accent:rgba(29,158,117,.3);
+  --text:#c8d5dd;
+  --text2:#83b5a5;
+  --text3:#3a5e52;
+  --ok:#0fdf9a;
+  --warn:#f5a623;
+  --danger:#f06060;
+  --purple:#8B5CF6;
+  --purple-dim:rgba(139,92,246,.1);
+  --orange:#F97316;
+  --orange-dim:rgba(249,115,22,.1);
   --font:'Barlow',system-ui,sans-serif;
-  --font-display:'Barlow Condensed',system-ui,sans-serif;
+  --fd:'Barlow Condensed',system-ui,sans-serif;
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
-  --nav-h:64px;
-  --r:16px;
+  --sidebar-w:264px;
+  --nav-h:68px;
 }
 
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
 body{
   background-image:
-    radial-gradient(ellipse 100% 45% at 50% 0%,rgba(29,158,117,.1),transparent),
-    radial-gradient(ellipse 60% 35% at 100% 100%,rgba(93,202,165,.04),transparent);
+    radial-gradient(ellipse 140% 50% at 50% -5%,rgba(29,158,117,.1),transparent),
+    radial-gradient(ellipse 80% 40% at -5% 65%,rgba(29,158,117,.05),transparent),
+    radial-gradient(ellipse 60% 50% at 105% 80%,rgba(93,202,165,.04),transparent);
   min-height:100vh;overflow-x:hidden;
 }
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.35;
+}
 
-/* ══════ LOADING ══════ */
+/* ══════════════════════════════════════
+   LOADING
+══════════════════════════════════════ */
 #loading-screen{
-  position:fixed;inset:0;z-index:300;background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-  transition:opacity .4s,visibility .4s;
+  position:fixed;inset:0;z-index:500;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .5s,visibility .5s;
 }
 #loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
-.loader-logo{font-family:var(--font-display);font-size:26px;font-weight:900;color:#fff;letter-spacing:7px;}
-.loader-bar{width:48px;height:2px;background:rgba(29,158,117,.15);border-radius:99px;overflow:hidden;}
-.loader-fill{height:100%;width:0;background:var(--accent);border-radius:99px;animation:lfill 1.4s ease-in-out infinite;}
-@keyframes lfill{0%{width:0%;margin-left:0}55%{width:100%;margin-left:0}100%{width:0%;margin-left:100%}}
+.ls-logo{font-family:var(--fd);font-size:22px;font-weight:900;letter-spacing:8px;color:rgba(255,255,255,.7);}
+.ls-bar{width:44px;height:2px;background:rgba(29,158,117,.12);border-radius:99px;overflow:hidden;}
+.ls-fill{height:100%;width:0;background:var(--accent);animation:lf 1.4s ease-in-out infinite;}
+@keyframes lf{0%{width:0;margin-left:0}55%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
 
-/* ══════ LOGIN ══════ */
+/* ══════════════════════════════════════
+   LOGIN
+══════════════════════════════════════ */
 #login-screen{
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  min-height:100vh;padding:40px 24px;
+  display:none;align-items:center;justify-content:center;
+  min-height:100vh;padding:40px 24px;position:relative;z-index:1;overflow:hidden;
 }
-.login-box{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:28px;}
-.login-hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;}
-.login-logo{font-family:var(--font-display);font-size:24px;font-weight:900;color:#fff;letter-spacing:7px;display:flex;align-items:center;gap:10px;}
-.login-gym-name{
-  font-size:18px;font-weight:800;color:var(--accent-light);
-  font-family:var(--font-display);letter-spacing:.5px;min-height:26px;
+/* Animated orbs */
+.login-orb{
+  position:absolute;border-radius:50%;pointer-events:none;
+  filter:blur(70px);opacity:.18;
 }
-.login-tagline{font-size:12px;color:var(--text3);line-height:1.5;}
-.login-divider{width:32px;height:1px;background:var(--border);}
+.login-orb-1{
+  width:360px;height:360px;
+  background:radial-gradient(circle,rgba(29,158,117,1),transparent 70%);
+  top:-80px;left:-100px;
+  animation:orb1 18s ease-in-out infinite alternate;
+}
+.login-orb-2{
+  width:280px;height:280px;
+  background:radial-gradient(circle,rgba(93,202,165,1),transparent 70%);
+  bottom:-60px;right:-80px;
+  animation:orb2 22s ease-in-out infinite alternate;
+}
+.login-orb-3{
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(29,158,117,.8),transparent 70%);
+  bottom:30%;left:60%;
+  animation:orb3 28s ease-in-out infinite alternate;
+}
+@keyframes orb1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(60px,40px) scale(1.15)}}
+@keyframes orb2{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-50px,-30px) scale(1.1)}}
+@keyframes orb3{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-30px,20px) scale(0.9)}}
+
+.login-wrap{width:100%;max-width:380px;position:relative;z-index:1;}
+.login-brand{text-align:center;margin-bottom:32px;}
+.login-brand-mark{display:flex;justify-content:center;margin-bottom:14px;}
+.login-brand-logo{display:inline-flex;align-items:center;gap:10px;font-family:var(--fd);font-size:24px;font-weight:900;color:#fff;letter-spacing:8px;}
+.login-gym-title{font-family:var(--fd);font-size:28px;font-weight:900;color:var(--accent-light);letter-spacing:.5px;min-height:36px;}
+.login-tagline{font-size:12px;color:var(--text3);margin-top:6px;}
 .login-card{
-  width:100%;background:rgba(255,255,255,.035);
-  border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:24px 20px;
-  display:flex;flex-direction:column;gap:14px;
+  background:rgba(255,255,255,.032);
+  border:1px solid rgba(255,255,255,.09);
+  border-top:1px solid rgba(255,255,255,.14);
+  border-radius:22px;padding:28px 24px;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  display:flex;flex-direction:column;gap:16px;
+  box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.03) inset;
 }
-.login-field{display:flex;flex-direction:column;gap:6px;}
-.login-label{font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
-.login-input{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
-  border-radius:12px;padding:13px 14px;font-size:15px;color:#fff;
-  font-family:var(--font);outline:none;width:100%;transition:border-color .2s,background .2s;
+.lf-label{font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.lf-input{
+  width:100%;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);border-radius:12px;
+  padding:13px 15px;font-size:15px;color:#fff;font-family:var(--font);
+  outline:none;transition:border-color .2s,background .2s,box-shadow .2s;
 }
-.login-input:focus{border-color:var(--accent);background:rgba(255,255,255,.07);}
-.login-input::placeholder{color:var(--text3);}
+.lf-input:focus{border-color:var(--accent);background:rgba(255,255,255,.07);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
+.lf-input::placeholder{color:var(--text3);}
 .login-btn{
   width:100%;padding:15px;background:var(--accent);color:#fff;border:none;
   border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font);
-  transition:all .2s;box-shadow:0 4px 20px rgba(29,158,117,.35);letter-spacing:.3px;
+  letter-spacing:.3px;box-shadow:0 6px 24px rgba(29,158,117,.4),0 1px 0 rgba(255,255,255,.15) inset;
+  transition:all .2s;position:relative;overflow:hidden;
 }
-.login-btn:hover{background:#22b886;transform:translateY(-1px);}
-.login-btn:active{transform:translateY(0) scale(.99);}
-.login-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none;}
-.login-error{
-  font-size:12px;color:var(--danger);text-align:center;
-  padding:8px 12px;background:rgba(248,113,113,.08);border-radius:10px;
-  border:1px solid rgba(248,113,113,.18);display:none;
+.login-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,transparent 100%);
+  border-radius:inherit;pointer-events:none;
 }
-.login-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;}
+.login-btn:hover{background:#22b886;transform:translateY(-1px);box-shadow:0 10px 32px rgba(29,158,117,.5);}
+.login-btn:active{transform:scale(.99);}
+.login-btn:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none;}
+.login-err{display:none;font-size:12px;color:var(--danger);text-align:center;padding:8px 12px;background:rgba(240,96,96,.07);border-radius:10px;border:1px solid rgba(240,96,96,.2);}
+.login-foot{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px;}
 
-/* ══════ ERROR ══════ */
-#error-screen{
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  min-height:100vh;padding:32px 24px;text-align:center;gap:16px;
-}
-.error-icon{font-size:48px;}
-.error-title{font-family:var(--font-display);font-size:22px;font-weight:800;color:#fff;}
-.error-desc{font-size:13px;color:var(--text3);line-height:1.6;max-width:280px;}
+/* ══════════════════════════════════════
+   ERROR
+══════════════════════════════════════ */
+#error-screen{display:none;align-items:center;justify-content:center;flex-direction:column;min-height:100vh;gap:14px;text-align:center;padding:32px;}
+.err-icon{font-size:48px;}.err-title{font-family:var(--fd);font-size:22px;font-weight:800;color:#fff;}
+.err-desc{font-size:12px;color:var(--text3);line-height:1.6;max-width:260px;}
 
-/* ══════ APP ══════ */
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
 #app{
   display:none;flex-direction:column;min-height:100vh;
-  padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 8px);
   padding-top:var(--safe-top);
+  padding-bottom:calc(var(--nav-h) + var(--safe-bottom));
+  position:relative;z-index:1;
 }
 
-/* ══════ TOPBAR ══════ */
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 20px 6px;
-}
-.topbar-gym{display:flex;align-items:center;gap:8px;}
-.gym-logo{
+/* ── Topbar (mobile) ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;}
+.topbar-gym{display:flex;align-items:center;gap:9px;}
+.gym-logo-sm{
   width:28px;height:28px;border-radius:8px;
-  background:linear-gradient(135deg,var(--accent),#0F6E56);
+  background:linear-gradient(135deg,var(--accent),#0d6048);
   display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:900;color:#fff;overflow:hidden;flex-shrink:0;
 }
-.gym-logo img{width:100%;height:100%;object-fit:cover;}
-.gym-name-el{font-size:12px;font-weight:700;color:var(--accent-light);letter-spacing:.3px;}
+.gym-logo-sm img{width:100%;height:100%;object-fit:cover;}
+.gym-name-sm{font-size:12px;font-weight:700;color:var(--accent-light);letter-spacing:.2px;}
 .topbar-avatar{
   width:34px;height:34px;border-radius:50%;
-  background:rgba(29,158,117,.12);border:1.5px solid rgba(29,158,117,.3);
+  background:rgba(29,158,117,.1);border:1.5px solid rgba(29,158,117,.28);
   display:flex;align-items:center;justify-content:center;
   font-size:12px;font-weight:800;color:var(--accent-light);cursor:pointer;
-  transition:background .15s;
-  /* Ensure 44px tap target */
-  padding:5px;margin:-5px;
+  transition:background .15s,border-color .15s;flex-shrink:0;
 }
-.topbar-avatar:active{background:rgba(29,158,117,.22);}
+.topbar-avatar:active{background:rgba(29,158,117,.2);}
 
-/* ══════ GREETING ══════ */
-.greeting{padding:6px 20px 20px;}
-.greeting-hi{font-size:12px;color:var(--accent-light);font-weight:600;letter-spacing:.3px;margin-bottom:2px;}
-.greeting-name{font-family:var(--font-display);font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;}
-
-/* ══════ MEMBERSHIP CARD ══════ */
-.membership-card{
-  margin:0 16px 8px;
-  border-radius:22px;padding:22px 20px;
-  position:relative;overflow:hidden;
-  background:linear-gradient(135deg,#1D9E75 0%,#0F6E56 50%,#0a4535 100%);
-  box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 80px rgba(29,158,117,.12);
-}
-.membership-card::before{
-  content:'';position:absolute;top:-40px;right:-40px;
-  width:160px;height:160px;background:rgba(255,255,255,.06);border-radius:50%;
-}
-.membership-card::after{
-  content:'VELUM';position:absolute;bottom:18px;right:20px;
-  font-family:var(--font-display);font-size:10px;font-weight:900;
-  color:rgba(255,255,255,.12);letter-spacing:5px;
-}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
-.card-plan-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:2px;text-transform:uppercase;}
-.card-plan-name{font-size:17px;font-weight:800;color:#fff;margin-top:3px;}
-.card-status-badge{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(0,0,0,.25);border-radius:99px;
-  padding:5px 11px;font-size:9px;font-weight:800;color:#fff;
-  backdrop-filter:blur(4px);letter-spacing:.3px;
-}
-.status-dot{width:6px;height:6px;border-radius:50%;}
-.status-dot.ok{background:#10e8a0;box-shadow:0 0 8px rgba(16,232,160,.8);}
-.status-dot.warn{background:var(--warn);box-shadow:0 0 6px rgba(251,191,36,.6);}
-.status-dot.danger{background:var(--danger);}
-.card-progress{margin:0 0 16px;}
-.card-progress-bar{height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;}
-.card-progress-fill{height:100%;background:rgba(255,255,255,.65);border-radius:99px;transition:width .8s ease;}
-.card-progress-lbl{display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.4);margin-top:5px;}
-.card-bottom{display:flex;align-items:flex-end;justify-content:space-between;}
-.card-days{display:flex;flex-direction:column;}
-.card-days-num{font-family:var(--font-display);font-size:42px;font-weight:900;color:#fff;line-height:1;}
-.card-days-lbl{font-size:10px;color:rgba(255,255,255,.55);font-weight:600;margin-top:2px;}
-.card-right{text-align:right;}
-.card-numero{font-size:10px;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;letter-spacing:1.5px;margin-bottom:3px;}
-.card-gym-name{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;}
-.card-vence{font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;}
-
-/* ══════ QUICK ACTIONS ══════ */
-.quick-actions{display:flex;gap:10px;padding:14px 16px 0;margin-bottom:20px;}
-.qa-card{
-  flex:1;background:var(--card);border:1px solid var(--border);
-  border-radius:14px;padding:14px 12px;
-  display:flex;flex-direction:column;gap:6px;cursor:pointer;
-  transition:background .15s,border-color .15s;
-}
-.qa-card:active{background:var(--card-hover);border-color:var(--border-accent);}
-.qa-card.accent{background:rgba(29,158,117,.07);border-color:rgba(29,158,117,.2);}
-.qa-card.accent:active{background:rgba(29,158,117,.14);}
-.qa-icon{font-size:24px;line-height:1;}
-.qa-title{font-size:12px;font-weight:800;color:#fff;}
-.qa-sub{font-size:10px;color:var(--text3);line-height:1.4;}
-
-/* ══════ SECTIONS ══════ */
-.section{padding:0 16px;margin-bottom:24px;}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.section-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
-.section-link{font-size:11px;color:var(--accent);font-weight:700;cursor:pointer;}
-
-/* ══════ PAQUETE CARD ══════ */
-.paquete-card{
-  background:rgba(196,146,42,.06);border:1px solid rgba(196,146,42,.18);
-  border-radius:16px;padding:18px;
-}
-.paquete-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.paquete-icon{font-size:22px;}
-.paquete-title{font-size:14px;font-weight:800;color:#fff;}
-.paquete-plan{font-size:10px;color:rgba(196,146,42,.8);font-weight:600;margin-top:2px;}
-.paquete-stats{display:flex;gap:8px;}
-.paquete-stat{flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px;text-align:center;}
-.paquete-num{font-family:var(--font-display);font-size:30px;font-weight:900;line-height:1;}
-.paquete-lbl{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:3px;}
-.paquete-progress{margin-top:12px;}
-.paquete-bar{height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;}
-.paquete-fill{height:100%;background:linear-gradient(90deg,#C4922A,#fbbf24);border-radius:99px;transition:width .8s;}
-
-/* ══════ TODAY WORKOUT ══════ */
-.workout-card{background:rgba(29,158,117,.05);border:1px solid rgba(29,158,117,.15);border-radius:16px;overflow:hidden;}
-.workout-header{padding:14px 16px 12px;border-bottom:1px solid rgba(29,158,117,.1);display:flex;align-items:center;gap:10px;}
-.workout-emoji{font-size:24px;}
-.workout-title{font-size:14px;font-weight:800;color:#fff;}
-.workout-meta{font-size:10px;color:var(--text3);margin-top:2px;}
-.workout-disc-badge{margin-left:auto;font-size:8px;font-weight:800;color:var(--accent);background:rgba(29,158,117,.12);border-radius:99px;padding:3px 9px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;}
-.workout-body-wrap{position:relative;}
-.workout-body{padding:14px 16px;max-height:340px;overflow-y:auto;}
-.workout-body::after{
-  content:'';position:sticky;bottom:0;left:0;right:0;height:36px;
-  display:block;background:linear-gradient(transparent,rgba(4,18,12,.95));
-  margin-top:-36px;pointer-events:none;
-}
-.workout-section-lbl{font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin:12px 0 5px;}
-.workout-section-lbl:first-child{margin-top:0;}
-.workout-line{font-size:12px;color:var(--text2);line-height:1.75;padding-left:2px;}
-.workout-empty{text-align:center;padding:24px;font-size:12px;color:var(--text3);}
-.workout-tabs{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none;}
-.workout-tab{flex-shrink:0;font-size:10px;font-weight:700;padding:5px 12px;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
-.workout-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-
-/* ══════ PROGRAMA VIEW ══════ */
-.week-nav{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:18px;
-}
-.week-nav-btn{
-  width:38px;height:38px;border-radius:11px;
-  background:var(--card);border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;cursor:pointer;transition:all .15s;flex-shrink:0;
-}
-.week-nav-btn:active{background:var(--card-hover);border-color:var(--border-accent);}
-.week-nav-center{text-align:center;}
-.week-nav-title{font-size:13px;font-weight:800;color:#fff;}
-.week-nav-sub{font-size:10px;color:var(--text3);margin-top:2px;}
-.prog-day-block{margin-bottom:18px;}
-.prog-day-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;
-}
-.prog-day-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
-.prog-day-label.today{color:var(--accent-light);}
-.prog-today-pill{font-size:9px;font-weight:700;color:var(--accent);background:rgba(29,158,117,.12);border-radius:99px;padding:2px 8px;}
-.prog-session-card{
-  display:flex;align-items:flex-start;gap:12px;
-  padding:12px 14px;background:var(--card);border:1px solid var(--border);
-  border-radius:12px;margin-bottom:6px;transition:border-color .15s;
-  cursor:pointer;
-}
-.prog-session-card:active{border-color:var(--border-accent);}
-.prog-session-left{display:flex;flex-direction:column;align-items:center;min-width:38px;padding-top:1px;}
-.prog-session-emoji{font-size:22px;line-height:1;margin-bottom:3px;}
-.prog-session-tipo{font-size:8px;font-weight:800;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;text-align:center;}
-.prog-session-body{flex:1;min-width:0;}
-.prog-session-title{font-size:13px;font-weight:800;color:#fff;}
-.prog-session-preview{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.55;}
-.prog-empty-day{
-  padding:12px 14px;text-align:center;font-size:11px;color:var(--text3);
-  background:rgba(255,255,255,.02);border-radius:10px;
-  border:1px dashed rgba(255,255,255,.05);margin-bottom:6px;
-}
-
-/* ══════ HISTORIAL ══════ */
-.checkin-list{display:flex;flex-direction:column;gap:6px;}
-.checkin-item{
-  display:flex;align-items:center;gap:12px;padding:12px 14px;
-  background:var(--card);border:1px solid var(--border);border-radius:12px;
-}
-.checkin-icon{width:34px;height:34px;border-radius:10px;background:rgba(29,158,117,.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
-.checkin-date{font-size:13px;font-weight:700;color:#fff;}
-.checkin-time{font-size:10px;color:var(--text3);margin-top:1px;}
-.checkin-badge{margin-left:auto;font-size:10px;font-weight:700;color:var(--accent-light);background:rgba(29,158,117,.08);border-radius:99px;padding:3px 9px;white-space:nowrap;}
-.empty-state{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;}
-.empty-state-icon{font-size:44px;}
-.empty-state-title{font-size:15px;font-weight:800;color:#fff;text-align:center;}
-.empty-state-sub{font-size:12px;color:var(--text3);text-align:center;line-height:1.6;max-width:240px;}
-
-/* ══════ BOTTOM NAV ══════ */
+/* ── Bottom Nav (mobile) ── */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;
-  background:rgba(4,18,15,.96);backdrop-filter:blur(20px);
-  border-top:1px solid rgba(255,255,255,.06);
-  display:flex;align-items:center;
   height:calc(var(--nav-h) + var(--safe-bottom));
   padding-bottom:var(--safe-bottom);
-  z-index:50;
+  background:rgba(3,10,8,.97);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-top:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;z-index:100;
 }
 .bn-item{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:8px 4px;cursor:pointer;opacity:.35;transition:opacity .15s;
-  gap:3px;
+  gap:4px;padding:8px 2px;cursor:pointer;opacity:.32;transition:opacity .2s;
+  position:relative;
 }
 .bn-item.active{opacity:1;}
+.bn-item.active::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:28px;height:2.5px;
+  background:var(--accent);border-radius:0 0 4px 4px;
+  box-shadow:0 0 10px rgba(29,158,117,.7);
+}
 .bn-icon{font-size:20px;line-height:1;}
-.bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
-.bn-item.active .bn-lbl{color:var(--accent);}
-.bn-item.active .bn-icon{filter:drop-shadow(0 0 6px rgba(29,158,117,.5));}
-/* FAB center */
-.bn-fab-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;}
+.bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;}
+.bn-item.active .bn-lbl{color:var(--accent-light);}
+.bn-item.active .bn-icon{filter:drop-shadow(0 0 5px rgba(29,158,117,.5));}
+.bn-fab-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;}
 .bn-fab{
-  width:50px;height:50px;border-radius:15px;
-  background:var(--accent);
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;transform:translateY(-12px);
-  box-shadow:0 4px 20px rgba(29,158,117,.5),0 0 0 3px rgba(4,18,15,1),0 0 0 4.5px rgba(29,158,117,.25);
+  width:50px;height:50px;border-radius:15px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  transform:translateY(-12px);
+  box-shadow:0 4px 24px rgba(29,158,117,.6),0 0 0 3px rgba(3,10,8,1),0 0 0 5px rgba(29,158,117,.25);
   transition:transform .15s,box-shadow .15s;
 }
-.bn-fab:active{transform:translateY(-10px) scale(.95);}
-.bn-fab-lbl{font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.5px;text-transform:uppercase;margin-top:-7px;}
+.bn-fab::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 60%);
+  pointer-events:none;
+}
+.bn-fab:active{transform:translateY(-10px) scale(.94);}
+.bn-fab-lbl{font-size:9px;font-weight:700;color:var(--accent-light);letter-spacing:.4px;text-transform:uppercase;margin-top:-7px;}
 
-/* ══════ VIEWS ══════ */
-.view{display:none;padding-top:6px;}
+/* ══════════════════════════════════════
+   VIEWS
+══════════════════════════════════════ */
+.view{display:none;}
 .view.active{display:block;}
 
-/* ══════ PROFILE SHEET ══════ */
-#profile-sheet{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);align-items:flex-end;}
-#profile-sheet.open{display:flex;}
-.profile-sheet-inner{
-  width:100%;background:#0c1f18;border-radius:26px 26px 0 0;
-  border-top:1px solid rgba(29,158,117,.18);
-  padding:20px 24px calc(36px + var(--safe-bottom));
-  display:flex;flex-direction:column;gap:20px;
-}
-.profile-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:99px;margin:0 auto 4px;}
-.profile-sheet-user{display:flex;align-items:center;gap:14px;}
-.profile-sheet-avatar{width:50px;height:50px;border-radius:50%;background:rgba(29,158,117,.12);border:1.5px solid rgba(29,158,117,.3);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--accent-light);flex-shrink:0;}
-.profile-sheet-name{font-size:16px;font-weight:800;color:#fff;}
-.profile-sheet-gym{font-size:11px;color:var(--text3);margin-top:3px;}
-.profile-sheet-divider{height:1px;background:rgba(255,255,255,.05);}
-.profile-sheet-btn{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.15);border-radius:12px;font-size:14px;font-weight:700;color:#f87171;cursor:pointer;transition:background .15s;}
-.profile-sheet-btn:active{background:rgba(248,113,113,.14);}
+/* ══════════════════════════════════════
+   HOME — GREETING
+══════════════════════════════════════ */
+.greeting{padding:8px 20px 18px;}
+.greeting-hi{font-size:12px;color:var(--accent-light);font-weight:600;letter-spacing:.3px;margin-bottom:3px;}
+.greeting-name{font-family:var(--fd);font-size:30px;font-weight:900;color:#fff;letter-spacing:.5px;}
 
-/* ══════ QR SHEET ══════ */
-#qr-sheet{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);align-items:flex-end;}
-#qr-sheet.open{display:flex;}
-.qr-sheet-inner{
-  width:100%;
-  background:linear-gradient(to bottom,#081f16,#04120f);
-  border-radius:28px 28px 0 0;
-  border-top:1px solid rgba(29,158,117,.2);
-  padding:20px 24px calc(44px + var(--safe-bottom));
-  display:flex;flex-direction:column;align-items:center;gap:18px;
+/* ══════════════════════════════════════
+   MEMBERSHIP CARD (Premium)
+══════════════════════════════════════ */
+.membership-card{
+  margin:0 16px 6px;border-radius:24px;
+  padding:22px 22px 20px;position:relative;overflow:hidden;
+  min-height:195px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 22px,
+      rgba(255,255,255,.018) 22px,
+      rgba(255,255,255,.018) 23px
+    ),
+    linear-gradient(145deg,
+      #246b50 0%,
+      #155640 20%,
+      #0b3829 45%,
+      #061f18 70%,
+      #030f0c 100%);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.6),
+    0 0 0 1px rgba(29,158,117,.18) inset,
+    0 1px 0 rgba(255,255,255,.1) inset;
 }
-.qr-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:99px;}
-.qr-sheet-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
-.qr-sheet-wrap{
-  width:188px;height:188px;border-radius:22px;
-  background:rgba(255,255,255,.99);padding:14px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 60px rgba(29,158,117,.25);
-  border:2px solid rgba(29,158,117,.3);
+/* Metallic shimmer sweep */
+.membership-card::before{
+  content:'';position:absolute;
+  top:-50%;left:-80%;
+  width:50%;height:200%;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 56%,transparent 70%);
+  animation:shimmer 5s ease-in-out infinite;
+  pointer-events:none;
 }
-.qr-sheet-wrap canvas{width:160px!important;height:160px!important;}
-.qr-sheet-name{font-family:var(--font-display);font-size:20px;font-weight:900;color:#fff;letter-spacing:.5px;}
-.qr-sheet-plan{font-size:11px;color:var(--accent-light);font-weight:600;}
-.qr-sheet-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;}
-.qr-sheet-close{
-  width:100%;padding:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
-  border-radius:13px;font-size:14px;font-weight:700;color:var(--text2);text-align:center;cursor:pointer;
+@keyframes shimmer{0%{left:-80%}65%{left:130%}100%{left:130%}}
+/* Corner radial glow */
+.membership-card::after{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:240px;height:240px;
+  background:radial-gradient(circle,rgba(93,202,165,.14),transparent 65%);
+  pointer-events:none;
+}
+.card-watermark{
+  position:absolute;bottom:18px;right:22px;
+  font-family:var(--fd);font-size:11px;font-weight:900;
+  color:rgba(255,255,255,.08);letter-spacing:6px;pointer-events:none;
+  user-select:none;
+}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1;}
+.card-plan-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;}
+.card-plan-name{font-size:18px;font-weight:800;color:#fff;margin-top:3px;letter-spacing:.2px;}
+.card-badge{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(0,0,0,.35);border-radius:99px;
+  padding:5px 12px 5px 8px;font-size:9px;font-weight:800;color:#fff;
+  backdrop-filter:blur(8px);letter-spacing:.3px;
+  border:1px solid rgba(255,255,255,.1);
+}
+.status-dot{width:7px;height:7px;border-radius:50%;}
+.status-dot.ok{background:#0fdf9a;box-shadow:0 0 8px rgba(15,223,154,.9);}
+.status-dot.warn{background:var(--warn);box-shadow:0 0 7px rgba(245,166,35,.8);}
+.status-dot.ok.pulse{animation:statusPulse 2.5s ease-in-out infinite;}
+.status-dot.danger{background:var(--danger);}
+@keyframes statusPulse{0%,100%{box-shadow:0 0 8px rgba(15,223,154,.9)}50%{box-shadow:0 0 16px rgba(15,223,154,1),0 0 24px rgba(15,223,154,.4)}}
+/* Card middle */
+.card-mid{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1;}
+.card-days-block{display:flex;flex-direction:column;}
+.card-days-num{font-family:var(--fd);font-size:54px;font-weight:900;color:#fff;line-height:1;letter-spacing:-2px;text-shadow:0 2px 12px rgba(0,0,0,.4);}
+.card-days-lbl{font-size:10px;color:rgba(255,255,255,.45);font-weight:600;margin-top:3px;letter-spacing:.3px;}
+.card-ring-wrap{position:relative;width:68px;height:68px;flex-shrink:0;}
+.card-ring{width:68px;height:68px;transform:rotate(-90deg);}
+.card-ring-bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:5;}
+.card-ring-fill{fill:none;stroke:rgba(255,255,255,.8);stroke-width:5;stroke-linecap:round;}
+.card-ring-label{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;color:rgba(255,255,255,.55);
+  line-height:1.2;text-align:center;
+}
+/* Card bottom */
+.card-bottom{display:flex;align-items:flex-end;justify-content:space-between;position:relative;z-index:1;}
+.card-prog-bar{height:3px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;width:120px;}
+.card-prog-fill{height:100%;background:linear-gradient(90deg,rgba(255,255,255,.5),rgba(255,255,255,.8));border-radius:99px;}
+.card-prog-lbl{font-size:9px;color:rgba(255,255,255,.3);margin-top:5px;letter-spacing:.2px;}
+.card-right{text-align:right;}
+.card-numero{
+  font-size:10px;color:rgba(255,255,255,.28);
+  letter-spacing:2px;font-weight:700;margin-bottom:3px;
+  font-family:var(--fd);
+}
+.card-gym{font-size:11px;color:rgba(255,255,255,.4);font-weight:600;}
+.card-vence{font-size:9px;color:rgba(255,255,255,.22);margin-top:2px;}
+
+/* ══════════════════════════════════════
+   STATS ROW (Colored chips)
+══════════════════════════════════════ */
+.stats-row{display:flex;gap:8px;padding:14px 16px 0;margin-bottom:20px;}
+.stat-chip{
+  flex:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:14px 12px;
+  display:flex;flex-direction:column;gap:5px;
+  transition:background .15s,border-color .15s,transform .1s;
+}
+.stat-chip:active{transform:scale(.97);}
+.stat-chip.visits{
+  background:rgba(139,92,246,.06);
+  border-color:rgba(139,92,246,.2);
+}
+.stat-chip.streak{
+  background:rgba(249,115,22,.06);
+  border-color:rgba(249,115,22,.2);
+}
+.stat-chip.days{
+  background:rgba(29,158,117,.06);
+  border-color:rgba(29,158,117,.2);
+}
+.stat-num{font-family:var(--fd);font-size:28px;font-weight:900;line-height:1;color:#fff;}
+.stat-chip.visits .stat-num{color:#C4B5FD;}
+.stat-chip.streak .stat-num{color:#FDBA74;}
+.stat-chip.days .stat-num{color:var(--ok);}
+.stat-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
+.stat-icon{font-size:16px;line-height:1;margin-bottom:2px;}
+
+/* ══════════════════════════════════════
+   QUICK ACTIONS
+══════════════════════════════════════ */
+.quick-actions{display:flex;gap:8px;padding:0 16px;margin-bottom:22px;}
+.qa{
+  flex:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:14px 12px;cursor:pointer;
+  transition:background .15s,border-color .15s,transform .1s;
+  display:flex;flex-direction:column;gap:5px;
+}
+.qa:active{transform:scale(.97);}
+.qa.primary{
+  background:rgba(29,158,117,.07);border-color:rgba(29,158,117,.22);
+  position:relative;overflow:hidden;
+}
+.qa.primary::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 0% 0%,rgba(93,202,165,.08),transparent);
+  pointer-events:none;
+}
+.qa.primary:active{background:rgba(29,158,117,.13);}
+.qa-ico{font-size:22px;line-height:1;}
+.qa-ttl{font-size:12px;font-weight:800;color:#fff;}
+.qa-sub{font-size:10px;color:var(--text3);}
+
+/* ══════════════════════════════════════
+   SECTIONS
+══════════════════════════════════════ */
+.section{padding:0 16px;margin-bottom:26px;}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.8px;}
+.sec-link{font-size:11px;color:var(--accent);font-weight:700;cursor:pointer;}
+.sec-link:active{opacity:.7;}
+
+/* ══════════════════════════════════════
+   PACKAGE CARD
+══════════════════════════════════════ */
+.pkg-card{
+  background:rgba(196,146,42,.06);border:1px solid rgba(196,146,42,.18);
+  border-radius:16px;padding:18px;position:relative;overflow:hidden;
+}
+.pkg-card::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;
+  background:radial-gradient(circle,rgba(196,146,42,.08),transparent 70%);
+  pointer-events:none;
+}
+.pkg-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;position:relative;z-index:1;}
+.pkg-title{font-size:14px;font-weight:800;color:#fff;}
+.pkg-sub{font-size:10px;color:rgba(196,146,42,.8);font-weight:600;margin-top:2px;}
+.pkg-stats{display:flex;gap:8px;position:relative;z-index:1;}
+.pkg-stat{flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:11px;text-align:center;}
+.pkg-n{font-family:var(--fd);font-size:28px;font-weight:900;line-height:1;}
+.pkg-l{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-top:3px;}
+.pkg-bar-wrap{margin-top:12px;position:relative;z-index:1;}
+.pkg-bar{height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;}
+.pkg-fill{height:100%;background:linear-gradient(90deg,#C4922A,#f5c842);border-radius:99px;transition:width .9s cubic-bezier(.4,0,.2,1);}
+
+/* ══════════════════════════════════════
+   WORKOUT CARD (today)
+══════════════════════════════════════ */
+.wk-card{background:rgba(29,158,117,.05);border:1px solid rgba(29,158,117,.13);border-radius:18px;overflow:hidden;}
+.wk-tabs{display:flex;gap:6px;padding:12px 14px 0;overflow-x:auto;scrollbar-width:none;}
+.wk-tab{flex-shrink:0;font-size:10px;font-weight:700;padding:5px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--border);color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.wk-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(29,158,117,.35);}
+.wk-hdr{padding:14px 16px 12px;border-bottom:1px solid rgba(29,158,117,.1);display:flex;align-items:center;gap:10px;}
+.wk-emoji{font-size:26px;}
+.wk-title{font-size:15px;font-weight:800;color:#fff;}
+.wk-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+.wk-disc-badge{margin-left:auto;font-size:8px;font-weight:800;color:var(--accent);background:rgba(29,158,117,.1);border-radius:99px;padding:3px 9px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;border:1px solid rgba(29,158,117,.18);}
+.wk-body{padding:16px;max-height:360px;overflow-y:auto;position:relative;}
+.wk-section{margin-bottom:14px;}
+.wk-section:last-child{margin-bottom:0;}
+.wk-section-hdr{
+  display:flex;align-items:center;gap:7px;
+  font-size:9px;font-weight:800;color:var(--accent);
+  text-transform:uppercase;letter-spacing:1.5px;
+  padding:6px 10px;border-radius:8px;
+  background:rgba(29,158,117,.07);border-left:2px solid var(--accent);
+  margin-bottom:8px;
+}
+.wk-section-hdr.warm{background:rgba(245,166,35,.07);border-color:var(--warn);color:var(--warn);}
+.wk-section-hdr.cool{background:rgba(93,202,165,.07);border-color:var(--accent-light);color:var(--accent-light);}
+.wk-section-hdr.finish{background:rgba(240,96,96,.07);border-color:var(--danger);color:var(--danger);}
+.wk-line{font-size:12px;color:var(--text2);line-height:1.8;padding:1px 6px;}
+.wk-fade{
+  position:sticky;bottom:0;height:40px;
+  background:linear-gradient(transparent,rgba(3,14,10,.95));
+  margin:-40px 0 0;pointer-events:none;border-radius:0 0 18px 18px;
+}
+.wk-empty{text-align:center;padding:28px;font-size:12px;color:var(--text3);}
+
+/* ══════════════════════════════════════
+   PROGRAMA VIEW
+══════════════════════════════════════ */
+.week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.wn-btn{
+  width:38px;height:38px;border-radius:11px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;
+  transition:all .15s;flex-shrink:0;color:var(--text2);
+}
+.wn-btn:active{background:var(--surface-hover);border-color:var(--border-accent);}
+.wn-center{text-align:center;flex:1;padding:0 12px;}
+.wn-range{font-size:14px;font-weight:800;color:#fff;}
+.wn-year{font-size:10px;color:var(--text3);margin-top:2px;}
+.disc-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;}
+/* Day blocks */
+.day-block{margin-bottom:14px;}
+.day-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:0 0 9px;border-bottom:1px solid var(--border);margin-bottom:10px;
+}
+.day-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.day-label.today{color:var(--accent-light);}
+.today-pill{font-size:9px;font-weight:700;color:var(--accent);background:rgba(29,158,117,.12);border-radius:99px;padding:2px 8px;margin-left:auto;border:1px solid rgba(29,158,117,.2);}
+.sess-card{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;margin-bottom:7px;overflow:hidden;cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.sess-card:active{background:var(--surface-hover);border-color:var(--border-accent);}
+.sess-accent-bar{width:3px;background:var(--accent);flex-shrink:0;}
+.sess-inner{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;flex:1;}
+.sess-emoji{font-size:22px;line-height:1;flex-shrink:0;padding-top:1px;}
+.sess-body{flex:1;min-width:0;}
+.sess-tipo{font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;}
+.sess-preview{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.55;}
+.sess-arrow{font-size:14px;color:var(--text3);padding:12px 12px 12px 0;display:flex;align-items:center;flex-shrink:0;}
+.day-empty{
+  padding:12px 14px;font-size:11px;color:var(--text3);
+  background:rgba(255,255,255,.02);border-radius:10px;
+  border:1px dashed rgba(255,255,255,.05);text-align:center;margin-bottom:7px;
+}
+
+/* ══════════════════════════════════════
+   HISTORIAL — Timeline
+══════════════════════════════════════ */
+.ci-timeline{position:relative;display:flex;flex-direction:column;}
+.ci-group-hdr{
+  display:flex;align-items:center;gap:10px;
+  font-size:9px;font-weight:800;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1.5px;
+  padding:14px 0 8px;
+}
+.ci-group-hdr::after{content:'';flex:1;height:1px;background:var(--border);}
+.ci-items{display:flex;flex-direction:column;gap:7px;margin-bottom:4px;}
+.ci-item{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 14px;background:var(--surface);
+  border:1px solid var(--border);border-radius:13px;
   transition:background .15s;
 }
-.qr-sheet-close:active{background:rgba(255,255,255,.09);}
-/* iOS banner inside QR sheet */
-.qr-ios-banner{
-  width:100%;display:flex;align-items:center;gap:10px;
-  background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.15);
-  border-radius:12px;padding:12px 14px;
-}
-.qr-ios-banner-text{font-size:11px;color:var(--text2);line-height:1.5;flex:1;}
-.qr-ios-banner-close{font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;}
-
-/* ══════ PROG EXPAND SHEET ══════ */
-#prog-sheet{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);align-items:flex-end;}
-#prog-sheet.open{display:flex;}
-.prog-sheet-inner{
-  width:100%;max-height:80vh;overflow-y:auto;
-  background:#0c1f18;border-radius:26px 26px 0 0;
-  border-top:1px solid rgba(29,158,117,.2);
-  padding:20px 20px calc(40px + var(--safe-bottom));
-}
-.prog-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:99px;margin:0 auto 16px;}
-.prog-sheet-tipo{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
-.prog-sheet-fecha{font-family:var(--font-display);font-size:20px;font-weight:900;color:#fff;margin-bottom:16px;}
-.prog-sheet-section-lbl{font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 5px;}
-.prog-sheet-section-lbl:first-child{margin-top:0;}
-.prog-sheet-line{font-size:13px;color:var(--text2);line-height:1.75;}
-.prog-sheet-close{
+.ci-item:active{background:var(--surface-hover);}
+.ci-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.12);
   display:flex;align-items:center;justify-content:center;
-  margin-top:20px;padding:13px;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
-  border-radius:12px;font-size:14px;font-weight:700;color:var(--text2);cursor:pointer;
+  font-size:17px;flex-shrink:0;
+}
+.ci-date{font-size:13px;font-weight:700;color:#fff;}
+.ci-time{font-size:10px;color:var(--text3);margin-top:1px;}
+.ci-badge{
+  margin-left:auto;font-size:9px;font-weight:700;
+  color:var(--accent-light);background:rgba(29,158,117,.08);
+  border-radius:99px;padding:3px 9px;white-space:nowrap;
+  border:1px solid rgba(29,158,117,.14);
+}
+.empty-state{display:flex;flex-direction:column;align-items:center;padding:48px 20px;gap:12px;text-align:center;}
+.es-ico{font-size:48px;line-height:1;}
+.es-title{font-size:16px;font-weight:800;color:#fff;}
+.es-sub{font-size:12px;color:var(--text3);line-height:1.65;max-width:230px;}
+
+/* ══════════════════════════════════════
+   SHEETS
+══════════════════════════════════════ */
+.sheet-backdrop{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  align-items:flex-end;
+}
+.sheet-backdrop.open{display:flex;}
+.sheet{
+  width:100%;background:var(--bg3);
+  border-radius:28px 28px 0 0;border-top:1px solid rgba(29,158,117,.18);
+  display:flex;flex-direction:column;gap:18px;
+  padding:20px 22px calc(40px + var(--safe-bottom));
+  box-shadow:0 -8px 40px rgba(0,0,0,.5);
+}
+.sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.1);border-radius:99px;margin:0 auto;}
+.sheet-close{
+  padding:13px;background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:13px;font-size:14px;font-weight:700;color:var(--text2);
+  text-align:center;cursor:pointer;transition:background .15s;
+}
+.sheet-close:active{background:rgba(255,255,255,.09);}
+
+/* Profile sheet */
+.ps-user{display:flex;align-items:center;gap:14px;}
+.ps-avatar{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(29,158,117,.2),rgba(29,158,117,.05));
+  border:1.5px solid rgba(29,158,117,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:var(--accent-light);flex-shrink:0;
+}
+.ps-name{font-size:16px;font-weight:800;color:#fff;}
+.ps-gym{font-size:11px;color:var(--text3);margin-top:3px;}
+.ps-divider{height:1px;background:rgba(255,255,255,.05);}
+.ps-logout{
+  display:flex;align-items:center;gap:12px;padding:14px;
+  background:rgba(240,96,96,.07);border:1px solid rgba(240,96,96,.15);
+  border-radius:12px;font-size:14px;font-weight:700;color:var(--danger);
+  cursor:pointer;transition:background .15s;
+}
+.ps-logout:active{background:rgba(240,96,96,.13);}
+
+/* QR sheet */
+.qr-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;text-align:center;}
+.qr-wrap{
+  width:190px;height:190px;border-radius:22px;
+  background:rgba(255,255,255,.99);padding:14px;align-self:center;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 60px rgba(29,158,117,.3),0 0 0 1px rgba(29,158,117,.3);
+}
+.qr-wrap canvas{width:162px!important;height:162px!important;}
+.qr-info{text-align:center;}
+.qr-name{font-family:var(--fd);font-size:20px;font-weight:900;color:#fff;}
+.qr-plan{font-size:11px;color:var(--accent-light);font-weight:600;margin-top:3px;}
+.qr-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;}
+.ios-banner{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.14);
+  border-radius:12px;padding:11px 13px;
+}
+.ios-banner-txt{font-size:11px;color:var(--text2);line-height:1.5;flex:1;}
+.ios-banner-x{font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;}
+
+/* Prog detail sheet */
+.pd-tipo{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;}
+.pd-fecha{font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;}
+#pd-content .wk-section{margin-bottom:16px;}
+.prog-sheet-inner{max-height:75vh;overflow-y:auto;}
+
+/* ══════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.au{animation:fadeUp .32s ease both;}
+.au1{animation-delay:.04s;}.au2{animation-delay:.09s;}.au3{animation-delay:.14s;}
+.au4{animation-delay:.19s;}.au5{animation-delay:.24s;}.au6{animation-delay:.29s;}
+
+/* ══════════════════════════════════════
+   DESKTOP LAYOUT (≥ 780px)
+══════════════════════════════════════ */
+@media(min-width:780px){
+  body{overflow:hidden;}
+  #app{flex-direction:row;padding:0;min-height:100vh;height:100vh;}
+
+  /* ── SIDEBAR ── */
+  .sidebar{
+    width:var(--sidebar-w);flex-shrink:0;height:100vh;
+    background:
+      linear-gradient(180deg,rgba(7,18,13,1) 0%,rgba(3,10,8,1) 100%);
+    border-right:1px solid rgba(255,255,255,.06);
+    display:flex;flex-direction:column;
+    padding:28px 0 24px;position:relative;z-index:10;
+  }
+  /* Sidebar inner glow */
+  .sidebar::after{
+    content:'';position:absolute;
+    top:0;left:0;right:0;height:200px;
+    background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(29,158,117,.07),transparent);
+    pointer-events:none;
+  }
+  .sb-brand{
+    display:flex;align-items:center;gap:11px;
+    padding:0 22px 24px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    margin-bottom:16px;position:relative;z-index:1;
+  }
+  .sb-gym-logo{
+    width:38px;height:38px;border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),#0d6048);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:900;color:#fff;overflow:hidden;flex-shrink:0;
+    box-shadow:0 4px 16px rgba(29,158,117,.3);
+  }
+  .sb-gym-logo img{width:100%;height:100%;object-fit:cover;}
+  .sb-gym-name{font-size:13px;font-weight:800;color:#fff;letter-spacing:.2px;}
+  .sb-velum{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:1px;}
+  /* Nav items */
+  .sb-nav{flex:1;padding:0 10px;display:flex;flex-direction:column;gap:2px;position:relative;z-index:1;}
+  .sb-item{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 14px;border-radius:12px;cursor:pointer;
+    opacity:.45;transition:all .15s;position:relative;
+  }
+  .sb-item:hover{background:var(--surface);opacity:.7;}
+  .sb-item.active{
+    background:rgba(29,158,117,.09);opacity:1;
+    border:1px solid rgba(29,158,117,.12);
+  }
+  .sb-item.active::before{
+    content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:3px;height:60%;background:var(--accent);
+    border-radius:0 3px 3px 0;
+    box-shadow:0 0 8px rgba(29,158,117,.5);
+  }
+  .sb-icon{font-size:18px;line-height:1;flex-shrink:0;}
+  .sb-lbl{font-size:13px;font-weight:700;color:#fff;letter-spacing:.2px;}
+  .sb-item.active .sb-lbl{color:var(--accent-light);}
+  /* Sidebar QR button */
+  .sb-qr-btn{
+    margin:10px 10px 0;padding:13px 16px;
+    background:linear-gradient(135deg,rgba(29,158,117,.12),rgba(29,158,117,.06));
+    border:1px solid rgba(29,158,117,.2);
+    border-radius:13px;cursor:pointer;
+    display:flex;align-items:center;gap:12px;
+    transition:all .15s;position:relative;z-index:1;
+  }
+  .sb-qr-btn:hover{background:linear-gradient(135deg,rgba(29,158,117,.18),rgba(29,158,117,.1));border-color:rgba(29,158,117,.3);}
+  .sb-qr-ico{font-size:20px;flex-shrink:0;}
+  .sb-qr-txt{font-size:12px;font-weight:700;color:var(--accent-light);}
+  /* Sidebar user footer */
+  .sb-footer{padding:14px 10px 0;border-top:1px solid rgba(255,255,255,.06);margin-top:auto;position:relative;z-index:1;}
+  .sb-user{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;cursor:pointer;transition:background .15s;}
+  .sb-user:hover{background:var(--surface);}
+  .sb-avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,rgba(29,158,117,.2),rgba(29,158,117,.05));
+    border:1.5px solid rgba(29,158,117,.28);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;color:var(--accent-light);flex-shrink:0;
+  }
+  .sb-user-name{font-size:12px;font-weight:700;color:#fff;flex:1;}
+  .sb-logout-ico{font-size:14px;color:var(--text3);}
+
+  /* ── MAIN AREA ── */
+  .main-scroll{
+    flex:1;height:100vh;overflow-y:auto;
+    padding:32px 36px;scroll-behavior:smooth;
+  }
+  .main-scroll::-webkit-scrollbar{width:4px;}
+  .main-scroll::-webkit-scrollbar-track{background:transparent;}
+  .main-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+  /* Hide mobile elements */
+  .topbar{display:none;}
+  .bottom-nav{display:none;}
+
+  /* ── HOME DESKTOP GRID ── */
+  .home-desktop-grid{
+    display:grid;
+    grid-template-columns:1fr 380px;
+    gap:22px;
+  }
+  .home-left{display:flex;flex-direction:column;gap:20px;}
+  .home-right{display:flex;flex-direction:column;gap:20px;}
+
+  /* Membership card desktop */
+  .membership-card{
+    margin:0;border-radius:22px;min-height:220px;
+    padding:28px 28px 24px;
+  }
+  .card-days-num{font-size:64px;}
+  .card-ring-wrap{width:80px;height:80px;}
+  .card-ring{width:80px;height:80px;}
+
+  /* Stats desktop */
+  .stats-row{padding:0;margin-bottom:0;}
+  .stat-chip{border-radius:16px;}
+  .quick-actions{padding:0;margin-bottom:0;}
+  .section{padding:0;margin-bottom:0;}
+  .greeting{padding:0 0 24px;}
+  .greeting-name{font-size:34px;}
+
+  /* Programa desktop: 7-column grid */
+  .prog-desktop-grid{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:10px;
+  }
+  .prog-desktop-day{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:12px 10px;min-height:120px;
+    transition:border-color .15s,background .15s;
+  }
+  .prog-desktop-day.today{
+    border-color:rgba(29,158,117,.3);
+    background:rgba(29,158,117,.06);
+    box-shadow:0 0 20px rgba(29,158,117,.05);
+  }
+  .prog-desktop-day-label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .prog-desktop-day-label.today{color:var(--accent-light);}
+  .prog-desktop-date{font-size:20px;font-weight:900;color:#fff;font-family:var(--fd);margin-bottom:8px;line-height:1;}
+  .prog-desktop-date.today{color:var(--accent);}
+  .prog-desktop-session{
+    display:flex;align-items:center;gap:5px;
+    padding:5px 7px;background:rgba(29,158,117,.08);
+    border:1px solid rgba(29,158,117,.12);
+    border-radius:8px;margin-bottom:5px;cursor:pointer;
+    transition:all .15s;
+  }
+  .prog-desktop-session:hover{background:rgba(29,158,117,.15);border-color:rgba(29,158,117,.22);}
+  .prog-desktop-session-emoji{font-size:12px;}
+  .prog-desktop-session-tipo{font-size:10px;font-weight:700;color:var(--accent-light);}
+  .prog-desktop-empty{font-size:10px;color:var(--text3);padding:4px 0;opacity:.5;}
+
+  /* Historial desktop: 2-col */
+  .ci-timeline{display:block;}
+  .ci-items{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 }
 
-/* ══════ ANIMATIONS ══════ */
-@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
-.anim-in{animation:fadeSlideUp .3s ease both;}
-.a1{animation-delay:.04s;} .a2{animation-delay:.09s;} .a3{animation-delay:.14s;} .a4{animation-delay:.19s;} .a5{animation-delay:.24s;}
-
+/* ══════════════════════════════════════
+   SMALL SCREEN
+══════════════════════════════════════ */
 @media(max-width:390px){
-  .card-days-num{font-size:36px;}
-  .greeting-name{font-size:24px;}
+  .card-days-num{font-size:44px;}
+  .greeting-name{font-size:26px;}
+  .stat-num{font-size:24px;}
 }
 </style>
 </head>
 <body>
 
-<!-- ══ LOADING ══ -->
+<!-- LOADING -->
 <div id="loading-screen">
-  <svg width="38" height="48" viewBox="0 0 28 36">
+  <svg width="36" height="44" viewBox="0 0 28 36">
     <polygon points="14,1 6,34 14,27 22,34" fill="#5DCAA5"/>
     <polygon points="14,1 22,34 14,27 6,34" fill="#1D9E75" opacity=".6"/>
-    <circle cx="14" cy="17" r="2.5" fill="#04120f"/>
+    <circle cx="14" cy="17" r="2.5" fill="#03100a"/>
   </svg>
-  <div class="loader-logo">VELUM</div>
-  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="ls-logo">VELUM</div>
+  <div class="ls-bar"><div class="ls-fill"></div></div>
 </div>
 
-<!-- ══ LOGIN ══ -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-hero">
-      <div class="login-logo">
-        <svg width="20" height="26" viewBox="0 0 20 26"><polygon points="10,1 4,24 10,19 16,24" fill="#5DCAA5"/><polygon points="10,1 16,24 10,19 4,24" fill="#1D9E75" opacity=".55"/><circle cx="10" cy="12" r="2" fill="#04140f"/></svg>
-        VELUM
+<!-- LOGIN -->
+<div id="login-screen" style="display:none;flex-direction:column;position:relative;z-index:1;">
+  <!-- Animated orbs -->
+  <div class="login-orb login-orb-1"></div>
+  <div class="login-orb login-orb-2"></div>
+  <div class="login-orb login-orb-3"></div>
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="login-brand-mark">
+        <svg width="40" height="50" viewBox="0 0 28 36">
+          <polygon points="14,1 6,34 14,27 22,34" fill="#5DCAA5"/>
+          <polygon points="14,1 22,34 14,27 6,34" fill="#1D9E75" opacity=".6"/>
+          <circle cx="14" cy="17" r="2.5" fill="#03100a"/>
+        </svg>
       </div>
-      <div class="login-gym-name" id="login-gym-name">Portal de Atletas</div>
-      <div class="login-tagline" id="login-tagline"></div>
+      <div class="login-brand-logo">VELUM</div>
+      <div class="login-gym-title" id="login-gym-title">Portal de Atletas</div>
+      <div class="login-tagline" id="login-tagline">Accede a tu membresía, programa y QR</div>
     </div>
     <div class="login-card">
-      <div class="login-field">
-        <div class="login-label">Código del Gym</div>
-        <input class="login-input" id="login-gym" type="text" placeholder="ej. MOVE" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
-      </div>
-      <div class="login-field">
-        <div class="login-label">Número de Socio</div>
-        <input class="login-input" id="login-numero" type="number" placeholder="ej. 42" min="1" inputmode="numeric"/>
-      </div>
-      <div class="login-field">
-        <div class="login-label">Contraseña</div>
-        <input class="login-input" id="login-pwd" type="password" placeholder="••••••••" autocomplete="current-password"/>
-      </div>
-      <div class="login-error" id="login-error"></div>
-      <button class="login-btn" id="login-btn" onclick="doLogin()">Acceder al Portal</button>
-    </div>
-    <div class="login-hint">Tu número de socio aparece en tu registro o pregunta en recepción.</div>
-  </div>
-</div>
-
-<!-- ══ ERROR ══ -->
-<div id="error-screen">
-  <div class="error-icon">🔒</div>
-  <div class="error-title">Portal no encontrado</div>
-  <div class="error-desc">Este link no es válido o expiró. Pide a tu gym un nuevo link de acceso.</div>
-</div>
-
-<!-- ══ APP ══ -->
-<div id="app">
-
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="topbar-gym">
-      <div class="gym-logo" id="gym-logo-el">V</div>
-      <span class="gym-name-el" id="gym-nombre-el">VELUM</span>
-    </div>
-    <div class="topbar-avatar" id="topbar-avatar-btn" onclick="openProfileSheet()">?</div>
-  </div>
-
-  <!-- Profile sheet -->
-  <div id="profile-sheet" onclick="closeProfileSheet(event)">
-    <div class="profile-sheet-inner">
-      <div class="profile-sheet-handle"></div>
-      <div class="profile-sheet-user">
-        <div class="profile-sheet-avatar" id="ps-avatar">?</div>
-        <div>
-          <div class="profile-sheet-name" id="ps-name">—</div>
-          <div class="profile-sheet-gym" id="ps-gym">VELUM</div>
-        </div>
-      </div>
-      <div class="profile-sheet-divider"></div>
-      <div class="profile-sheet-btn" onclick="doLogout()">
-        <span>🚪</span><span>Cerrar sesión</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- QR Sheet -->
-  <div id="qr-sheet" onclick="closeQRSheet(event)">
-    <div class="qr-sheet-inner">
-      <div class="qr-sheet-handle"></div>
-      <div class="qr-sheet-label">Mi QR de Entrada</div>
-      <div class="qr-sheet-wrap">
-        <canvas id="qr-canvas"></canvas>
+      <div>
+        <label class="lf-label">Código del Gym</label>
+        <input class="lf-input" id="login-gym" type="text" placeholder="ej. MOVE" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
       </div>
       <div>
-        <div class="qr-sheet-name" id="qr-nombre">—</div>
-        <div class="qr-sheet-plan" id="qr-plan-lbl" style="text-align:center;margin-top:3px;">—</div>
+        <label class="lf-label">Número de Socio</label>
+        <input class="lf-input" id="login-numero" type="number" placeholder="ej. 42" min="1" inputmode="numeric"/>
       </div>
-      <div class="qr-sheet-hint">Muestra este código en la entrada del gym.<br>Se genera de forma segura para tu acceso.</div>
-      <div class="qr-ios-banner" id="qr-ios-banner" style="display:none;">
-        <div style="font-size:18px;flex-shrink:0;">📲</div>
-        <div class="qr-ios-banner-text"><strong>Agrega VELUM a tu pantalla de inicio</strong> para acceder en 1 toque. Toca <strong>Compartir →</strong> y luego <strong>"En pantalla de inicio"</strong>.</div>
-        <div class="qr-ios-banner-close" onclick="document.getElementById('qr-ios-banner').style.display='none'">✕</div>
+      <div>
+        <label class="lf-label">Contraseña</label>
+        <input class="lf-input" id="login-pwd" type="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
-      <div class="qr-sheet-close" onclick="closeQRSheet()">Cerrar</div>
+      <div class="login-err" id="login-err"></div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Acceder al Portal</button>
     </div>
+    <p class="login-foot">Tu número de socio aparece en tu registro o pregunta en recepción.</p>
   </div>
+</div>
 
-  <!-- Programa Sheet (expand full workout) -->
-  <div id="prog-sheet" onclick="closeProgSheet(event)">
-    <div class="prog-sheet-inner">
-      <div class="prog-sheet-handle"></div>
-      <div class="prog-sheet-tipo" id="ps-tipo">—</div>
-      <div class="prog-sheet-fecha" id="ps-fecha">—</div>
-      <div id="ps-content"></div>
-      <div class="prog-sheet-close" onclick="closeProgSheet()">Cerrar</div>
-    </div>
-  </div>
+<!-- ERROR -->
+<div id="error-screen" style="display:none;flex-direction:column;">
+  <div class="err-icon">🔒</div>
+  <div class="err-title">Portal no disponible</div>
+  <div class="err-desc">Este link no es válido o expiró. Solicita a tu gym un nuevo acceso.</div>
+</div>
 
-  <!-- ── HOME ── -->
-  <div class="view active" id="view-home">
+<!-- APP -->
+<div id="app">
 
-    <div class="greeting anim-in a1">
-      <div class="greeting-hi" id="greeting-hi">Buenos días 👋</div>
-      <div class="greeting-name" id="atleta-nombre">—</div>
-    </div>
-
-    <!-- Membership Card -->
-    <div class="membership-card anim-in a2" id="membership-card">
-      <div class="card-top">
-        <div>
-          <div class="card-plan-lbl">Membresía</div>
-          <div class="card-plan-name" id="card-plan">—</div>
-        </div>
-        <div class="card-status-badge" id="card-status-badge">
-          <div class="status-dot ok" id="status-dot"></div>
-          <span id="card-status-txt">Activo</span>
-        </div>
-      </div>
-      <div class="card-progress" id="card-progress-wrap">
-        <div class="card-progress-bar">
-          <div class="card-progress-fill" id="card-progress-fill" style="width:70%;"></div>
-        </div>
-        <div class="card-progress-lbl">
-          <span id="card-days-used">—</span>
-          <span id="card-days-total">—</span>
-        </div>
-      </div>
-      <div class="card-bottom">
-        <div class="card-days">
-          <div class="card-days-num" id="card-days-num">—</div>
-          <div class="card-days-lbl" id="card-days-lbl">días restantes</div>
-        </div>
-        <div class="card-right">
-          <div class="card-numero" id="card-numero"></div>
-          <div class="card-gym-name" id="card-gym-name">—</div>
-          <div class="card-vence" id="card-vence">—</div>
-        </div>
+  <!-- ══ SIDEBAR (desktop) ══ -->
+  <div class="sidebar" id="sidebar" style="display:none;">
+    <div class="sb-brand">
+      <div class="sb-gym-logo" id="sb-gym-logo">V</div>
+      <div>
+        <div class="sb-gym-name" id="sb-gym-name">VELUM Gym</div>
+        <div class="sb-velum">Portal Atleta</div>
       </div>
     </div>
-
-    <!-- Package if applicable -->
-    <div class="section anim-in a3" id="paquete-section" style="display:none;">
-      <div class="section-header">
-        <div class="section-title">📦 Paquete</div>
+    <div class="sb-nav">
+      <div class="sb-item active" id="sbn-home" onclick="switchView('home')">
+        <div class="sb-icon">🏠</div><div class="sb-lbl">Inicio</div>
       </div>
-      <div class="paquete-card">
-        <div class="paquete-header">
-          <div class="paquete-icon">📦</div>
-          <div>
-            <div class="paquete-title" id="paquete-title">—</div>
-            <div class="paquete-plan" id="paquete-plan">—</div>
-          </div>
-        </div>
-        <div class="paquete-stats">
-          <div class="paquete-stat">
-            <div class="paquete-num" id="paquete-restantes" style="color:#10e8a0;">—</div>
-            <div class="paquete-lbl">Restantes</div>
-          </div>
-          <div class="paquete-stat">
-            <div class="paquete-num" id="paquete-usadas" style="color:var(--text3);">—</div>
-            <div class="paquete-lbl">Usadas</div>
-          </div>
-          <div class="paquete-stat">
-            <div class="paquete-num" id="paquete-total" style="color:var(--text2);">—</div>
-            <div class="paquete-lbl">Total</div>
-          </div>
-        </div>
-        <div class="paquete-progress">
-          <div class="paquete-bar">
-            <div class="paquete-fill" id="paquete-fill" style="width:50%;"></div>
-          </div>
-        </div>
+      <div class="sb-item" id="sbn-programa" onclick="switchView('programa')">
+        <div class="sb-icon">📅</div><div class="sb-lbl">Programa</div>
+      </div>
+      <div class="sb-item" id="sbn-historial" onclick="switchView('historial')">
+        <div class="sb-icon">🕐</div><div class="sb-lbl">Historial</div>
       </div>
     </div>
-
-    <!-- Quick actions -->
-    <div class="quick-actions anim-in a3">
-      <div class="qa-card accent" onclick="openQRSheet()">
-        <div class="qa-icon">📲</div>
-        <div class="qa-title">QR de Entrada</div>
-        <div class="qa-sub">Muéstralo en recepción</div>
-      </div>
-      <div class="qa-card" onclick="switchView('historial')">
-        <div class="qa-icon">📍</div>
-        <div class="qa-title">Mis Visitas</div>
-        <div class="qa-sub" id="qa-visitas-sub">Ver historial</div>
-      </div>
+    <div class="sb-qr-btn" onclick="openQRSheet()">
+      <div class="sb-qr-ico">📲</div>
+      <div class="sb-qr-txt">Mi QR de Entrada</div>
     </div>
-
-    <!-- Today's workout -->
-    <div class="section anim-in a4">
-      <div class="section-header">
-        <div class="section-title">Entrenamiento de hoy</div>
-        <div class="section-link" onclick="switchView('programa')">Ver semana →</div>
-      </div>
-      <div id="today-workout-container">
-        <div class="workout-empty">No hay programa cargado para hoy.</div>
+    <div class="sb-footer">
+      <div class="sb-user" onclick="openProfileSheet()">
+        <div class="sb-avatar" id="sb-avatar">?</div>
+        <div class="sb-user-name" id="sb-user-name">—</div>
+        <div class="sb-logout-ico">⚙️</div>
       </div>
     </div>
   </div>
 
-  <!-- ── PROGRAMA ── -->
-  <div class="view" id="view-programa">
-    <div class="greeting">
-      <div class="greeting-hi" id="prog-gym-hi">Programa</div>
-      <div class="greeting-name" id="prog-mes-title" style="font-size:22px;">—</div>
-    </div>
-    <div class="section">
-      <div class="week-nav">
-        <div class="week-nav-btn" onclick="navWeek(-1)">‹</div>
-        <div class="week-nav-center">
-          <div class="week-nav-title" id="wn-range">—</div>
-          <div class="week-nav-sub" id="wn-year">—</div>
-        </div>
-        <div class="week-nav-btn" onclick="navWeek(1)">›</div>
-      </div>
-      <div class="workout-tabs" id="prog-disc-tabs" style="padding:0;margin-bottom:14px;"></div>
-      <div id="prog-week-list"></div>
-    </div>
-  </div>
+  <!-- ══ MAIN SCROLL ══ -->
+  <div class="main-scroll" id="main-scroll" style="flex:1;">
 
-  <!-- ── HISTORIAL ── -->
-  <div class="view" id="view-historial">
-    <div class="greeting">
-      <div class="greeting-hi">Mis visitas</div>
-      <div class="greeting-name" style="font-size:22px;">Historial</div>
+    <!-- Mobile topbar -->
+    <div class="topbar">
+      <div class="topbar-gym">
+        <div class="gym-logo-sm" id="gym-logo-sm">V</div>
+        <span class="gym-name-sm" id="gym-name-sm">VELUM</span>
+      </div>
+      <div class="topbar-avatar" id="topbar-avatar" onclick="openProfileSheet()">?</div>
     </div>
-    <div class="section">
-      <div class="checkin-list" id="checkin-list">
-        <div class="empty-state">
-          <div class="empty-state-icon">🏃</div>
-          <div class="empty-state-title">¡Haz tu primer check-in!</div>
-          <div class="empty-state-sub">Muestra tu QR en la entrada y aquí verás tu historial de visitas.</div>
+
+    <!-- ── HOME ── -->
+    <div class="view active" id="view-home">
+      <!-- Mobile layout -->
+      <div id="home-mobile">
+        <div class="greeting au au1">
+          <div class="greeting-hi" id="greeting-hi">Buenos días 👋</div>
+          <div class="greeting-name" id="atleta-nombre">—</div>
+        </div>
+        <div id="membership-card-wrap" class="au au2"></div>
+        <div id="paquete-section" style="display:none;" class="section au au3">
+          <div class="sec-hdr"><div class="sec-title">📦 Paquete activo</div></div>
+          <div id="pkg-card-container"></div>
+        </div>
+        <div class="stats-row au au3" id="stats-row-mobile"></div>
+        <div class="quick-actions au au4">
+          <div class="qa primary" onclick="openQRSheet()">
+            <div class="qa-ico">📲</div>
+            <div class="qa-ttl">QR de Entrada</div>
+            <div class="qa-sub">Muéstralo en recepción</div>
+          </div>
+          <div class="qa" onclick="switchView('historial')">
+            <div class="qa-ico">📍</div>
+            <div class="qa-ttl">Mis Visitas</div>
+            <div class="qa-sub" id="qa-visits-sub">Ver historial</div>
+          </div>
+        </div>
+        <div class="section au au5">
+          <div class="sec-hdr">
+            <div class="sec-title">Entrenamiento de hoy</div>
+            <div class="sec-link" onclick="switchView('programa')">Ver semana →</div>
+          </div>
+          <div id="today-wk-container"><div class="wk-empty">No hay programa cargado para hoy.</div></div>
+        </div>
+      </div>
+      <!-- Desktop layout -->
+      <div id="home-desktop" style="display:none;">
+        <div class="greeting au au1">
+          <div class="greeting-hi" id="greeting-hi-desk">Buenos días 👋</div>
+          <div class="greeting-name" id="atleta-nombre-desk">—</div>
+        </div>
+        <div class="home-desktop-grid">
+          <div class="home-left">
+            <div id="membership-card-desk"></div>
+            <div class="stats-row" id="stats-row-desk"></div>
+            <div class="quick-actions">
+              <div class="qa primary" onclick="openQRSheet()">
+                <div class="qa-ico">📲</div>
+                <div class="qa-ttl">QR de Entrada</div>
+                <div class="qa-sub">Muéstralo en recepción</div>
+              </div>
+              <div class="qa" onclick="switchView('historial')">
+                <div class="qa-ico">📍</div>
+                <div class="qa-ttl">Mis Visitas</div>
+                <div class="qa-sub" id="qa-visits-desk">Ver historial</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-right">
+            <div id="paquete-desk" style="display:none;"></div>
+            <div class="section">
+              <div class="sec-hdr">
+                <div class="sec-title">Entrenamiento de hoy</div>
+                <div class="sec-link" onclick="switchView('programa')">Ver semana →</div>
+              </div>
+              <div id="today-wk-desk"><div class="wk-empty">No hay programa para hoy.</div></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Bottom Nav -->
+    <!-- ── PROGRAMA ── -->
+    <div class="view" id="view-programa">
+      <div class="greeting">
+        <div class="greeting-hi" id="prog-gym-hi">Programa</div>
+        <div class="greeting-name" id="prog-mes-title" style="font-size:22px;">—</div>
+      </div>
+      <div class="section">
+        <div class="week-nav">
+          <div class="wn-btn" onclick="navWeek(-1)">‹</div>
+          <div class="wn-center">
+            <div class="wn-range" id="wn-range">—</div>
+            <div class="wn-year" id="wn-year">—</div>
+          </div>
+          <div class="wn-btn" onclick="navWeek(1)">›</div>
+        </div>
+        <div class="disc-tabs" id="prog-disc-tabs"></div>
+        <div id="prog-content"></div>
+      </div>
+    </div>
+
+    <!-- ── HISTORIAL ── -->
+    <div class="view" id="view-historial">
+      <div class="greeting">
+        <div class="greeting-hi">Mis visitas</div>
+        <div class="greeting-name" style="font-size:22px;">Historial</div>
+      </div>
+      <div class="section">
+        <div id="checkin-list">
+          <div class="empty-state">
+            <div class="es-ico">🏃</div>
+            <div class="es-title">¡Haz tu primer check-in!</div>
+            <div class="es-sub">Muestra tu QR en la entrada del gym y aquí verás tu historial de visitas.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-scroll -->
+
+  <!-- Mobile Bottom Nav -->
   <div class="bottom-nav">
-    <div class="bn-item active" onclick="switchView('home')" id="bn-home">
-      <div class="bn-icon">🏠</div>
-      <div class="bn-lbl">Inicio</div>
+    <div class="bn-item active" id="bn-home" onclick="switchView('home')">
+      <div class="bn-icon">🏠</div><div class="bn-lbl">Inicio</div>
     </div>
     <div class="bn-fab-wrap" onclick="openQRSheet()">
       <div class="bn-fab">📲</div>
       <div class="bn-fab-lbl">Check-in</div>
     </div>
-    <div class="bn-item" onclick="switchView('programa')" id="bn-programa">
-      <div class="bn-icon">📅</div>
-      <div class="bn-lbl">Programa</div>
+    <div class="bn-item" id="bn-programa" onclick="switchView('programa')">
+      <div class="bn-icon">📅</div><div class="bn-lbl">Programa</div>
     </div>
-    <div class="bn-item" onclick="switchView('historial')" id="bn-historial">
-      <div class="bn-icon">🕐</div>
-      <div class="bn-lbl">Historial</div>
+    <div class="bn-item" id="bn-historial" onclick="switchView('historial')">
+      <div class="bn-icon">🕐</div><div class="bn-lbl">Historial</div>
     </div>
   </div>
 
 </div><!-- /app -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- ══ SHEETS ══ -->
+<div class="sheet-backdrop" id="profile-sheet" onclick="closeSheet('profile-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;">
+    <div class="sheet-handle"></div>
+    <div class="ps-user">
+      <div class="ps-avatar" id="ps-avatar">?</div>
+      <div>
+        <div class="ps-name" id="ps-name">—</div>
+        <div class="ps-gym" id="ps-gym">VELUM</div>
+      </div>
+    </div>
+    <div class="ps-divider"></div>
+    <div class="ps-logout" onclick="doLogout()"><span>🚪</span><span>Cerrar sesión</span></div>
+  </div>
+</div>
 
+<div class="sheet-backdrop" id="qr-sheet" onclick="closeSheet('qr-sheet',event)">
+  <div class="sheet" style="align-items:center;max-width:520px;margin:0 auto;width:100%;">
+    <div class="sheet-handle"></div>
+    <div class="qr-label">Mi QR de Entrada</div>
+    <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
+    <div class="qr-info">
+      <div class="qr-name" id="qr-nombre">—</div>
+      <div class="qr-plan" id="qr-plan-lbl">—</div>
+    </div>
+    <div class="qr-hint">Muestra este código en la entrada del gym.<br>Se genera de forma segura para tu acceso.</div>
+    <div class="ios-banner" id="ios-banner" style="display:none;">
+      <div style="font-size:18px;flex-shrink:0;">📲</div>
+      <div class="ios-banner-txt"><strong>Agrega VELUM a tu pantalla de inicio</strong> para acceder en 1 toque. Toca <strong>Compartir →</strong> luego <strong>"En pantalla de inicio"</strong>.</div>
+      <div class="ios-banner-x" onclick="document.getElementById('ios-banner').style.display='none'">✕</div>
+    </div>
+    <div class="sheet-close" onclick="closeSheet('qr-sheet')">Cerrar</div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="prog-sheet" onclick="closeSheet('prog-sheet',event)">
+  <div class="sheet prog-sheet-inner" style="max-width:560px;margin:0 auto;width:100%;">
+    <div class="sheet-handle"></div>
+    <div class="pd-tipo" id="pd-tipo">—</div>
+    <div class="pd-fecha" id="pd-fecha">—</div>
+    <div id="pd-content"></div>
+    <div class="sheet-close" onclick="closeSheet('prog-sheet')">Cerrar</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-// ════════════════════════════════
-//  VELUM — Athlete Portal v2
-// ════════════════════════════════
+// ════════════════════════════════════
+//  VELUM Portal — v4 Premium
+// ════════════════════════════════════
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI';
-const MESES_ES     = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DIAS_ES      = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-const DIAS_FULL    = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-const DISC_EMOJIS  = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥',Calistenia:'🤸',Powerlifting:'🏋️',Halterofilia:'🎽',Spinning:'🚴',Triatlon:'🏊',MMA:'🛡',Kickboxing:'🦶',Movilidad:'🦾',Futbol:'⚽',Basquetbol:'🏀',PrepAtletica:'🏆'};
+const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DIAS_L = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const EMOJIS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥',Calistenia:'🤸',Powerlifting:'🏋️',Halterofilia:'🎽',Spinning:'🚴',Triatlon:'🏊',MMA:'🛡',Kickboxing:'🦶',Movilidad:'🦾',Futbol:'⚽',Basquetbol:'🏀',PrepAtletica:'🏆'};
 
 let portalData = null;
 let activeView = 'home';
 let progWeekOffset = 0;
 let progActiveDisc = '';
+let progItems = [];
+const isDesktop = () => window.innerWidth >= 780;
 
-// ── Routing ──────────────────────────
-function getURLToken(){
-  const p = new URLSearchParams(window.location.search);
-  return p.get('t') || p.get('token');
+// ── Helpers ─────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
+
+function greet(){
+  const h=new Date().getHours();
+  return h<12?'Buenos días 👋':h<19?'Buenas tardes 👋':'Buenas noches 👋';
 }
 
-// ── Views ──────────────────────────
+// ── Count-up animation ───────────────────────────────
+function countUp(el, target, duration=700){
+  if(!el||isNaN(target)||target===0) return;
+  const start=Date.now();
+  const tick=()=>{
+    const p=Math.min((Date.now()-start)/duration,1);
+    const eased=1-Math.pow(1-p,3);
+    el.textContent=Math.round(target*eased);
+    if(p<1) requestAnimationFrame(tick);
+    else el.textContent=target;
+  };
+  requestAnimationFrame(tick);
+}
+
+// ── Ring animation ───────────────────────────────────
+function animateRings(){
+  document.querySelectorAll('.card-ring-fill').forEach(fill=>{
+    const finalOffset=parseFloat(fill.getAttribute('data-target-offset')||fill.style.strokeDashoffset||'0');
+    const total=parseFloat(fill.getAttribute('stroke-dasharray')||'188.5');
+    fill.style.transition='none';
+    fill.style.strokeDashoffset=total;
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        fill.style.transition='stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1)';
+        fill.style.strokeDashoffset=finalOffset;
+      });
+    });
+  });
+}
+
+// ── Sheet control ────────────────────────────────────
+function openSheet(id){ $(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeSheet(id,e){
+  if(!e||e.target===$(id)){ $(id).classList.remove('open'); document.body.style.overflow=''; }
+}
+function openQRSheet(){ renderQR(); openSheet('qr-sheet'); }
+function openProfileSheet(){ openSheet('profile-sheet'); }
+
+// ── View switching ───────────────────────────────────
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
-  const v = document.getElementById('view-'+name);
-  const b = document.getElementById('bn-'+name);
-  if(v) v.classList.add('active');
-  if(b) b.classList.add('active');
-  activeView = name;
+  ['home','programa','historial'].forEach(n=>{
+    const b=$('bn-'+n); if(b) b.classList.toggle('active',n===name);
+    const s=$('sbn-'+n); if(s) s.classList.toggle('active',n===name);
+  });
+  const v=$('view-'+name); if(v) v.classList.add('active');
+  activeView=name;
   if(name==='programa') renderProgramaView();
   if(name==='historial') renderHistorial();
 }
 
-// ── QR Sheet ──────────────────────────
-function openQRSheet(){
-  renderQR();
-  document.getElementById('qr-sheet').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeQRSheet(e){
-  if(!e || e.target===document.getElementById('qr-sheet')){
-    document.getElementById('qr-sheet').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-}
-
-// ── Profile Sheet ──────────────────────────
-function openProfileSheet(){
-  document.getElementById('profile-sheet').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeProfileSheet(e){
-  if(!e || e.target===document.getElementById('profile-sheet')){
-    document.getElementById('profile-sheet').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-}
-
-// ── Prog Sheet ──────────────────────────
-function openProgSheet(tipo, fechaStr, contenido){
-  const dt = new Date(fechaStr + 'T12:00:00');
-  const label = DIAS_FULL[dt.getDay()] + ', ' + dt.getDate() + ' de ' + MESES_ES[dt.getMonth()];
-  document.getElementById('ps-tipo').textContent = tipo;
-  document.getElementById('ps-fecha').textContent = label;
-  document.getElementById('ps-content').innerHTML = renderWorkoutLines(contenido);
-  document.getElementById('prog-sheet').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeProgSheet(e){
-  if(!e || e.target===document.getElementById('prog-sheet')){
-    document.getElementById('prog-sheet').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-}
-
-// ── Logout ──────────────────────────
+// ── Logout ───────────────────────────────────────────
 function doLogout(){
-  try{ localStorage.removeItem('velum_session'); } catch(_){}
-  portalData = null;
-  closeProfileSheet();
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  ['login-gym','login-numero','login-pwd'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
+  try{ localStorage.removeItem('velum_session'); }catch(_){}
+  portalData=null;
+  closeSheet('profile-sheet');
+  $('app').style.display='none';
+  $('login-screen').style.display='flex';
+  ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
 }
 
-// ── Greeting ──────────────────────────
-function greetingText(){
-  const h = new Date().getHours();
-  if(h < 12) return 'Buenos días 👋';
-  if(h < 19) return 'Buenas tardes 👋';
-  return 'Buenas noches 👋';
-}
-
-// ── Show portal ──────────────────────────
+// ── Show portal ──────────────────────────────────────
 function showPortal(data){
-  portalData = data;
-  document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
+  portalData=data;
+  document.title=`${data.cliente.nombre.split(' ')[0]} — VELUM`;
 
-  // Persist session
   if(data.cliente.portal_token){
-    try{ localStorage.setItem('velum_session', JSON.stringify({token: data.cliente.portal_token})); } catch(_){}
+    try{ localStorage.setItem('velum_session',JSON.stringify({token:data.cliente.portal_token})); }catch(_){}
   }
 
-  // Populate topbar + profile sheet
-  const initials = (data.cliente.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  const setEl = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-  setEl('topbar-avatar-btn', initials);
-  setEl('ps-avatar', initials);
-  setEl('ps-name', data.cliente.nombre);
-  setEl('ps-gym', data.gym.nombre + (data.cliente.numero_cliente ? ` · Socio #${data.cliente.numero_cliente}` : ''));
+  const initials=(data.cliente.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const gymLogo=data.gym.logo;
+  const gymName=data.gym.nombre||'VELUM';
 
-  renderMembresiaCard(data);
-  renderTodayWorkout(data.programasHoy);
-  renderQuickStats(data);
-
-  document.getElementById('loading-screen').classList.add('hidden');
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-}
-
-// ── Render membership card ──────────────────────────
-function renderMembresiaCard(data){
-  const { cliente, gym, paquete } = data;
-  const setEl = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-
-  // Gym logo
-  const gymLogoEl = document.getElementById('gym-logo-el');
-  if(gym.logo){ gymLogoEl.innerHTML = `<img src="${gym.logo}" alt="${gym.nombre}">`; }
-  else { gymLogoEl.textContent = (gym.nombre||'V')[0].toUpperCase(); }
-  setEl('gym-nombre-el', gym.nombre);
-
-  // Greeting
-  setEl('greeting-hi', greetingText());
-  setEl('atleta-nombre', (cliente.nombre||'').split(' ')[0]);
-
-  // Plan
-  setEl('card-plan', cliente.plan || 'Membresía');
-  setEl('card-gym-name', gym.nombre);
-
-  // Número socio
-  if(cliente.numero_cliente){
-    setEl('card-numero', `SOCIO  #${String(cliente.numero_cliente).padStart(3,'0')}`);
-  }
-
-  // Status
-  const ok   = cliente.membresiaOk;
-  const dias = cliente.diasRestantes;
-  const dot  = document.getElementById('status-dot');
-  const txt  = document.getElementById('card-status-txt');
-
-  if(!ok){
-    dot.className='status-dot danger'; txt.textContent='Vencida';
-    document.getElementById('membership-card').style.background='linear-gradient(135deg,#7f1d1d,#450a0a)';
-  } else if(dias!==null && dias<=7){
-    dot.className='status-dot warn'; txt.textContent='Vence pronto';
-  } else {
-    dot.className='status-dot ok'; txt.textContent='Activo';
-  }
-
-  if(dias!==null){
-    setEl('card-days-num', dias);
-    setEl('card-days-lbl', dias===1?'día restante':'días restantes');
-    if(cliente.vence){
-      const dt = new Date(cliente.vence+'T12:00:00');
-      setEl('card-vence','Vence '+dt.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}));
-    }
-    const pct = Math.max(2, Math.min(100, Math.round((dias/30)*100)));
-    document.getElementById('card-progress-fill').style.width = pct+'%';
-    setEl('card-days-used', `${30-dias} días usados`);
-    setEl('card-days-total', '30 días');
-  } else {
-    document.getElementById('card-progress-wrap').style.display='none';
-    setEl('card-days-num','∞');
-    setEl('card-days-lbl','sin fecha límite');
-  }
-
-  // Package
-  if(paquete){
-    document.getElementById('paquete-section').style.display='';
-    setEl('paquete-title', paquete.plan||'Paquete de Clases');
-    setEl('paquete-plan', `${paquete.clasesRestantes} clases disponibles`);
-    setEl('paquete-restantes', paquete.clasesRestantes);
-    setEl('paquete-usadas', paquete.clasesUsadas);
-    setEl('paquete-total', paquete.clasesTotal);
-    const pct = Math.max(2, Math.round((paquete.clasesRestantes/paquete.clasesTotal)*100));
-    document.getElementById('paquete-fill').style.width = pct+'%';
-    if(paquete.clasesRestantes<=2) document.getElementById('paquete-restantes').style.color='var(--danger)';
-  }
-}
-
-// ── Quick stats ──────────────────────────
-function renderQuickStats(data){
-  const checkins = data.checkins||[];
-  const sub = document.getElementById('qa-visitas-sub');
-  if(sub) sub.textContent = checkins.length ? `${checkins.length} visitas registradas` : 'Sin check-ins aún';
-}
-
-// ── Workout content renderer ──────────────────────────
-function renderWorkoutLines(txt){
-  const lines = (txt||'').trim().split('\n');
-  let html = '';
-  lines.forEach(line=>{
-    const t = line.trim();
-    if(!t){ html += '<div style="height:5px;"></div>'; return; }
-    const isHeader = /^(🔥|💪|⚡|🧘|WARM UP|COOL DOWN|BLOQUE|FINALIZADOR|OBJETIVO|ESTRUCTURA|MODALIDAD)/i.test(t) || /^[A-Z\s🔥💪⚡🧘]{4,}:/.test(t);
-    if(isHeader) html += `<div class="workout-section-lbl">${t}</div>`;
-    else html += `<div class="workout-line">${t}</div>`;
+  ['gym-logo-sm','sb-gym-logo'].forEach(id=>{
+    const e=$(id); if(!e) return;
+    if(gymLogo) e.innerHTML=`<img src="${gymLogo}" alt="${gymName}">`;
+    else e.textContent=gymName[0].toUpperCase();
   });
-  return html;
+  set('gym-name-sm',gymName); set('sb-gym-name',gymName);
+  ['topbar-avatar','sb-avatar','ps-avatar'].forEach(id=>set(id,initials));
+  set('sb-user-name',data.cliente.nombre.split(' ')[0]);
+  set('ps-name',data.cliente.nombre);
+  set('ps-gym',gymName+(data.cliente.numero_cliente?` · Socio #${data.cliente.numero_cliente}`:''));
+
+  renderHomeData(data);
+  $('loading-screen').classList.add('hidden');
+  $('login-screen').style.display='none';
+  $('app').style.display='flex';
+  handleDesktopLayout();
 }
 
-// ── Today workout ──────────────────────────
-function renderTodayWorkout(programasHoy){
-  const container = document.getElementById('today-workout-container');
-  if(!programasHoy||!programasHoy.length){
-    container.innerHTML='<div class="workout-empty">No hay entrenamiento programado para hoy.</div>';
-    return;
-  }
-  let activeDisc = programasHoy[0].tipo;
+function handleDesktopLayout(){
+  const desk=isDesktop();
+  const sidebar=$('sidebar');
+  if(sidebar) sidebar.style.display=desk?'flex':'none';
+  $('home-mobile').style.display=desk?'none':'block';
+  $('home-desktop').style.display=desk?'block':'none';
+  ['greeting-hi','greeting-hi-desk'].forEach(id=>set(id,greet()));
+  const fname=(portalData.cliente.nombre||'').split(' ')[0];
+  ['atleta-nombre','atleta-nombre-desk'].forEach(id=>set(id,fname));
+}
 
-  function build(){
-    const emoji = DISC_EMOJIS[activeDisc]||'🏋️';
-    const prog = programasHoy.find(p=>p.tipo===activeDisc)||programasHoy[0];
-    let tabs = '';
-    if(programasHoy.length>1){
-      tabs=`<div class="workout-tabs" style="padding:10px 16px 0;">${
-        programasHoy.map(p=>`<div class="workout-tab${p.tipo===activeDisc?' active':''}" onclick="atletaSwitchWorkout('${p.tipo}')">${DISC_EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>`).join('')
-      }</div>`;
-    }
-    container.innerHTML=`<div class="workout-card">
-      ${tabs}
-      <div class="workout-header">
-        <div class="workout-emoji">${emoji}</div>
-        <div>
-          <div class="workout-title">${prog.tipo}</div>
-          <div class="workout-meta">${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>
+// ── Membership card HTML ─────────────────────────────
+function membershipCardHTML(data){
+  const {cliente,gym,paquete}=data;
+  const ok=cliente.membresiaOk;
+  const dias=cliente.diasRestantes;
+
+  let dotClass='ok pulse',statusTxt='Activo',cardStyle='';
+  if(!ok){ dotClass='danger'; statusTxt='Vencida'; cardStyle='style="background:linear-gradient(145deg,#7f1d1d,#450a0a)"'; }
+  else if(dias!==null&&dias<=7){ dotClass='warn'; statusTxt='Vence pronto'; }
+
+  const ringR=30; const ringC=2*Math.PI*ringR;
+  const pct=dias!==null?Math.max(2,Math.min(100,Math.round((dias/30)*100))):100;
+  const dashOffset=ringC*(1-pct/100);
+
+  const daysNum=dias!==null?dias:'∞';
+  const daysLbl=dias===1?'día restante':dias===null?'sin límite':'días restantes';
+  const venceStr=cliente.vence?'Vence '+new Date(cliente.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'';
+  const numStr=cliente.numero_cliente?`SOCIO  #${String(cliente.numero_cliente).padStart(3,'0')}`:'';
+  const progressPct=dias!==null?Math.max(2,Math.min(100,Math.round((dias/30)*100))):100;
+  const usedDays=dias!==null?30-dias:0;
+
+  return `<div class="membership-card" ${cardStyle}>
+    <div class="card-watermark">VELUM</div>
+    <div class="card-top">
+      <div>
+        <div class="card-plan-lbl">Membresía</div>
+        <div class="card-plan-name">${cliente.plan||'Membresía'}</div>
+      </div>
+      <div class="card-badge">
+        <div class="status-dot ${dotClass}"></div>
+        <span>${statusTxt}</span>
+      </div>
+    </div>
+    <div class="card-mid">
+      <div class="card-days-block">
+        <div class="card-days-num">${daysNum}</div>
+        <div class="card-days-lbl">${daysLbl}</div>
+      </div>
+      <div class="card-ring-wrap">
+        <svg class="card-ring" viewBox="0 0 68 68" width="68" height="68">
+          <circle class="card-ring-bg" cx="34" cy="34" r="30"/>
+          <circle class="card-ring-fill" cx="34" cy="34" r="30"
+            stroke-dasharray="${ringC.toFixed(1)}"
+            data-target-offset="${dashOffset.toFixed(1)}"
+            stroke-dashoffset="${ringC.toFixed(1)}"/>
+        </svg>
+        <div class="card-ring-label">${pct}%<br><span style="font-size:8px;">activo</span></div>
+      </div>
+    </div>
+    ${dias!==null?`<div class="card-bottom">
+      <div>
+        <div class="card-prog-bar">
+          <div class="card-prog-fill" style="width:${progressPct}%;"></div>
         </div>
-        <div class="workout-disc-badge">${prog.tipo}</div>
+        <div class="card-prog-lbl">${usedDays} días usados de 30</div>
       </div>
-      <div class="workout-body-wrap">
-        <div class="workout-body">${renderWorkoutLines(prog.contenido)}</div>
+      <div class="card-right">
+        <div class="card-numero">${numStr}</div>
+        <div class="card-gym">${gym.nombre}</div>
+        <div class="card-vence">${venceStr}</div>
       </div>
-    </div>`;
-  }
-  window.atletaSwitchWorkout = t=>{ activeDisc=t; build(); };
-  build();
+    </div>`:`<div class="card-bottom"><div></div><div class="card-right"><div class="card-numero">${numStr}</div><div class="card-gym">${gym.nombre}</div></div></div>`}
+  </div>`;
 }
 
-// ── QR ──────────────────────────
+// ── Package card HTML ────────────────────────────────
+function pkgCardHTML(paquete){
+  const pct=Math.max(2,Math.round((paquete.clasesRestantes/paquete.clasesTotal)*100));
+  const lowColor=paquete.clasesRestantes<=2?'style="color:var(--danger)"':'style="color:var(--ok)"';
+  return `<div class="pkg-card">
+    <div class="pkg-hdr">
+      <div style="font-size:22px;">📦</div>
+      <div>
+        <div class="pkg-title">${paquete.plan||'Paquete de Clases'}</div>
+        <div class="pkg-sub">${paquete.clasesRestantes} clases disponibles</div>
+      </div>
+    </div>
+    <div class="pkg-stats">
+      <div class="pkg-stat"><div class="pkg-n" ${lowColor}>${paquete.clasesRestantes}</div><div class="pkg-l">Restantes</div></div>
+      <div class="pkg-stat"><div class="pkg-n" style="color:var(--text3);">${paquete.clasesUsadas}</div><div class="pkg-l">Usadas</div></div>
+      <div class="pkg-stat"><div class="pkg-n" style="color:var(--text2);">${paquete.clasesTotal}</div><div class="pkg-l">Total</div></div>
+    </div>
+    <div class="pkg-bar-wrap"><div class="pkg-bar"><div class="pkg-fill" style="width:${pct}%;"></div></div></div>
+  </div>`;
+}
+
+// ── Stats row HTML ───────────────────────────────────
+function statsRowHTML(data){
+  const checkins=data.checkins||[];
+  const visits=checkins.length;
+  const dias=data.cliente.diasRestantes;
+  const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
+  let streak=0;
+  if(distinctDates.length){
+    const today=new Date().toISOString().slice(0,10);
+    let cursor=today;
+    for(const d of distinctDates){
+      if(d===cursor){ streak++; const dt=new Date(cursor); dt.setDate(dt.getDate()-1); cursor=dt.toISOString().slice(0,10); }
+      else break;
+    }
+  }
+  const diasNum=dias!==null?dias:0;
+  return `
+    <div class="stat-chip visits">
+      <div class="stat-icon">📊</div>
+      <div class="stat-num" data-count="${visits}">0</div>
+      <div class="stat-lbl">Visitas</div>
+    </div>
+    <div class="stat-chip streak">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-num" data-count="${streak}">0</div>
+      <div class="stat-lbl">Racha días</div>
+    </div>
+    <div class="stat-chip days">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-num" data-count="${diasNum}">${dias!==null?'0':'∞'}</div>
+      <div class="stat-lbl">Días restantes</div>
+    </div>
+  `;
+}
+
+// ── Render home data ─────────────────────────────────
+function renderHomeData(data){
+  const {paquete,checkins}=data;
+  const cardHTML=membershipCardHTML(data);
+  const wrap=$('membership-card-wrap'); if(wrap) wrap.innerHTML=cardHTML;
+  const wDesk=$('membership-card-desk'); if(wDesk) wDesk.innerHTML=cardHTML;
+
+  const statsHTML=statsRowHTML(data);
+  const statsM=$('stats-row-mobile'); if(statsM) statsM.innerHTML=statsHTML;
+  const statsD=$('stats-row-desk');   if(statsD) statsD.innerHTML=statsHTML;
+
+  const visits=(checkins||[]).length;
+  ['qa-visits-sub','qa-visits-desk'].forEach(id=>set(id,visits?`${visits} visitas registradas`:'Sin check-ins aún'));
+
+  if(paquete){
+    const pkgHTML=pkgCardHTML(paquete);
+    const ps=$('paquete-section'); if(ps){ ps.style.display=''; ps.querySelector('#pkg-card-container').innerHTML=pkgHTML; }
+    const pd=$('paquete-desk'); if(pd){ pd.style.display='block'; pd.innerHTML=`<div class="section"><div class="sec-hdr"><div class="sec-title">📦 Paquete activo</div></div>${pkgHTML}</div>`; }
+  }
+
+  renderTodayWorkout(data.programasHoy);
+
+  // Animate ring + count-up after a frame
+  setTimeout(()=>{
+    animateRings();
+    document.querySelectorAll('.stat-num[data-count]').forEach(el=>{
+      const t=parseInt(el.getAttribute('data-count'),10);
+      if(!isNaN(t)&&t>0) countUp(el,t);
+    });
+  },120);
+}
+
+// ── Workout content parser ───────────────────────────
+function parseWorkoutSections(txt){
+  const lines=(txt||'').trim().split('\n');
+  let sections=[],current=null;
+  lines.forEach(raw=>{
+    const t=raw.trim(); if(!t) return;
+    const isHdr=/^(🔥|💪|⚡|🧘|WARM UP|COOL DOWN|BLOQUE|FINALIZADOR|OBJETIVO|ESTRUCTURA|MODALIDAD)/i.test(t)||/^[🔥💪⚡🧘]/u.test(t);
+    if(isHdr){
+      if(current) sections.push(current);
+      let type='main';
+      if(/warm up|calentamiento|movilidad/i.test(t)) type='warm';
+      else if(/cool|enfriamiento|estiramient/i.test(t)) type='cool';
+      else if(/finaliz|conditioning|metcon/i.test(t)) type='finish';
+      current={header:t,type,lines:[]};
+    } else if(current){ current.lines.push(t); }
+    else { if(!current) current={header:null,type:'main',lines:[]}; current.lines.push(t); }
+  });
+  if(current) sections.push(current);
+  return sections;
+}
+
+function renderWorkoutHTML(txt){
+  const sections=parseWorkoutSections(txt);
+  if(!sections.length) return '<div class="wk-empty">Sin contenido</div>';
+  return sections.map(s=>`<div class="wk-section">${s.header?`<div class="wk-section-hdr ${s.type}">${s.header}</div>`:''}${s.lines.map(l=>`<div class="wk-line">${l}</div>`).join('')}</div>`).join('');
+}
+
+// ── Today's workout ──────────────────────────────────
+function renderTodayWorkout(programasHoy){
+  ['today-wk-container','today-wk-desk'].forEach(containerId=>{
+    const container=$(containerId); if(!container) return;
+    if(!programasHoy||!programasHoy.length){
+      container.innerHTML='<div class="wk-empty">No hay entrenamiento programado para hoy.</div>'; return;
+    }
+    let activeDisc=programasHoy[0].tipo;
+    function build(){
+      const emoji=EMOJIS[activeDisc]||'🏋️';
+      const prog=programasHoy.find(p=>p.tipo===activeDisc)||programasHoy[0];
+      let tabs='';
+      if(programasHoy.length>1){
+        tabs=`<div class="wk-tabs">${programasHoy.map(p=>`<div class="wk-tab${p.tipo===activeDisc?' active':''}" onclick="todayTab('${containerId}','${p.tipo}')">${EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>`).join('')}</div>`;
+      }
+      container.innerHTML=`<div class="wk-card">
+        ${tabs}
+        <div class="wk-hdr">
+          <div class="wk-emoji">${emoji}</div>
+          <div>
+            <div class="wk-title">${prog.tipo}</div>
+            <div class="wk-meta">${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>
+          </div>
+          <div class="wk-disc-badge">${prog.tipo}</div>
+        </div>
+        <div class="wk-body">${renderWorkoutHTML(prog.contenido)}<div class="wk-fade"></div></div>
+      </div>`;
+    }
+    window[`todayTab_${containerId}`]=t=>{ activeDisc=t; build(); };
+    build();
+  });
+}
+window.todayTab=(cid,t)=>{ window[`todayTab_${cid}`]&&window[`todayTab_${cid}`](t); };
+
+// ── QR ───────────────────────────────────────────────
 function renderQR(){
   if(!portalData) return;
-  const canvas = document.getElementById('qr-canvas');
-  canvas.innerHTML='';
-  const tok = portalData.cliente.portal_token || getURLToken() || '';
-  const url = `${SUPABASE_URL}/functions/v1/move-checkin?token=${tok}`;
+  const canvas=$('qr-canvas'); canvas.innerHTML='';
+  const tok=portalData.cliente.portal_token||'';
+  const url=`${SUPABASE_URL}/functions/v1/move-checkin?token=${tok}`;
   try{
-    new QRCode(canvas,{text:url,width:160,height:160,colorDark:'#1D9E75',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
-  } catch(e){
+    new QRCode(canvas,{text:url,width:162,height:162,colorDark:'#1D9E75',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }catch(e){
     canvas.style.cssText='font-size:8px;word-break:break-all;color:#1D9E75;';
     canvas.textContent=url;
   }
-  document.getElementById('qr-nombre').textContent = portalData.cliente.nombre;
-  document.getElementById('qr-plan-lbl').textContent = (portalData.gym.nombre||'') + (portalData.cliente.plan ? ' · '+portalData.cliente.plan : '');
-
-  // iOS add to homescreen
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.navigator.standalone;
-  if(isIOS && !isStandalone && !sessionStorage.getItem('ios_banner_dismissed')){
-    document.getElementById('qr-ios-banner').style.display='flex';
+  set('qr-nombre',portalData.cliente.nombre);
+  set('qr-plan-lbl',(portalData.gym.nombre||'')+(portalData.cliente.plan?' · '+portalData.cliente.plan:''));
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS&&!window.navigator.standalone&&!sessionStorage.getItem('ios_dismissed')){
+    $('ios-banner').style.display='flex';
   }
 }
 
-// ── Programa View ──────────────────────────
+// ── Programa view ────────────────────────────────────
 function getWeekDates(offset){
-  const now = new Date();
-  const dow = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - dow + (dow===0?-6:1) + offset*7);
-  monday.setHours(0,0,0,0);
-  const dates = [];
-  for(let i=0;i<7;i++){
-    const d = new Date(monday);
-    d.setDate(monday.getDate()+i);
-    dates.push(d.toISOString().slice(0,10));
-  }
-  return dates;
+  const now=new Date(); const dow=now.getDay();
+  const mon=new Date(now);
+  mon.setDate(now.getDate()-dow+(dow===0?-6:1)+offset*7);
+  mon.setHours(0,0,0,0);
+  return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d.toISOString().slice(0,10); });
 }
-
-function navWeek(dir){
-  progWeekOffset += dir;
-  renderProgramaView();
-}
+function navWeek(dir){ progWeekOffset+=dir; renderProgramaView(); }
 
 function renderProgramaView(){
   if(!portalData) return;
-  const today = new Date().toISOString().slice(0,10);
-  const weekDates = getWeekDates(progWeekOffset);
-  const d0 = new Date(weekDates[0]+'T12:00:00');
-  const d6 = new Date(weekDates[6]+'T12:00:00');
-
-  // Header
-  document.getElementById('prog-mes-title').textContent =
-    MESES_ES[d0.getMonth()] + (d0.getMonth()!==d6.getMonth() ? ' / '+MESES_ES[d6.getMonth()] : '');
-  document.getElementById('wn-range').textContent =
-    `${d0.getDate()} ${MESES_ES[d0.getMonth()].slice(0,3)} — ${d6.getDate()} ${MESES_ES[d6.getMonth()].slice(0,3)}`;
-  document.getElementById('wn-year').textContent = d0.getFullYear();
-  document.getElementById('prog-gym-hi').textContent = portalData.gym.nombre;
-
-  // Build data map: fecha → [programa...]
-  // We only have portalData.programasHoy — for other days we'd need a separate load
-  // Map available programs
-  const progMap = {};
-  (portalData.programasHoy||[]).forEach(p=>{
-    if(!progMap[today]) progMap[today]=[];
-    progMap[today].push(p);
-  });
-
-  // Discipline tabs (from all available data)
-  const allDiscs = [...new Set(Object.values(progMap).flat().map(p=>p.tipo))];
-  const tabsEl = document.getElementById('prog-disc-tabs');
-  if(allDiscs.length<=1){
-    tabsEl.innerHTML='';
-    if(allDiscs.length===1) progActiveDisc = allDiscs[0];
-  } else {
-    if(!progActiveDisc || !allDiscs.includes(progActiveDisc)) progActiveDisc = allDiscs[0];
-    tabsEl.innerHTML = allDiscs.map(d=>`
-      <div class="workout-tab${d===progActiveDisc?' active':''}" onclick="progSelectDisc('${d}')">${DISC_EMOJIS[d]||'🏋️'} ${d}</div>
-    `).join('');
+  const today=new Date().toISOString().slice(0,10);
+  const dates=getWeekDates(progWeekOffset);
+  const d0=new Date(dates[0]+'T12:00:00'); const d6=new Date(dates[6]+'T12:00:00');
+  set('prog-mes-title',MESES[d0.getMonth()]+(d0.getMonth()!==d6.getMonth()?' / '+MESES[d6.getMonth()]:''));
+  set('wn-range',`${d0.getDate()} ${MESES[d0.getMonth()].slice(0,3)} — ${d6.getDate()} ${MESES[d6.getMonth()].slice(0,3)}`);
+  set('wn-year',d0.getFullYear());
+  set('prog-gym-hi',portalData.gym.nombre);
+  const progMap={};
+  (portalData.programasHoy||[]).forEach(p=>{ if(!progMap[today]) progMap[today]=[]; progMap[today].push(p); });
+  const allDiscs=[...new Set(Object.values(progMap).flat().map(p=>p.tipo))];
+  const tabsEl=$('prog-disc-tabs');
+  if(allDiscs.length<=1){ tabsEl.innerHTML=''; if(allDiscs.length===1) progActiveDisc=allDiscs[0]; }
+  else {
+    if(!progActiveDisc||!allDiscs.includes(progActiveDisc)) progActiveDisc=allDiscs[0];
+    tabsEl.innerHTML=allDiscs.map(d=>`<div class="wk-tab${d===progActiveDisc?' active':''}" onclick="progSelectDisc('${d}')">${EMOJIS[d]||'🏋️'} ${d}</div>`).join('');
   }
-
-  window.progSelectDisc = function(d){
+  window.progSelectDisc=d=>{
     progActiveDisc=d;
-    document.querySelectorAll('#prog-disc-tabs .workout-tab').forEach(t=>{
-      t.classList.toggle('active', t.textContent.includes(d));
-    });
-    buildWeekList(weekDates, progMap, today);
+    document.querySelectorAll('#prog-disc-tabs .wk-tab').forEach(t=>t.classList.toggle('active',t.textContent.includes(d)));
+    buildProgContent(dates,progMap,today);
   };
-
-  buildWeekList(weekDates, progMap, today);
+  buildProgContent(dates,progMap,today);
 }
 
-function buildWeekList(weekDates, progMap, today){
-  const listEl = document.getElementById('prog-week-list');
-  let html='';
-
-  weekDates.forEach(dateStr=>{
-    const dt = new Date(dateStr+'T12:00:00');
-    const dayLabel = `${DIAS_ES[dt.getDay()]} ${dt.getDate()}`;
-    const isToday = dateStr===today;
-    const dayProgs = (progMap[dateStr]||[]).filter(p=>!progActiveDisc||p.tipo===progActiveDisc||progMap[dateStr].length<=1);
-
-    html+=`<div class="prog-day-block">
-      <div class="prog-day-header">
-        <span class="prog-day-label${isToday?' today':''}">${isToday?'Hoy · ':''} ${dayLabel}</span>
-        ${isToday?'<span class="prog-today-pill">HOY</span>':''}
-      </div>`;
-
-    if(!dayProgs.length){
-      html+=`<div class="prog-empty-day">${isToday?'Sin programa para hoy':'—'}</div>`;
-    } else {
-      dayProgs.forEach(prog=>{
-        const emoji = DISC_EMOJIS[prog.tipo]||'🏋️';
-        // Preview: first 2 non-empty lines
-        const previewLines = (prog.contenido||'').split('\n').map(l=>l.trim()).filter(l=>l).slice(0,2);
-        const preview = previewLines.join('  ·  ');
-        html+=`<div class="prog-session-card" onclick="openProgSheet('${prog.tipo}','${dateStr}',${JSON.stringify(prog.contenido||'').replace(/'/g,"&apos;")})">
-          <div class="prog-session-left">
-            <div class="prog-session-emoji">${emoji}</div>
-            <div class="prog-session-tipo">${prog.tipo}</div>
-          </div>
-          <div class="prog-session-body">
-            <div class="prog-session-title">${prog.tipo}</div>
-            <div class="prog-session-preview">${preview||'Ver entrenamiento completo'}</div>
-          </div>
-          <div style="font-size:16px;color:var(--text3);padding-top:2px;flex-shrink:0;">›</div>
+function buildProgContent(dates,progMap,today){
+  const cont=$('prog-content'); if(!cont) return;
+  progItems=[];
+  if(isDesktop()){
+    let html=`<div class="prog-desktop-grid">`;
+    dates.forEach(dateStr=>{
+      const dt=new Date(dateStr+'T12:00:00');
+      const isToday=dateStr===today;
+      const dayProgs=(progMap[dateStr]||[]).filter(p=>!progActiveDisc||p.tipo===progActiveDisc||!progActiveDisc);
+      html+=`<div class="prog-desktop-day${isToday?' today':''}">
+        <div class="prog-desktop-day-label${isToday?' today':''}">${DIAS_S[dt.getDay()]}</div>
+        <div class="prog-desktop-date${isToday?' today':''}">${dt.getDate()}</div>`;
+      if(!dayProgs.length){ html+=`<div class="prog-desktop-empty">—</div>`; }
+      else {
+        dayProgs.forEach(prog=>{
+          const idx=progItems.length; progItems.push({tipo:prog.tipo,fecha:dateStr,contenido:prog.contenido});
+          html+=`<div class="prog-desktop-session" onclick="openProgDetail(${idx})">
+            <div class="prog-desktop-session-emoji">${EMOJIS[prog.tipo]||'🏋️'}</div>
+            <div class="prog-desktop-session-tipo">${prog.tipo}</div>
+          </div>`;
+        });
+      }
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+    cont.innerHTML=html;
+  } else {
+    let html='';
+    dates.forEach(dateStr=>{
+      const dt=new Date(dateStr+'T12:00:00');
+      const isToday=dateStr===today;
+      const dayProgs=(progMap[dateStr]||[]).filter(p=>!progActiveDisc||p.tipo===progActiveDisc||!progActiveDisc);
+      html+=`<div class="day-block">
+        <div class="day-hdr">
+          <span class="day-label${isToday?' today':''}">${isToday?'Hoy · ':DIAS_S[dt.getDay()]+' '}${dt.getDate()} ${MESES[dt.getMonth()].slice(0,3)}</span>
+          ${isToday?'<span class="today-pill">HOY</span>':''}
         </div>`;
-      });
-    }
-    html+='</div>';
-  });
-  listEl.innerHTML=html;
+      if(!dayProgs.length){ html+=`<div class="day-empty">${isToday?'Sin programa hoy':'—'}</div>`; }
+      else {
+        dayProgs.forEach(prog=>{
+          const idx=progItems.length; progItems.push({tipo:prog.tipo,fecha:dateStr,contenido:prog.contenido});
+          const previewLines=(prog.contenido||'').split('\n').map(l=>l.trim()).filter(l=>l&&!/^[🔥💪⚡🧘]/.test(l)&&!/^[A-Z\s]{4,}:/.test(l)).slice(0,2);
+          const preview=previewLines.join('  ·  ')||'Ver entrenamiento completo';
+          html+=`<div class="sess-card" onclick="openProgDetail(${idx})">
+            <div class="sess-accent-bar"></div>
+            <div class="sess-inner">
+              <div class="sess-emoji">${EMOJIS[prog.tipo]||'🏋️'}</div>
+              <div class="sess-body">
+                <div class="sess-tipo">${prog.tipo}</div>
+                <div class="sess-preview">${preview}</div>
+              </div>
+            </div>
+            <div class="sess-arrow">›</div>
+          </div>`;
+        });
+      }
+      html+=`</div>`;
+    });
+    cont.innerHTML=html;
+  }
 }
 
-// ── Historial ──────────────────────────
+window.openProgDetail=function(idx){
+  const item=progItems[idx]; if(!item) return;
+  const dt=new Date(item.fecha+'T12:00:00');
+  set('pd-tipo',item.tipo);
+  set('pd-fecha',`${DIAS_L[dt.getDay()]}, ${dt.getDate()} de ${MESES[dt.getMonth()]}`);
+  $('pd-content').innerHTML=renderWorkoutHTML(item.contenido);
+  openSheet('prog-sheet');
+};
+
+// ── Historial (grouped timeline) ─────────────────────
 function renderHistorial(){
   if(!portalData) return;
-  const checkins = portalData.checkins||[];
-  const el = document.getElementById('checkin-list');
+  const checkins=portalData.checkins||[];
+  const el=$('checkin-list');
   if(!checkins.length){
     el.innerHTML=`<div class="empty-state">
-      <div class="empty-state-icon">🏃</div>
-      <div class="empty-state-title">¡Haz tu primer check-in!</div>
-      <div class="empty-state-sub">Muestra tu QR en la entrada y aquí verás tu historial de visitas.</div>
-    </div>`;
-    return;
+      <div class="es-ico">🏃</div>
+      <div class="es-title">¡Haz tu primer check-in!</div>
+      <div class="es-sub">Muestra tu QR en la entrada del gym y aquí verás tu historial de visitas.</div>
+    </div>`; return;
   }
-  const METODO_ICONS={QR:'📲',Manual:'✍️',App:'📱',default:'✅'};
-  el.innerHTML=checkins.map(c=>{
+  const MI={QR:'📲',Manual:'✍️',App:'📱',default:'✅'};
+  const todayStr=new Date().toISOString().slice(0,10);
+  const yesterdayStr=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  const weekAgoStr=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+
+  function ciItemHTML(c){
     const dt=new Date(c.fecha+'T12:00:00');
-    const label=dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+    const lbl=dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
     const hora=c.hora?c.hora.slice(0,5):'';
-    const icon=METODO_ICONS[c.metodo]||METODO_ICONS.default;
-    return `<div class="checkin-item">
-      <div class="checkin-icon">${icon}</div>
+    return `<div class="ci-item">
+      <div class="ci-icon">${MI[c.metodo]||MI.default}</div>
       <div>
-        <div class="checkin-date">${label}</div>
-        <div class="checkin-time">${hora?hora+' hrs':'Check-in registrado'}</div>
+        <div class="ci-date">${lbl}</div>
+        <div class="ci-time">${hora?hora+' hrs':'Check-in registrado'}</div>
       </div>
-      ${c.metodo?`<div class="checkin-badge">${c.metodo}</div>`:''}
+      ${c.metodo?`<div class="ci-badge">${c.metodo}</div>`:''}
     </div>`;
-  }).join('');
+  }
+
+  const groups=[
+    {label:'Hoy',         items:checkins.filter(c=>c.fecha===todayStr)},
+    {label:'Ayer',        items:checkins.filter(c=>c.fecha===yesterdayStr)},
+    {label:'Esta semana', items:checkins.filter(c=>c.fecha<yesterdayStr&&c.fecha>=weekAgoStr)},
+    {label:'Anterior',    items:checkins.filter(c=>c.fecha<weekAgoStr)},
+  ].filter(g=>g.items.length);
+
+  let html='<div class="ci-timeline">';
+  groups.forEach(g=>{
+    html+=`<div class="ci-group-hdr">${g.label}</div>`;
+    html+=`<div class="ci-items">${g.items.map(ciItemHTML).join('')}</div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
 }
 
-// ── Login form ──────────────────────────
+// ── Login ─────────────────────────────────────────────
 async function doLogin(){
-  const gym    = (document.getElementById('login-gym').value||'').trim();
-  const numero = (document.getElementById('login-numero').value||'').trim();
-  const pwd    = (document.getElementById('login-pwd').value||'').trim();
-  const errEl  = document.getElementById('login-error');
-  const btn    = document.getElementById('login-btn');
-
+  const gym=(($('login-gym').value)||'').trim();
+  const numero=(($('login-numero').value)||'').trim();
+  const pwd=(($('login-pwd').value)||'').trim();
+  const errEl=$('login-err'); const btn=$('login-btn');
   errEl.style.display='none';
-  if(!gym||!numero||!pwd){
-    errEl.textContent='Completa todos los campos.';
-    errEl.style.display='block'; return;
-  }
+  if(!gym||!numero||!pwd){ errEl.textContent='Completa todos los campos.'; errEl.style.display='block'; return; }
   btn.disabled=true; btn.textContent='Verificando…';
-
   try{
-    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':ANON_KEY},
-      body:JSON.stringify({gym, numero:parseInt(numero,10), password:pwd})
+    const res=await fetch(`${EDGE_BASE}/velum-atleta-portal`,{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':ANON_KEY},
+      body:JSON.stringify({gym,numero:parseInt(numero,10),password:pwd})
     });
-    const data = await res.json();
+    const data=await res.json();
     if(!res.ok||data.error){
-      const msg = data.error==='Contraseña incorrecta'?'Contraseña incorrecta.':
-                  data.error==='Número de socio no encontrado'?'Número de socio no encontrado.':
-                  data.error==='Gym no encontrado'?'Código de gym incorrecto.':
-                  'Datos incorrectos. Verifica e intenta de nuevo.';
-      errEl.textContent=msg; errEl.style.display='block'; return;
+      const m=data.error==='Contraseña incorrecta'?'Contraseña incorrecta.':
+               data.error==='Número de socio no encontrado'?'Número de socio no encontrado.':
+               data.error==='Gym no encontrado'?'Código de gym incorrecto.':
+               'Datos incorrectos. Verifica e intenta de nuevo.';
+      errEl.textContent=m; errEl.style.display='block'; return;
     }
     showPortal(data);
-  } catch(e){
-    errEl.textContent='Error de conexión. Intenta de nuevo.';
-    errEl.style.display='block';
-  } finally {
-    btn.disabled=false; btn.textContent='Acceder al Portal';
-  }
+  }catch(e){ errEl.textContent='Error de conexión. Intenta de nuevo.'; errEl.style.display='block'; }
+  finally{ btn.disabled=false; btn.textContent='Acceder al Portal'; }
 }
 
-// ── Init ──────────────────────────
+// ── Init ─────────────────────────────────────────────
 async function init(){
-  const p     = new URLSearchParams(window.location.search);
-  const token = p.get('t')||p.get('token');
-  const gym   = p.get('gym')||p.get('g')||'';
-
-  if(gym){
-    const gi=document.getElementById('login-gym');
-    if(gi) gi.value=gym.toUpperCase();
-  }
+  const p=new URLSearchParams(window.location.search);
+  const token=p.get('t')||p.get('token');
+  const gym=p.get('gym')||p.get('g')||'';
+  if(gym){ const gi=$('login-gym'); if(gi) gi.value=gym.toUpperCase(); }
 
   async function tryToken(tok){
-    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(tok)}`,{
-      headers:{'apikey':ANON_KEY}
-    });
+    const res=await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(tok)}`,{headers:{'apikey':ANON_KEY}});
     if(!res.ok) throw new Error('invalid');
-    const data = await res.json();
+    const data=await res.json();
     if(data.error) throw new Error(data.error);
     return data;
   }
 
-  // 1) URL token (magic link)
-  if(token){
-    try{ showPortal(await tryToken(token)); return; } catch(_){}
-  }
+  if(token){ try{ showPortal(await tryToken(token)); return; }catch(_){} }
 
-  // 2) Stored session (auto-login)
   let stored=null;
-  try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); } catch(_){}
-  if(stored?.token){
-    try{ showPortal(await tryToken(stored.token)); return; }
-    catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} }
-  }
+  try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); }catch(_){}
+  if(stored?.token){ try{ showPortal(await tryToken(stored.token)); return; }catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} } }
 
-  // 3) Show login
-  document.getElementById('loading-screen').classList.add('hidden');
-  document.getElementById('login-screen').style.display='flex';
-
-  ['login-gym','login-numero','login-pwd'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-  });
+  $('loading-screen').classList.add('hidden');
+  $('login-screen').style.display='flex';
+  ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doLogin(); }); });
 }
+
+// ── Responsive ───────────────────────────────────────
+let resizeTimeout;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimeout);
+  resizeTimeout=setTimeout(()=>{
+    if(portalData){ handleDesktopLayout(); if(activeView==='programa') renderProgramaView(); }
+  },150);
+});
 
 window.addEventListener('DOMContentLoaded', init);
 </script>
