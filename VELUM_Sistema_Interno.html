@@ -357,6 +357,9 @@ body{
   border:1px solid var(--border);
 }
 .btn-outline:hover{background:rgba(255,255,255,.09);border-color:var(--border2);color:var(--text);}
+.btn-ghost{background:transparent;color:var(--text2);border:none;padding:4px 8px;}
+.btn-ghost:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.btn-ghost:disabled{opacity:.3;cursor:default;}
 .btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(248,113,113,.2);}
 .btn-danger:hover{background:rgba(248,113,113,.18);border-color:rgba(248,113,113,.35);}
 .btn-sm{padding:5px 12px;font-size:12px;border-radius:7px;}
@@ -1404,6 +1407,8 @@ select option{background:#10101c;color:var(--text);}
 .prog-day-content{ font-size:10px;color:var(--text2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical; }
 .prog-day-has{ border-color:rgba(29,158,117,.4);background:rgba(29,158,117,.06); }
 .prog-day-has .prog-day-num{ color:var(--accent); }
+.prog-week-selected{ border-color:rgba(139,92,246,.35)!important;background:rgba(139,92,246,.05)!important; }
+.prog-day-cell.prog-day-has.prog-week-selected{ border-color:rgba(139,92,246,.5)!important; }
 .prog-day-tag{ display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px; }
 .prog-tag-Strength{ background:rgba(139,92,246,.2);color:#8b5cf6; }
 .prog-tag-Hyrox{ background:rgba(239,68,68,.2);color:#ef4444; }
@@ -3180,13 +3185,18 @@ select option{background:#10101c;color:var(--text);}
       <div class="tabs" style="margin-bottom:16px;flex-wrap:wrap;" id="prog-tabs-container"></div>
 
       <!-- Month nav + Generate button -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn btn-outline btn-sm" onclick="progNavMes(-1)">‹ Anterior</button>
-        <span style="font-size:15px;font-weight:700;min-width:160px;text-align:center;" id="prog-mes-label">—</span>
-        <button class="btn btn-outline btn-sm" onclick="progNavMes(1)">Siguiente ›</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="progNavMes(-1)">‹</button>
+        <span style="font-size:15px;font-weight:700;min-width:140px;text-align:center;" id="prog-mes-label">—</span>
+        <button class="btn btn-outline btn-sm" onclick="progNavMes(1)">›</button>
         <div style="flex:1;"></div>
-        <button id="btn-generar-mes" class="btn btn-primary btn-sm" onclick="generateMesCompleto()" style="background:linear-gradient(135deg,#8b5cf6,#1D9E75);border:none;white-space:nowrap;" title="Genera entrenamientos para todo el mes usando IA">
-          🤖 Generar Mes Completo
+        <div style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">
+          <button class="btn btn-ghost btn-sm" onclick="progNavSemana(-1)" id="btn-sem-prev" style="padding:2px 7px;min-width:0;font-size:13px;">‹</button>
+          <span style="font-size:11px;font-weight:600;color:var(--text2);min-width:110px;text-align:center;white-space:nowrap;" id="prog-sem-label">Semana 1</span>
+          <button class="btn btn-ghost btn-sm" onclick="progNavSemana(1)" id="btn-sem-next" style="padding:2px 7px;min-width:0;font-size:13px;">›</button>
+        </div>
+        <button id="btn-generar-semana" class="btn btn-primary btn-sm" onclick="generateSemanaActual()" style="background:linear-gradient(135deg,#8b5cf6,#1D9E75);border:none;white-space:nowrap;" title="Genera los entrenamientos de esta semana con IA">
+          🤖 Generar Semana
         </button>
       </div>
 
@@ -4686,7 +4696,7 @@ select option{background:#10101c;color:var(--text);}
     <!-- Contenido ocupa todo el espacio disponible -->
     <div style="flex:1;min-height:0;padding:16px 24px;display:flex;flex-direction:column;gap:10px;">
       <textarea id="prog-contenido"
-        placeholder="Warm up:&#10;&#10;A) BLOQUE PRINCIPAL&#10;A1) Back Squat 4x5 @80%&#10;A2) ...&#10;&#10;B) FINALIZADOR&#10;&#10;Cool down:&#10;&#10;📝 NOTA:"
+        placeholder="🔥 WARM UP (10 min):&#10;[Activación dinámica, movilidad]&#10;&#10;💪 BLOQUE PRINCIPAL:&#10;[Ejercicio principal: series × reps @ carga / %1RM]&#10;[Accesorio 1: series × reps]&#10;[Accesorio 2: series × reps]&#10;&#10;⚡ FINALIZADOR (10-12 min):&#10;[AMRAP / EMOM / For Time — descripción]&#10;&#10;🧘 COOL DOWN:&#10;[Estiramientos estáticos]"
         style="flex:1;min-height:0;font-family:monospace;font-size:13px;line-height:1.7;resize:none;width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);outline:none;"></textarea>
       <textarea id="prog-notas" rows="2" placeholder="Notas del coach (opcional)..."
         style="resize:none;width:100%;box-sizing:border-box;font-size:12px;"></textarea>
@@ -4767,6 +4777,7 @@ let programas = [];
 let progTab   = 'Strength';
 let progYear  = new Date().getFullYear();
 let progMonth = new Date().getMonth();
+let progSemana = 0; // 0-indexed week within the displayed month
 
 // ═══════════════════════════════════════════════════════════════════
 // AUTH — Login / Logout / Session
@@ -11322,7 +11333,36 @@ function progNavMes(dir){
   progMonth += dir;
   if(progMonth > 11){ progMonth=0; progYear++; }
   if(progMonth < 0) { progMonth=11; progYear--; }
+  progSemana = 0; // reset to first week on month change
   renderProgramaCalendar();
+}
+
+function progNavSemana(dir){
+  const firstDow   = (new Date(progYear, progMonth, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(progYear, progMonth+1, 0).getDate();
+  const totalSemanas = Math.ceil((firstDow + daysInMonth) / 7);
+  progSemana = Math.max(0, Math.min(totalSemanas - 1, progSemana + dir));
+  renderProgramaCalendar();
+}
+
+// Returns the training-day date strings for the currently selected week
+function getProgSemanaFechas(){
+  const dias = getDisciplinaDias(progTab);
+  const firstDow   = (new Date(progYear, progMonth, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(progYear, progMonth+1, 0).getDate();
+  const weekStart  = 1 - firstDow + progSemana * 7;
+  const weekEnd    = weekStart + 6;
+  const fechas = [];
+  for(let d = Math.max(1, weekStart); d <= Math.min(daysInMonth, weekEnd); d++){
+    const dt  = new Date(progYear, progMonth, d);
+    const dow = (dt.getDay() + 6) % 7;
+    if(dias.includes(dow)){
+      const mm = String(progMonth+1).padStart(2,'0');
+      const dd = String(d).padStart(2,'0');
+      fechas.push(`${progYear}-${mm}-${dd}`);
+    }
+  }
+  return fechas;
 }
 
 function renderProgramaCalendar(){
@@ -11348,9 +11388,9 @@ function renderProgramaCalendar(){
       <span style="font-size:24px;">${disc.emoji}</span>
       <div style="flex:1;min-width:180px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);">Sin sesiones de ${disc.nombre} en ${MESES_ES[progMonth]}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Usa IA para generar el mes completo con un clic, o toca cualquier día para escribir la sesión manualmente.</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Genera semana a semana con IA, o toca cualquier día para escribir la sesión manualmente.</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="generateMesCompleto()" style="background:linear-gradient(135deg,#8b5cf6,#1D9E75);border:none;white-space:nowrap;">🤖 Generar mes con IA</button>
+      <button class="btn btn-primary btn-sm" onclick="generateSemanaActual()" style="background:linear-gradient(135deg,#8b5cf6,#1D9E75);border:none;white-space:nowrap;">🤖 Generar semana con IA</button>
     </div>`;
   } else if(banner){
     banner.remove();
@@ -11359,6 +11399,21 @@ function renderProgramaCalendar(){
   const today = new Date(); today.setHours(0,0,0,0);
   const daysInMonth = new Date(progYear, progMonth+1, 0).getDate();
   const firstDow    = (new Date(progYear, progMonth, 1).getDay()+6)%7; // Mon=0
+  const totalSemanas = Math.ceil((firstDow + daysInMonth) / 7);
+
+  // Clamp progSemana to valid range
+  if(progSemana >= totalSemanas) progSemana = totalSemanas - 1;
+  if(progSemana < 0) progSemana = 0;
+
+  // Update week label + nav buttons
+  const semStart = Math.max(1, 1 - firstDow + progSemana * 7);
+  const semEnd   = Math.min(daysInMonth, semStart + 6);
+  const semLbl   = document.getElementById('prog-sem-label');
+  if(semLbl) semLbl.textContent = `${semStart}–${semEnd} de ${MESES_ES[progMonth]}`;
+  const prevBtn = document.getElementById('btn-sem-prev');
+  const nextBtn = document.getElementById('btn-sem-next');
+  if(prevBtn) prevBtn.disabled = progSemana === 0;
+  if(nextBtn) nextBtn.disabled = progSemana >= totalSemanas - 1;
 
   const DIAS_SHORT2 = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
@@ -11371,8 +11426,13 @@ function renderProgramaCalendar(){
   // Headers
   DIAS_SHORT2.forEach(d=>{ html += `<div class="prog-day-header">${d}</div>`; });
   // Cells
-  cells.forEach(day=>{
-    if(!day){ html += `<div class="prog-day-cell prog-empty-col"></div>`; return; }
+  cells.forEach((day, cellIdx)=>{
+    const weekIdx = Math.floor(cellIdx / 7);
+    const isSelectedWeek = weekIdx === progSemana;
+    if(!day){
+      html += `<div class="prog-day-cell prog-empty-col${isSelectedWeek?' prog-week-selected':''}"></div>`;
+      return;
+    }
     const mm  = String(progMonth+1).padStart(2,'0');
     const dd  = String(day).padStart(2,'0');
     const fStr= `${progYear}-${mm}-${dd}`;
@@ -11382,14 +11442,21 @@ function renderProgramaCalendar(){
     const prog = programas.find(p=>p.fecha===fStr && p.tipo===progTab);
     const hasContent = prog && prog.contenido;
     let cls = 'prog-day-cell';
-    if(isToday)    cls += ' prog-today';
-    if(hasContent) cls += ' prog-day-has';
-    const preview = hasContent ? esc(prog.contenido.slice(0,120)) : '';
+    if(isToday)        cls += ' prog-today';
+    if(hasContent)     cls += ' prog-day-has';
+    if(isSelectedWeek) cls += ' prog-week-selected';
+    // Build compact preview from content sections
+    let preview = '';
+    if(hasContent){
+      // Show first two non-empty lines from the structured content
+      const lines = prog.contenido.split('\n').map(l=>l.trim()).filter(l=>l);
+      preview = esc(lines.slice(0,2).join(' · ').slice(0,90));
+    }
     html += `<div class="${cls}" onclick="openProgramaModal('${fStr}')">
       <div class="prog-day-num">${day}</div>
       ${hasContent
         ? `<span class="prog-day-tag" style="background:${getDisciplinaColor(progTab)}22;color:${getDisciplinaColor(progTab)};border:1px solid ${getDisciplinaColor(progTab)}44;">${(VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'',nombre:progTab}).emoji} ${progTab}</span><div class="prog-day-content">${preview}</div>`
-        : `<div style="color:var(--border);font-size:18px;line-height:1;margin-top:8px;text-align:center;">+</div>`
+        : `<div style="color:${isSelectedWeek?'rgba(139,92,246,.4)':'var(--border)'};font-size:${isSelectedWeek?'20':'18'}px;line-height:1;margin-top:8px;text-align:center;">+</div>`
       }
     </div>`;
   });
@@ -11397,34 +11464,34 @@ function renderProgramaCalendar(){
   grid.innerHTML = html;
 }
 
-async function generateMesCompleto(){
+async function generateSemanaActual(){
   const disc = VELUM_DISCIPLINAS.find(d=>d.id===progTab);
   if(!disc){ toast('Selecciona una disciplina primero','⚠️'); return; }
-  const cfg = progConfig[progTab]||{};
-  const dias = getDisciplinaDias(progTab);
-  if(!dias.length){ toast('Configura al menos un día de entrenamiento en ⚙️ Configurar IA','⚠️'); return; }
 
+  const fechas = getProgSemanaFechas();
+  if(!fechas.length){
+    toast('Esta semana no tiene días de entrenamiento configurados','⚠️');
+    return;
+  }
+
+  const cfg    = progConfig[progTab]||{};
   const gymCfg = progConfig['gym']||{};
-  const DIAS_ES = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
-  const diasNombres = dias.map(i=>DIAS_ES[i]).join(', ');
+  const dias   = getDisciplinaDias(progTab);
 
-  const btn = document.getElementById('btn-generar-mes');
+  const btn = document.getElementById('btn-generar-semana');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Generando…'; }
 
   try {
-    const session = getSession();
-    const gym_id = session ? (session.gym_id||session.id||'') : '';
     const { data: fnData, error: fnErr } = await window.supabaseClient.functions.invoke('velum-prog-generate', {
       body: {
-        tipo:       disc.id,
-        año:        progYear,
-        mes:        progMonth,
+        tipo:        disc.id,
+        fechas:      fechas,       // send exact dates for this week
         dias_semana: dias,
-        equipo:     gymCfg.equipo||'',
-        objetivo:   cfg.objetivo||'',
-        bloque:     cfg.bloque||'Base',
-        nivel:      cfg.nivel||'Mixto',
-        notas:      cfg.notas||'',
+        equipo:      gymCfg.equipo||'',
+        objetivo:    cfg.objetivo||'',
+        bloque:      cfg.bloque||'Base',
+        nivel:       cfg.nivel||'Mixto',
+        notas:       cfg.notas||'',
       }
     });
 
@@ -11432,18 +11499,17 @@ async function generateMesCompleto(){
     const result = fnData || {};
     if(result.error) throw new Error(result.error);
     const generados = result.programas||[];
-    if(!generados.length){ toast('La IA no generó sesiones para este mes ⚠️','⚠️'); return; }
+    if(!generados.length){ toast('La IA no generó sesiones — revisa la configuración ⚠️','⚠️'); return; }
 
     // Upsert each generated day into Supabase
-    let saved = 0;
-    let errors = 0;
+    let saved = 0, errors = 0;
     for(const prog of generados){
       const existing = programas.find(p=>p.fecha===prog.fecha && p.tipo===disc.id);
       const payload = {
         tipo:      disc.id,
         fecha:     prog.fecha,
         contenido: prog.contenido||'',
-        notas:     prog.notas ? `Generado automáticamente · ${prog.notas}` : 'Generado automáticamente',
+        notas:     prog.notas || 'Generado con IA',
       };
       let err;
       if(existing && existing.id){
@@ -11461,13 +11527,13 @@ async function generateMesCompleto(){
     if(errors > 0){
       toast(`${saved} sesiones guardadas, ${errors} con error ⚠️`,'⚠️');
     } else {
-      toast(`✅ ${saved} sesiones generadas para ${disc.emoji} ${disc.nombre} — ${MESES_ES[progMonth]} ${progYear}`,'🤖');
+      toast(`✅ ${saved} sesiones generadas — ${disc.emoji} ${disc.nombre}`,'🤖');
     }
   } catch(err){
-    console.error('generateMesCompleto error:', err);
-    toast('Error generando programa: '+(err.message||'').slice(0,60),'✕');
+    console.error('generateSemanaActual error:', err);
+    toast('Error generando programa: '+(err.message||'').slice(0,80),'✕');
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='🤖 Generar Mes Completo'; }
+    if(btn){ btn.disabled=false; btn.textContent='🤖 Generar Semana'; }
   }
 }
 
@@ -11485,9 +11551,8 @@ function openProgramaModal(fechaStr){
   document.getElementById('prog-fecha-input').value        = fechaStr;
   document.getElementById('prog-id-input').value           = prog ? prog.id : '';
   document.getElementById('prog-contenido').value = prog ? prog.contenido : '';
-  // Omitir notas auto-generadas por el asistente IA — mostrar vacío
   const rawNotas = prog ? (prog.notas||'') : '';
-  document.getElementById('prog-notas').value = rawNotas.startsWith('Generado automáticamente') ? '' : rawNotas;
+  document.getElementById('prog-notas').value = rawNotas;
   setSelectVal('prog-tipo-sel', progTab);
 
   const delBtn = document.getElementById('prog-delete-btn');
