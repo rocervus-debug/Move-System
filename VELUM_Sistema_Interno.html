@@ -2773,7 +2773,15 @@ select option{background:#10101c;color:var(--text);}
 
       <!-- Lista -->
       <div id="clientes-list" style="display:flex;flex-direction:column;gap:8px;">
-        <div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Sin clientes aún</div><div class="empty-sub">Los clientes aparecen al registrar pagos.</div></div>
+        <div class="empty-state" id="clientes-zero-state">
+          <div class="empty-icon">👥</div>
+          <div class="empty-title">Tu primer cliente está a un paso</div>
+          <div class="empty-sub" style="max-width:360px;">Registra un pago para añadir tu primer cliente al directorio. VELUM calculará automáticamente su vencimiento, estado y alertas de renovación.</div>
+          <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;">
+            <button class="btn btn-primary" onclick="openModal('pago')">💳 Registrar primer pago →</button>
+            <button class="btn btn-outline" onclick="go('crm', document.getElementById('nav-crm'))">👤 Agregar prospecto</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2918,7 +2926,15 @@ select option{background:#10101c;color:var(--text);}
             <button class="pf-btn" data-filter="metodo" data-val="Nessty" onclick="setPagoFilter('metodo','Nessty',this)">🔗 Nessty</button>
           </div>
         </div>
-        <div id="pagos-list"><div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos registrados</div><div class="empty-sub">Registra los pagos de tus clientes para llevar control de ingresos y renovaciones.</div></div></div>
+        <div id="pagos-list"><div class="empty-state">
+          <div class="empty-icon">💳</div>
+          <div class="empty-title">Registra tu primer ingreso</div>
+          <div class="empty-sub" style="max-width:360px;">Cada pago registrado activa el tracking de vencimientos, alertas automáticas de renovación y las métricas de ingresos del Dashboard.</div>
+          <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;">
+            <button class="btn btn-primary" onclick="openModal('pago')">+ Registrar primer pago →</button>
+            <button class="btn btn-outline" onclick="go('clientes', document.getElementById('nav-clientes'))">👥 Ver directorio</button>
+          </div>
+        </div></div>
       </div>
     </div>
 
@@ -3163,11 +3179,15 @@ select option{background:#10101c;color:var(--text);}
       <!-- Discipline tabs — rendered dynamically by renderProgTabs() -->
       <div class="tabs" style="margin-bottom:16px;flex-wrap:wrap;" id="prog-tabs-container"></div>
 
-      <!-- Month nav -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <!-- Month nav + Generate button -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="progNavMes(-1)">‹ Anterior</button>
         <span style="font-size:15px;font-weight:700;min-width:160px;text-align:center;" id="prog-mes-label">—</span>
         <button class="btn btn-outline btn-sm" onclick="progNavMes(1)">Siguiente ›</button>
+        <div style="flex:1;"></div>
+        <button id="btn-generar-mes" class="btn btn-primary btn-sm" onclick="generateMesCompleto()" style="background:linear-gradient(135deg,#8b5cf6,#1D9E75);border:none;white-space:nowrap;" title="Genera entrenamientos para todo el mes usando IA">
+          🤖 Generar Mes Completo
+        </button>
       </div>
 
       <div id="prog-calendar-grid">
@@ -3416,6 +3436,24 @@ select option{background:#10101c;color:var(--text);}
             <button class="btn btn-danger btn-sm" onclick="doLogout()">🚪 Cerrar Sesión</button>
           </div>
           <div id="cfg-cuenta-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Menú & Navegación -->
+      <div class="card" style="margin-top:18px;">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <span>🗂 Menú &amp; Navegación</span>
+            <button class="btn btn-outline btn-sm" onclick="resetSidebarOrder()" style="font-size:11px;">↺ Restaurar</button>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin:10px 0 14px;line-height:1.5;">
+            Arrastra para reordenar · Usa el botón de ojo para ocultar secciones que no usas.
+          </div>
+          <div id="sidebar-customizer-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary btn-sm" onclick="saveSidebarOrder()">💾 Guardar menú</button>
+          </div>
         </div>
       </div>
     </div>
@@ -5647,6 +5685,14 @@ function applyGymConfig(){
   // Show gym_id
   const gymIdEl = el('cfg-gym-id-display');
   if(gymIdEl) gymIdEl.textContent = MOVE_GYM_ID || gymConfig.gym_id || 'Cargando...';
+
+  // Apply custom sidebar order (if configured)
+  if(gymConfig.sidebar_order){
+    try{
+      const order = JSON.parse(gymConfig.sidebar_order);
+      if(Array.isArray(order) && order.length) applySidebarOrder(order);
+    }catch(_){}
+  }
 }
 
 async function saveGymConfig(){
@@ -6184,7 +6230,7 @@ function go(id, el){
       }
     }
   }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); renderStripeSettings(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; }
+  if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); renderStripeSettings(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; renderSidebarCustomizer(); }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
 
@@ -8098,7 +8144,24 @@ function renderClientes(){
   // ── Construir set de nombres únicos: clientes tabla + pagos (por si acaso) ──
   const nombresSet = new Set();
   clientesDB.forEach(c => { if(c.nombre) nombresSet.add(c.nombre.trim()); });
-  pagos.forEach(p => { const n=(p.cliente||'').trim(); if(n) nombresSet.add(n); });
+  pagos.filter(p=>p.notas!=='__sin_pago__').forEach(p => { const n=(p.cliente||'').trim(); if(n) nombresSet.add(n); });
+
+  // ── Zero-data empty state (no clients AND no payments at all) ──
+  if(!nombresSet.size){
+    if(kpisEl) kpisEl.innerHTML = '';
+    listEl.innerHTML = `
+      <div class="empty-state" style="padding:60px 20px;">
+        <div class="empty-icon">👥</div>
+        <div class="empty-title">Tu primer cliente está a un paso</div>
+        <div class="empty-sub" style="max-width:360px;">Registra un pago para añadir tu primer cliente. VELUM calculará su vencimiento, estado y alertas de renovación automáticamente.</div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;">
+          <button class="btn btn-primary" onclick="openModal('pago')">💳 Registrar primer pago →</button>
+          <button class="btn btn-outline" onclick="go('crm', document.getElementById('nav-crm'))">👤 Agregar prospecto</button>
+        </div>
+      </div>`;
+    document.getElementById('clientes-pagination')?.remove();
+    return;
+  }
 
   // ── Construir lista de clientes con estado y tipo ────────────────
   let clientes = [...nombresSet].map(nombre => {
@@ -8520,20 +8583,40 @@ function openClientePanel(nombreCliente){
   const primerNombre = nombreCliente.split(' ')[0];
   const numWAForQR   = tel.length===10?'52'+tel:tel;
   const qrWAMsg = encodeURIComponent(`Hola ${primerNombre}! Te enviamos tu codigo QR personal de MOVE. Guardalo en tu celular — cada vez que llegues al gym solo presentalo en la entrada para registrar tu asistencia automaticamente. Sin escribir nada!`);
+  // Portal del atleta
+  const portalToken = cliRec.portal_token || '';
+  const portalUrl   = portalToken ? `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}atleta.html?t=${portalToken}` : '';
+  const portalWAMsg = portalToken ? encodeURIComponent(`Hola ${primerNombre} 👋 Aquí está tu acceso personal a VELUM. Desde ahí puedes ver tu membresía, el entrenamiento del día y tu QR de entrada:\n\n${portalUrl}\n\n¡Guárdalo o agrégalo a tu pantalla de inicio como app! 💪`) : '';
   document.getElementById('cpanel-qr-body').innerHTML = `
+    ${portalToken?`<div style="padding:12px 14px;margin-bottom:12px;background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.2);border-radius:10px;">
+      <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📱 Portal Personal VELUM</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5;">El atleta puede ver su membresía, el entrenamiento del día y su QR desde su celular.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${numWAForQR.length>=12?`<a href="https://wa.me/${numWAForQR}?text=${portalWAMsg}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+                 background:rgba(37,211,102,.15);color:#25d366;font-size:11px;font-weight:700;
+                 text-decoration:none;border:1px solid rgba(37,211,102,.3);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+          Enviar portal por WhatsApp</a>`:''}
+        <button onclick="navigator.clipboard.writeText('${portalUrl}').then(()=>toast('Link copiado ✓','📋'))"
+          style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+                 background:var(--card2);color:var(--text2);font-size:11px;font-weight:600;
+                 border:1px solid var(--border);cursor:pointer;">📋 Copiar link</button>
+      </div>
+    </div>`:''}
     <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
       <div style="background:#fff;border-radius:10px;padding:7px;display:inline-block;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.5);">
         <img src="${qrImgUrl}" width="130" height="130" style="display:block;border-radius:4px;" alt="QR ${esc(nombreCliente)}"/>
       </div>
       <div style="flex:1;min-width:130px;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.55;">QR único para <strong style="color:var(--text);">${esc(primerNombre)}</strong>. Al escanearlo en el kiosco de entrada registra su asistencia al instante.</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.55;">QR de check-in para <strong style="color:var(--text);">${esc(primerNombre)}</strong>. Al escanearlo en el kiosco registra la asistencia al instante.</div>
         <div style="display:flex;flex-direction:column;gap:7px;">
           ${numWAForQR.length>=12?`<a href="https://wa.me/${numWAForQR}?text=${qrWAMsg}" target="_blank" rel="noopener"
             style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
                    background:rgba(37,211,102,.12);color:#25d366;font-size:11px;font-weight:700;
                    text-decoration:none;border:1px solid rgba(37,211,102,.28);">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-            Enviar por WhatsApp</a>`:''}
+            Enviar QR por WhatsApp</a>`:''}
           <button onclick="imprimirQRCliente('${esc(nombreCliente)}')"
             style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
                    background:var(--card2);color:var(--text2);font-size:11px;font-weight:600;
@@ -10748,6 +10831,189 @@ async function deleteGasto(id){
 // ═══════════════════════════════════════════════════════════════════
 // DISCIPLINAS CATALOG — 25 disciplines available in VELUM
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// SIDEBAR NAV CATALOG + CUSTOMIZER
+// ═══════════════════════════════════════════════════════════════════
+const VELUM_NAV_CATALOG = [
+  { id:'dashboard',      label:'Dashboard General',      emoji:'📊', alwaysVisible:true },
+  { id:'crm',            label:'CRM & Prospectos',        emoji:'👤' },
+  { id:'pipeline',       label:'Pipeline de Ventas',      emoji:'📈' },
+  { id:'pagos',          label:'Pagos & Renovaciones',    emoji:'💳' },
+  { id:'clientes',       label:'Clientes',                emoji:'👥' },
+  { id:'retencion',      label:'Retención & Churn',       emoji:'📉' },
+  { id:'calendario-venc',label:'Calendario Vencimientos', emoji:'📅' },
+  { id:'marketing',      label:'Hub de Marketing',        emoji:'📣' },
+  { id:'campanas',       label:'Campañas',                emoji:'🎯' },
+  { id:'solicitudes',    label:'Solicitudes',             emoji:'📋' },
+  { id:'horario',        label:'Horario Semanal',         emoji:'🗓' },
+  { id:'coaches',        label:'Coaches',                 emoji:'🏋️' },
+  { id:'evaluaciones',   label:'Evaluaciones',            emoji:'⭐' },
+  { id:'programa',       label:'Programa de Entreno',     emoji:'📄' },
+  { id:'asistencia',     label:'Asistencia',              emoji:'✅' },
+  { id:'gastos',         label:'Gastos & Balance',        emoji:'💰' },
+  { id:'settings',       label:'Configuración',           emoji:'⚙️', alwaysVisible:true },
+];
+
+// Keep original nav items' outerHTML for rebuilding
+let _origNavItems = null;
+function _initOrigNavItems(){
+  if(_origNavItems) return;
+  _origNavItems = {};
+  document.querySelectorAll('aside nav .nav-item').forEach(el=>{
+    const id = (el.id||'').replace('nav-','');
+    if(id) _origNavItems[id] = el.outerHTML;
+  });
+}
+
+function getSidebarOrder(){
+  try{
+    const raw = gymConfig.sidebar_order;
+    if(raw) return JSON.parse(raw);
+  }catch(_){}
+  return VELUM_NAV_CATALOG.map(n=>({ id:n.id, visible:true }));
+}
+
+function applySidebarOrder(order){
+  if(!order) order = getSidebarOrder();
+  _initOrigNavItems();
+
+  const nav = document.querySelector('aside nav');
+  if(!nav||!_origNavItems) return;
+
+  // Clear nav content (keep sidebar-bottom outside nav)
+  nav.innerHTML = '';
+  nav.style.display = 'flex';
+  nav.style.flexDirection = 'column';
+  nav.style.gap = '1px';
+  nav.style.padding = '8px 0';
+
+  const SEPARATORS_BEFORE = new Set(['crm','marketing','horario','gastos','settings']);
+
+  order.forEach(o=>{
+    const html = _origNavItems[o.id];
+    if(!html) return;
+    // Add thin separator before key groups
+    if(SEPARATORS_BEFORE.has(o.id)){
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height:1px;background:var(--sidebar-border);margin:4px 10px;opacity:.6;';
+      sep.dataset.sepFor = o.id;
+      nav.appendChild(sep);
+    }
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    const el = wrap.firstElementChild;
+    el.style.display = o.visible ? '' : 'none';
+    nav.appendChild(el);
+  });
+
+  // Always ensure superadmin is at the end (hidden by default)
+  const saHtml = _origNavItems['superadmin'];
+  if(saHtml){
+    const wrap = document.createElement('div');
+    wrap.innerHTML = saHtml;
+    const el = wrap.firstElementChild;
+    el.style.display = 'none';
+    nav.appendChild(el);
+    // Re-show if current user is superadmin
+    if(currentUser&&currentUser.rol==='superadmin') el.style.display='';
+  }
+}
+
+function renderSidebarCustomizer(){
+  const list = document.getElementById('sidebar-customizer-list');
+  if(!list) return;
+  const order = getSidebarOrder();
+  // Merge with catalog (add new items, remove stale ones)
+  const existingIds = new Set(order.map(o=>o.id));
+  const fullOrder = [
+    ...order.filter(o=>VELUM_NAV_CATALOG.find(n=>n.id===o.id)),
+    ...VELUM_NAV_CATALOG.filter(n=>!existingIds.has(n.id)).map(n=>({ id:n.id, visible:true }))
+  ];
+  list.innerHTML = fullOrder.map(o=>{
+    const def = VELUM_NAV_CATALOG.find(n=>n.id===o.id);
+    if(!def) return '';
+    const alwaysOn = !!def.alwaysVisible;
+    const vis = o.visible !== false;
+    return `
+    <div class="sidebar-sort-item" data-id="${o.id}" data-visible="${vis}" style="
+      display:flex;align-items:center;gap:10px;padding:9px 12px;
+      background:${vis ? 'rgba(29,158,117,.07)' : 'var(--card2)'};
+      border:1px solid ${vis ? 'rgba(29,158,117,.18)' : 'var(--border)'};
+      border-radius:8px;transition:all .15s;opacity:${vis?'1':'.5'};
+    ">
+      <span class="sb-drag" style="cursor:grab;color:var(--text4);font-size:14px;user-select:none;line-height:1;">⠿</span>
+      <span style="font-size:15px;">${def.emoji}</span>
+      <span style="flex:1;font-size:13px;font-weight:600;color:var(--text);">${def.label}</span>
+      ${alwaysOn
+        ? `<span style="font-size:10px;color:var(--text4);font-style:italic;white-space:nowrap;">siempre visible</span>`
+        : `<button onclick="toggleSidebarItem('${o.id}',this)" style="
+            background:${vis?'rgba(29,158,117,.15)':'rgba(100,116,139,.1)'};
+            color:${vis?'var(--accent)':'var(--text3)'};
+            border:1px solid ${vis?'rgba(29,158,117,.3)':'var(--border)'};
+            border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            ${vis?'👁 Visible':'🚫 Oculto'}
+          </button>`
+      }
+    </div>`;
+  }).join('');
+
+  // Init SortableJS on the list
+  if(window.Sortable){
+    if(list._sortable) list._sortable.destroy();
+    list._sortable = new Sortable(list, {
+      animation:150,
+      handle:'.sb-drag',
+      ghostClass:'sortable-ghost',
+    });
+  }
+}
+
+function toggleSidebarItem(id, btn){
+  const item = btn.closest('.sidebar-sort-item');
+  const vis = item.dataset.visible !== 'true';
+  item.dataset.visible = vis ? 'true' : 'false';
+  item.style.background = vis ? 'rgba(29,158,117,.07)' : 'var(--card2)';
+  item.style.borderColor = vis ? 'rgba(29,158,117,.18)' : 'var(--border)';
+  item.style.opacity = vis ? '1' : '.5';
+  btn.style.background = vis ? 'rgba(29,158,117,.15)' : 'rgba(100,116,139,.1)';
+  btn.style.color = vis ? 'var(--accent)' : 'var(--text3)';
+  btn.style.borderColor = vis ? 'rgba(29,158,117,.3)' : 'var(--border)';
+  btn.textContent = vis ? '👁 Visible' : '🚫 Oculto';
+}
+
+function getCurrentSidebarOrder(){
+  const list = document.getElementById('sidebar-customizer-list');
+  if(!list) return getSidebarOrder();
+  return [...list.querySelectorAll('.sidebar-sort-item')].map(item=>{
+    const id = item.dataset.id;
+    const def = VELUM_NAV_CATALOG.find(n=>n.id===id);
+    const visible = def?.alwaysVisible ? true : item.dataset.visible === 'true';
+    return { id, visible };
+  });
+}
+
+async function saveSidebarOrder(){
+  const order = getCurrentSidebarOrder();
+  const gid = MOVE_GYM_ID || 1;
+  const { error } = await window.supabaseClient
+    .from('gym_config')
+    .upsert({ key:'sidebar_order', value: JSON.stringify(order), gym_id: gid }, { onConflict:'key,gym_id' });
+  if(error){ toast('Error al guardar ✗','danger'); return; }
+  gymConfig.sidebar_order = JSON.stringify(order);
+  applySidebarOrder(order);
+  toast('Menú guardado ✓');
+}
+
+function resetSidebarOrder(){
+  gymConfig.sidebar_order = '';
+  renderSidebarCustomizer();
+  applySidebarOrder(VELUM_NAV_CATALOG.map(n=>({ id:n.id, visible:true })));
+  // Persist reset
+  const gid = MOVE_GYM_ID || 1;
+  window.supabaseClient?.from('gym_config')
+    .upsert({ key:'sidebar_order', value:'', gym_id:gid }, { onConflict:'key,gym_id' });
+}
+
 const VELUM_DISCIPLINAS = [
   // Fuerza
   {id:'Strength',    emoji:'💪', nombre:'Strength',     cat:'Fuerza',          defaultDias:[0,2,4]},
@@ -11020,7 +11286,13 @@ function renderProgTabs(){
   const container = document.getElementById('prog-tabs-container');
   if(!container) return;
   const active = getActiveDisciplinas();
-  if(!active.length) return;
+  if(!active.length){
+    container.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:8px 2px;">
+      ⚠️ No hay disciplinas activas —
+      <a href="#" onclick="openProgConfig();return false;" style="color:var(--accent);text-decoration:none;font-weight:700;">⚙️ Configura aquí</a>
+    </div>`;
+    return;
+  }
   // Make sure progTab is valid
   if(!active.find(d=>d.id===progTab)) progTab = active[0].id;
   container.innerHTML = active.map(d=>`
@@ -11060,6 +11332,30 @@ function renderProgramaCalendar(){
 
   const grid = document.getElementById('prog-calendar-grid');
   if(!grid) return;
+
+  // Show / hide "no workouts" banner
+  const mm0 = String(progMonth+1).padStart(2,'0');
+  const mesPrefix = `${progYear}-${mm0}`;
+  const hasPrograms = programas.some(p => p.fecha?.startsWith(mesPrefix) && p.tipo === progTab);
+  let banner = document.getElementById('prog-empty-banner');
+  if(!hasPrograms && getActiveDisciplinas().length){
+    if(!banner){
+      banner = document.createElement('div');
+      banner.id = 'prog-empty-banner';
+      grid.parentElement.insertBefore(banner, grid);
+    }
+    const disc = VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'📄',nombre:progTab};
+    banner.innerHTML = `<div style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-size:24px;">${disc.emoji}</span>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">Sin sesiones de ${disc.nombre} en ${MESES_ES[progMonth]}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Usa IA para generar el mes completo con un clic, o toca cualquier día para escribir la sesión manualmente.</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="generateMesCompleto()" style="background:linear-gradient(135deg,#8b5cf6,#1D9E75);border:none;white-space:nowrap;">🤖 Generar mes con IA</button>
+    </div>`;
+  } else if(banner){
+    banner.remove();
+  }
 
   const today = new Date(); today.setHours(0,0,0,0);
   const daysInMonth = new Date(progYear, progMonth+1, 0).getDate();
@@ -12801,6 +13097,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // Apply stored color mode immediately to avoid flash
   const storedMode = localStorage.getItem('move_color_mode') || 'dark';
   applyColorMode(storedMode);
+
+  // Snapshot original nav items before any data-driven changes
+  _initOrigNavItems();
 
   await new Promise(r => setTimeout(r, 150));
 
