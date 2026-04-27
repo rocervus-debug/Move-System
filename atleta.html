@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>VELUM — Mi Acceso</title>
+<title>VELUM — Portal Atleta</title>
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json"/>
@@ -20,11 +20,13 @@
 :root{
   --accent:#1D9E75;
   --accent-light:#5DCAA5;
-  --accent-glow:rgba(29,158,117,.2);
+  --accent-glow:rgba(29,158,117,.18);
   --bg:#04120f;
   --bg2:#071a14;
   --card:rgba(255,255,255,.04);
+  --card-hover:rgba(255,255,255,.06);
   --border:rgba(255,255,255,.07);
+  --border-accent:rgba(29,158,117,.25);
   --text:#d0dce8;
   --text2:#9DC8BB;
   --text3:#4a7265;
@@ -33,409 +35,413 @@
   --danger:#f87171;
   --font:'Barlow',system-ui,sans-serif;
   --font-display:'Barlow Condensed',system-ui,sans-serif;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --nav-h:64px;
+  --r:16px;
 }
 
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
 body{
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(29,158,117,.12), transparent),
-    radial-gradient(ellipse 50% 30% at 80% 80%, rgba(93,202,165,.04), transparent);
-  min-height:100vh;
-  overflow-x:hidden;
+    radial-gradient(ellipse 100% 45% at 50% 0%,rgba(29,158,117,.1),transparent),
+    radial-gradient(ellipse 60% 35% at 100% 100%,rgba(93,202,165,.04),transparent);
+  min-height:100vh;overflow-x:hidden;
 }
 
-/* ── LOADING SCREEN ── */
+/* ══════ LOADING ══════ */
 #loading-screen{
-  position:fixed;inset:0;z-index:100;
-  background:var(--bg);
+  position:fixed;inset:0;z-index:300;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-  transition:opacity .4s, visibility .4s;
+  transition:opacity .4s,visibility .4s;
 }
-#loading-screen.hidden{opacity:0;visibility:hidden;}
-.loader-logo{
-  font-family:var(--font-display);font-size:28px;font-weight:900;color:#fff;
-  letter-spacing:7px;text-transform:uppercase;
-}
-.loader-logo svg{filter:drop-shadow(0 0 12px rgba(29,158,117,.5));}
-.loader-bar{width:48px;height:2px;background:rgba(29,158,117,.2);border-radius:99px;overflow:hidden;}
+#loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.loader-logo{font-family:var(--font-display);font-size:26px;font-weight:900;color:#fff;letter-spacing:7px;}
+.loader-bar{width:48px;height:2px;background:rgba(29,158,117,.15);border-radius:99px;overflow:hidden;}
 .loader-fill{height:100%;width:0;background:var(--accent);border-radius:99px;animation:lfill 1.4s ease-in-out infinite;}
 @keyframes lfill{0%{width:0%;margin-left:0}55%{width:100%;margin-left:0}100%{width:0%;margin-left:100%}}
 
-/* ── LOGIN SCREEN ── */
+/* ══════ LOGIN ══════ */
 #login-screen{
-  display:none;
-  flex-direction:column;align-items:center;justify-content:center;
-  min-height:100vh;padding:32px 24px;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:40px 24px;
 }
-.login-box{
-  width:100%;max-width:340px;
-  display:flex;flex-direction:column;align-items:center;gap:24px;
-}
-.login-logo{
-  font-family:var(--font-display);font-size:26px;font-weight:900;
-  color:#fff;letter-spacing:6px;display:flex;align-items:center;gap:10px;
-}
+.login-box{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:28px;}
+.login-hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.login-logo{font-family:var(--font-display);font-size:24px;font-weight:900;color:#fff;letter-spacing:7px;display:flex;align-items:center;gap:10px;}
 .login-gym-name{
-  font-size:13px;color:var(--accent-light);font-weight:600;
-  letter-spacing:.3px;margin-top:-16px;text-align:center;min-height:18px;
+  font-size:18px;font-weight:800;color:var(--accent-light);
+  font-family:var(--font-display);letter-spacing:.5px;min-height:26px;
 }
+.login-tagline{font-size:12px;color:var(--text3);line-height:1.5;}
+.login-divider{width:32px;height:1px;background:var(--border);}
 .login-card{
-  width:100%;background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px 24px;
-  display:flex;flex-direction:column;gap:16px;
+  width:100%;background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:24px 20px;
+  display:flex;flex-direction:column;gap:14px;
 }
 .login-field{display:flex;flex-direction:column;gap:6px;}
-.login-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+.login-label{font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
 .login-input{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;
-  font-family:var(--font);outline:none;width:100%;
-  transition:border-color .2s;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;padding:13px 14px;font-size:15px;color:#fff;
+  font-family:var(--font);outline:none;width:100%;transition:border-color .2s,background .2s;
 }
-.login-input:focus{border-color:var(--accent);}
+.login-input:focus{border-color:var(--accent);background:rgba(255,255,255,.07);}
 .login-input::placeholder{color:var(--text3);}
 .login-btn{
-  width:100%;padding:14px;background:var(--accent);color:#fff;border:none;
-  border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
-  font-family:var(--font);transition:all .2s;
-  box-shadow:0 0 24px rgba(29,158,117,.35);
+  width:100%;padding:15px;background:var(--accent);color:#fff;border:none;
+  border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font);
+  transition:all .2s;box-shadow:0 4px 20px rgba(29,158,117,.35);letter-spacing:.3px;
 }
-.login-btn:hover{background:#25c48f;transform:translateY(-1px);}
-.login-btn:disabled{opacity:.6;cursor:default;transform:none;}
+.login-btn:hover{background:#22b886;transform:translateY(-1px);}
+.login-btn:active{transform:translateY(0) scale(.99);}
+.login-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none;}
 .login-error{
-  font-size:12px;color:#f87171;text-align:center;
-  padding:8px 12px;background:rgba(248,113,113,.1);border-radius:8px;
-  border:1px solid rgba(248,113,113,.2);display:none;
+  font-size:12px;color:var(--danger);text-align:center;
+  padding:8px 12px;background:rgba(248,113,113,.08);border-radius:10px;
+  border:1px solid rgba(248,113,113,.18);display:none;
 }
-.login-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.5;}
+.login-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;}
 
-/* ── ERROR SCREEN ── */
+/* ══════ ERROR ══════ */
 #error-screen{
-  display:none;
-  flex-direction:column;align-items:center;justify-content:center;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
   min-height:100vh;padding:32px 24px;text-align:center;gap:16px;
 }
 .error-icon{font-size:48px;}
 .error-title{font-family:var(--font-display);font-size:22px;font-weight:800;color:#fff;}
 .error-desc{font-size:13px;color:var(--text3);line-height:1.6;max-width:280px;}
 
-/* ── APP WRAPPER ── */
+/* ══════ APP ══════ */
 #app{
-  display:none;
-  flex-direction:column;
-  min-height:100vh;
-  padding-bottom:calc(72px + var(--safe-bottom));
+  display:none;flex-direction:column;min-height:100vh;
+  padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 8px);
   padding-top:var(--safe-top);
 }
 
-/* ── TOPBAR ── */
+/* ══════ TOPBAR ══════ */
 .topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:16px 20px 8px;
+  padding:14px 20px 6px;
 }
-.topbar-gym{
-  font-size:11px;font-weight:700;color:var(--accent-light);
-  letter-spacing:.5px;display:flex;align-items:center;gap:6px;
-}
+.topbar-gym{display:flex;align-items:center;gap:8px;}
 .gym-logo{
-  width:22px;height:22px;border-radius:6px;
+  width:28px;height:28px;border-radius:8px;
   background:linear-gradient(135deg,var(--accent),#0F6E56);
   display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:900;color:#fff;overflow:hidden;flex-shrink:0;
+  font-size:11px;font-weight:900;color:#fff;overflow:hidden;flex-shrink:0;
 }
 .gym-logo img{width:100%;height:100%;object-fit:cover;}
-.topbar-velum{
-  font-family:var(--font-display);font-size:13px;font-weight:900;
-  color:rgba(255,255,255,.3);letter-spacing:3px;
+.gym-name-el{font-size:12px;font-weight:700;color:var(--accent-light);letter-spacing:.3px;}
+.topbar-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(29,158,117,.12);border:1.5px solid rgba(29,158,117,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:var(--accent-light);cursor:pointer;
+  transition:background .15s;
+  /* Ensure 44px tap target */
+  padding:5px;margin:-5px;
 }
+.topbar-avatar:active{background:rgba(29,158,117,.22);}
 
-/* ── GREETING ── */
-.greeting{padding:4px 20px 20px;}
-.greeting-hi{font-size:12px;color:var(--accent-light);font-weight:600;letter-spacing:.3px;}
-.greeting-name{font-family:var(--font-display);font-size:26px;font-weight:900;color:#fff;letter-spacing:.5px;margin-top:1px;}
+/* ══════ GREETING ══════ */
+.greeting{padding:6px 20px 20px;}
+.greeting-hi{font-size:12px;color:var(--accent-light);font-weight:600;letter-spacing:.3px;margin-bottom:2px;}
+.greeting-name{font-family:var(--font-display);font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;}
 
-/* ── MEMBERSHIP CARD ── */
+/* ══════ MEMBERSHIP CARD ══════ */
 .membership-card{
-  margin:0 16px 20px;
-  border-radius:18px;
-  padding:20px;
+  margin:0 16px 8px;
+  border-radius:22px;padding:22px 20px;
   position:relative;overflow:hidden;
-  background:linear-gradient(135deg,#1D9E75 0%,#0F6E56 45%,#0a4535 100%);
-  box-shadow:0 8px 32px rgba(0,0,0,.5), 0 0 60px rgba(29,158,117,.15);
+  background:linear-gradient(135deg,#1D9E75 0%,#0F6E56 50%,#0a4535 100%);
+  box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 80px rgba(29,158,117,.12);
 }
 .membership-card::before{
-  content:'';position:absolute;top:-30px;right:-30px;
-  width:120px;height:120px;
-  background:rgba(255,255,255,.07);border-radius:50%;
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;background:rgba(255,255,255,.06);border-radius:50%;
 }
 .membership-card::after{
-  content:'VELUM';
-  position:absolute;bottom:14px;right:18px;
-  font-family:var(--font-display);font-size:11px;font-weight:900;
-  color:rgba(255,255,255,.15);letter-spacing:4px;
+  content:'VELUM';position:absolute;bottom:18px;right:20px;
+  font-family:var(--font-display);font-size:10px;font-weight:900;
+  color:rgba(255,255,255,.12);letter-spacing:5px;
 }
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
-.card-plan-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:2px;text-transform:uppercase;}
-.card-plan-name{font-size:16px;font-weight:800;color:#fff;margin-top:2px;}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
+.card-plan-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:2px;text-transform:uppercase;}
+.card-plan-name{font-size:17px;font-weight:800;color:#fff;margin-top:3px;}
 .card-status-badge{
   display:flex;align-items:center;gap:5px;
-  background:rgba(255,255,255,.15);border-radius:99px;
-  padding:4px 10px;font-size:9px;font-weight:700;color:#fff;
-  backdrop-filter:blur(4px);
+  background:rgba(0,0,0,.25);border-radius:99px;
+  padding:5px 11px;font-size:9px;font-weight:800;color:#fff;
+  backdrop-filter:blur(4px);letter-spacing:.3px;
 }
 .status-dot{width:6px;height:6px;border-radius:50%;}
-.status-dot.ok{background:#10e8a0;box-shadow:0 0 6px rgba(16,232,160,.7);}
-.status-dot.warn{background:var(--warn);}
+.status-dot.ok{background:#10e8a0;box-shadow:0 0 8px rgba(16,232,160,.8);}
+.status-dot.warn{background:var(--warn);box-shadow:0 0 6px rgba(251,191,36,.6);}
 .status-dot.danger{background:var(--danger);}
+.card-progress{margin:0 0 16px;}
+.card-progress-bar{height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;}
+.card-progress-fill{height:100%;background:rgba(255,255,255,.65);border-radius:99px;transition:width .8s ease;}
+.card-progress-lbl{display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.4);margin-top:5px;}
 .card-bottom{display:flex;align-items:flex-end;justify-content:space-between;}
-.card-days{
-  display:flex;flex-direction:column;
-}
-.card-days-num{font-family:var(--font-display);font-size:36px;font-weight:900;color:#fff;line-height:1;}
-.card-days-lbl{font-size:10px;color:rgba(255,255,255,.6);font-weight:600;margin-top:2px;}
-.card-gym{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:right;}
-.card-vence{font-size:9px;color:rgba(255,255,255,.35);margin-top:2px;text-align:right;}
+.card-days{display:flex;flex-direction:column;}
+.card-days-num{font-family:var(--font-display);font-size:42px;font-weight:900;color:#fff;line-height:1;}
+.card-days-lbl{font-size:10px;color:rgba(255,255,255,.55);font-weight:600;margin-top:2px;}
+.card-right{text-align:right;}
+.card-numero{font-size:10px;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;letter-spacing:1.5px;margin-bottom:3px;}
+.card-gym-name{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;}
+.card-vence{font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;}
 
-/* Progress bar on card */
-.card-progress{margin:14px 0 2px;}
-.card-progress-bar{
-  height:4px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;
+/* ══════ QUICK ACTIONS ══════ */
+.quick-actions{display:flex;gap:10px;padding:14px 16px 0;margin-bottom:20px;}
+.qa-card{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:14px 12px;
+  display:flex;flex-direction:column;gap:6px;cursor:pointer;
+  transition:background .15s,border-color .15s;
 }
-.card-progress-fill{height:100%;background:rgba(255,255,255,.7);border-radius:99px;transition:width .8s ease;}
-.card-progress-lbl{display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.45);margin-top:5px;}
+.qa-card:active{background:var(--card-hover);border-color:var(--border-accent);}
+.qa-card.accent{background:rgba(29,158,117,.07);border-color:rgba(29,158,117,.2);}
+.qa-card.accent:active{background:rgba(29,158,117,.14);}
+.qa-icon{font-size:24px;line-height:1;}
+.qa-title{font-size:12px;font-weight:800;color:#fff;}
+.qa-sub{font-size:10px;color:var(--text3);line-height:1.4;}
 
-/* ── SECTIONS ── */
-.section{padding:0 16px;margin-bottom:22px;}
-.section-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:12px;
-}
-.section-title{
-  font-size:10px;font-weight:800;color:var(--text3);
-  text-transform:uppercase;letter-spacing:2px;
-}
-.section-link{font-size:11px;color:var(--accent);font-weight:600;}
+/* ══════ SECTIONS ══════ */
+.section{padding:0 16px;margin-bottom:24px;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.section-link{font-size:11px;color:var(--accent);font-weight:700;cursor:pointer;}
 
-/* ── QR CARD ── */
-.qr-card{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:16px;padding:20px;
-  display:flex;flex-direction:column;align-items:center;
-  text-align:center;
-}
-.qr-wrapper{
-  width:150px;height:150px;
-  border-radius:14px;
-  border:1.5px solid rgba(29,158,117,.4);
-  background:rgba(255,255,255,.98);
-  padding:10px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 40px rgba(29,158,117,.15);
-  margin-bottom:14px;
-}
-.qr-wrapper canvas{width:130px!important;height:130px!important;}
-.qr-name{font-size:15px;font-weight:800;color:#fff;margin-bottom:3px;}
-.qr-plan{font-size:11px;color:var(--accent-light);font-weight:600;margin-bottom:10px;}
-.qr-hint{font-size:10px;color:var(--text3);line-height:1.5;}
-
-/* ── TODAY'S WORKOUT ── */
-.workout-card{
-  background:rgba(29,158,117,.06);
-  border:1px solid rgba(29,158,117,.18);
-  border-radius:14px;
-  overflow:hidden;
-}
-.workout-header{
-  padding:14px 16px 10px;
-  border-bottom:1px solid rgba(29,158,117,.1);
-  display:flex;align-items:center;gap:10px;
-}
-.workout-emoji{font-size:22px;}
-.workout-title{font-size:14px;font-weight:800;color:#fff;}
-.workout-meta{font-size:10px;color:var(--text3);margin-top:2px;}
-.workout-disc-badge{
-  margin-left:auto;
-  font-size:8px;font-weight:800;color:var(--accent);
-  background:rgba(29,158,117,.15);border-radius:99px;
-  padding:3px 8px;letter-spacing:.8px;text-transform:uppercase;
-  white-space:nowrap;
-}
-.workout-body{padding:14px 16px;max-height:280px;overflow-y:auto;}
-.workout-section-lbl{
-  font-size:9px;font-weight:800;color:var(--accent);
-  text-transform:uppercase;letter-spacing:1.5px;
-  margin:10px 0 4px;
-}
-.workout-section-lbl:first-child{margin-top:0;}
-.workout-line{font-size:12px;color:var(--text2);line-height:1.7;padding-left:2px;}
-.workout-empty{
-  text-align:center;padding:20px;
-  font-size:12px;color:var(--text3);
-}
-.workout-tabs{
-  display:flex;gap:6px;padding:10px 16px 0;
-  overflow-x:auto;scrollbar-width:none;
-}
-.workout-tab{
-  flex-shrink:0;font-size:10px;font-weight:700;
-  padding:5px 12px;border-radius:99px;
-  background:var(--card);border:1px solid var(--border);
-  color:var(--text3);cursor:pointer;
-  transition:all .15s;
-  white-space:nowrap;
-}
-.workout-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-
-/* ── CHECKIN HISTORY ── */
-.checkin-list{display:flex;flex-direction:column;gap:6px;}
-.checkin-item{
-  display:flex;align-items:center;gap:12px;
-  padding:10px 14px;
-  background:var(--card);border:1px solid var(--border);
-  border-radius:10px;
-}
-.checkin-icon{
-  width:32px;height:32px;border-radius:9px;
-  background:rgba(29,158,117,.1);
-  display:flex;align-items:center;justify-content:center;
-  font-size:15px;flex-shrink:0;
-}
-.checkin-date{font-size:12px;font-weight:700;color:#fff;}
-.checkin-time{font-size:10px;color:var(--text3);margin-top:1px;}
-.checkin-type{
-  margin-left:auto;font-size:10px;font-weight:700;color:var(--accent-light);
-  background:rgba(29,158,117,.1);border-radius:99px;padding:3px 8px;white-space:nowrap;
-}
-
-/* ── PAQUETE CARD ── */
+/* ══════ PAQUETE CARD ══════ */
 .paquete-card{
-  background:rgba(196,146,42,.06);
-  border:1px solid rgba(196,146,42,.2);
-  border-radius:14px;
-  padding:16px;
+  background:rgba(196,146,42,.06);border:1px solid rgba(196,146,42,.18);
+  border-radius:16px;padding:18px;
 }
-.paquete-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.paquete-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
 .paquete-icon{font-size:22px;}
 .paquete-title{font-size:14px;font-weight:800;color:#fff;}
 .paquete-plan{font-size:10px;color:rgba(196,146,42,.8);font-weight:600;margin-top:2px;}
-.paquete-stats{
-  display:flex;gap:8px;
-}
-.paquete-stat{
-  flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px;text-align:center;
-}
-.paquete-num{font-family:var(--font-display);font-size:28px;font-weight:900;line-height:1;}
+.paquete-stats{display:flex;gap:8px;}
+.paquete-stat{flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px;text-align:center;}
+.paquete-num{font-family:var(--font-display);font-size:30px;font-weight:900;line-height:1;}
 .paquete-lbl{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:3px;}
 .paquete-progress{margin-top:12px;}
-.paquete-bar{height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;}
-.paquete-fill{height:100%;background:linear-gradient(90deg,#C4922A,#fbbf24);border-radius:99px;transition:width .8s ease;}
+.paquete-bar{height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;}
+.paquete-fill{height:100%;background:linear-gradient(90deg,#C4922A,#fbbf24);border-radius:99px;transition:width .8s;}
 
-/* ── BOTTOM NAV ── */
+/* ══════ TODAY WORKOUT ══════ */
+.workout-card{background:rgba(29,158,117,.05);border:1px solid rgba(29,158,117,.15);border-radius:16px;overflow:hidden;}
+.workout-header{padding:14px 16px 12px;border-bottom:1px solid rgba(29,158,117,.1);display:flex;align-items:center;gap:10px;}
+.workout-emoji{font-size:24px;}
+.workout-title{font-size:14px;font-weight:800;color:#fff;}
+.workout-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+.workout-disc-badge{margin-left:auto;font-size:8px;font-weight:800;color:var(--accent);background:rgba(29,158,117,.12);border-radius:99px;padding:3px 9px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;}
+.workout-body-wrap{position:relative;}
+.workout-body{padding:14px 16px;max-height:340px;overflow-y:auto;}
+.workout-body::after{
+  content:'';position:sticky;bottom:0;left:0;right:0;height:36px;
+  display:block;background:linear-gradient(transparent,rgba(4,18,12,.95));
+  margin-top:-36px;pointer-events:none;
+}
+.workout-section-lbl{font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin:12px 0 5px;}
+.workout-section-lbl:first-child{margin-top:0;}
+.workout-line{font-size:12px;color:var(--text2);line-height:1.75;padding-left:2px;}
+.workout-empty{text-align:center;padding:24px;font-size:12px;color:var(--text3);}
+.workout-tabs{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none;}
+.workout-tab{flex-shrink:0;font-size:10px;font-weight:700;padding:5px 12px;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.workout-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ══════ PROGRAMA VIEW ══════ */
+.week-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;
+}
+.week-nav-btn{
+  width:38px;height:38px;border-radius:11px;
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.week-nav-btn:active{background:var(--card-hover);border-color:var(--border-accent);}
+.week-nav-center{text-align:center;}
+.week-nav-title{font-size:13px;font-weight:800;color:#fff;}
+.week-nav-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.prog-day-block{margin-bottom:18px;}
+.prog-day-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;
+}
+.prog-day-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.prog-day-label.today{color:var(--accent-light);}
+.prog-today-pill{font-size:9px;font-weight:700;color:var(--accent);background:rgba(29,158,117,.12);border-radius:99px;padding:2px 8px;}
+.prog-session-card{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 14px;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:6px;transition:border-color .15s;
+  cursor:pointer;
+}
+.prog-session-card:active{border-color:var(--border-accent);}
+.prog-session-left{display:flex;flex-direction:column;align-items:center;min-width:38px;padding-top:1px;}
+.prog-session-emoji{font-size:22px;line-height:1;margin-bottom:3px;}
+.prog-session-tipo{font-size:8px;font-weight:800;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;text-align:center;}
+.prog-session-body{flex:1;min-width:0;}
+.prog-session-title{font-size:13px;font-weight:800;color:#fff;}
+.prog-session-preview{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.55;}
+.prog-empty-day{
+  padding:12px 14px;text-align:center;font-size:11px;color:var(--text3);
+  background:rgba(255,255,255,.02);border-radius:10px;
+  border:1px dashed rgba(255,255,255,.05);margin-bottom:6px;
+}
+
+/* ══════ HISTORIAL ══════ */
+.checkin-list{display:flex;flex-direction:column;gap:6px;}
+.checkin-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+}
+.checkin-icon{width:34px;height:34px;border-radius:10px;background:rgba(29,158,117,.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.checkin-date{font-size:13px;font-weight:700;color:#fff;}
+.checkin-time{font-size:10px;color:var(--text3);margin-top:1px;}
+.checkin-badge{margin-left:auto;font-size:10px;font-weight:700;color:var(--accent-light);background:rgba(29,158,117,.08);border-radius:99px;padding:3px 9px;white-space:nowrap;}
+.empty-state{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:10px;}
+.empty-state-icon{font-size:44px;}
+.empty-state-title{font-size:15px;font-weight:800;color:#fff;text-align:center;}
+.empty-state-sub{font-size:12px;color:var(--text3);text-align:center;line-height:1.6;max-width:240px;}
+
+/* ══════ BOTTOM NAV ══════ */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;
-  background:rgba(4,18,15,.95);
-  backdrop-filter:blur(16px);
-  border-top:1px solid rgba(255,255,255,.07);
-  display:flex;
+  background:rgba(4,18,15,.96);backdrop-filter:blur(20px);
+  border-top:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;
+  height:calc(var(--nav-h) + var(--safe-bottom));
   padding-bottom:var(--safe-bottom);
   z-index:50;
 }
 .bn-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;
-  padding:10px 4px 8px;cursor:pointer;
-  opacity:.35;transition:opacity .15s;
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 4px;cursor:pointer;opacity:.35;transition:opacity .15s;
+  gap:3px;
 }
 .bn-item.active{opacity:1;}
-.bn-icon{font-size:20px;line-height:1;margin-bottom:3px;}
+.bn-icon{font-size:20px;line-height:1;}
 .bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
 .bn-item.active .bn-lbl{color:var(--accent);}
 .bn-item.active .bn-icon{filter:drop-shadow(0 0 6px rgba(29,158,117,.5));}
+/* FAB center */
+.bn-fab-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;}
+.bn-fab{
+  width:50px;height:50px;border-radius:15px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;transform:translateY(-12px);
+  box-shadow:0 4px 20px rgba(29,158,117,.5),0 0 0 3px rgba(4,18,15,1),0 0 0 4.5px rgba(29,158,117,.25);
+  transition:transform .15s,box-shadow .15s;
+}
+.bn-fab:active{transform:translateY(-10px) scale(.95);}
+.bn-fab-lbl{font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.5px;text-transform:uppercase;margin-top:-7px;}
 
-/* ── VIEWS ── */
-.view{display:none;padding-top:8px;}
+/* ══════ VIEWS ══════ */
+.view{display:none;padding-top:6px;}
 .view.active{display:block;}
 
-/* ── IOS ADD TO HOME BANNER ── */
-.ios-banner{
-  margin:0 16px 16px;
-  background:rgba(29,158,117,.08);
-  border:1px solid rgba(29,158,117,.2);
-  border-radius:12px;
-  padding:12px 14px;
-  display:flex;align-items:center;gap:10px;
-}
-.ios-banner-icon{font-size:20px;flex-shrink:0;}
-.ios-banner-text{font-size:11px;color:var(--text2);line-height:1.5;flex:1;}
-.ios-banner-close{
-  font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;
-}
-
-/* ── TOPBAR PROFILE ── */
-.topbar-avatar{
-  width:30px;height:30px;border-radius:50%;
-  background:rgba(29,158,117,.15);border:1.5px solid rgba(29,158,117,.35);
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:800;color:var(--accent-light);cursor:pointer;
-  flex-shrink:0;transition:background .15s;
-}
-.topbar-avatar:active{background:rgba(29,158,117,.28);}
-
-/* ── PROFILE SHEET ── */
-#profile-sheet{
-  display:none;
-  position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
-  align-items:flex-end;
-}
+/* ══════ PROFILE SHEET ══════ */
+#profile-sheet{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);align-items:flex-end;}
 #profile-sheet.open{display:flex;}
 .profile-sheet-inner{
-  width:100%;background:#0d2119;
-  border-radius:24px 24px 0 0;
-  border-top:1px solid rgba(29,158,117,.2);
-  padding:24px 24px calc(32px + var(--safe-bottom));
+  width:100%;background:#0c1f18;border-radius:26px 26px 0 0;
+  border-top:1px solid rgba(29,158,117,.18);
+  padding:20px 24px calc(36px + var(--safe-bottom));
   display:flex;flex-direction:column;gap:20px;
 }
-.profile-sheet-handle{
-  width:36px;height:4px;border-radius:99px;
-  background:rgba(255,255,255,.15);margin:0 auto 4px;
-}
+.profile-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:99px;margin:0 auto 4px;}
 .profile-sheet-user{display:flex;align-items:center;gap:14px;}
-.profile-sheet-avatar{
-  width:48px;height:48px;border-radius:50%;
-  background:rgba(29,158,117,.15);border:1.5px solid rgba(29,158,117,.35);
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:800;color:var(--accent-light);flex-shrink:0;
-}
-.profile-sheet-info{}
+.profile-sheet-avatar{width:50px;height:50px;border-radius:50%;background:rgba(29,158,117,.12);border:1.5px solid rgba(29,158,117,.3);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--accent-light);flex-shrink:0;}
 .profile-sheet-name{font-size:16px;font-weight:800;color:#fff;}
-.profile-sheet-gym{font-size:11px;color:var(--text3);margin-top:2px;}
-.profile-sheet-divider{height:1px;background:rgba(255,255,255,.06);}
-.profile-sheet-btn{
-  display:flex;align-items:center;gap:12px;
-  padding:14px;background:rgba(248,113,113,.08);
-  border:1px solid rgba(248,113,113,.18);border-radius:12px;
-  font-size:14px;font-weight:700;color:#f87171;
-  cursor:pointer;transition:background .15s;
-}
-.profile-sheet-btn:active{background:rgba(248,113,113,.18);}
+.profile-sheet-gym{font-size:11px;color:var(--text3);margin-top:3px;}
+.profile-sheet-divider{height:1px;background:rgba(255,255,255,.05);}
+.profile-sheet-btn{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.15);border-radius:12px;font-size:14px;font-weight:700;color:#f87171;cursor:pointer;transition:background .15s;}
+.profile-sheet-btn:active{background:rgba(248,113,113,.14);}
 
-/* ── UTILITIES ── */
-.mt-auto{margin-top:auto;}
-.gap-section{height:8px;}
+/* ══════ QR SHEET ══════ */
+#qr-sheet{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);align-items:flex-end;}
+#qr-sheet.open{display:flex;}
+.qr-sheet-inner{
+  width:100%;
+  background:linear-gradient(to bottom,#081f16,#04120f);
+  border-radius:28px 28px 0 0;
+  border-top:1px solid rgba(29,158,117,.2);
+  padding:20px 24px calc(44px + var(--safe-bottom));
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+}
+.qr-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:99px;}
+.qr-sheet-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.qr-sheet-wrap{
+  width:188px;height:188px;border-radius:22px;
+  background:rgba(255,255,255,.99);padding:14px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 60px rgba(29,158,117,.25);
+  border:2px solid rgba(29,158,117,.3);
+}
+.qr-sheet-wrap canvas{width:160px!important;height:160px!important;}
+.qr-sheet-name{font-family:var(--font-display);font-size:20px;font-weight:900;color:#fff;letter-spacing:.5px;}
+.qr-sheet-plan{font-size:11px;color:var(--accent-light);font-weight:600;}
+.qr-sheet-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;}
+.qr-sheet-close{
+  width:100%;padding:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:13px;font-size:14px;font-weight:700;color:var(--text2);text-align:center;cursor:pointer;
+  transition:background .15s;
+}
+.qr-sheet-close:active{background:rgba(255,255,255,.09);}
+/* iOS banner inside QR sheet */
+.qr-ios-banner{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.15);
+  border-radius:12px;padding:12px 14px;
+}
+.qr-ios-banner-text{font-size:11px;color:var(--text2);line-height:1.5;flex:1;}
+.qr-ios-banner-close{font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;}
+
+/* ══════ PROG EXPAND SHEET ══════ */
+#prog-sheet{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);align-items:flex-end;}
+#prog-sheet.open{display:flex;}
+.prog-sheet-inner{
+  width:100%;max-height:80vh;overflow-y:auto;
+  background:#0c1f18;border-radius:26px 26px 0 0;
+  border-top:1px solid rgba(29,158,117,.2);
+  padding:20px 20px calc(40px + var(--safe-bottom));
+}
+.prog-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:99px;margin:0 auto 16px;}
+.prog-sheet-tipo{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
+.prog-sheet-fecha{font-family:var(--font-display);font-size:20px;font-weight:900;color:#fff;margin-bottom:16px;}
+.prog-sheet-section-lbl{font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 5px;}
+.prog-sheet-section-lbl:first-child{margin-top:0;}
+.prog-sheet-line{font-size:13px;color:var(--text2);line-height:1.75;}
+.prog-sheet-close{
+  display:flex;align-items:center;justify-content:center;
+  margin-top:20px;padding:13px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;font-size:14px;font-weight:700;color:var(--text2);cursor:pointer;
+}
+
+/* ══════ ANIMATIONS ══════ */
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.anim-in{animation:fadeSlideUp .3s ease both;}
+.a1{animation-delay:.04s;} .a2{animation-delay:.09s;} .a3{animation-delay:.14s;} .a4{animation-delay:.19s;} .a5{animation-delay:.24s;}
 
 @media(max-width:390px){
-  .card-days-num{font-size:30px;}
-  .greeting-name{font-size:22px;}
+  .card-days-num{font-size:36px;}
+  .greeting-name{font-size:24px;}
 }
 </style>
 </head>
 <body>
 
-<!-- Loading -->
+<!-- ══ LOADING ══ -->
 <div id="loading-screen">
-  <svg width="40" height="50" viewBox="0 0 28 36">
+  <svg width="38" height="48" viewBox="0 0 28 36">
     <polygon points="14,1 6,34 14,27 22,34" fill="#5DCAA5"/>
     <polygon points="14,1 22,34 14,27 6,34" fill="#1D9E75" opacity=".6"/>
     <circle cx="14" cy="17" r="2.5" fill="#04120f"/>
@@ -444,14 +450,17 @@ body{
   <div class="loader-bar"><div class="loader-fill"></div></div>
 </div>
 
-<!-- Login -->
+<!-- ══ LOGIN ══ -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">
-      <svg width="22" height="28" viewBox="0 0 20 26"><polygon points="10,1 4,24 10,19 16,24" fill="#5DCAA5"/><polygon points="10,1 16,24 10,19 4,24" fill="#1D9E75" opacity=".55"/><circle cx="10" cy="12" r="2" fill="#04140f"/></svg>
-      VELUM
+    <div class="login-hero">
+      <div class="login-logo">
+        <svg width="20" height="26" viewBox="0 0 20 26"><polygon points="10,1 4,24 10,19 16,24" fill="#5DCAA5"/><polygon points="10,1 16,24 10,19 4,24" fill="#1D9E75" opacity=".55"/><circle cx="10" cy="12" r="2" fill="#04140f"/></svg>
+        VELUM
+      </div>
+      <div class="login-gym-name" id="login-gym-name">Portal de Atletas</div>
+      <div class="login-tagline" id="login-tagline"></div>
     </div>
-    <div class="login-gym-name" id="login-gym-name">Portal de Atletas</div>
     <div class="login-card">
       <div class="login-field">
         <div class="login-label">Código del Gym</div>
@@ -466,26 +475,27 @@ body{
         <input class="login-input" id="login-pwd" type="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
       <div class="login-error" id="login-error"></div>
-      <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar →</button>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Acceder al Portal</button>
     </div>
-    <div class="login-hint">¿No sabes tu número? Pregunta en recepción.</div>
+    <div class="login-hint">Tu número de socio aparece en tu registro o pregunta en recepción.</div>
   </div>
 </div>
 
-<!-- Error -->
+<!-- ══ ERROR ══ -->
 <div id="error-screen">
   <div class="error-icon">🔒</div>
   <div class="error-title">Portal no encontrado</div>
   <div class="error-desc">Este link no es válido o expiró. Pide a tu gym un nuevo link de acceso.</div>
 </div>
 
-<!-- App -->
+<!-- ══ APP ══ -->
 <div id="app">
+
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-gym">
       <div class="gym-logo" id="gym-logo-el">V</div>
-      <span id="gym-nombre-el">VELUM Gym</span>
+      <span class="gym-name-el" id="gym-nombre-el">VELUM</span>
     </div>
     <div class="topbar-avatar" id="topbar-avatar-btn" onclick="openProfileSheet()">?</div>
   </div>
@@ -496,29 +506,61 @@ body{
       <div class="profile-sheet-handle"></div>
       <div class="profile-sheet-user">
         <div class="profile-sheet-avatar" id="ps-avatar">?</div>
-        <div class="profile-sheet-info">
+        <div>
           <div class="profile-sheet-name" id="ps-name">—</div>
           <div class="profile-sheet-gym" id="ps-gym">VELUM</div>
         </div>
       </div>
       <div class="profile-sheet-divider"></div>
       <div class="profile-sheet-btn" onclick="doLogout()">
-        <span>🚪</span>
-        <span>Cerrar sesión</span>
+        <span>🚪</span><span>Cerrar sesión</span>
       </div>
     </div>
   </div>
 
-  <!-- Views -->
-  <!-- ─ HOME ─ -->
+  <!-- QR Sheet -->
+  <div id="qr-sheet" onclick="closeQRSheet(event)">
+    <div class="qr-sheet-inner">
+      <div class="qr-sheet-handle"></div>
+      <div class="qr-sheet-label">Mi QR de Entrada</div>
+      <div class="qr-sheet-wrap">
+        <canvas id="qr-canvas"></canvas>
+      </div>
+      <div>
+        <div class="qr-sheet-name" id="qr-nombre">—</div>
+        <div class="qr-sheet-plan" id="qr-plan-lbl" style="text-align:center;margin-top:3px;">—</div>
+      </div>
+      <div class="qr-sheet-hint">Muestra este código en la entrada del gym.<br>Se genera de forma segura para tu acceso.</div>
+      <div class="qr-ios-banner" id="qr-ios-banner" style="display:none;">
+        <div style="font-size:18px;flex-shrink:0;">📲</div>
+        <div class="qr-ios-banner-text"><strong>Agrega VELUM a tu pantalla de inicio</strong> para acceder en 1 toque. Toca <strong>Compartir →</strong> y luego <strong>"En pantalla de inicio"</strong>.</div>
+        <div class="qr-ios-banner-close" onclick="document.getElementById('qr-ios-banner').style.display='none'">✕</div>
+      </div>
+      <div class="qr-sheet-close" onclick="closeQRSheet()">Cerrar</div>
+    </div>
+  </div>
+
+  <!-- Programa Sheet (expand full workout) -->
+  <div id="prog-sheet" onclick="closeProgSheet(event)">
+    <div class="prog-sheet-inner">
+      <div class="prog-sheet-handle"></div>
+      <div class="prog-sheet-tipo" id="ps-tipo">—</div>
+      <div class="prog-sheet-fecha" id="ps-fecha">—</div>
+      <div id="ps-content"></div>
+      <div class="prog-sheet-close" onclick="closeProgSheet()">Cerrar</div>
+    </div>
+  </div>
+
+  <!-- ── HOME ── -->
   <div class="view active" id="view-home">
-    <div class="greeting">
+
+    <div class="greeting anim-in a1">
       <div class="greeting-hi" id="greeting-hi">Buenos días 👋</div>
       <div class="greeting-name" id="atleta-nombre">—</div>
     </div>
 
     <!-- Membership Card -->
-    <div class="membership-card" id="membership-card">
+    <div class="membership-card anim-in a2" id="membership-card">
       <div class="card-top">
         <div>
           <div class="card-plan-lbl">Membresía</div>
@@ -543,17 +585,18 @@ body{
           <div class="card-days-num" id="card-days-num">—</div>
           <div class="card-days-lbl" id="card-days-lbl">días restantes</div>
         </div>
-        <div>
-          <div class="card-gym" id="card-gym-name">—</div>
+        <div class="card-right">
+          <div class="card-numero" id="card-numero"></div>
+          <div class="card-gym-name" id="card-gym-name">—</div>
           <div class="card-vence" id="card-vence">—</div>
         </div>
       </div>
     </div>
 
     <!-- Package if applicable -->
-    <div class="section" id="paquete-section" style="display:none;">
+    <div class="section anim-in a3" id="paquete-section" style="display:none;">
       <div class="section-header">
-        <div class="section-title">📦 Paquete de Clases</div>
+        <div class="section-title">📦 Paquete</div>
       </div>
       <div class="paquete-card">
         <div class="paquete-header">
@@ -577,7 +620,7 @@ body{
             <div class="paquete-lbl">Total</div>
           </div>
         </div>
-        <div class="paquete-progress" id="paquete-progress-wrap">
+        <div class="paquete-progress">
           <div class="paquete-bar">
             <div class="paquete-fill" id="paquete-fill" style="width:50%;"></div>
           </div>
@@ -585,11 +628,25 @@ body{
       </div>
     </div>
 
+    <!-- Quick actions -->
+    <div class="quick-actions anim-in a3">
+      <div class="qa-card accent" onclick="openQRSheet()">
+        <div class="qa-icon">📲</div>
+        <div class="qa-title">QR de Entrada</div>
+        <div class="qa-sub">Muéstralo en recepción</div>
+      </div>
+      <div class="qa-card" onclick="switchView('historial')">
+        <div class="qa-icon">📍</div>
+        <div class="qa-title">Mis Visitas</div>
+        <div class="qa-sub" id="qa-visitas-sub">Ver historial</div>
+      </div>
+    </div>
+
     <!-- Today's workout -->
-    <div class="section">
+    <div class="section anim-in a4">
       <div class="section-header">
-        <div class="section-title">🏋️ Entrenamiento de hoy</div>
-        <div class="section-link" onclick="switchView('programa')" style="cursor:pointer;">Ver mes →</div>
+        <div class="section-title">Entrenamiento de hoy</div>
+        <div class="section-link" onclick="switchView('programa')">Ver semana →</div>
       </div>
       <div id="today-workout-container">
         <div class="workout-empty">No hay programa cargado para hoy.</div>
@@ -597,54 +654,39 @@ body{
     </div>
   </div>
 
-  <!-- ─ QR CHECK-IN ─ -->
-  <div class="view" id="view-qr">
-    <div class="greeting">
-      <div class="greeting-hi">Mi acceso</div>
-      <div class="greeting-name" style="font-size:20px;">Check-in QR</div>
-    </div>
-    <div class="section">
-      <div class="qr-card">
-        <div class="qr-wrapper">
-          <canvas id="qr-canvas"></canvas>
-        </div>
-        <div class="qr-name" id="qr-nombre">—</div>
-        <div class="qr-plan" id="qr-plan-lbl">—</div>
-        <div class="qr-hint">Muestra este código en la entrada del gym.<br>Se genera de forma segura para tu acceso.</div>
-      </div>
-    </div>
-
-    <!-- iOS Add to Home banner -->
-    <div class="ios-banner" id="ios-banner" style="display:none;">
-      <div class="ios-banner-icon">📲</div>
-      <div class="ios-banner-text"><strong>Agrega VELUM a tu pantalla de inicio</strong> para acceder al QR en 1 toque. Toca <strong>Compartir →</strong> y luego <strong>"En pantalla de inicio"</strong>.</div>
-      <div class="ios-banner-close" onclick="document.getElementById('ios-banner').style.display='none'">✕</div>
-    </div>
-  </div>
-
-  <!-- ─ PROGRAMA ─ -->
+  <!-- ── PROGRAMA ── -->
   <div class="view" id="view-programa">
     <div class="greeting">
-      <div class="greeting-hi">Programa del mes</div>
-      <div class="greeting-name" id="prog-mes-title" style="font-size:20px;">—</div>
+      <div class="greeting-hi" id="prog-gym-hi">Programa</div>
+      <div class="greeting-name" id="prog-mes-title" style="font-size:22px;">—</div>
     </div>
     <div class="section">
-      <!-- Discipline tabs -->
-      <div class="workout-tabs" id="atleta-prog-tabs" style="padding:0;margin-bottom:12px;"></div>
-      <!-- Calendar days with workouts -->
-      <div id="atleta-prog-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div class="week-nav">
+        <div class="week-nav-btn" onclick="navWeek(-1)">‹</div>
+        <div class="week-nav-center">
+          <div class="week-nav-title" id="wn-range">—</div>
+          <div class="week-nav-sub" id="wn-year">—</div>
+        </div>
+        <div class="week-nav-btn" onclick="navWeek(1)">›</div>
+      </div>
+      <div class="workout-tabs" id="prog-disc-tabs" style="padding:0;margin-bottom:14px;"></div>
+      <div id="prog-week-list"></div>
     </div>
   </div>
 
-  <!-- ─ HISTORIAL ─ -->
+  <!-- ── HISTORIAL ── -->
   <div class="view" id="view-historial">
     <div class="greeting">
       <div class="greeting-hi">Mis visitas</div>
-      <div class="greeting-name" style="font-size:20px;">Historial</div>
+      <div class="greeting-name" style="font-size:22px;">Historial</div>
     </div>
     <div class="section">
       <div class="checkin-list" id="checkin-list">
-        <div style="text-align:center;padding:20px;font-size:12px;color:var(--text3);">Sin check-ins registrados.</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">🏃</div>
+          <div class="empty-state-title">¡Haz tu primer check-in!</div>
+          <div class="empty-state-sub">Muestra tu QR en la entrada y aquí verás tu historial de visitas.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -655,9 +697,9 @@ body{
       <div class="bn-icon">🏠</div>
       <div class="bn-lbl">Inicio</div>
     </div>
-    <div class="bn-item" onclick="switchView('qr')" id="bn-qr">
-      <div class="bn-icon">📲</div>
-      <div class="bn-lbl">QR</div>
+    <div class="bn-fab-wrap" onclick="openQRSheet()">
+      <div class="bn-fab">📲</div>
+      <div class="bn-fab-lbl">Check-in</div>
     </div>
     <div class="bn-item" onclick="switchView('programa')" id="bn-programa">
       <div class="bn-icon">📅</div>
@@ -668,31 +710,35 @@ body{
       <div class="bn-lbl">Historial</div>
     </div>
   </div>
-</div>
 
-<!-- QR Library -->
+</div><!-- /app -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-// ══════════════════════════════
-// VELUM — Athlete Portal
-// ══════════════════════════════
+// ════════════════════════════════
+//  VELUM — Athlete Portal v2
+// ════════════════════════════════
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
-const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DIAS_ES  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI';
+const MESES_ES     = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_ES      = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DIAS_FULL    = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DISC_EMOJIS  = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥',Calistenia:'🤸',Powerlifting:'🏋️',Halterofilia:'🎽',Spinning:'🚴',Triatlon:'🏊',MMA:'🛡',Kickboxing:'🦶',Movilidad:'🦾',Futbol:'⚽',Basquetbol:'🏀',PrepAtletica:'🏆'};
 
 let portalData = null;
 let activeView = 'home';
-let activeProg = '';
+let progWeekOffset = 0;
+let progActiveDisc = '';
 
-// ── Routing ──
-function getToken(){
+// ── Routing ──────────────────────────
+function getURLToken(){
   const p = new URLSearchParams(window.location.search);
   return p.get('t') || p.get('token');
 }
 
-// ── Views ──
+// ── Views ──────────────────────────
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
@@ -701,125 +747,209 @@ function switchView(name){
   if(v) v.classList.add('active');
   if(b) b.classList.add('active');
   activeView = name;
-  if(name==='qr') renderQR();
   if(name==='programa') renderProgramaView();
   if(name==='historial') renderHistorial();
 }
 
-// ── Greeting ──
-function greeting(){
+// ── QR Sheet ──────────────────────────
+function openQRSheet(){
+  renderQR();
+  document.getElementById('qr-sheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeQRSheet(e){
+  if(!e || e.target===document.getElementById('qr-sheet')){
+    document.getElementById('qr-sheet').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+// ── Profile Sheet ──────────────────────────
+function openProfileSheet(){
+  document.getElementById('profile-sheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeProfileSheet(e){
+  if(!e || e.target===document.getElementById('profile-sheet')){
+    document.getElementById('profile-sheet').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+// ── Prog Sheet ──────────────────────────
+function openProgSheet(tipo, fechaStr, contenido){
+  const dt = new Date(fechaStr + 'T12:00:00');
+  const label = DIAS_FULL[dt.getDay()] + ', ' + dt.getDate() + ' de ' + MESES_ES[dt.getMonth()];
+  document.getElementById('ps-tipo').textContent = tipo;
+  document.getElementById('ps-fecha').textContent = label;
+  document.getElementById('ps-content').innerHTML = renderWorkoutLines(contenido);
+  document.getElementById('prog-sheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeProgSheet(e){
+  if(!e || e.target===document.getElementById('prog-sheet')){
+    document.getElementById('prog-sheet').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+// ── Logout ──────────────────────────
+function doLogout(){
+  try{ localStorage.removeItem('velum_session'); } catch(_){}
+  portalData = null;
+  closeProfileSheet();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  ['login-gym','login-numero','login-pwd'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+}
+
+// ── Greeting ──────────────────────────
+function greetingText(){
   const h = new Date().getHours();
   if(h < 12) return 'Buenos días 👋';
   if(h < 19) return 'Buenas tardes 👋';
   return 'Buenas noches 👋';
 }
 
-// ── Render membership card ──
-function renderMembresiaCard(data){
-  const { cliente, gym, paquete } = data;
+// ── Show portal ──────────────────────────
+function showPortal(data){
+  portalData = data;
+  document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
 
-  // Gym
-  const gymLogoEl = document.getElementById('gym-logo-el');
-  const gymNombreEl = document.getElementById('gym-nombre-el');
-  if(gym.logo){ gymLogoEl.innerHTML = `<img src="${gym.logo}" alt="${gym.nombre}">`; }
-  else { gymLogoEl.textContent = (gym.nombre||'V').charAt(0).toUpperCase(); }
-  if(gymNombreEl) gymNombreEl.textContent = gym.nombre;
-
-  // Greeting
-  document.getElementById('greeting-hi').textContent = greeting();
-  document.getElementById('atleta-nombre').textContent = (cliente.nombre||'').split(' ')[0];
-
-  // Membership card
-  document.getElementById('card-plan').textContent = cliente.plan || 'Membresía';
-  document.getElementById('card-gym-name').textContent = gym.nombre;
-
-  const ok = cliente.membresiaOk;
-  const dias = cliente.diasRestantes;
-  const dot = document.getElementById('status-dot');
-  const txt = document.getElementById('card-status-txt');
-
-  if(!ok){
-    dot.className = 'status-dot danger';
-    txt.textContent = 'Vencida';
-    document.getElementById('membership-card').style.background = 'linear-gradient(135deg,#7f1d1d,#450a0a)';
-  } else if(dias !== null && dias <= 7){
-    dot.className = 'status-dot warn';
-    txt.textContent = `Vence pronto`;
-  } else {
-    dot.className = 'status-dot ok';
-    txt.textContent = 'Activo';
+  // Persist session
+  if(data.cliente.portal_token){
+    try{ localStorage.setItem('velum_session', JSON.stringify({token: data.cliente.portal_token})); } catch(_){}
   }
 
-  if(dias !== null){
-    document.getElementById('card-days-num').textContent = dias;
-    document.getElementById('card-days-lbl').textContent = dias === 1 ? 'día restante' : 'días restantes';
-    if(cliente.vence){
-      const dt = new Date(cliente.vence + 'T12:00:00');
-      document.getElementById('card-vence').textContent = 'Vence ' + dt.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
-    }
-    // Progress bar (assume 30-day cycle)
-    const pct = Math.max(2, Math.min(100, Math.round((dias / 30) * 100)));
-    document.getElementById('card-progress-fill').style.width = pct+'%';
-    document.getElementById('card-days-used').textContent = `${30 - dias} días usados`;
-    document.getElementById('card-days-total').textContent = `30 días`;
+  // Populate topbar + profile sheet
+  const initials = (data.cliente.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const setEl = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  setEl('topbar-avatar-btn', initials);
+  setEl('ps-avatar', initials);
+  setEl('ps-name', data.cliente.nombre);
+  setEl('ps-gym', data.gym.nombre + (data.cliente.numero_cliente ? ` · Socio #${data.cliente.numero_cliente}` : ''));
+
+  renderMembresiaCard(data);
+  renderTodayWorkout(data.programasHoy);
+  renderQuickStats(data);
+
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+
+// ── Render membership card ──────────────────────────
+function renderMembresiaCard(data){
+  const { cliente, gym, paquete } = data;
+  const setEl = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+
+  // Gym logo
+  const gymLogoEl = document.getElementById('gym-logo-el');
+  if(gym.logo){ gymLogoEl.innerHTML = `<img src="${gym.logo}" alt="${gym.nombre}">`; }
+  else { gymLogoEl.textContent = (gym.nombre||'V')[0].toUpperCase(); }
+  setEl('gym-nombre-el', gym.nombre);
+
+  // Greeting
+  setEl('greeting-hi', greetingText());
+  setEl('atleta-nombre', (cliente.nombre||'').split(' ')[0]);
+
+  // Plan
+  setEl('card-plan', cliente.plan || 'Membresía');
+  setEl('card-gym-name', gym.nombre);
+
+  // Número socio
+  if(cliente.numero_cliente){
+    setEl('card-numero', `SOCIO  #${String(cliente.numero_cliente).padStart(3,'0')}`);
+  }
+
+  // Status
+  const ok   = cliente.membresiaOk;
+  const dias = cliente.diasRestantes;
+  const dot  = document.getElementById('status-dot');
+  const txt  = document.getElementById('card-status-txt');
+
+  if(!ok){
+    dot.className='status-dot danger'; txt.textContent='Vencida';
+    document.getElementById('membership-card').style.background='linear-gradient(135deg,#7f1d1d,#450a0a)';
+  } else if(dias!==null && dias<=7){
+    dot.className='status-dot warn'; txt.textContent='Vence pronto';
   } else {
-    document.getElementById('card-progress-wrap').style.display = 'none';
-    document.getElementById('card-days-num').textContent = '∞';
-    document.getElementById('card-days-lbl').textContent = 'sin fecha límite';
+    dot.className='status-dot ok'; txt.textContent='Activo';
+  }
+
+  if(dias!==null){
+    setEl('card-days-num', dias);
+    setEl('card-days-lbl', dias===1?'día restante':'días restantes');
+    if(cliente.vence){
+      const dt = new Date(cliente.vence+'T12:00:00');
+      setEl('card-vence','Vence '+dt.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}));
+    }
+    const pct = Math.max(2, Math.min(100, Math.round((dias/30)*100)));
+    document.getElementById('card-progress-fill').style.width = pct+'%';
+    setEl('card-days-used', `${30-dias} días usados`);
+    setEl('card-days-total', '30 días');
+  } else {
+    document.getElementById('card-progress-wrap').style.display='none';
+    setEl('card-days-num','∞');
+    setEl('card-days-lbl','sin fecha límite');
   }
 
   // Package
   if(paquete){
-    document.getElementById('paquete-section').style.display = '';
-    document.getElementById('paquete-title').textContent = paquete.plan || 'Paquete de Clases';
-    document.getElementById('paquete-plan').textContent = `${paquete.clasesRestantes} clases disponibles`;
-    document.getElementById('paquete-restantes').textContent = paquete.clasesRestantes;
-    document.getElementById('paquete-usadas').textContent = paquete.clasesUsadas;
-    document.getElementById('paquete-total').textContent = paquete.clasesTotal;
-    const pct = Math.max(2, Math.round((paquete.clasesRestantes / paquete.clasesTotal) * 100));
+    document.getElementById('paquete-section').style.display='';
+    setEl('paquete-title', paquete.plan||'Paquete de Clases');
+    setEl('paquete-plan', `${paquete.clasesRestantes} clases disponibles`);
+    setEl('paquete-restantes', paquete.clasesRestantes);
+    setEl('paquete-usadas', paquete.clasesUsadas);
+    setEl('paquete-total', paquete.clasesTotal);
+    const pct = Math.max(2, Math.round((paquete.clasesRestantes/paquete.clasesTotal)*100));
     document.getElementById('paquete-fill').style.width = pct+'%';
-    if(paquete.clasesRestantes <= 2){
-      document.getElementById('paquete-restantes').style.color = 'var(--danger)';
-    }
+    if(paquete.clasesRestantes<=2) document.getElementById('paquete-restantes').style.color='var(--danger)';
   }
 }
 
-// ── Render today's workout ──
+// ── Quick stats ──────────────────────────
+function renderQuickStats(data){
+  const checkins = data.checkins||[];
+  const sub = document.getElementById('qa-visitas-sub');
+  if(sub) sub.textContent = checkins.length ? `${checkins.length} visitas registradas` : 'Sin check-ins aún';
+}
+
+// ── Workout content renderer ──────────────────────────
+function renderWorkoutLines(txt){
+  const lines = (txt||'').trim().split('\n');
+  let html = '';
+  lines.forEach(line=>{
+    const t = line.trim();
+    if(!t){ html += '<div style="height:5px;"></div>'; return; }
+    const isHeader = /^(🔥|💪|⚡|🧘|WARM UP|COOL DOWN|BLOQUE|FINALIZADOR|OBJETIVO|ESTRUCTURA|MODALIDAD)/i.test(t) || /^[A-Z\s🔥💪⚡🧘]{4,}:/.test(t);
+    if(isHeader) html += `<div class="workout-section-lbl">${t}</div>`;
+    else html += `<div class="workout-line">${t}</div>`;
+  });
+  return html;
+}
+
+// ── Today workout ──────────────────────────
 function renderTodayWorkout(programasHoy){
   const container = document.getElementById('today-workout-container');
-  if(!programasHoy || !programasHoy.length){
-    container.innerHTML = '<div class="workout-empty">No hay entrenamiento programado para hoy.</div>';
+  if(!programasHoy||!programasHoy.length){
+    container.innerHTML='<div class="workout-empty">No hay entrenamiento programado para hoy.</div>';
     return;
   }
-
-  // Multiple disciplines? Show tabs
   let activeDisc = programasHoy[0].tipo;
-  const VELUM_DISC_EMOJIS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥',Calistenia:'🤸',Powerlifting:'🏋️',Halterofilia:'🎽',Spinning:'🚴',Triatlon:'🏊',MMA:'🛡',Kickboxing:'🦶',Movilidad:'🦾',Futbol:'⚽',Basquetbol:'🏀',PrepAtletica:'🏆'};
-
-  function renderWorkoutContent(prog){
-    const txt = (prog.contenido||'').trim();
-    const lines = txt.split('\n');
-    let html = '';
-    lines.forEach(line=>{
-      const t = line.trim();
-      if(!t){ html += '<div style="height:6px;"></div>'; return; }
-      const isHeader = /^(WARM UP|COOL DOWN|A\)|B\)|C\)|BLOQUE|FINALIZADOR|OBJETIVO|ESTRUCTURA|MODALIDAD)/i.test(t) || /^[A-Z\s]{4,}:/.test(t);
-      if(isHeader) html += `<div class="workout-section-lbl">${t}</div>`;
-      else html += `<div class="workout-line">${t}</div>`;
-    });
-    return html;
-  }
 
   function build(){
-    const emoji = VELUM_DISC_EMOJIS[activeDisc] || '🏋️';
-    const prog = programasHoy.find(p=>p.tipo===activeDisc) || programasHoy[0];
+    const emoji = DISC_EMOJIS[activeDisc]||'🏋️';
+    const prog = programasHoy.find(p=>p.tipo===activeDisc)||programasHoy[0];
     let tabs = '';
-    if(programasHoy.length > 1){
-      tabs = `<div class="workout-tabs" style="padding:10px 16px 0;margin-bottom:0;">${
-        programasHoy.map(p=>`<div class="workout-tab${p.tipo===activeDisc?' active':''}" onclick="atletaSwitchWorkout('${p.tipo}')">${VELUM_DISC_EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>`).join('')
+    if(programasHoy.length>1){
+      tabs=`<div class="workout-tabs" style="padding:10px 16px 0;">${
+        programasHoy.map(p=>`<div class="workout-tab${p.tipo===activeDisc?' active':''}" onclick="atletaSwitchWorkout('${p.tipo}')">${DISC_EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>`).join('')
       }</div>`;
     }
-    container.innerHTML = `<div class="workout-card">
+    container.innerHTML=`<div class="workout-card">
       ${tabs}
       <div class="workout-header">
         <div class="workout-emoji">${emoji}</div>
@@ -829,293 +959,259 @@ function renderTodayWorkout(programasHoy){
         </div>
         <div class="workout-disc-badge">${prog.tipo}</div>
       </div>
-      <div class="workout-body">${renderWorkoutContent(prog)}</div>
+      <div class="workout-body-wrap">
+        <div class="workout-body">${renderWorkoutLines(prog.contenido)}</div>
+      </div>
     </div>`;
   }
-
-  window.atletaSwitchWorkout = function(tipo){
-    activeDisc = tipo;
-    build();
-  };
+  window.atletaSwitchWorkout = t=>{ activeDisc=t; build(); };
   build();
 }
 
-// ── Render QR ──
+// ── QR ──────────────────────────
 function renderQR(){
   if(!portalData) return;
   const canvas = document.getElementById('qr-canvas');
-  canvas.innerHTML = '';
-  const url = `${SUPABASE_URL}/functions/v1/move-checkin?token=${getToken()}`;
+  canvas.innerHTML='';
+  const tok = portalData.cliente.portal_token || getURLToken() || '';
+  const url = `${SUPABASE_URL}/functions/v1/move-checkin?token=${tok}`;
   try{
-    new QRCode(canvas, {
-      text: url,
-      width: 130, height: 130,
-      colorDark: '#1D9E75',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
+    new QRCode(canvas,{text:url,width:160,height:160,colorDark:'#1D9E75',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
   } catch(e){
-    // fallback: show text QR
-    canvas.style.cssText = 'font-size:9px;word-break:break-all;color:#1D9E75;padding:4px;';
-    canvas.textContent = url;
+    canvas.style.cssText='font-size:8px;word-break:break-all;color:#1D9E75;';
+    canvas.textContent=url;
   }
   document.getElementById('qr-nombre').textContent = portalData.cliente.nombre;
-  document.getElementById('qr-plan-lbl').textContent = (portalData.gym.nombre || '') + ' · ' + (portalData.cliente.plan || 'Membresía');
+  document.getElementById('qr-plan-lbl').textContent = (portalData.gym.nombre||'') + (portalData.cliente.plan ? ' · '+portalData.cliente.plan : '');
 
-  // iOS add to homescreen hint
+  // iOS add to homescreen
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone;
-  if(isIOS && !isStandalone && !sessionStorage.getItem('banner_dismissed')){
-    document.getElementById('ios-banner').style.display = 'flex';
+  if(isIOS && !isStandalone && !sessionStorage.getItem('ios_banner_dismissed')){
+    document.getElementById('qr-ios-banner').style.display='flex';
   }
 }
 
-// ── Render programa view ──
+// ── Programa View ──────────────────────────
+function getWeekDates(offset){
+  const now = new Date();
+  const dow = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - dow + (dow===0?-6:1) + offset*7);
+  monday.setHours(0,0,0,0);
+  const dates = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  return dates;
+}
+
+function navWeek(dir){
+  progWeekOffset += dir;
+  renderProgramaView();
+}
+
 function renderProgramaView(){
   if(!portalData) return;
-  const now = new Date();
-  document.getElementById('prog-mes-title').textContent = `${MESES_ES[now.getMonth()]} ${now.getFullYear()}`;
+  const today = new Date().toISOString().slice(0,10);
+  const weekDates = getWeekDates(progWeekOffset);
+  const d0 = new Date(weekDates[0]+'T12:00:00');
+  const d6 = new Date(weekDates[6]+'T12:00:00');
 
-  // We don't have full month data in portal — show what we have (today's only for now)
-  // With a future expansion, we'd load the full month. For now, redirect to today.
-  const programasHoy = portalData.programasHoy || [];
+  // Header
+  document.getElementById('prog-mes-title').textContent =
+    MESES_ES[d0.getMonth()] + (d0.getMonth()!==d6.getMonth() ? ' / '+MESES_ES[d6.getMonth()] : '');
+  document.getElementById('wn-range').textContent =
+    `${d0.getDate()} ${MESES_ES[d0.getMonth()].slice(0,3)} — ${d6.getDate()} ${MESES_ES[d6.getMonth()].slice(0,3)}`;
+  document.getElementById('wn-year').textContent = d0.getFullYear();
+  document.getElementById('prog-gym-hi').textContent = portalData.gym.nombre;
 
-  const tabsEl = document.getElementById('atleta-prog-tabs');
-  const listEl = document.getElementById('atleta-prog-list');
+  // Build data map: fecha → [programa...]
+  // We only have portalData.programasHoy — for other days we'd need a separate load
+  // Map available programs
+  const progMap = {};
+  (portalData.programasHoy||[]).forEach(p=>{
+    if(!progMap[today]) progMap[today]=[];
+    progMap[today].push(p);
+  });
 
-  if(!programasHoy.length){
-    tabsEl.innerHTML = '';
-    listEl.innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--text3);">No hay programa cargado para este mes todavía.</div>';
-    return;
+  // Discipline tabs (from all available data)
+  const allDiscs = [...new Set(Object.values(progMap).flat().map(p=>p.tipo))];
+  const tabsEl = document.getElementById('prog-disc-tabs');
+  if(allDiscs.length<=1){
+    tabsEl.innerHTML='';
+    if(allDiscs.length===1) progActiveDisc = allDiscs[0];
+  } else {
+    if(!progActiveDisc || !allDiscs.includes(progActiveDisc)) progActiveDisc = allDiscs[0];
+    tabsEl.innerHTML = allDiscs.map(d=>`
+      <div class="workout-tab${d===progActiveDisc?' active':''}" onclick="progSelectDisc('${d}')">${DISC_EMOJIS[d]||'🏋️'} ${d}</div>
+    `).join('');
   }
 
-  const VELUM_DISC_EMOJIS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥'};
-  const today = now.toISOString().slice(0,10);
-
-  // Tabs
-  activeProg = programasHoy[0].tipo;
-  tabsEl.innerHTML = programasHoy.map(p=>`
-    <div class="workout-tab${p.tipo===activeProg?' active':''}" onclick="atletaProgTab('${p.tipo}')">${VELUM_DISC_EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>
-  `).join('');
-
-  function renderProgList(){
-    const prog = programasHoy.find(p=>p.tipo===activeProg) || programasHoy[0];
-    const lines = (prog.contenido||'').trim().split('\n');
-    let body = '';
-    lines.forEach(line=>{
-      const t = line.trim();
-      if(!t){ body += '<div style="height:5px;"></div>'; return; }
-      const isHeader = /^(WARM UP|COOL DOWN|BLOQUE|FINALIZADOR|OBJETIVO)/i.test(t) || /^[A-Z\s]{4,}:/.test(t);
-      if(isHeader) body += `<div class="workout-section-lbl">${t}</div>`;
-      else body += `<div class="workout-line">${t}</div>`;
+  window.progSelectDisc = function(d){
+    progActiveDisc=d;
+    document.querySelectorAll('#prog-disc-tabs .workout-tab').forEach(t=>{
+      t.classList.toggle('active', t.textContent.includes(d));
     });
-    const dt = new Date(today + 'T12:00:00');
-    const dayLabel = dt.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
-    listEl.innerHTML = `
-      <div style="padding:12px 14px;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.18);border-radius:12px;margin-bottom:8px;">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
-          Hoy · ${dayLabel}
-        </div>
-        <div style="font-size:10px;color:var(--text3);">(Más días disponibles cuando el gym genere el mes completo)</div>
-      </div>
-      <div class="workout-card"><div class="workout-body">${body}</div></div>
-    `;
-  }
-
-  window.atletaProgTab = function(tipo){
-    activeProg = tipo;
-    document.querySelectorAll('#atleta-prog-tabs .workout-tab').forEach(t=>{
-      t.classList.toggle('active', t.textContent.includes(tipo));
-    });
-    renderProgList();
+    buildWeekList(weekDates, progMap, today);
   };
-  renderProgList();
+
+  buildWeekList(weekDates, progMap, today);
 }
 
-// ── Render historial ──
+function buildWeekList(weekDates, progMap, today){
+  const listEl = document.getElementById('prog-week-list');
+  let html='';
+
+  weekDates.forEach(dateStr=>{
+    const dt = new Date(dateStr+'T12:00:00');
+    const dayLabel = `${DIAS_ES[dt.getDay()]} ${dt.getDate()}`;
+    const isToday = dateStr===today;
+    const dayProgs = (progMap[dateStr]||[]).filter(p=>!progActiveDisc||p.tipo===progActiveDisc||progMap[dateStr].length<=1);
+
+    html+=`<div class="prog-day-block">
+      <div class="prog-day-header">
+        <span class="prog-day-label${isToday?' today':''}">${isToday?'Hoy · ':''} ${dayLabel}</span>
+        ${isToday?'<span class="prog-today-pill">HOY</span>':''}
+      </div>`;
+
+    if(!dayProgs.length){
+      html+=`<div class="prog-empty-day">${isToday?'Sin programa para hoy':'—'}</div>`;
+    } else {
+      dayProgs.forEach(prog=>{
+        const emoji = DISC_EMOJIS[prog.tipo]||'🏋️';
+        // Preview: first 2 non-empty lines
+        const previewLines = (prog.contenido||'').split('\n').map(l=>l.trim()).filter(l=>l).slice(0,2);
+        const preview = previewLines.join('  ·  ');
+        html+=`<div class="prog-session-card" onclick="openProgSheet('${prog.tipo}','${dateStr}',${JSON.stringify(prog.contenido||'').replace(/'/g,"&apos;")})">
+          <div class="prog-session-left">
+            <div class="prog-session-emoji">${emoji}</div>
+            <div class="prog-session-tipo">${prog.tipo}</div>
+          </div>
+          <div class="prog-session-body">
+            <div class="prog-session-title">${prog.tipo}</div>
+            <div class="prog-session-preview">${preview||'Ver entrenamiento completo'}</div>
+          </div>
+          <div style="font-size:16px;color:var(--text3);padding-top:2px;flex-shrink:0;">›</div>
+        </div>`;
+      });
+    }
+    html+='</div>';
+  });
+  listEl.innerHTML=html;
+}
+
+// ── Historial ──────────────────────────
 function renderHistorial(){
   if(!portalData) return;
-  const checkins = portalData.checkins || [];
+  const checkins = portalData.checkins||[];
   const el = document.getElementById('checkin-list');
   if(!checkins.length){
-    el.innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--text3);">Sin check-ins registrados todavía.</div>';
+    el.innerHTML=`<div class="empty-state">
+      <div class="empty-state-icon">🏃</div>
+      <div class="empty-state-title">¡Haz tu primer check-in!</div>
+      <div class="empty-state-sub">Muestra tu QR en la entrada y aquí verás tu historial de visitas.</div>
+    </div>`;
     return;
   }
-  const METODO_ICONS = {QR:'📲',Manual:'✍️',App:'📱',default:'✅'};
-  el.innerHTML = checkins.map(c=>{
-    const dt = new Date(c.fecha + 'T12:00:00');
-    const label = dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
-    const hora = c.hora ? c.hora.slice(0,5) : '';
-    const icon = METODO_ICONS[c.metodo] || METODO_ICONS.default;
+  const METODO_ICONS={QR:'📲',Manual:'✍️',App:'📱',default:'✅'};
+  el.innerHTML=checkins.map(c=>{
+    const dt=new Date(c.fecha+'T12:00:00');
+    const label=dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+    const hora=c.hora?c.hora.slice(0,5):'';
+    const icon=METODO_ICONS[c.metodo]||METODO_ICONS.default;
     return `<div class="checkin-item">
       <div class="checkin-icon">${icon}</div>
       <div>
         <div class="checkin-date">${label}</div>
-        <div class="checkin-time">${hora ? hora+' hrs' : 'Check-in registrado'}</div>
+        <div class="checkin-time">${hora?hora+' hrs':'Check-in registrado'}</div>
       </div>
-      ${c.metodo ? `<div class="checkin-type">${c.metodo}</div>` : ''}
+      ${c.metodo?`<div class="checkin-badge">${c.metodo}</div>`:''}
     </div>`;
   }).join('');
 }
 
-// ── Show portal after successful auth ──
-function showPortal(data){
-  portalData = data;
-  document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
-
-  // Persist session to localStorage using portal_token
-  const tok = data.cliente.portal_token;
-  if(tok){
-    try{ localStorage.setItem('velum_session', JSON.stringify({ token: tok })); } catch(_){}
-  }
-
-  // Populate topbar avatar + profile sheet
-  const initials = (data.cliente.nombre || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  const avatarBtn = document.getElementById('topbar-avatar-btn');
-  if(avatarBtn) avatarBtn.textContent = initials;
-  const psAvatar = document.getElementById('ps-avatar');
-  if(psAvatar) psAvatar.textContent = initials;
-  const psName = document.getElementById('ps-name');
-  if(psName) psName.textContent = data.cliente.nombre;
-  const psGym = document.getElementById('ps-gym');
-  if(psGym) psGym.textContent = data.gym.nombre + (data.cliente.numero_cliente ? ` · Socio #${data.cliente.numero_cliente}` : '');
-
-  renderMembresiaCard(data);
-  renderTodayWorkout(data.programasHoy);
-  document.getElementById('loading-screen').classList.add('hidden');
-  document.getElementById('login-screen').style.display   = 'none';
-  document.getElementById('app').style.display = 'flex';
-}
-
-// ── Profile sheet ──
-function openProfileSheet(){
-  document.getElementById('profile-sheet').classList.add('open');
-}
-function closeProfileSheet(e){
-  // Close if tapping the backdrop (not the inner panel)
-  if(e.target === document.getElementById('profile-sheet')){
-    document.getElementById('profile-sheet').classList.remove('open');
-  }
-}
-
-// ── Logout ──
-function doLogout(){
-  try{ localStorage.removeItem('velum_session'); } catch(_){}
-  portalData = null;
-  document.getElementById('profile-sheet').classList.remove('open');
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  ['login-gym','login-numero','login-pwd'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  document.getElementById('loading-screen').classList.add('hidden');
-}
-
-// ── Login form submit ──
+// ── Login form ──────────────────────────
 async function doLogin(){
-  const gym    = (document.getElementById('login-gym').value || '').trim();
-  const numero = (document.getElementById('login-numero').value || '').trim();
-  const pwd    = (document.getElementById('login-pwd').value || '').trim();
+  const gym    = (document.getElementById('login-gym').value||'').trim();
+  const numero = (document.getElementById('login-numero').value||'').trim();
+  const pwd    = (document.getElementById('login-pwd').value||'').trim();
   const errEl  = document.getElementById('login-error');
   const btn    = document.getElementById('login-btn');
 
-  errEl.style.display = 'none';
-  if(!gym || !numero || !pwd){
-    errEl.textContent = 'Completa todos los campos.';
-    errEl.style.display = 'block';
-    return;
+  errEl.style.display='none';
+  if(!gym||!numero||!pwd){
+    errEl.textContent='Completa todos los campos.';
+    errEl.style.display='block'; return;
   }
-
-  btn.disabled = true;
-  btn.textContent = 'Verificando…';
+  btn.disabled=true; btn.textContent='Verificando…';
 
   try{
-    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI';
-    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': ANON_KEY
-      },
-      body: JSON.stringify({ gym, numero: parseInt(numero, 10), password: pwd })
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':ANON_KEY},
+      body:JSON.stringify({gym, numero:parseInt(numero,10), password:pwd})
     });
     const data = await res.json();
-    if(!res.ok || data.error){
-      const msg = data.error === 'Contraseña incorrecta' ? 'Contraseña incorrecta.' :
-                  data.error === 'Número de socio no encontrado' ? 'Número de socio no encontrado.' :
-                  data.error === 'Gym no encontrado' ? 'Código de gym incorrecto.' :
+    if(!res.ok||data.error){
+      const msg = data.error==='Contraseña incorrecta'?'Contraseña incorrecta.':
+                  data.error==='Número de socio no encontrado'?'Número de socio no encontrado.':
+                  data.error==='Gym no encontrado'?'Código de gym incorrecto.':
                   'Datos incorrectos. Verifica e intenta de nuevo.';
-      errEl.textContent = msg;
-      errEl.style.display = 'block';
-      return;
+      errEl.textContent=msg; errEl.style.display='block'; return;
     }
     showPortal(data);
-  } catch(err){
-    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
-    errEl.style.display = 'block';
+  } catch(e){
+    errEl.textContent='Error de conexión. Intenta de nuevo.';
+    errEl.style.display='block';
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Entrar →';
+    btn.disabled=false; btn.textContent='Acceder al Portal';
   }
 }
 
-// ── Init ──
+// ── Init ──────────────────────────
 async function init(){
-  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI';
-
   const p     = new URLSearchParams(window.location.search);
-  const token = p.get('t') || p.get('token');
-  const gym   = p.get('gym') || p.get('g') || '';
+  const token = p.get('t')||p.get('token');
+  const gym   = p.get('gym')||p.get('g')||'';
 
-  // Pre-fill gym code if in URL
   if(gym){
-    const gymInput = document.getElementById('login-gym');
-    if(gymInput) gymInput.value = gym.toUpperCase();
+    const gi=document.getElementById('login-gym');
+    if(gi) gi.value=gym.toUpperCase();
   }
 
   async function tryToken(tok){
-    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(tok)}`, {
-      headers: { 'apikey': ANON_KEY }
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(tok)}`,{
+      headers:{'apikey':ANON_KEY}
     });
-    if(!res.ok) throw new Error('Invalid');
+    if(!res.ok) throw new Error('invalid');
     const data = await res.json();
     if(data.error) throw new Error(data.error);
     return data;
   }
 
-  // 1) Token mode — magic link from URL
+  // 1) URL token (magic link)
   if(token){
-    try{
-      const data = await tryToken(token);
-      showPortal(data);
-      return;
-    } catch(_){}
-    // Token invalid — fall through
+    try{ showPortal(await tryToken(token)); return; } catch(_){}
   }
 
-  // 2) Stored session — auto-login if returning user
-  let stored = null;
-  try{ stored = JSON.parse(localStorage.getItem('velum_session') || 'null'); } catch(_){}
+  // 2) Stored session (auto-login)
+  let stored=null;
+  try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); } catch(_){}
   if(stored?.token){
-    try{
-      const data = await tryToken(stored.token);
-      showPortal(data);
-      return;
-    } catch(_){
-      // Stored token expired/invalid — clear and show login
-      try{ localStorage.removeItem('velum_session'); } catch(_){}
-    }
+    try{ showPortal(await tryToken(stored.token)); return; }
+    catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} }
   }
 
-  // 3) Show login form
+  // 3) Show login
   document.getElementById('loading-screen').classList.add('hidden');
-  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-screen').style.display='flex';
 
-  // Allow Enter key to submit
   ['login-gym','login-numero','login-pwd'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
   });
 }
 
