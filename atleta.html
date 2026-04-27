@@ -63,6 +63,54 @@ body{
 .loader-fill{height:100%;width:0;background:var(--accent);border-radius:99px;animation:lfill 1.4s ease-in-out infinite;}
 @keyframes lfill{0%{width:0%;margin-left:0}55%{width:100%;margin-left:0}100%{width:0%;margin-left:100%}}
 
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:32px 24px;
+}
+.login-box{
+  width:100%;max-width:340px;
+  display:flex;flex-direction:column;align-items:center;gap:24px;
+}
+.login-logo{
+  font-family:var(--font-display);font-size:26px;font-weight:900;
+  color:#fff;letter-spacing:6px;display:flex;align-items:center;gap:10px;
+}
+.login-gym-name{
+  font-size:13px;color:var(--accent-light);font-weight:600;
+  letter-spacing:.3px;margin-top:-16px;text-align:center;min-height:18px;
+}
+.login-card{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px 24px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.login-field{display:flex;flex-direction:column;gap:6px;}
+.login-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+.login-input{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;
+  font-family:var(--font);outline:none;width:100%;
+  transition:border-color .2s;
+}
+.login-input:focus{border-color:var(--accent);}
+.login-input::placeholder{color:var(--text3);}
+.login-btn{
+  width:100%;padding:14px;background:var(--accent);color:#fff;border:none;
+  border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:var(--font);transition:all .2s;
+  box-shadow:0 0 24px rgba(29,158,117,.35);
+}
+.login-btn:hover{background:#25c48f;transform:translateY(-1px);}
+.login-btn:disabled{opacity:.6;cursor:default;transform:none;}
+.login-error{
+  font-size:12px;color:#f87171;text-align:center;
+  padding:8px 12px;background:rgba(248,113,113,.1);border-radius:8px;
+  border:1px solid rgba(248,113,113,.2);display:none;
+}
+.login-hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.5;}
+
 /* ── ERROR SCREEN ── */
 #error-screen{
   display:none;
@@ -345,6 +393,34 @@ body{
   </svg>
   <div class="loader-logo">VELUM</div>
   <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="22" height="28" viewBox="0 0 20 26"><polygon points="10,1 4,24 10,19 16,24" fill="#5DCAA5"/><polygon points="10,1 16,24 10,19 4,24" fill="#1D9E75" opacity=".55"/><circle cx="10" cy="12" r="2" fill="#04140f"/></svg>
+      VELUM
+    </div>
+    <div class="login-gym-name" id="login-gym-name">Portal de Atletas</div>
+    <div class="login-card">
+      <div class="login-field">
+        <div class="login-label">Código del Gym</div>
+        <input class="login-input" id="login-gym" type="text" placeholder="ej. MOVE" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
+      </div>
+      <div class="login-field">
+        <div class="login-label">Número de Socio</div>
+        <input class="login-input" id="login-numero" type="number" placeholder="ej. 42" min="1" inputmode="numeric"/>
+      </div>
+      <div class="login-field">
+        <div class="login-label">Contraseña</div>
+        <input class="login-input" id="login-pwd" type="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar →</button>
+    </div>
+    <div class="login-hint">¿No sabes tu número? Pregunta en recepción.</div>
+  </div>
 </div>
 
 <!-- Error -->
@@ -814,42 +890,101 @@ function renderHistorial(){
   }).join('');
 }
 
-// ── Init ──
-async function init(){
-  const token = getToken();
-  if(!token){
-    document.getElementById('loading-screen').classList.add('hidden');
-    document.getElementById('error-screen').style.display = 'flex';
+// ── Show portal after successful auth ──
+function showPortal(data){
+  portalData = data;
+  document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
+  renderMembresiaCard(data);
+  renderTodayWorkout(data.programasHoy);
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('login-screen').style.display   = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+
+// ── Login form submit ──
+async function doLogin(){
+  const gym    = (document.getElementById('login-gym').value || '').trim();
+  const numero = (document.getElementById('login-numero').value || '').trim();
+  const pwd    = (document.getElementById('login-pwd').value || '').trim();
+  const errEl  = document.getElementById('login-error');
+  const btn    = document.getElementById('login-btn');
+
+  errEl.style.display = 'none';
+  if(!gym || !numero || !pwd){
+    errEl.textContent = 'Completa todos los campos.';
+    errEl.style.display = 'block';
     return;
   }
 
+  btn.disabled = true;
+  btn.textContent = 'Verificando…';
+
   try{
-    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(token)}`, {
-      headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI' }
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI'
+      },
+      body: JSON.stringify({ gym, numero: parseInt(numero, 10), password: pwd })
     });
-
-    if(!res.ok) throw new Error('Not found');
     const data = await res.json();
-    if(data.error) throw new Error(data.error);
-
-    portalData = data;
-
-    // Set page title
-    document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
-
-    // Render
-    renderMembresiaCard(data);
-    renderTodayWorkout(data.programasHoy);
-
-    // Show app
-    document.getElementById('loading-screen').classList.add('hidden');
-    document.getElementById('app').style.display = 'flex';
-
+    if(!res.ok || data.error){
+      const msg = data.error === 'Contraseña incorrecta' ? 'Contraseña incorrecta.' :
+                  data.error === 'Número de socio no encontrado' ? 'Número de socio no encontrado.' :
+                  data.error === 'Gym no encontrado' ? 'Código de gym incorrecto.' :
+                  'Datos incorrectos. Verifica e intenta de nuevo.';
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+      return;
+    }
+    showPortal(data);
   } catch(err){
-    console.error('Portal error:', err);
-    document.getElementById('loading-screen').classList.add('hidden');
-    document.getElementById('error-screen').style.display = 'flex';
+    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar →';
   }
+}
+
+// ── Init ──
+async function init(){
+  const p     = new URLSearchParams(window.location.search);
+  const token = p.get('t') || p.get('token');
+  const gym   = p.get('gym') || p.get('g') || '';
+
+  // Pre-fill gym code if in URL
+  if(gym){
+    const gymInput = document.getElementById('login-gym');
+    if(gymInput) gymInput.value = gym.toUpperCase();
+  }
+
+  // Token mode — magic link
+  if(token){
+    try{
+      const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(token)}`, {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI' }
+      });
+      if(!res.ok) throw new Error('Not found');
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      showPortal(data);
+      return;
+    } catch(err){
+      // Token invalid — fall through to login
+    }
+  }
+
+  // Show login form
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('login-screen').style.display = 'flex';
+
+  // Allow Enter key to submit
+  ['login-gym','login-numero','login-pwd'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  });
 }
 
 window.addEventListener('DOMContentLoaded', init);

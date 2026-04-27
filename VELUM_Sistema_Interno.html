@@ -3341,6 +3341,36 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
+      <!-- Portal de Atletas -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="settings-section" style="margin-bottom:0;">
+          <div class="settings-section-title">🏃 Portal de Atletas</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
+            Configura el acceso de tus clientes a su portal personal. Ellos entran con su número de socio y la contraseña que tú elijas.
+          </div>
+          <div class="settings-row" style="flex-wrap:wrap;gap:14px;">
+            <div class="field" style="flex:1;min-width:140px;margin:0;">
+              <label>Código del Gym</label>
+              <input class="settings-input" id="cfg-portal-codigo" type="text" placeholder="ej. MOVE" style="text-transform:uppercase;" maxlength="12"/>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px;">Los atletas lo usan para identificar tu gym en el login.</div>
+            </div>
+            <div class="field" style="flex:1;min-width:140px;margin:0;">
+              <label>Contraseña del Portal</label>
+              <input class="settings-input" id="cfg-portal-password" type="text" placeholder="ej. move2025" maxlength="30"/>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px;">Una contraseña para todos tus socios. Cámbiala cuando quieras.</div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="savePortalConfig()">💾 Guardar configuración</button>
+          <div id="portal-link-box" style="display:none;margin-top:16px;padding:12px 14px;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;">🔗 Link para compartir con tus atletas:</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <code id="portal-link-text" style="font-size:12px;color:var(--text);background:rgba(0,0,0,.2);padding:6px 10px;border-radius:6px;flex:1;word-break:break-all;"></code>
+              <button class="btn btn-outline btn-sm" onclick="copyPortalLink()" style="white-space:nowrap;">📋 Copiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Kiosco URL -->
       <div class="card" style="margin-bottom:18px;">
         <div class="settings-section" style="margin-bottom:0;">
@@ -6240,7 +6270,18 @@ function go(id, el){
       }
     }
   }
-  if(id==='settings'){   updateSidebarUser(); if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios(); renderPlanes(); renderStripeSettings(); const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl(); const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——'; renderSidebarCustomizer(); }
+  if(id==='settings'){
+    updateSidebarUser();
+    if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios();
+    renderPlanes(); renderStripeSettings();
+    const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl();
+    const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——';
+    // Portal de Atletas
+    const pc=document.getElementById('cfg-portal-codigo'); if(pc) pc.value=gymConfig.portal_codigo||'';
+    const pp=document.getElementById('cfg-portal-password'); if(pp) pp.value=gymConfig.portal_password||'';
+    updatePortalLinkBox();
+    renderSidebarCustomizer();
+  }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
 
@@ -9321,6 +9362,49 @@ function saveKioskoUrl(){
 }
 function getKioskoUrl(){
   return (localStorage.getItem('move_kiosko_url')||'').trim();
+}
+
+// ─── Portal de Atletas config ──────────────────────────────────────
+async function savePortalConfig(){
+  const codigo   = (document.getElementById('cfg-portal-codigo').value||'').trim().toUpperCase();
+  const password = (document.getElementById('cfg-portal-password').value||'').trim();
+  if(!codigo || !password){ toast('Completa el código y la contraseña del portal','⚠️'); return; }
+
+  const session = getSession();
+  const gym_id  = session?.gym_id || session?.id || '';
+  if(!gym_id){ toast('Error: no se encontró gym_id','✕'); return; }
+
+  const rows = [
+    { gym_id, key: 'portal_codigo',   value: codigo },
+    { gym_id, key: 'portal_password', value: password },
+  ];
+  for(const row of rows){
+    await window.supabaseClient.from('gym_config').upsert(row, { onConflict: 'gym_id,key' });
+  }
+  gymConfig.portal_codigo   = codigo;
+  gymConfig.portal_password = password;
+  updatePortalLinkBox();
+  toast('Configuración del portal guardada ✓','🏃');
+}
+
+function updatePortalLinkBox(){
+  const codigo = gymConfig.portal_codigo || '';
+  const box    = document.getElementById('portal-link-box');
+  const txt    = document.getElementById('portal-link-text');
+  if(!box || !txt) return;
+  if(codigo){
+    const link = `https://myvelum.app/atleta?gym=${codigo.toLowerCase()}`;
+    txt.textContent = link;
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function copyPortalLink(){
+  const txt = document.getElementById('portal-link-text');
+  if(!txt) return;
+  navigator.clipboard.writeText(txt.textContent).then(()=>toast('Link copiado ✓','📋'));
 }
 
 // ─── PIN Kiosco ────────────────────────────────────────────────────
