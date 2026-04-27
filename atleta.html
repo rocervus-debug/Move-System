@@ -360,10 +360,15 @@ body::before{
   background:rgba(29,158,117,.06);
   border-color:rgba(29,158,117,.2);
 }
+.stat-chip.classes{
+  background:rgba(196,146,42,.06);
+  border-color:rgba(196,146,42,.2);
+}
 .stat-num{font-family:var(--fd);font-size:28px;font-weight:900;line-height:1;color:#fff;}
 .stat-chip.visits .stat-num{color:#C4B5FD;}
 .stat-chip.streak .stat-num{color:#FDBA74;}
 .stat-chip.days .stat-num{color:var(--ok);}
+.stat-chip.classes .stat-num{color:#FCD34D;}
 .stat-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
 .stat-icon{font-size:16px;line-height:1;margin-bottom:2px;}
 
@@ -565,16 +570,41 @@ body::before{
 .sheet-close:active{background:rgba(255,255,255,.09);}
 
 /* Profile sheet */
-.ps-user{display:flex;align-items:center;gap:14px;}
+.ps-user{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.ps-avatar-large{
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(29,158,117,.2),rgba(29,158,117,.05));
+  border:2px solid rgba(29,158,117,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:800;color:var(--accent-light);
+  cursor:pointer;position:relative;overflow:hidden;
+  flex-shrink:0;transition:border-color .2s;
+  background-size:cover;background-position:center;
+}
+.ps-avatar-large:hover{border-color:rgba(29,158,117,.6);}
+.ps-photo-overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(2px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;opacity:0;transition:opacity .2s;
+}
+.ps-avatar-large:hover .ps-photo-overlay{opacity:1;}
+.ps-photo-overlay-ico{font-size:20px;}
+.ps-photo-overlay-lbl{font-size:9px;font-weight:700;color:#fff;letter-spacing:.5px;}
+/* keep small avatars for topbar/sidebar */
 .ps-avatar{
   width:52px;height:52px;border-radius:50%;
   background:linear-gradient(135deg,rgba(29,158,117,.2),rgba(29,158,117,.05));
   border:1.5px solid rgba(29,158,117,.3);
   display:flex;align-items:center;justify-content:center;
   font-size:20px;font-weight:800;color:var(--accent-light);flex-shrink:0;
+  background-size:cover;background-position:center;
 }
+.ps-user-info{text-align:center;}
 .ps-name{font-size:16px;font-weight:800;color:#fff;}
 .ps-gym{font-size:11px;color:var(--text3);margin-top:3px;}
+.ps-photo-hint{font-size:10px;color:var(--text3);margin-top:4px;cursor:pointer;}
+.ps-photo-hint:active{color:var(--accent-light);}
 .ps-divider{height:1px;background:rgba(255,255,255,.05);}
 .ps-logout{
   display:flex;align-items:center;gap:12px;padding:14px;
@@ -587,12 +617,12 @@ body::before{
 /* QR sheet */
 .qr-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;text-align:center;}
 .qr-wrap{
-  width:190px;height:190px;border-radius:22px;
-  background:rgba(255,255,255,.99);padding:14px;align-self:center;
+  width:200px;height:200px;border-radius:22px;
+  background:#ffffff;padding:14px;align-self:center;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 0 60px rgba(29,158,117,.3),0 0 0 1px rgba(29,158,117,.3);
 }
-.qr-wrap canvas{width:162px!important;height:162px!important;}
+.qr-wrap canvas,.qr-wrap img{width:172px!important;height:172px!important;display:block;}
 .qr-info{text-align:center;}
 .qr-name{font-family:var(--fd);font-size:20px;font-weight:900;color:#fff;}
 .qr-plan{font-size:11px;color:var(--accent-light);font-weight:600;margin-top:3px;}
@@ -1030,10 +1060,18 @@ body::before{
   <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;">
     <div class="sheet-handle"></div>
     <div class="ps-user">
-      <div class="ps-avatar" id="ps-avatar">?</div>
-      <div>
+      <div class="ps-avatar-large" id="ps-avatar-large" onclick="triggerPhotoUpload()">
+        <span id="ps-avatar-initials">?</span>
+        <div class="ps-photo-overlay">
+          <div class="ps-photo-overlay-ico">📷</div>
+          <div class="ps-photo-overlay-lbl">CAMBIAR</div>
+        </div>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)"/>
+      <div class="ps-user-info">
         <div class="ps-name" id="ps-name">—</div>
         <div class="ps-gym" id="ps-gym">VELUM</div>
+        <div class="ps-photo-hint" onclick="triggerPhotoUpload()">Toca para cambiar foto</div>
       </div>
     </div>
     <div class="ps-divider"></div>
@@ -1045,7 +1083,7 @@ body::before{
   <div class="sheet" style="align-items:center;max-width:520px;margin:0 auto;width:100%;">
     <div class="sheet-handle"></div>
     <div class="qr-label">Mi QR de Entrada</div>
-    <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
+    <div class="qr-wrap"><div id="qr-canvas"></div></div>
     <div class="qr-info">
       <div class="qr-name" id="qr-nombre">—</div>
       <div class="qr-plan" id="qr-plan-lbl">—</div>
@@ -1153,11 +1191,81 @@ function switchView(name){
 // ── Logout ───────────────────────────────────────────
 function doLogout(){
   try{ localStorage.removeItem('velum_session'); }catch(_){}
+  clearProfilePhoto();
   portalData=null;
   closeSheet('profile-sheet');
   $('app').style.display='none';
   $('login-screen').style.display='flex';
   ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
+}
+
+// ── Profile photo ────────────────────────────────────
+function photoKey(){ return portalData?`velum_photo_${portalData.cliente.id}`:''; }
+
+function loadProfilePhoto(){
+  if(!portalData) return;
+  let photo=null;
+  try{ photo=localStorage.getItem(photoKey()); }catch(_){}
+  if(photo) applyProfilePhoto(photo);
+}
+
+function applyProfilePhoto(dataUrl){
+  // Large avatar in profile sheet
+  const big=$('ps-avatar-large');
+  if(big){
+    big.style.backgroundImage=`url(${dataUrl})`;
+    const initEl=$('ps-avatar-initials');
+    if(initEl) initEl.style.display='none';
+  }
+  // Small avatars: topbar + sidebar
+  ['topbar-avatar','sb-avatar'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.style.backgroundImage=`url(${dataUrl})`;
+    el.style.backgroundSize='cover';
+    el.style.backgroundPosition='center';
+    el.textContent='';
+  });
+}
+
+function clearProfilePhoto(){
+  ['topbar-avatar','sb-avatar'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.style.backgroundImage='';
+  });
+  const big=$('ps-avatar-large');
+  if(big){
+    big.style.backgroundImage='';
+    const initEl=$('ps-avatar-initials');
+    if(initEl) initEl.style.display='';
+  }
+}
+
+function triggerPhotoUpload(){
+  const inp=$('photo-input');
+  if(inp){ inp.value=''; inp.click(); }
+}
+
+function handlePhotoUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=240;
+      const cv=document.createElement('canvas');
+      cv.width=size; cv.height=size;
+      const ctx=cv.getContext('2d');
+      // Center-crop to square
+      const min=Math.min(img.width,img.height);
+      const sx=(img.width-min)/2; const sy=(img.height-min)/2;
+      ctx.drawImage(img,sx,sy,min,min,0,0,size,size);
+      const dataUrl=cv.toDataURL('image/jpeg',0.82);
+      try{ localStorage.setItem(photoKey(),dataUrl); }catch(_){}
+      applyProfilePhoto(dataUrl);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── Show portal ──────────────────────────────────────
@@ -1179,12 +1287,14 @@ function showPortal(data){
     else e.textContent=gymName[0].toUpperCase();
   });
   set('gym-name-sm',gymName); set('sb-gym-name',gymName);
-  ['topbar-avatar','sb-avatar','ps-avatar'].forEach(id=>set(id,initials));
+  ['topbar-avatar','sb-avatar'].forEach(id=>set(id,initials));
+  set('ps-avatar-initials',initials);
   set('sb-user-name',data.cliente.nombre.split(' ')[0]);
   set('ps-name',data.cliente.nombre);
   set('ps-gym',gymName+(data.cliente.numero_cliente?` · Socio #${data.cliente.numero_cliente}`:''));
 
   renderHomeData(data);
+  loadProfilePhoto(); // load saved photo after initials are set
   $('loading-screen').classList.add('hidden');
   $('login-screen').style.display='none';
   $('app').style.display='flex';
@@ -1293,6 +1403,7 @@ function statsRowHTML(data){
   const checkins=data.checkins||[];
   const visits=checkins.length;
   const dias=data.cliente.diasRestantes;
+  const paquete=data.paquete;
   const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
   let streak=0;
   if(distinctDates.length){
@@ -1303,7 +1414,26 @@ function statsRowHTML(data){
       else break;
     }
   }
-  const diasNum=dias!==null?dias:0;
+
+  // 3rd chip: clases remaining if package, else days
+  let thirdChip='';
+  if(paquete){
+    const remaining=paquete.clasesRestantes;
+    const low=remaining<=2;
+    thirdChip=`<div class="stat-chip classes">
+      <div class="stat-icon">📦</div>
+      <div class="stat-num" data-count="${remaining}" style="${low?'color:var(--danger)':''}">0</div>
+      <div class="stat-lbl">Clases restantes</div>
+    </div>`;
+  } else {
+    const diasNum=dias!==null?dias:0;
+    thirdChip=`<div class="stat-chip days">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-num" data-count="${diasNum}">${dias!==null?'0':'∞'}</div>
+      <div class="stat-lbl">Días restantes</div>
+    </div>`;
+  }
+
   return `
     <div class="stat-chip visits">
       <div class="stat-icon">📊</div>
@@ -1315,11 +1445,7 @@ function statsRowHTML(data){
       <div class="stat-num" data-count="${streak}">0</div>
       <div class="stat-lbl">Racha días</div>
     </div>
-    <div class="stat-chip days">
-      <div class="stat-icon">⏳</div>
-      <div class="stat-num" data-count="${diasNum}">${dias!==null?'0':'∞'}</div>
-      <div class="stat-lbl">Días restantes</div>
-    </div>
+    ${thirdChip}
   `;
 }
 
@@ -1419,14 +1545,24 @@ window.todayTab=(cid,t)=>{ window[`todayTab_${cid}`]&&window[`todayTab_${cid}`](
 // ── QR ───────────────────────────────────────────────
 function renderQR(){
   if(!portalData) return;
-  const canvas=$('qr-canvas'); canvas.innerHTML='';
+  const container=$('qr-canvas');
+  // Clear any previous QR
+  container.innerHTML='';
   const tok=portalData.cliente.portal_token||'';
   const url=`${SUPABASE_URL}/functions/v1/move-checkin?token=${tok}`;
   try{
-    new QRCode(canvas,{text:url,width:162,height:162,colorDark:'#1D9E75',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+    new QRCode(container,{
+      text:url,
+      width:172,
+      height:172,
+      colorDark:'#0a3828',
+      colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.M
+    });
   }catch(e){
-    canvas.style.cssText='font-size:8px;word-break:break-all;color:#1D9E75;';
-    canvas.textContent=url;
+    // Fallback: show token text
+    container.style.cssText='font-size:7px;word-break:break-all;color:#1D9E75;padding:4px;';
+    container.textContent=url;
   }
   set('qr-nombre',portalData.cliente.nombre);
   set('qr-plan-lbl',(portalData.gym.nombre||'')+(portalData.cliente.plan?' · '+portalData.cliente.plan:''));
