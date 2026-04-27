@@ -78,16 +78,15 @@ FECHAS A CUBRIR (${sesionesTotal} sesiones en ${semanas} semanas):
 ${fechas.join('\n')}
 
 REGLAS DE PROGRAMACIÓN:
-1. Progresión lógica: semana 1 = introducción/base, semana 2 = volumen, semana 3 = intensidad, semana 4 = pico o deload
-2. Varía los estímulos: no repitas el mismo ejercicio principal más de 2 veces seguidas
-3. Cada sesión tiene estructura clara con estas secciones (usa estas etiquetas exactas):
-   WARM UP
-   BLOQUE PRINCIPAL
-   FINALIZADOR
-   COOL DOWN
-4. Incluye cargas, tiempos, distancias o repeticiones específicas cuando aplique
-5. Cada sesión: 200-350 palabras de contenido técnico y accionable
-6. La nota del coach (campo "notas") es opcional — úsala para indicar el enfoque de la sesión en 1 línea (ej: "Sesión de fuerza máxima — enfoque en patrón de jalón")
+1. Progresión lógica: semana 1 = base, semana 2 = volumen, semana 3 = intensidad, semana 4 = deload
+2. Varía el ejercicio principal cada sesión
+3. Cada sesión usa este formato compacto (etiquetas exactas, sin saltos de línea innecesarios):
+   WARM UP: [2-3 ejercicios con duración]
+   BLOQUE PRINCIPAL: [ejercicio principal + 2-3 accesorios con series×reps/carga]
+   FINALIZADOR: [1 circuito o metcon de 8-12 min]
+   COOL DOWN: [1-2 estiramientos clave]
+4. Cada sesión: MÁXIMO 120 palabras en total — sé directo y accionable
+5. "notas": enfoque de la sesión en 1 línea máximo
 
 RESPONDE SOLO CON ESTE JSON (sin texto antes ni después):
 {
@@ -109,7 +108,7 @@ RESPONDE SOLO CON ESTE JSON (sin texto antes ni después):
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 8192,
+        max_tokens: 3000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),
