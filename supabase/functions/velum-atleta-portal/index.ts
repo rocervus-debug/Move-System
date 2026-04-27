@@ -49,31 +49,43 @@ serve(async (req) => {
         });
       }
 
-      // Find gym by portal_codigo
-      const { data: gymRow, error: gErr } = await supabase
+      // Find gym by portal_codigo (key-value store: key='portal_codigo', value=gym_codigo)
+      const { data: codigoRows, error: gErr } = await supabase
         .from('gym_config')
-        .select('gym_id, portal_password, portal_codigo')
-        .ilike('portal_codigo', gym_codigo)
-        .single();
+        .select('gym_id, value')
+        .eq('key', 'portal_codigo')
+        .ilike('value', gym_codigo);
 
-      if (gErr || !gymRow) {
+      if (gErr || !codigoRows || codigoRows.length === 0) {
         return new Response(JSON.stringify({ error: 'Gym no encontrado' }), {
           status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      // Validate password
-      if (!gymRow.portal_password || gymRow.portal_password !== password) {
+      const found_gym_id = codigoRows[0].gym_id;
+
+      // Get portal password for this gym
+      const { data: pwdRow } = await supabase
+        .from('gym_config')
+        .select('value')
+        .eq('gym_id', found_gym_id)
+        .eq('key', 'portal_password')
+        .single();
+
+      if (!pwdRow?.value || pwdRow.value !== password) {
         return new Response(JSON.stringify({ error: 'Contraseña incorrecta' }), {
           status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
+      // Reuse found_gym_id below
+      const gymRow = { gym_id: found_gym_id };
+
       // Find client by numero_cliente within this gym
       const { data, error: cErr } = await supabase
         .from('clientes')
         .select('id, nombre, email, telefono, gym_id, portal_token, numero_cliente')
-        .eq('gym_id', gymRow.gym_id)
+        .eq('gym_id', found_gym_id)
         .eq('numero_cliente', numero)
         .single();
 
@@ -89,11 +101,15 @@ serve(async (req) => {
     const gym_id = cliente.gym_id;
     const today  = new Date().toISOString().slice(0, 10);
 
-    const { data: gymCfg } = await supabase
+    // gym_config is key-value — fetch all keys for this gym
+    const { data: cfgRows } = await supabase
       .from('gym_config')
-      .select('gym_nombre, gym_logo, portal_codigo')
+      .select('key, value')
       .eq('gym_id', gym_id)
-      .single();
+      .in('key', ['gym_nombre', 'gym_logo', 'portal_codigo']);
+
+    const cfg: Record<string, string> = {};
+    (cfgRows || []).forEach((r: any) => { cfg[r.key] = r.value; });
 
     const { data: pagos } = await supabase
       .from('pagos')
@@ -142,6 +158,7 @@ serve(async (req) => {
         email:          cliente.email,
         tel:            cliente.telefono,
         numero_cliente: cliente.numero_cliente,
+        portal_token:   cliente.portal_token,
         plan:           pagoReciente?.plan || null,
         vence,
         activo:         membresiaOk,
@@ -149,9 +166,9 @@ serve(async (req) => {
         membresiaOk,
       },
       gym: {
-        nombre:  gymCfg?.gym_nombre   || 'VELUM Gym',
-        logo:    gymCfg?.gym_logo     || null,
-        codigo:  gymCfg?.portal_codigo || null,
+        nombre:  cfg['gym_nombre']    || 'VELUM Gym',
+        logo:    cfg['gym_logo']      || null,
+        codigo:  cfg['portal_codigo'] || null,
       },
       paquete: paqueteActivo ? {
         plan:            paqueteActivo.plan,

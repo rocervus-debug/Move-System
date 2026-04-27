@@ -372,6 +372,55 @@ body{
   font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;
 }
 
+/* ── TOPBAR PROFILE ── */
+.topbar-avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(29,158,117,.15);border:1.5px solid rgba(29,158,117,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:var(--accent-light);cursor:pointer;
+  flex-shrink:0;transition:background .15s;
+}
+.topbar-avatar:active{background:rgba(29,158,117,.28);}
+
+/* ── PROFILE SHEET ── */
+#profile-sheet{
+  display:none;
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+  align-items:flex-end;
+}
+#profile-sheet.open{display:flex;}
+.profile-sheet-inner{
+  width:100%;background:#0d2119;
+  border-radius:24px 24px 0 0;
+  border-top:1px solid rgba(29,158,117,.2);
+  padding:24px 24px calc(32px + var(--safe-bottom));
+  display:flex;flex-direction:column;gap:20px;
+}
+.profile-sheet-handle{
+  width:36px;height:4px;border-radius:99px;
+  background:rgba(255,255,255,.15);margin:0 auto 4px;
+}
+.profile-sheet-user{display:flex;align-items:center;gap:14px;}
+.profile-sheet-avatar{
+  width:48px;height:48px;border-radius:50%;
+  background:rgba(29,158,117,.15);border:1.5px solid rgba(29,158,117,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:var(--accent-light);flex-shrink:0;
+}
+.profile-sheet-info{}
+.profile-sheet-name{font-size:16px;font-weight:800;color:#fff;}
+.profile-sheet-gym{font-size:11px;color:var(--text3);margin-top:2px;}
+.profile-sheet-divider{height:1px;background:rgba(255,255,255,.06);}
+.profile-sheet-btn{
+  display:flex;align-items:center;gap:12px;
+  padding:14px;background:rgba(248,113,113,.08);
+  border:1px solid rgba(248,113,113,.18);border-radius:12px;
+  font-size:14px;font-weight:700;color:#f87171;
+  cursor:pointer;transition:background .15s;
+}
+.profile-sheet-btn:active{background:rgba(248,113,113,.18);}
+
 /* ── UTILITIES ── */
 .mt-auto{margin-top:auto;}
 .gap-section{height:8px;}
@@ -438,7 +487,26 @@ body{
       <div class="gym-logo" id="gym-logo-el">V</div>
       <span id="gym-nombre-el">VELUM Gym</span>
     </div>
-    <div class="topbar-velum">VELUM</div>
+    <div class="topbar-avatar" id="topbar-avatar-btn" onclick="openProfileSheet()">?</div>
+  </div>
+
+  <!-- Profile sheet -->
+  <div id="profile-sheet" onclick="closeProfileSheet(event)">
+    <div class="profile-sheet-inner">
+      <div class="profile-sheet-handle"></div>
+      <div class="profile-sheet-user">
+        <div class="profile-sheet-avatar" id="ps-avatar">?</div>
+        <div class="profile-sheet-info">
+          <div class="profile-sheet-name" id="ps-name">—</div>
+          <div class="profile-sheet-gym" id="ps-gym">VELUM</div>
+        </div>
+      </div>
+      <div class="profile-sheet-divider"></div>
+      <div class="profile-sheet-btn" onclick="doLogout()">
+        <span>🚪</span>
+        <span>Cerrar sesión</span>
+      </div>
+    </div>
   </div>
 
   <!-- Views -->
@@ -873,19 +941,19 @@ function renderHistorial(){
     el.innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--text3);">Sin check-ins registrados todavía.</div>';
     return;
   }
-  const DISC_ICONS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',default:'✅'};
+  const METODO_ICONS = {QR:'📲',Manual:'✍️',App:'📱',default:'✅'};
   el.innerHTML = checkins.map(c=>{
     const dt = new Date(c.fecha + 'T12:00:00');
     const label = dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
     const hora = c.hora ? c.hora.slice(0,5) : '';
-    const icon = DISC_ICONS[c.tipo] || DISC_ICONS.default;
+    const icon = METODO_ICONS[c.metodo] || METODO_ICONS.default;
     return `<div class="checkin-item">
       <div class="checkin-icon">${icon}</div>
       <div>
         <div class="checkin-date">${label}</div>
         <div class="checkin-time">${hora ? hora+' hrs' : 'Check-in registrado'}</div>
       </div>
-      ${c.tipo ? `<div class="checkin-type">${c.tipo}</div>` : ''}
+      ${c.metodo ? `<div class="checkin-type">${c.metodo}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -894,11 +962,54 @@ function renderHistorial(){
 function showPortal(data){
   portalData = data;
   document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
+
+  // Persist session to localStorage using portal_token
+  const tok = data.cliente.portal_token;
+  if(tok){
+    try{ localStorage.setItem('velum_session', JSON.stringify({ token: tok })); } catch(_){}
+  }
+
+  // Populate topbar avatar + profile sheet
+  const initials = (data.cliente.nombre || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const avatarBtn = document.getElementById('topbar-avatar-btn');
+  if(avatarBtn) avatarBtn.textContent = initials;
+  const psAvatar = document.getElementById('ps-avatar');
+  if(psAvatar) psAvatar.textContent = initials;
+  const psName = document.getElementById('ps-name');
+  if(psName) psName.textContent = data.cliente.nombre;
+  const psGym = document.getElementById('ps-gym');
+  if(psGym) psGym.textContent = data.gym.nombre + (data.cliente.numero_cliente ? ` · Socio #${data.cliente.numero_cliente}` : '');
+
   renderMembresiaCard(data);
   renderTodayWorkout(data.programasHoy);
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('login-screen').style.display   = 'none';
   document.getElementById('app').style.display = 'flex';
+}
+
+// ── Profile sheet ──
+function openProfileSheet(){
+  document.getElementById('profile-sheet').classList.add('open');
+}
+function closeProfileSheet(e){
+  // Close if tapping the backdrop (not the inner panel)
+  if(e.target === document.getElementById('profile-sheet')){
+    document.getElementById('profile-sheet').classList.remove('open');
+  }
+}
+
+// ── Logout ──
+function doLogout(){
+  try{ localStorage.removeItem('velum_session'); } catch(_){}
+  portalData = null;
+  document.getElementById('profile-sheet').classList.remove('open');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  ['login-gym','login-numero','login-pwd'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('loading-screen').classList.add('hidden');
 }
 
 // ── Login form submit ──
@@ -920,11 +1031,12 @@ async function doLogin(){
   btn.textContent = 'Verificando…';
 
   try{
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI';
     const res = await fetch(`${EDGE_BASE}/velum-atleta-portal`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI'
+        'apikey': ANON_KEY
       },
       body: JSON.stringify({ gym, numero: parseInt(numero, 10), password: pwd })
     });
@@ -950,6 +1062,8 @@ async function doLogin(){
 
 // ── Init ──
 async function init(){
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI';
+
   const p     = new URLSearchParams(window.location.search);
   const token = p.get('t') || p.get('token');
   const gym   = p.get('gym') || p.get('g') || '';
@@ -960,23 +1074,41 @@ async function init(){
     if(gymInput) gymInput.value = gym.toUpperCase();
   }
 
-  // Token mode — magic link
+  async function tryToken(tok){
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(tok)}`, {
+      headers: { 'apikey': ANON_KEY }
+    });
+    if(!res.ok) throw new Error('Invalid');
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    return data;
+  }
+
+  // 1) Token mode — magic link from URL
   if(token){
     try{
-      const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(token)}`, {
-        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI' }
-      });
-      if(!res.ok) throw new Error('Not found');
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
+      const data = await tryToken(token);
       showPortal(data);
       return;
-    } catch(err){
-      // Token invalid — fall through to login
+    } catch(_){}
+    // Token invalid — fall through
+  }
+
+  // 2) Stored session — auto-login if returning user
+  let stored = null;
+  try{ stored = JSON.parse(localStorage.getItem('velum_session') || 'null'); } catch(_){}
+  if(stored?.token){
+    try{
+      const data = await tryToken(stored.token);
+      showPortal(data);
+      return;
+    } catch(_){
+      // Stored token expired/invalid — clear and show login
+      try{ localStorage.removeItem('velum_session'); } catch(_){}
     }
   }
 
-  // Show login form
+  // 3) Show login form
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('login-screen').style.display = 'flex';
 
