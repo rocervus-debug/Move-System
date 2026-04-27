@@ -8218,9 +8218,10 @@ function renderClientes(){
   let clientes = [...nombresSet].map(nombre => {
     // Identidad desde tabla clientes
     const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
-    const telefono  = cliRec.telefono || '';
-    const cumpleanos = cliRec.cumpleanos || null;
-    const cliId = cliRec.id || null;
+    const telefono     = cliRec.telefono || '';
+    const cumpleanos   = cliRec.cumpleanos || null;
+    const cliId        = cliRec.id || null;
+    const numeroCliente = cliRec.numero_cliente || null;
 
     // Pagos reales (excluir __sin_pago__)
     const todosPagos = pagos.filter(p=>(p.cliente||'').trim()===nombre && p.notas!=='__sin_pago__');
@@ -8245,7 +8246,7 @@ function renderClientes(){
     const tipo = !total ? 'paquete' : (tienePaquete?'paquete':'pase');
 
     return {
-      nombre, telefono, cumpleanos, cliId,
+      nombre, telefono, cumpleanos, cliId, numeroCliente,
       plan:  ultimo?ultimo.plan:'Sin membresía',
       vence: ultimo?ultimo.vence:null,
       monto: ultimo?ultimo.monto:0,
@@ -8397,6 +8398,7 @@ function renderClientes(){
       ${getAvatarHTML(c.nombre, 42, c.foto_url||null)}
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px;">
+          ${c.numeroCliente ? `<span style="font-size:10px;font-weight:800;color:var(--accent);background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.25);padding:2px 7px;border-radius:6px;letter-spacing:.3px;flex-shrink:0;">#${c.numeroCliente}</span>` : ''}
           <span style="font-size:14px;font-weight:700;color:var(--text);">${esc(c.nombre)}</span>
           <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${cfg.bg};color:${cfg.color};font-weight:700;">${cfg.icon} ${cfg.label}</span>
           ${tipoBadge}
