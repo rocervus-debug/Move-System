@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>VELUM — Mi Acceso</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="VELUM"/>
+<link rel="apple-touch-icon" href="move-icon-180.png"/>
+<meta name="theme-color" content="#04120f"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet"/>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --accent:#1D9E75;
+  --accent-light:#5DCAA5;
+  --accent-glow:rgba(29,158,117,.2);
+  --bg:#04120f;
+  --bg2:#071a14;
+  --card:rgba(255,255,255,.04);
+  --border:rgba(255,255,255,.07);
+  --text:#d0dce8;
+  --text2:#9DC8BB;
+  --text3:#4a7265;
+  --ok:#10e8a0;
+  --warn:#fbbf24;
+  --danger:#f87171;
+  --font:'Barlow',system-ui,sans-serif;
+  --font-display:'Barlow Condensed',system-ui,sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+body{
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(29,158,117,.12), transparent),
+    radial-gradient(ellipse 50% 30% at 80% 80%, rgba(93,202,165,.04), transparent);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── LOADING SCREEN ── */
+#loading-screen{
+  position:fixed;inset:0;z-index:100;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .4s, visibility .4s;
+}
+#loading-screen.hidden{opacity:0;visibility:hidden;}
+.loader-logo{
+  font-family:var(--font-display);font-size:28px;font-weight:900;color:#fff;
+  letter-spacing:7px;text-transform:uppercase;
+}
+.loader-logo svg{filter:drop-shadow(0 0 12px rgba(29,158,117,.5));}
+.loader-bar{width:48px;height:2px;background:rgba(29,158,117,.2);border-radius:99px;overflow:hidden;}
+.loader-fill{height:100%;width:0;background:var(--accent);border-radius:99px;animation:lfill 1.4s ease-in-out infinite;}
+@keyframes lfill{0%{width:0%;margin-left:0}55%{width:100%;margin-left:0}100%{width:0%;margin-left:100%}}
+
+/* ── ERROR SCREEN ── */
+#error-screen{
+  display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:32px 24px;text-align:center;gap:16px;
+}
+.error-icon{font-size:48px;}
+.error-title{font-family:var(--font-display);font-size:22px;font-weight:800;color:#fff;}
+.error-desc{font-size:13px;color:var(--text3);line-height:1.6;max-width:280px;}
+
+/* ── APP WRAPPER ── */
+#app{
+  display:none;
+  flex-direction:column;
+  min-height:100vh;
+  padding-bottom:calc(72px + var(--safe-bottom));
+  padding-top:var(--safe-top);
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 8px;
+}
+.topbar-gym{
+  font-size:11px;font-weight:700;color:var(--accent-light);
+  letter-spacing:.5px;display:flex;align-items:center;gap:6px;
+}
+.gym-logo{
+  width:22px;height:22px;border-radius:6px;
+  background:linear-gradient(135deg,var(--accent),#0F6E56);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:900;color:#fff;overflow:hidden;flex-shrink:0;
+}
+.gym-logo img{width:100%;height:100%;object-fit:cover;}
+.topbar-velum{
+  font-family:var(--font-display);font-size:13px;font-weight:900;
+  color:rgba(255,255,255,.3);letter-spacing:3px;
+}
+
+/* ── GREETING ── */
+.greeting{padding:4px 20px 20px;}
+.greeting-hi{font-size:12px;color:var(--accent-light);font-weight:600;letter-spacing:.3px;}
+.greeting-name{font-family:var(--font-display);font-size:26px;font-weight:900;color:#fff;letter-spacing:.5px;margin-top:1px;}
+
+/* ── MEMBERSHIP CARD ── */
+.membership-card{
+  margin:0 16px 20px;
+  border-radius:18px;
+  padding:20px;
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#1D9E75 0%,#0F6E56 45%,#0a4535 100%);
+  box-shadow:0 8px 32px rgba(0,0,0,.5), 0 0 60px rgba(29,158,117,.15);
+}
+.membership-card::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:120px;height:120px;
+  background:rgba(255,255,255,.07);border-radius:50%;
+}
+.membership-card::after{
+  content:'VELUM';
+  position:absolute;bottom:14px;right:18px;
+  font-family:var(--font-display);font-size:11px;font-weight:900;
+  color:rgba(255,255,255,.15);letter-spacing:4px;
+}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+.card-plan-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:2px;text-transform:uppercase;}
+.card-plan-name{font-size:16px;font-weight:800;color:#fff;margin-top:2px;}
+.card-status-badge{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.15);border-radius:99px;
+  padding:4px 10px;font-size:9px;font-weight:700;color:#fff;
+  backdrop-filter:blur(4px);
+}
+.status-dot{width:6px;height:6px;border-radius:50%;}
+.status-dot.ok{background:#10e8a0;box-shadow:0 0 6px rgba(16,232,160,.7);}
+.status-dot.warn{background:var(--warn);}
+.status-dot.danger{background:var(--danger);}
+.card-bottom{display:flex;align-items:flex-end;justify-content:space-between;}
+.card-days{
+  display:flex;flex-direction:column;
+}
+.card-days-num{font-family:var(--font-display);font-size:36px;font-weight:900;color:#fff;line-height:1;}
+.card-days-lbl{font-size:10px;color:rgba(255,255,255,.6);font-weight:600;margin-top:2px;}
+.card-gym{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:right;}
+.card-vence{font-size:9px;color:rgba(255,255,255,.35);margin-top:2px;text-align:right;}
+
+/* Progress bar on card */
+.card-progress{margin:14px 0 2px;}
+.card-progress-bar{
+  height:4px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;
+}
+.card-progress-fill{height:100%;background:rgba(255,255,255,.7);border-radius:99px;transition:width .8s ease;}
+.card-progress-lbl{display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.45);margin-top:5px;}
+
+/* ── SECTIONS ── */
+.section{padding:0 16px;margin-bottom:22px;}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+.section-title{
+  font-size:10px;font-weight:800;color:var(--text3);
+  text-transform:uppercase;letter-spacing:2px;
+}
+.section-link{font-size:11px;color:var(--accent);font-weight:600;}
+
+/* ── QR CARD ── */
+.qr-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:20px;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+}
+.qr-wrapper{
+  width:150px;height:150px;
+  border-radius:14px;
+  border:1.5px solid rgba(29,158,117,.4);
+  background:rgba(255,255,255,.98);
+  padding:10px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 40px rgba(29,158,117,.15);
+  margin-bottom:14px;
+}
+.qr-wrapper canvas{width:130px!important;height:130px!important;}
+.qr-name{font-size:15px;font-weight:800;color:#fff;margin-bottom:3px;}
+.qr-plan{font-size:11px;color:var(--accent-light);font-weight:600;margin-bottom:10px;}
+.qr-hint{font-size:10px;color:var(--text3);line-height:1.5;}
+
+/* ── TODAY'S WORKOUT ── */
+.workout-card{
+  background:rgba(29,158,117,.06);
+  border:1px solid rgba(29,158,117,.18);
+  border-radius:14px;
+  overflow:hidden;
+}
+.workout-header{
+  padding:14px 16px 10px;
+  border-bottom:1px solid rgba(29,158,117,.1);
+  display:flex;align-items:center;gap:10px;
+}
+.workout-emoji{font-size:22px;}
+.workout-title{font-size:14px;font-weight:800;color:#fff;}
+.workout-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+.workout-disc-badge{
+  margin-left:auto;
+  font-size:8px;font-weight:800;color:var(--accent);
+  background:rgba(29,158,117,.15);border-radius:99px;
+  padding:3px 8px;letter-spacing:.8px;text-transform:uppercase;
+  white-space:nowrap;
+}
+.workout-body{padding:14px 16px;max-height:280px;overflow-y:auto;}
+.workout-section-lbl{
+  font-size:9px;font-weight:800;color:var(--accent);
+  text-transform:uppercase;letter-spacing:1.5px;
+  margin:10px 0 4px;
+}
+.workout-section-lbl:first-child{margin-top:0;}
+.workout-line{font-size:12px;color:var(--text2);line-height:1.7;padding-left:2px;}
+.workout-empty{
+  text-align:center;padding:20px;
+  font-size:12px;color:var(--text3);
+}
+.workout-tabs{
+  display:flex;gap:6px;padding:10px 16px 0;
+  overflow-x:auto;scrollbar-width:none;
+}
+.workout-tab{
+  flex-shrink:0;font-size:10px;font-weight:700;
+  padding:5px 12px;border-radius:99px;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text3);cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.workout-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ── CHECKIN HISTORY ── */
+.checkin-list{display:flex;flex-direction:column;gap:6px;}
+.checkin-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;
+}
+.checkin-icon{
+  width:32px;height:32px;border-radius:9px;
+  background:rgba(29,158,117,.1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;
+}
+.checkin-date{font-size:12px;font-weight:700;color:#fff;}
+.checkin-time{font-size:10px;color:var(--text3);margin-top:1px;}
+.checkin-type{
+  margin-left:auto;font-size:10px;font-weight:700;color:var(--accent-light);
+  background:rgba(29,158,117,.1);border-radius:99px;padding:3px 8px;white-space:nowrap;
+}
+
+/* ── PAQUETE CARD ── */
+.paquete-card{
+  background:rgba(196,146,42,.06);
+  border:1px solid rgba(196,146,42,.2);
+  border-radius:14px;
+  padding:16px;
+}
+.paquete-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.paquete-icon{font-size:22px;}
+.paquete-title{font-size:14px;font-weight:800;color:#fff;}
+.paquete-plan{font-size:10px;color:rgba(196,146,42,.8);font-weight:600;margin-top:2px;}
+.paquete-stats{
+  display:flex;gap:8px;
+}
+.paquete-stat{
+  flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px;text-align:center;
+}
+.paquete-num{font-family:var(--font-display);font-size:28px;font-weight:900;line-height:1;}
+.paquete-lbl{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:3px;}
+.paquete-progress{margin-top:12px;}
+.paquete-bar{height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;}
+.paquete-fill{height:100%;background:linear-gradient(90deg,#C4922A,#fbbf24);border-radius:99px;transition:width .8s ease;}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(4,18,15,.95);
+  backdrop-filter:blur(16px);
+  border-top:1px solid rgba(255,255,255,.07);
+  display:flex;
+  padding-bottom:var(--safe-bottom);
+  z-index:50;
+}
+.bn-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:10px 4px 8px;cursor:pointer;
+  opacity:.35;transition:opacity .15s;
+}
+.bn-item.active{opacity:1;}
+.bn-icon{font-size:20px;line-height:1;margin-bottom:3px;}
+.bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+.bn-item.active .bn-lbl{color:var(--accent);}
+.bn-item.active .bn-icon{filter:drop-shadow(0 0 6px rgba(29,158,117,.5));}
+
+/* ── VIEWS ── */
+.view{display:none;padding-top:8px;}
+.view.active{display:block;}
+
+/* ── IOS ADD TO HOME BANNER ── */
+.ios-banner{
+  margin:0 16px 16px;
+  background:rgba(29,158,117,.08);
+  border:1px solid rgba(29,158,117,.2);
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+}
+.ios-banner-icon{font-size:20px;flex-shrink:0;}
+.ios-banner-text{font-size:11px;color:var(--text2);line-height:1.5;flex:1;}
+.ios-banner-close{
+  font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;
+}
+
+/* ── UTILITIES ── */
+.mt-auto{margin-top:auto;}
+.gap-section{height:8px;}
+
+@media(max-width:390px){
+  .card-days-num{font-size:30px;}
+  .greeting-name{font-size:22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-screen">
+  <svg width="40" height="50" viewBox="0 0 28 36">
+    <polygon points="14,1 6,34 14,27 22,34" fill="#5DCAA5"/>
+    <polygon points="14,1 22,34 14,27 6,34" fill="#1D9E75" opacity=".6"/>
+    <circle cx="14" cy="17" r="2.5" fill="#04120f"/>
+  </svg>
+  <div class="loader-logo">VELUM</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- Error -->
+<div id="error-screen">
+  <div class="error-icon">🔒</div>
+  <div class="error-title">Portal no encontrado</div>
+  <div class="error-desc">Este link no es válido o expiró. Pide a tu gym un nuevo link de acceso.</div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-gym">
+      <div class="gym-logo" id="gym-logo-el">V</div>
+      <span id="gym-nombre-el">VELUM Gym</span>
+    </div>
+    <div class="topbar-velum">VELUM</div>
+  </div>
+
+  <!-- Views -->
+  <!-- ─ HOME ─ -->
+  <div class="view active" id="view-home">
+    <div class="greeting">
+      <div class="greeting-hi" id="greeting-hi">Buenos días 👋</div>
+      <div class="greeting-name" id="atleta-nombre">—</div>
+    </div>
+
+    <!-- Membership Card -->
+    <div class="membership-card" id="membership-card">
+      <div class="card-top">
+        <div>
+          <div class="card-plan-lbl">Membresía</div>
+          <div class="card-plan-name" id="card-plan">—</div>
+        </div>
+        <div class="card-status-badge" id="card-status-badge">
+          <div class="status-dot ok" id="status-dot"></div>
+          <span id="card-status-txt">Activo</span>
+        </div>
+      </div>
+      <div class="card-progress" id="card-progress-wrap">
+        <div class="card-progress-bar">
+          <div class="card-progress-fill" id="card-progress-fill" style="width:70%;"></div>
+        </div>
+        <div class="card-progress-lbl">
+          <span id="card-days-used">—</span>
+          <span id="card-days-total">—</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="card-days">
+          <div class="card-days-num" id="card-days-num">—</div>
+          <div class="card-days-lbl" id="card-days-lbl">días restantes</div>
+        </div>
+        <div>
+          <div class="card-gym" id="card-gym-name">—</div>
+          <div class="card-vence" id="card-vence">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Package if applicable -->
+    <div class="section" id="paquete-section" style="display:none;">
+      <div class="section-header">
+        <div class="section-title">📦 Paquete de Clases</div>
+      </div>
+      <div class="paquete-card">
+        <div class="paquete-header">
+          <div class="paquete-icon">📦</div>
+          <div>
+            <div class="paquete-title" id="paquete-title">—</div>
+            <div class="paquete-plan" id="paquete-plan">—</div>
+          </div>
+        </div>
+        <div class="paquete-stats">
+          <div class="paquete-stat">
+            <div class="paquete-num" id="paquete-restantes" style="color:#10e8a0;">—</div>
+            <div class="paquete-lbl">Restantes</div>
+          </div>
+          <div class="paquete-stat">
+            <div class="paquete-num" id="paquete-usadas" style="color:var(--text3);">—</div>
+            <div class="paquete-lbl">Usadas</div>
+          </div>
+          <div class="paquete-stat">
+            <div class="paquete-num" id="paquete-total" style="color:var(--text2);">—</div>
+            <div class="paquete-lbl">Total</div>
+          </div>
+        </div>
+        <div class="paquete-progress" id="paquete-progress-wrap">
+          <div class="paquete-bar">
+            <div class="paquete-fill" id="paquete-fill" style="width:50%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's workout -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🏋️ Entrenamiento de hoy</div>
+        <div class="section-link" onclick="switchView('programa')" style="cursor:pointer;">Ver mes →</div>
+      </div>
+      <div id="today-workout-container">
+        <div class="workout-empty">No hay programa cargado para hoy.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─ QR CHECK-IN ─ -->
+  <div class="view" id="view-qr">
+    <div class="greeting">
+      <div class="greeting-hi">Mi acceso</div>
+      <div class="greeting-name" style="font-size:20px;">Check-in QR</div>
+    </div>
+    <div class="section">
+      <div class="qr-card">
+        <div class="qr-wrapper">
+          <canvas id="qr-canvas"></canvas>
+        </div>
+        <div class="qr-name" id="qr-nombre">—</div>
+        <div class="qr-plan" id="qr-plan-lbl">—</div>
+        <div class="qr-hint">Muestra este código en la entrada del gym.<br>Se genera de forma segura para tu acceso.</div>
+      </div>
+    </div>
+
+    <!-- iOS Add to Home banner -->
+    <div class="ios-banner" id="ios-banner" style="display:none;">
+      <div class="ios-banner-icon">📲</div>
+      <div class="ios-banner-text"><strong>Agrega VELUM a tu pantalla de inicio</strong> para acceder al QR en 1 toque. Toca <strong>Compartir →</strong> y luego <strong>"En pantalla de inicio"</strong>.</div>
+      <div class="ios-banner-close" onclick="document.getElementById('ios-banner').style.display='none'">✕</div>
+    </div>
+  </div>
+
+  <!-- ─ PROGRAMA ─ -->
+  <div class="view" id="view-programa">
+    <div class="greeting">
+      <div class="greeting-hi">Programa del mes</div>
+      <div class="greeting-name" id="prog-mes-title" style="font-size:20px;">—</div>
+    </div>
+    <div class="section">
+      <!-- Discipline tabs -->
+      <div class="workout-tabs" id="atleta-prog-tabs" style="padding:0;margin-bottom:12px;"></div>
+      <!-- Calendar days with workouts -->
+      <div id="atleta-prog-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ─ HISTORIAL ─ -->
+  <div class="view" id="view-historial">
+    <div class="greeting">
+      <div class="greeting-hi">Mis visitas</div>
+      <div class="greeting-name" style="font-size:20px;">Historial</div>
+    </div>
+    <div class="section">
+      <div class="checkin-list" id="checkin-list">
+        <div style="text-align:center;padding:20px;font-size:12px;color:var(--text3);">Sin check-ins registrados.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="bn-item active" onclick="switchView('home')" id="bn-home">
+      <div class="bn-icon">🏠</div>
+      <div class="bn-lbl">Inicio</div>
+    </div>
+    <div class="bn-item" onclick="switchView('qr')" id="bn-qr">
+      <div class="bn-icon">📲</div>
+      <div class="bn-lbl">QR</div>
+    </div>
+    <div class="bn-item" onclick="switchView('programa')" id="bn-programa">
+      <div class="bn-icon">📅</div>
+      <div class="bn-lbl">Programa</div>
+    </div>
+    <div class="bn-item" onclick="switchView('historial')" id="bn-historial">
+      <div class="bn-icon">🕐</div>
+      <div class="bn-lbl">Historial</div>
+    </div>
+  </div>
+</div>
+
+<!-- QR Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+// ══════════════════════════════
+// VELUM — Athlete Portal
+// ══════════════════════════════
+const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
+const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_ES  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+let portalData = null;
+let activeView = 'home';
+let activeProg = '';
+
+// ── Routing ──
+function getToken(){
+  const p = new URLSearchParams(window.location.search);
+  return p.get('t') || p.get('token');
+}
+
+// ── Views ──
+function switchView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  const v = document.getElementById('view-'+name);
+  const b = document.getElementById('bn-'+name);
+  if(v) v.classList.add('active');
+  if(b) b.classList.add('active');
+  activeView = name;
+  if(name==='qr') renderQR();
+  if(name==='programa') renderProgramaView();
+  if(name==='historial') renderHistorial();
+}
+
+// ── Greeting ──
+function greeting(){
+  const h = new Date().getHours();
+  if(h < 12) return 'Buenos días 👋';
+  if(h < 19) return 'Buenas tardes 👋';
+  return 'Buenas noches 👋';
+}
+
+// ── Render membership card ──
+function renderMembresiaCard(data){
+  const { cliente, gym, paquete } = data;
+
+  // Gym
+  const gymLogoEl = document.getElementById('gym-logo-el');
+  const gymNombreEl = document.getElementById('gym-nombre-el');
+  if(gym.logo){ gymLogoEl.innerHTML = `<img src="${gym.logo}" alt="${gym.nombre}">`; }
+  else { gymLogoEl.textContent = (gym.nombre||'V').charAt(0).toUpperCase(); }
+  if(gymNombreEl) gymNombreEl.textContent = gym.nombre;
+
+  // Greeting
+  document.getElementById('greeting-hi').textContent = greeting();
+  document.getElementById('atleta-nombre').textContent = (cliente.nombre||'').split(' ')[0];
+
+  // Membership card
+  document.getElementById('card-plan').textContent = cliente.plan || 'Membresía';
+  document.getElementById('card-gym-name').textContent = gym.nombre;
+
+  const ok = cliente.membresiaOk;
+  const dias = cliente.diasRestantes;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('card-status-txt');
+
+  if(!ok){
+    dot.className = 'status-dot danger';
+    txt.textContent = 'Vencida';
+    document.getElementById('membership-card').style.background = 'linear-gradient(135deg,#7f1d1d,#450a0a)';
+  } else if(dias !== null && dias <= 7){
+    dot.className = 'status-dot warn';
+    txt.textContent = `Vence pronto`;
+  } else {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'Activo';
+  }
+
+  if(dias !== null){
+    document.getElementById('card-days-num').textContent = dias;
+    document.getElementById('card-days-lbl').textContent = dias === 1 ? 'día restante' : 'días restantes';
+    if(cliente.vence){
+      const dt = new Date(cliente.vence + 'T12:00:00');
+      document.getElementById('card-vence').textContent = 'Vence ' + dt.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+    }
+    // Progress bar (assume 30-day cycle)
+    const pct = Math.max(2, Math.min(100, Math.round((dias / 30) * 100)));
+    document.getElementById('card-progress-fill').style.width = pct+'%';
+    document.getElementById('card-days-used').textContent = `${30 - dias} días usados`;
+    document.getElementById('card-days-total').textContent = `30 días`;
+  } else {
+    document.getElementById('card-progress-wrap').style.display = 'none';
+    document.getElementById('card-days-num').textContent = '∞';
+    document.getElementById('card-days-lbl').textContent = 'sin fecha límite';
+  }
+
+  // Package
+  if(paquete){
+    document.getElementById('paquete-section').style.display = '';
+    document.getElementById('paquete-title').textContent = paquete.plan || 'Paquete de Clases';
+    document.getElementById('paquete-plan').textContent = `${paquete.clasesRestantes} clases disponibles`;
+    document.getElementById('paquete-restantes').textContent = paquete.clasesRestantes;
+    document.getElementById('paquete-usadas').textContent = paquete.clasesUsadas;
+    document.getElementById('paquete-total').textContent = paquete.clasesTotal;
+    const pct = Math.max(2, Math.round((paquete.clasesRestantes / paquete.clasesTotal) * 100));
+    document.getElementById('paquete-fill').style.width = pct+'%';
+    if(paquete.clasesRestantes <= 2){
+      document.getElementById('paquete-restantes').style.color = 'var(--danger)';
+    }
+  }
+}
+
+// ── Render today's workout ──
+function renderTodayWorkout(programasHoy){
+  const container = document.getElementById('today-workout-container');
+  if(!programasHoy || !programasHoy.length){
+    container.innerHTML = '<div class="workout-empty">No hay entrenamiento programado para hoy.</div>';
+    return;
+  }
+
+  // Multiple disciplines? Show tabs
+  let activeDisc = programasHoy[0].tipo;
+  const VELUM_DISC_EMOJIS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥',Calistenia:'🤸',Powerlifting:'🏋️',Halterofilia:'🎽',Spinning:'🚴',Triatlon:'🏊',MMA:'🛡',Kickboxing:'🦶',Movilidad:'🦾',Futbol:'⚽',Basquetbol:'🏀',PrepAtletica:'🏆'};
+
+  function renderWorkoutContent(prog){
+    const txt = (prog.contenido||'').trim();
+    const lines = txt.split('\n');
+    let html = '';
+    lines.forEach(line=>{
+      const t = line.trim();
+      if(!t){ html += '<div style="height:6px;"></div>'; return; }
+      const isHeader = /^(WARM UP|COOL DOWN|A\)|B\)|C\)|BLOQUE|FINALIZADOR|OBJETIVO|ESTRUCTURA|MODALIDAD)/i.test(t) || /^[A-Z\s]{4,}:/.test(t);
+      if(isHeader) html += `<div class="workout-section-lbl">${t}</div>`;
+      else html += `<div class="workout-line">${t}</div>`;
+    });
+    return html;
+  }
+
+  function build(){
+    const emoji = VELUM_DISC_EMOJIS[activeDisc] || '🏋️';
+    const prog = programasHoy.find(p=>p.tipo===activeDisc) || programasHoy[0];
+    let tabs = '';
+    if(programasHoy.length > 1){
+      tabs = `<div class="workout-tabs" style="padding:10px 16px 0;margin-bottom:0;">${
+        programasHoy.map(p=>`<div class="workout-tab${p.tipo===activeDisc?' active':''}" onclick="atletaSwitchWorkout('${p.tipo}')">${VELUM_DISC_EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>`).join('')
+      }</div>`;
+    }
+    container.innerHTML = `<div class="workout-card">
+      ${tabs}
+      <div class="workout-header">
+        <div class="workout-emoji">${emoji}</div>
+        <div>
+          <div class="workout-title">${prog.tipo}</div>
+          <div class="workout-meta">${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>
+        </div>
+        <div class="workout-disc-badge">${prog.tipo}</div>
+      </div>
+      <div class="workout-body">${renderWorkoutContent(prog)}</div>
+    </div>`;
+  }
+
+  window.atletaSwitchWorkout = function(tipo){
+    activeDisc = tipo;
+    build();
+  };
+  build();
+}
+
+// ── Render QR ──
+function renderQR(){
+  if(!portalData) return;
+  const canvas = document.getElementById('qr-canvas');
+  canvas.innerHTML = '';
+  const url = `${SUPABASE_URL}/functions/v1/move-checkin?token=${getToken()}`;
+  try{
+    new QRCode(canvas, {
+      text: url,
+      width: 130, height: 130,
+      colorDark: '#1D9E75',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e){
+    // fallback: show text QR
+    canvas.style.cssText = 'font-size:9px;word-break:break-all;color:#1D9E75;padding:4px;';
+    canvas.textContent = url;
+  }
+  document.getElementById('qr-nombre').textContent = portalData.cliente.nombre;
+  document.getElementById('qr-plan-lbl').textContent = (portalData.gym.nombre || '') + ' · ' + (portalData.cliente.plan || 'Membresía');
+
+  // iOS add to homescreen hint
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone;
+  if(isIOS && !isStandalone && !sessionStorage.getItem('banner_dismissed')){
+    document.getElementById('ios-banner').style.display = 'flex';
+  }
+}
+
+// ── Render programa view ──
+function renderProgramaView(){
+  if(!portalData) return;
+  const now = new Date();
+  document.getElementById('prog-mes-title').textContent = `${MESES_ES[now.getMonth()]} ${now.getFullYear()}`;
+
+  // We don't have full month data in portal — show what we have (today's only for now)
+  // With a future expansion, we'd load the full month. For now, redirect to today.
+  const programasHoy = portalData.programasHoy || [];
+
+  const tabsEl = document.getElementById('atleta-prog-tabs');
+  const listEl = document.getElementById('atleta-prog-list');
+
+  if(!programasHoy.length){
+    tabsEl.innerHTML = '';
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--text3);">No hay programa cargado para este mes todavía.</div>';
+    return;
+  }
+
+  const VELUM_DISC_EMOJIS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥'};
+  const today = now.toISOString().slice(0,10);
+
+  // Tabs
+  activeProg = programasHoy[0].tipo;
+  tabsEl.innerHTML = programasHoy.map(p=>`
+    <div class="workout-tab${p.tipo===activeProg?' active':''}" onclick="atletaProgTab('${p.tipo}')">${VELUM_DISC_EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>
+  `).join('');
+
+  function renderProgList(){
+    const prog = programasHoy.find(p=>p.tipo===activeProg) || programasHoy[0];
+    const lines = (prog.contenido||'').trim().split('\n');
+    let body = '';
+    lines.forEach(line=>{
+      const t = line.trim();
+      if(!t){ body += '<div style="height:5px;"></div>'; return; }
+      const isHeader = /^(WARM UP|COOL DOWN|BLOQUE|FINALIZADOR|OBJETIVO)/i.test(t) || /^[A-Z\s]{4,}:/.test(t);
+      if(isHeader) body += `<div class="workout-section-lbl">${t}</div>`;
+      else body += `<div class="workout-line">${t}</div>`;
+    });
+    const dt = new Date(today + 'T12:00:00');
+    const dayLabel = dt.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+    listEl.innerHTML = `
+      <div style="padding:12px 14px;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.18);border-radius:12px;margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
+          Hoy · ${dayLabel}
+        </div>
+        <div style="font-size:10px;color:var(--text3);">(Más días disponibles cuando el gym genere el mes completo)</div>
+      </div>
+      <div class="workout-card"><div class="workout-body">${body}</div></div>
+    `;
+  }
+
+  window.atletaProgTab = function(tipo){
+    activeProg = tipo;
+    document.querySelectorAll('#atleta-prog-tabs .workout-tab').forEach(t=>{
+      t.classList.toggle('active', t.textContent.includes(tipo));
+    });
+    renderProgList();
+  };
+  renderProgList();
+}
+
+// ── Render historial ──
+function renderHistorial(){
+  if(!portalData) return;
+  const checkins = portalData.checkins || [];
+  const el = document.getElementById('checkin-list');
+  if(!checkins.length){
+    el.innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--text3);">Sin check-ins registrados todavía.</div>';
+    return;
+  }
+  const DISC_ICONS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',default:'✅'};
+  el.innerHTML = checkins.map(c=>{
+    const dt = new Date(c.fecha + 'T12:00:00');
+    const label = dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+    const hora = c.hora ? c.hora.slice(0,5) : '';
+    const icon = DISC_ICONS[c.tipo] || DISC_ICONS.default;
+    return `<div class="checkin-item">
+      <div class="checkin-icon">${icon}</div>
+      <div>
+        <div class="checkin-date">${label}</div>
+        <div class="checkin-time">${hora ? hora+' hrs' : 'Check-in registrado'}</div>
+      </div>
+      ${c.tipo ? `<div class="checkin-type">${c.tipo}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Init ──
+async function init(){
+  const token = getToken();
+  if(!token){
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('error-screen').style.display = 'flex';
+    return;
+  }
+
+  try{
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(token)}`, {
+      headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxNDY1NTYsImV4cCI6MjA1MjcyMjU1Nn0.Yy4pFfFLxknhBKMqBqxsJMVB0KFaaCz5aBgaK2E29OI' }
+    });
+
+    if(!res.ok) throw new Error('Not found');
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+
+    portalData = data;
+
+    // Set page title
+    document.title = `${data.cliente.nombre.split(' ')[0]} — VELUM`;
+
+    // Render
+    renderMembresiaCard(data);
+    renderTodayWorkout(data.programasHoy);
+
+    // Show app
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+
+  } catch(err){
+    console.error('Portal error:', err);
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('error-screen').style.display = 'flex';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
