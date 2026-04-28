@@ -6806,8 +6806,8 @@ function buildNotifAlerts(){
 
   const alerts = [];
 
-  // ── Membresías vencidas ──
-  const vencidas = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now && p.notas!=='__sin_pago__');
+  // ── Membresías vencidas (excluir pases de día — se usan el mismo día) ──
+  const vencidas = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now && p.notas!=='__sin_pago__' && !esPaseDia(p.plan));
   if(vencidas.length){
     alerts.push({
       type:'danger', icon:'🔴', iconCls:'notif-icon-danger',
@@ -6817,9 +6817,9 @@ function buildNotifAlerts(){
     });
   }
 
-  // ── Por vencer en 3 días ──
+  // ── Por vencer en 3 días (excluir pases de día) ──
   const pronto = pagos.filter(p=>{
-    if(!p.vence||p.vence==='—') return false;
+    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false;
     const v=new Date(p.vence+'T12:00:00'); return v>=now && v<=in3;
   });
   if(pronto.length){
@@ -6946,10 +6946,10 @@ function renderRetencion(){
     return new Date(ultPago.vence+'T12:00:00') >= hoy;
   }).length;
 
-  // Clientes en riesgo: vencido hace +15 días sin renovar
+  // Clientes en riesgo: vencido hace +15 días sin renovar (excluir pases de día)
   const hace15 = new Date(hoy); hace15.setDate(hoy.getDate()-15);
   const enRiesgo = todosClientes.map(nombre=>{
-    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
     const ult = ps[0]||null;
     if(!ult||!ult.vence||ult.vence==='—') return null;
     const vDate = new Date(ult.vence+'T12:00:00');
@@ -8660,12 +8660,13 @@ function renderClientes(){
     const ultimo = pagosOrd[0]||null;
     const total  = todosPagos.length;
 
-    // Estado membresía
+    // Estado membresía (pases de día nunca se marcan como vencidos)
     let estado = 'sin-fecha', diff = null;
     if(ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'){
       const vDate = new Date(ultimo.vence+'T12:00:00');
       diff = Math.ceil((vDate-hoy)/(1000*60*60*24));
-      estado = diff<0?'vencido':diff<=14?'por-vencer':'activo';
+      if(esPaseDia(ultimo.plan)) estado = diff<0?'sin-fecha':'activo';
+      else estado = diff<0?'vencido':diff<=14?'por-vencer':'activo';
     }
 
     // Tipo
@@ -8933,12 +8934,13 @@ function openClientePanel(nombreCliente){
   const totalPagado = historial.reduce((s,p)=>s+p.monto,0);
   const primerPago  = historial[historial.length-1]||null;
 
-  // Estado membresía
+  // Estado membresía (pases de día nunca se marcan como vencidos)
   let estado='sin-fecha', diff=null;
   if(ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'){
     const vDate=new Date(ultimo.vence+'T12:00:00');
     diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
-    estado= diff<0?'vencido':diff<=14?'por-vencer':'activo';
+    if(esPaseDia(ultimo.plan)) estado = diff<0?'sin-fecha':'activo';
+    else estado= diff<0?'vencido':diff<=14?'por-vencer':'activo';
   }
   const esCfg={
     activo:      {color:'var(--ok)',     label:'Activo',     icon:'✅'},
@@ -9321,6 +9323,7 @@ function waEnMasa(){
     const tel=(p.telefono||'').replace(/\D/g,'');
     if(tel.length!==10) return false; // sin teléfono, skip
     if(!p.vence||p.vence.length<10) return false;
+    if(esPaseDia(p.plan)) return false; // pases de día no se notifican como vencidos
     const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
     return diff<=14; // vencidos o por vencer en 14 días
   });
@@ -9354,7 +9357,7 @@ function abrirRenovacionMasiva(){
   const nombresSet = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
   const candidatos = [];
   [...nombresSet].forEach(nombre=>{
-    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
     const ult = ps[0]||null;
     if(!ult) return;
     const vDate = new Date(ult.vence+'T12:00:00');
