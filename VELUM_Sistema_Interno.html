@@ -2238,6 +2238,125 @@ select option{background:#0d1a16;color:var(--text);}
   .nav-item .nav-icon { width: 20px !important; height: 20px !important; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   FORGE v9 — Mobile UX: FAB, filtros, view-hdr, tabla sticky, VA
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Bloque A: FAB + Cliente ── */
+#fab-nuevo-cliente {
+  display: none; /* solo visible en mobile via media query */
+}
+@media (max-width: 768px) {
+  /* Ocultar fila de acciones — reemplazada por FAB + topbar overflow */
+  #clientes-action-row { display: none !important; }
+
+  /* FAB flotante + Cliente */
+  #fab-nuevo-cliente {
+    display: flex !important;
+    position: fixed;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    z-index: 200;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 26px;
+    font-weight: 300;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(29,158,117,.55), 0 1px 4px rgba(0,0,0,.4);
+    cursor: pointer;
+    border: none;
+    transition: transform .18s, box-shadow .18s;
+  }
+  #fab-nuevo-cliente:active { transform: scale(.93); box-shadow: 0 2px 10px rgba(29,158,117,.4); }
+
+  /* Menú overflow de acciones mobile */
+  #cli-mob-actions {
+    display: flex !important;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-bottom: 10px;
+  }
+  #cli-mob-actions::-webkit-scrollbar { display: none; }
+  #cli-mob-actions .btn { white-space: nowrap; flex-shrink: 0; }
+
+  /* ── Bloque A: Filtros → rails horizontales scrollables ── */
+  #tabs-cli-tipo, #tabs-cli-estado {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+    gap: 5px !important;
+    padding-bottom: 2px;
+    position: relative;
+  }
+  #tabs-cli-tipo::-webkit-scrollbar,
+  #tabs-cli-estado::-webkit-scrollbar { display: none; }
+
+  /* Shadow hint derecho en filtros — indica que hay más opciones */
+  .cli-filter-wrap { position: relative; }
+  .cli-filter-wrap::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 2px;
+    width: 32px;
+    background: linear-gradient(to left, var(--bg) 20%, transparent);
+    pointer-events: none;
+  }
+
+  /* Labels de filtros — ocultar en mobile para ahorrar espacio */
+  .cli-filter-label { display: none !important; }
+
+  /* Márgenes compactos en filtros mobile */
+  .cli-filter-block { margin-bottom: 6px !important; }
+
+  /* ── Bloque B: View-hdr mobile wrap ── */
+  .view-hdr { flex-wrap: wrap !important; gap: 8px !important; }
+  .view-hdr-right {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .view-search { width: 100% !important; max-width: 100% !important; }
+
+  /* Search de Clientes full-width en mobile */
+  #clientes-search { max-width: 100% !important; }
+  .sh > div[style*="max-width"] { max-width: 100% !important; flex: 1 1 100% !important; }
+
+  /* ── Bloque B: topbar VA FAB — desplazar izquierda para no solapar nav ── */
+  #va-btn { right: 68px !important; }
+  #va-chat { right: 68px !important; }
+
+  /* ── Bloque C: Tabla — columna de acción sticky derecha ── */
+  .tbl td:last-child, .tbl th:last-child {
+    position: sticky;
+    right: 0;
+    background: var(--card);
+    box-shadow: -3px 0 8px rgba(0,0,0,.25);
+    z-index: 2;
+  }
+  /* Header cell de acción */
+  .tbl th:last-child {
+    background: rgba(255,255,255,.04);
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* ── Bloque C: Shadow hint filtros en 480px también ── */
+@media (max-width: 480px) {
+  .cli-filter-wrap::after { width: 24px; }
+  /* KPI label legible a 480px */
+  .kpi-label { font-size: 9px !important; letter-spacing: -.2px !important; }
+}
+
 /* ── Clientes: tabs de filtro ── */
 .cli-tab-tipo, .cli-tab-estado {
   padding: 6px 14px;
@@ -3161,8 +3280,8 @@ select option{background:#0d1a16;color:var(--text);}
       <!-- KPIs -->
       <div id="clientes-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;"></div>
 
-      <!-- Acciones rápidas -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+      <!-- Acciones rápidas — desktop -->
+      <div id="clientes-action-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
         <button class="btn btn-sm btn-wa btn-icon" onclick="waEnMasa()" id="btn-wa-masa">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
           WA vencidos
@@ -3180,25 +3299,46 @@ select option{background:#0d1a16;color:var(--text);}
         <button class="btn btn-sm btn-primary btn-icon" onclick="openModal('solo-cliente')">+ Cliente</button>
       </div>
 
+      <!-- Acciones rápidas — mobile (rail scrollable) -->
+      <div id="cli-mob-actions" style="display:none;">
+        <button class="btn btn-sm btn-wa btn-icon" onclick="waEnMasa()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+          WA
+        </button>
+        <button class="btn btn-sm btn-export btn-icon" onclick="exportarClientesCSV()">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+        <button class="btn btn-sm btn-xlsx btn-icon" onclick="exportarClientesXLSX()">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Excel
+        </button>
+        <button class="btn btn-sm btn-icon" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.28);" onclick="abrirRenovacionMasiva()">🔄 Renovar</button>
+        <button class="btn btn-sm btn-icon" style="background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.22);" onclick="launchKiosco()">🖥️ Kiosco</button>
+      </div>
+
+      <!-- FAB + Cliente (solo mobile, posición fixed via CSS) -->
+      <button id="fab-nuevo-cliente" onclick="openModal('solo-cliente')" aria-label="Nuevo cliente">+</button>
+
       <!-- Filtro por TIPO (paquete vs pase) -->
-      <div style="margin-bottom:8px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">Tipo de cliente</div>
+      <div class="cli-filter-block cli-filter-wrap" style="margin-bottom:8px;">
+        <div class="cli-filter-label" style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">Tipo de cliente</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="tabs-cli-tipo">
-          <button class="cli-tab-tipo active" data-tipo="todos"    onclick="setCliTipo('todos',this)">👥 Todos los tipos</button>
-          <button class="cli-tab-tipo"         data-tipo="paquete" onclick="setCliTipo('paquete',this)">🏋️ Paquetes & Membresías</button>
+          <button class="cli-tab-tipo active" data-tipo="todos"    onclick="setCliTipo('todos',this)">👥 Todos</button>
+          <button class="cli-tab-tipo"         data-tipo="paquete" onclick="setCliTipo('paquete',this)">🏋️ Membresías</button>
           <button class="cli-tab-tipo"         data-tipo="pase"    onclick="setCliTipo('pase',this)">🎫 Pase de Día</button>
         </div>
       </div>
 
       <!-- Filtro por ESTADO -->
-      <div style="margin-bottom:16px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">Estado de membresía</div>
+      <div class="cli-filter-block cli-filter-wrap" style="margin-bottom:16px;">
+        <div class="cli-filter-label" style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">Estado de membresía</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="tabs-cli-estado">
-          <button class="cli-tab-estado active" data-estado="todos"      onclick="setCliEstado('todos',this)">Todos</button>
-          <button class="cli-tab-estado"         data-estado="activo"    onclick="setCliEstado('activo',this)">✅ Activos</button>
+          <button class="cli-tab-estado active" data-estado="todos"       onclick="setCliEstado('todos',this)">Todos</button>
+          <button class="cli-tab-estado"         data-estado="activo"     onclick="setCliEstado('activo',this)">✅ Activos</button>
           <button class="cli-tab-estado"         data-estado="por-vencer" onclick="setCliEstado('por-vencer',this)">⚠️ Por vencer</button>
-          <button class="cli-tab-estado"         data-estado="vencido"   onclick="setCliEstado('vencido',this)">🔴 Vencidos</button>
-          <button class="cli-tab-estado"         data-estado="sin-fecha" onclick="setCliEstado('sin-fecha',this)">📅 Sin fecha</button>
+          <button class="cli-tab-estado"         data-estado="vencido"    onclick="setCliEstado('vencido',this)">🔴 Vencidos</button>
+          <button class="cli-tab-estado"         data-estado="sin-fecha"  onclick="setCliEstado('sin-fecha',this)">📅 Sin fecha</button>
         </div>
       </div>
 
