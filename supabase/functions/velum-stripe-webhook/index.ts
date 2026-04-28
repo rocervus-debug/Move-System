@@ -84,29 +84,86 @@ serve(async (req) => {
 
   // ── Handle checkout.session.completed ────────────────────────────────
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Record<string, unknown>;
+    const session     = event.data.object as Record<string, unknown>;
+    const sessionId   = session.id as string;
+    const amountTotal = (session.amount_total as number) / 100;
+    const currency    = (session.currency as string) || 'mxn';
+    const metadata    = (session.metadata as Record<string, string>) || {};
+    const mode        = session.mode as string;
+    const today       = new Date().toISOString().slice(0, 10);
 
+    // ── PATH A: Athlete portal purchase (destination charge via velum-atleta-checkout)
+    //    Identified by portal_token + gym_id in metadata
+    if (metadata.portal_token && metadata.gym_id) {
+      const portalToken = metadata.portal_token;
+      const gymId       = metadata.gym_id;
+      const planNombre  = metadata.plan_nombre  || 'Plan';
+      const planTipo    = metadata.plan_tipo    || 'membresia';
+      const planDias    = parseInt(metadata.plan_dias   || '0', 10);
+      const planClases  = parseInt(metadata.plan_clases || '0', 10);
+
+      // Idempotency — check across all gyms since destination charges have no gym in header
+      const { data: existing } = await db
+        .from('pagos').select('id').eq('stripe_session_id', sessionId).maybeSingle();
+      if (existing) return json({ ok: true, skipped: 'duplicate' });
+
+      // Look up the client
+      const { data: cliente } = await db
+        .from('clientes').select('id, nombre')
+        .eq('portal_token', portalToken).maybeSingle();
+
+      if (!cliente) {
+        console.error('Portal purchase: cliente not found for token', portalToken);
+        return json({ ok: true, skipped: 'cliente_not_found' });
+      }
+
+      // Vence date for memberships
+      let vence: string | null = null;
+      if (planTipo === 'membresia' && planDias > 0) {
+        const venceDate = new Date();
+        venceDate.setDate(venceDate.getDate() + planDias);
+        vence = venceDate.toISOString().slice(0, 10);
+      }
+
+      const { error: insertErr } = await db.from('pagos').insert({
+        gym_id:            gymId,
+        cliente:           cliente.nombre,
+        plan:              planNombre,
+        monto:             amountTotal,
+        fecha:             today,
+        vence:             vence,
+        clases_totales:    planTipo === 'paquete' && planClases > 0 ? planClases : null,
+        clases_usadas:     planTipo === 'paquete' && planClases > 0 ? 0           : null,
+        metodo:            'stripe',
+        estado:            'Activo',
+        notas:             `[PORTAL] session=${sessionId} plan=${metadata.plan_id || ''}`,
+        stripe_session_id: sessionId,
+      });
+
+      if (insertErr) {
+        console.error('Portal purchase insert error:', insertErr);
+        return json({ error: 'DB insert failed' }, 500);
+      }
+
+      console.log(`✅ Portal pago — gym ${gymId} — ${cliente.nombre} — ${planNombre} — $${amountTotal}`);
+      return json({ ok: true, registered: true, source: 'portal' });
+    }
+
+    // ── PATH B: Regular gym checkout (direct charge on connected account)
     const stripeAccountId = req.headers.get('stripe-account') || (session.on_behalf_of as string) || null;
-    const sessionId       = session.id as string;
-    const amountTotal     = (session.amount_total as number) / 100; // cents → pesos
-    const currency        = session.currency as string || 'mxn';
-    const clienteEmail    = (session.customer_email as string) || (session.customer_details as Record<string, unknown>)?.email as string || '';
-    const clienteNombre   = (session.metadata as Record<string, unknown>)?.cliente as string || clienteEmail || 'Cliente';
-    const descripcion     = (session.metadata as Record<string, unknown>)?.descripcion as string ||
-                            ((session.line_items as Record<string, unknown>[])?.[0] as Record<string, unknown>)?.description as string || 'Pago Stripe';
-    const mode            = session.mode as string; // 'payment' | 'subscription'
+    const clienteEmail    = (session.customer_email as string)
+      || ((session.customer_details as Record<string, unknown>)?.email as string) || '';
+    const clienteNombre   = metadata?.cliente || clienteEmail || 'Cliente';
+    const descripcion     = metadata?.descripcion || 'Pago Stripe';
 
-    // Find the gym by stripe_account_id
     if (!stripeAccountId) {
       console.error('No stripe_account in webhook — cannot find gym');
       return json({ ok: true, skipped: 'no_account_id' });
     }
 
     const { data: gymConfigRow } = await db
-      .from('gym_config')
-      .select('gym_id')
-      .eq('stripe_account_id', stripeAccountId)
-      .maybeSingle();
+      .from('gym_config').select('gym_id')
+      .eq('stripe_account_id', stripeAccountId).maybeSingle();
 
     if (!gymConfigRow?.gym_id) {
       console.error('Gym not found for stripe_account_id:', stripeAccountId);
@@ -115,29 +172,20 @@ serve(async (req) => {
 
     const gymId = gymConfigRow.gym_id;
 
-    // Avoid duplicate inserts (idempotency)
     const { data: existing } = await db
-      .from('pagos')
-      .select('id')
-      .eq('gym_id', gymId)
-      .eq('stripe_session_id', sessionId)
-      .maybeSingle();
+      .from('pagos').select('id')
+      .eq('gym_id', gymId).eq('stripe_session_id', sessionId).maybeSingle();
+    if (existing) return json({ ok: true, skipped: 'duplicate' });
 
-    if (existing) {
-      return json({ ok: true, skipped: 'duplicate' });
-    }
-
-    // Insert payment record
-    const today = new Date().toISOString().slice(0, 10);
     const { error: insertError } = await db.from('pagos').insert({
-      gym_id:           gymId,
-      cliente:          clienteNombre,
-      plan:             descripcion,
-      monto:            amountTotal,
-      fecha:            today,
-      metodo:           'stripe',
-      estado:           'Activo',
-      notas:            `[STRIPE] session=${sessionId} mode=${mode} email=${clienteEmail}`,
+      gym_id:            gymId,
+      cliente:           clienteNombre,
+      plan:              descripcion,
+      monto:             amountTotal,
+      fecha:             today,
+      metodo:            'stripe',
+      estado:            'Activo',
+      notas:             `[STRIPE] session=${sessionId} mode=${mode} email=${clienteEmail}`,
       stripe_session_id: sessionId,
     });
 
@@ -147,7 +195,7 @@ serve(async (req) => {
     }
 
     console.log(`✅ Pago registrado — gym ${gymId} — ${clienteNombre} — $${amountTotal} ${currency.toUpperCase()}`);
-    return json({ ok: true, registered: true });
+    return json({ ok: true, registered: true, source: 'gym' });
   }
 
   // ── Handle invoice.payment_succeeded (subscriptions) ─────────────────

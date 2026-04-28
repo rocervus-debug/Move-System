@@ -502,6 +502,9 @@ body{
   0%  {transform:translate(0,0) rotate(0deg);opacity:1;}
   100%{transform:translate(var(--cx,0px),100vh) rotate(720deg);opacity:0;}
 }
+@keyframes hero-orb1{from{transform:translate(0,0) scale(1);}to{transform:translate(20px,-15px) scale(1.15);}}
+@keyframes hero-orb2{from{transform:translate(0,0) scale(1);}to{transform:translate(-18px,12px) scale(1.1);}}
+@keyframes mas-slide-up{from{transform:translateY(100%);opacity:.6;}to{transform:translateY(0);opacity:1;}}
 
 /* ══════════════════════════════════
    COMPONENTS
@@ -510,12 +513,14 @@ body{
 /* KPI Grid */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
 .kpi-card{
-  background:rgba(12,12,20,.9);
-  backdrop-filter:blur(8px);
+  background:rgba(255,255,255,.03);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
   border-radius:var(--radius);
   padding:20px 22px;
   border:1px solid rgba(255,255,255,.07);
-  box-shadow:var(--shadow);
+  border-top:1px solid rgba(255,255,255,.11);
+  box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.05);
   position:relative;overflow:hidden;
   transition:box-shadow .25s, transform .25s, border-color .25s;
 }
@@ -553,15 +558,17 @@ body{
 
 /* Card */
 .card{
-  background:rgba(15,15,26,.85);
-  backdrop-filter:blur(8px);
+  background:rgba(255,255,255,.028);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
   border-radius:var(--radius);
   border:1px solid rgba(255,255,255,.07);
+  border-top:1px solid rgba(255,255,255,.12);
   padding:22px;
-  box-shadow:var(--shadow), 0 0 0 1px rgba(29,158,117,.03) inset;
+  box-shadow:var(--shadow), 0 0 0 1px rgba(29,158,117,.03) inset, inset 0 1px 0 rgba(255,255,255,.07);
   transition:border-color .2s, box-shadow .2s;
 }
-.card:hover{border-color:rgba(29,158,117,.14);box-shadow:var(--shadow-md), 0 0 0 1px rgba(29,158,117,.06) inset;}
+.card:hover{border-color:rgba(29,158,117,.18);box-shadow:var(--shadow-md), 0 0 0 1px rgba(29,158,117,.08) inset, 0 0 40px rgba(29,158,117,.05);}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
 .card-title{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);letter-spacing:.3px;display:flex;align-items:center;gap:8px;}
 .card-sub{font-size:11px;color:var(--text3);}
@@ -570,6 +577,60 @@ body{
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
 .g-6040{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;}
+
+/* ── KPI primary hero row ── */
+.kpi-grid-primary .kpi-card{
+  background:rgba(29,158,117,.055);
+  border-color:rgba(29,158,117,.15);
+  border-top-color:rgba(93,202,165,.28);
+  padding:24px 26px;
+  box-shadow:0 4px 28px rgba(0,0,0,.35), 0 0 0 1px rgba(29,158,117,.1) inset, inset 0 1px 0 rgba(93,202,165,.12);
+}
+.kpi-grid-primary .kpi-value{font-size:38px;}
+.kpi-grid-primary .kpi-card:hover{
+  background:rgba(29,158,117,.09);
+  border-color:rgba(29,158,117,.3);
+  box-shadow:0 8px 40px rgba(0,0,0,.4), 0 0 60px rgba(29,158,117,.08);
+}
+
+/* ── Sidebar collapse (desktop) ── */
+.sidebar{position:relative;transition:width .28s cubic-bezier(.4,0,.2,1);}
+.sidebar-collapsed{width:68px !important;}
+.sidebar-collapsed .logo-velum-wordmark,
+.sidebar-collapsed .logo-tagline,
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .nav-badge,
+.sidebar-collapsed .sidebar-bottom .user-name,
+.sidebar-collapsed .sidebar-bottom .user-role,
+.sidebar-collapsed #sidebar-mode-label{ display:none !important; }
+.sidebar-collapsed .nav-item{justify-content:center;padding:10px 8px;}
+.sidebar-collapsed .nav-item span:last-child:not(.nav-icon){display:none;}
+.sidebar-collapsed .logo{padding:20px 14px;justify-content:center;}
+.sidebar-collapsed .logo-velum{justify-content:center;}
+.sidebar-collapse-btn{
+  position:absolute;top:50%;right:-11px;transform:translateY(-50%);
+  width:22px;height:22px;border-radius:50%;
+  background:var(--sidebar-bg);border:1px solid rgba(29,158,117,.35);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--accent);font-size:10px;font-weight:800;
+  box-shadow:0 2px 16px rgba(0,0,0,.6);
+  transition:all .18s;z-index:60;line-height:1;
+  user-select:none;
+}
+.sidebar-collapse-btn:hover{background:rgba(29,158,117,.2);box-shadow:0 0 12px rgba(29,158,117,.5);}
+.sidebar-collapsed .sidebar-collapse-btn{right:-11px;}
+
+/* ── Mobile "Más" item — hidden on desktop ── */
+.mob-mas-item{display:none !important;}
+
+/* ── Body gradient v4 — deeper with emerald accent ── */
+body{
+  background-image:
+    radial-gradient(ellipse at 10% 10%, rgba(29,158,117,.12) 0%, transparent 52%),
+    radial-gradient(ellipse at 90% 85%, rgba(93,202,165,.06) 0%, transparent 52%),
+    radial-gradient(ellipse at 50% 0%, rgba(15,110,86,.09) 0%, transparent 45%),
+    radial-gradient(ellipse at 70% 40%, rgba(4,52,44,.5) 0%, transparent 60%);
+}
 
 /* Badges */
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.3px;white-space:nowrap;border:1px solid transparent;}
@@ -1619,12 +1680,21 @@ select option{background:#10101c;color:var(--text);}
   /* Toast above bottom nav */
   .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); right: 12px; left: 12px; right: 12px; }
 
+  /* ── Mobile nav: hide secondary items, show "Más" ── */
+  .nav-item.mob-hidden { display: none !important; }
+  .mob-mas-item { display: flex !important; }
+  /* Hide desktop collapse button on mobile */
+  .sidebar-collapse-btn { display: none !important; }
+
   /* ──────────── KPI cards ──────────── */
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .kpi-card { padding: 12px 14px; border-radius: 12px; }
   .kpi-value { font-size: 22px; }
   .kpi-label { font-size: 10px; }
   .kpi-meta { font-size: 10px; }
+  /* Primary KPIs on mobile — slightly more prominent */
+  .kpi-grid-primary .kpi-card { padding: 14px 16px; }
+  .kpi-grid-primary .kpi-value { font-size: 26px; }
 
   /* ──────────── Dashboard ──────────── */
   .dash-row { flex-direction: column; gap: 12px; }
@@ -2201,11 +2271,11 @@ select option{background:#10101c;color:var(--text);}
 
     <div class="nav-section">
       <div class="nav-label">Ventas</div>
-      <div class="nav-item" id="nav-crm" onclick="go('crm',this)">
+      <div class="nav-item mob-hidden" id="nav-crm" onclick="go('crm',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> CRM & Prospectos
         <span class="nav-badge" id="badge-leads">0</span>
       </div>
-      <div class="nav-item" id="nav-pipeline" onclick="go('pipeline',this)">
+      <div class="nav-item mob-hidden" id="nav-pipeline" onclick="go('pipeline',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="7" rx="1"/></svg></span> Pipeline
       </div>
       <div class="nav-item" id="nav-pagos" onclick="go('pagos',this)">
@@ -2215,23 +2285,23 @@ select option{background:#10101c;color:var(--text);}
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span> Clientes
         <span class="nav-badge blue" id="badge-clientes" style="display:none;">0</span>
       </div>
-      <div class="nav-item" id="nav-retencion" onclick="go('retencion',this)">
+      <div class="nav-item mob-hidden" id="nav-retencion" onclick="go('retencion',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Retención & Churn
       </div>
-      <div class="nav-item" id="nav-calendario-venc" onclick="go('calendario-venc',this)">
+      <div class="nav-item mob-hidden" id="nav-calendario-venc" onclick="go('calendario-venc',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Calendario Vencimientos
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Marketing</div>
-      <div class="nav-item" id="nav-marketing" onclick="go('marketing',this)">
+      <div class="nav-item mob-hidden" id="nav-marketing" onclick="go('marketing',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></svg></span> Hub de Marketing
       </div>
-      <div class="nav-item" id="nav-campanas" onclick="go('campanas',this)">
+      <div class="nav-item mob-hidden" id="nav-campanas" onclick="go('campanas',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Campañas
       </div>
-      <div class="nav-item" id="nav-solicitudes" onclick="go('solicitudes',this)">
+      <div class="nav-item mob-hidden" id="nav-solicitudes" onclick="go('solicitudes',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Solicitudes
         <span class="nav-badge blue">3</span>
       </div>
@@ -2239,16 +2309,16 @@ select option{background:#10101c;color:var(--text);}
 
     <div class="nav-section">
       <div class="nav-label">Operación</div>
-      <div class="nav-item" id="nav-horario" onclick="go('horario',this)">
+      <div class="nav-item mob-hidden" id="nav-horario" onclick="go('horario',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Horario Semanal
       </div>
-      <div class="nav-item" id="nav-coaches" onclick="go('coaches',this)">
+      <div class="nav-item mob-hidden" id="nav-coaches" onclick="go('coaches',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Coaches
       </div>
-      <div class="nav-item" id="nav-evaluaciones" onclick="go('evaluaciones',this)">
+      <div class="nav-item mob-hidden" id="nav-evaluaciones" onclick="go('evaluaciones',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> Evaluaciones
       </div>
-      <div class="nav-item" id="nav-programa" onclick="go('programa',this)">
+      <div class="nav-item mob-hidden" id="nav-programa" onclick="go('programa',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Programa de Entreno
       </div>
       <div class="nav-item" id="nav-asistencia" onclick="go('asistencia',this)">
@@ -2258,21 +2328,31 @@ select option{background:#10101c;color:var(--text);}
 
     <div class="nav-section">
       <div class="nav-label">Finanzas</div>
-      <div class="nav-item" id="nav-gastos" onclick="go('gastos',this)">
+      <div class="nav-item mob-hidden" id="nav-gastos" onclick="go('gastos',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Gastos & Balance
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Sistema</div>
-      <div class="nav-item" id="nav-superadmin" onclick="go('superadmin',this)" style="display:none;">
+      <div class="nav-item mob-hidden" id="nav-superadmin" onclick="go('superadmin',this)" style="display:none;">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Super Admin
       </div>
-      <div class="nav-item" id="nav-settings" onclick="go('settings',this)">
+      <div class="nav-item mob-hidden" id="nav-settings" onclick="go('settings',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuración
       </div>
     </div>
+
+    <!-- ── "Más" item — visible mobile only ── -->
+    <div class="nav-section">
+      <div class="nav-item mob-mas-item" onclick="openMasMenu()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></span> Más
+      </div>
+    </div>
   </nav>
+
+  <!-- ── Desktop sidebar collapse button ── -->
+  <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Contraer/expandir">‹</button>
 
   <div class="sidebar-bottom">
     <!-- Dark/Light mode toggle -->
@@ -2362,54 +2442,78 @@ select option{background:#10101c;color:var(--text);}
     </div>
   </div>
 
+  <!-- ══ "Más" mobile bottom sheet ══ -->
+  <div id="mas-overlay" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);" onclick="closeMasMenu()"></div>
+  <div id="mas-sheet" style="
+    display:none;position:fixed;bottom:0;left:0;right:0;z-index:9501;
+    background:rgba(5,8,7,.97);
+    border-top:1px solid rgba(29,158,117,.25);
+    border-radius:20px 20px 0 0;
+    padding:16px 12px calc(80px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -8px 48px rgba(0,0,0,.8);
+    animation:mas-slide-up .28s cubic-bezier(.32,1,.23,1);
+  ">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 18px;"></div>
+    <div style="font-size:10px;font-weight:700;color:rgba(200,220,235,.35);letter-spacing:2px;text-transform:uppercase;padding:0 8px 10px;">Más opciones</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="mas-grid"></div>
+  </div>
+
   <div class="content">
 
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
 
-      <!-- HERO BANNER — change --hero-photo in :root to add your gym photo -->
+      <!-- HERO COMMAND CENTER — change --hero-photo in :root to add your gym photo -->
       <div id="dash-hero" style="
-        position:relative;overflow:hidden;border-radius:16px;margin-bottom:22px;
-        min-height:140px;display:flex;align-items:flex-end;
-        background:var(--hero-photo,linear-gradient(135deg,#04040c 0%,#060918 40%,#040a10 100%));
+        position:relative;overflow:hidden;border-radius:18px;margin-bottom:22px;
+        min-height:156px;display:flex;align-items:flex-end;
+        background:var(--hero-photo,linear-gradient(135deg,#020c09 0%,#041a12 45%,#030f0c 100%));
         background-size:cover;background-position:center;
-        border:1px solid rgba(29,158,117,.14);
-        box-shadow:0 8px 40px rgba(0,0,0,.6), 0 0 60px rgba(29,158,117,.06);
+        border:1px solid rgba(29,158,117,.2);
+        border-top:1px solid rgba(93,202,165,.22);
+        box-shadow:0 12px 48px rgba(0,0,0,.7), 0 0 80px rgba(29,158,117,.07), inset 0 1px 0 rgba(93,202,165,.1);
       ">
         <!-- Overlay for readability when photo is set -->
-        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.8) 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.7) 100%);"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.82) 0%,rgba(0,0,0,.35) 55%,rgba(0,0,0,.72) 100%);"></div>
         <!-- Animated glow orbs -->
-        <div style="position:absolute;top:-40px;left:40px;width:220px;height:220px;background:radial-gradient(circle,rgba(29,158,117,.18) 0%,transparent 70%);pointer-events:none;"></div>
-        <div style="position:absolute;bottom:-60px;right:80px;width:180px;height:180px;background:radial-gradient(circle,rgba(192,132,252,.1) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;top:-50px;left:30px;width:260px;height:260px;background:radial-gradient(circle,rgba(29,158,117,.22) 0%,transparent 68%);pointer-events:none;animation:hero-orb1 8s ease-in-out infinite alternate;"></div>
+        <div style="position:absolute;bottom:-70px;right:60px;width:220px;height:220px;background:radial-gradient(circle,rgba(192,132,252,.12) 0%,transparent 68%);pointer-events:none;animation:hero-orb2 11s ease-in-out infinite alternate;"></div>
+        <div style="position:absolute;top:20px;right:200px;width:120px;height:120px;background:radial-gradient(circle,rgba(93,202,165,.08) 0%,transparent 70%);pointer-events:none;"></div>
         <!-- Content -->
-        <div style="position:relative;z-index:1;padding:28px 32px;width:100%;">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div style="position:relative;z-index:1;padding:26px 32px;width:100%;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;">
             <div>
-              <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:rgba(93,202,165,.7);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;">VELUM Platform</div>
-              <div style="font-family:var(--font-display);font-size:32px;font-weight:800;color:#fff;letter-spacing:1px;line-height:1;" id="hero-gym-nombre">—</div>
-              <div style="font-size:12px;color:rgba(200,220,235,.5);margin-top:4px;" id="hero-tagline">Cargando...</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <div style="font-family:var(--font-display);font-size:10px;font-weight:700;color:rgba(93,202,165,.6);letter-spacing:3px;text-transform:uppercase;" id="hero-greeting-label">VELUM Platform</div>
+                <div style="width:4px;height:4px;border-radius:50%;background:rgba(93,202,165,.4);"></div>
+                <div style="font-size:10px;color:rgba(200,220,235,.35);" id="hero-date-label">—</div>
+              </div>
+              <div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:rgba(200,220,235,.45);letter-spacing:.5px;margin-bottom:3px;" id="hero-greeting">—</div>
+              <div style="font-family:var(--font-display);font-size:34px;font-weight:800;color:#fff;letter-spacing:.5px;line-height:1;text-shadow:0 2px 20px rgba(0,0,0,.5);" id="hero-gym-nombre">—</div>
+              <div style="font-size:11px;color:rgba(200,220,235,.42);margin-top:5px;display:flex;align-items:center;gap:6px;" id="hero-tagline">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px rgba(16,232,160,.7);display:inline-block;"></span>
+                Cargando...
+              </div>
             </div>
-            <div style="display:flex;gap:24px;align-items:center;">
-              <div style="text-align:center;">
-                <div style="font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--accent);line-height:1;" id="hero-coaches">—</div>
-                <div style="font-size:10px;color:rgba(200,220,235,.4);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Coaches</div>
+            <div style="display:flex;gap:20px;align-items:flex-end;padding-bottom:2px;">
+              <div style="text-align:center;padding:10px 16px;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.2);border-radius:12px;backdrop-filter:blur(8px);">
+                <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent);line-height:1;" id="hero-coaches">—</div>
+                <div style="font-size:9px;color:rgba(200,220,235,.38);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">Coaches</div>
               </div>
-              <div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>
-              <div style="text-align:center;">
-                <div style="font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--ok);line-height:1;" id="hero-clases">—</div>
-                <div style="font-size:10px;color:rgba(200,220,235,.4);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Clases/Sem</div>
+              <div style="text-align:center;padding:10px 16px;background:rgba(16,232,160,.07);border:1px solid rgba(16,232,160,.15);border-radius:12px;backdrop-filter:blur(8px);">
+                <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--ok);line-height:1;" id="hero-clases">—</div>
+                <div style="font-size:9px;color:rgba(200,220,235,.38);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">Clases/Sem</div>
               </div>
-              <div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>
-              <div style="text-align:center;">
-                <div style="font-family:var(--font-display);font-size:26px;font-weight:800;color:#c084fc;line-height:1;" id="hero-leads">—</div>
-                <div style="font-size:10px;color:rgba(200,220,235,.4);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Leads mes</div>
+              <div style="text-align:center;padding:10px 16px;background:rgba(192,132,252,.07);border:1px solid rgba(192,132,252,.15);border-radius:12px;backdrop-filter:blur(8px);">
+                <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:#c084fc;line-height:1;" id="hero-leads">—</div>
+                <div style="font-size:9px;color:rgba(200,220,235,.38);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">Leads/mes</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="kpi-grid">
+      <div class="kpi-grid kpi-grid-primary">
         <div class="kpi-card" style="--kpi-color:var(--accent)">
           <div class="kpi-label">Clientes Activos</div>
           <div class="kpi-value" id="kpi-activos">0</div>
@@ -2433,7 +2537,11 @@ select option{background:#10101c;color:var(--text);}
           <div class="kpi-meta" id="kpi-ingresos-meta">Pagos registrados</div>
         </div>
       </div>
-      <!-- Payment stats row -->
+      <!-- Secondary metrics row -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;margin-top:-6px;">
+        <span style="font-size:10px;font-weight:700;color:rgba(155,185,175,.35);letter-spacing:2px;text-transform:uppercase;">Métricas secundarias</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.05);"></div>
+      </div>
       <div class="kpi-grid" style="margin-bottom:18px;">
         <div class="kpi-card" style="--kpi-color:var(--ok)">
           <div class="kpi-label">Ingresos Totales</div>
@@ -5014,6 +5122,7 @@ function showApp(){
     
     updateSidebarUser();
     applyStoredSettings();
+    updateHeroGreeting(); // v4: dynamic greeting with user name
     setTimeout(applyPlanGates, 200); // Después de que gymConfig cargue
     // Admin y superadmin pueden gestionar usuarios; coaches y otros roles no
     if(currentUser.rol==='admin' || currentUser.rol==='superadmin'){
@@ -14770,6 +14879,95 @@ document.addEventListener('velumAppReady', ()=>{ renderStripeSettings(); });
 
 // Inicializar cuando el app esté listo
 document.addEventListener('velumAppReady', vaInit);
+
+/* ═══════════════════════════════════════════════════════════
+   VELUM v4 PREMIUM — Sidebar collapse + Mobile "Más" + Hero greeting
+═══════════════════════════════════════════════════════════ */
+
+// ── Sidebar collapse toggle (desktop) ──
+function toggleSidebarCollapse(){
+  const sidebar = document.querySelector('.sidebar');
+  const btn = document.getElementById('sidebar-collapse-btn');
+  if(!sidebar) return;
+  const collapsed = sidebar.classList.toggle('sidebar-collapsed');
+  if(btn) btn.textContent = collapsed ? '›' : '‹';
+  try{ localStorage.setItem('velum_sidebar_collapsed', collapsed ? '1' : '0'); }catch(e){}
+}
+
+// Restore sidebar collapse state on load
+(function(){
+  try{
+    if(localStorage.getItem('velum_sidebar_collapsed') === '1'){
+      const sidebar = document.querySelector('.sidebar');
+      const btn = document.getElementById('sidebar-collapse-btn');
+      if(sidebar){ sidebar.classList.add('sidebar-collapsed'); if(btn) btn.textContent='›'; }
+    }
+  }catch(e){}
+})();
+
+// ── Hero greeting ──
+function updateHeroGreeting(){
+  const greetEl = document.getElementById('hero-greeting');
+  const labelEl = document.getElementById('hero-greeting-label');
+  const dateEl  = document.getElementById('hero-date-label');
+  const h = new Date().getHours();
+  const greeting = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const nombre = (typeof currentUser !== 'undefined' && currentUser && currentUser.nombre) ? `, ${currentUser.nombre.split(' ')[0]}` : '';
+  if(greetEl) greetEl.textContent = greeting + nombre;
+  if(labelEl) labelEl.textContent = 'VELUM Platform';
+  if(dateEl){
+    const now = new Date();
+    const opts = { weekday:'long', day:'numeric', month:'long' };
+    dateEl.textContent = now.toLocaleDateString('es-MX', opts);
+  }
+}
+document.addEventListener('velumAppReady', updateHeroGreeting);
+
+// ── Mobile "Más" menu ──
+const _masItems = [
+  { id:'crm',             label:'CRM',         icon:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+  { id:'pipeline',        label:'Pipeline',    icon:'<rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="7" rx="1"/>' },
+  { id:'retencion',       label:'Retención',   icon:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>' },
+  { id:'calendario-venc', label:'Calendario',  icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
+  { id:'marketing',       label:'Marketing',   icon:'<polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/>' },
+  { id:'campanas',        label:'Campañas',    icon:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>' },
+  { id:'solicitudes',     label:'Solicitudes', icon:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>' },
+  { id:'horario',         label:'Horario',     icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
+  { id:'coaches',         label:'Coaches',     icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
+  { id:'evaluaciones',    label:'Evaluac.',    icon:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },
+  { id:'programa',        label:'Programa',    icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>' },
+  { id:'gastos',          label:'Gastos',      icon:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' },
+  { id:'settings',        label:'Config',      icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+];
+
+function openMasMenu(){
+  const overlay = document.getElementById('mas-overlay');
+  const sheet   = document.getElementById('mas-sheet');
+  const grid    = document.getElementById('mas-grid');
+  if(!overlay||!sheet||!grid) return;
+  // Build grid
+  grid.innerHTML = _masItems.map(item=>`
+    <div onclick="closeMasMenu();go('${item.id}',document.getElementById('nav-${item.id}'))"
+      style="display:flex;flex-direction:column;align-items:center;gap:7px;
+             padding:14px 8px;border-radius:12px;cursor:pointer;
+             background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+             transition:background .15s;active:background:rgba(29,158,117,.12);"
+      ontouchstart="this.style.background='rgba(29,158,117,.12)'"
+      ontouchend="this.style.background='rgba(255,255,255,.04)'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(180,220,210,.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${item.icon}</svg>
+      <span style="font-size:10px;font-weight:700;color:rgba(200,220,235,.6);letter-spacing:.3px;text-align:center;">${item.label}</span>
+    </div>
+  `).join('');
+  overlay.style.display='block';
+  sheet.style.display='block';
+}
+
+function closeMasMenu(){
+  const overlay = document.getElementById('mas-overlay');
+  const sheet   = document.getElementById('mas-sheet');
+  if(overlay) overlay.style.display='none';
+  if(sheet)   sheet.style.display='none';
+}
 </script>
 
 </body>

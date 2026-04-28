@@ -39,9 +39,9 @@ serve(async (req) => {
       let body: any = {};
       try { body = await req.json(); } catch (_) {}
 
-      const gym_codigo    = (url.searchParams.get('gym')      || body.gym      || '').trim().toLowerCase();
-      const numero        = parseInt(url.searchParams.get('numero') || body.numero || '0', 10);
-      const password      = url.searchParams.get('pwd')       || body.password  || '';
+      const gym_codigo = (url.searchParams.get('gym')      || body.gym      || '').trim().toLowerCase();
+      const numero     = parseInt(url.searchParams.get('numero') || body.numero || '0', 10);
+      const password   = url.searchParams.get('pwd')       || body.password  || '';
 
       if (!gym_codigo || !numero || !password) {
         return new Response(JSON.stringify({ error: 'Token requerido' }), {
@@ -49,7 +49,6 @@ serve(async (req) => {
         });
       }
 
-      // Find gym by portal_codigo (key-value store: key='portal_codigo', value=gym_codigo)
       const { data: codigoRows, error: gErr } = await supabase
         .from('gym_config')
         .select('gym_id, value')
@@ -64,7 +63,6 @@ serve(async (req) => {
 
       const found_gym_id = codigoRows[0].gym_id;
 
-      // Get portal password for this gym
       const { data: pwdRow } = await supabase
         .from('gym_config')
         .select('value')
@@ -78,10 +76,6 @@ serve(async (req) => {
         });
       }
 
-      // Reuse found_gym_id below
-      const gymRow = { gym_id: found_gym_id };
-
-      // Find client by numero_cliente within this gym
       const { data, error: cErr } = await supabase
         .from('clientes')
         .select('id, nombre, email, telefono, gym_id, portal_token, numero_cliente')
@@ -101,16 +95,28 @@ serve(async (req) => {
     const gym_id = cliente.gym_id;
     const today  = new Date().toISOString().slice(0, 10);
 
-    // gym_config is key-value — fetch all keys for this gym
+    // Calculate current week range (Monday – Sunday)
+    const todayDate     = new Date();
+    const dow           = todayDate.getDay();
+    const mondayOffset  = dow === 0 ? -6 : 1 - dow;
+    const monday        = new Date(todayDate);
+    monday.setDate(todayDate.getDate() + mondayOffset);
+    const sunday        = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const semanaInicio  = monday.toISOString().slice(0, 10);
+    const semanaFin     = sunday.toISOString().slice(0, 10);
+
+    // Gym config
     const { data: cfgRows } = await supabase
       .from('gym_config')
       .select('key, value')
       .eq('gym_id', gym_id)
-      .in('key', ['gym_nombre', 'gym_logo', 'portal_codigo']);
+      .in('key', ['gym_nombre', 'gym_logo', 'portal_codigo', 'planes_portal', 'stripe_habilitado']);
 
     const cfg: Record<string, string> = {};
     (cfgRows || []).forEach((r: any) => { cfg[r.key] = r.value; });
 
+    // Pagos
     const { data: pagos } = await supabase
       .from('pagos')
       .select('id, plan, monto, fecha, vence, clases_totales, clases_usadas, notas')
@@ -120,28 +126,34 @@ serve(async (req) => {
       .order('fecha', { ascending: false })
       .limit(10);
 
-    const pagosList    = pagos || [];
-    const pagoReciente = pagosList[0] || null;
+    const pagosList     = pagos || [];
+    const pagoReciente  = pagosList[0] || null;
     const paqueteActivo = pagosList.find((p: any) =>
       p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales
     );
 
-    const vence     = pagoReciente?.vence || null;
-    const venceDate = vence ? new Date(vence + 'T12:00:00') : null;
-    const todayDate = new Date(today + 'T12:00:00');
+    const vence         = pagoReciente?.vence || null;
+    const venceDate     = vence ? new Date(vence + 'T12:00:00') : null;
+    const todayD        = new Date(today + 'T12:00:00');
     const diasRestantes = venceDate
-      ? Math.max(0, Math.ceil((venceDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(0, Math.ceil((venceDate.getTime() - todayD.getTime()) / (1000 * 60 * 60 * 24)))
       : null;
-    const membresiaOk = paqueteActivo
+    const membresiaOk   = paqueteActivo
       ? true
-      : (venceDate ? venceDate >= todayDate : false);
+      : (venceDate ? venceDate >= todayD : false);
 
-    const { data: programasHoy } = await supabase
+    // Full week programs
+    const { data: programasSemana } = await supabase
       .from('programas')
-      .select('tipo, contenido, notas')
+      .select('tipo, contenido, notas, fecha')
       .eq('gym_id', gym_id)
-      .eq('fecha', today);
+      .gte('fecha', semanaInicio)
+      .lte('fecha', semanaFin);
 
+    // Today derived from week data
+    const programasHoy = (programasSemana || []).filter((p: any) => p.fecha === today);
+
+    // Check-ins (last 50 for accurate streak)
     const { data: checkins } = await supabase
       .from('asistencias')
       .select('fecha, hora, metodo')
@@ -149,7 +161,11 @@ serve(async (req) => {
       .eq('gym_id', gym_id)
       .order('fecha', { ascending: false })
       .order('hora', { ascending: false })
-      .limit(10);
+      .limit(50);
+
+    // Purchasable plans from gym config
+    let planes: any[] = [];
+    try { planes = JSON.parse(cfg['planes_portal'] || '[]'); } catch (_) {}
 
     return new Response(JSON.stringify({
       cliente: {
@@ -166,9 +182,10 @@ serve(async (req) => {
         membresiaOk,
       },
       gym: {
-        nombre:  cfg['gym_nombre']    || 'VELUM Gym',
-        logo:    cfg['gym_logo']      || null,
-        codigo:  cfg['portal_codigo'] || null,
+        nombre:           cfg['gym_nombre']    || 'VELUM Gym',
+        logo:             cfg['gym_logo']      || null,
+        codigo:           cfg['portal_codigo'] || null,
+        stripeHabilitado: cfg['stripe_habilitado'] === 'true',
       },
       paquete: paqueteActivo ? {
         plan:            paqueteActivo.plan,
@@ -176,16 +193,16 @@ serve(async (req) => {
         clasesUsadas:    paqueteActivo.clases_usadas ?? 0,
         clasesRestantes: paqueteActivo.clases_totales - (paqueteActivo.clases_usadas ?? 0),
       } : null,
-      programasHoy: (programasHoy || []).map((p: any) => ({
-        tipo:     p.tipo,
-        contenido: p.contenido,
-        notas:    p.notas,
+      programasHoy: programasHoy.map((p: any) => ({
+        tipo: p.tipo, contenido: p.contenido, notas: p.notas, fecha: p.fecha,
+      })),
+      programasSemana: (programasSemana || []).map((p: any) => ({
+        tipo: p.tipo, contenido: p.contenido, notas: p.notas, fecha: p.fecha,
       })),
       checkins: (checkins || []).map((c: any) => ({
-        fecha:  c.fecha,
-        hora:   c.hora,
-        metodo: c.metodo,
+        fecha: c.fecha, hora: c.hora, metodo: c.metodo,
       })),
+      planes,
       generadoEn: new Date().toISOString(),
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
