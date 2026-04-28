@@ -554,7 +554,10 @@ body::before{
 .planes-empty-ico{font-size:42px;margin-bottom:12px;}
 .planes-empty-title{font-size:15px;font-weight:800;color:#fff;margin-bottom:8px;}
 .planes-empty-sub{font-size:12px;color:var(--text3);line-height:1.65;max-width:240px;margin:0 auto;}
+.planes-wa-btn{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:10px 20px;border-radius:10px;background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.25);font-size:13px;font-weight:700;text-decoration:none;transition:background .15s;}
+.planes-wa-btn:hover{background:rgba(37,211,102,.2);}
 .plan-grid{display:flex;flex-direction:column;gap:12px;padding:0 16px 30px;}
+@media(min-width:600px){.plan-grid{display:grid;grid-template-columns:repeat(2,1fr);}}
 .plan-card{
   background:var(--surface);border:1px solid var(--border);
   border-radius:18px;padding:20px;position:relative;overflow:hidden;
@@ -1154,15 +1157,15 @@ body::before{
           <div class="payment-success-ico">🎉</div>
           <div>
             <div class="payment-success-title">¡Pago completado!</div>
-            <div class="payment-success-sub">Tu membresía o paquete ya fue activado. Cierra y vuelve a abrir el portal para ver el cambio.</div>
+            <div class="payment-success-sub">Tu membresía o paquete fue activado. Actualizando tu información…</div>
           </div>
         </div>
       </div>
       <div id="planes-content">
         <div class="planes-empty">
           <div class="planes-empty-ico">💳</div>
-          <div class="planes-empty-title">Sin planes disponibles</div>
-          <div class="planes-empty-sub">El gym aún no tiene planes configurados para compra en línea. Pasa por recepción para renovar.</div>
+          <div class="planes-empty-title">Cargando planes…</div>
+          <div class="planes-empty-sub">Un momento mientras obtenemos los planes disponibles de tu gym.</div>
         </div>
       </div>
     </div>
@@ -1469,8 +1472,10 @@ function membershipCardHTML(data){
   const daysLbl=dias===1?'día restante':dias===null?'sin límite':'días restantes';
   const venceStr=cliente.vence?'Vence '+new Date(cliente.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'';
   const numStr=cliente.numero_cliente?`SOCIO  #${String(cliente.numero_cliente).padStart(3,'0')}`:'';
-  const progressPct=dias!==null?Math.max(2,Math.min(100,Math.round((dias/30)*100))):100;
-  const usedDays=dias!==null?30-dias:0;
+  // Duración real del plan (viene de la BD cuando está disponible, fallback 30d)
+  const planDuracion=cliente.duracion_dias||30;
+  const progressPct=dias!==null?Math.max(2,Math.min(100,Math.round((dias/planDuracion)*100))):100;
+  const usedDays=dias!==null?Math.max(0,planDuracion-dias):0;
 
   // Paquete mode: show classes remaining prominently in the card
   const pkgDaysNum = paquete ? paquete.clasesRestantes : daysNum;
@@ -1519,7 +1524,7 @@ function membershipCardHTML(data){
         <div class="card-prog-bar">
           <div class="card-prog-fill" style="width:${progressPct}%;"></div>
         </div>
-        <div class="card-prog-lbl">${usedDays} días usados de 30</div>
+        <div class="card-prog-lbl">${usedDays} días usados de ${planDuracion}</div>
       </div>
       <div class="card-right">
         <div class="card-numero">${numStr}</div>
@@ -1859,10 +1864,14 @@ function renderPlanes(){
   const cont=$('planes-content'); if(!cont) return;
 
   if(!planes.length||!stripeOk){
+    const gymName=portalData?.gym?.nombre||'el gym';
+    const gymPhone=portalData?.gym?.telefono||'';
+    const waLink=gymPhone?`https://wa.me/${gymPhone.replace(/\D/g,'')}`:null;
     cont.innerHTML=`<div class="planes-empty">
       <div class="planes-empty-ico">💳</div>
-      <div class="planes-empty-title">Sin planes disponibles</div>
-      <div class="planes-empty-sub">El gym aún no tiene planes configurados para compra en línea. Pasa por recepción para renovar.</div>
+      <div class="planes-empty-title">Pago en recepción</div>
+      <div class="planes-empty-sub">${gymName} aún no tiene pagos en línea activos. Pasa por recepción o contáctanos para renovar.</div>
+      ${waLink?`<a href="${waLink}" target="_blank" rel="noopener" class="planes-wa-btn">💬 WhatsApp ${gymName}</a>`:''}
     </div>`; return;
   }
 
@@ -2020,6 +2029,18 @@ async function init(){
         switchView('planes');
         const sw=$('payment-success-wrap');
         if(sw) sw.style.display='';
+        // Auto-refresh portal data after 2s to reflect new membership/paquete
+        setTimeout(async()=>{
+          try{
+            const fresh=await tryToken(token);
+            portalData=fresh;
+            renderHomeData(fresh);
+            renderPlanes();
+            updateQRStatus();
+            const subEl=$('payment-success-sub');
+            if(subEl) subEl.textContent='¡Todo listo! Tu membresía está activa.';
+          }catch(_){}
+        },2000);
       }
       return;
     }catch(_){}

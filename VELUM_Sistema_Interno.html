@@ -69,6 +69,7 @@
   /* Content areas */
   --bg:#070f0d;
   --white:#0d1a16;
+  --card:#0d1a16;   /* alias — usado en search dropdown y horario sticky */
   --border:rgba(255,255,255,.07);
   --border2:rgba(255,255,255,.13);
 
@@ -292,14 +293,20 @@ body{
 .search-wrap{
   display:flex;align-items:center;gap:8px;
   background:rgba(255,255,255,.04);border:1px solid var(--border);
-  border-radius:8px;padding:7px 13px;width:260px;
-  transition:width .28s cubic-bezier(.4,0,.2,1), border-color .18s, background .18s, box-shadow .18s;
-  position:relative;
+  border-radius:8px;padding:7px 10px;width:38px;
+  transition:width .28s cubic-bezier(.4,0,.2,1), border-color .18s, background .18s, box-shadow .18s, padding .28s;
+  position:relative;overflow:hidden;cursor:pointer;
 }
 .search-wrap:focus-within{
-  width:380px;
+  width:300px;padding:7px 13px;cursor:text;
   border-color:var(--accent);background:rgba(29,158,117,.05);
   box-shadow:0 0 0 3px rgba(29,158,117,.1), var(--glow);
+}
+.search-wrap input{
+  opacity:0;width:0;transition:opacity .2s, width .28s;
+}
+.search-wrap:focus-within input{
+  opacity:1;width:100%;
 }
 .search-wrap input{background:none;border:none;outline:none;font-size:13px;color:var(--text);font-family:var(--font);flex:1;}
 .search-wrap input::placeholder{color:var(--text4);}
@@ -578,6 +585,60 @@ body{
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
 .g-6040{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;}
 
+/* ── Alert strip — contextual urgency banner ── */
+.alert-strip{
+  display:none; /* mostrado via JS cuando hay urgencias */
+  align-items:center;gap:12px;
+  background:rgba(248,113,113,.07);
+  border:1px solid rgba(248,113,113,.18);
+  border-left:3px solid var(--danger);
+  border-radius:10px;padding:10px 16px;
+  margin-bottom:14px;
+  animation:kpi-in .3s ease;
+}
+.alert-strip.visible{display:flex;}
+.alert-strip-icon{font-size:14px;flex-shrink:0;}
+.alert-strip-txt{font-size:12px;color:rgba(248,113,113,.9);font-weight:600;flex:1;line-height:1.4;}
+.alert-strip-action{
+  font-size:11px;font-weight:700;color:var(--danger);cursor:pointer;white-space:nowrap;
+  padding:4px 11px;border:1px solid rgba(248,113,113,.25);border-radius:7px;
+  background:rgba(248,113,113,.08);transition:all .15s;flex-shrink:0;
+}
+.alert-strip-action:hover{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.4);}
+
+/* ── Quick actions strip (hero bottom) ── */
+.hero-quick-actions{
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding-top:14px;margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.06);
+  position:relative;z-index:1;
+}
+.qa-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 14px;border-radius:8px;
+  font-size:12px;font-weight:700;cursor:pointer;
+  border:none;font-family:var(--font);
+  transition:all .15s;letter-spacing:.2px;
+}
+.qa-primary{background:rgba(29,158,117,.15);color:var(--accent);border:1px solid rgba(29,158,117,.28);}
+.qa-primary:hover{background:rgba(29,158,117,.25);border-color:rgba(29,158,117,.45);}
+.qa-secondary{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.09);}
+.qa-secondary:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.16);}
+.qa-danger{background:rgba(248,113,113,.1);color:var(--danger);border:1px solid rgba(248,113,113,.2);}
+.qa-danger:hover{background:rgba(248,113,113,.18);border-color:rgba(248,113,113,.35);}
+.qa-danger.hidden{display:none;}
+
+/* ── Section divider ── */
+.section-divider{
+  display:flex;align-items:center;gap:10px;
+  margin:22px 0 14px;
+}
+.section-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.05);}
+.section-divider-label{
+  font-size:9px;font-weight:700;color:var(--text4);
+  text-transform:uppercase;letter-spacing:2.5px;white-space:nowrap;
+}
+
 /* ── KPI primary hero row ── */
 .kpi-grid-primary .kpi-card{
   background:rgba(29,158,117,.055);
@@ -600,11 +661,11 @@ body{
 .sidebar-collapsed .logo-tagline,
 .sidebar-collapsed .nav-label,
 .sidebar-collapsed .nav-badge,
+.sidebar-collapsed .nav-label-text,
 .sidebar-collapsed .sidebar-bottom .user-name,
 .sidebar-collapsed .sidebar-bottom .user-role,
 .sidebar-collapsed #sidebar-mode-label{ display:none !important; }
 .sidebar-collapsed .nav-item{justify-content:center;padding:10px 8px;}
-.sidebar-collapsed .nav-item span:last-child:not(.nav-icon){display:none;}
 .sidebar-collapsed .logo{padding:20px 14px;justify-content:center;}
 .sidebar-collapsed .logo-velum{justify-content:center;}
 .sidebar-collapse-btn{
@@ -1695,6 +1756,11 @@ select option{background:#10101c;color:var(--text);}
   /* Primary KPIs on mobile — slightly more prominent */
   .kpi-grid-primary .kpi-card { padding: 14px 16px; }
   .kpi-grid-primary .kpi-value { font-size: 26px; }
+  /* Hero stats row — no overflow en 375px */
+  .hero-stats-row { flex-wrap: wrap !important; gap: 8px !important; }
+  .hero-stat-box { padding: 8px 12px !important; min-width: 76px; }
+  /* Section divider mobile */
+  .section-divider-label { font-size: 9px; }
 
   /* ──────────── Dashboard ──────────── */
   .dash-row { flex-direction: column; gap: 12px; }
@@ -2265,44 +2331,44 @@ select option{background:#10101c;color:var(--text);}
     <div class="nav-section">
       <div class="nav-label">General</div>
       <div class="nav-item active" id="nav-dashboard" onclick="go('dashboard',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span> Dashboard
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span><span class="nav-label-text"> Dashboard</span>
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Ventas</div>
       <div class="nav-item mob-hidden" id="nav-crm" onclick="go('crm',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> CRM & Prospectos
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-label-text"> CRM & Prospectos</span>
         <span class="nav-badge" id="badge-leads">0</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-pipeline" onclick="go('pipeline',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="7" rx="1"/></svg></span> Pipeline
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="7" rx="1"/></svg></span><span class="nav-label-text"> Pipeline</span>
       </div>
       <div class="nav-item" id="nav-pagos" onclick="go('pagos',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span> Pagos & Renovaciones
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="nav-label-text"> Pagos & Renovaciones</span>
       </div>
       <div class="nav-item" id="nav-clientes" onclick="go('clientes',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span> Clientes
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span><span class="nav-label-text"> Clientes</span>
         <span class="nav-badge blue" id="badge-clientes" style="display:none;">0</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-retencion" onclick="go('retencion',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Retención & Churn
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><span class="nav-label-text"> Retención & Churn</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-calendario-venc" onclick="go('calendario-venc',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Calendario Vencimientos
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="nav-label-text"> Calendario Vencimientos</span>
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Marketing</div>
       <div class="nav-item mob-hidden" id="nav-marketing" onclick="go('marketing',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></svg></span> Hub de Marketing
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></svg></span><span class="nav-label-text"> Hub de Marketing</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-campanas" onclick="go('campanas',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Campañas
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span class="nav-label-text"> Campañas</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-solicitudes" onclick="go('solicitudes',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Solicitudes
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="nav-label-text"> Solicitudes</span>
         <span class="nav-badge blue">3</span>
       </div>
     </div>
@@ -2310,36 +2376,36 @@ select option{background:#10101c;color:var(--text);}
     <div class="nav-section">
       <div class="nav-label">Operación</div>
       <div class="nav-item mob-hidden" id="nav-horario" onclick="go('horario',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Horario Semanal
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="nav-label-text"> Horario Semanal</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-coaches" onclick="go('coaches',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Coaches
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-label-text"> Coaches</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-evaluaciones" onclick="go('evaluaciones',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> Evaluaciones
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span><span class="nav-label-text"> Evaluaciones</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-programa" onclick="go('programa',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Programa de Entreno
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span class="nav-label-text"> Programa de Entreno</span>
       </div>
       <div class="nav-item" id="nav-asistencia" onclick="go('asistencia',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Asistencia
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="nav-label-text"> Asistencia</span>
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Finanzas</div>
       <div class="nav-item mob-hidden" id="nav-gastos" onclick="go('gastos',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Gastos & Balance
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="nav-label-text"> Gastos & Balance</span>
       </div>
     </div>
 
     <div class="nav-section">
       <div class="nav-label">Sistema</div>
       <div class="nav-item mob-hidden" id="nav-superadmin" onclick="go('superadmin',this)" style="display:none;">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Super Admin
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="nav-label-text"> Super Admin</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-settings" onclick="go('settings',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuración
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label-text"> Configuración</span>
       </div>
     </div>
 
@@ -2463,6 +2529,13 @@ select option{background:#10101c;color:var(--text);}
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
 
+      <!-- ALERT STRIP — visible solo cuando hay urgencias (JS controla .visible) -->
+      <div class="alert-strip" id="dash-alert-strip">
+        <span class="alert-strip-icon">⚠</span>
+        <span class="alert-strip-txt" id="dash-alert-strip-txt">Cargando alertas…</span>
+        <span class="alert-strip-action" onclick="go('clientes', document.getElementById('nav-clientes'))">Ver ahora</span>
+      </div>
+
       <!-- HERO COMMAND CENTER — change --hero-photo in :root to add your gym photo -->
       <div id="dash-hero" style="
         position:relative;overflow:hidden;border-radius:18px;margin-bottom:22px;
@@ -2495,40 +2568,49 @@ select option{background:#10101c;color:var(--text);}
                 Cargando...
               </div>
             </div>
-            <div style="display:flex;gap:20px;align-items:flex-end;padding-bottom:2px;">
-              <div style="text-align:center;padding:10px 16px;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.2);border-radius:12px;backdrop-filter:blur(8px);">
+            <div class="hero-stats-row" style="display:flex;gap:20px;align-items:flex-end;padding-bottom:2px;flex-wrap:wrap;">
+              <div class="hero-stat-box" style="text-align:center;padding:10px 16px;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.2);border-radius:12px;backdrop-filter:blur(8px);">
                 <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent);line-height:1;" id="hero-coaches">—</div>
                 <div style="font-size:9px;color:rgba(200,220,235,.38);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">Coaches</div>
               </div>
-              <div style="text-align:center;padding:10px 16px;background:rgba(16,232,160,.07);border:1px solid rgba(16,232,160,.15);border-radius:12px;backdrop-filter:blur(8px);">
+              <div class="hero-stat-box" style="text-align:center;padding:10px 16px;background:rgba(16,232,160,.07);border:1px solid rgba(16,232,160,.15);border-radius:12px;backdrop-filter:blur(8px);">
                 <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--ok);line-height:1;" id="hero-clases">—</div>
                 <div style="font-size:9px;color:rgba(200,220,235,.38);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">Clases/Sem</div>
               </div>
-              <div style="text-align:center;padding:10px 16px;background:rgba(192,132,252,.07);border:1px solid rgba(192,132,252,.15);border-radius:12px;backdrop-filter:blur(8px);">
+              <div class="hero-stat-box" style="text-align:center;padding:10px 16px;background:rgba(192,132,252,.07);border:1px solid rgba(192,132,252,.15);border-radius:12px;backdrop-filter:blur(8px);">
                 <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:#c084fc;line-height:1;" id="hero-leads">—</div>
                 <div style="font-size:9px;color:rgba(200,220,235,.38);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">Leads/mes</div>
               </div>
             </div>
           </div>
+          <!-- Quick Actions strip -->
+          <div class="hero-quick-actions">
+            <button class="qa-btn qa-primary" onclick="openModal('checkin')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Check-in
+            </button>
+            <button class="qa-btn qa-primary" onclick="openModal('pago')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              + Pago
+            </button>
+            <button class="qa-btn qa-secondary" onclick="openModal('cliente')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
+              + Cliente
+            </button>
+            <button class="qa-btn qa-danger hidden" id="qa-vencidos-btn" onclick="go('clientes', document.getElementById('nav-clientes'))">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span id="qa-vencidos-label">Ver vencidos</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="kpi-grid kpi-grid-primary">
+      <!-- KPI primarios — 3 hero numbers (FORGE v5) -->
+      <div class="kpi-grid kpi-grid-primary" style="grid-template-columns:repeat(3,1fr);">
         <div class="kpi-card" style="--kpi-color:var(--accent)">
           <div class="kpi-label">Clientes Activos</div>
           <div class="kpi-value" id="kpi-activos">0</div>
-          <div class="kpi-meta">Cerrado – Ganado</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#7c3aed">
-          <div class="kpi-label">Leads Este Mes</div>
-          <div class="kpi-value" id="kpi-leads">0</div>
-          <div class="kpi-trend" id="kpi-leads-trend" style="display:none;"></div>
-          <div class="kpi-meta">Prospectos ingresados</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--ok)">
-          <div class="kpi-label">Tasa de Conversión</div>
-          <div class="kpi-value" id="kpi-conv">—</div>
-          <div class="kpi-meta">Leads → Clientes</div>
+          <div class="kpi-meta">Membresías vigentes</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--warn)">
           <div class="kpi-label">Ingresos del Mes</div>
@@ -2536,36 +2618,48 @@ select option{background:#10101c;color:var(--text);}
           <div class="kpi-trend" id="kpi-ingresos-trend" style="display:none;"></div>
           <div class="kpi-meta" id="kpi-ingresos-meta">Pagos registrados</div>
         </div>
-      </div>
-      <!-- Secondary metrics row -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;margin-top:-6px;">
-        <span style="font-size:10px;font-weight:700;color:rgba(155,185,175,.35);letter-spacing:2px;text-transform:uppercase;">Métricas secundarias</span>
-        <div style="flex:1;height:1px;background:rgba(255,255,255,.05);"></div>
-      </div>
-      <div class="kpi-grid" style="margin-bottom:18px;">
-        <div class="kpi-card" style="--kpi-color:var(--ok)">
-          <div class="kpi-label">Ingresos Totales</div>
-          <div class="kpi-value" id="kpi-total-ingresos">$0</div>
-          <div class="kpi-meta" id="kpi-total-ingresos-meta">Todos los pagos</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#22c55e">
-          <div class="kpi-label">Socios Nuevos</div>
-          <div class="kpi-value" id="kpi-socios-nuevos">0</div>
-          <div class="kpi-trend" id="kpi-socios-trend" style="display:none;"></div>
-          <div class="kpi-meta">Primer pago este mes</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--danger)">
-          <div class="kpi-label">Membresías Vencidas</div>
-          <div class="kpi-value" id="kpi-vencidas">0</div>
-          <div class="kpi-trend" id="kpi-vencidas-trend" style="display:none;"></div>
-          <div class="kpi-meta">Sin renovar</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--warn)">
-          <div class="kpi-label">Por Vencer — 30 días</div>
-          <div class="kpi-value" id="kpi-por-vencer">0</div>
-          <div class="kpi-meta">Requieren atención</div>
+        <div class="kpi-card" style="--kpi-color:#7c3aed">
+          <div class="kpi-label">Leads Este Mes</div>
+          <div class="kpi-value" id="kpi-leads">0</div>
+          <div class="kpi-trend" id="kpi-leads-trend" style="display:none;"></div>
+          <div class="kpi-meta">Conv: <span id="kpi-conv" style="font-weight:700;color:var(--ok);">—</span></div>
         </div>
       </div>
+      <!-- Secondary metrics — collapsible (FORGE v5) -->
+      <details id="kpi-secondary-details" style="margin-bottom:18px;">
+        <summary style="
+          display:flex;align-items:center;gap:10px;
+          list-style:none;cursor:pointer;padding:8px 0;user-select:none;
+        " onclick="">
+          <span style="font-size:9px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:2px;white-space:nowrap;">Métricas secundarias</span>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.05);"></div>
+          <span id="kpi-sec-chevron" style="font-size:9px;color:var(--text4);transition:transform .2s;">▾</span>
+        </summary>
+        <div class="kpi-grid" style="margin-top:10px;">
+          <div class="kpi-card" style="--kpi-color:var(--ok)">
+            <div class="kpi-label">Ingresos Totales</div>
+            <div class="kpi-value" id="kpi-total-ingresos">$0</div>
+            <div class="kpi-meta" id="kpi-total-ingresos-meta">Todos los pagos</div>
+          </div>
+          <div class="kpi-card" style="--kpi-color:#22c55e">
+            <div class="kpi-label">Socios Nuevos</div>
+            <div class="kpi-value" id="kpi-socios-nuevos">0</div>
+            <div class="kpi-trend" id="kpi-socios-trend" style="display:none;"></div>
+            <div class="kpi-meta">Primer pago este mes</div>
+          </div>
+          <div class="kpi-card" style="--kpi-color:var(--danger)">
+            <div class="kpi-label">Membresías Vencidas</div>
+            <div class="kpi-value" id="kpi-vencidas">0</div>
+            <div class="kpi-trend" id="kpi-vencidas-trend" style="display:none;"></div>
+            <div class="kpi-meta">Sin renovar</div>
+          </div>
+          <div class="kpi-card" style="--kpi-color:var(--warn)">
+            <div class="kpi-label">Por Vencer — 30 días</div>
+            <div class="kpi-value" id="kpi-por-vencer">0</div>
+            <div class="kpi-meta">Requieren atención</div>
+          </div>
+        </div>
+      </details>
 
       <!-- ── Botón personalizar (siempre visible arriba) ── -->
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
@@ -2592,6 +2686,9 @@ select option{background:#10101c;color:var(--text);}
       <!-- ── Widget grid (reorderable) ── -->
       <div id="dash-widgets-grid">
 
+      <!-- Section: Ventas & Pipeline -->
+      <div class="section-divider"><span class="section-divider-label">Ventas & Pipeline</span></div>
+
       <div class="dash-widget" data-widget-id="pipeline">
         <div class="dash-widget-handle">⠿ Mover</div>
         <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
@@ -2614,7 +2711,10 @@ select option{background:#10101c;color:var(--text);}
 
       </div><!-- /pipeline widget -->
 
-      <div class="dash-widget" data-widget-id="coaches-venc" style="margin-top:18px;">
+      <!-- Section: Equipo & Operación -->
+      <div class="section-divider" style="margin-top:24px;"><span class="section-divider-label">Equipo & Operación</span></div>
+
+      <div class="dash-widget" data-widget-id="coaches-venc">
         <div class="dash-widget-handle">⠿ Mover</div>
         <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
         <div class="g2">
@@ -2646,7 +2746,10 @@ select option{background:#10101c;color:var(--text);}
         </div>
       </div>
 
-      <div class="dash-widget" data-widget-id="meta-ret" style="margin-top:18px;">
+      <!-- Section: Finanzas & Metas -->
+      <div class="section-divider" style="margin-top:24px;"><span class="section-divider-label">Finanzas & Metas</span></div>
+
+      <div class="dash-widget" data-widget-id="meta-ret">
         <div class="dash-widget-handle">⠿ Mover</div>
         <div class="dash-widget-toggle" onclick="toggleWidgetVisibility(this)">👁 Ocultar</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="dash-meta-ret-grid">
@@ -10063,6 +10166,9 @@ function renderDashboard(){
 
   countUp(document.getElementById('kpi-por-vencer'), porVencer30.length, {duration:500});
 
+  // ── Alert strip + Quick Actions — se activa tras las animaciones countUp ──
+  setTimeout(()=>updateAlertStrip(vencidasCount, porVencer30.length), 600);
+
   // Leads trend (el valor ya se seteó arriba con `total`)
   setTrend('kpi-leads-trend', leadsEsteMes, leadsLastMes, false);
 
@@ -14922,6 +15028,36 @@ function updateHeroGreeting(){
   }
 }
 document.addEventListener('velumAppReady', updateHeroGreeting);
+
+// ── Alert Strip — muestra banner contextual si hay vencimientos urgentes ──
+// Acepta valores directos para evitar race condition con countUp animations
+function updateAlertStrip(vencidasDirect, porVencerDirect){
+  const vencidas  = vencidasDirect  !== undefined ? vencidasDirect  : (parseInt(document.getElementById('kpi-vencidas')?.textContent)  || 0);
+  const porVencer = porVencerDirect !== undefined ? porVencerDirect : (parseInt(document.getElementById('kpi-por-vencer')?.textContent) || 0);
+  const strip     = document.getElementById('dash-alert-strip');
+  const stripTxt  = document.getElementById('dash-alert-strip-txt');
+  const qaBtn     = document.getElementById('qa-vencidos-btn');
+  const qaLbl     = document.getElementById('qa-vencidos-label');
+  if(!strip) return;
+  const total = vencidas + porVencer;
+  if(vencidas > 0 || porVencer > 0){
+    let msg = '';
+    if(vencidas > 0 && porVencer > 0){
+      msg = `${vencidas} membresía${vencidas>1?'s':''} vencida${vencidas>1?'s':''} · ${porVencer} por vencer en los próximos 30 días`;
+    } else if(vencidas > 0){
+      msg = `${vencidas} membresía${vencidas>1?'s':''} vencida${vencidas>1?'s':''} sin renovar — requiere atención`;
+    } else {
+      msg = `${porVencer} membresía${porVencer>1?'s':''} por vencer en los próximos 30 días`;
+    }
+    if(stripTxt) stripTxt.textContent = msg;
+    strip.classList.add('visible');
+    if(qaBtn){ qaBtn.classList.remove('hidden'); }
+    if(qaLbl){ qaLbl.textContent = `Ver vencidos (${vencidas})`; }
+  } else {
+    strip.classList.remove('visible');
+    if(qaBtn) qaBtn.classList.add('hidden');
+  }
+}
 
 // ── Mobile "Más" menu ──
 const _masItems = [
