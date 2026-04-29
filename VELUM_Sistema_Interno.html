@@ -7250,7 +7250,7 @@ function renderCalVenc(){
   // For each cliente, find their latest pago and check if it vence this month
   const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
   [...nombresSet].forEach(nombre=>{
-    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__').sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
+    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
     if(!ps.length) return;
     const ult=ps[0];
     if(!(ult.vence||'').startsWith(mesStr)) return;
@@ -7326,7 +7326,7 @@ function calVencShowDay(day){
   const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
   const events=[];
   [...nombresSet].forEach(nombre=>{
-    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence===dayStr&&p.notas!=='__sin_pago__');
+    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence===dayStr&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan));
     if(!ps.length) return;
     const ult=ps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
     const vDate=new Date(dayStr+'T12:00:00');
@@ -9596,7 +9596,7 @@ function exportarClientesCSV(){
     let estado='Sin fecha';
     if(c.vence&&c.vence.length>=10){
       const diff=Math.ceil((new Date(c.vence+'T12:00:00')-hoy)/(1000*60*60*24));
-      estado=diff<0?'Vencido':diff<=14?'Por vencer':'Activo';
+      estado=esPaseDia(c.plan)?(diff<0?'Sin fecha':'Activo'):(diff<0?'Vencido':diff<=14?'Por vencer':'Activo');
     }
     const tipo = pagos.filter(p=>(p.cliente||'').trim()===nombre).some(p=>!esPaseDia(p.plan))?'Paquete':'Pase de Día';
     const totalPagado = pagos.filter(p=>(p.cliente||'').trim()===nombre).reduce((s,p)=>s+p.monto,0);
@@ -9627,7 +9627,7 @@ function exportarClientesXLSX(){
     let estado='Sin fecha';
     if(ult&&ult.vence&&ult.vence.length>=10){
       const diff=Math.ceil((new Date(ult.vence+'T12:00:00')-hoy)/(1000*60*60*24));
-      estado=diff<0?'Vencido':diff<=14?'Por vencer':'Activo';
+      estado=esPaseDia(ult.plan)?(diff<0?'Sin fecha':'Activo'):(diff<0?'Vencido':diff<=14?'Por vencer':'Activo');
     }
     const tipo = ps.some(p=>!esPaseDia(p.plan))?'Paquete':'Pase de Día';
     const ltv  = ps.reduce((s,p)=>s+p.monto,0);
@@ -10414,11 +10414,11 @@ function renderDashboard(){
     const tieneAntes = pagos.some(x=>x.cliente===p.cliente && (x.fecha||'')<(p.fecha||'') && !(x.fecha||'').startsWith(thisMonth));
     if(!tieneAntes) clientesNuevos.add(p.cliente);
   });
-  // Membresías vencidas
-  const vencidasCount = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now).length;
-  // Por vencer en 30 días
+  // Membresías vencidas (excluir pases de día)
+  const vencidasCount = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now&&!esPaseDia(p.plan)).length;
+  // Por vencer en 30 días (excluir pases de día)
   const porVencer30 = pagos.filter(p=>{
-    if(!p.vence||p.vence==='—') return false;
+    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false;
     const v = new Date(p.vence); return v>=now && v<=in30;
   });
 
@@ -10445,9 +10445,9 @@ function renderDashboard(){
     return f.startsWith(thisMonth);
   }).length;
 
-  // Vencidas mes anterior (vencieron en lastMonth)
-  const vencidasLastMes = pagos.filter(p=>p.vence&&p.vence!=='—'&&(p.vence||'').startsWith(lastMonth)).length;
-  const vencidasEsteMes = pagos.filter(p=>p.vence&&p.vence!=='—'&&(p.vence||'').startsWith(thisMonth)).length;
+  // Vencidas mes anterior (excluir pases de día)
+  const vencidasLastMes = pagos.filter(p=>p.vence&&p.vence!=='—'&&(p.vence||'').startsWith(lastMonth)&&!esPaseDia(p.plan)).length;
+  const vencidasEsteMes = pagos.filter(p=>p.vence&&p.vence!=='—'&&(p.vence||'').startsWith(thisMonth)&&!esPaseDia(p.plan)).length;
 
   // Helper: renderiza badge de trend
   function setTrend(elId, current, prev, invertido){
@@ -12544,10 +12544,13 @@ function renderPagos(){
   const proyMeses = [1,2,3].map(i=>{ const d=new Date(today); d.setMonth(d.getMonth()-i); return d.toISOString().slice(0,7); });
   const proyeccion = Math.round(proyMeses.map(m=>pagosSinAbono.filter(p=>(p.fecha||'').startsWith(m)).reduce((s,p)=>s+(p.monto||0),0)).reduce((a,b)=>a+b,0)/3);
 
-  // Clientes únicos vencidos (sin renovar)
-  const mapaUlt = {}; pagosSinAbono.forEach(p=>{ if(!mapaUlt[p.cliente]||(p.vence||'')>(mapaUlt[p.cliente]||'')) mapaUlt[p.cliente]=p.vence; });
+  // Clientes únicos vencidos (sin renovar, excluir pases de día)
+  const mapaUlt = {};
+  pagosSinAbono.filter(p=>!esPaseDia(p.plan)).forEach(p=>{
+    if(!mapaUlt[p.cliente]||(p.vence||'')>(mapaUlt[p.cliente]||'')) mapaUlt[p.cliente]=p.vence;
+  });
   const vencidasCount = Object.values(mapaUlt).filter(v=>v&&v!=='—'&&new Date(v+'T12:00:00')<today).length;
-  const enRiesgoClientes = [...new Set(pagosSinAbono.filter(p=>{ if(!p.vence||p.vence==='—') return false; const v=new Date(p.vence+'T12:00:00'); return v>=today&&v<=in7; }).map(p=>p.cliente))];
+  const enRiesgoClientes = [...new Set(pagosSinAbono.filter(p=>{ if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false; const v=new Date(p.vence+'T12:00:00'); return v>=today&&v<=in7; }).map(p=>p.cliente))];
 
   // Mes anterior (para trend)
   const mesAnt = (()=>{ const d=new Date(today); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
