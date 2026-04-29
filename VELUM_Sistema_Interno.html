@@ -1232,7 +1232,7 @@ select option{background:#0d1a16;color:var(--text);}
   transition:all .18s;
 }
 .detail-close:hover{background:rgba(29,158,117,.15);color:var(--accent);border-color:rgba(29,158,117,.3);}
-.detail-name{font-family:var(--font-display);font-size:22px;font-weight:900;color:#fff;margin-top:6px;letter-spacing:.2px;line-height:1.2;}
+.detail-name{font-family:var(--font-display);font-size:22px;font-weight:900;color:#fff;margin-top:6px;letter-spacing:.2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .detail-sub{font-size:12px;color:rgba(210,224,238,.45);margin-top:4px;}
 .detail-body{padding:22px 20px;}
 .detail-section{margin-bottom:24px;}
@@ -1859,26 +1859,51 @@ select option{background:#0d1a16;color:var(--text);}
   .sidebar-bottom  { display: none !important; }  /* user-card at bottom */
 
   /*
-   * KEY FIX: display:contents makes both the <nav> wrapper and
-   * nav-sections "invisible" to flex layout.
-   * All .nav-item elements flow directly into the sidebar's flex row.
+   * KEY FIX v10: display:contents es inestable en iOS Safari PWA.
+   * Flex explícito en nav.nav + nav-section garantiza compatibilidad total.
+   * :has() oculta secciones donde todos los ítems son mob-hidden.
+   * Resultado: Dashboard | Pagos+Clientes | Asistencia | Más → espaciado even.
    */
-  nav.nav      { display: contents !important; }
-  .nav-section { display: contents !important; }
+  nav.nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 1 !important;
+    align-items: stretch !important;
+    justify-content: space-evenly !important;
+    padding: 0 2px !important;
+    gap: 0 !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  .nav-section {
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+  }
+  /* Ocultar secciones donde TODOS los ítems son mob-hidden */
+  .nav-section:not(:has(.nav-item:not(.mob-hidden))) {
+    display: none !important;
+  }
 
-  /* Hide group labels (class is .nav-label in HTML, not .nav-section-label) */
+  /* Hide group labels */
   .nav-label { display: none !important; }
 
-  /* Each nav-item: vertical icon + text */
+  /* Each nav-item: vertical icon + text, fills section evenly */
   .nav-item {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    flex-shrink: 0 !important;
-    min-width: 52px !important;
+    flex: 1 1 0 !important;
+    min-width: 40px !important;
     min-height: 52px !important;
-    padding: 6px 8px 4px !important;
+    padding: 6px 6px 4px !important;
     gap: 3px !important;
     border-radius: 10px !important;
     border-left: none !important;
@@ -2205,8 +2230,8 @@ select option{background:#0d1a16;color:var(--text);}
 /* ── 480px breakpoint ── */
 @media (max-width: 480px) {
 
-  /* Bottom nav — tighter */
-  .nav-item { min-width: 50px; padding: 6px 6px 4px; }
+  /* Bottom nav — tighter (flex:1 ensures fill) */
+  .nav-item { min-width: 36px; padding: 6px 4px 4px; }
   .nav-item .nav-icon { font-size: 17px; }
   .nav-item .nav-label { font-size: 8px; }
 
@@ -2244,7 +2269,7 @@ select option{background:#0d1a16;color:var(--text);}
 
 /* ── 390px: tap targets mínimos Apple (44pt) ── */
 @media (max-width: 390px) {
-  .nav-item { min-width: 44px !important; padding: 5px 4px 3px !important; font-size: 8px !important; }
+  .nav-item { min-width: 30px !important; padding: 5px 2px 3px !important; font-size: 8px !important; }
   .nav-item .nav-icon { width: 20px !important; height: 20px !important; }
 }
 
@@ -3302,6 +3327,23 @@ select option{background:#0d1a16;color:var(--text);}
           <button class="cli-tab-estado"         data-estado="sin-fecha"  onclick="setCliEstado('sin-fecha',this)">📅 Sin fecha</button>
         </div>
       </div>
+      <script>
+        // Restaurar filtros desde sessionStorage al cargar la vista
+        (function initCliTabs(){
+          const savedTipo   = sessionStorage.getItem('velum_cliTipo');
+          const savedEstado = sessionStorage.getItem('velum_cliEstado');
+          if(savedTipo && savedTipo !== 'todos'){
+            document.querySelectorAll('.cli-tab-tipo').forEach(b=>{
+              b.classList.toggle('active', b.dataset.tipo === savedTipo);
+            });
+          }
+          if(savedEstado && savedEstado !== 'todos'){
+            document.querySelectorAll('.cli-tab-estado').forEach(b=>{
+              b.classList.toggle('active', b.dataset.estado === savedEstado);
+            });
+          }
+        })();
+      </script>
 
       <!-- Lista -->
       <div id="clientes-list" style="display:flex;flex-direction:column;gap:8px;">
@@ -4120,7 +4162,13 @@ select option{background:#0d1a16;color:var(--text);}
   <div class="detail-body">
     <div class="detail-section">
       <div class="detail-section-title">Información de Contacto</div>
-      <div class="detail-field"><span class="detail-field-label">Teléfono</span><span class="detail-field-value" id="dp-tel">—</span></div>
+      <div class="detail-field" style="align-items:center;">
+        <span class="detail-field-label">Teléfono</span>
+        <span class="detail-field-value" id="dp-tel">—</span>
+        <button id="dp-tel-copy" onclick="copyTelDetailPanel()" title="Copiar teléfono"
+          style="display:none;margin-left:6px;padding:2px 7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;flex-shrink:0;transition:background .15s;"
+          onmouseenter="this.style.background='rgba(29,158,117,.12)'" onmouseleave="this.style.background='rgba(255,255,255,.06)'">📋</button>
+      </div>
       <div class="detail-field"><span class="detail-field-label">Email</span><span class="detail-field-value" id="dp-email">—</span></div>
       <div class="detail-field"><span class="detail-field-label">Canal preferido</span><span class="detail-field-value" id="dp-canal">—</span></div>
     </div>
@@ -4355,8 +4403,17 @@ select option{background:#0d1a16;color:var(--text);}
         </button>
       </div>
       <div class="field-grid">
-        <div class="field"><label>Cliente *</label><input id="p-cliente" type="text" placeholder="Nombre del cliente"/></div>
-        <div class="field"><label id="p-monto-label">Monto (MXN) *</label><input id="p-monto" type="number" placeholder="1200" min="0" oninput="recalcSaldo()"/></div>
+        <div class="field">
+          <label>Cliente *</label>
+          <input id="p-cliente" type="text" placeholder="Nombre del cliente" list="p-cliente-list" autocomplete="off"/>
+          <datalist id="p-cliente-list"></datalist>
+          <span class="field-err" id="p-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label id="p-monto-label">Monto (MXN) *</label>
+          <input id="p-monto" type="number" placeholder="1200" min="0" oninput="recalcSaldo()"/>
+          <span class="field-err" id="p-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
       </div>
       <!-- Abono extra fields -->
       <div id="p-abono-row" style="display:none;">
@@ -4405,7 +4462,11 @@ select option{background:#0d1a16;color:var(--text);}
         </div>
       </div>
       <div class="field-grid">
-        <div class="field"><label>Fecha de pago *</label><input id="p-fecha" type="date"/></div>
+        <div class="field">
+          <label>Fecha de pago *</label>
+          <input id="p-fecha" type="date"/>
+          <span class="field-err" id="p-fecha-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
         <div class="field"><label>Fecha de vencimiento <span style="font-size:10px;color:var(--text3);">(opcional para paquetes)</span></label><input id="p-vence" type="date"/></div>
       </div>
       <div class="field-grid">
@@ -6816,17 +6877,29 @@ function go(id, el){
 // ═══════════════════════════════════════════════════════════════════
 // TOAST
 // ═══════════════════════════════════════════════════════════════════
-function toast(msg, icon='✓'){
+let _toastTimer = null;
+function toast(msg, icon='✓', duration=2800){
   const t = document.getElementById('toast');
   t.innerHTML = `<span>${icon}</span> ${msg}`;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>{ t.classList.remove('show'); _toastTimer=null; }, duration);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════════════════════════════════
-function openModal(id){ document.getElementById('modal-'+id).classList.add('open'); }
+function openModal(id){
+  document.getElementById('modal-'+id).classList.add('open');
+  // Poblar datalist de clientes cuando se abre el modal de pago
+  if(id==='pago'){
+    const dl = document.getElementById('p-cliente-list');
+    if(dl && typeof clientesDB !== 'undefined'){
+      dl.innerHTML = clientesDB.map(c=>`<option value="${(c.nombre||'').replace(/"/g,'&quot;')}">`).join('');
+    }
+    _clearPagoErrors();
+  }
+}
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
 
 // ─── Confirm Dialog (reemplaza window.confirm) ───
@@ -7533,12 +7606,30 @@ async function deleteLead(id){
   renderDashboard();
 }
 
+function copyTelDetailPanel(){
+  const btn = document.getElementById('dp-tel-copy');
+  const tel = btn ? btn.dataset.tel : '';
+  if(!tel) return;
+  navigator.clipboard.writeText(tel).then(()=>{
+    toast('Teléfono copiado','📋', 1600);
+  }).catch(()=>{
+    // fallback para PWA sin permisos
+    const ta = document.createElement('textarea');
+    ta.value = tel; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('Teléfono copiado','📋', 1600);
+  });
+}
+
 function openDetail(id){
   const l = leads.find(x=>String(x.id)===String(id));
   if(!l) return;
   document.getElementById('dp-name').textContent = l.nombre;
   document.getElementById('dp-sub').textContent  = l.estado + ' · ' + l.fechaIngreso;
   document.getElementById('dp-tel').textContent  = l.tel||'—';
+  const dpTelCopy = document.getElementById('dp-tel-copy');
+  if(dpTelCopy){ dpTelCopy.style.display = l.tel ? 'inline-block' : 'none'; dpTelCopy.dataset.tel = l.tel||''; }
   document.getElementById('dp-email').textContent= l.email||'—';
   document.getElementById('dp-canal').textContent= l.canal||'—';
   document.getElementById('dp-fuente').textContent= l.fuente||'—';
@@ -8690,17 +8781,19 @@ function buildWAMsg(nombre, plan, vence){
 }
 
 // Estado activo de los filtros
-let _cliEstado = 'todos';
-let _cliTipo   = 'todos';
+let _cliEstado = sessionStorage.getItem('velum_cliEstado') || 'todos';
+let _cliTipo   = sessionStorage.getItem('velum_cliTipo')   || 'todos';
 
 function setCliEstado(val, btn){
   _cliEstado = val;
+  sessionStorage.setItem('velum_cliEstado', val);
   document.querySelectorAll('.cli-tab-estado').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderClientes();
 }
 function setCliTipo(val, btn){
   _cliTipo = val;
+  sessionStorage.setItem('velum_cliTipo', val);
   document.querySelectorAll('.cli-tab-tipo').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderClientes();
@@ -10174,7 +10267,8 @@ function onPlanChange(selectId, montoId, venceId){
   if(dias && venceId){
     const fechaEl=document.getElementById(selectId==='p-plan'?'p-fecha':'ep-fecha');
     const venceEl=document.getElementById(venceId);
-    if(venceEl&&fechaEl&&fechaEl.value){
+    // Solo auto-calcular vence si está vacío (no sobreescribir edición manual)
+    if(venceEl&&!venceEl.value&&fechaEl&&fechaEl.value){
       const base=new Date(fechaEl.value+'T12:00:00');
       base.setDate(base.getDate()+dias);
       venceEl.value=base.toISOString().slice(0,10);
@@ -12268,6 +12362,8 @@ async function saveEditLead(){
   document.getElementById('dp-name').textContent   = l.nombre;
   document.getElementById('dp-sub').textContent    = l.estado + ' · ' + l.fechaIngreso;
   document.getElementById('dp-tel').textContent    = l.tel||'—';
+  const dpTelCopyB = document.getElementById('dp-tel-copy');
+  if(dpTelCopyB){ dpTelCopyB.style.display = l.tel ? 'inline-block' : 'none'; dpTelCopyB.dataset.tel = l.tel||''; }
   document.getElementById('dp-email').textContent  = l.email||'—';
   document.getElementById('dp-canal').textContent  = l.canal||'—';
   document.getElementById('dp-fuente').textContent = l.fuente||'—';
@@ -12317,13 +12413,26 @@ function recalcSaldo(){
   else { disp.textContent=`$${saldo.toLocaleString('es-MX')} pendiente`; disp.style.color='var(--warn)'; }
 }
 
+// Helper: muestra error inline bajo un campo del modal de pago
+function _pagoFieldErr(id, msg){
+  const el = document.getElementById(id+'-err');
+  const input = document.getElementById(id);
+  if(el){ el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+  if(input){ input.style.borderColor = msg ? 'var(--danger)' : ''; }
+}
+function _clearPagoErrors(){
+  ['p-cliente','p-monto','p-fecha'].forEach(id=>_pagoFieldErr(id,''));
+}
+
 async function savePago(){
+  _clearPagoErrors();
   const cliente = document.getElementById('p-cliente').value.trim();
   const monto   = parseFloat(document.getElementById('p-monto').value);
   const fecha   = document.getElementById('p-fecha').value;
-  if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
-  if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
-  if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
+  let hasError = false;
+  if(!cliente){ _pagoFieldErr('p-cliente','El nombre del cliente es obligatorio.'); hasError=true; }
+  if(!monto||monto<=0){ _pagoFieldErr('p-monto','Ingresa un monto válido.'); hasError=true; }
+  if(!fecha){ _pagoFieldErr('p-fecha','La fecha de pago es obligatoria.'); hasError=true; }
   // Build notas: prepend abono info if applicable
   let notasBase = document.getElementById('p-notas').value.trim();
   let abonoPrefix = '';
@@ -12336,7 +12445,14 @@ async function savePago(){
   const esPaquete = planVal.includes('Paquete');
   const clases_totales = esPaquete ? (parseInt(document.getElementById('p-clases-totales')?.value)||null) : null;
   const clases_usadas  = esPaquete ? (parseInt(document.getElementById('p-clases-usadas-init')?.value)||0) : 0;
-  if(esPaquete && (!clases_totales || clases_totales < 1)){ alert('Ingresa el número de clases del paquete.'); return; }
+  if(esPaquete && (!clases_totales || clases_totales < 1)){
+    toast('Ingresa el número de clases del paquete.','⚠️'); hasError=true;
+  }
+  if(hasError) return;
+  // Loading state
+  const btn = document.getElementById('p-save-btn');
+  const btnOrigText = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
   const payload = {
     cliente, monto, fecha,
     plan:      planVal,
@@ -12348,7 +12464,8 @@ async function savePago(){
     ...(esPaquete ? { clases_totales, clases_usadas } : {}),
   };
   const { error } = await window.supabaseClient.from('pagos').insert([withGymId(payload)]);
-  if(error){ console.error('Error guardando pago:', error); alert('No se pudo guardar el pago.'); return; }
+  if(btn){ btn.disabled=false; btn.textContent=btnOrigText; }
+  if(error){ console.error('Error guardando pago:', error); toast('No se pudo guardar el pago. Intenta de nuevo.','❌'); return; }
   await Promise.all([loadPagosFromSupabase(), loadClientesFromSupabase()]);
   closeModal('pago');
   ['p-cliente','p-monto','p-notas','p-telefono'].forEach(id=>document.getElementById(id).value='');
@@ -12358,6 +12475,7 @@ async function savePago(){
   if(document.getElementById('p-monto-total')) document.getElementById('p-monto-total').value='';
   document.getElementById('p-plan').selectedIndex=0;
   document.getElementById('p-metodo').selectedIndex=0;
+  _clearPagoErrors();
   setPagoTipo('completo'); // reset toggle
   const tipoLabel = _pagoTipo==='abono' ? 'Abono' : 'Pago';
   auditLog('CREAR_PAGO', 'pagos', '', `${tipoLabel} $${monto} para ${cliente}`);
