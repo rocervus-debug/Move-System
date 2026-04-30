@@ -13,6 +13,7 @@ async function generateBatch(
   nivel: string,
   objetivo: string,
   notas: string,
+  plantillaEjemplo: string,
   monthName: string,
   diasNombres: string,
   ANTHROPIC_API_KEY: string,
@@ -28,21 +29,19 @@ Tu programación es:
 
 Respondes SIEMPRE con JSON válido y nada más — sin texto introductorio, sin explicaciones, sin markdown extra.`;
 
-  const userPrompt = `Genera el programa de ${tipo} para las siguientes sesiones de ${monthName}.
+  // Build the format instruction section — use example template if provided
+  const formatoSection = plantillaEjemplo && plantillaEjemplo.trim()
+    ? `FORMATO OBLIGATORIO — Analiza el siguiente ejemplo y replica EXACTAMENTE su estructura, secciones, emojis y estilo. Varía SOLO los ejercicios, cargas y circuitos (nunca el formato):
 
-CONTEXTO DEL GIMNASIO:
-- Disciplina: ${tipo}
-- Equipo disponible: ${equipo || 'Barras olímpicas, discos, mancuernas (5-40kg), kettlebells, remos, assault bike, cajas pliométricas, bandas, TRX'}
-- Bloque de entrenamiento: ${bloque || 'Base / Acumulación'}
-- Nivel de atletas: ${nivel || 'Mixto (principiante a avanzado)'}
-- Objetivo principal: ${objetivo || `Desarrollo integral de capacidad en ${tipo} con progresión mensual`}
-- Días de entrenamiento: ${diasNombres}
-- Notas del coach: ${notas || 'Ninguna'}
+--- EJEMPLO DE SESIÓN ---
+${plantillaEjemplo.trim()}
+--- FIN DEL EJEMPLO ---
 
-FECHAS (${fechas.length} sesiones):
-${fechas.join('\n')}
-
-FORMATO OBLIGATORIO POR SESIÓN — Usa exactamente estas etiquetas y un salto de línea entre secciones:
+Reglas de formato:
+1. Usa las mismas secciones, en el mismo orden, con los mismos emojis/encabezados del ejemplo
+2. Mantén el mismo nivel de detalle (si el ejemplo especifica %1RM, tú también debes hacerlo)
+3. Respeta la longitud y estilo de redacción del ejemplo`
+    : `FORMATO OBLIGATORIO POR SESIÓN — Usa exactamente estas etiquetas y un salto de línea entre secciones:
 
 🔥 WARM UP (10 min):
 [2-3 ejercicios de activación específicos, con tiempo o rondas]
@@ -57,7 +56,23 @@ FORMATO OBLIGATORIO POR SESIÓN — Usa exactamente estas etiquetas y un salto d
 [Tipo: AMRAP / EMOM / For Time / Chipper — descripción completa del circuito]
 
 🧘 COOL DOWN:
-[1-2 estiramientos estáticos específicos, 30-60 seg cada uno]
+[1-2 estiramientos estáticos específicos, 30-60 seg cada uno]`;
+
+  const userPrompt = `Genera el programa de ${tipo} para las siguientes sesiones de ${monthName}.
+
+CONTEXTO DEL GIMNASIO:
+- Disciplina: ${tipo}
+- Equipo disponible: ${equipo || 'Barras olímpicas, discos, mancuernas (5-40kg), kettlebells, remos, assault bike, cajas pliométricas, bandas, TRX'}
+- Bloque de entrenamiento: ${bloque || 'Base / Acumulación'}
+- Nivel de atletas: ${nivel || 'Mixto (principiante a avanzado)'}
+- Objetivo principal: ${objetivo || `Desarrollo integral de capacidad en ${tipo} con progresión mensual`}
+- Días de entrenamiento: ${diasNombres}
+- Notas del coach: ${notas || 'Ninguna'}
+
+FECHAS (${fechas.length} sesiones):
+${fechas.join('\n')}
+
+${formatoSection}
 
 REGLAS DE CALIDAD:
 1. Progresión coherente: si hay varias sesiones, que haya progresión de carga o volumen
@@ -70,7 +85,7 @@ RESPONDE SOLO CON ESTE JSON:
   "programas": [
     {
       "fecha": "YYYY-MM-DD",
-      "contenido": "🔥 WARM UP (10 min):\\n[ejercicios]\\n\\n💪 BLOQUE PRINCIPAL:\\n[ejercicios]\\n\\n⚡ FINALIZADOR (10-12 min):\\n[circuito]\\n\\n🧘 COOL DOWN:\\n[estiramientos]",
+      "contenido": "[sesión completa con el formato especificado arriba]",
       "notas": "Enfoque fisiológico de la sesión"
     }
   ]
@@ -144,6 +159,7 @@ serve(async (req) => {
       bloque,
       nivel,
       notas,
+      plantilla_ejemplo,
     } = await req.json();
 
     if (!tipo) {
@@ -213,6 +229,7 @@ serve(async (req) => {
     for (const batch of batches) {
       const batchResult = await generateBatch(
         batch, tipo, equipo || '', bloque || '', nivel || '', objetivo || '', notas || '',
+        plantilla_ejemplo || '',
         monthName, diasNombres, ANTHROPIC_API_KEY
       );
       allProgramas.push(...batchResult);

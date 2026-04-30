@@ -12158,6 +12158,7 @@ function renderDisciplinaCatalog(){
       const notasVal = cfg.notas||'';
       const bloqueVal = cfg.bloque||'Base';
       const nivelVal = cfg.nivel||'Mixto';
+      const plantillaVal = cfg.plantilla_ejemplo||'';
       html += `
       <div id="cfg-disc-${disc.id}" style="border:1px solid ${isActive ? color+'55' : 'var(--border)'};border-radius:10px;margin-bottom:8px;background:${isActive ? color+'0a' : 'var(--card2)'};overflow:hidden;transition:all .2s;">
         <!-- Header row -->
@@ -12209,9 +12210,19 @@ function renderDisciplinaCatalog(){
             <label style="font-size:10px;">Objetivo del programa</label>
             <textarea id="cfg-obj-${disc.id}" rows="2" style="font-size:12px;" placeholder="Ej: Desarrollar fuerza funcional, progresión lineal de cargas...">${objVal}</textarea>
           </div>
-          <div class="field" style="margin:0;">
+          <div class="field" style="margin:0 0 6px;">
             <label style="font-size:10px;">Notas para el asistente IA</label>
             <textarea id="cfg-notas-${disc.id}" rows="1" style="font-size:12px;" placeholder="Ej: Sesiones de máx 60 min. Evitar movimientos olímpicos...">${notasVal}</textarea>
+          </div>
+          <div class="field" style="margin:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label style="font-size:10px;margin:0;">Programa de ejemplo (la IA copiará este formato)</label>
+              <div style="display:flex;gap:4px;">
+                <button type="button" onclick="usarPlantillaEjemplo('${disc.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;line-height:1.4;">Usar como plantilla</button>
+                <button type="button" onclick="document.getElementById('cfg-plantilla-${disc.id}').value=''" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;line-height:1.4;">Restablecer</button>
+              </div>
+            </div>
+            <textarea id="cfg-plantilla-${disc.id}" rows="6" style="font-size:11px;font-family:monospace;letter-spacing:.01em;line-height:1.5;" placeholder="Pega aquí un ejemplo de sesión bien formateada. La IA detectará la estructura (secciones, emojis, orden) y la replicará en cada día generado...">${plantillaVal}</textarea>
           </div>
         </div>
       </div>`;
@@ -12248,6 +12259,31 @@ function onDiscActivaChange(id){
   if(detail) detail.style.display = isActive ? 'block' : 'none';
 }
 
+function usarPlantillaEjemplo(discId){
+  // Copy current notas-field content into plantilla field, pre-filling with a blank template
+  const el = document.getElementById('cfg-plantilla-'+discId);
+  if(!el) return;
+  if(el.value.trim()){
+    if(!confirm('¿Reemplazar la plantilla actual con el formato predeterminado?')) return;
+  }
+  el.value = `🔥 WARM UP (10 min):
+- Ejercicio de activación 1 (2-3 rondas)
+- Ejercicio de activación 2 (tiempo o reps)
+
+💪 BLOQUE PRINCIPAL:
+- Ejercicio principal: 4×5 @ 75-80% 1RM
+- Accesorio 1: 3×10-12 (carga específica)
+- Accesorio 2: 3×8-10 (carga específica)
+
+⚡ FINALIZADOR (10-12 min):
+AMRAP / EMOM / For Time — descripción completa del circuito con movimientos y reps exactos
+
+🧘 COOL DOWN:
+- Estiramiento estático 1 (30-60 seg)
+- Estiramiento estático 2 (30-60 seg)`;
+  el.focus();
+}
+
 function openProgConfig(){
   const gym = progConfig['gym']||{};
   const sv = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
@@ -12276,14 +12312,15 @@ async function saveProgConfig(){
     }
     const dias = diasArr.length > 0 ? diasArr : disc.defaultDias;
     rows.push({
-      tipo:       disc.id,
-      equipo:     '',
-      activa:     isActiva,
-      dias_semana: dias,
-      objetivo:   gv('cfg-obj-'+disc.id),
-      bloque:     gv('cfg-bloque-'+disc.id),
-      nivel:      gv('cfg-nivel-'+disc.id),
-      notas:      gv('cfg-notas-'+disc.id),
+      tipo:             disc.id,
+      equipo:           '',
+      activa:           isActiva,
+      dias_semana:      dias,
+      objetivo:         gv('cfg-obj-'+disc.id),
+      bloque:           gv('cfg-bloque-'+disc.id),
+      nivel:            gv('cfg-nivel-'+disc.id),
+      notas:            gv('cfg-notas-'+disc.id),
+      plantilla_ejemplo: gv('cfg-plantilla-'+disc.id),
     });
   }
 
@@ -12516,14 +12553,15 @@ async function generateSemanaActual(){
   try {
     const { data: fnData, error: fnErr } = await window.supabaseClient.functions.invoke('velum-prog-generate', {
       body: {
-        tipo:        disc.id,
-        fechas:      fechas,       // send exact dates for this week
-        dias_semana: dias,
-        equipo:      gymCfg.equipo||'',
-        objetivo:    cfg.objetivo||'',
-        bloque:      cfg.bloque||'Base',
-        nivel:       cfg.nivel||'Mixto',
-        notas:       cfg.notas||'',
+        tipo:              disc.id,
+        fechas:            fechas,       // send exact dates for this week
+        dias_semana:       dias,
+        equipo:            gymCfg.equipo||'',
+        objetivo:          cfg.objetivo||'',
+        bloque:            cfg.bloque||'Base',
+        nivel:             cfg.nivel||'Mixto',
+        notas:             cfg.notas||'',
+        plantilla_ejemplo: cfg.plantilla_ejemplo||'',
       }
     });
 
