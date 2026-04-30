@@ -2116,14 +2116,41 @@ function _sbHeaders(){
   return {'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'};
 }
 
+// Resolves gym_id: uses portalData.gym.id if present, otherwise looks it up
+// from the clientes table using the portal_token (fallback for old edge function versions)
+async function _resolveGymId(){
+  if(portalData?.gym?.id) return portalData.gym.id;
+  if(!portalData?.cliente?.portal_token) return null;
+  try{
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalData.cliente.portal_token)}&select=gym_id&limit=1`,
+      { headers: _sbHeaders() }
+    );
+    const rows = res.ok ? await res.json() : [];
+    if(Array.isArray(rows) && rows.length && rows[0].gym_id){
+      // Cache on portalData so next call is instant
+      if(portalData.gym) portalData.gym.id = rows[0].gym_id;
+      return rows[0].gym_id;
+    }
+  }catch(_){}
+  return null;
+}
+
 async function loadClasesData(){
   if(!portalData) return;
   if(clasesLoading) return;
   clasesLoading = true;
 
-  const gymId    = portalData.gym.id;
+  const gymId    = await _resolveGymId();
   const token    = portalData.cliente.portal_token;
   const membOk   = portalData.cliente.membresiaOk;
+
+  if(!gymId){
+    clasesLoading = false;
+    const el = $('cls-content');
+    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico">⚠️</div><div class="cls-empty-txt">No se pudo identificar el gimnasio. Contacta a recepción.</div></div>';
+    return;
+  }
 
   // Show membership warning if expired
   const warnEl = $('cls-warn-banner');
@@ -2377,8 +2404,13 @@ async function crearReserva(horarioId, fecha, tipo, hora){
   const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Reservando…'; }
 
-  const gymId   = portalData.gym.id;
+  const gymId   = await _resolveGymId();
   const cliente = portalData.cliente;
+  if(!gymId){
+    alert('❌ No se pudo identificar el gimnasio. Contacta a recepción.');
+    if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
+    return;
+  }
   const diaIdx  = new Date(fecha+'T12:00:00').getDay();
   const dia     = DIAS[diaIdx];
 

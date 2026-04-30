@@ -245,23 +245,45 @@ async function doCheckinByNumero(numero){
   if(btn){ btn.disabled=true; btn.textContent='Verificando…'; }
   hideNumErr();
   try{
-    // 1. Look up portal_token by numero_cliente
+    // 1. Look up qr_token (and portal_token as fallback) by numero_cliente
+    //    move-checkin searches by qr_token; portal_token is fallback
     const gymFilter = kioscoGymId ? `&gym_id=eq.${kioscoGymId}` : '';
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/clientes?numero_cliente=eq.${encodeURIComponent(numero)}${gymFilter}&select=portal_token,nombre&limit=1`,
+      `${SUPABASE_URL}/rest/v1/clientes?numero_cliente=eq.${encodeURIComponent(numero)}${gymFilter}&select=qr_token,portal_token,nombre&limit=1`,
       { headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`} }
     );
+    if(!res.ok){
+      showNumErr('Error al consultar. Intenta de nuevo.');
+      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
+      return;
+    }
     const rows = await res.json();
-    if(!rows || !rows.length || !rows[0].portal_token){
+    if(!Array.isArray(rows) || !rows.length){
       showNumErr('Número de cliente no encontrado.');
       if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
       return;
     }
-    const token = rows[0].portal_token;
+    // Use qr_token first (native check-in token), fallback to portal_token
+    const token = rows[0].qr_token || rows[0].portal_token;
+    if(!token){
+      showNumErr('Este cliente no tiene token de acceso configurado.');
+      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
+      return;
+    }
     // 2. Call check-in edge function with token
     const cRes = await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`);
     const data  = await cRes.json();
-    if(!cRes.ok || !data.ok){ renderError(data.error||'No se pudo registrar'); return; }
+    if(!cRes.ok || !data.ok){
+      // Show inline error in kiosk, not the full error card
+      const msg = data.error || 'No se pudo registrar el acceso.';
+      if(msg.includes('no encontrado') || msg.includes('no válido')){
+        showNumErr('Cliente no encontrado. Verifica el número.');
+      } else {
+        showNumErr(msg);
+      }
+      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
+      return;
+    }
     renderSuccess(data, true); // true = kiosco mode → auto-reset
   } catch(e){
     showNumErr('Error de conexión. Intenta de nuevo.');

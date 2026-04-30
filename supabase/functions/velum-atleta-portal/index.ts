@@ -182,6 +182,7 @@ serve(async (req) => {
         membresiaOk,
       },
       gym: {
+        id:               gym_id,
         nombre:           cfg['gym_nombre']    || 'VELUM Gym',
         logo:             cfg['gym_logo']      || null,
         codigo:           cfg['portal_codigo'] || null,

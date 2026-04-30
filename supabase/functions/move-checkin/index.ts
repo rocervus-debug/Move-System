@@ -31,15 +31,16 @@ serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // ── Look up client by QR token ────────────────────────────────────
+  // ── Look up client by QR token OR portal_token ───────────────────
+  // Supports both: QR scan (uses qr_token) and kiosk by number (uses portal_token)
   const { data: cliente, error } = await db
     .from('clientes')
-    .select('id, nombre, email, estado, membresia, vence, foto_url, gym_id, qr_token')
-    .eq('qr_token', token)
+    .select('id, nombre, email, estado, membresia, vence, foto_url, gym_id, qr_token, portal_token')
+    .or(`qr_token.eq.${token},portal_token.eq.${token}`)
     .maybeSingle();
 
   if (error || !cliente) {
-    return new Response(JSON.stringify({ error: 'QR no válido o cliente no encontrado.' }), {
+    return new Response(JSON.stringify({ error: 'Cliente no encontrado. Verifica el número o QR.' }), {
       status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
