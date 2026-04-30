@@ -2134,13 +2134,18 @@ async function loadClasesData(){
   if(hiEl) hiEl.textContent = portalData.gym.nombre || 'Clases';
 
   try{
-    // 1. Fetch weekly horarios template (fecha = null = recurring)
+    // 1. Fetch weekly horarios template (fecha vacía = recurrente)
+    // La tabla usa fecha="" para plantillas semanales (no NULL)
     const hRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&fecha=is.null&select=id,dia,hora,tipo,coach_nombre,cupo&order=hora.asc`,
+      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&select=id,dia,hora,tipo,coach_nombre,cupo,fecha`,
       { headers: _sbHeaders() }
     );
     if(!hRes.ok) throw new Error('horarios fetch failed');
-    clasesHorarios = await hRes.json();
+    const allHorarios = await hRes.json();
+    // Filtrar solo plantillas recurrentes: fecha vacía o null
+    clasesHorarios = allHorarios.filter(h => !h.fecha || h.fecha === '');
+    // Ordenar cronológicamente (formato "6:00am", "5:30pm", etc.)
+    clasesHorarios.sort((a,b) => _horaToMin(a.hora) - _horaToMin(b.hora));
 
     // Determine dates for the next 7 days
     const today = new Date();
@@ -2331,11 +2336,39 @@ function renderClasesView(dates){
   }).join('');
 }
 
+// Convierte "6:00am" / "18:30" / "6:00 PM" → minutos desde medianoche (para sort)
+function _horaToMin(hora){
+  if(!hora) return 9999;
+  const s = hora.toLowerCase().trim();
+  const isPm = s.includes('pm');
+  const isAm = s.includes('am');
+  const clean = s.replace(/[apm\s]/g,'');
+  const [hStr, mStr] = clean.split(':');
+  let h = parseInt(hStr,10)||0;
+  const m = parseInt(mStr,10)||0;
+  if(isPm && h !== 12) h += 12;
+  if(isAm && h === 12) h = 0;
+  return h*60+m;
+}
+
+// Formatea hora para mostrar: "6:00am" → "6:00 AM"
 function _fmtHora(hora){
   if(!hora) return '—';
+  const s = hora.toLowerCase().trim();
+  const isPm = s.includes('pm');
+  const isAm = s.includes('am');
+  if(isAm || isPm){
+    // Ya viene en formato 12h — solo limpiar y capitalizar
+    const time = s.replace(/[apm\s]/g,'');
+    const suffix = isPm ? 'PM' : 'AM';
+    return `${time} <span style="font-size:12px;font-weight:600;opacity:.6;">${suffix}</span>`;
+  }
+  // Formato 24h: "18:30" → "6:30 PM"
   const [h,m] = hora.split(':');
   const hr = parseInt(h,10);
-  return `${hr>12?hr-12:hr||12}:${m} <span style="font-size:12px;font-weight:600;opacity:.6;">${hr>=12?'PM':'AM'}</span>`;
+  const suffix = hr >= 12 ? 'PM' : 'AM';
+  const hr12 = hr > 12 ? hr-12 : hr || 12;
+  return `${hr12}:${m||'00'} <span style="font-size:12px;font-weight:600;opacity:.6;">${suffix}</span>`;
 }
 
 async function crearReserva(horarioId, fecha, tipo, hora){

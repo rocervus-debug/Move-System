@@ -216,10 +216,30 @@ function renderError(msg){
 }
 
 // ── Init: read token from URL ─────────────────────────────────────────
-const params = new URLSearchParams(window.location.search);
-const token  = params.get('token');
-if(!token){ renderError('QR inválido. Escanea tu código QR personal.'); }
-else       { doCheckin(token); }
+const params  = new URLSearchParams(window.location.search);
+const token   = params.get('token');
+const kiosco  = params.get('kiosko') || params.get('kiosco');
+
+if(token){
+  doCheckin(token);
+} else if(kiosco){
+  // Modo kiosco: pantalla de espera para que atletas muestren su QR
+  document.getElementById('gym-sub').textContent = 'Kiosco · Listo para escanear';
+  document.getElementById('root').innerHTML = `
+    <div class="card" style="--glow:rgba(29,158,117,.15);">
+      <div class="status-ring" style="--ring-color:var(--accent);--ring-bg:rgba(29,158,117,.08);--ring-glow:rgba(29,158,117,.2);">📲</div>
+      <span class="status-badge badge-ok">Kiosco activo</span>
+      <div class="client-name" style="font-size:20px;margin-top:8px;">Muestra tu QR de entrada</div>
+      <div class="client-plan" style="margin-top:6px;line-height:1.6;">
+        Abre el portal VELUM en tu teléfono,<br>toca <strong style="color:#fff;">Check-in</strong> y muestra tu código QR.
+      </div>
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:rgba(255,255,255,.2);">
+        VELUM · Check-in Kiosco
+      </div>
+    </div>`;
+} else {
+  renderError('QR inválido. Escanea tu código QR personal.');
+}
 </script>
 </body>
 </html>
