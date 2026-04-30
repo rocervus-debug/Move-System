@@ -2435,7 +2435,8 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     if(!res.ok){
       // Duplicate = already reserved (unique index violation)
       const isdup = JSON.stringify(data).includes('idx_reservas_no_duplicado');
-      alert(isdup ? '⚠️ Ya tienes esta clase reservada.' : '❌ No se pudo reservar. Intenta de nuevo.');
+      const sbErr = data?.message || data?.details || data?.hint || JSON.stringify(data).slice(0,300);
+      alert(isdup ? '⚠️ Ya tienes esta clase reservada.' : `❌ No se pudo reservar.\n\n${sbErr}`);
       if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
       return;
     }
