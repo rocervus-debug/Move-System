@@ -2023,23 +2023,27 @@ select option{background:#0d1a16;color:var(--text);}
   #pagos-filters .pf-btn { flex-shrink: 0 !important; white-space: nowrap !important; min-height: 32px !important; font-size: 11px !important; }
   #pagos-filters span[style*="text-transform:uppercase"] { flex-shrink: 0 !important; }
 
-  /* ──────────── Vista Asistencia ──────────── */
-  /* KPI grid 2×2 (era repeat(4,1fr) inline) */
-  #asist-kpis { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  /* Card header QR: stack en mobile */
-  #v-asistencia .card-header {
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-    align-items: flex-start !important;
-  }
-  #v-asistencia .card-header > div[style*="display:flex"] {
-    width: 100% !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-  }
-  /* Input buscar historial: full-width */
-  #asist-buscar { width: 100% !important; min-width: 0 !important; }
-  #v-asistencia .card-header > div > input { width: 100% !important; }
+  /* ──────────── Vista Asistencia Operativa ──────────── */
+  .clase-card{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;cursor:pointer;transition:background .15s,border-color .15s,transform .1s;-webkit-tap-highlight-color:transparent;user-select:none;}
+  .clase-card:active{transform:scale(.98);}
+  .clase-card:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12);}
+  .clase-card.lleno{border-color:rgba(240,96,96,.35)!important;}
+  .clase-card.casi-lleno{border-color:rgba(245,166,35,.3)!important;}
+  .cupo-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .cupo-dot.ok{background:#0fdf9a;box-shadow:0 0 6px rgba(15,223,154,.5);}
+  .cupo-dot.warn{background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,.4);}
+  .cupo-dot.full{background:#f06060;box-shadow:0 0 6px rgba(240,96,96,.4);}
+  #asist-detalle-panel.open{display:flex!important;}
+  #asist-detalle-overlay.open{display:block!important;}
+  .asist-search-wrap{position:relative;}
+  .asist-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;}
+  .asist-search-wrap input{width:100%;padding:10px 12px 10px 34px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;}
+  .asist-search-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--card2);border:1px solid var(--border);border-radius:10px;z-index:10;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .asist-search-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .asist-search-item:last-child{border-bottom:none;}
+  .asist-search-item:hover{background:rgba(255,255,255,.04);}
+  .persona-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);}
+  .persona-row.checkin{background:rgba(15,223,154,.05);border-color:rgba(15,223,154,.18);}
 
   /* ──────────── Tables ──────────── */
   div[style*="overflow-x:auto"],
@@ -3308,88 +3312,30 @@ select option{background:#0d1a16;color:var(--text);}
     <!-- ══ ASISTENCIA ══ -->
     <div class="view" id="v-asistencia">
 
-      <!-- ── CHECK-INS QR DE HOY ── -->
-      <div class="card" style="margin-bottom:18px;border:1px solid rgba(29,158,117,.2);">
-        <div class="card-header">
-          <div class="card-title">📡 Check-ins QR de Hoy</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="card-sub" id="asist-qr-label">—</span>
-            <button onclick="loadQRCheckinsHoy()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.25);cursor:pointer;font-weight:700;">↺ Actualizar</button>
-            <button onclick="exportAsistenciasCSV()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(255,255,255,.05);color:var(--text2);border:1px solid var(--border);cursor:pointer;font-weight:700;">📥 CSV</button>
-            <button onclick="abrirKiosco()" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;font-weight:700;text-decoration:none;white-space:nowrap;cursor:pointer;">📱 Abrir Kiosco</button>
-          </div>
+      <!-- Header operativo -->
+      <div class="sh" style="margin-bottom:16px;">
+        <div>
+          <div class="sh-title" id="asist-dia-label">Clases de Hoy</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="asist-fecha-label">—</div>
         </div>
-        <div id="asist-qr-hoy" style="min-height:48px;"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="abrirKiosco()" style="font-size:12px;padding:7px 14px;border-radius:9px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;white-space:nowrap;">📱 Kiosco</button>
+          <button onclick="loadClasesOperativas()" style="font-size:12px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border);cursor:pointer;font-weight:700;" title="Actualizar">↺</button>
+        </div>
       </div>
 
-      <!-- ── RESERVAS DE HOY ── -->
-      <div class="card" style="margin-bottom:18px;border:1px solid rgba(29,158,117,.15);">
-        <div class="card-header">
-          <div class="card-title">🗓️ Reservas de Hoy</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="card-sub" id="reservas-hoy-label">—</span>
-            <button onclick="loadReservasHoy()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.25);cursor:pointer;font-weight:700;">↺ Actualizar</button>
-          </div>
-        </div>
-        <div id="reservas-hoy-content" style="min-height:40px;"></div>
-      </div>
+      <!-- Lista de clases del día -->
+      <div id="asist-clases-list" style="display:flex;flex-direction:column;gap:12px;"></div>
 
-      <div id="asist-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;"></div>
+      <!-- Overlay fondo -->
+      <div id="asist-detalle-overlay" onclick="cerrarDetalleClase()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;backdrop-filter:blur(3px);"></div>
 
-      <!-- ── Gráfica Check-ins QR últimos 14 días ── -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="card-header">
-          <div class="card-title">📊 Check-ins QR — Últimos 14 días</div>
-          <span class="card-sub">Hoy: <span id="checkins-hoy-count" style="font-weight:700;color:var(--ok);transition:transform .3s,color .3s;">—</span>&nbsp; Total: <span id="checkins-chart-total">—</span></span>
-        </div>
-        <div style="height:160px;"><canvas id="checkinsChart"></canvas></div>
-      </div>
+      <!-- Panel detalle clase -->
+      <div id="asist-detalle-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:min(480px,100vw);background:var(--bg2,var(--bg));border-left:1px solid var(--border);z-index:201;overflow-y:auto;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.4);"></div>
 
-      <div class="g2" style="margin-bottom:18px;">
-        <div class="card">
-          <div class="card-header"><div class="card-title">📋 Registrar Asistencia</div></div>
-          <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">
-            <div class="field">
-              <label>Fecha de la clase</label>
-              <input type="date" id="asist-fecha" style="width:100%;"/>
-            </div>
-            <div class="field">
-              <label>Clase / Disciplina</label>
-              <input type="text" id="asist-clase" placeholder="Ej: Strength 7am, Cardio 6pm..." style="width:100%;"/>
-            </div>
-            <div class="field">
-              <label>Coach</label>
-              <select id="asist-coach" style="width:100%;"><option value="">— Seleccionar coach —</option></select>
-            </div>
-            <div class="field">
-              <label>Participantes (uno por línea o separados por coma)</label>
-              <textarea id="asist-participantes" rows="4" placeholder="Ana García&#10;Luis Martínez&#10;Valeria Serrano" style="width:100%;resize:vertical;"></textarea>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="btn btn-primary" style="flex:1;" onclick="guardarAsistencia()">✓ Guardar Asistencia</button>
-              <button onclick="generarQRDesdeFormulario()" title="Generar QR para esta clase"
-                style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:9px;
-                       background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.3);
-                       cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap;">📱 QR</button>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">⚠️ Clientes en Riesgo</div><span class="card-sub">Pagan pero no asisten</span></div>
-          <div id="asist-riesgo">
-            <div class="empty-state" style="padding:24px;"><div class="empty-icon">📊</div><div class="empty-title">Sin datos</div><div class="empty-sub">Registra asistencia para ver clientes en riesgo.</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">📅 Historial de Clases</div>
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="asist-buscar" placeholder="Buscar cliente..." oninput="renderAsistencia()" style="padding:6px 10px;background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;width:160px;"/>
-          </div>
-        </div>
-        <div id="asist-historial" style="display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
+      <!-- Hidden for realtime counter compat -->
+      <span id="checkins-hoy-count" style="display:none;">—</span>
+
     </div>
 
     <!-- ══ CLIENTES ══ -->
@@ -7005,7 +6951,7 @@ function go(id, el){
   if(id==='clientes')    renderClientes();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { renderAsistencia(); loadQRCheckinsHoy(); renderCheckinsChart(); loadReservasHoy(); }
+  if(id==='asistencia')  { loadClasesOperativas(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
@@ -15060,6 +15006,261 @@ async function loadReservasHoy(){
     el.innerHTML = '<div style="padding:10px 0;font-size:12px;color:var(--text3);">No se pudo cargar reservas. Verifica que la tabla <code>reservas</code> exista en Supabase.</div>';
     console.error('loadReservasHoy error', e);
   }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ASISTENCIA OPERATIVA — Clases del Día
+// ══════════════════════════════════════════════════════════════════
+
+const _DIAS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function fmtHoraClase(h){
+  if(!h) return '—';
+  const m = h.match(/^(\d+):(\d+)\s*(am|pm)?$/i);
+  if(!m) return h;
+  let hr = parseInt(m[1],10); const mn = m[2]; const period = (m[3]||'').toLowerCase();
+  if(period==='pm' && hr<12) hr+=12;
+  if(period==='am' && hr===12) hr=0;
+  const h12 = hr%12||12; const ampm = hr>=12?'PM':'AM';
+  return `${h12}:${mn} ${ampm}`;
+}
+
+async function loadClasesOperativas(){
+  const el     = document.getElementById('asist-clases-list');
+  const lbl    = document.getElementById('asist-dia-label');
+  const fLbl   = document.getElementById('asist-fecha-label');
+  if(!el) return;
+  const hoy    = new Date();
+  const hoyStr = hoy.toISOString().slice(0,10);
+  const diaHoy = _DIAS_ES[hoy.getDay()];
+  if(lbl)  lbl.textContent  = `Clases del ${diaHoy}`;
+  if(fLbl) fLbl.textContent = hoy.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  el.innerHTML = '<div style="padding:28px 0;text-align:center;font-size:13px;color:var(--text3);">Cargando clases…</div>';
+  try{
+    const gymId = MOVE_GYM_ID||null;
+    let hQ = window.supabaseClient.from('horarios').select('id,hora,tipo,coach_nombre,cupo').eq('dia',diaHoy).order('hora',{ascending:true});
+    if(gymId) hQ = hQ.eq('gym_id',gymId);
+    const {data:horarios,error:hErr} = await hQ;
+    if(hErr) throw hErr;
+    if(!horarios||!horarios.length){
+      el.innerHTML = `<div style="padding:48px 20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">🏖️</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Sin clases hoy</div><div style="font-size:12px;color:var(--text3);">No hay clases programadas para el ${diaHoy}.</div></div>`;
+      return;
+    }
+    let rQ = window.supabaseClient.from('reservas').select('id,horario_id,cliente_nombre,estado').eq('fecha',hoyStr).neq('estado','cancelado');
+    if(gymId) rQ = rQ.eq('gym_id',gymId);
+    const {data:reservas} = await rQ;
+    const rMap = {};
+    (reservas||[]).forEach(r=>{ if(!r.horario_id) return; if(!rMap[r.horario_id]) rMap[r.horario_id]=[]; rMap[r.horario_id].push(r); });
+    el.innerHTML = horarios.map(h=>{
+      const lista    = rMap[h.id]||[];
+      const ocupados = lista.length;
+      const cupo     = h.cupo||0;
+      const libres   = Math.max(0,cupo-ocupados);
+      const pct      = cupo>0 ? ocupados/cupo : 0;
+      const dotCls   = pct>=1?'full':pct>=.75?'warn':'ok';
+      const cardCls  = pct>=1?'lleno':pct>=.75?'casi-lleno':'';
+      const checkins = lista.filter(r=>r.estado==='checkin').length;
+      const barW     = cupo>0 ? Math.min(pct*100,100).toFixed(0) : 0;
+      const barClr   = dotCls==='full'?'#f06060':dotCls==='warn'?'#f5a623':'var(--accent)';
+      return `<div class="clase-card ${cardCls}" onclick="abrirDetalleClase('${h.id}','${esc(h.hora)}','${esc(h.tipo)}','${esc(h.coach_nombre||'')}',${cupo})">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+            <div class="cupo-dot ${dotCls}"></div>
+            <div style="min-width:0;">
+              <div style="font-size:22px;font-weight:900;font-family:var(--fd);color:#fff;line-height:1.1;">${fmtHoraClase(h.hora)}</div>
+              <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.2px;margin-top:4px;">${esc(h.tipo)}</div>
+              ${h.coach_nombre?`<div style="font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">👤 ${esc(h.coach_nombre)}</div>`:''}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:26px;font-weight:900;font-family:var(--fd);color:#fff;line-height:1;">${ocupados}<span style="font-size:14px;color:var(--text3);font-weight:500;"> / ${cupo}</span></div>
+            <div style="font-size:12px;font-weight:700;margin-top:4px;color:${libres===0?'#f06060':libres<=3?'#f5a623':'var(--ok)'};">${libres===0?'LLENO':`${libres} libre${libres!==1?'s':''}`}</div>
+            ${checkins>0?`<div style="font-size:10px;color:var(--text3);margin-top:2px;">${checkins} check-in${checkins!==1?'s':''}</div>`:''}
+          </div>
+        </div>
+        ${cupo>0?`<div style="margin-top:12px;height:4px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;"><div style="height:100%;width:${barW}%;background:${barClr};border-radius:99px;transition:width .4s;"></div></div>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML = `<div style="padding:20px;text-align:center;font-size:13px;color:var(--text3);">Error cargando clases: ${esc(e.message||String(e))}</div>`;
+    console.error('loadClasesOperativas',e);
+  }
+}
+
+let _detalleCtx = null;
+
+async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
+  _detalleCtx = {horarioId,hora,tipo,coach,cupo};
+  const panel   = document.getElementById('asist-detalle-panel');
+  const overlay = document.getElementById('asist-detalle-overlay');
+  panel.classList.add('open');
+  overlay.classList.add('open');
+  document.body.style.overflow='hidden';
+  panel.innerHTML = `
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;background:var(--bg2,var(--bg));z-index:2;">
+      <div>
+        <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:#fff;">${fmtHoraClase(hora)}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:3px;">${esc(tipo)}${coach?` · ${esc(coach)}`:''}</div>
+      </div>
+      <button onclick="cerrarDetalleClase()" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div id="detalle-body" style="padding:18px;flex:1;overflow-y:auto;">
+      <div style="text-align:center;padding:24px;font-size:13px;color:var(--text3);">Cargando…</div>
+    </div>`;
+  await loadDetalleClase(horarioId,hora,tipo,cupo);
+}
+
+function cerrarDetalleClase(){
+  const panel   = document.getElementById('asist-detalle-panel');
+  const overlay = document.getElementById('asist-detalle-overlay');
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.style.overflow='';
+  _detalleCtx = null;
+  loadClasesOperativas();
+}
+
+async function loadDetalleClase(horarioId,hora,tipo,cupo){
+  const body = document.getElementById('detalle-body');
+  if(!body) return;
+  const hoyStr = new Date().toISOString().slice(0,10);
+  const gymId  = MOVE_GYM_ID||null;
+  try{
+    let q = window.supabaseClient.from('reservas')
+      .select('id,cliente_nombre,estado,portal_token,cliente_id')
+      .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado').order('created_at',{ascending:true});
+    if(gymId) q = q.eq('gym_id',gymId);
+    const {data:reservas,error} = await q;
+    if(error) throw error;
+    const lista     = reservas||[];
+    const checkins  = lista.filter(r=>r.estado==='checkin');
+    const pendientes= lista.filter(r=>r.estado!=='checkin');
+    const libres    = Math.max(0,(cupo||0)-lista.length);
+    const hEsc      = esc(hora), tEsc = esc(tipo);
+    body.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 10px;text-align:center;">
+          <div style="font-size:24px;font-weight:900;font-family:var(--fd);">${lista.length}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Reservados</div>
+        </div>
+        <div style="background:rgba(15,223,154,.06);border:1px solid rgba(15,223,154,.18);border-radius:12px;padding:14px 10px;text-align:center;">
+          <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:var(--ok);">${checkins.length}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Check-in</div>
+        </div>
+        <div style="background:${libres===0?'rgba(240,96,96,.06)':'rgba(255,255,255,.04)'};border:1px solid ${libres===0?'rgba(240,96,96,.25)':'rgba(255,255,255,.07)'};border-radius:12px;padding:14px 10px;text-align:center;">
+          <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:${libres===0?'#f06060':'#fff'};">${libres}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Libres</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">+ Agregar cliente</div>
+      <div class="asist-search-wrap" style="margin-bottom:22px;" id="asist-add-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="asist-add-input" placeholder="Nombre o número de cliente…" autocomplete="off"
+          oninput="buscarClienteDetalle(this.value,'${horarioId}','${hEsc}','${tEsc}')"/>
+        <div id="asist-add-results" class="asist-search-results" style="display:none;"></div>
+      </div>
+
+      ${checkins.length?`
+        <div style="font-size:11px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">✅ Check-in · ${checkins.length}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+          ${checkins.map(r=>_renderPersonaRow(r,true,horarioId,hEsc,tEsc)).join('')}
+        </div>`:''}
+
+      ${pendientes.length?`
+        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">⏳ Reservados · ${pendientes.length}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${pendientes.map(r=>_renderPersonaRow(r,false,horarioId,hEsc,tEsc)).join('')}
+        </div>`:''}
+
+      ${!lista.length?`<div style="padding:32px 20px;text-align:center;font-size:13px;color:var(--text3);">Sin reservas para esta clase.<br>Usa el campo de arriba para agregar clientes.</div>`:''}`;
+  }catch(e){
+    body.innerHTML=`<div style="padding:20px;font-size:13px;color:var(--text3);">Error: ${esc(e.message||String(e))}</div>`;
+    console.error('loadDetalleClase',e);
+  }
+}
+
+function _renderPersonaRow(r,isCheckin,horarioId,hora,tipo){
+  const n = esc(r.cliente_nombre||'—');
+  return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}">
+    <div style="width:36px;height:36px;border-radius:50%;background:${isCheckin?'rgba(15,223,154,.15)':'rgba(255,255,255,.07)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">${isCheckin?'✅':'👤'}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</div>
+      <div style="font-size:11px;color:${isCheckin?'var(--ok)':'var(--text3)'};">${isCheckin?'Check-in ✓':'Reservado'}</div>
+    </div>
+    ${!isCheckin?`<button onclick="marcarPresenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
+      style="flex-shrink:0;padding:8px 13px;border-radius:8px;background:rgba(29,158,117,.12);color:var(--accent);border:1px solid rgba(29,158,117,.3);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:36px;">✓ Presente</button>`:''}
+  </div>`;
+}
+
+let _asistSearchTimer = null;
+function buscarClienteDetalle(query,horarioId,hora,tipo){
+  const res = document.getElementById('asist-add-results');
+  if(!res) return;
+  if(!query||query.length<2){ res.style.display='none'; return; }
+  clearTimeout(_asistSearchTimer);
+  _asistSearchTimer = setTimeout(async()=>{
+    const gymId = MOVE_GYM_ID||null;
+    const numQuery = parseInt(query)||0;
+    let q = window.supabaseClient.from('clientes').select('id,nombre,numero_cliente').limit(8);
+    if(gymId) q = q.eq('gym_id',gymId);
+    if(numQuery) q = q.or(`nombre.ilike.%${query}%,numero_cliente.eq.${numQuery}`);
+    else q = q.ilike('nombre',`%${query}%`);
+    const {data} = await q;
+    if(!data||!data.length){
+      res.innerHTML='<div class="asist-search-item" style="color:var(--text3);">Sin resultados</div>';
+      res.style.display='block'; return;
+    }
+    res.innerHTML = data.map(c=>`<div class="asist-search-item" onclick="agregarClienteAClase('${c.id}','${esc(c.nombre)}','${horarioId}','${esc(hora)}','${esc(tipo)}')">
+      <span style="font-weight:700;">${esc(c.nombre)}</span>
+      ${c.numero_cliente?`<span style="font-size:11px;color:var(--text3);margin-left:8px;">#${c.numero_cliente}</span>`:''}
+    </div>`).join('');
+    res.style.display='block';
+  },250);
+}
+
+async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo){
+  const input = document.getElementById('asist-add-input');
+  const res   = document.getElementById('asist-add-results');
+  if(input) input.value='';
+  if(res)   res.style.display='none';
+  const hoyStr = new Date().toISOString().slice(0,10);
+  const gymId  = MOVE_GYM_ID||null;
+  const cupo   = _detalleCtx?.cupo||0;
+  // Duplicate check
+  let dq = window.supabaseClient.from('reservas').select('id',{count:'exact',head:true}).eq('horario_id',horarioId).eq('fecha',hoyStr).eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
+  const {count:dupCount} = await dq;
+  if(dupCount>0){ toast(`${clienteNombre} ya está en esta clase`,'⚠️'); return; }
+  // Cupo check
+  let cq = window.supabaseClient.from('reservas').select('id',{count:'exact',head:true}).eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado');
+  const {count:cntActual} = await cq;
+  if(cupo>0 && (cntActual||0)>=cupo){
+    if(!await confirmDialog(`La clase ${tipo} ${hora} está llena (${cntActual}/${cupo}). ¿Agregar de todas formas?`,{title:'Clase llena',icon:'⚠️'})) return;
+  }
+  const diaHoy = _DIAS_ES[new Date().getDay()];
+  const {error} = await window.supabaseClient.from('reservas').insert({
+    gym_id: gymId, horario_id: horarioId, cliente_id: parseInt(clienteId)||null,
+    cliente_nombre: clienteNombre, fecha: hoyStr,
+    clase_tipo: tipo, clase_hora: hora, clase_dia: diaHoy, estado: 'checkin',
+  });
+  if(error){ toast(`Error: ${error.message}`,'❌'); return; }
+  toast(`${clienteNombre} registrado ✓`,'✅');
+  navigator.vibrate?.([50,30,50]);
+  await loadDetalleClase(horarioId,hora,tipo,cupo);
+}
+
+async function marcarPresenteReserva(reservaId,nombre,horarioId,hora,tipo){
+  const btn = document.querySelector(`#prow-${reservaId} button`);
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
+  const {error} = await window.supabaseClient.from('reservas').update({estado:'checkin'}).eq('id',reservaId);
+  if(error){
+    toast(`Error: ${error.message}`,'❌');
+    if(btn){ btn.disabled=false; btn.textContent='✓ Presente'; }
+    return;
+  }
+  toast(`${nombre} ✓ presente`,'✅');
+  navigator.vibrate?.([50,30,50]);
+  await loadDetalleClase(horarioId,hora,tipo,_detalleCtx?.cupo||0);
 }
 
 function saveMetaCoach(coachId, val){
