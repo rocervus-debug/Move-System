@@ -15136,14 +15136,27 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
   panel.classList.add('open');
   overlay.classList.add('open');
   document.body.style.overflow='hidden';
+  const hEsc2 = esc(hora), tEsc2 = esc(tipo);
   panel.innerHTML = `
-    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;background:var(--bg2,var(--bg));z-index:2;">
+    <!-- Header -->
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2,var(--bg));">
       <div>
         <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:#fff;">${fmtHoraClase(hora)}</div>
-        <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:3px;">${esc(tipo)}${coach?` · ${esc(coach)}`:''}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:3px;">${hEsc2.replace(/</g,'&lt;')} · ${tEsc2.replace(/</g,'&lt;')}${coach?` · ${esc(coach)}`:''}</div>
       </div>
       <button onclick="cerrarDetalleClase()" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
+    <!-- Buscador — FUERA del overflow container para que el dropdown no quede clipeado -->
+    <div id="detalle-search-wrap" style="padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:10;">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">+ Agregar cliente</div>
+      <div class="asist-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="asist-add-input" placeholder="Nombre o número de cliente…" autocomplete="off"
+          oninput="buscarClienteDetalle(this.value,'${horarioId}','${hEsc2}','${tEsc2}')"/>
+        <div id="asist-add-results" class="asist-search-results" style="display:none;"></div>
+      </div>
+    </div>
+    <!-- Lista personas — scrollable -->
     <div id="detalle-body" style="padding:18px;flex:1;overflow-y:auto;">
       <div style="text-align:center;padding:24px;font-size:13px;color:var(--text3);">Cargando…</div>
     </div>`;
@@ -15176,7 +15189,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     const checkins  = lista.filter(r=>r.estado==='checkin');
     const pendientes= lista.filter(r=>r.estado!=='checkin');
     const libres    = Math.max(0,(cupo||0)-lista.length);
-    const hEsc      = esc(hora), tEsc = esc(tipo);
+    const hEsc = esc(hora), tEsc = esc(tipo);
     body.innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
         <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 10px;text-align:center;">
@@ -15191,14 +15204,6 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
           <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:${libres===0?'#f06060':'#fff'};">${libres}</div>
           <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Libres</div>
         </div>
-      </div>
-
-      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">+ Agregar cliente</div>
-      <div class="asist-search-wrap" style="margin-bottom:22px;" id="asist-add-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="asist-add-input" placeholder="Nombre o número de cliente…" autocomplete="off"
-          oninput="buscarClienteDetalle(this.value,'${horarioId}','${hEsc}','${tEsc}')"/>
-        <div id="asist-add-results" class="asist-search-results" style="display:none;"></div>
       </div>
 
       ${checkins.length?`
