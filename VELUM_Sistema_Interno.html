@@ -2002,76 +2002,100 @@ select option{background:#0d1a16;color:var(--text);}
   }
   #detailPanel.open { right: 0 !important; }
 
-  /* ──────────── Modals → bottom sheets ──────────── */
-  .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+  /* ──────────── Modals → native bottom sheets ──────────── */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
   .modal {
     width: 100% !important;
     max-width: 100% !important;
-    border-radius: 20px 20px 0 0 !important;
-    /* Flex column: header + scrollable body + sticky footer */
-    display: flex !important;
-    flex-direction: column !important;
-    /* dvh = viewport height minus keyboard — iOS 16+; fallback to 92vh */
-    max-height: 92vh !important;
-    max-height: 92dvh !important;
-    /* Override desktop overflow — body handles scroll now */
-    overflow: hidden !important;
-    animation: modal-slide-up .28s cubic-bezier(.32,1,.23,1);
+    border-radius: 22px 22px 0 0 !important;
+    /* JS (_applyMobileModalLayout) sets height/overflow at runtime */
+    animation: modal-slide-up .3s cubic-bezier(.32,1,.23,1) !important;
+    box-shadow: 0 -8px 48px rgba(0,0,0,.6), 0 -1px 0 rgba(255,255,255,.08) !important;
   }
   @keyframes modal-slide-up {
-    from { transform: translateY(100%); opacity: .6; }
+    from { transform: translateY(40px); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
   }
-  /* Header: fixed at top, never scrolls */
-  .modal-head, .modal-header {
-    flex-shrink: 0 !important;
-    padding: 16px 18px 12px !important;
-  }
-  /* Body: fills remaining space, scrolls internally */
-  .modal-body {
-    flex: 1 !important;
-    min-height: 0 !important; /* critical: allows flex child to shrink below content height */
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    padding: 14px 18px !important;
-  }
-  /* Footer: pinned to bottom, always visible even with keyboard */
-  .modal-footer {
-    flex-shrink: 0 !important;
-    position: relative !important; /* exits sticky — flex order keeps it at bottom */
-    padding: 12px 18px !important;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-  .field-grid { grid-template-columns: 1fr !important; }
 
-  /* Drag handle visual indicator — signals scrollable sheet */
+  /* Drag handle — iOS sheet language */
   .modal-head::before, .modal-header::before {
     content: '';
     display: block;
-    width: 36px; height: 4px;
-    background: rgba(255,255,255,.18);
+    width: 40px; height: 4px;
+    background: rgba(255,255,255,.2);
     border-radius: 2px;
-    margin: 0 auto 12px;
+    margin: 0 auto 14px;
   }
 
-  /* Inputs + selects: bigger touch targets on mobile */
-  .modal-body input, .modal-body select, .modal-body textarea {
+  .modal-head, .modal-header {
+    padding: 14px 20px 12px !important;
+    border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  }
+  .modal-title { font-size: 16px !important; }
+  .modal-close {
+    width: 32px !important; height: 32px !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,.1) !important;
+    font-size: 13px !important;
+  }
+
+  /* Body — JS sets height; CSS just handles the look */
+  .modal-body {
+    padding: 16px 20px !important;
+  }
+  .field-grid { grid-template-columns: 1fr !important; }
+  .field { margin-bottom: 12px !important; }
+
+  /* Inputs — 44px touch target, 16px prevents iOS zoom */
+  .modal-body input,
+  .modal-body select,
+  .modal-body textarea {
     min-height: 44px !important;
-    font-size: 16px !important; /* prevents iOS auto-zoom */
-    padding: 10px 12px !important;
+    font-size: 16px !important;
+    padding: 11px 14px !important;
+    border-radius: 10px !important;
   }
   .modal-body label {
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    margin-bottom: 5px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: .4px !important;
+    text-transform: uppercase !important;
+    color: var(--text3) !important;
+    margin-bottom: 6px !important;
+    display: block !important;
   }
-  /* Save button: prominent, full width on mobile */
+  .modal-body textarea { min-height: 80px !important; }
+
+  /* Footer — JS keeps it visible; CSS makes it look solid */
+  .modal-footer {
+    padding: 14px 20px !important;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid rgba(255,255,255,.07) !important;
+    background: var(--bg) !important;
+    gap: 10px !important;
+    display: flex !important;
+    flex-direction: column !important; /* stack vertically on mobile */
+  }
+  /* Primary CTA: full width, prominent */
   .modal-footer .btn-primary {
     width: 100% !important;
-    min-height: 48px !important;
+    min-height: 50px !important;
     font-size: 15px !important;
     font-weight: 700 !important;
+    border-radius: 12px !important;
+    order: -1 !important; /* Primary action FIRST */
+  }
+  /* Secondary (cancel): less prominent */
+  .modal-footer .btn-outline {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    opacity: .7 !important;
   }
 
   /* Full-screen programa modal — avoid dvh (iOS <15.4 compat) */
@@ -6982,25 +7006,76 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
 });
 
-// ── Mobile: Visual Viewport fix — resize modal when keyboard opens ──────
-// iOS Safari: when keyboard opens, visualViewport.height shrinks but vh doesn't.
-// This makes modal respect the actual visible height.
-(function(){
-  if(!window.visualViewport) return;
-  function _syncModalHeight(){
-    const vvh = window.visualViewport.height;
-    const openModals = document.querySelectorAll('.modal-overlay.open .modal');
-    const isMobile = window.innerWidth <= 768;
-    if(!isMobile){ openModals.forEach(m=>m.style.maxHeight=''); return; }
-    openModals.forEach(m=>{ m.style.maxHeight = Math.floor(vvh * 0.94) + 'px'; });
+// ══════════════════════════════════════════════════════════════════
+// MOBILE MODAL LAYOUT ENGINE
+// Problema: en iOS Safari, vh no cambia cuando abre el teclado.
+// backdrop-filter en .modal-overlay rompe position:fixed en hijos.
+// Solución: JS calcula altura explícita del body = modalH - headH - footH
+// Resultado: footer SIEMPRE visible, body scrolleable, 100% compatible.
+// ══════════════════════════════════════════════════════════════════
+function _applyMobileModalLayout(modalEl) {
+  if (!modalEl || window.innerWidth > 768) return;
+  const head = modalEl.querySelector('.modal-head, .modal-header');
+  const body = modalEl.querySelector('.modal-body');
+  const foot = modalEl.querySelector('.modal-footer');
+  if (!body) return;
+
+  const vvh = (window.visualViewport || window).height;
+  const safeBottom = parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--sab') || '0') || 0;
+  const maxModalH = Math.floor(vvh * 0.93) - safeBottom;
+
+  // Set modal container height
+  modalEl.style.maxHeight = maxModalH + 'px';
+  modalEl.style.overflow  = 'hidden';
+  modalEl.style.display   = 'flex';
+  modalEl.style.flexDirection = 'column';
+
+  // Calculate body height = total - header - footer
+  const headH = head ? head.getBoundingClientRect().height : 56;
+  const footH = foot ? foot.getBoundingClientRect().height : 68;
+  const bodyH = Math.max(120, maxModalH - headH - footH);
+
+  body.style.height    = bodyH + 'px';
+  body.style.maxHeight = bodyH + 'px';
+  body.style.overflowY = 'auto';
+  body.style.webkitOverflowScrolling = 'touch';
+  body.style.overscrollBehavior = 'contain';
+  body.style.flexShrink = '0';
+
+  // Footer always at bottom, never scrolls
+  if (foot) {
+    foot.style.flexShrink = '0';
+    foot.style.position   = 'relative';
+    foot.style.bottom     = 'auto';
   }
-  window.visualViewport.addEventListener('resize', _syncModalHeight);
-  // Also run when a modal opens
-  const _origOpenModal = window.openModal;
-  window.openModal = function(id){
-    if(_origOpenModal) _origOpenModal(id);
-    setTimeout(_syncModalHeight, 30);
+}
+
+// Run layout on every openModal call + on keyboard resize
+(function(){
+  // Patch openModal
+  const _orig = window.openModal;
+  window.openModal = function(id) {
+    if (_orig) _orig(id);
+    // Two passes: first after DOM shows, second after browser reflow
+    setTimeout(function() {
+      const ov = document.getElementById('modal-' + id);
+      if (ov) _applyMobileModalLayout(ov.querySelector('.modal'));
+    }, 30);
+    setTimeout(function() {
+      const ov = document.getElementById('modal-' + id);
+      if (ov) _applyMobileModalLayout(ov.querySelector('.modal'));
+    }, 200);
   };
+
+  // Keyboard open/close on iOS — visualViewport.height changes
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+      document.querySelectorAll('.modal-overlay.open').forEach(function(ov) {
+        _applyMobileModalLayout(ov.querySelector('.modal'));
+      });
+    });
+  }
 })();
 
 // ═══════════════════════════════════════════════════════════════════
