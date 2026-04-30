@@ -1958,9 +1958,20 @@ select option{background:#0d1a16;color:var(--text);}
   .hero-stat-box { padding: 8px 12px !important; min-width: 76px; }
   /* Hero: más compacto */
   #dash-hero { min-height: 120px !important; border-radius: 14px !important; }
-  #hero-gym-nombre { font-size: 26px !important; }
+  /* Override inline padding:26px 32px — demasiado ancho en 375px */
+  #dash-hero > div:last-child { padding: 16px 16px !important; }
+  #hero-gym-nombre { font-size: 24px !important; line-height: 1.1 !important; }
   #hero-greeting-label { display: none !important; }
   #hero-date-label { display: none !important; }
+  #hero-greeting { font-size: 11px !important; }
+  /* Primary KPI — 3 columns tight on mobile: reduce font so $12,450 fits */
+  .kpi-grid-primary .kpi-value { font-size: 20px !important; letter-spacing: -.3px !important; }
+  .kpi-grid-primary .kpi-card { padding: 10px 10px !important; }
+  .kpi-grid-primary .kpi-label { font-size: 9px !important; margin-bottom: 6px !important; }
+  .kpi-grid-primary .kpi-meta { font-size: 9px !important; margin-top: 4px !important; }
+  /* "Personalizar dashboard" — ocultar en mobile (drag-and-drop no funciona en touch) */
+  #dash-customize-btn { display: none !important; }
+  #dash-customize-bar { display: none !important; }
   /* Quick actions: grid 2×2 en lugar de flex wrap */
   .hero-quick-actions { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; padding-top: 10px !important; margin-top: 10px !important; }
   .qa-btn { padding: 9px 10px !important; font-size: 12px !important; min-height: 40px !important; justify-content: center; }
@@ -14285,6 +14296,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   };
   _wireDebounce('clientes-search', renderClientes);
   _wireDebounce('asist-buscar', renderAsistencia);
+
+  // ── KPI secondary chevron rotation ──────────────────────────────
+  const _kpiDetails = document.getElementById('kpi-secondary-details');
+  const _kpiChevron = document.getElementById('kpi-sec-chevron');
+  if (_kpiDetails && _kpiChevron) {
+    _kpiDetails.addEventListener('toggle', () => {
+      _kpiChevron.style.transform = _kpiDetails.open ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+  }
 
   // ── PWA Install Prompt ──────────────────────────────────────────
   let _pwaPrompt = null;
