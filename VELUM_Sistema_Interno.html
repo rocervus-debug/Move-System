@@ -10105,11 +10105,38 @@ async function exportAsistenciasCSV(){
 function loadAsistencia(){ return JSON.parse(localStorage.getItem('move_asistencia')||'[]'); }
 function saveAsistenciaLS(data){ localStorage.setItem('move_asistencia', JSON.stringify(data)); }
 
-function openRegistrarClase(){
-  const hoy = new Date().toISOString().slice(0,10);
-  const fi = document.getElementById('asist-fecha');
-  if(fi && !fi.value) fi.value = hoy;
-  document.getElementById('asist-clase').focus();
+async function openRegistrarClase(){
+  // Build a quick picker: select class → opens detail panel
+  const gymId  = MOVE_GYM_ID||null;
+  const diaHoy = _DIAS_ES[new Date().getDay()];
+  let hQ = window.supabaseClient.from('horarios').select('id,hora,tipo,coach_nombre,cupo').eq('dia',diaHoy);
+  if(gymId) hQ = hQ.eq('gym_id',gymId);
+  const {data:_h} = await hQ;
+  const horarios = (_h||[]).slice().sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+  if(!horarios.length){ toast('Sin clases programadas para hoy','ℹ️'); return; }
+
+  // Reuse existing modal infrastructure or create inline overlay
+  const modalHtml = `<div id="rc-modal-overlay" onclick="document.getElementById('rc-modal-overlay').remove()"
+    style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+    <div onclick="event.stopPropagation()" style="background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:380px;box-shadow:0 16px 48px rgba(0,0,0,.5);">
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">Registrar en clase</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:18px;">Selecciona la clase del ${diaHoy}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${horarios.map(h=>`
+          <button onclick="document.getElementById('rc-modal-overlay').remove();abrirDetalleClase('${h.id}','${esc(h.hora)}','${esc(h.tipo)}','${esc(h.coach_nombre||'')}',${h.cupo||0})"
+            style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;text-align:left;width:100%;">
+            <div>
+              <div style="font-size:16px;font-weight:900;font-family:var(--fd);color:#fff;">${fmtHoraClase(h.hora)}</div>
+              <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">${esc(h.tipo)}${h.coach_nombre?` · ${esc(h.coach_nombre)}`:''}</div>
+            </div>
+            <div style="font-size:12px;color:var(--text3);">Cupo ${h.cupo||'—'} →</div>
+          </button>`).join('')}
+      </div>
+      <button onclick="document.getElementById('rc-modal-overlay').remove()"
+        style="margin-top:16px;width:100%;padding:10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--text2);font-size:13px;cursor:pointer;">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 function guardarAsistencia(){
