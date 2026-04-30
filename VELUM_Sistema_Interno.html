@@ -6830,6 +6830,42 @@ function toast(msg, icon='✓', duration=2800){
   _toastTimer = setTimeout(()=>{ t.classList.remove('show'); _toastTimer=null; }, duration);
 }
 
+// ── Override nativo alert() → toast no-bloqueante ──────────────────
+// Convierte los 49+ alert() del codebase en toasts sin tocar cada uno.
+window.alert = (msg) => toast(String(msg), '⚠️', 3500);
+
+// ── JWT helpers ────────────────────────────────────────────────────
+function isJwtExpired(jwt){
+  try{
+    const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return payload.exp ? (payload.exp * 1000) < Date.now() : false;
+  } catch(e){ return true; }
+}
+// Wrapper para cualquier operación Supabase — detecta JWT expirado y fuerza re-login
+async function sbOp(fn){
+  try{
+    const result = await fn();
+    const errMsg = result?.error?.message || '';
+    if(errMsg && (errMsg.includes('JWT') || errMsg.includes('expired') || errMsg.includes('invalid claim'))){
+      _handleJwtExpiry();
+      return { data: null, error: result.error };
+    }
+    return result;
+  } catch(e){
+    console.error('[VELUM sbOp error]', e);
+    return { data: null, error: e };
+  }
+}
+function _handleJwtExpiry(){
+  clearSession();
+  currentUser = null;
+  toast('Tu sesión expiró. Vuelve a iniciar sesión.','🔒', 4000);
+  setTimeout(()=>{
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = '';
+  }, 1200);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════════════════════════════════
@@ -9050,7 +9086,12 @@ async function saveEditarCliente(){
     const r = await window.supabaseClient.from('clientes').insert([withGymId(payload)]);
     err = r.error;
   }
-  if(err){ alert('Error al guardar: '+(err.message||err)); return; }
+  if(err){
+    const msg = err.message || String(err);
+    if(msg.includes('JWT') || msg.includes('expired') || msg.includes('invalid claim')){ _handleJwtExpiry(); }
+    else { toast('Error al guardar: '+msg,'❌'); }
+    return;
+  }
   await loadClientesFromSupabase();
   closeModal('editar-cliente');
   toast(`Datos de ${nombre} actualizados ✅`,'✏️');
@@ -10752,7 +10793,14 @@ async function renderSuperAdmin(){
   // ── Fetch all gyms (no gym_id filter — superadmin sees all) ──
   const { data: gymsData, error: gymsErr } = await window.supabaseClient
     .from('gyms').select('*').order('id');
-  if(gymsErr){ console.error('Error cargando gyms:', gymsErr); }
+  if(gymsErr){
+    console.error('Error cargando gyms:', gymsErr);
+    const errMsg = gymsErr.message || '';
+    if(errMsg.includes('JWT') || errMsg.includes('expired') || errMsg.includes('invalid claim')){
+      _handleJwtExpiry(); return;
+    }
+    toast('No se pudieron cargar los gyms: '+errMsg,'❌');
+  }
   const allGyms = gymsData || [];
   _saGymsCache = allGyms; // cache for context switcher dropdown
   updateSaCtxLabel();
@@ -13857,6 +13905,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // If data loads before knowing which gym, ALL gyms' data leaks in (multi-tenancy breach).
   const session = getSession();
   if(session){
+    // ── JWT expiry check BEFORE any data load ──
+    if(session.jwt && isJwtExpired(session.jwt)){
+      clearSession();
+      toast('Tu sesión expiró. Por favor vuelve a iniciar sesión.','🔒', 4000);
+      // Skip to login screen — don't load any data
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-screen').style.display = '';
+      return;
+    }
     // Restore JWT-authenticated client if we have a stored token
     if(session.jwt){
       initAuthClient(session.jwt);
