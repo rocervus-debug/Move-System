@@ -10389,7 +10389,8 @@ function getKioscoPin(){
 }
 function abrirKiosco(){
   const pin = getKioscoPin();
-  if(!pin){ window.open('checkin.html?kiosko=1','_blank'); return; }
+  const gymParam = MOVE_GYM_ID ? `&gym_id=${MOVE_GYM_ID}` : '';
+  if(!pin){ window.open(`checkin.html?kiosko=1${gymParam}`,'_blank'); return; }
   // Show PIN entry modal
   const existing = document.getElementById('kiosco-pin-modal');
   if(existing) existing.remove();
@@ -10420,7 +10421,8 @@ function _kioscoSubmitPin(){
   const pin = getKioscoPin();
   if(entered === pin){
     document.getElementById('kiosco-pin-modal').remove();
-    window.open('checkin.html?kiosko=1','_blank');
+    const gymParam = MOVE_GYM_ID ? `&gym_id=${MOVE_GYM_ID}` : '';
+    window.open(`checkin.html?kiosko=1${gymParam}`,'_blank');
   } else {
     document.getElementById('kiosco-pin-err').textContent = 'PIN incorrecto. Inténtalo de nuevo.';
     document.getElementById('kiosco-pin-input').value = '';
