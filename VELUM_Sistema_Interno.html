@@ -4422,10 +4422,14 @@ select option{background:#0d1a16;color:var(--text);}
         </button>
       </div>
       <div class="field-grid">
-        <div class="field">
+        <div class="field" style="position:relative;">
           <label>Cliente *</label>
-          <input id="p-cliente" type="text" placeholder="Nombre del cliente" list="p-cliente-list" autocomplete="off"/>
-          <datalist id="p-cliente-list"></datalist>
+          <input id="p-cliente" type="text" placeholder="Buscar cliente..." autocomplete="off"
+            oninput="_pcAutoInput(this)" onfocus="_pcAutoInput(this)" onblur="_pcAutoBlur()"/>
+          <div id="p-cliente-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:9999;
+            background:var(--card);border:1px solid rgba(29,158,117,.3);border-radius:10px;
+            box-shadow:0 8px 32px rgba(0,0,0,.5);max-height:180px;overflow-y:auto;margin-top:4px;">
+          </div>
           <span class="field-err" id="p-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
         <div class="field">
@@ -4556,6 +4560,12 @@ select option{background:#0d1a16;color:var(--text);}
       <div class="field">
         <label>Nombre completo *</label>
         <input id="sc-nombre" type="text" placeholder="Nombre del cliente"/>
+        <span class="field-err" id="sc-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+      </div>
+      <div class="field">
+        <label>Email * <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(evita duplicados)</span></label>
+        <input id="sc-email-new" type="email" placeholder="cliente@email.com" autocapitalize="off" autocorrect="off"/>
+        <span class="field-err" id="sc-email-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
       </div>
       <div class="field-grid">
         <div class="field">
@@ -6960,16 +6970,74 @@ function _handleJwtExpiry(){
 // ═══════════════════════════════════════════════════════════════════
 function openModal(id){
   document.getElementById('modal-'+id).classList.add('open');
-  // Poblar datalist de clientes cuando se abre el modal de pago
   if(id==='pago'){
-    const dl = document.getElementById('p-cliente-list');
-    if(dl && typeof clientesDB !== 'undefined'){
-      dl.innerHTML = clientesDB.map(c=>`<option value="${(c.nombre||'').replace(/"/g,'&quot;')}">`).join('');
-    }
+    // Reset campo cliente y dropdown
+    const inp = document.getElementById('p-cliente');
+    if(inp) inp.value = '';
+    const dd = document.getElementById('p-cliente-dropdown');
+    if(dd) dd.style.display = 'none';
     _clearPagoErrors();
+  }
+  if(id==='solo-cliente'){
+    // Reset form completo
+    ['sc-nombre','sc-email-new','sc-telefono','sc-notas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    const cb = document.getElementById('sc-cumpleanos'); if(cb) cb.value='';
+    ['sc-nombre-err','sc-email-err'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; } });
   }
 }
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
+
+// ══════════════════════════════════════════════════════════════════
+// AUTOCOMPLETE CUSTOM — #p-cliente en modal de pago
+// Reemplaza <datalist> que es no confiable en iOS Safari
+// ══════════════════════════════════════════════════════════════════
+let _pcBlurTimer = null;
+
+function _pcAutoInput(inp){
+  const dd = document.getElementById('p-cliente-dropdown');
+  if(!dd) return;
+  const q = (inp.value||'').trim().toLowerCase();
+  // Construir lista única de nombres: clientesDB + pagos históricos
+  const nombres = [...new Set([
+    ...clientesDB.map(c=>c.nombre||''),
+    ...pagos.map(p=>p.cliente||'')
+  ])].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+
+  const matches = q.length === 0
+    ? nombres.slice(0, 20)                                       // sin texto: mostrar todos (máx 20)
+    : nombres.filter(n=>n.toLowerCase().includes(q)).slice(0,15); // con texto: filtrar
+
+  if(matches.length === 0){ dd.style.display='none'; return; }
+
+  dd.innerHTML = matches.map(n=>`
+    <div onmousedown="_pcSelect('${n.replace(/'/g,"\\'")}',event)"
+      style="padding:11px 14px;font-size:14px;color:var(--text);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);
+             transition:background .1s;-webkit-tap-highlight-color:rgba(29,158,117,.15);"
+      ontouchstart="this.style.background='rgba(29,158,117,.12)'"
+      ontouchend="this.style.background=''"
+      onmouseenter="this.style.background='rgba(29,158,117,.1)'"
+      onmouseleave="this.style.background=''">
+      ${n.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>')}
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function _pcSelect(nombre, e){
+  if(e) e.preventDefault();
+  const inp = document.getElementById('p-cliente');
+  const dd  = document.getElementById('p-cliente-dropdown');
+  if(inp){ inp.value = nombre; _pagoFieldErr('p-cliente',''); }
+  if(dd) dd.style.display = 'none';
+  if(_pcBlurTimer){ clearTimeout(_pcBlurTimer); _pcBlurTimer=null; }
+}
+
+function _pcAutoBlur(){
+  // Delay: permite que el click en dropdown se ejecute antes de cerrar
+  _pcBlurTimer = setTimeout(()=>{
+    const dd = document.getElementById('p-cliente-dropdown');
+    if(dd) dd.style.display = 'none';
+  }, 200);
+}
 
 // ─── Confirm Dialog (reemplaza window.confirm) ───
 let _confirmResolve = null;
@@ -12639,32 +12707,73 @@ async function savePago(){
 }
 
 async function saveClienteSinPago(){
+  // ── Helpers de error por campo ──
+  function _scErr(campo, msg){
+    const el = document.getElementById('sc-'+campo+'-err');
+    const inp = document.getElementById('sc-'+campo === 'email' ? 'sc-email-new' : 'sc-'+campo);
+    if(el){ el.textContent=msg; el.style.display=msg?'block':'none'; }
+    if(inp) inp.style.borderColor = msg ? 'var(--danger)' : '';
+  }
+  function _scClearErrs(){ ['nombre','email'].forEach(f=>_scErr(f,'')); }
+  _scClearErrs();
+
   const nombre = document.getElementById('sc-nombre').value.trim();
-  if(!nombre){ toast('El nombre es obligatorio','⚠️'); return; }
+  const email  = document.getElementById('sc-email-new').value.trim().toLowerCase();
+
+  let hasError = false;
+  if(!nombre){ _scErr('nombre','El nombre es obligatorio.'); hasError=true; }
+  if(!email){
+    _scErr('email','El email es obligatorio para evitar duplicados.');
+    hasError=true;
+  } else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    _scErr('email','Ingresa un email válido.');
+    hasError=true;
+  }
+  if(hasError) return;
+
   const planCheck = checkPlanLimit('clientes');
   if(!planCheck.ok){ toast(planCheck.msg,'🔒'); return; }
 
-  const existe = clientesDB.some(c=>(c.nombre||'').toLowerCase()===nombre.toLowerCase());
-  if(existe){
-    if(!await confirmDialog(`Ya existe un cliente llamado "${nombre}". ¿Deseas agregarlo de todas formas?`, {title:'Cliente duplicado', danger:false, confirmText:'Agregar de todas formas', icon:'👤'})) return;
+  // ── Verificar email duplicado (más confiable que nombre) ──
+  const emailDupe = clientesDB.find(c=>(c.email||'').toLowerCase()===email);
+  if(emailDupe){
+    _scErr('email', `Este email ya pertenece a ${emailDupe.nombre}. ¿Es la misma persona?`);
+    return;
   }
+
+  // ── Advertencia por nombre similar (no bloquea) ──
+  const nombreDupe = clientesDB.some(c=>(c.nombre||'').toLowerCase()===nombre.toLowerCase());
+  if(nombreDupe){
+    if(!await confirmDialog(`Ya existe un cliente llamado "${nombre}" pero con diferente email. ¿Confirmas que es una persona distinta?`,
+      {title:'Nombre similar', danger:false, confirmText:'Sí, es diferente', icon:'👤'})) return;
+  }
+
+  const btn = document.querySelector('#modal-solo-cliente .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
 
   const payload = {
     nombre,
+    email,
     telefono:   document.getElementById('sc-telefono').value.trim(),
     cumpleanos: document.getElementById('sc-cumpleanos').value||null,
     notas:      document.getElementById('sc-notas').value.trim(),
   };
 
   const { error } = await window.supabaseClient.from('clientes').insert([withGymId(payload)]);
-  if(error){ console.error('Error guardando cliente:', error); alert('No se pudo guardar el cliente.'); return; }
+  if(btn){ btn.disabled=false; btn.textContent='Agregar Cliente'; }
+  if(error){
+    console.error('Error guardando cliente:', error);
+    const m = error.message||'';
+    if(m.includes('JWT')||m.includes('expired')){ _handleJwtExpiry(); return; }
+    if(m.includes('unique')||m.includes('duplicate')){ _scErr('email','Este email ya está registrado.'); return; }
+    toast('No se pudo guardar el cliente: '+m,'❌');
+    return;
+  }
 
   await loadClientesFromSupabase();
   closeModal('solo-cliente');
-  ['sc-nombre','sc-telefono','sc-notas'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('sc-cumpleanos').value='';
-  auditLog('CREAR_CLIENTE', 'clientes', '', `Nuevo cliente: ${nombre}`);
-  toast(`Cliente "${nombre}" agregado al directorio ✅`,'👤');
+  auditLog('CREAR_CLIENTE', 'clientes', '', `Nuevo cliente: ${nombre} (${email})`);
+  toast(`${nombre} agregado ✅`,'👤');
   renderClientes();
 }
 
