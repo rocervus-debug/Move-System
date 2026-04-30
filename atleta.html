@@ -398,6 +398,102 @@ body::before{
 .qa-sub{font-size:10px;color:var(--text3);}
 
 /* ══════════════════════════════════════
+   CLASES — Reservas View
+══════════════════════════════════════ */
+/* Day tab strip */
+.cls-day-tabs{
+  display:flex;gap:6px;padding:0 16px 14px;
+  overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+}
+.cls-day-tabs::-webkit-scrollbar{display:none;}
+.cls-day-tab{
+  flex-shrink:0;padding:7px 14px;border-radius:99px;
+  font-size:11px;font-weight:800;color:var(--text3);
+  background:var(--surface);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;letter-spacing:.3px;text-transform:uppercase;
+}
+.cls-day-tab.active{
+  background:rgba(29,158,117,.12);border-color:var(--border-accent);
+  color:var(--accent-light);box-shadow:0 0 10px rgba(29,158,117,.12);
+}
+.cls-day-tab:active{transform:scale(.95);}
+/* Class card */
+.cls-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;overflow:hidden;
+  margin-bottom:10px;transition:border-color .15s,background .15s;
+  position:relative;
+}
+.cls-card.reserved{
+  background:rgba(29,158,117,.05);
+  border-color:rgba(29,158,117,.22);
+}
+.cls-card.reserved::before{
+  content:'';position:absolute;top:0;left:0;right:0;
+  height:2px;background:var(--accent);border-radius:18px 18px 0 0;
+}
+.cls-card-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:14px 16px 10px;
+}
+.cls-card-time{
+  font-family:var(--fd);font-size:24px;font-weight:900;color:#fff;
+  line-height:1;letter-spacing:-.5px;
+}
+.cls-card-type{
+  font-size:10px;font-weight:800;color:var(--accent);
+  text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;
+}
+.cls-cupo-badge{
+  flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px;
+}
+.cls-cupo-num{font-size:11px;font-weight:700;text-align:right;}
+.cls-cupo-lbl{font-size:9px;color:var(--text3);text-align:right;letter-spacing:.2px;}
+/* Cupo bar */
+.cls-cupo-bar{height:3px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;width:52px;margin-top:1px;}
+.cls-cupo-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+/* Card body */
+.cls-card-body{padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.cls-coach{font-size:11px;color:var(--text3);}
+.cls-coach span{color:var(--text2);}
+/* Reserve button */
+.cls-btn{
+  flex-shrink:0;padding:9px 18px;border-radius:99px;
+  font-size:11px;font-weight:800;letter-spacing:.3px;
+  border:none;cursor:pointer;transition:all .15s;
+  font-family:var(--font);white-space:nowrap;
+}
+.cls-btn.reserve{
+  background:var(--accent);color:#fff;
+  box-shadow:0 4px 16px rgba(29,158,117,.35);
+}
+.cls-btn.reserve:active{transform:scale(.95);background:#17875e;}
+.cls-btn.cancel{
+  background:rgba(240,96,96,.1);color:var(--danger);
+  border:1px solid rgba(240,96,96,.2);
+}
+.cls-btn.cancel:active{transform:scale(.95);}
+.cls-btn.full{
+  background:rgba(255,255,255,.04);color:var(--text3);
+  border:1px solid var(--border);cursor:default;
+}
+.cls-btn.loading{
+  background:rgba(29,158,117,.08);color:var(--accent);
+  border:1px solid var(--border-accent);cursor:default;opacity:.7;
+}
+/* No-class empty state */
+.cls-empty{padding:48px 16px;text-align:center;}
+.cls-empty-ico{font-size:36px;margin-bottom:12px;}
+.cls-empty-txt{font-size:13px;color:var(--text3);line-height:1.5;}
+/* Membership warning */
+.cls-warn-banner{
+  margin:0 16px 16px;padding:12px 14px;
+  background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);
+  border-radius:14px;font-size:12px;color:var(--warn);
+  display:flex;align-items:center;gap:8px;line-height:1.4;
+}
+
+/* ══════════════════════════════════════
    SECTIONS
 ══════════════════════════════════════ */
 .section{padding:0 16px;margin-bottom:26px;}
@@ -1006,6 +1102,9 @@ body::before{
       <div class="sb-item" id="sbn-programa" onclick="switchView('programa')">
         <div class="sb-icon">📅</div><div class="sb-lbl">Programa</div>
       </div>
+      <div class="sb-item" id="sbn-clases" onclick="switchView('clases')">
+        <div class="sb-icon">🗓️</div><div class="sb-lbl">Reservar clase</div>
+      </div>
       <div class="sb-item" id="sbn-historial" onclick="switchView('historial')">
         <div class="sb-icon">🕐</div><div class="sb-lbl">Historial</div>
       </div>
@@ -1058,6 +1157,11 @@ body::before{
             <div class="qa-ttl">QR de Entrada</div>
             <div class="qa-sub">Muéstralo en recepción</div>
           </div>
+          <div class="qa" onclick="switchView('clases')">
+            <div class="qa-ico">🗓️</div>
+            <div class="qa-ttl">Reservar clase</div>
+            <div class="qa-sub">Ver clases disponibles</div>
+          </div>
           <div class="qa" onclick="switchView('historial')">
             <div class="qa-ico">📍</div>
             <div class="qa-ttl">Mis Visitas</div>
@@ -1087,6 +1191,11 @@ body::before{
                 <div class="qa-ico">📲</div>
                 <div class="qa-ttl">QR de Entrada</div>
                 <div class="qa-sub">Muéstralo en recepción</div>
+              </div>
+              <div class="qa" onclick="switchView('clases')">
+                <div class="qa-ico">🗓️</div>
+                <div class="qa-ttl">Reservar clase</div>
+                <div class="qa-sub">Ver clases disponibles</div>
               </div>
               <div class="qa" onclick="switchView('historial')">
                 <div class="qa-ico">📍</div>
@@ -1170,6 +1279,27 @@ body::before{
       </div>
     </div>
 
+
+    <!-- ── CLASES ── -->
+    <div class="view" id="view-clases">
+      <div class="greeting">
+        <div class="greeting-hi" id="cls-gym-hi">Clases</div>
+        <div class="greeting-name" style="font-size:22px;">Reservar clase</div>
+      </div>
+      <div id="cls-warn-banner" style="display:none;" class="cls-warn-banner">
+        <span>⚠️</span><span>Tu membresía está vencida. Renueva para reservar clases.</span>
+      </div>
+      <div class="cls-day-tabs" id="cls-day-tabs"></div>
+      <div class="section" style="padding-top:0;">
+        <div id="cls-content">
+          <div class="cls-empty">
+            <div class="cls-empty-ico">📅</div>
+            <div class="cls-empty-txt">Cargando clases…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main-scroll -->
 
   <!-- Mobile Bottom Nav -->
@@ -1177,8 +1307,8 @@ body::before{
     <div class="bn-item active" id="bn-home" onclick="switchView('home')">
       <div class="bn-icon">🏠</div><div class="bn-lbl">Inicio</div>
     </div>
-    <div class="bn-item" id="bn-programa" onclick="switchView('programa')">
-      <div class="bn-icon">📅</div><div class="bn-lbl">Programa</div>
+    <div class="bn-item" id="bn-clases" onclick="switchView('clases')">
+      <div class="bn-icon">🗓️</div><div class="bn-lbl">Clases</div>
     </div>
     <div class="bn-fab-wrap" onclick="openQRSheet()">
       <div class="bn-fab">📲</div>
@@ -1318,13 +1448,14 @@ function openProfileSheet(){ openSheet('profile-sheet'); }
 // ── View switching ───────────────────────────────────
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  ['home','programa','historial','planes'].forEach(n=>{
+  ['home','programa','clases','historial','planes'].forEach(n=>{
     const b=$('bn-'+n); if(b) b.classList.toggle('active',n===name);
     const s=$('sbn-'+n); if(s) s.classList.toggle('active',n===name);
   });
   const v=$('view-'+name); if(v) v.classList.add('active');
   activeView=name;
   if(name==='programa') renderProgramaView();
+  if(name==='clases') loadClasesData();
   if(name==='historial') renderHistorial();
   if(name==='planes') renderPlanes();
 }
@@ -1971,6 +2102,316 @@ function renderHistorial(){
   });
   html+='</div>';
   el.innerHTML=html;
+}
+
+// ── Clases / Reservas ────────────────────────────────
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+let clasesHorarios   = [];   // weekly template from 'horarios' table
+let clasesReservas   = {};   // { horario_id+fecha: reserva } for current client
+let clasesCupos      = {};   // { horario_id+fecha: count }
+let clasesActiveDia  = null; // currently selected day name (e.g. 'Lunes')
+let clasesLoading    = false;
+
+function _sbHeaders(){
+  return {'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'};
+}
+
+async function loadClasesData(){
+  if(!portalData) return;
+  if(clasesLoading) return;
+  clasesLoading = true;
+
+  const gymId    = portalData.gym.id;
+  const token    = portalData.cliente.portal_token;
+  const membOk   = portalData.cliente.membresiaOk;
+
+  // Show membership warning if expired
+  const warnEl = $('cls-warn-banner');
+  if(warnEl) warnEl.style.display = membOk ? 'none' : 'flex';
+
+  // Set gym name header
+  const hiEl = $('cls-gym-hi');
+  if(hiEl) hiEl.textContent = portalData.gym.nombre || 'Clases';
+
+  try{
+    // 1. Fetch weekly horarios template (fecha = null = recurring)
+    const hRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&fecha=is.null&select=id,dia,hora,tipo,coach_nombre,cupo&order=hora.asc`,
+      { headers: _sbHeaders() }
+    );
+    if(!hRes.ok) throw new Error('horarios fetch failed');
+    clasesHorarios = await hRes.json();
+
+    // Determine dates for the next 7 days
+    const today = new Date();
+    const dates = []; // [{ dia: 'Lunes', fecha: '2025-05-05' }, ...]
+    for(let i=0;i<7;i++){
+      const d = new Date(today); d.setDate(today.getDate()+i);
+      dates.push({ dia: DIAS[d.getDay()], fecha: d.toISOString().slice(0,10) });
+    }
+
+    // Build set of (horario_id, fecha) combos we need cupos for
+    const needed = [];
+    clasesHorarios.forEach(h=>{
+      dates.filter(d=>d.dia===h.dia).forEach(d=>needed.push({hid:h.id,fecha:d.fecha}));
+    });
+
+    // 2. Fetch existing reservas by this token (next 7 days)
+    const fechaMin = dates[0].fecha;
+    const fechaMax = dates[6].fecha;
+    const rRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=neq.cancelado&select=id,horario_id,fecha,estado`,
+      { headers: _sbHeaders() }
+    );
+    const myReservas = rRes.ok ? await rRes.json() : [];
+    clasesReservas = {};
+    myReservas.forEach(r=>{ clasesReservas[r.horario_id+'_'+r.fecha] = r; });
+
+    // 3. Fetch cupo count per class/date (parallel)
+    clasesCupos = {};
+    await Promise.all(needed.map(async ({hid,fecha})=>{
+      const key = hid+'_'+fecha;
+      try{
+        const cRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/reservas?horario_id=eq.${hid}&fecha=eq.${fecha}&estado=neq.cancelado&select=id`,
+          { headers: {..._sbHeaders(),'Prefer':'count=exact'} }
+        );
+        // count in Content-Range header: "0-N/TOTAL"
+        const cr = cRes.headers.get('content-range')||'';
+        const total = parseInt((cr.split('/')[1])||'0',10);
+        clasesCupos[key] = isNaN(total) ? 0 : total;
+      }catch(_){ clasesCupos[key] = 0; }
+    }));
+
+    // Build tabs from days that have classes
+    const diasConClases = [...new Set(clasesHorarios.map(h=>h.dia))];
+    // Order by index in dates (next 7 days in order)
+    const diaOrder = dates.map(d=>d.dia).filter((d,i,a)=>a.indexOf(d)===i);
+    const tabDias = diaOrder.filter(d=>diasConClases.includes(d));
+
+    if(!clasesActiveDia || !tabDias.includes(clasesActiveDia)){
+      clasesActiveDia = tabDias[0] || null;
+    }
+
+    // Render day tabs
+    const tabsEl = $('cls-day-tabs');
+    if(tabsEl){
+      tabsEl.innerHTML = tabDias.map(d=>{
+        const dd = dates.find(x=>x.dia===d);
+        const label = _diaLabel(d, dd ? dd.fecha : null);
+        return `<div class="cls-day-tab${d===clasesActiveDia?' active':''}" onclick="clsSelectDia('${d}')">${label}</div>`;
+      }).join('');
+    }
+
+    renderClasesView(dates);
+  }catch(e){
+    console.error('loadClasesData error',e);
+    const el = $('cls-content');
+    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico">⚠️</div><div class="cls-empty-txt">Error al cargar clases. Intenta de nuevo.</div></div>';
+  }finally{
+    clasesLoading = false;
+  }
+}
+
+function _diaLabel(dia, fecha){
+  if(!fecha) return dia;
+  const today = new Date().toISOString().slice(0,10);
+  const tom   = new Date(); tom.setDate(tom.getDate()+1);
+  const tomStr = tom.toISOString().slice(0,10);
+  if(fecha===today) return 'Hoy';
+  if(fecha===tomStr) return 'Mañana';
+  // Short day name (3 chars)
+  return dia.slice(0,3);
+}
+
+function clsSelectDia(dia){
+  clasesActiveDia = dia;
+  // Update tab active state
+  document.querySelectorAll('.cls-day-tab').forEach(t=>{
+    t.classList.toggle('active', t.textContent.trim()===_diaLabel(dia, _fechaForDia(dia)) || t.onclick?.toString().includes(`'${dia}'`));
+  });
+  // Re-render tabs highlighting correct one
+  const tabsEl = $('cls-day-tabs');
+  if(tabsEl){
+    tabsEl.querySelectorAll('.cls-day-tab').forEach(t=>{
+      const matches = t.getAttribute('onclick')===`clsSelectDia('${dia}')`;
+      t.classList.toggle('active', matches);
+    });
+  }
+  // Rebuild dates array
+  const today = new Date();
+  const dates = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    dates.push({ dia: DIAS[d.getDay()], fecha: d.toISOString().slice(0,10) });
+  }
+  renderClasesView(dates);
+}
+
+function _fechaForDia(dia){
+  const today = new Date();
+  for(let i=0;i<7;i++){
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    if(DIAS[d.getDay()]===dia) return d.toISOString().slice(0,10);
+  }
+  return null;
+}
+
+function renderClasesView(dates){
+  const el = $('cls-content');
+  if(!el) return;
+  if(!clasesActiveDia){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">📅</div><div class="cls-empty-txt">No hay clases programadas.</div></div>'; return; }
+
+  const membOk = portalData && portalData.cliente.membresiaOk;
+  const fecha  = _fechaForDia(clasesActiveDia);
+  if(!fecha){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">📅</div><div class="cls-empty-txt">Sin clases para este día.</div></div>'; return; }
+
+  const clasesDia = clasesHorarios.filter(h=>h.dia===clasesActiveDia);
+  if(!clasesDia.length){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">🏋️</div><div class="cls-empty-txt">No hay clases programadas para este día.</div></div>'; return; }
+
+  const today = new Date().toISOString().slice(0,10);
+  const isPast = fecha < today;
+
+  el.innerHTML = clasesDia.map(h=>{
+    const key        = h.id+'_'+fecha;
+    const cupoTotal  = h.cupo || 0;
+    const cupoUsado  = clasesCupos[key] || 0;
+    const cupoLibre  = Math.max(0, cupoTotal - cupoUsado);
+    const pct        = cupoTotal > 0 ? Math.round((cupoUsado/cupoTotal)*100) : 0;
+    const isFull     = cupoTotal > 0 && cupoLibre === 0;
+    const miReserva  = clasesReservas[key];
+    const isReserved = !!miReserva;
+
+    // Cupo bar color
+    let barColor = '#0fdf9a'; // green
+    if(pct >= 90) barColor = '#f06060';
+    else if(pct >= 60) barColor = '#f5a623';
+
+    // Cupo number color
+    let cupoColor = 'var(--ok)';
+    if(pct >= 90) cupoColor = 'var(--danger)';
+    else if(pct >= 60) cupoColor = 'var(--warn)';
+
+    // Cupo text
+    const cupoText = cupoTotal > 0
+      ? (isFull ? '0 lugares' : `${cupoLibre} de ${cupoTotal}`)
+      : '—';
+
+    // Button state
+    let btnHtml = '';
+    if(isPast){
+      btnHtml = `<button class="cls-btn full" disabled>Pasado</button>`;
+    } else if(isReserved){
+      btnHtml = `<button class="cls-btn cancel" onclick="cancelarReserva('${miReserva.id}','${key}')">Cancelar</button>`;
+    } else if(isFull){
+      btnHtml = `<button class="cls-btn full" disabled>Lleno</button>`;
+    } else if(!membOk){
+      btnHtml = `<button class="cls-btn full" disabled>Sin membresía</button>`;
+    } else {
+      btnHtml = `<button class="cls-btn reserve" onclick="crearReserva('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">Reservar</button>`;
+    }
+
+    return `<div class="cls-card${isReserved?' reserved':''}" id="cls-card-${key}">
+      <div class="cls-card-head">
+        <div>
+          <div class="cls-card-time">${_fmtHora(h.hora)}</div>
+          <div class="cls-card-type">${h.tipo||'Clase'}${isReserved?' · ✓ Reservado':''}</div>
+        </div>
+        <div class="cls-cupo-badge">
+          <span class="cls-cupo-num" style="color:${cupoColor};">${cupoText}</span>
+          <span class="cls-cupo-lbl">disponibles</span>
+          <div class="cls-cupo-bar"><div class="cls-cupo-fill" style="width:${pct}%;background:${barColor};"></div></div>
+        </div>
+      </div>
+      <div class="cls-card-body">
+        <div class="cls-coach">${h.coach_nombre ? '👤 <span>'+h.coach_nombre+'</span>' : '<span style="opacity:.4;">Sin coach asignado</span>'}</div>
+        ${btnHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _fmtHora(hora){
+  if(!hora) return '—';
+  const [h,m] = hora.split(':');
+  const hr = parseInt(h,10);
+  return `${hr>12?hr-12:hr||12}:${m} <span style="font-size:12px;font-weight:600;opacity:.6;">${hr>=12?'PM':'AM'}</span>`;
+}
+
+async function crearReserva(horarioId, fecha, tipo, hora){
+  if(!portalData) return;
+  const key = horarioId+'_'+fecha;
+  const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
+  if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Reservando…'; }
+
+  const gymId   = portalData.gym.id;
+  const cliente = portalData.cliente;
+  const diaIdx  = new Date(fecha+'T12:00:00').getDay();
+  const dia     = DIAS[diaIdx];
+
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservas`,{
+      method:'POST',
+      headers:{..._sbHeaders(),'Prefer':'return=representation'},
+      body: JSON.stringify({
+        gym_id:        gymId,
+        horario_id:    horarioId,
+        cliente_id:    cliente.id || null,
+        cliente_nombre:cliente.nombre,
+        portal_token:  cliente.portal_token,
+        fecha:         fecha,
+        clase_tipo:    tipo,
+        clase_hora:    hora,
+        clase_dia:     dia,
+        estado:        'reservado'
+      })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      // Duplicate = already reserved (unique index violation)
+      const isdup = JSON.stringify(data).includes('idx_reservas_no_duplicado');
+      alert(isdup ? '⚠️ Ya tienes esta clase reservada.' : '❌ No se pudo reservar. Intenta de nuevo.');
+      if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
+      return;
+    }
+    const newReserva = Array.isArray(data) ? data[0] : data;
+    clasesReservas[key] = newReserva;
+    clasesCupos[key] = (clasesCupos[key]||0)+1;
+    // Re-render just this card
+    const today = new Date();
+    const dates = [];
+    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)}); }
+    renderClasesView(dates);
+  }catch(e){
+    alert('❌ Error de conexión. Intenta de nuevo.');
+    if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
+  }
+}
+
+async function cancelarReserva(reservaId, key){
+  if(!portalData) return;
+  if(!confirm('¿Cancelar tu reserva para esta clase?')) return;
+
+  const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
+  if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Cancelando…'; }
+
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservas?id=eq.${reservaId}`,{
+      method:'PATCH',
+      headers:_sbHeaders(),
+      body: JSON.stringify({ estado:'cancelado' })
+    });
+    if(!res.ok && res.status !== 204) throw new Error('patch failed');
+    delete clasesReservas[key];
+    clasesCupos[key] = Math.max(0,(clasesCupos[key]||1)-1);
+    const today = new Date();
+    const dates = [];
+    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)}); }
+    renderClasesView(dates);
+  }catch(e){
+    alert('❌ Error al cancelar. Intenta de nuevo.');
+    if(btn){ btn.className='cls-btn cancel'; btn.disabled=false; btn.textContent='Cancelar'; }
+  }
 }
 
 // ── Login ─────────────────────────────────────────────
