@@ -669,6 +669,8 @@ body{
 .sidebar{position:relative;transition:width .28s cubic-bezier(.4,0,.2,1);}
 /* Label corto: solo en mobile, oculto en desktop */
 .nav-lbl-mob { display: none; }
+/* Mobile bottom nav — hidden on desktop */
+#mobile-bottom-nav { display: none; }
 
 .sidebar-collapsed{width:68px !important;}
 .sidebar-collapsed .logo-velum-wordmark,
@@ -1818,156 +1820,59 @@ select option{background:#0d1a16;color:var(--text);}
     min-height: -webkit-fill-available !important;
   }
 
-  /* ── Sidebar → slim fixed bottom nav ── */
-  .sidebar {
-    /* Geometry */
+  /* ── Desktop sidebar: HIDDEN on mobile — replaced by #mobile-bottom-nav ── */
+  .sidebar { display: none !important; }
+
+  /* ── Mobile bottom nav — independent, simple, bulletproof ── */
+  #mobile-bottom-nav {
+    display: flex !important;
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    top: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    /* Horizontal single-row layout */
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    /* Solo captura gestos horizontales — no bloquea el scroll vertical del contenido */
-    touch-action: pan-x manipulation !important;
-    overscroll-behavior-x: contain !important;
-    /* Styling */
     z-index: 9000 !important;
-    border-right: none !important;
-    border-top: 1px solid rgba(29,158,117,.22) !important;
     background: rgba(5,5,12,.98) !important;
-    /* Safe area for iPhone home indicator */
-    padding: 4px 6px constant(safe-area-inset-bottom, 0px) !important;
-    padding: 4px 6px env(safe-area-inset-bottom, 0px) !important;
+    border-top: 1px solid rgba(29,158,117,.22) !important;
     box-shadow: 0 -4px 24px rgba(0,0,0,.8) !important;
-    scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch;
-    /* GPU layer — critical for iOS fixed positioning */
     -webkit-transform: translateZ(0) !important;
     transform: translateZ(0) !important;
-    will-change: transform;
   }
-  .sidebar::-webkit-scrollbar { display: none !important; }
-
-  /* Hide logo, footer, user card */
-  .logo            { display: none !important; }
-  .sidebar-footer  { display: none !important; }
-  .sidebar-bottom  { display: none !important; }  /* user-card at bottom */
-
-  /*
-   * KEY FIX v10: display:contents es inestable en iOS Safari PWA.
-   * Flex explícito en nav.nav + nav-section garantiza compatibilidad total.
-   * :has() oculta secciones donde todos los ítems son mob-hidden.
-   * Resultado: Dashboard | Pagos+Clientes | Asistencia | Más → espaciado even.
-   */
-  nav.nav {
-    display: flex !important;
-    flex-direction: row !important;
-    flex: 1 !important;
-    align-items: stretch !important;
-    justify-content: space-evenly !important;
-    padding: 0 2px !important;
-    gap: 0 !important;
-    min-width: 0 !important;
-    overflow: visible !important;
-  }
-  .nav-section {
-    display: flex !important;
-    flex-direction: row !important;
-    flex: 1 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 2px !important;
-    min-width: 0 !important;
-  }
-  /* Ocultar secciones vacías (Marketing, Finanzas, Sistema) — sin :has() */
-  .nav-sec-empty { display: none !important; }
-
-  /* Sección Más — siempre visible en mobile */
-  .nav-section:last-child { display: flex !important; flex: 1 !important; justify-content: center !important; align-items: center !important; }
-
-  /* Hide group labels */
-  .nav-label { display: none !important; }
-
-  /* Labels: desktop muestra texto largo, mobile muestra texto corto */
-  .nav-lbl-mob { display: inline !important; font-size: 9px; font-weight: 700; color: rgba(255,255,255,.65); white-space: nowrap; }
-  .nav-lbl-desktop { display: none !important; }
-
-  /* Ocultar Velum Assistant FAB en mobile — interfiere con nav */
-  #va-btn { display: none !important; }
-
-  /* Each nav-item: vertical icon + text, fills section evenly */
-  .nav-item {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex: 1 1 0 !important;
-    min-width: 40px !important;
-    min-height: 52px !important;
-    padding: 6px 6px 4px !important;
-    gap: 3px !important;
-    border-radius: 10px !important;
-    border-left: none !important;
-    border-bottom: none !important;
-    margin: 1px !important;
-    background: transparent !important;
-    transition: background .15s !important;
+  .mbn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 8px 4px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    color: rgba(255,255,255,.55);
+    font-size: 9px;
+    font-weight: 700;
+    font-family: var(--font);
+    gap: 4px;
     cursor: pointer;
-    box-sizing: border-box;
-    /* Text node (label) inherits this: */
-    font-size: 9px !important;
-    font-weight: 700 !important;
-    color: rgba(255,255,255,.65) !important;
-    white-space: nowrap !important;
-    letter-spacing: .2px !important;
-    line-height: 1.2;
-    /* Kill desktop left-accent bar */
-    box-shadow: none !important;
+    min-height: 56px;
+    letter-spacing: .2px;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
   }
-  .nav-item::before { display: none !important; }  /* kill accent bar */
-
-  .nav-item.active {
-    background: rgba(29,158,117,.14) !important;
-    color: var(--accent) !important;
-    border-left: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
+  .mbn-item.active { color: var(--accent); }
+  .mbn-item svg {
+    width: 20px; height: 20px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    opacity: .75;
   }
-  .nav-item.active .nav-icon {
-    opacity: 1 !important;
-    filter: drop-shadow(0 0 5px rgba(29,158,117,.7)) !important;
-  }
-  .nav-item:not(.active) .nav-icon { opacity: .70 !important; }
-
-  /* Nav icon: bigger on mobile */
-  .nav-item .nav-icon {
-    width: 22px !important;
-    height: 22px !important;
-  }
-  .nav-item .nav-icon svg {
-    width: 18px !important;
-    height: 18px !important;
+  .mbn-item.active svg {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(29,158,117,.6));
   }
 
-  /* Badge: position over icon */
-  .nav-item .nav-badge {
-    position: absolute !important;
-    top: 2px !important;
-    right: 4px !important;
-    font-size: 8px !important;
-    padding: 1px 3px !important;
-    margin-left: 0 !important;
-  }
+  /* Ocultar Velum Assistant FAB en mobile */
+  #va-btn { display: none !important; }
 
   /* Main content — override overflow:hidden from base CSS */
   .main {
@@ -2027,9 +1932,7 @@ select option{background:#0d1a16;color:var(--text);}
   .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); right: 12px; left: 12px; right: 12px; }
 
   /* ── Mobile nav: hide secondary items, show "Más" ── */
-  .nav-item.mob-hidden { display: none !important; }
-  .mob-mas-item { display: flex !important; }
-  /* Hide desktop collapse button on mobile */
+  /* Collapse button: hidden on mobile */
   .sidebar-collapse-btn { display: none !important; }
 
   /* ──────────── KPI cards ──────────── */
@@ -2799,6 +2702,33 @@ select option{background:#0d1a16;color:var(--text);}
     </div>
   </div>
 </aside>
+
+<!-- ══════════════════════════════════════════════
+     MOBILE BOTTOM NAV — independiente del sidebar
+     Solo visible en mobile (max-width: 768px)
+══════════════════════════════════════════════ -->
+<nav id="mobile-bottom-nav" role="navigation" aria-label="Navegación">
+  <button class="mbn-item active" id="mbn-dashboard" onclick="go('dashboard')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </button>
+  <button class="mbn-item" id="mbn-pagos" onclick="go('pagos')">
+    <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    Pagos
+  </button>
+  <button class="mbn-item" id="mbn-clientes" onclick="go('clientes')">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
+    Clientes
+  </button>
+  <button class="mbn-item" id="mbn-asistencia" onclick="go('asistencia')">
+    <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Asistencia
+  </button>
+  <button class="mbn-item" id="mbn-mas" onclick="openMasMenu()">
+    <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>
+    Más
+  </button>
+</nav>
 
 <!-- ═══════════════════════════════════════
      MAIN
@@ -6833,6 +6763,9 @@ const topBtnActions = {
 function go(id, el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  // Sync mobile bottom nav active state
+  document.querySelectorAll('.mbn-item').forEach(n=>n.classList.remove('active'));
+  const mbnEl = document.getElementById('mbn-'+id); if(mbnEl) mbnEl.classList.add('active');
   document.getElementById('v-'+id).classList.add('active');
   if(el) el.classList.add('active');
   const t = topTitles[id]||[id,''];
