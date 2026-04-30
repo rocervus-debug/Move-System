@@ -1803,21 +1803,23 @@ select option{background:#0d1a16;color:var(--text);}
 /* ── 768px breakpoint ── */
 @media (max-width: 768px) {
 
-  /* ──────────── iOS Safari root fixes ──────────── */
+  /* ──────────── PWA Viewport fix ──────────── */
   /*
-     Safari requires !important to override base body height/overflow.
-     Also: position:fixed inside overflow:hidden breaks on iOS, so
-     we must clear overflow on body before the sidebar can be fixed.
+     #app-wrapper uses inline height:100vh which can be wrong on iOS Safari
+     (includes address bar space). We override here with dvh (dynamic viewport height)
+     so the app fills exactly the visible area — no gaps, no overflow.
   */
+  #app-wrapper {
+    height: 100dvh !important;  /* Modern: dynamic viewport, keyboard-aware */
+    height: 100vh !important;   /* Fallback for older browsers */
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
   body {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    height: auto !important;
-    min-height: 100vh !important;
-    /* iOS Safari fill-available fallback */
-    min-height: -webkit-fill-available !important;
+    overflow: hidden !important;
+    height: 100dvh !important;
+    height: 100vh !important;
   }
 
   /* ── Desktop sidebar: HIDDEN on mobile — replaced by #mobile-bottom-nav ── */
@@ -1874,21 +1876,17 @@ select option{background:#0d1a16;color:var(--text);}
   /* Ocultar Velum Assistant FAB en mobile */
   #va-btn { display: none !important; }
 
-  /* Main content — override overflow:hidden from base CSS */
+  /* Main content — flex column, NO scroll here (scroll lives in .content) */
   .main {
     flex: 1 !important;
+    display: flex !important;
     flex-direction: column !important;
     margin-left: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    /* CRITICAL: override base overflow:hidden */
-    overflow: visible !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    /* Space for fixed bottom nav + iOS home indicator */
-    padding-bottom: 80px !important;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+    /* Do NOT use height:auto — it breaks flex height on iOS Safari */
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
   }
 
   /* ──────────── Topbar ──────────── */
@@ -1926,7 +1924,18 @@ select option{background:#0d1a16;color:var(--text);}
   .g2 { grid-template-columns: 1fr !important; gap: 12px !important; }
   .g3 { grid-template-columns: 1fr !important; gap: 12px !important; }
 
-  .content { padding: 12px; }
+  /* .content is the ONLY scroll container on mobile */
+  .content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    padding: 12px !important;
+    /* CRITICAL: space for fixed bottom nav + iOS home indicator */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 0 !important;
+  }
 
   /* Toast above bottom nav */
   .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); right: 12px; left: 12px; right: 12px; }
