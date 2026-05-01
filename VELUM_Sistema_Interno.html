@@ -2044,7 +2044,8 @@ select option{background:#0d1a16;color:var(--text);}
   .asist-search-wrap{position:relative;}
   .asist-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;}
   .asist-search-wrap input{width:100%;padding:10px 12px 10px 34px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;}
-  .asist-search-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--card2);border:1px solid var(--border);border-radius:10px;z-index:10;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .asist-search-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--card2);border:1px solid var(--border);border-radius:10px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+  #detalle-search-wrap{overflow:visible!important;}
   .asist-search-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05);}
   .asist-search-item:last-child{border-bottom:none;}
   .asist-search-item:hover{background:rgba(255,255,255,.04);}
@@ -3336,8 +3337,8 @@ select option{background:#0d1a16;color:var(--text);}
       <!-- Overlay fondo -->
       <div id="asist-detalle-overlay" onclick="cerrarDetalleClase()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;backdrop-filter:blur(3px);"></div>
 
-      <!-- Panel detalle clase -->
-      <div id="asist-detalle-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:min(480px,100vw);background:var(--bg2,var(--bg));border-left:1px solid var(--border);z-index:201;overflow-y:auto;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.4);"></div>
+      <!-- Panel detalle clase — NO overflow-y:auto en el panel raíz (solo en detalle-body) -->
+      <div id="asist-detalle-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:min(480px,100vw);background:var(--bg2,var(--bg));border-left:1px solid var(--border);z-index:201;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.4);"></div>
 
       <!-- Hidden for realtime counter compat -->
       <span id="checkins-hoy-count" style="display:none;">—</span>
@@ -15345,31 +15346,58 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
   panel.classList.add('open');
   overlay.classList.add('open');
   document.body.style.overflow='hidden';
-  const hEsc2 = esc(hora), tEsc2 = esc(tipo);
+
+  // Store context on window so inline handlers can reference safely without string escaping issues
+  window._dc = {horarioId, hora, tipo, coach, cupo};
+
   panel.innerHTML = `
-    <!-- Header -->
-    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2,var(--bg));">
-      <div>
-        <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:#fff;">${fmtHoraClase(hora)}</div>
-        <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:3px;">${hEsc2.replace(/</g,'&lt;')} · ${tEsc2.replace(/</g,'&lt;')}${coach?` · ${esc(coach)}`:''}</div>
+    <!-- ① Header — sticky, always visible -->
+    <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2,var(--bg));gap:12px;">
+      <div style="min-width:0;">
+        <div style="font-size:22px;font-weight:900;font-family:var(--fd);color:#fff;">${fmtHoraClase(hora)}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(hora)} · ${esc(tipo)}${coach ? ' · '+esc(coach) : ''}</div>
       </div>
-      <button onclick="cerrarDetalleClase()" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      <button onclick="cerrarDetalleClase()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
-    <!-- Buscador — FUERA del overflow container para que el dropdown no quede clipeado -->
-    <div id="detalle-search-wrap" style="padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:10;">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">+ Agregar cliente</div>
-      <div class="asist-search-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="asist-add-input" placeholder="Nombre o número de cliente…" autocomplete="off"
-          oninput="buscarClienteDetalle(this.value,'${horarioId}','${hEsc2}','${tEsc2}')"/>
-        <div id="asist-add-results" class="asist-search-results" style="display:none;"></div>
+
+    <!-- ② Buscador — sticky, NUNCA scroll, overflow:visible para que dropdown sea visible -->
+    <div id="detalle-search-wrap" style="padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;">+ Reservar cliente</span>
+        <span style="font-size:11px;color:var(--text4);">Nombre, número o teléfono</span>
+      </div>
+      <div class="asist-search-wrap" style="position:relative;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="asist-add-input"
+          placeholder="Buscar por nombre, número o teléfono…"
+          autocomplete="off" inputmode="search"
+          style="width:100%;padding:11px 12px 11px 34px;background:var(--card2);border:1.5px solid var(--accent);border-radius:10px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;"
+          oninput="_detalleSearch(this.value)"/>
+        <div id="asist-add-results" class="asist-search-results" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:9999;"></div>
       </div>
     </div>
-    <!-- Lista personas — scrollable -->
-    <div id="detalle-body" style="padding:18px;flex:1;overflow-y:auto;">
-      <div style="text-align:center;padding:24px;font-size:13px;color:var(--text3);">Cargando…</div>
+
+    <!-- ③ Lista de personas — scrollable -->
+    <div id="detalle-body" style="padding:16px 18px;flex:1;overflow-y:auto;min-height:0;">
+      <div style="text-align:center;padding:28px;font-size:13px;color:var(--text3);">Cargando…</div>
     </div>`;
+
   await loadDetalleClase(horarioId,hora,tipo,cupo);
+}
+
+// Search helper — uses window._dc to avoid string-escaping issues in inline handlers
+function _detalleSearch(query){
+  const ctx = window._dc;
+  if(!ctx) return;
+  buscarClienteDetalle(query, ctx.horarioId, ctx.hora, ctx.tipo);
+}
+
+// Called from search result buttons — uses pre-stored client list to avoid quote issues
+function _agregarDesdeLista(idx, estado){
+  const ctx = window._dc;
+  const c   = (window._dcClientes||[])[idx];
+  if(!ctx||!c){ toast('Cliente no encontrado.','⚠️'); return; }
+  agregarClienteAClase(c.id, c.nombre, ctx.horarioId, ctx.hora, ctx.tipo, estado);
 }
 
 function cerrarDetalleClase(){
@@ -15456,29 +15484,37 @@ function buscarClienteDetalle(query,horarioId,hora,tipo){
   _asistSearchTimer = setTimeout(async()=>{
     const gymId = MOVE_GYM_ID||null;
     const numQuery = parseInt(query)||0;
-    let q = window.supabaseClient.from('clientes').select('id,nombre,numero_cliente').limit(8);
+    let q = window.supabaseClient.from('clientes').select('id,nombre,numero_cliente,telefono').limit(10);
     if(gymId) q = q.eq('gym_id',gymId);
-    if(numQuery) q = q.or(`nombre.ilike.%${query}%,numero_cliente.eq.${numQuery}`);
-    else q = q.ilike('nombre',`%${query}%`);
+    if(numQuery) q = q.or(`nombre.ilike.%${query}%,numero_cliente.eq.${numQuery},telefono.ilike.%${query}%`);
+    else q = q.or(`nombre.ilike.%${query}%,telefono.ilike.%${query}%`);
     const {data} = await q;
     if(!data||!data.length){
       res.innerHTML='<div class="asist-search-item" style="color:var(--text3);">Sin resultados</div>';
       res.style.display='block'; return;
     }
-    // On click: show inline action buttons (Reservar / Check-in) before confirming
-    res.innerHTML = data.map(c=>`
-      <div class="asist-search-item" id="sri-${c.id}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <div>
-          <span style="font-weight:700;">${esc(c.nombre)}</span>
-          ${c.numero_cliente?`<span style="font-size:11px;color:var(--text3);margin-left:8px;">#${c.numero_cliente}</span>`:''}
+    // Use window._dc to avoid any string-escaping issues in onclick attributes
+    const ctx = window._dc;
+    if(!ctx){ res.style.display='none'; return; }
+    // Store client list for safe reference by index
+    window._dcClientes = data;
+    res.innerHTML = data.map((c,idx)=>`
+      <div class="asist-search-item" id="sri-${c.id}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;">
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.nombre)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;">
+            ${c.numero_cliente?`#${c.numero_cliente}`:''}
+            ${c.numero_cliente&&c.telefono?' · ':''}
+            ${c.telefono?esc(c.telefono):''}
+          </div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button onclick="event.stopPropagation();agregarClienteAClase('${c.id}','${esc(c.nombre)}','${horarioId}','${esc(hora)}','${esc(tipo)}','reservado')"
-            style="padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          <button onclick="event.stopPropagation();_agregarDesdeLista(${idx},'reservado')"
+            style="padding:6px 11px;border-radius:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:34px;">
             📋 Reservar
           </button>
-          <button onclick="event.stopPropagation();agregarClienteAClase('${c.id}','${esc(c.nombre)}','${horarioId}','${esc(hora)}','${esc(tipo)}','checkin')"
-            style="padding:5px 10px;border-radius:7px;background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.3);color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          <button onclick="event.stopPropagation();_agregarDesdeLista(${idx},'checkin')"
+            style="padding:6px 11px;border-radius:7px;background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.3);color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:34px;">
             ✅ Check-in
           </button>
         </div>
@@ -15492,27 +15528,67 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   const res   = document.getElementById('asist-add-results');
   if(input) input.value='';
   if(res)   res.style.display='none';
+
   const hoyStr = new Date().toISOString().slice(0,10);
   const gymId  = MOVE_GYM_ID||null;
   const cupo   = _detalleCtx?.cupo||0;
-  // Duplicate check
-  let dq = window.supabaseClient.from('reservas').select('id',{count:'exact',head:true}).eq('horario_id',horarioId).eq('fecha',hoyStr).eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
-  const {count:dupCount} = await dq;
-  if(dupCount>0){ toast(`${clienteNombre} ya está en esta clase`,'⚠️'); return; }
-  // Cupo check
-  let cq = window.supabaseClient.from('reservas').select('id',{count:'exact',head:true}).eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado');
-  const {count:cntActual} = await cq;
-  if(cupo>0 && (cntActual||0)>=cupo){
-    if(!await confirmDialog(`La clase ${tipo} ${hora} está llena (${cntActual}/${cupo}). ¿Agregar de todas formas?`,{title:'Clase llena',icon:'⚠️'})) return;
+
+  // ── Validación 1: cliente existe ────────────────────────────────
+  if(!clienteId){ toast('Cliente no encontrado.','⚠️'); return; }
+
+  // ── Validación 2: duplicado en esta clase ───────────────────────
+  const {count:dupCount} = await window.supabaseClient
+    .from('reservas').select('id',{count:'exact',head:true})
+    .eq('horario_id',horarioId).eq('fecha',hoyStr)
+    .eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
+  if(dupCount>0){
+    toast('Este cliente ya tiene una reserva para esta clase.','⚠️');
+    return;
   }
+
+  // ── Validación 3: cupo disponible ───────────────────────────────
+  const {count:cntActual} = await window.supabaseClient
+    .from('reservas').select('id',{count:'exact',head:true})
+    .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado');
+  if(cupo>0 && (cntActual||0)>=cupo){
+    if(!await confirmDialog(
+      `La clase está llena (${cntActual}/${cupo} cupos). ¿Registrar de todas formas?`,
+      {title:'Clase llena ⚠️',icon:'⚠️'}
+    )) {
+      toast('La clase está llena. No se puede reservar más personas.','🚫');
+      return;
+    }
+  }
+
+  // ── Validación 4 (opcional): membresía vencida ──────────────────
+  const pagosCliente = pagos.filter(p=>p.cliente===clienteNombre&&p.notas!=='__sin_pago__');
+  const tieneClasesActivas = pagosCliente.some(p=>p.clases_totales&&(p.clases_usadas??0)<p.clases_totales);
+  const ultimoVence = pagosCliente.map(p=>p.vence).filter(Boolean).sort().reverse()[0]||null;
+  const membresiVencida = !tieneClasesActivas && ultimoVence && new Date(ultimoVence+'T12:00:00') < new Date();
+  if(membresiVencida){
+    const continuar = await confirmDialog(
+      `La membresía de ${clienteNombre} está vencida desde ${ultimoVence}. ¿Registrarlo de todas formas?`,
+      {title:'Membresía vencida',icon:'⚠️'}
+    );
+    if(!continuar) return;
+  }
+
+  // ── Insert ──────────────────────────────────────────────────────
   const diaHoy = _DIAS_ES[new Date().getDay()];
   const {error} = await window.supabaseClient.from('reservas').insert({
-    gym_id: gymId, horario_id: horarioId, cliente_id: parseInt(clienteId)||null,
-    cliente_nombre: clienteNombre, fecha: hoyStr,
-    clase_tipo: tipo, clase_hora: hora, clase_dia: diaHoy, estado,
+    gym_id:          gymId,
+    horario_id:      horarioId,
+    cliente_id:      parseInt(clienteId)||null,
+    cliente_nombre:  clienteNombre,
+    fecha:           hoyStr,
+    clase_tipo:      tipo,
+    clase_hora:      hora,
+    clase_dia:       diaHoy,
+    estado,
   });
-  if(error){ toast(`Error: ${error.message}`,'❌'); return; }
-  const label = estado==='checkin' ? 'Check-in registrado ✓' : 'Reserva creada ✓';
+  if(error){ toast('No se pudo completar la reserva. Intenta de nuevo.','❌'); console.error(error); return; }
+
+  const label = estado==='checkin' ? 'Check-in registrado ✓' : 'Cliente reservado correctamente.';
   toast(`${clienteNombre} — ${label}`,'✅');
   navigator.vibrate?.([50,30,50]);
   await loadDetalleClase(horarioId,hora,tipo,cupo);
