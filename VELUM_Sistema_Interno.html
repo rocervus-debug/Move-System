@@ -1987,6 +1987,12 @@ select option{background:#0d1a16;color:var(--text);}
   /* Balance hero cards */
   .balance-card { padding: 14px 16px; margin-bottom: 10px; }
 
+  /* ──────────── Navegador de Mes ──────────── */
+  .month-nav{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:5px 10px;}
+  .month-nav-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;transition:color .15s;font-weight:300;}
+  .month-nav-btn:hover{color:var(--text);}
+  .month-nav-label{font-size:13px;font-weight:700;color:var(--text);min-width:110px;text-align:center;white-space:nowrap;}
+
   /* ──────────── Vista Pagos ──────────── */
   /* card-header: apilar título arriba, acciones abajo */
   #v-pagos .card-header {
@@ -3336,6 +3342,20 @@ select option{background:#0d1a16;color:var(--text);}
       <!-- Hidden for realtime counter compat -->
       <span id="checkins-hoy-count" style="display:none;">—</span>
 
+      <!-- ── Historial de Check-ins por Mes ── -->
+      <div id="asist-historial-section" style="margin-top:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);">📋 Historial de Check-ins</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="asist-hist-total">—</div>
+          </div>
+          <div id="asist-hist-nav"></div>
+        </div>
+        <div id="asist-hist-body" style="min-height:60px;">
+          <div style="color:var(--text3);font-size:13px;padding:10px 0;">Cargando historial…</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ══ CLIENTES ══ -->
@@ -3519,6 +3539,11 @@ select option{background:#0d1a16;color:var(--text);}
 
     <!-- ══ PAGOS ══ -->
     <div class="view" id="v-pagos">
+      <!-- Navegador de mes -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div id="pagos-month-nav"></div>
+        <span style="font-size:11px;color:var(--text4);">La lista muestra pagos registrados en el mes seleccionado</span>
+      </div>
       <div class="kpi-grid" style="margin-bottom:18px;">
         <div class="kpi-card" style="--kpi-color:var(--ok)">
           <div class="kpi-label">Ingresos del Mes</div>
@@ -3790,8 +3815,10 @@ select option{background:#0d1a16;color:var(--text);}
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Navegador de mes + Filtros -->
       <div id="gastos-filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <div id="gastos-month-nav"></div>
+        <div style="width:1px;background:var(--border);height:24px;margin:0 4px;"></div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
           <button class="pf-btn active" id="gf-cat-todos" onclick="setGastoFilter('categoria','todos')">Todos</button>
           <button class="pf-btn" id="gf-cat-Nómina" onclick="setGastoFilter('categoria','Nómina')">Nómina</button>
@@ -3801,7 +3828,8 @@ select option{background:#0d1a16;color:var(--text);}
           <button class="pf-btn" id="gf-cat-Marketing" onclick="setGastoFilter('categoria','Marketing')">Marketing</button>
           <button class="pf-btn" id="gf-cat-Otro" onclick="setGastoFilter('categoria','Otro')">Otro</button>
         </div>
-        <input type="month" id="gf-mes" class="settings-input" style="width:150px;padding:5px 10px;" onchange="setGastoFilter('mes',this.value)"/>
+        <!-- hidden input kept for backward compat with setGastoFilter -->
+        <input type="month" id="gf-mes" style="display:none;" onchange="setGastoFilter('mes',this.value)"/>
       </div>
 
       <div class="card">
@@ -5484,7 +5512,10 @@ let hvYear  = new Date().getFullYear();
 let hvMonth = new Date().getMonth(); // 0-indexed
 // Gastos
 let gastos = [];
-let gastoFilter = { categoria: 'todos', mes: '' };
+let gastoFilter = { categoria: 'todos', mes: new Date().toISOString().slice(0,7) };
+// ── Navegación por mes (compartida entre Pagos / Asistencia historial) ──
+let _pagosMes  = new Date().toISOString().slice(0,7);  // "YYYY-MM"
+let _asistMes  = new Date().toISOString().slice(0,7);
 // Programas de Entrenamiento
 let programas = [];
 let progTab   = 'Strength';
@@ -6951,7 +6982,7 @@ function go(id, el){
   if(id==='clientes')    renderClientes();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { loadClasesOperativas(); }
+  if(id==='asistencia')  { loadClasesOperativas(); renderAsistHistorial(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes') renderSolicitudes();
   if(id==='marketing')   renderCalendario();
@@ -11713,18 +11744,139 @@ async function renderSaAuditLog(){
   } catch(e){ el.innerHTML=`<div style="color:var(--danger);font-size:12px;">Error: ${e.message}</div>`; }
 }
 
+// ════════════════════════════════════════════════════════════════
+// HELPERS DE NAVEGACIÓN POR MES
+// ════════════════════════════════════════════════════════════════
+function _mesLabel(mesStr){
+  if(!mesStr) return '—';
+  const [y,m] = mesStr.split('-');
+  // MESES_ES may not yet be defined if called early; fallback to JS date
+  if(typeof MESES_ES !== 'undefined') return `${MESES_ES[parseInt(m,10)-1]} ${y}`;
+  const d = new Date(mesStr+'-01T12:00:00');
+  return d.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+}
+function _mesPrev(mesStr){
+  const d = new Date(mesStr+'-01T12:00:00');
+  d.setMonth(d.getMonth()-1);
+  return d.toISOString().slice(0,7);
+}
+function _mesNext(mesStr){
+  const d = new Date(mesStr+'-01T12:00:00');
+  d.setMonth(d.getMonth()+1);
+  return d.toISOString().slice(0,7);
+}
+// Returns HTML for a ← Mes Año → nav, using string callbacks (eval-safe via data attrs)
+function _buildMonthNav(mesStr, prevCallback, nextCallback){
+  const isCurrentMonth = mesStr === new Date().toISOString().slice(0,7);
+  const nextDisabled = isCurrentMonth ? 'opacity:.35;pointer-events:none;' : '';
+  return `<div class="month-nav">
+    <button class="month-nav-btn" onclick="${prevCallback}" title="Mes anterior">‹</button>
+    <span class="month-nav-label">${_mesLabel(mesStr)}</span>
+    <button class="month-nav-btn" onclick="${nextCallback}" style="${nextDisabled}" title="Mes siguiente">›</button>
+  </div>`;
+}
+
+// ── Pagos — navegación ──
+function navPagosMes(delta){
+  _pagosMes = delta < 0 ? _mesPrev(_pagosMes) : _mesNext(_pagosMes);
+  renderPagos();
+}
+
+// ── Gastos — navegación ──
+function navGastosMes(delta){
+  gastoFilter.mes = delta < 0 ? _mesPrev(gastoFilter.mes) : _mesNext(gastoFilter.mes);
+  const gfInput = document.getElementById('gf-mes');
+  if(gfInput) gfInput.value = gastoFilter.mes;
+  renderGastos();
+}
+
+// ── Asistencia histórica — navegación ──
+function navAsistMes(delta){
+  _asistMes = delta < 0 ? _mesPrev(_asistMes) : _mesNext(_asistMes);
+  renderAsistHistorial();
+}
+
+async function renderAsistHistorial(){
+  const container = document.getElementById('asist-historial-section');
+  if(!container) return;
+
+  // Month nav
+  const navEl = document.getElementById('asist-hist-nav');
+  if(navEl) navEl.innerHTML = _buildMonthNav(_asistMes,'navAsistMes(-1)','navAsistMes(1)');
+
+  const bodyEl = document.getElementById('asist-hist-body');
+  if(!bodyEl) return;
+  bodyEl.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:16px 0;">Cargando…</div>`;
+
+  const mesStart = _asistMes+'-01';
+  const lastDay  = new Date(parseInt(_asistMes.slice(0,4)), parseInt(_asistMes.slice(5,7)), 0).getDate();
+  const mesEnd   = `${_asistMes}-${String(lastDay).padStart(2,'0')}`;
+
+  const { data: asists, error } = await gf(
+    window.supabaseClient.from('asistencias')
+      .select('fecha, hora, metodo, cliente_id, clientes(nombre)')
+      .gte('fecha', mesStart)
+      .lte('fecha', mesEnd)
+  ).order('fecha', {ascending: false}).order('hora', {ascending: false});
+
+  if(error){
+    bodyEl.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:10px 0;">Error cargando historial: ${error.message}</div>`;
+    return;
+  }
+
+  const rows = asists||[];
+  const totalEl = document.getElementById('asist-hist-total');
+  if(totalEl) totalEl.textContent = `${rows.length} check-in${rows.length!==1?'s':''}`;
+
+  if(!rows.length){
+    bodyEl.innerHTML = `<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">📋</div><div class="empty-title">Sin check-ins</div><div class="empty-sub">No hay asistencia registrada en ${_mesLabel(_asistMes)}.</div></div>`;
+    return;
+  }
+
+  // Group by date
+  const byDate = {};
+  rows.forEach(r=>{ (byDate[r.fecha]=byDate[r.fecha]||[]).push(r); });
+
+  bodyEl.innerHTML = Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([fecha, checkins])=>{
+    const dt = new Date(fecha+'T12:00:00');
+    const diaLabel = dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+    const items = checkins.map(c=>{
+      const nombre = c.clientes?.nombre || '—';
+      const hora = c.hora||'—';
+      const metodoBadge = c.metodo==='qr'
+        ? `<span style="font-size:9px;padding:1px 5px;border-radius:5px;background:rgba(15,223,154,.12);color:var(--ok);border:1px solid rgba(15,223,154,.25);">QR</span>`
+        : `<span style="font-size:9px;padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.07);color:var(--text3);border:1px solid var(--border);">Manual</span>`;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,.025);margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${esc(nombre)}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${metodoBadge}
+          <span style="font-size:11px;color:var(--text3);">${hora}</span>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">${diaLabel}</span>
+        <span style="font-size:11px;color:var(--text4);">${checkins.length} check-in${checkins.length!==1?'s':''}</span>
+      </div>
+      ${items}
+    </div>`;
+  }).join('');
+}
+
 function renderGastos(){
   // ─ KPIs ─
   const now = new Date(); now.setHours(0,0,0,0);
-  const thisMes = now.toISOString().slice(0,7);
+  const thisMes = gastoFilter.mes || now.toISOString().slice(0,7);
   const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMes) && p.notas!=='__sin_pago__');
   const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+(p.monto||0),0);
 
-  // Coach nomina (sum from localStorage for this month)
+  // Coach nomina (sum from localStorage for selected month)
+  const thisMesDate = new Date(thisMes+'-01T12:00:00');
   let nominaTotal = 0;
   coaches.forEach(c=>{
-    const q1 = parseFloat(localStorage.getItem(`move_coach_q1_${now.getFullYear()}_${now.getMonth()}_${c.id}`)||'0');
-    const q2 = parseFloat(localStorage.getItem(`move_coach_q2_${now.getFullYear()}_${now.getMonth()}_${c.id}`)||'0');
+    const q1 = parseFloat(localStorage.getItem(`move_coach_q1_${thisMesDate.getFullYear()}_${thisMesDate.getMonth()}_${c.id}`)||'0');
+    const q2 = parseFloat(localStorage.getItem(`move_coach_q2_${thisMesDate.getFullYear()}_${thisMesDate.getMonth()}_${c.id}`)||'0');
     nominaTotal += q1 + q2;
   });
   // Also count gastos of category Nómina this month
@@ -11735,6 +11887,16 @@ function renderGastos(){
   const balance = ingresosMes - totalEgresos;
 
   const el = id => document.getElementById(id);
+  // Inject month nav
+  const gasNavEl = el('gastos-month-nav');
+  if(gasNavEl) gasNavEl.innerHTML = _buildMonthNav(thisMes,'navGastosMes(-1)','navGastosMes(1)');
+  // Update KPI labels with selected month
+  const mesLblGastos = _mesLabel(thisMes);
+  const kpiIngLabel = document.querySelector('#v-gastos .kpi-card:first-child .kpi-label');
+  if(kpiIngLabel) kpiIngLabel.textContent = `💰 Ingresos — ${mesLblGastos}`;
+  const kpiGasLabel = document.querySelector('#v-gastos .kpi-card:nth-child(2) .kpi-label');
+  if(kpiGasLabel) kpiGasLabel.textContent = `📤 Gastos — ${mesLblGastos}`;
+
   if(el('gasto-kpi-ingresos')) el('gasto-kpi-ingresos').textContent = '$'+ingresosMes.toLocaleString('es-MX');
   if(el('gasto-kpi-total'))    el('gasto-kpi-total').textContent    = '$'+gastosMes.toLocaleString('es-MX');
   if(el('gasto-kpi-meta'))     el('gasto-kpi-meta').textContent     = gastos.filter(g=>(g.fecha||'').startsWith(thisMes)).length+' egresos';
@@ -11748,7 +11910,8 @@ function renderGastos(){
   // ─ Filter ─
   let filtered = [...gastos];
   if(gastoFilter.categoria !== 'todos') filtered = filtered.filter(g=>g.categoria===gastoFilter.categoria);
-  if(gastoFilter.mes) filtered = filtered.filter(g=>(g.fecha||'').startsWith(gastoFilter.mes));
+  // Always filter by selected month
+  filtered = filtered.filter(g=>(g.fecha||'').startsWith(thisMes));
 
   const listEl = el('gastos-list');
   const countEl = el('gastos-count');
@@ -13050,7 +13213,14 @@ function renderPagos(){
   // ─── KPIs reales ────────────────────────────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
   const in7   = new Date(today); in7.setDate(today.getDate()+7);
-  const thisMonth = today.toISOString().slice(0,7);
+  const thisMonth = _pagosMes; // uses navigable month
+
+  // Inject month nav into header
+  const pagoNavEl = document.getElementById('pagos-month-nav');
+  if(pagoNavEl) pagoNavEl.innerHTML = _buildMonthNav(_pagosMes,'navPagosMes(-1)','navPagosMes(1)');
+  // Update KPI label
+  const kpiMesLbl = document.getElementById('pagos-kpi-cobrado-meta');
+  if(kpiMesLbl) kpiMesLbl.textContent = _mesLabel(_pagosMes);
 
   const pagosSinAbono = pagos.filter(p=>p.notas!=='__sin_pago__');
   const ingresosMes   = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(thisMonth)).reduce((s,p)=>s+(p.monto||0),0);
@@ -13067,8 +13237,8 @@ function renderPagos(){
   const vencidasCount = Object.values(mapaUlt).filter(v=>v&&v!=='—'&&new Date(v+'T12:00:00')<today).length;
   const enRiesgoClientes = [...new Set(pagosSinAbono.filter(p=>{ if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false; const v=new Date(p.vence+'T12:00:00'); return v>=today&&v<=in7; }).map(p=>p.cliente))];
 
-  // Mes anterior (para trend)
-  const mesAnt = (()=>{ const d=new Date(today); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
+  // Mes anterior (para trend) — relativo al mes seleccionado
+  const mesAnt = _mesPrev(_pagosMes);
   const ingresosMesAnt = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(mesAnt)).reduce((s,p)=>s+(p.monto||0),0);
 
   countUp(document.getElementById('pagos-kpi-cobrado'), ingresosMes, {prefix:'$', duration:600});
@@ -13101,7 +13271,8 @@ function renderPagos(){
 
   // Apply filters + text search
   const searchQ = (document.getElementById('pagos-search')?.value||'').toLowerCase().trim();
-  let filtered = pagosSinAbono;
+  // Pre-filter by selected month
+  let filtered = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(_pagosMes));
   if(searchQ) filtered = filtered.filter(p=>(p.cliente||'').toLowerCase().includes(searchQ));
   if(pagoFilter.estado !== 'todos'){
     filtered = filtered.filter(p=>{
