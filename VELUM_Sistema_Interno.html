@@ -6939,7 +6939,7 @@ function _iniciarKiosco(){
     const hint = document.getElementById('k-name-hint');
     if(hint){
       if(ctx.num.length >= 2){
-        const m = clientes.find(c=>String(c.numero_cliente)===ctx.num);
+        const m = clientesDB.find(c=>String(c.numero_cliente)===ctx.num);
         if(m){ hint.textContent=m.nombre; hint.style.color=`rgba(${ctx.accentRgb},0.8)`; }
         else { hint.textContent=''; }
       } else { hint.textContent=''; }
@@ -6950,7 +6950,7 @@ function _iniciarKiosco(){
   window._kioscoSubmit = async function(){
     const ctx = window._kioscoCtx;
     if(!ctx.num) return;
-    const cliente = clientes.find(c=>String(c.numero_cliente)===ctx.num);
+    const cliente = clientesDB.find(c=>String(c.numero_cliente)===ctx.num);
     if(!cliente){
       const wrap = document.getElementById('k-digits-wrap');
       if(wrap){ wrap.style.animation='none'; void wrap.offsetWidth; wrap.style.animation='k-shake 400ms ease'; }
@@ -6982,25 +6982,29 @@ function _iniciarKiosco(){
         if(btn)btn.textContent='REGISTRAR ENTRADA';
       },2500);
     } else {
-      _kioscoShowSuccess(cliente.nombre);
+      _kioscoShowSuccess(cliente.nombre, cliente.foto_url||null);
     }
   };
 
-  window._kioscoShowSuccess = function(nombre){
+  window._kioscoShowSuccess = function(nombre, fotoUrl){
     const ctx = window._kioscoCtx;
     const primer = (nombre||'').split(' ')[0];
+    const initials = (nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const main = document.getElementById('k-main');
     if(main) main.style.display='none';
     const fb = document.getElementById('k-feedback');
     fb.style.display='flex';
+    // Avatar: photo if available, else initials circle
+    const avatarInner = fotoUrl
+      ? `<img src="${fotoUrl}" style="width:130px;height:130px;border-radius:50%;object-fit:cover;display:block;" alt="${esc(primer)}" onerror="this.style.display='none';this.nextSibling.style.display='flex';">
+         <div style="display:none;width:130px;height:130px;background:rgba(${ctx.accentRgb},.15);border-radius:50%;align-items:center;justify-content:center;font-size:44px;font-weight:800;color:rgb(${ctx.accentRgb});">${esc(initials)}</div>`
+      : `<div style="width:130px;height:130px;background:rgba(${ctx.accentRgb},.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;color:rgb(${ctx.accentRgb});">${esc(initials)}</div>`;
     fb.innerHTML=`
       <div style="text-align:center;animation:k-pop 500ms ease;">
         <div style="position:relative;width:130px;height:130px;margin:0 auto 28px;">
           <div style="position:absolute;inset:-20px;border-radius:50%;border:2px solid rgba(${ctx.accentRgb},.55);animation:k-ring 900ms ease forwards;"></div>
-          <div style="width:130px;height:130px;background:rgba(${ctx.accentRgb},.1);border:2px solid rgba(${ctx.accentRgb},.4);border-radius:50%;display:flex;align-items:center;justify-content:center;">
-            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" stroke="rgb(${ctx.accentRgb})" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 30 L26 42 L46 18" stroke-dasharray="80" stroke-dashoffset="80" style="animation:k-check 600ms 200ms ease forwards;"/>
-            </svg>
+          <div style="width:130px;height:130px;border:2px solid rgba(${ctx.accentRgb},.4);border-radius:50%;overflow:hidden;">
+            ${avatarInner}
           </div>
         </div>
         <div style="font-size:34px;font-weight:800;color:#fff;margin-bottom:8px;">¡Bienvenido, ${esc(primer)}!</div>
