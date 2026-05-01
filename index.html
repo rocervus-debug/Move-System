@@ -841,6 +841,425 @@ footer a:hover{color:var(--accent-light);}
 </div>
 </section>
 
+<!-- ══════════════════════════════════════════════════════════
+     AI WORKOUT GENERATOR — DEMO INTERACTIVO
+     ══════════════════════════════════════════════════════════ -->
+<style>
+@keyframes d-bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+@keyframes d-fadein{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes d-glow{0%,100%{box-shadow:0 0 24px rgba(29,158,117,.28);}50%{box-shadow:0 0 44px rgba(29,158,117,.55);}}
+.d-pill{
+  width:100%;padding:11px 14px;
+  background:rgba(255,255,255,.04);
+  border:1.5px solid rgba(255,255,255,.09);
+  border-radius:10px;color:var(--text2);
+  font-size:13px;font-weight:600;cursor:pointer;
+  text-align:left;font-family:inherit;transition:all 140ms;
+}
+.d-pill:hover{background:rgba(29,158,117,.08);border-color:rgba(29,158,117,.25);}
+.d-pill.active{background:rgba(29,158,117,.13);border-color:rgba(29,158,117,.5);color:#5DCAA5;}
+.d-section{border-radius:12px;padding:14px 16px;}
+.d-item{font-size:12.5px;color:var(--text2);padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.55;}
+.d-item:last-child{border-bottom:none;}
+#d-gen-btn{
+  width:100%;padding:14px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:12px;
+  font-size:15px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:all .2s;
+  animation:d-glow 2.5s ease-in-out infinite;
+}
+#d-gen-btn:hover{background:var(--accent-light);transform:translateY(-2px);}
+#d-gen-btn:disabled{opacity:.6;cursor:default;animation:none;transform:none;}
+@media(max-width:720px){
+  #demo-layout{grid-template-columns:1fr!important;}
+  #demo-output-wrap{min-height:360px!important;}
+}
+</style>
+
+<section id="demo" style="padding:80px 24px 60px;max-width:1060px;margin:0 auto;">
+
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:44px;">
+    <div class="section-tag">IA en acción · Demo interactivo</div>
+    <div class="section-title" style="margin-bottom:10px;">Así genera VELUM tu clase</div>
+    <div style="font-size:19px;font-weight:700;color:var(--accent-light);letter-spacing:-.2px;">En segundos tienes tu clase lista.</div>
+    <div style="font-size:14px;color:var(--text3);margin-top:8px;">Sin escribir nada. Sin esperar. Solo elige el tipo de sesión.</div>
+  </div>
+
+  <!-- Layout -->
+  <div id="demo-layout" style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;">
+
+    <!-- ── LEFT: Controls ── -->
+    <div style="background:rgba(12,30,24,.85);border:1px solid rgba(29,158,117,.2);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:20px;">
+
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:9px;">Tipo de clase</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="d-pill active" data-group="tipo" data-val="Strength"  onclick="dSel(this)">🏋️ Strength</button>
+          <button class="d-pill"        data-group="tipo" data-val="Endurance" onclick="dSel(this)">🏃 Endurance</button>
+          <button class="d-pill"        data-group="tipo" data-val="Hyrox"     onclick="dSel(this)">🔥 Hyrox</button>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:9px;">Duración</div>
+        <div style="display:flex;gap:8px;">
+          <button class="d-pill active" style="flex:1;text-align:center;" data-group="dur" data-val="45" onclick="dSel(this)">45 min</button>
+          <button class="d-pill"        style="flex:1;text-align:center;" data-group="dur" data-val="60" onclick="dSel(this)">60 min</button>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:9px;">Nivel</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="d-pill"        data-group="nivel" data-val="Principiante" onclick="dSel(this)">🟢 Principiante</button>
+          <button class="d-pill active" data-group="nivel" data-val="Intermedio"   onclick="dSel(this)">🟡 Intermedio</button>
+          <button class="d-pill"        data-group="nivel" data-val="Avanzado"     onclick="dSel(this)">🔴 Avanzado</button>
+        </div>
+      </div>
+
+      <button id="d-gen-btn" onclick="runDemo()">⚡ Generar entrenamiento</button>
+    </div>
+
+    <!-- ── RIGHT: Output ── -->
+    <div id="demo-output-wrap" style="background:rgba(6,14,11,.97);border:1px solid rgba(29,158,117,.18);border-radius:20px;overflow:hidden;min-height:480px;display:flex;flex-direction:column;">
+
+      <!-- App chrome bar -->
+      <div style="background:rgba(10,22,17,.97);border-bottom:1px solid rgba(29,158,117,.1);padding:12px 18px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <div style="width:9px;height:9px;border-radius:50%;background:#1D9E75;box-shadow:0 0 6px #1D9E75;"></div>
+        <div style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);"></div>
+        <div style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);"></div>
+        <div style="margin-left:8px;font-size:11px;color:rgba(255,255,255,.25);font-family:monospace;letter-spacing:.3px;">VELUM · Generador IA</div>
+        <div style="margin-left:auto;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.25);color:var(--accent-light);">DEMO</div>
+      </div>
+
+      <!-- Idle state -->
+      <div id="d-idle" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;gap:16px;">
+        <div style="width:72px;height:72px;background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.18);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;">⚡</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">Elige los parámetros</div>
+        <div style="font-size:13px;color:var(--text3);line-height:1.65;max-width:240px;">La IA construye un entrenamiento estructurado, con cargas reales, listo para dar clase.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <span style="font-size:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;color:var(--text3);">Warm Up</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;color:var(--text3);">Fuerza Principal</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;color:var(--text3);">Conditioning</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;color:var(--text3);">Cool Down</span>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="d-loading" style="flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;gap:22px;">
+        <div style="display:flex;gap:8px;align-items:center;justify-content:center;">
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:block;animation:d-bounce .75s ease-in-out infinite;"></span>
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:block;animation:d-bounce .75s .15s ease-in-out infinite;"></span>
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:block;animation:d-bounce .75s .3s ease-in-out infinite;"></span>
+        </div>
+        <div id="d-msg" style="font-size:14px;font-weight:600;color:var(--text2);">Generando entrenamiento…</div>
+        <div style="width:180px;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;">
+          <div id="d-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light));border-radius:99px;width:0%;transition:width 1.8s ease;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);">Calibrando cargas · Ajustando progresión…</div>
+      </div>
+
+      <!-- Result state -->
+      <div id="d-result" style="flex:1;display:none;flex-direction:column;padding:18px;gap:12px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="text-align:center;margin-top:48px;">
+    <div style="font-size:13px;color:var(--text3);margin-bottom:18px;">¿Listo para tenerlo en tu gym?</div>
+    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <a href="registro.html?plan=max" class="btn-primary" onclick="typeof gtag!=='undefined'&&gtag('event','demo_cta_click',{label:'gym_cta'})">Quiero esto en mi gimnasio →</a>
+      <a href="#pricing" class="btn-outline">Ver planes y precios</a>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:12px;">Incluido en Plan Max · Sin configuración extra · Listo el día uno</div>
+  </div>
+
+</section>
+
+<script>
+(function(){
+  var _ds = {tipo:'Strength',dur:'45',nivel:'Intermedio',n:0};
+
+  window.dSel = function(btn){
+    var g = btn.dataset.group;
+    document.querySelectorAll('.d-pill[data-group="'+g+'"]').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    _ds[g] = btn.dataset.val;
+    _ds.n = 0;
+  };
+
+  // ── Workout library ──────────────────────────────────────────────
+  var WL = {
+    Strength:{
+      Principiante:{
+        wu:[
+          ['Inchworm + Hip Opener 2×5','Band Pull-Apart 2×15','KB Deadlift práctica 3×5 @ 12kg'],
+          ['Cat-Cow + Thoracic Rotation 2×8','Glute Bridge 3×12','Goblet Squat práctica 2×8 @ 12kg']
+        ],
+        m45:[
+          {t:'Goblet Squat',s:'4×10 @ 20–24kg · Rest 90s',a:['Romanian Deadlift 3×12 @ 40kg','Lat Pulldown 3×12','Plank 3×40s']},
+          {t:'Trap Bar Deadlift',s:'4×8 @ 60% 1RM · Rest 2 min',a:['DB Bench Press 3×12 @ 2×14kg','Seated Row 3×12','Dead Bug 3×10']}
+        ],
+        m60:[
+          {t:'Back Squat',s:'5×5 @ 68–72% 1RM · Rest 2.5 min',a:['Romanian Deadlift 3×10 @ 50kg','DB Row 3×10 c/lado','Pallof Press 3×12','Glute Bridge 3×15']},
+          {t:'Front Squat',s:'4×6 @ 65% 1RM · Rest 2 min',a:['DB Bench Press 3×10','Cable Row 3×12','Reverse Lunge 3×10 c/lado','Bird-Dog 3×10']}
+        ],
+        fin:[
+          {f:'AMRAP 6 min',i:['10 KB Swing @ 12kg','10 Goblet Squat @ 12kg','8 Sit-ups']},
+          {f:'For Time',i:['3 Rounds:','12 Box Step-Up 50cm','10 DB Shoulder Press @ 2×10kg','8 Bent-Over Row @ 20kg']}
+        ]
+      },
+      Intermedio:{
+        wu:[
+          ['Cossack Squat 2×8','Band Hip Circle 2×12','Hang Power Clean práctica 3×3 @ bar'],
+          ['World\'s Greatest Stretch 2×5','Wall Squat 2×10','Barbell RDL práctica 2×6 @ 40kg']
+        ],
+        m45:[
+          {t:'Back Squat',s:'4×5 @ 77–82% 1RM · Rest 2.5 min',a:['Romanian Deadlift 3×8 @ 65% 1RM','Weighted Pull-up 3×6','GHD Sit-up 3×12']},
+          {t:'Deadlift',s:'4×4 @ 80% 1RM · Rest 3 min',a:['Pause Squat 3×5 @ 55%','DB Row 3×10 c/lado','L-Sit Hold 3×20s']}
+        ],
+        m60:[
+          {t:'Back Squat',s:'5×4 @ 82–87% 1RM · Rest 3 min',a:['Bulgarian Split Squat 3×8 c/lado @ 2×20kg','Pendlay Row 4×6 @ 70%','Weighted Dip 3×8','GHD Sit-up 3×12']},
+          {t:'Clean & Jerk técnica',s:'5×3 @ 65% 1RM · Rest 2 min',a:['Front Squat 3×4 @ 70%','Strict Press 3×8','Muscle-up transición 3×5']}
+        ],
+        fin:[
+          {f:'AMRAP 10 min',i:['10 Wall Ball @ 9kg','8 Chest-to-Bar Pull-up','6 Box Jump 60cm']},
+          {f:'4 Rounds For Time',i:['12 KB Swing @ 24kg','10 Burpee over bar','8 Toes-to-Bar','6 Power Clean @ 60kg']}
+        ]
+      },
+      Avanzado:{
+        wu:[
+          ['Hang Snatch práctica 3×3 @ 50%','OH Squat 3×5 @ barra','Box Jump activación 3×5'],
+          ['Clean Pull 3×3 @ 60%','Muscle Snatch 3×3','Hollow Body Hold 3×20s']
+        ],
+        m45:[
+          {t:'Snatch',s:'6×2 @ 80–85% 1RM · Rest 2.5 min',a:['Snatch Pull 3×3 @ 100%','Pause OH Squat 3×3 @ 60%','Ring Dip 3×8']},
+          {t:'Clean & Jerk',s:'5×2+1 @ 82% 1RM · Rest 3 min',a:['Front Squat 3×3 @ 90%','Deficit Deadlift 3×4','Weighted Pull-up 3×5']}
+        ],
+        m60:[
+          {t:'Back Squat',s:'6×3 @ 88–93% 1RM · Rest 3.5 min',a:['Snatch 4×2 @ 78%','Pause Back Squat 3×3 @ 70%','Hip Thrust ponderado 3×10','Ring Muscle-up 3×4']},
+          {t:'Deadlift',s:'4×2 @ 90%+ 1RM · Rest 4 min',a:['Clean 4×2 @ 80%','Romanian Deadlift 3×5 @ 80%','Weighted Pull-up 4×4','L-Sit 3×30s']}
+        ],
+        fin:[
+          {f:'AMRAP 12 min',i:['5 Bar Muscle-up','10 Pistol Squat (alt)','15 KB Swing @ 32kg']},
+          {f:'5 Rounds For Time',i:['10 Thruster @ 50kg','10 Pull-up kipping','10 Box Jump 70cm']}
+        ]
+      }
+    },
+    Endurance:{
+      Principiante:{
+        wu:[
+          ['Marcha aeróbica 3 min','Hip Circle + Ankle Mobility 2×10','Box Step-Up lento 2×10'],
+          ['Jogging suave 2 min','Jumping Jack 3×15','Leg Swing frontal + lateral 2×10']
+        ],
+        m45:[
+          {t:'Trabajo aeróbico base',s:'4 Rounds · RPE 6–7',a:['Row 400m @ ritmo controlado','Rest 90s activo (caminata)','Repetir sin pausa brusca']},
+          {t:'Intervalos de capacidad',s:'RPE 7 · descanso 1:2',a:['Bike 3 min @ RPE 7','Rest 90s activo','×4 rondas · Total 18 min']}
+        ],
+        m60:[
+          {t:'Circuito aeróbico',s:'5 Rounds · RPE 6–7',a:['Run 500m ó Row 500m','30 KB Swing @ 12kg','20 Box Step-Up 50cm','10 Burpee lento']},
+          {t:'Intervalos progresivos',s:'Build each round',a:['Row 500m @ 70%, 75%, 80%, 85%, 90%','Rest 2 min entre rounds','Registrar cada pace']}
+        ],
+        fin:[
+          {f:'AMRAP 6 min',i:['10 Jumping Jack','10 Air Squat','10 Mountain Climber']},
+          {f:'For Time',i:['1000m Row calmo','No parar · Ritmo sostenido']}
+        ]
+      },
+      Intermedio:{
+        wu:[
+          ['Dinámica de carrera 5 min','Leg Swing + Hip Hinge 2×10','A-Skip 2×20m'],
+          ['Row suave 3 min @ damper 4','Calf + Ankle mobility 2×12','High Knees 2×15']
+        ],
+        m45:[
+          {t:'Capacidad aeróbica',s:'4×5 min @ RPE 7 · Rest 2 min',a:['Alternancia: Row 500m + Run 400m','Mantener ritmo consistente por ronda','No drop > 5% del pace en última ronda']},
+          {t:'Interval Threshold',s:'6× (3 min ON / 90s OFF) @ RPE 8',a:['Bike ergo ó Ski erg','Monitorear wattaje o pace','Target: mismo watts en todas las rondas']}
+        ],
+        m60:[
+          {t:'Circuito potencia aeróbica',s:'5 Rounds · ~9 min c/ronda',a:['500m Row @ 85%','400m Run','20 KB Swing @ 20kg','Rest 2 min']},
+          {t:'Long intervals',s:'3×8 min @ threshold · Rest 3 min',a:['Ski Erg ó Assault Bike','Pace goal: 105% del pace de 2K','Registrar HR promedio']}
+        ],
+        fin:[
+          {f:'AMRAP 8 min',i:['200m Row','15 Double-Under ó 30 Singles','12 Air Squat','10 Burpee']},
+          {f:'For Time · Cap 10 min',i:['1 Mile Run ó 1500m Row','Objetivo: PR personal']}
+        ]
+      },
+      Avanzado:{
+        wu:[
+          ['Dinámica de carrera + drills 6 min','Barbell complex @ barra 3×5','Box Jump activación 3×5'],
+          ['Ski erg 3 min @ 60%','Hip hinge complex 2×8','Sprint 60m × 3']
+        ],
+        m45:[
+          {t:'High-intensity intervals',s:'10× (1 min ON / 30s OFF) @ RPE 9',a:['Assault Bike ó Ski Erg','Target: >90% max HR','No recuperación completa entre rounds']},
+          {t:'Tempo work',s:'4×6 min @ lactate threshold',a:['2km Row pace objetivo','Rest 90s · No más','Monitor HR: mantener zona 4']}
+        ],
+        m60:[
+          {t:'Potencia aeróbica compuesta',s:'4 Rounds · ~10 min c/ronda',a:['1000m Row @ 90%','800m Run @ RPE 9','20 Burpee to Target 20cm']},
+          {t:'Rower Sprint Protocol',s:'5×500m / Rest 2 min · All-out',a:['Target < 1:35/500m','Seguir con 2K for time al final','Registrar splits']}
+        ],
+        fin:[
+          {f:'AMRAP 12 min',i:['250m Row','25 Double-Under','10 Burpee','10 Thruster @ 43kg']},
+          {f:'For Time · Cap 15 min',i:['3 Rounds:','500m Row','400m Run','15 Burpee to plate']}
+        ]
+      }
+    },
+    Hyrox:{
+      Principiante:{
+        wu:[
+          ['Marcha con brazos 3 min','Hip Opener + Ankle 2×10','Sled push lento 10m × 2'],
+          ['Row suave 3 min','Leg Swing + Inchworm 2×8','Ski Erg técnica 2×200m']
+        ],
+        m45:[
+          {t:'Estaciones simuladas',s:'2 Rondas · RPE 6–7',a:['Run 1000m (ó Row 1000m)','25 Wall Ball @ 6kg','Farmer Carry 2×16kg × 25m','Ski Erg 500m']},
+          {t:'Práctica de estaciones',s:'Técnica + resistencia básica',a:['Sled Push 10m × 4','Sandbag Carry 15kg × 20m × 3','30 Wall Ball @ 6kg × 3','Burpee Broad Jump 5m × 3']}
+        ],
+        m60:[
+          {t:'Simulación Hyrox parcial',s:'3 Rounds · RPE 6–7',a:['Run 800m','50m Sled Push (carga ligera)','25 Wall Ball @ 6kg','500m Ski Erg','50m Farmer Carry 2×16kg']},
+          {t:'Bloque de estaciones',s:'4 Rounds · Rest 2 min',a:['500m Row','30 Wall Ball @ 6kg','Sandbag Carry 15kg × 20m','10 Burpee Broad Jump']}
+        ],
+        fin:[
+          {f:'For Time · Cap 8 min',i:['500m Row','25 Wall Ball @ 6kg','500m Run']},
+          {f:'AMRAP 6 min',i:['10 Wall Ball @ 6kg','10 Box Step-Up 50cm','20m Farmer Carry 2×12kg']}
+        ]
+      },
+      Intermedio:{
+        wu:[
+          ['Run 1000m suave','Hip & ankle mobility 2×10','Sled Push activación 10m × 3'],
+          ['500m Ski Erg @ 65%','Inchworm + Push-up 2×8','Wall Ball práctica 2×12']
+        ],
+        m45:[
+          {t:'Bloques Hyrox competencia',s:'2 Rondas completas · RPE 7–8',a:['Run 1000m @ race pace','100m Farmer Carry 2×24kg','25 Wall Ball @ 9kg','Sled Push 20m @ 90kg']},
+          {t:'Trabajo de debilidades',s:'4 estaciones × 4 sets',a:['Ski Erg 500m','Burpee Broad Jump 6 reps','Sandbag Lunges 20m @ 20kg','Wall Ball 20 reps @ 9kg']}
+        ],
+        m60:[
+          {t:'Race simulation',s:'Protocolo completo',a:['8× (Run 1000m + 1 estación Hyrox)','Alternar las 8 estaciones clásicas','Mantener pace objetivo de carrera real']},
+          {t:'Interval Hyrox',s:'5 Rounds · Max RPE sostenido',a:['500m Ski Erg','50m Sled Pull @ 70kg','25 Wall Ball @ 9kg','20 Burpee Broad Jump']}
+        ],
+        fin:[
+          {f:'For Time · Cap 10 min',i:['Run 1000m','30 Wall Ball @ 9kg','50m Farmer Carry 2×24kg','500m Row']},
+          {f:'3 Rounds For Time',i:['500m Ski Erg','10 Burpee Broad Jump','30 Wall Ball @ 9kg']}
+        ]
+      },
+      Avanzado:{
+        wu:[
+          ['Run 2000m suave','Sled Push activación 20m × 4','Wall Ball velocidad 2×15'],
+          ['1000m Ski Erg @ 70%','A-Skip + ankle stiffness drills','Sled Pull 10m × 3 @ comp weight']
+        ],
+        m45:[
+          {t:'Race pace training',s:'Todo al pace objetivo de competencia',a:['2 Rondas Hyrox completas','Cada estación al tiempo de carrera real','Registro de splits por estación']},
+          {t:'Capacidad de umbral',s:'High intensity · RPE 8–9',a:['5× (500m Ski Erg @ max pace + 20 Wall Ball @ 9/11kg)','Rest 90s','Monitor pace decay entre rondas']}
+        ],
+        m60:[
+          {t:'Full Hyrox simulation',s:'Protocolo de carrera completo',a:['8 estaciones completas','Run 1000m entre cada una','Goal: tiempo objetivo de competencia']},
+          {t:'Killer combo',s:'5 Rounds · All out',a:['1000m Row @ max','100m Farmer Carry 2×32kg','30 Wall Ball @ 11kg','20 Burpee Broad Jump']}
+        ],
+        fin:[
+          {f:'For Time · Cap 12 min',i:['1000m Ski Erg','50m Sled Push @ comp weight','30 Wall Ball @ 9/11kg','Run 1000m']},
+          {f:'3 Rounds For Time',i:['500m Row all-out','15 Burpee Broad Jump','20 Wall Ball @ 9/11kg','50m Farmer Carry 2×28kg']}
+        ]
+      }
+    }
+  };
+
+  var CD = {
+    Strength: [['Pigeon Pose · 45s c/lado','Hip Flexor Stretch · 60s c/lado'],['Child\'s Pose · 60s','Lat Stretch en rack · 45s c/lado']],
+    Endurance:[['Calf Stretch estático · 60s c/pierna','Quad Stretch de pie · 45s c/lado'],['Hamstring Stretch en suelo · 60s c/lado','Pigeon Pose · 45s c/lado']],
+    Hyrox:    [['Calf + Achilles Stretch · 60s c/lado','Hip Flexor Lunge · 60s c/lado'],['Thoracic Foam Roll · 2 min','Figure-4 Glute Stretch · 45s c/lado']]
+  };
+
+  var MSGS = ['Seleccionando ejercicios…','Calibrando cargas…','Ajustando progresión…','Armando el finalizador…','Revisando periodización…'];
+
+  window.runDemo = function(){
+    var btn = document.getElementById('d-gen-btn');
+    btn.disabled = true; btn.textContent = '⏳ Generando…';
+    var idle    = document.getElementById('d-idle');
+    var loading = document.getElementById('d-loading');
+    var result  = document.getElementById('d-result');
+    idle.style.display = 'none';
+    result.style.display = 'none';
+    loading.style.display = 'flex';
+    // Bar
+    setTimeout(function(){ var b = document.getElementById('d-bar'); if(b) b.style.width='93%'; }, 40);
+    // Messages
+    var mi = 0, msgEl = document.getElementById('d-msg');
+    var iv = setInterval(function(){ mi=(mi+1)%MSGS.length; if(msgEl) msgEl.textContent=MSGS[mi]; }, 380);
+
+    var delay = 1600 + Math.floor(Math.random()*800);
+    setTimeout(function(){
+      clearInterval(iv);
+      loading.style.display = 'none';
+
+      var p = WL[_ds.tipo][_ds.nivel];
+      var mKey = _ds.dur==='45' ? 'm45' : 'm60';
+      var vi = _ds.n % 2; _ds.n++;
+      var wu   = p.wu[vi];
+      var main = p[mKey][vi];
+      var fin  = p.fin[vi];
+      var cd   = CD[_ds.tipo][vi];
+
+      var wuT  = _ds.dur==='45' ? '8 min'  : '10 min';
+      var mT   = _ds.dur==='45' ? '22 min' : '28 min';
+      var finT = _ds.dur==='45' ? '8 min'  : '12 min';
+      var levelColors = {Principiante:'#10e8a0', Intermedio:'#f59e0b', Avanzado:'#f87171'};
+
+      var html =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
+        + '<div><div style="font-size:15px;font-weight:800;color:#fff;">'+_ds.tipo+' · '+_ds.dur+' min</div>'
+        + '<div style="font-size:11px;color:var(--text3);margin-top:2px;">Generado por VELUM IA · Listo para impartir</div></div>'
+        + '<span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba('+_dHex(levelColors[_ds.nivel])+',.09);border:1px solid rgba('+_dHex(levelColors[_ds.nivel])+',.3);color:'+levelColors[_ds.nivel]+';">'+_ds.nivel+'</span>'
+        + '</div>';
+
+      var mainTitle = {Strength:'💪 FUERZA PRINCIPAL', Endurance:'🏃 BLOQUE PRINCIPAL', Hyrox:'🔥 BLOQUE HYROX'}[_ds.tipo];
+      html += _dSec('🔥','WARM UP', '#f97316', wuT, null, wu.map(function(x){return {l:x};}));
+      html += _dSec('💪',mainTitle.replace(/^[^\s]+\s/,''), '#1D9E75', mT, null, [{l:main.t, s:main.s}].concat(main.a.map(function(x){return {l:x};})));
+      html += _dSec('⚡','FINALIZADOR', '#8b5cf6', finT, fin.f, fin.i.map(function(x){return {l:x};}));
+      html += _dSec('🧘','COOL DOWN', '#64748b', '5 min', null, cd.map(function(x){return {l:x};}));
+
+      result.innerHTML = html;
+      result.style.display = 'flex';
+
+      // Stagger
+      result.querySelectorAll('.d-section').forEach(function(s, i){
+        s.style.opacity='0'; s.style.transform='translateY(10px)';
+        setTimeout(function(){ s.style.transition='all 280ms ease'; s.style.opacity='1'; s.style.transform='translateY(0)'; }, i*90);
+      });
+
+      btn.disabled = false; btn.textContent = '🔄 Generar otra variación';
+      if(typeof gtag!=='undefined') gtag('event','demo_generated',{tipo:_ds.tipo,nivel:_ds.nivel,dur:_ds.dur});
+    }, delay);
+  };
+
+  function _dSec(emoji, title, color, time, badge, items){
+    var rows = items.map(function(item, i){
+      var isMain = i===0 && item.s;
+      var st = isMain
+        ? 'font-size:13px;color:#e8edf5;padding:7px 0 5px;border-bottom:1px solid rgba(255,255,255,.07);font-weight:700;'
+        : 'font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);';
+      var inner = isMain
+        ? item.l+'<div style="font-size:11.5px;color:'+color+';font-weight:600;margin-top:2px;">'+item.s+'</div>'
+        : (item.l.endsWith(':') ? '<strong style="color:var(--text);font-size:12px;">'+item.l+'</strong>' : item.l);
+      return '<div class="d-item" style="'+st+'">'+inner+'</div>';
+    }).join('');
+    return '<div class="d-section" style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      +'<span>'+emoji+'</span>'
+      +'<span style="font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:'+color+';">'+title+'</span>'
+      +(badge ? '<span style="margin-left:auto;font-size:10px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.28);border-radius:5px;padding:2px 8px;color:#a78bfa;font-weight:700;">'+badge+'</span>'
+              : '<span style="margin-left:auto;font-size:10.5px;color:rgba(255,255,255,.2);">'+time+'</span>')
+      +'</div>'+rows+'</div>';
+  }
+
+  // Helper: convert hex color "#rrggbb" → "r,g,b" for rgba()
+  function _dHex(hex){
+    var h=hex.replace('#','');
+    if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');
+    var n=parseInt(h,16);
+    return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255);
+  }
+})();
+</script>
+
 <div class="divider"></div>
 
 <!-- Pricing -->
