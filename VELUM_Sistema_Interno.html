@@ -6969,8 +6969,13 @@ function _iniciarKiosco(){
     const now  = new Date();
     const fecha= now.toISOString().slice(0,10);
     const hora = now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-    const {error} = await gf(window.supabaseClient.from('asistencias')
-      .insert({cliente_id:cliente.id, gym_id:MOVE_GYM_ID, fecha, hora, metodo:'Kiosco'}));
+    // Fetch foto_url fresca + insert asistencia en paralelo
+    const [{error}, fotoResult] = await Promise.all([
+      gf(window.supabaseClient.from('asistencias')
+        .insert({cliente_id:cliente.id, gym_id:MOVE_GYM_ID, fecha, hora, metodo:'Kiosco'})),
+      gf(window.supabaseClient.from('clientes')
+        .select('foto_url').eq('id', cliente.id).single())
+    ]);
     if(error){
       if(btn) btn.textContent='REGISTRAR ENTRADA';
       const hint=document.getElementById('k-name-hint');
@@ -6982,7 +6987,10 @@ function _iniciarKiosco(){
         if(btn)btn.textContent='REGISTRAR ENTRADA';
       },2500);
     } else {
-      _kioscoShowSuccess(cliente.nombre, cliente.foto_url||null);
+      const fotoUrl = (fotoResult?.data?.foto_url) || cliente.foto_url || null;
+      // Actualizar caché local para la próxima vez
+      if(fotoUrl) cliente.foto_url = fotoUrl;
+      _kioscoShowSuccess(cliente.nombre, fotoUrl);
     }
   };
 
