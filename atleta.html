@@ -1476,9 +1476,24 @@ function photoKey(){ return portalData?`velum_photo_${portalData.cliente.id}`:''
 
 function loadProfilePhoto(){
   if(!portalData) return;
-  let photo=null;
-  try{ photo=localStorage.getItem(photoKey()); }catch(_){}
-  if(photo) applyProfilePhoto(photo);
+  // 1. Apply localStorage instantly (no flicker)
+  let local=null;
+  try{ local=localStorage.getItem(photoKey()); }catch(_){}
+  if(local){ applyProfilePhoto(local); return; }
+  // 2. No local photo → fetch from Supabase (cross-device sync)
+  const token=portalData.cliente?.portal_token;
+  if(!token) return;
+  fetch(`${SUPABASE_URL}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(token)}&select=foto_url`,{
+    headers: apiHeaders()
+  })
+  .then(r=>r.json())
+  .then(rows=>{
+    const url=(rows&&rows[0]&&rows[0].foto_url)||null;
+    if(!url) return;
+    applyProfilePhoto(url);
+    try{ localStorage.setItem(photoKey(),url); }catch(_){} // cache locally
+  })
+  .catch(()=>{});
 }
 
 function applyProfilePhoto(dataUrl){
