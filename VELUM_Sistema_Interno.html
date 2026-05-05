@@ -2826,7 +2826,11 @@ select option{background:#0d1a16;color:var(--text);}
       </div>
       <div class="nav-item mob-hidden" id="nav-solicitudes" onclick="go('solicitudes',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="nav-label-text"> Solicitudes</span>
-        <span class="nav-badge blue">3</span>
+        <span class="nav-badge blue" id="badge-solicitudes">0</span>
+      </div>
+      <div class="nav-item mob-hidden" id="nav-landing-leads" onclick="go('landing-leads',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span><span class="nav-label-text"> Leads Landing</span>
+        <span class="nav-badge" id="badge-landing-leads" style="display:none;">0</span>
       </div>
     </div>
 
@@ -3657,6 +3661,21 @@ select option{background:#0d1a16;color:var(--text);}
       <div class="card" id="solicitudes-list"></div>
     </div>
 
+    <!-- ══ LEADS LANDING ══ -->
+    <div class="view" id="v-landing-leads">
+      <div class="sh">
+        <div>
+          <div class="sh-title">Leads de la Landing Page</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Emails capturados en myvelum.app</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="exportLandingLeadsCSV()">↓ Exportar CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="marcarLandingLeadsVistos()">✓ Marcar vistos</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;" id="landing-leads-list"></div>
+    </div>
+
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
@@ -4424,7 +4443,7 @@ select option{background:#0d1a16;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>Fuente del lead *</label>
-          <select id="l-fuente"><option value="">Selecciona…</option><option>Instagram Orgánico</option><option>Meta Ads</option><option>TikTok</option><option>Google Ads</option><option>Referido</option><option>Walk-in</option><option>Otra</option></select>
+          <select id="l-fuente"><option value="">Selecciona…</option><option>Landing Page</option><option>Instagram Orgánico</option><option>Meta Ads</option><option>TikTok</option><option>Google Ads</option><option>Referido</option><option>Walk-in</option><option>Otra</option></select>
         </div>
         <div class="field"><label>Clase de interés</label>
           <select id="l-clase"><option value="">No definido</option><option>Strength</option><option>Endurance</option><option>Hyrox</option></select>
@@ -5502,7 +5521,8 @@ let evals      = []; // loaded from Supabase
 let pagos      = []; // loaded from Supabase
 let clientesDB = []; // loaded from clientes table
 let campanas   = []; // loaded from Supabase
-let solicitudes= []; // loaded from Supabase
+let solicitudes   = []; // loaded from Supabase
+let leadsLanding  = []; // loaded from leads_landing table (landing page captures)
 let contenidos = []; // loaded from Supabase
 let horario    = []; // loaded from Supabase
 let usuarios   = []; // loaded from Supabase (admin only)
@@ -5569,7 +5589,7 @@ async function doLogin(){
       loadEvalsFromSupabase(), loadPagosFromSupabase(), loadClientesFromSupabase(),
       loadCampanasFromSupabase(), loadSolicitudesFromSupabase(), loadContenidosFromSupabase(),
       loadHorarioFromSupabase(), loadGastosFromSupabase(), loadProgramasFromSupabase(),
-      loadProgConfigFromSupabase(), loadUsuariosFromSupabase()
+      loadProgConfigFromSupabase(), loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase()
     ]);
     showApp();
     initRealtimeSubscriptions();
@@ -6591,6 +6611,108 @@ async function loadLeadsFromSupabase(){
   }));
 }
 
+// ─── Leads Landing — from public landing page ──────────────────────
+async function loadLeadsLandingFromSupabase(){
+  if(!window.supabaseClient) return;
+  // leads_landing is NOT gym-scoped — it belongs to the VELUM platform, not a specific gym.
+  // Only superadmin or gym admin that owns VELUM can read it; RLS should enforce that.
+  const { data, error } = await window.supabaseClient
+    .from('leads_landing')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if(error){ console.error('Error cargando leads_landing:', error); return; }
+  leadsLanding = (data||[]).map(l=>({
+    id:       l.id,
+    email:    l.email   || '',
+    fuente:   l.fuente  || 'landing',
+    fechaISO: l.created_at || '',
+    fecha:    l.created_at ? fmtDate(l.created_at) : '—',
+  }));
+}
+
+function _seenLandingIds(){
+  try{ return new Set(JSON.parse(localStorage.getItem('velum_seen_ll')||'[]')); }catch(_){ return new Set(); }
+}
+function marcarLandingLeadsVistos(){
+  const ids = leadsLanding.map(l=>String(l.id));
+  try{ localStorage.setItem('velum_seen_ll', JSON.stringify(ids)); }catch(_){}
+  updateBadges();
+  renderLeadsLanding();
+}
+function exportLandingLeadsCSV(){
+  if(!leadsLanding.length){ toast('Sin leads para exportar','⚠️'); return; }
+  const rows = [['Email','Fuente','Fecha']];
+  leadsLanding.forEach(l=>rows.push([l.email, l.fuente, l.fecha]));
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `VELUM_Leads_Landing_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast(`${leadsLanding.length} leads exportados ✓`,'📥');
+}
+function renderLeadsLanding(){
+  const el = document.getElementById('landing-leads-list');
+  if(!el) return;
+  const seen = _seenLandingIds();
+  // Update badge
+  const unseen = leadsLanding.filter(l=>!seen.has(String(l.id))).length;
+  const badge = document.getElementById('badge-landing-leads');
+  if(badge){ badge.textContent = unseen; badge.style.display = unseen>0 ? 'inline' : 'none'; }
+
+  if(!leadsLanding.length){
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📩</div><div class="empty-title">Sin leads aún</div><div class="empty-sub">Cuando alguien deje su email en myvelum.app, aparecerá aquí.</div></div>`;
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border2);">
+        <th style="text-align:left;padding:11px 18px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;"></th>
+        <th style="text-align:left;padding:11px 18px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;">Email</th>
+        <th style="text-align:left;padding:11px 18px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;">Fuente</th>
+        <th style="text-align:left;padding:11px 18px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;">Fecha</th>
+        <th style="padding:11px 18px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${leadsLanding.map((l,i)=>{
+        const isNew = !seen.has(String(l.id));
+        const rowBg = i%2===0 ? '' : 'background:rgba(255,255,255,.018);';
+        const newBg = isNew ? 'background:rgba(29,158,117,.055);' : rowBg;
+        return `<tr style="${newBg}border-bottom:1px solid var(--border);">
+          <td style="padding:10px 18px;width:12px;">
+            ${isNew ? `<span style="display:inline-block;width:7px;height:7px;background:var(--accent);border-radius:50%;"></span>` : ''}
+          </td>
+          <td style="padding:10px 18px;font-size:13px;font-weight:${isNew?700:400};color:var(--text1);">${esc(l.email)}</td>
+          <td style="padding:10px 18px;font-size:12px;color:var(--text2);">${esc(l.fuente)}</td>
+          <td style="padding:10px 18px;font-size:12px;color:var(--text3);">${esc(l.fecha)}</td>
+          <td style="padding:10px 18px;text-align:right;white-space:nowrap;display:flex;gap:6px;align-items:center;justify-content:flex-end;">
+            ${isNew ? `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(29,158,117,.12);padding:2px 8px;border-radius:99px;margin-right:4px;">NUEVO</span>` : ''}
+            <a href="mailto:${esc(l.email)}" style="font-size:11px;color:var(--accent);text-decoration:none;font-weight:700;padding:4px 10px;border:1px solid rgba(29,158,117,.3);border-radius:6px;">✉ Email</a>
+            <button onclick="agregarLandingLeadAlCRM('${esc(l.email)}')" style="font-size:11px;font-weight:700;padding:4px 10px;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;">+ Al CRM</button>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+function agregarLandingLeadAlCRM(email){
+  // Pre-fill the CRM modal with this email and open it
+  openModal('lead');
+  setTimeout(()=>{
+    const emailField = document.getElementById('l-email');
+    if(emailField){ emailField.value = email; }
+    const fuenteField = document.getElementById('l-fuente');
+    if(fuenteField){
+      // Try to select "Landing Page" option; if absent, add it temporarily
+      let opt = [...fuenteField.options].find(o=>o.value==='Landing Page');
+      if(!opt){ opt = new Option('Landing Page','Landing Page'); fuenteField.add(opt); }
+      fuenteField.value = 'Landing Page';
+    }
+    // Focus the name field so the user can fill it
+    document.getElementById('l-nombre')?.focus();
+  }, 120);
+}
+
 async function loadCoachesFromSupabase(){
   const { data, error } = await gf(window.supabaseClient.from('coaches').select('*')).order('created_at');
   if(error){ console.error('Error cargando coaches:', error); return; }
@@ -7135,7 +7257,8 @@ const topTitles = {
   asistencia:  ['Asistencia',               ()=>`Registro de asistencia · ${_todayLabel()}`],
   marketing:   ['Hub de Marketing',          'Calendario de contenido y campañas'],
   campanas:    ['Campañas',                  'Resultados y métricas por campaña'],
-  solicitudes: ['Solicitudes Internas',      'Pedidos de apoyo a Marketing'],
+  solicitudes:     ['Solicitudes Internas',      'Pedidos de apoyo a Marketing'],
+  'landing-leads': ['Leads Landing',             'Emails capturados desde myvelum.app'],
   horario:     ['Calendario de Clases',      ()=>`Vista mensual · ${_mesLabel()}`],
   coaches:     ['Equipo de Coaches',         'Perfiles del equipo de entrenamiento'],
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
@@ -7155,7 +7278,8 @@ const topBtnLabels = {
   asistencia:  '+ Registrar Clase',
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
-  solicitudes: '+ Nueva Solicitud',
+  solicitudes:     '+ Nueva Solicitud',
+  'landing-leads': '↓ Exportar CSV',
   horario:     '+ Plantilla',
   coaches:     '+ Agregar Coach',
   evaluaciones:'+ Evaluar Coach',
@@ -7172,7 +7296,8 @@ const topBtnActions = {
   pipeline:    ()=>openModal('lead'),
   coaches:     ()=>openModal('coach'),
   campanas:    ()=>openModal('campana'),
-  solicitudes: ()=>openModal('solicitud'),
+  solicitudes:     ()=>openModal('solicitud'),
+  'landing-leads': ()=>exportLandingLeadsCSV(),
   pagos:       ()=>openModal('pago'),
   clientes:    ()=>openModal('pago'),
   asistencia:  ()=>openRegistrarClase(),
@@ -7215,8 +7340,9 @@ function go(id, el){
   if(id==='calendario-venc') renderCalVenc();
   if(id==='asistencia')  { loadClasesOperativas(); renderAsistHistorial(); }
   if(id==='campanas')    renderCampanas();
-  if(id==='solicitudes') renderSolicitudes();
-  if(id==='marketing')   renderCalendario();
+  if(id==='solicitudes')   renderSolicitudes();
+  if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
+  if(id==='marketing')     renderCalendario();
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='programa'){
@@ -7571,6 +7697,18 @@ function buildNotifAlerts(){
       title:`${sinRenovar.length} clientes sin pago en +30 días`,
       desc:'Considera contactarlos para renovar',
       action:`go('clientes',document.getElementById('nav-clientes'))`,
+    });
+  }
+
+  // ── Nuevos leads de la landing page ──
+  const seenLl = _seenLandingIds();
+  const newLl = leadsLanding.filter(l=>!seenLl.has(String(l.id)));
+  if(newLl.length){
+    alerts.push({
+      type:'ok', icon:'📩', iconCls:'notif-icon-ok',
+      title:`${newLl.length} lead${newLl.length>1?'s':''} nuevo${newLl.length>1?'s':''} en la landing`,
+      desc: newLl.slice(0,3).map(l=>l.email).join(', ')+(newLl.length>3?` y ${newLl.length-3} más`:''),
+      action:`go('landing-leads',document.getElementById('nav-landing-leads'))`,
     });
   }
 
@@ -11333,10 +11471,19 @@ function renderDashboard(){
 }
 
 function updateBadges(){
+  // CRM leads badge
   const pending = leads.filter(l=>!['Cerrado – Ganado','Cerrado – Perdido'].includes(l.estado)).length;
   const badgeEl = document.getElementById('badge-leads');
-  badgeEl.textContent = pending;
-  badgeEl.style.display = pending>0 ? 'inline' : 'none';
+  if(badgeEl){ badgeEl.textContent = pending; badgeEl.style.display = pending>0 ? 'inline' : 'none'; }
+  // Solicitudes badge
+  const pendSol = solicitudes.filter(s=>s.estado!=='Completada'&&s.estado!=='Cancelada').length;
+  const solBadge = document.getElementById('badge-solicitudes');
+  if(solBadge){ solBadge.textContent = pendSol; solBadge.style.display = pendSol>0 ? 'inline' : 'none'; }
+  // Landing leads badge (unseen)
+  const seen = _seenLandingIds();
+  const unseen = leadsLanding.filter(l=>!seen.has(String(l.id))).length;
+  const llBadge = document.getElementById('badge-landing-leads');
+  if(llBadge){ llBadge.textContent = unseen; llBadge.style.display = unseen>0 ? 'inline' : 'none'; }
   // Update notification bell badge on load
   renderNotifPanel();
 }
@@ -11808,7 +11955,7 @@ async function saContextSwitch(gymId){
       loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
       loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
       loadGastosFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
-      loadUsuariosFromSupabase()
+      loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase()
     ]);
     updateSaCtxLabel();
     renderDashboard();
@@ -12281,6 +12428,7 @@ const VELUM_NAV_CATALOG = [
   { id:'marketing',      label:'Hub de Marketing',        emoji:'📣' },
   { id:'campanas',       label:'Campañas',                emoji:'🎯' },
   { id:'solicitudes',    label:'Solicitudes',             emoji:'📋' },
+  { id:'landing-leads', label:'Leads Landing',           emoji:'📩' },
   { id:'horario',        label:'Horario Semanal',         emoji:'🗓' },
   { id:'coaches',        label:'Coaches',                 emoji:'🏋️' },
   { id:'evaluaciones',   label:'Evaluaciones',            emoji:'⭐' },
@@ -14769,6 +14917,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadGastosFromSupabase(),
     loadProgramasFromSupabase(),
     loadProgConfigFromSupabase(),
+    loadLeadsLandingFromSupabase(),
   ]);
   renderDashboard();
   renderCoaches();
@@ -14780,6 +14929,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderCampanas();
   renderSolicitudes();
   renderCalendario();
+  renderLeadsLanding();
   updateBadges();
 
   // Init dashboard layout (after render so elements exist)
@@ -16773,6 +16923,7 @@ const _masItems = [
   { id:'marketing',       label:'Marketing',   icon:'<polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/>' },
   { id:'campanas',        label:'Campañas',    icon:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>' },
   { id:'solicitudes',     label:'Solicitudes', icon:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>' },
+  { id:'landing-leads',  label:'Leads Web',   icon:'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>' },
   { id:'horario',         label:'Horario',     icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
   { id:'coaches',         label:'Coaches',     icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
   { id:'evaluaciones',    label:'Evaluac.',    icon:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },
