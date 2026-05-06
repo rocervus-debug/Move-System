@@ -12392,6 +12392,13 @@ async function saveGasto(){
   if(err){ toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
   closeModal('gasto');
   await loadGastosFromSupabase();
+  // Navegar al mes del gasto guardado para que sea visible de inmediato
+  if(fecha && fecha.length >= 7){
+    const mesDel = fecha.slice(0,7);
+    gastoFilter.mes = mesDel;
+    const gfInput = document.getElementById('gf-mes');
+    if(gfInput) gfInput.value = mesDel;
+  }
   renderGastos();
   renderDashboard();
   toast(id ? 'Gasto actualizado ✓' : 'Gasto registrado ✓','💸');
@@ -13387,7 +13394,7 @@ async function saveClienteSinPago(){
   // ── Helpers de error por campo ──
   function _scErr(campo, msg){
     const el = document.getElementById('sc-'+campo+'-err');
-    const inp = document.getElementById('sc-'+campo === 'email' ? 'sc-email-new' : 'sc-'+campo);
+    const inp = document.getElementById(campo === 'email' ? 'sc-email-new' : 'sc-'+campo);
     if(el){ el.textContent=msg; el.style.display=msg?'block':'none'; }
     if(inp) inp.style.borderColor = msg ? 'var(--danger)' : '';
   }
@@ -13451,6 +13458,13 @@ async function saveClienteSinPago(){
   closeModal('solo-cliente');
   auditLog('CREAR_CLIENTE', 'clientes', '', `Nuevo cliente: ${nombre} (${email})`);
   toast(`${nombre} agregado ✅`,'👤');
+  // Resetear filtro a 'todos' para que el cliente recién creado sea visible
+  // (clientes sin membresía tienen estado 'sin-fecha' y serían ocultados si el filtro estaba en 'activo')
+  _cliEstado = 'todos';
+  sessionStorage.setItem('velum_cliEstado', 'todos');
+  document.querySelectorAll('.cli-tab-estado').forEach(b => {
+    b.classList.toggle('active', b.dataset?.val === 'todos' || b.onclick?.toString().includes("'todos'"));
+  });
   renderClientes();
 }
 
