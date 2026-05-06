@@ -5689,44 +5689,69 @@ function showPasswordReset(){
   if(existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'pw-reset-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
   modal.innerHTML = `
-    <div style="background:#0f1726;border:1px solid rgba(29,158,117,.2);border-radius:18px;padding:30px 28px;width:100%;max-width:380px;text-align:center;">
-      <div style="font-size:32px;margin-bottom:12px;">🔑</div>
-      <div style="font-size:16px;font-weight:700;color:#e8edf5;margin-bottom:8px;">Recuperar contraseña</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:22px;line-height:1.6;">
-        Ingresa tu email y si existe una cuenta activa el administrador de tu gym puede restablecerla desde <strong style="color:var(--accent);">Configuración → Usuarios</strong>.
+    <div style="background:#0b1a14;border:1px solid rgba(29,158,117,.25);border-radius:20px;padding:32px 28px;width:100%;max-width:380px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);">
+      <div style="width:52px;height:52px;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 16px;">🔑</div>
+      <div style="font-size:17px;font-weight:700;color:#e8edf5;margin-bottom:8px;">Recuperar contraseña</div>
+      <div style="font-size:13px;color:rgba(200,220,215,.5);margin-bottom:22px;line-height:1.65;">
+        Ingresa tu email y te enviamos un enlace para crear una contraseña nueva. Revisa también tu carpeta de spam.
       </div>
-      <input id="pw-reset-email" type="email" placeholder="tu@email.com"
-        style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;color:#e8edf5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:16px;"
+      <input id="pw-reset-email" type="email" placeholder="tu@email.com" autocomplete="email"
+        style="width:100%;padding:12px 14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#e8edf5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:14px;transition:border-color .2s;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"
         value="${(document.getElementById('login-email')?.value||'')}"/>
-      <div id="pw-reset-msg" style="font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+      <div id="pw-reset-msg" style="font-size:12px;min-height:18px;margin-bottom:14px;line-height:1.5;"></div>
       <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('pw-reset-modal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;font-size:13px;color:#94a3b8;cursor:pointer;">Cancelar</button>
-        <button onclick="_submitPasswordReset()" style="flex:1;padding:11px;background:var(--accent);border:none;border-radius:8px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">Enviar solicitud</button>
+        <button onclick="document.getElementById('pw-reset-modal').remove()"
+          style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;font-size:13px;color:#94a3b8;cursor:pointer;font-family:inherit;">
+          Cancelar
+        </button>
+        <button id="pw-reset-btn" onclick="_submitPasswordReset()"
+          style="flex:1;padding:12px;background:var(--accent);border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;transition:background .2s;">
+          Enviar enlace
+        </button>
       </div>
     </div>`;
   document.body.appendChild(modal);
-  setTimeout(()=>{ const i=document.getElementById('pw-reset-email'); if(i) i.focus(); },80);
+  modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+  setTimeout(()=>{ const i=document.getElementById('pw-reset-email'); if(i) i.focus(); }, 80);
 }
 
 async function _submitPasswordReset(){
   const email = (document.getElementById('pw-reset-email')?.value||'').trim().toLowerCase();
-  const msg = document.getElementById('pw-reset-msg');
-  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    msg.style.color='#f87171'; msg.textContent='Ingresa un email válido.'; return;
+  const msg   = document.getElementById('pw-reset-msg');
+  const btn   = document.getElementById('pw-reset-btn');
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    msg.style.color = '#f87171';
+    msg.textContent = 'Ingresa un email válido.';
+    return;
   }
-  // Check if user exists (without leaking information)
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
   try {
-    const { data } = await window.supabaseClient.from('usuarios').select('id').eq('email',email).eq('activo',true).maybeSingle();
-    msg.style.color='#6ee7b7';
-    if(data){
-      msg.textContent='✓ Cuenta encontrada. El admin del gym puede restablecer tu contraseña desde Configuración → Usuarios.';
-    } else {
-      msg.textContent='No encontramos una cuenta activa con ese email.';
-      msg.style.color='#fca5a5';
+    const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/VELUM_Sistema_Interno.html?reset=1'
+    });
+    if(error){
+      msg.style.color = '#f87171';
+      msg.textContent = 'Error al enviar: ' + error.message;
+      btn.disabled = false;
+      btn.textContent = 'Enviar enlace';
+      return;
     }
-  } catch(e){ msg.style.color='#f87171'; msg.textContent='Error de conexión.'; }
+    msg.style.color = '#6ee7b7';
+    msg.innerHTML = '✓ Enlace enviado. Revisa tu email (y spam) — tienes 1 hora para usarlo.';
+    btn.textContent = '✓ Enviado';
+    btn.style.background = 'rgba(16,232,160,.15)';
+    btn.style.color = '#10e8a0';
+    document.getElementById('pw-reset-email').disabled = true;
+  } catch(e){
+    msg.style.color = '#f87171';
+    msg.textContent = 'Error de conexión. Intenta de nuevo.';
+    btn.disabled = false;
+    btn.textContent = 'Enviar enlace';
+  }
 }
 
 function doLogout(){

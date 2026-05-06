@@ -1330,6 +1330,11 @@ body::before{
         <div class="bit-title">📓 Bitácora</div>
         <button class="bit-add-btn" onclick="openBitacoraSheet()" title="Agregar sesión">+</button>
       </div>
+      <div style="padding:0 0 12px;">
+        <input type="text" id="bit-search" placeholder="🔍 Buscar ejercicio…" oninput="renderBitacora(this.value)"
+          style="width:100%;padding:10px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color .2s;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
       <div id="bitacora-list">
         <div class="bit-empty">
           <div class="bit-empty-ico">🏋️</div>
@@ -2830,20 +2835,24 @@ async function loadAndRenderBitacora(){
   renderBitacora();
 }
 
-function renderBitacora(){
+function renderBitacora(query=''){
   const el = $('bitacora-list');
   if(!el) return;
-  if(!bitacoraData.length){
-    el.innerHTML = `<div class="bit-empty">
-      <div class="bit-empty-ico">🏋️</div>
-      <div class="bit-empty-ttl">Tu diario de entrenamiento</div>
-      <div class="bit-empty-sub">Toca + para registrar tu primera sesión.</div>
-    </div>`;
+  const q = (query||'').toLowerCase().trim();
+  // Filtrar por ejercicio si hay búsqueda
+  const data = q
+    ? bitacoraData.filter(e => (e.ejercicio||'').toLowerCase().includes(q))
+    : bitacoraData;
+
+  if(!data.length){
+    el.innerHTML = q
+      ? `<div class="bit-empty"><div class="bit-empty-ico">🔍</div><div class="bit-empty-ttl">Sin resultados</div><div class="bit-empty-sub">No encontramos ejercicios con "${query}".</div></div>`
+      : `<div class="bit-empty"><div class="bit-empty-ico">🏋️</div><div class="bit-empty-ttl">Tu diario de entrenamiento</div><div class="bit-empty-sub">Toca + para registrar tu primera sesión.</div></div>`;
     return;
   }
   // Agrupar por fecha
   const byDay = {};
-  bitacoraData.forEach(e=>{ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
+  data.forEach(e=>{ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
   const TIPO_ICO = { fuerza:'💪', cardio:'🏃', otro:'⚡' };
   const TIPO_CLS = { fuerza:'fuerza', cardio:'cardio', otro:'otro' };
 
