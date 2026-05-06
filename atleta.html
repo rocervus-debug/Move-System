@@ -494,6 +494,47 @@ body::before{
 }
 
 /* ══════════════════════════════════════
+   BITÁCORA
+══════════════════════════════════════ */
+.bit-header{padding:20px 16px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.bit-title{font-size:22px;font-weight:900;font-family:var(--fd);letter-spacing:1px;color:#fff;}
+.bit-add-btn{width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(29,158,117,.4);transition:all .15s;}
+.bit-add-btn:active{transform:scale(.92);}
+.bit-day-group{padding:0 16px;margin-bottom:20px;}
+.bit-day-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+.bit-entry{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;}
+.bit-type-dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.bit-type-dot.fuerza{background:rgba(139,92,246,.12);}
+.bit-type-dot.cardio{background:rgba(249,115,22,.12);}
+.bit-type-dot.otro{background:rgba(29,158,117,.1);}
+.bit-entry-body{flex:1;min-width:0;}
+.bit-ej{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bit-meta{font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px;}
+.bit-chip{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--text2);}
+.bit-nota{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.4;font-style:italic;}
+.bit-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px;margin-left:auto;flex-shrink:0;transition:color .15s;}
+.bit-del:active{color:var(--danger);}
+.bit-empty{padding:60px 24px;text-align:center;}
+.bit-empty-ico{font-size:40px;margin-bottom:14px;}
+.bit-empty-ttl{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;}
+.bit-empty-sub{font-size:13px;color:var(--text3);line-height:1.5;}
+/* Bitácora sheet */
+.bit-sheet{padding:0 20px 20px;}
+.bit-type-tabs{display:flex;gap:8px;margin-bottom:20px;}
+.bit-type-tab{flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text3);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font);}
+.bit-type-tab.active{background:rgba(29,158,117,.12);border-color:var(--border-accent);color:var(--accent-light);}
+.bit-field{margin-bottom:16px;}
+.bit-field label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;}
+.bit-field input,.bit-field textarea,.bit-field select{width:100%;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;-webkit-appearance:none;}
+.bit-field input:focus,.bit-field textarea:focus,.bit-field select:focus{border-color:var(--border-accent);}
+.bit-field textarea{resize:none;line-height:1.5;}
+.bit-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.bit-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.bit-save-btn{width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:var(--font);transition:all .15s;margin-top:4px;}
+.bit-save-btn:active{transform:scale(.98);background:#17875e;}
+.bit-save-btn:disabled{opacity:.5;cursor:default;}
+
+/* ══════════════════════════════════════
    SECTIONS
 ══════════════════════════════════════ */
 .section{padding:0 16px;margin-bottom:26px;}
@@ -1111,6 +1152,9 @@ body::before{
       <div class="sb-item" id="sbn-planes" onclick="switchView('planes')">
         <div class="sb-icon">💳</div><div class="sb-lbl">Planes y Pagos</div>
       </div>
+      <div class="sb-item" id="sbn-bitacora" onclick="switchView('bitacora')">
+        <div class="sb-icon">📓</div><div class="sb-lbl">Bitácora</div>
+      </div>
     </div>
     <div class="sb-qr-btn" onclick="openQRSheet()">
       <div class="sb-qr-ico">📲</div>
@@ -1280,6 +1324,21 @@ body::before{
     </div>
 
 
+    <!-- ── BITÁCORA ── -->
+    <div class="view" id="view-bitacora">
+      <div class="bit-header">
+        <div class="bit-title">📓 Bitácora</div>
+        <button class="bit-add-btn" onclick="openBitacoraSheet()" title="Agregar sesión">+</button>
+      </div>
+      <div id="bitacora-list">
+        <div class="bit-empty">
+          <div class="bit-empty-ico">🏋️</div>
+          <div class="bit-empty-ttl">Tu diario de entrenamiento</div>
+          <div class="bit-empty-sub">Registra cada sesión — ejercicios, pesos, tiempos. Ve tu progreso con el tiempo.</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── CLASES ── -->
     <div class="view" id="view-clases">
       <div class="greeting">
@@ -1319,6 +1378,9 @@ body::before{
     </div>
     <div class="bn-item" id="bn-planes" onclick="switchView('planes')">
       <div class="bn-icon">💳</div><div class="bn-lbl">Planes</div>
+    </div>
+    <div class="bn-item" id="bn-bitacora" onclick="switchView('bitacora')">
+      <div class="bn-icon">📓</div><div class="bn-lbl">Log</div>
     </div>
   </div>
 
@@ -1365,6 +1427,90 @@ body::before{
       <div class="ios-banner-x" onclick="document.getElementById('ios-banner').style.display='none'">✕</div>
     </div>
     <div class="sheet-close" onclick="closeSheet('qr-sheet')">Cerrar</div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="bitacora-sheet" onclick="closeSheet('bitacora-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;max-height:92vh;overflow-y:auto;">
+    <div class="sheet-handle"></div>
+    <div class="bit-sheet">
+      <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:18px;">Nueva sesión</div>
+
+      <!-- Tipo -->
+      <div class="bit-type-tabs">
+        <button class="bit-type-tab active" id="btt-fuerza" onclick="setBitTipo('fuerza')">💪 Fuerza</button>
+        <button class="bit-type-tab" id="btt-cardio" onclick="setBitTipo('cardio')">🏃 Cardio</button>
+        <button class="bit-type-tab" id="btt-otro" onclick="setBitTipo('otro')">⚡ Otro</button>
+      </div>
+      <input type="hidden" id="bit-tipo" value="fuerza"/>
+
+      <!-- Fecha -->
+      <div class="bit-field">
+        <label>Fecha</label>
+        <input type="date" id="bit-fecha"/>
+      </div>
+
+      <!-- Ejercicio -->
+      <div class="bit-field">
+        <label>Ejercicio *</label>
+        <input type="text" id="bit-ejercicio" placeholder="Ej: Sentadilla, Bench Press, Carrera..."/>
+      </div>
+
+      <!-- Fuerza: series + reps + peso -->
+      <div id="bit-fuerza-fields">
+        <div class="bit-row">
+          <div class="bit-field">
+            <label>Series</label>
+            <input type="number" id="bit-series" min="1" max="99" placeholder="4"/>
+          </div>
+          <div class="bit-field">
+            <label>Reps</label>
+            <input type="number" id="bit-reps" min="1" max="999" placeholder="10"/>
+          </div>
+          <div class="bit-field">
+            <label>Peso</label>
+            <input type="number" id="bit-peso" min="0" step="0.5" placeholder="60"/>
+          </div>
+        </div>
+        <div class="bit-field" style="margin-top:-8px;">
+          <label>Unidad</label>
+          <select id="bit-unidad-peso">
+            <option value="kg">kg</option>
+            <option value="lbs">lbs</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Cardio: duración + distancia -->
+      <div id="bit-cardio-fields" style="display:none;">
+        <div class="bit-row2">
+          <div class="bit-field">
+            <label>Duración (min)</label>
+            <input type="number" id="bit-duracion" min="1" max="999" placeholder="30"/>
+          </div>
+          <div class="bit-field">
+            <label>Distancia</label>
+            <input type="number" id="bit-distancia" min="0" step="0.1" placeholder="5"/>
+          </div>
+        </div>
+        <div class="bit-field" style="margin-top:-8px;">
+          <label>Unidad distancia</label>
+          <select id="bit-unidad-dist">
+            <option value="km">km</option>
+            <option value="m">m</option>
+            <option value="mi">mi</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="bit-field">
+        <label>Notas (opcional)</label>
+        <textarea id="bit-notas" rows="2" placeholder="Cómo te sentiste, observaciones..."></textarea>
+      </div>
+
+      <button class="bit-save-btn" id="bit-save-btn" onclick="saveBitacoraEntry()">Guardar sesión</button>
+    </div>
   </div>
 </div>
 
@@ -1449,7 +1595,7 @@ function openProfileSheet(){ openSheet('profile-sheet'); }
 // ── View switching ───────────────────────────────────
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  ['home','programa','clases','historial','planes'].forEach(n=>{
+  ['home','programa','clases','historial','planes','bitacora'].forEach(n=>{
     const b=$('bn-'+n); if(b) b.classList.toggle('active',n===name);
     const s=$('sbn-'+n); if(s) s.classList.toggle('active',n===name);
   });
@@ -1459,6 +1605,7 @@ function switchView(name){
   if(name==='clases') loadClasesData();
   if(name==='historial') renderHistorial();
   if(name==='planes') renderPlanes();
+  if(name==='bitacora') loadAndRenderBitacora();
 }
 
 // ── Logout ───────────────────────────────────────────
@@ -2596,6 +2743,149 @@ window.addEventListener('resize',()=>{
 });
 
 window.addEventListener('DOMContentLoaded', init);
+
+// ════════════════════════════════════
+//  BITÁCORA — Log de entrenamiento
+// ════════════════════════════════════
+
+let bitacoraData = [];
+let bitTipoActivo = 'fuerza';
+
+function _bitToken(){ return portalData?.cliente?.portal_token || null; }
+function _bitGymId(){ return portalData?.cliente?.gym_id || null; }
+
+function openBitacoraSheet(){
+  // defaults
+  $('bit-fecha').value  = new Date().toISOString().slice(0,10);
+  $('bit-ejercicio').value = '';
+  $('bit-series').value = '';
+  $('bit-reps').value   = '';
+  $('bit-peso').value   = '';
+  $('bit-duracion').value  = '';
+  $('bit-distancia').value = '';
+  $('bit-notas').value  = '';
+  $('bit-save-btn').disabled = false;
+  setBitTipo('fuerza');
+  openSheet('bitacora-sheet');
+}
+
+function setBitTipo(tipo){
+  bitTipoActivo = tipo;
+  $('bit-tipo').value = tipo;
+  ['fuerza','cardio','otro'].forEach(t=>{
+    $('btt-'+t)?.classList.toggle('active', t===tipo);
+  });
+  $('bit-fuerza-fields').style.display  = tipo==='fuerza' ? '' : 'none';
+  $('bit-cardio-fields').style.display  = tipo==='cardio' ? '' : 'none';
+}
+
+async function saveBitacoraEntry(){
+  const token = _bitToken();
+  if(!token){ alert('Sesión no válida, vuelve a iniciar sesión.'); return; }
+  const ejercicio = $('bit-ejercicio').value.trim();
+  if(!ejercicio){ $('bit-ejercicio').focus(); return; }
+  const tipo  = bitTipoActivo;
+  const fecha = $('bit-fecha').value || new Date().toISOString().slice(0,10);
+
+  const payload = {
+    qr_token:   token,
+    gym_id:     _bitGymId(),
+    fecha, tipo, ejercicio,
+    series:      tipo==='fuerza' ? (parseInt($('bit-series').value)||null) : null,
+    reps:        tipo==='fuerza' ? (parseInt($('bit-reps').value)||null)   : null,
+    peso:        tipo==='fuerza' ? (parseFloat($('bit-peso').value)||null) : null,
+    unidad_peso: tipo==='fuerza' ? ($('bit-unidad-peso').value||'kg')     : null,
+    duracion_min:  tipo==='cardio' ? (parseInt($('bit-duracion').value)||null)   : null,
+    distancia:     tipo==='cardio' ? (parseFloat($('bit-distancia').value)||null): null,
+    unidad_distancia: tipo==='cardio' ? ($('bit-unidad-dist').value||'km')      : null,
+    notas: $('bit-notas').value.trim() || null,
+  };
+
+  const btn = $('bit-save-btn');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta`, {
+    method: 'POST',
+    headers: { ...apiHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(payload),
+  });
+
+  btn.disabled = false; btn.textContent = 'Guardar sesión';
+  if(!res.ok){ const e=await res.text(); console.error(e); alert('No se pudo guardar.'); return; }
+  closeSheet('bitacora-sheet');
+  await loadAndRenderBitacora();
+}
+
+async function loadAndRenderBitacora(){
+  const token = _bitToken();
+  if(!token) return;
+  try{
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&order=fecha.desc,created_at.desc&limit=200`,
+      { headers: apiHeaders() }
+    );
+    if(!res.ok) return;
+    bitacoraData = await res.json();
+  } catch(e){ console.error(e); return; }
+  renderBitacora();
+}
+
+function renderBitacora(){
+  const el = $('bitacora-list');
+  if(!el) return;
+  if(!bitacoraData.length){
+    el.innerHTML = `<div class="bit-empty">
+      <div class="bit-empty-ico">🏋️</div>
+      <div class="bit-empty-ttl">Tu diario de entrenamiento</div>
+      <div class="bit-empty-sub">Toca + para registrar tu primera sesión.</div>
+    </div>`;
+    return;
+  }
+  // Agrupar por fecha
+  const byDay = {};
+  bitacoraData.forEach(e=>{ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
+  const TIPO_ICO = { fuerza:'💪', cardio:'🏃', otro:'⚡' };
+  const TIPO_CLS = { fuerza:'fuerza', cardio:'cardio', otro:'otro' };
+
+  el.innerHTML = Object.keys(byDay).map(fecha=>{
+    const d = new Date(fecha+'T12:00:00');
+    const label = d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+    const entries = byDay[fecha].map(e=>{
+      let meta = '';
+      if(e.tipo==='fuerza'){
+        if(e.series||e.reps) meta += `<span class="bit-chip">${e.series||'?'} series × ${e.reps||'?'} reps</span>`;
+        if(e.peso) meta += `<span class="bit-chip">${e.peso} ${e.unidad_peso||'kg'}</span>`;
+      } else if(e.tipo==='cardio'){
+        if(e.duracion_min) meta += `<span class="bit-chip">⏱ ${e.duracion_min} min</span>`;
+        if(e.distancia) meta += `<span class="bit-chip">📍 ${e.distancia} ${e.unidad_distancia||'km'}</span>`;
+      }
+      const nota = e.notas ? `<div class="bit-nota">${e.notas}</div>` : '';
+      return `<div class="bit-entry">
+        <div class="bit-type-dot ${TIPO_CLS[e.tipo]||'otro'}">${TIPO_ICO[e.tipo]||'⚡'}</div>
+        <div class="bit-entry-body">
+          <div class="bit-ej">${e.ejercicio}</div>
+          <div class="bit-meta">${meta}</div>
+          ${nota}
+        </div>
+        <button class="bit-del" onclick="deleteBitacoraEntry('${e.id}')" title="Eliminar">✕</button>
+      </div>`;
+    }).join('');
+    return `<div class="bit-day-group">
+      <div class="bit-day-label">${label}</div>
+      ${entries}
+    </div>`;
+  }).join('');
+}
+
+async function deleteBitacoraEntry(id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: apiHeaders(),
+  });
+  bitacoraData = bitacoraData.filter(e=>String(e.id)!==String(id));
+  renderBitacora();
+}
 </script>
 </body>
 </html>

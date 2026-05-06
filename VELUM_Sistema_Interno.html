@@ -3852,6 +3852,8 @@ select option{background:#0d1a16;color:var(--text);}
         <input type="month" id="gf-mes" style="display:none;" onchange="setGastoFilter('mes',this.value)"/>
       </div>
 
+      <div id="gastos-rec-banner"></div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-title">Registro de Gastos</div>
@@ -5400,6 +5402,15 @@ select option{background:#0d1a16;color:var(--text);}
       </div>
     </div>
     <div class="field"><label>Fecha *</label><input id="ga-fecha" type="date"/></div>
+    <div class="field" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(29,158,117,.05);border:1px solid rgba(29,158,117,.15);border-radius:9px;">
+      <input type="checkbox" id="ga-recurrente" onchange="toggleGastoRec(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;"/>
+      <label for="ga-recurrente" style="cursor:pointer;margin-bottom:0;font-size:13px;color:var(--text2);">🔄 Gasto recurrente — se auto-crea cada mes</label>
+    </div>
+    <div class="field" id="ga-dia-row" style="display:none;">
+      <label>Día del mes en que se paga</label>
+      <input id="ga-dia" type="number" min="1" max="31" placeholder="Ej: 1, 5, 15, 30..." style="max-width:140px;"/>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">El sistema creará automáticamente la instancia de cada mes cuando llegue ese día.</div>
+    </div>
     <div class="field"><label>Notas</label><textarea id="ga-notas" placeholder="Detalles adicionales..." rows="2"></textarea></div>
     <input type="hidden" id="ga-id"/>
     <div class="modal-footer">
@@ -5591,6 +5602,7 @@ async function doLogin(){
       loadHorarioFromSupabase(), loadGastosFromSupabase(), loadProgramasFromSupabase(),
       loadProgConfigFromSupabase(), loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase()
     ]);
+    await autoCrearGastosRecurrentes();
     showApp();
     initRealtimeSubscriptions();
   } catch(e){ errEl.textContent='Error de conexión.'; errEl.classList.add('show'); console.error(e); }
@@ -7709,6 +7721,26 @@ function buildNotifAlerts(){
       title:`${newLl.length} lead${newLl.length>1?'s':''} nuevo${newLl.length>1?'s':''} en la landing`,
       desc: newLl.slice(0,3).map(l=>l.email).join(', ')+(newLl.length>3?` y ${newLl.length-3} más`:''),
       action:`go('landing-leads',document.getElementById('nav-landing-leads'))`,
+    });
+  }
+
+  // ── Gastos recurrentes próximos (3 días) ──
+  const hoyGA = new Date(); hoyGA.setHours(0,0,0,0);
+  const en3GA = new Date(hoyGA); en3GA.setDate(hoyGA.getDate()+3);
+  const gastosProx = gastos
+    .filter(g => g.recurrente && g.dia_recurrencia)
+    .map(g => {
+      const thisM = new Date(hoyGA.getFullYear(), hoyGA.getMonth(), g.dia_recurrencia);
+      const nextDate = thisM >= hoyGA ? thisM : new Date(hoyGA.getFullYear(), hoyGA.getMonth()+1, g.dia_recurrencia);
+      return { ...g, nextDate };
+    })
+    .filter(g => g.nextDate <= en3GA);
+  if(gastosProx.length){
+    alerts.push({
+      type:'warn', icon:'📋', iconCls:'notif-icon-warn',
+      title:`${gastosProx.length} gasto${gastosProx.length>1?'s':''} recurrente${gastosProx.length>1?'s':''} próximo${gastosProx.length>1?'s':''}`,
+      desc: gastosProx.map(g=>`${g.descripcion} — día ${g.dia_recurrencia}`).join(', '),
+      action:`go('gastos',document.getElementById('nav-gastos'))`,
     });
   }
 
@@ -11491,12 +11523,43 @@ function updateBadges(){
 // ═══════════════════════════════════════════════════════════════════
 // GASTOS — Supabase CRUD + render
 // ═══════════════════════════════════════════════════════════════════
+function toggleGastoRec(on){
+  document.getElementById('ga-dia-row').style.display = on ? '' : 'none';
+}
+
+async function autoCrearGastosRecurrentes(){
+  if(!window.supabaseClient || !gastos.length) return;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const mesActual = hoy.toISOString().slice(0,7);
+  const diaHoy   = hoy.getDate();
+  const templates = gastos.filter(g => g.recurrente && g.dia_recurrencia);
+  if(!templates.length) return;
+  const payloads = [];
+  for(const t of templates){
+    const yaExiste = gastos.some(g =>
+      String(g.origen_id) === String(t.id) && (g.fecha||'').startsWith(mesActual)
+    );
+    if(!yaExiste && diaHoy >= t.dia_recurrencia){
+      const dia = String(t.dia_recurrencia).padStart(2,'0');
+      payloads.push(withGymId({
+        descripcion: t.descripcion, monto: t.monto, categoria: t.categoria,
+        fecha: `${mesActual}-${dia}`, notas: 'Generado automáticamente',
+        recurrente: false, dia_recurrencia: null, origen_id: t.id,
+      }));
+    }
+  }
+  if(!payloads.length) return;
+  const { error } = await window.supabaseClient.from('gastos').insert(payloads);
+  if(!error){ await loadGastosFromSupabase(); renderGastos(); }
+}
+
 async function loadGastosFromSupabase(){
   const { data, error } = await gf(window.supabaseClient.from('gastos').select('*')).order('fecha',{ascending:false});
   if(error){ console.error('Error cargando gastos:', error); return; }
   gastos = (data||[]).map(g=>({
     id: g.id, descripcion: g.descripcion||'', monto: parseFloat(g.monto)||0,
-    categoria: g.categoria||'Otro', fecha: g.fecha||'', notas: g.notas||''
+    categoria: g.categoria||'Otro', fecha: g.fecha||'', notas: g.notas||'',
+    recurrente: !!g.recurrente, dia_recurrencia: g.dia_recurrencia||null, origen_id: g.origen_id||null
   }));
 }
 
@@ -12243,6 +12306,31 @@ async function renderAsistHistorial(){
 }
 
 function renderGastos(){
+  // ─ Banner gastos recurrentes próximos (7 días) ─
+  const bannerEl = document.getElementById('gastos-rec-banner');
+  if(bannerEl){
+    const hoyB = new Date(); hoyB.setHours(0,0,0,0);
+    const en7  = new Date(hoyB); en7.setDate(hoyB.getDate()+7);
+    const proximos = gastos
+      .filter(g => g.recurrente && g.dia_recurrencia)
+      .map(g => {
+        const dia = g.dia_recurrencia;
+        const thisM = new Date(hoyB.getFullYear(), hoyB.getMonth(), dia);
+        const nextDate = thisM >= hoyB ? thisM : new Date(hoyB.getFullYear(), hoyB.getMonth()+1, dia);
+        return { ...g, nextDate };
+      })
+      .filter(g => g.nextDate <= en7)
+      .sort((a,b)=>a.nextDate-b.nextDate);
+    if(proximos.length){
+      const items = proximos.map(g=>`
+        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:4px 10px;font-size:12px;">
+          🔄 <strong style="color:#fff;">${esc(g.descripcion)}</strong> <span style="color:var(--text3);">— $${g.monto.toLocaleString('es-MX')} — día ${g.dia_recurrencia}</span>
+        </span>`).join('');
+      bannerEl.innerHTML = `<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <span style="font-size:12px;color:var(--warn);font-weight:700;margin-right:2px;">⏰ Próximos 7 días:</span>${items}</div>`;
+    } else { bannerEl.innerHTML=''; }
+  }
+
   // ─ KPIs ─
   const now = new Date(); now.setHours(0,0,0,0);
   const thisMes = gastoFilter.mes || now.toISOString().slice(0,7);
@@ -12367,6 +12455,10 @@ function openGastoModal(id=''){
   document.getElementById('ga-monto').value  = g ? g.monto : '';
   document.getElementById('ga-fecha').value  = g ? g.fecha : new Date().toISOString().slice(0,10);
   document.getElementById('ga-notas').value  = g ? g.notas : '';
+  const isRec = g ? !!g.recurrente : false;
+  document.getElementById('ga-recurrente').checked = isRec;
+  document.getElementById('ga-dia').value = (g && g.dia_recurrencia) ? g.dia_recurrencia : '';
+  document.getElementById('ga-dia-row').style.display = isRec ? '' : 'none';
   setSelectVal('ga-cat', g ? g.categoria : 'Otro');
   openModal('gasto');
 }
@@ -12377,10 +12469,14 @@ async function saveGasto(){
   const monto = parseFloat(document.getElementById('ga-monto').value)||0;
   const cat   = document.getElementById('ga-cat').value;
   const fecha = document.getElementById('ga-fecha').value;
-  const notas = document.getElementById('ga-notas').value.trim();
+  const notas        = document.getElementById('ga-notas').value.trim();
+  const recurrente   = document.getElementById('ga-recurrente').checked;
+  const dia_rec_raw  = parseInt(document.getElementById('ga-dia').value)||null;
+  const dia_recurrencia = recurrente ? dia_rec_raw : null;
   if(!desc){ alert('La descripción es obligatoria.'); return; }
   if(!monto){ alert('El monto debe ser mayor a 0.'); return; }
-  const payload = { descripcion: desc, monto, categoria: cat, fecha, notas };
+  if(recurrente && !dia_recurrencia){ alert('Ingresa el día del mes para el gasto recurrente (1–31).'); return; }
+  const payload = { descripcion: desc, monto, categoria: cat, fecha, notas, recurrente, dia_recurrencia };
   let err;
   if(id){
     const r = await window.supabaseClient.from('gastos').update(payload).eq('id', id);
