@@ -334,7 +334,7 @@ footer a:hover{color:var(--accent-light);}
         <div class="mock-dot" style="background:#ff5f57;"></div>
         <div class="mock-dot" style="background:#ffbd2e;"></div>
         <div class="mock-dot" style="background:#28ca41;"></div>
-        <div class="mock-url">myvelum.app/app</div>
+        <div class="mock-url">myvelum.app</div>
       </div>
       <!-- App shell -->
       <div class="mock-app-shell" style="display:grid;grid-template-columns:200px 1fr;background:#070f0d;min-height:380px;">
@@ -1282,6 +1282,7 @@ footer a:hover{color:var(--accent-light);}
         <li>Notificaciones email automáticas</li>
         <li>Retención & churn analytics</li>
         <li>Multi-usuario completo</li>
+        <li style="color:#5DCAA5;font-weight:700;">VELUM Assistant IA integrada ✦</li>
       </ul>
       <a href="registro.html?plan=max" class="plan-cta primary">Empezar con Max →</a>
       <p class="plan-note">El gym promedio recupera el costo en el primer mes de retención mejorada.</p>
@@ -1304,6 +1305,7 @@ footer a:hover{color:var(--accent-light);}
         <li class="no">Sin programa de entrenamiento</li>
         <li class="no">Sin notificaciones email</li>
         <li class="no">Sin analytics de retención</li>
+        <li class="no">Sin VELUM Assistant IA</li>
       </ul>
       <a href="registro.html?plan=pro" class="plan-cta secondary">Empezar con Pro</a>
       <p class="plan-note">Puedes subir a Max en cualquier momento.</p>
@@ -1491,8 +1493,8 @@ async function demoSend(preset){
   if(!text) return;
 
   if(demoUsed){
-    demoAddMsg('ai','Para seguir chateando, regístrate en VELUM — el Assistant está incluido en tu plan y configuras todo en menos de 10 minutos. 👉 myvelum.app/registro');
-    document.getElementById('demo-sugs').innerHTML = '<a href="/registro" style="font-size:12px;padding:8px 16px;background:#1D9E75;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;">Empezar con VELUM →</a>';
+    demoAddMsg('ai','¿Te convenciste? En tu gym el Asistente conoce TUS clientes, vencimientos y métricas reales. Configúralo en menos de 10 minutos 👇');
+    document.getElementById('demo-sugs').innerHTML = '<a href="registro.html?plan=max" style="font-size:12px;padding:8px 16px;background:#1D9E75;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">Empezar con Max — IA incluida →</a>';
     return;
   }
 
@@ -1526,7 +1528,7 @@ async function demoSend(preset){
     // Show CTA after reply
     setTimeout(()=>{
       const sugs = document.getElementById('demo-sugs');
-      if(sugs) sugs.innerHTML = '<a href="/registro" style="font-size:12px;padding:8px 16px;background:#1D9E75;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">Ver VELUM completo →</a><span style="font-size:11px;color:#4a7265;display:block;margin-top:6px;">Incluye IA + todos los módulos desde $599/mes</span>';
+      if(sugs) sugs.innerHTML = '<a href="registro.html?plan=max" style="font-size:12px;padding:8px 16px;background:#1D9E75;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">Empezar con Max — IA incluida →</a><span style="font-size:11px;color:#4a7265;display:block;margin-top:6px;">El Asistente conectado a TU gym desde el día 1 · $999/mes</span>';
     }, 800);
   }catch(e){
     typing.remove();
@@ -1549,7 +1551,7 @@ async function lcSubmit(){
   msg.style.color='var(--text2)'; msg.textContent='Guardando...';
   try{
     // Guardar lead en Supabase
-    await fetch('https://savzjanpydyjtrgdkllx.supabase.co/rest/v1/leads_landing', {
+    const res = await fetch('https://savzjanpydyjtrgdkllx.supabase.co/rest/v1/leads_landing', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1558,16 +1560,20 @@ async function lcSubmit(){
       },
       body: JSON.stringify({ email, fuente: 'landing' })
     });
+    if(!res.ok) throw new Error('insert_failed');
     // Notificar a Roy — fail-safe, no afecta al usuario si falla
     fetch('https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/velum-lead-notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE' },
       body: JSON.stringify({ email, fuente: 'landing' })
     }).catch(()=>{});
-  }catch(e){}
-  msg.style.color='var(--accent-light)';
-  msg.textContent='¡Listo! Te contactamos pronto. 🎉';
-  document.getElementById('lc-email').value='';
+    msg.style.color='var(--accent-light)';
+    msg.textContent='¡Listo! Te contactamos pronto. 🎉';
+    document.getElementById('lc-email').value='';
+  }catch(e){
+    msg.style.color='#f87171';
+    msg.textContent='Error al guardar. Intenta de nuevo o escríbenos por WhatsApp.';
+  }
 }
 </script>
 </body>
