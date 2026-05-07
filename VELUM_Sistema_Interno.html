@@ -9514,7 +9514,8 @@ function buildWAMsg(nombre, plan, vence){
   // Primer nombre solamente
   const primerNombre = (nombre||'').split(' ')[0];
 
-  return `Hola ${primerNombre}! Te escribimos desde MOVE para avisarte que tu ${planLabel} vence el ${fechaLabel}. Queremos que sigas siendo parte de la comunidad, asi que cuando quieras renovar aqui estamos para ayudarte. Un saludo!`;
+  const gNombre = gymConfig.gym_nombre||'el gym';
+  return `Hola ${primerNombre}! Te escribimos desde ${gNombre} para avisarte que tu ${planLabel} vence el ${fechaLabel}. Queremos que sigas siendo parte de la comunidad, asi que cuando quieras renovar aqui estamos para ayudarte. Un saludo!`;
 }
 
 // Estado activo de los filtros
@@ -10000,7 +10001,7 @@ function openClientePanel(nombreCliente){
   const qrImgUrl    = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrContent)}&bgcolor=ffffff&color=000000&margin=3&qzone=1`;
   const primerNombre = nombreCliente.split(' ')[0];
   const numWAForQR   = tel.length===10?'52'+tel:tel;
-  const qrWAMsg = encodeURIComponent(`Hola ${primerNombre}! Te enviamos tu codigo QR personal de MOVE. Guardalo en tu celular — cada vez que llegues al gym solo presentalo en la entrada para registrar tu asistencia automaticamente. Sin escribir nada!`);
+  const qrWAMsg = encodeURIComponent(`Hola ${primerNombre}! Te enviamos tu codigo QR personal de ${gymConfig.gym_nombre||'el gym'}. Guardalo en tu celular — cada vez que llegues al gym solo presentalo en la entrada para registrar tu asistencia automaticamente. Sin escribir nada!`);
   // Portal del atleta
   const portalToken = cliRec.portal_token || '';
   const portalUrl   = portalToken ? `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}atleta.html?t=${portalToken}` : '';
@@ -11093,7 +11094,7 @@ function renderCumpleanos(){
     const tel=(c.telefono||'').replace(/\D/g,'');
     const numWA=tel.length===10?'52'+tel:tel;
     const primerNombre=c.nombre.split(' ')[0];
-    const msgCumple=encodeURIComponent(`Hola ${primerNombre}! Hoy te mandamos un saludo especial desde MOVE para desearté un muy feliz cumpleanos. Que lo pases increible y que este nuevo ano venga lleno de salud y energia. Nos vemos en el gym! 🎉💪`);
+    const msgCumple=encodeURIComponent(`Hola ${primerNombre}! Hoy te mandamos un saludo especial desde ${gymConfig.gym_nombre||'el gym'} para desearté un muy feliz cumpleanos. Que lo pases increible y que este nuevo ano venga lleno de salud y energia. Nos vemos en el gym! 🎉💪`);
     const waBtn = numWA.length>=12
       ?`<a href="https://wa.me/${numWA}?text=${msgCumple}" target="_blank" rel="noopener"
            style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;
@@ -15117,7 +15118,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       banner.innerHTML = `
         <div style="font-size:28px;">📱</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);">Instala MOVE en tu teléfono</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">Instala ${gymConfig.gym_nombre||'VELUM'} en tu teléfono</div>
           <div style="font-size:11px;color:var(--text3);">Acceso rápido desde la pantalla de inicio, sin browser.</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
