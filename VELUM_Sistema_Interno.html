@@ -4678,6 +4678,68 @@ select option{background:#0d1a16;color:var(--text);}
   </div>
 </div>
 
+<!-- Modal: Medidas de Progreso -->
+<div class="modal-overlay" id="modal-medidas-cliente">
+  <div class="modal" style="width:480px;max-height:88vh;display:flex;flex-direction:column;">
+    <div class="modal-head">
+      <div class="modal-title">📏 Medidas — <span id="med-cli-nombre">—</span></div>
+      <button class="modal-close" onclick="closeModal('medidas-cliente')">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1;">
+      <!-- Nueva medición form -->
+      <div style="background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.18);border-radius:10px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">+ Nueva medición</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Fecha</label>
+            <input id="med-fecha" type="date"/>
+          </div>
+          <div class="field">
+            <label>Peso (kg)</label>
+            <input id="med-peso" type="number" step="0.1" placeholder="70.5"/>
+          </div>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>% Grasa corporal</label>
+            <input id="med-grasa" type="number" step="0.1" placeholder="18.5"/>
+          </div>
+          <div class="field">
+            <label>Cintura (cm)</label>
+            <input id="med-cintura" type="number" step="0.1" placeholder="82"/>
+          </div>
+        </div>
+        <div class="field-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="field">
+            <label>Cadera (cm)</label>
+            <input id="med-cadera" type="number" step="0.1" placeholder="95"/>
+          </div>
+          <div class="field">
+            <label>Pecho (cm)</label>
+            <input id="med-pecho" type="number" step="0.1" placeholder="100"/>
+          </div>
+          <div class="field">
+            <label>Brazo (cm)</label>
+            <input id="med-brazo" type="number" step="0.1" placeholder="35"/>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Notas (opcional)</label>
+          <input id="med-notas" type="text" placeholder="Observaciones, contexto…"/>
+        </div>
+      </div>
+      <!-- Historial -->
+      <div id="med-historial-admin">
+        <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Cargando…</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('medidas-cliente')">Cerrar</button>
+      <button class="btn btn-primary" onclick="saveMedidaAdmin()">💾 Guardar medición</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Agregar Cliente (sin pago / migración) -->
 <div class="modal-overlay" id="modal-solo-cliente">
   <div class="modal" style="width:420px;">
@@ -9758,18 +9820,25 @@ function renderClientes(){
        </button>`;
     const cliDbRec = clientesDB.find(x=>x.nombre===c.nombre)||{};
     const qrToken  = cliDbRec.qr_token || '';
+    const cliDbId  = cliDbRec.id || c.cliId || '';
     const qrBtn = qrToken ? `<button onclick="event.stopPropagation();showClientQR('${esc(c.nombre)}','${qrToken}')"
          title="Ver QR de check-in"
          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
                 border-radius:8px;background:rgba(29,158,117,.08);color:var(--accent);font-size:16px;
                 border:1px solid rgba(29,158,117,.2);cursor:pointer;flex-shrink:0;">▦</button>` : '';
+    const medBtn = cliDbId ? `<button onclick="event.stopPropagation();openMedidasCliente('${esc(c.nombre)}','${cliDbId}')"
+         title="Medidas de progreso"
+         style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+                border-radius:8px;background:rgba(139,92,246,.08);color:#a78bfa;font-size:15px;
+                border:1px solid rgba(139,92,246,.22);cursor:pointer;flex-shrink:0;transition:background .15s;"
+         onmouseenter="this.style.background='rgba(139,92,246,.18)'" onmouseleave="this.style.background='rgba(139,92,246,.08)'">📏</button>` : '';
     const waBtn = numWA.length >= 12
       ? `<div style="display:flex;gap:6px;align-items:center;">
            <a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
               style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
                      background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
                      text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;">${WA_SVG} WhatsApp</a>
-           ${editBtn}${qrBtn}${delBtn}
+           ${editBtn}${qrBtn}${medBtn}${delBtn}
          </div>`
       : `<div style="display:flex;gap:6px;align-items:center;">
            <button onclick="abrirEditarTelefono('${esc(c.nombre)}')"
@@ -9777,7 +9846,7 @@ function renderClientes(){
                       background:var(--card2);color:var(--text3);font-size:12px;font-weight:600;
                       border:1px dashed var(--border);cursor:pointer;white-space:nowrap;">
              📱 Agregar número</button>
-           ${qrBtn}${delBtn}
+           ${qrBtn}${medBtn}${delBtn}
          </div>`;
 
     return `<div onclick="openClientePanel('${esc(c.nombre)}')"
@@ -17328,6 +17397,124 @@ function closeMasMenu(){
   const sheet   = document.getElementById('mas-sheet');
   if(overlay) overlay.style.display='none';
   if(sheet)   sheet.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+// TIER 3.1 — MEDIDAS DE PROGRESO (ADMIN)
+// ══════════════════════════════════════════════════════
+let _medCurrentCliId   = null;
+let _medCurrentCliNombre = null;
+
+async function openMedidasCliente(nombre, cliId){
+  _medCurrentCliId     = cliId;
+  _medCurrentCliNombre = nombre;
+  const el = document.getElementById('med-cli-nombre');
+  if(el) el.textContent = nombre.split(' ')[0];
+  // Set today's date as default
+  const fechaEl = document.getElementById('med-fecha');
+  if(fechaEl && !fechaEl.value) fechaEl.value = new Date().toISOString().slice(0,10);
+  // Clear fields
+  ['med-peso','med-grasa','med-cintura','med-cadera','med-pecho','med-brazo','med-notas']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  openModal('medidas-cliente');
+  await loadMedidasAdmin(cliId);
+}
+
+async function loadMedidasAdmin(cliId){
+  const el = document.getElementById('med-historial-admin');
+  if(!el) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Cargando…</div>`;
+  try{
+    const {data, error} = await window.supabaseClient
+      .from('medidas')
+      .select('*')
+      .eq('cliente_id', cliId)
+      .order('fecha', {ascending:false})
+      .limit(30);
+    if(error) throw error;
+    renderMedidasHistorialAdmin(data||[]);
+  }catch(err){
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--danger);font-size:13px;">Error al cargar medidas.</div>`;
+  }
+}
+
+function renderMedidasHistorialAdmin(rows){
+  const el = document.getElementById('med-historial-admin');
+  if(!el) return;
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Sin mediciones registradas aún. Agrega la primera arriba.</div>`;
+    return;
+  }
+  const FIELDS = [
+    ['peso_kg','kg','Peso'],['grasa_pct','%','Grasa'],
+    ['cintura_cm','cm','Cintura'],['cadera_cm','cm','Cadera'],
+    ['pecho_cm','cm','Pecho'],['brazo_cm','cm','Brazo'],
+  ];
+  const rowsHTML = rows.map(r=>{
+    const dt = new Date(r.fecha+'T12:00:00');
+    const dlbl = dt.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+    const chips = FIELDS.filter(([k])=>r[k]!=null)
+      .map(([k,u,l])=>`<span style="display:inline-block;font-size:11px;font-weight:700;color:var(--text);background:var(--card2);border-radius:6px;padding:3px 8px;margin:2px 2px 2px 0;">${r[k]}<small style="color:var(--text3);font-weight:500;"> ${u}</small></span>`)
+      .join('');
+    const nota = r.notas ? `<div style="font-size:10px;color:var(--text3);margin-top:5px;font-style:italic;">${r.notas}</div>` : '';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text3);font-weight:600;width:90px;flex-shrink:0;padding-top:4px;">${dlbl}</div>
+      <div style="flex:1;">
+        <div style="display:flex;flex-wrap:wrap;">${chips}</div>${nota}
+      </div>
+      <button onclick="deleteMedidaAdmin('${r.id}')" title="Eliminar medición"
+        style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+               border-radius:7px;background:rgba(239,68,68,.07);color:#f87171;font-size:12px;
+               border:1px solid rgba(239,68,68,.18);cursor:pointer;flex-shrink:0;margin-top:2px;">✕</button>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px 8px;">Historial</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">${rowsHTML}</div>`;
+}
+
+async function saveMedidaAdmin(){
+  if(!_medCurrentCliId){ toast('Error: no hay cliente seleccionado','✕'); return; }
+  const fecha    = document.getElementById('med-fecha')?.value;
+  const peso     = document.getElementById('med-peso')?.value;
+  const grasa    = document.getElementById('med-grasa')?.value;
+  const cintura  = document.getElementById('med-cintura')?.value;
+  const cadera   = document.getElementById('med-cadera')?.value;
+  const pecho    = document.getElementById('med-pecho')?.value;
+  const brazo    = document.getElementById('med-brazo')?.value;
+  const notas    = document.getElementById('med-notas')?.value?.trim()||null;
+
+  if(!fecha){ toast('Elige una fecha para la medición','📅'); return; }
+  const hasAny = [peso,grasa,cintura,cadera,pecho,brazo].some(v=>v&&v.trim()!=='');
+  if(!hasAny){ toast('Ingresa al menos un valor','📏'); return; }
+
+  const gym_id = gymConfig?.gym_id || currentGymId || null;
+  const payload = {
+    gym_id,
+    cliente_id: _medCurrentCliId,
+    fecha,
+    peso_kg:    peso    ? parseFloat(peso)   : null,
+    grasa_pct:  grasa   ? parseFloat(grasa)  : null,
+    cintura_cm: cintura ? parseFloat(cintura): null,
+    cadera_cm:  cadera  ? parseFloat(cadera) : null,
+    pecho_cm:   pecho   ? parseFloat(pecho)  : null,
+    brazo_cm:   brazo   ? parseFloat(brazo)  : null,
+    notas,
+  };
+  const {error} = await window.supabaseClient.from('medidas').insert(payload);
+  if(error){ toast('Error al guardar ❌','✕'); console.error(error); return; }
+  toast(`Medición guardada 📏`,'✅');
+  // Clear form
+  ['med-peso','med-grasa','med-cintura','med-cadera','med-pecho','med-brazo','med-notas']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  await loadMedidasAdmin(_medCurrentCliId);
+}
+
+async function deleteMedidaAdmin(medId){
+  if(!await confirmDialog('¿Eliminar esta medición?',{title:'Eliminar medición',icon:'📏'})) return;
+  const {error} = await window.supabaseClient.from('medidas').delete().eq('id', medId);
+  if(error){ toast('Error al eliminar ❌','✕'); return; }
+  toast('Medición eliminada','🗑');
+  await loadMedidasAdmin(_medCurrentCliId);
 }
 </script>
 
