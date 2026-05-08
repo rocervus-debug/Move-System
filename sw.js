@@ -5,19 +5,20 @@
                Offline fallback para el app shell
 ═══════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'velum-v4';
+const CACHE_VERSION = 'velum-v5';
 const CACHE_STATIC  = `move-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
   './VELUM_Sistema_Interno.html',
   './checkin.html',
+  './atleta.html',
   './index.html',
   './manifest.json',
   './move-icon-192.png',
   './move-icon-512.png',
   'https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  // XLSX (~800KB) se carga bajo demanda — NO precachear en install
 ];
 
 /* ── Install ── */

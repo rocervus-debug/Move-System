@@ -26,8 +26,8 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<!-- XLSX se carga bajo demanda (lazy) al exportar — ver ensureXLSX() -->
 <style>
 /* ═══════════════════════════════════════
    VELUM — DARK PREMIUM DESIGN SYSTEM v3
@@ -10635,9 +10635,25 @@ function exportarClientesCSV(){
   toast('Clientes exportados ✓','📥');
 }
 
+// ─── Lazy loader: XLSX se carga solo cuando se necesita ───────────
+let _xlsxLoading = false;
+function ensureXLSX(callback){
+  if(typeof XLSX !== 'undefined'){ callback(); return; }
+  if(_xlsxLoading){ toast('Cargando Excel, espera...','⏳'); return; }
+  _xlsxLoading = true;
+  toast('Preparando Excel...','⏳');
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload  = () => { _xlsxLoading = false; callback(); };
+  s.onerror = () => { _xlsxLoading = false; toast('Error cargando librería Excel','❌'); };
+  document.head.appendChild(s);
+}
+
 // ─── Exportar Excel (XLSX) de clientes ────────────────────────────
 function exportarClientesXLSX(){
-  if(typeof XLSX === 'undefined'){ toast('Cargando librería Excel...','⏳'); return; }
+  ensureXLSX(_doExportarClientesXLSX);
+}
+function _doExportarClientesXLSX(){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
 
   // ── Hoja 1: Directorio ──
