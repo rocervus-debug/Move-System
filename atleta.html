@@ -370,7 +370,12 @@ body::before{
 .stat-chip.days .stat-num{color:var(--ok);}
 .stat-chip.classes .stat-num{color:#FCD34D;}
 .stat-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
+.stat-sub{font-size:9px;color:var(--accent-light);font-weight:600;margin-top:2px;letter-spacing:.2px;}
 .stat-icon{font-size:16px;line-height:1;margin-bottom:2px;}
+/* Streak motivational banner */
+.streak-banner{background:linear-gradient(135deg,var(--accent-dim),rgba(255,255,255,.03));border:1px solid var(--border-accent);border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--accent-light);letter-spacing:.2px;margin:8px 0;}
+.streak-banner.fire{border-color:rgba(251,146,60,.35);background:linear-gradient(135deg,rgba(251,146,60,.1),rgba(255,255,255,.02));color:#FDBA74;}
+.streak-banner.gold{border-color:rgba(253,224,71,.35);background:linear-gradient(135deg,rgba(253,224,71,.1),rgba(255,255,255,.02));color:#FDE047;}
 
 /* ══════════════════════════════════════
    QUICK ACTIONS
@@ -1196,6 +1201,7 @@ body::before{
           <div id="pkg-card-container"></div>
         </div>
         <div class="stats-row au au3" id="stats-row-mobile"></div>
+        <div id="streak-banner-mobile" class="streak-banner" style="display:none;"></div>
         <div class="quick-actions au au4">
           <div class="qa primary" onclick="openQRSheet()">
             <div class="qa-ico">📲</div>
@@ -1231,6 +1237,7 @@ body::before{
           <div class="home-left">
             <div id="membership-card-desk"></div>
             <div class="stats-row" id="stats-row-desk"></div>
+            <div id="streak-banner-desk" class="streak-banner" style="display:none;"></div>
             <div class="quick-actions">
               <div class="qa primary" onclick="openQRSheet()">
                 <div class="qa-ico">📲</div>
@@ -1715,9 +1722,42 @@ function handlePhotoUpload(input){
   reader.readAsDataURL(file);
 }
 
+// ── Gym branding ─────────────────────────────────────
+async function fetchGymBranding(gymId){
+  if(!gymId) return;
+  try{
+    const res=await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&key=in.(gym_color,gym_color_primario)&select=key,value&limit=5`,
+      {headers:apiHeaders()}
+    );
+    if(!res.ok) return;
+    const rows=await res.json();
+    if(!Array.isArray(rows)||!rows.length) return;
+    const cfg={};
+    rows.forEach(r=>cfg[r.key]=r.value);
+    const hex=cfg.gym_color||cfg.gym_color_primario;
+    if(hex) applyGymAccent(hex);
+  }catch(_){}
+}
+
+function applyGymAccent(hex){
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const lr=Math.round(r+(255-r)*0.45),lg=Math.round(g+(255-g)*0.45),lb=Math.round(b+(255-b)*0.45);
+  const light=`#${lr.toString(16).padStart(2,'0')}${lg.toString(16).padStart(2,'0')}${lb.toString(16).padStart(2,'0')}`;
+  const root=document.documentElement;
+  root.style.setProperty('--accent',hex);
+  root.style.setProperty('--accent-light',light);
+  root.style.setProperty('--accent-dim',`rgba(${r},${g},${b},.15)`);
+  root.style.setProperty('--accent-glow',`rgba(${r},${g},${b},.28)`);
+  root.style.setProperty('--border-accent',`rgba(${r},${g},${b},.3)`);
+}
+
 // ── Show portal ──────────────────────────────────────
 function showPortal(data){
   portalData=data;
+  // 1.1 — Apply gym brand color (async, non-blocking)
+  if(data.gym?.id) fetchGymBranding(data.gym.id);
   document.title=`${data.cliente.nombre.split(' ')[0]} — VELUM`;
 
   if(data.cliente.portal_token){
@@ -1870,6 +1910,8 @@ function statsRowHTML(data){
   const dias=data.cliente.diasRestantes;
   const paquete=data.paquete;
   const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
+
+  // Streak: consecutive days attended
   let streak=0;
   if(distinctDates.length){
     const today=new Date().toISOString().slice(0,10);
@@ -1880,6 +1922,16 @@ function statsRowHTML(data){
       else break;
     }
   }
+
+  // 1.2 — Monthly count
+  const monthPrefix=new Date().toISOString().slice(0,7);
+  const monthVisits=checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
+  const monthSub=monthVisits>0?`<div class="stat-sub">${monthVisits} este mes</div>`:'';
+
+  // Streak label: upgrade to "semanas" if 7+ consecutive days
+  const streakWeeks=Math.floor(streak/7);
+  const streakLabel=streakWeeks>=2?`${streakWeeks} sem.`:`${streak} días`;
+  const streakFire=streak>=7?'🏆':streak>=3?'🔥':'🔥';
 
   // 3rd chip: clases remaining if package, else days
   let thirdChip='';
@@ -1904,12 +1956,13 @@ function statsRowHTML(data){
     <div class="stat-chip visits">
       <div class="stat-icon">📊</div>
       <div class="stat-num" data-count="${visits}">0</div>
-      <div class="stat-lbl">Visitas</div>
+      <div class="stat-lbl">Visitas totales</div>
+      ${monthSub}
     </div>
     <div class="stat-chip streak">
-      <div class="stat-icon">🔥</div>
+      <div class="stat-icon">${streakFire}</div>
       <div class="stat-num" data-count="${streak}">0</div>
-      <div class="stat-lbl">Racha días</div>
+      <div class="stat-lbl">Racha — ${streakLabel}</div>
     </div>
     ${thirdChip}
   `;
@@ -1937,6 +1990,9 @@ function renderHomeData(data){
 
   renderTodayWorkout(data.programasHoy);
 
+  // 1.4 — Streak motivational banner
+  renderStreakBanner(data);
+
   // Animate ring + count-up after a frame
   setTimeout(()=>{
     animateRings();
@@ -1945,6 +2001,33 @@ function renderHomeData(data){
       if(!isNaN(t)&&t>0) countUp(el,t);
     });
   },120);
+}
+
+// ── Streak motivational banner (1.4) ─────────────────
+function renderStreakBanner(data){
+  const checkins=data.checkins||[];
+  const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
+  let streak=0;
+  if(distinctDates.length){
+    const today=new Date().toISOString().slice(0,10);
+    let cursor=today;
+    for(const d of distinctDates){
+      const diff=(new Date(cursor)-new Date(d))/(1000*60*60*24);
+      if(diff<=1){ streak++; const dt=new Date(d); dt.setDate(dt.getDate()-1); cursor=dt.toISOString().slice(0,10); }
+      else break;
+    }
+  }
+  let msg='', cls='';
+  if(streak>=14){ msg=`🏆 ${streak} días seguidos. Nivel élite.`; cls='gold'; }
+  else if(streak>=7){ msg=`🔥 ¡Una semana seguida! ${streak} días en racha.`; cls='fire'; }
+  else if(streak>=3){ msg=`💪 ${streak} días seguidos — ¡sigue así!`; cls=''; }
+  else if(checkins.length===0){ msg='⚡ ¡Bienvenido! Registra tu primera visita con el QR.'; cls=''; }
+
+  ['streak-banner-mobile','streak-banner-desk'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    if(msg){ el.className=`streak-banner${cls?' '+cls:''}`; el.textContent=msg; el.style.display=''; }
+    else { el.style.display='none'; }
+  });
 }
 
 // ── Workout content parser ───────────────────────────

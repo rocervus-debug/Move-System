@@ -573,6 +573,13 @@ body{
 .kpi-meta{font-size:11px;color:var(--text4);margin-top:6px;display:flex;align-items:center;gap:4px;}
 .kpi-up{color:var(--ok);}
 .kpi-down{color:var(--danger);}
+/* 1.3 — Semáforo KPI */
+.kpi-semaforo{display:none;align-items:center;gap:5px;margin-top:5px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.kpi-semaforo.visible{display:inline-flex;}
+.kpi-semaforo::before{content:'';width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.kpi-semaforo.ok{color:#4ade80;}.kpi-semaforo.ok::before{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.6);}
+.kpi-semaforo.warn{color:#fbbf24;}.kpi-semaforo.warn::before{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.6);}
+.kpi-semaforo.danger{color:#f87171;}.kpi-semaforo.danger::before{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.6);}
 
 /* Card */
 .card{
@@ -3098,12 +3105,14 @@ select option{background:#0d1a16;color:var(--text);}
           <div class="kpi-label">Clientes Activos</div>
           <div class="kpi-value" id="kpi-activos">0</div>
           <div class="kpi-meta">Membresías vigentes</div>
+          <div class="kpi-semaforo" id="kpi-semaforo-activos"></div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--warn)">
           <div class="kpi-label">Ingresos del Mes</div>
           <div class="kpi-value" id="kpi-ingresos-mes">$0</div>
           <div class="kpi-trend" id="kpi-ingresos-trend" style="display:none;"></div>
           <div class="kpi-meta" id="kpi-ingresos-meta">Pagos registrados</div>
+          <div class="kpi-semaforo" id="kpi-semaforo-ingresos"></div>
         </div>
         <div class="kpi-card" style="--kpi-color:#7c3aed">
           <div class="kpi-label">Leads Este Mes</div>
@@ -3139,11 +3148,13 @@ select option{background:#0d1a16;color:var(--text);}
             <div class="kpi-value" id="kpi-vencidas">0</div>
             <div class="kpi-trend" id="kpi-vencidas-trend" style="display:none;"></div>
             <div class="kpi-meta">Sin renovar</div>
+            <div class="kpi-semaforo" id="kpi-semaforo-vencidas"></div>
           </div>
           <div class="kpi-card" style="--kpi-color:var(--warn)">
             <div class="kpi-label">Por Vencer — 30 días</div>
             <div class="kpi-value" id="kpi-por-vencer">0</div>
             <div class="kpi-meta">Requieren atención</div>
+            <div class="kpi-semaforo" id="kpi-semaforo-por-vencer"></div>
           </div>
         </div>
       </details>
@@ -11346,6 +11357,36 @@ function renderDashboard(){
   setTrend('kpi-vencidas-trend', vencidasEsteMes, vencidasLastMes, true);
 
   countUp(document.getElementById('kpi-por-vencer'), porVencer30.length, {duration:500});
+
+  // 1.3 — Semáforo visual en KPIs
+  function setSemaforo(id, status, label){
+    const el=document.getElementById(id); if(!el) return;
+    el.className=`kpi-semaforo ${status} visible`;
+    el.textContent=label;
+  }
+  // Activos: vs total de clientes (sanos si >=70% activos)
+  const totalClientes = pagos.filter((p,i,a)=>a.findIndex(x=>x.cliente===p.cliente)===i).length || 1;
+  const activosPct = activos / Math.max(totalClientes, 1);
+  setSemaforo('kpi-semaforo-activos',
+    activos===0?'danger': activosPct>=0.6?'ok': activosPct>=0.35?'warn':'danger',
+    activos===0?'Sin activos': activosPct>=0.6?'Base sana': activosPct>=0.35?'Atención':'Retención crítica'
+  );
+  // Ingresos: vs mes anterior
+  const ingresosRatio = ingresosLastMes>0 ? ingresosMes/ingresosLastMes : (ingresosMes>0?1:0);
+  setSemaforo('kpi-semaforo-ingresos',
+    ingresosRatio>=0.9?'ok': ingresosRatio>=0.6?'warn':'danger',
+    ingresosRatio>=0.9?'En meta': ingresosRatio>=0.6?'Por debajo':'Revisar pagos'
+  );
+  // Vencidas: thresholds absolutos
+  setSemaforo('kpi-semaforo-vencidas',
+    vencidasCount===0?'ok': vencidasCount<=4?'warn':'danger',
+    vencidasCount===0?'Al día': vencidasCount<=4?'Dar seguimiento':'Acción urgente'
+  );
+  // Por vencer: thresholds absolutos
+  setSemaforo('kpi-semaforo-por-vencer',
+    porVencer30.length<=2?'ok': porVencer30.length<=6?'warn':'danger',
+    porVencer30.length<=2?'Sin urgencia': porVencer30.length<=6?'Contactar':'Campana de alerta'
+  );
 
   // ── Alert strip + Quick Actions — se activa tras las animaciones countUp ──
   setTimeout(()=>updateAlertStrip(vencidasCount, porVencer30.length), 600);
