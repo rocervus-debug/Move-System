@@ -4660,9 +4660,15 @@ select option{background:#0d1a16;color:var(--text);}
         <label>Email</label>
         <input id="cli-email" type="email" placeholder="correo@ejemplo.com"/>
       </div>
-      <div class="field">
-        <label>Notas internas</label>
-        <input id="cli-notas" type="text" placeholder="Referido por, condición especial..."/>
+      <div class="field-grid">
+        <div class="field">
+          <label>👥 Referido por</label>
+          <input id="cli-referido-por" type="text" placeholder="Nombre de quien lo recomendó"/>
+        </div>
+        <div class="field">
+          <label>Notas internas</label>
+          <input id="cli-notas" type="text" placeholder="Condición especial, observaciones..."/>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -9697,6 +9703,15 @@ function renderClientes(){
     'sin-fecha': { color:'var(--text3)',  bg:'rgba(100,116,139,.10)', label:'Sin fecha',  icon:'📅' },
   };
 
+  // 2.4 — Mapa de referidos: cuántos clientes tienen a X como referido_por
+  const refCount = {};
+  clientesDB.forEach(r=>{ if(r.referido_por){ const k=r.referido_por.trim(); refCount[k]=(refCount[k]||0)+1; } });
+
+  // 2.1 — Mapa de membresías congeladas por cliente
+  const frozenClientes = new Set(
+    pagos.filter(p=>p.congelado&&!esPaseDia(p.plan)).map(p=>(p.cliente||'').trim())
+  );
+
   listEl.innerHTML = paginated.map(c => {
     const cfg = esCfg[c.estado] || esCfg['sin-fecha'];
 
@@ -9777,6 +9792,8 @@ function renderClientes(){
           <span style="font-size:14px;font-weight:700;color:var(--text);">${esc(c.nombre)}</span>
           <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${cfg.bg};color:${cfg.color};font-weight:700;">${cfg.icon} ${cfg.label}</span>
           ${tipoBadge}
+          ${frozenClientes.has(c.nombre)?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(96,165,250,.12);color:#60a5fa;font-weight:700;border:1px solid rgba(96,165,250,.25);">❄️ Congelado</span>`:''}
+          ${(refCount[c.nombre]||0)>0?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(167,139,250,.12);color:#a78bfa;font-weight:700;border:1px solid rgba(167,139,250,.25);">👥 ${refCount[c.nombre]} referido${refCount[c.nombre]!==1?'s':''}</span>`:''}
           <span style="font-size:10px;color:var(--text4);">${c.total} pago${c.total!==1?'s':''}</span>
         </div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:5px;">
@@ -9818,19 +9835,21 @@ function abrirEditarTelefono(nombreCliente){ abrirEditarCliente(nombreCliente); 
 function abrirEditarCliente(nombreCliente){
   const cliRec = clientesDB.find(c=>c.nombre===nombreCliente);
   if(!cliRec){
-    document.getElementById('cli-id').value        = '';
-    document.getElementById('cli-nombre').value    = nombreCliente;
-    document.getElementById('cli-telefono').value  = '';
-    document.getElementById('cli-email').value     = '';
-    document.getElementById('cli-cumpleanos').value= '';
-    document.getElementById('cli-notas').value     = '';
+    document.getElementById('cli-id').value           = '';
+    document.getElementById('cli-nombre').value       = nombreCliente;
+    document.getElementById('cli-telefono').value     = '';
+    document.getElementById('cli-email').value        = '';
+    document.getElementById('cli-cumpleanos').value   = '';
+    document.getElementById('cli-referido-por').value = '';
+    document.getElementById('cli-notas').value        = '';
   } else {
-    document.getElementById('cli-id').value        = cliRec.id||'';
-    document.getElementById('cli-nombre').value    = cliRec.nombre||'';
-    document.getElementById('cli-telefono').value  = cliRec.telefono||'';
-    document.getElementById('cli-email').value     = cliRec.email||'';
-    document.getElementById('cli-cumpleanos').value= cliRec.cumpleanos||'';
-    document.getElementById('cli-notas').value     = cliRec.notas||'';
+    document.getElementById('cli-id').value           = cliRec.id||'';
+    document.getElementById('cli-nombre').value       = cliRec.nombre||'';
+    document.getElementById('cli-telefono').value     = cliRec.telefono||'';
+    document.getElementById('cli-email').value        = cliRec.email||'';
+    document.getElementById('cli-cumpleanos').value   = cliRec.cumpleanos||'';
+    document.getElementById('cli-referido-por').value = cliRec.referido_por||'';
+    document.getElementById('cli-notas').value        = cliRec.notas||'';
   }
   openModal('editar-cliente');
 }
@@ -9845,11 +9864,12 @@ async function saveEditarCliente(){
   }
   const payload = {
     nombre,
-    telefono:   document.getElementById('cli-telefono').value.trim(),
-    email:      document.getElementById('cli-email').value.trim(),
-    cumpleanos: document.getElementById('cli-cumpleanos').value||null,
-    notas:      document.getElementById('cli-notas').value.trim(),
-    updated_at: new Date().toISOString(),
+    telefono:     document.getElementById('cli-telefono').value.trim(),
+    email:        document.getElementById('cli-email').value.trim(),
+    cumpleanos:   document.getElementById('cli-cumpleanos').value||null,
+    referido_por: document.getElementById('cli-referido-por').value.trim()||null,
+    notas:        document.getElementById('cli-notas').value.trim(),
+    updated_at:   new Date().toISOString(),
   };
   let err;
   if(id){
@@ -9941,12 +9961,25 @@ function openClientePanel(nombreCliente){
   const diasLabel = diff!==null
     ? (diff<0?`Venció hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`:diff===0?'Vence hoy':`Vence en ${diff} día${diff!==1?'s':''}`)
     : 'Sin membresía activa';
+  // 2.1 — Congelado status for panel
+  const freezeInfo = ultimo && ultimo.congelado
+    ? `<div style="margin-top:7px;font-size:11px;color:#60a5fa;font-weight:700;">❄️ Membresía congelada desde ${fmtDate(ultimo.congelado_desde||'')}${ultimo.dias_congelados>0?` · ${ultimo.dias_congelados}d acumulados`:''}</div>`
+    : (ultimo && ultimo.dias_congelados>0 ? `<div style="margin-top:7px;font-size:11px;color:var(--text3);">Incluyó ${ultimo.dias_congelados} días de congelamiento</div>` : '');
+
+  // 2.4 — Referidos info
+  const refPor  = cliRec.referido_por ? `<div style="margin-top:8px;font-size:11px;color:var(--text3);">👥 Referido por: <strong style="color:var(--text);">${esc(cliRec.referido_por)}</strong></div>` : '';
+  const misRefs = clientesDB.filter(r=>r.referido_por===nombreCliente);
+  const refInfo = misRefs.length>0
+    ? `<div style="margin-top:5px;font-size:11px;color:#a78bfa;font-weight:600;">🔗 Ha referido a ${misRefs.length} socio${misRefs.length!==1?'s':''}: ${misRefs.map(r=>esc(r.nombre)).join(', ')}</div>`
+    : '';
+
   document.getElementById('cpanel-membresia').innerHTML = `
     <div style="background:${cfg.color}11;border:1px solid ${cfg.color}33;border-radius:10px;padding:14px;">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${esc(ultimo?ultimo.plan:'Sin membresía')}</div>
       ${ultimo?`<div style="font-size:12px;color:var(--text3);margin-bottom:3px;">Vencimiento: <strong style="color:${cfg.color};">${venceFmt}</strong></div>`:''}
       <div style="font-size:12px;color:${cfg.color};font-weight:700;">${diasLabel}</div>
       ${tel?`<div style="font-size:11px;color:var(--text3);margin-top:6px;">📱 ${tel}</div>`:''}
+      ${freezeInfo}${refPor}${refInfo}
     </div>`;
 
   // Acciones
@@ -13638,6 +13671,116 @@ async function saveClienteSinPago(){
   renderClientes();
 }
 
+// ── Helper: sumar días a una fecha ISO ──────────────────
+function addDays(dateStr, days){
+  if(!dateStr||dateStr==='—') return dateStr;
+  const d=new Date(dateStr+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+
+// ── 2.1 Congelar / descongelar membresía ────────────────
+async function toggleCongelarPago(id, esCongelado){
+  const p=pagos.find(x=>String(x.id)===String(id));
+  if(!p) return;
+
+  if(!esCongelado){
+    // ── Congelar ──
+    const hoy=new Date().toISOString().slice(0,10);
+    const msg=`¿Congelar la membresía de <strong>${esc(p.cliente)}</strong>?<br><span style="font-size:12px;color:var(--text3);">Los días congelados se suman al vencimiento cuando se descongele.</span>`;
+    if(!await confirmDialog(msg,{title:'Congelar membresía ❄️',icon:'❄️'})) return;
+    const {error}=await window.supabaseClient.from('pagos')
+      .update({congelado:true,congelado_desde:hoy}).eq('id',id);
+    if(error){toast('Error al congelar ❌','✕'); return;}
+    p.congelado=true; p.congelado_desde=hoy;
+    toast(`Membresía de ${p.cliente} congelada ❄️`,'❄️');
+  } else {
+    // ── Descongelar ──
+    const desde=new Date(p.congelado_desde+'T12:00:00');
+    const hoy=new Date(); hoy.setHours(12,0,0,0);
+    const dias=Math.max(1,Math.round((hoy-desde)/(1000*60*60*24)));
+    const nuevoVence=addDays(p.vence,dias);
+    const viejoStr=p.vence&&p.vence!=='—'?fmtDate(p.vence):'—';
+    const nuevoStr=nuevoVence&&nuevoVence!=='—'?fmtDate(nuevoVence):'—';
+    const msg=`¿Descongelar a <strong>${esc(p.cliente)}</strong>?<br><span style="font-size:12px;color:var(--text3);">Se sumarán <strong>${dias} día${dias!==1?'s':''}</strong> al vencimiento.<br>${viejoStr} → <strong>${nuevoStr}</strong></span>`;
+    if(!await confirmDialog(msg,{title:'Descongelar membresía ☀️',icon:'☀️'})) return;
+    const totalCongelados=(p.dias_congelados||0)+dias;
+    const {error}=await window.supabaseClient.from('pagos')
+      .update({congelado:false,congelado_desde:null,dias_congelados:totalCongelados,vence:nuevoVence}).eq('id',id);
+    if(error){toast('Error al descongelar ❌','✕'); return;}
+    p.congelado=false; p.congelado_desde=null; p.dias_congelados=totalCongelados; p.vence=nuevoVence;
+    toast(`Membresía de ${p.cliente} descongelada — vence ${nuevoStr} ☀️`,'☀️');
+  }
+  renderPagos(); renderClientes(); renderDashboard();
+}
+
+// ── 2.3 Recibo PDF ──────────────────────────────────────
+function printRecibo(pagoId){
+  const p=pagos.find(x=>String(x.id)===String(pagoId));
+  if(!p) return;
+  const gymNombre=gymConfig.gym_nombre||localStorage.getItem('move_gym_nombre')||'VELUM';
+  const gymTagline=gymConfig.gym_tagline||localStorage.getItem('move_tagline')||'';
+  const gymColor=gymConfig.gym_color||'#1D9E75';
+  const fecha=p.fecha?fmtDate(p.fecha):'—';
+  const vence=p.vence&&p.vence!=='—'?fmtDate(p.vence):'—';
+  const folio=String(p.id).replace(/-/g,'').slice(0,10).toUpperCase();
+  const esPaq=(p.plan||'').includes('Paquete');
+  const extraRow=esPaq&&p.clases_totales
+    ? `<div class="row"><span class="label">Clases incluidas</span><span class="value">${p.clases_totales} clases</span></div>`
+    : (p.vence&&p.vence!=='—'?`<div class="row"><span class="label">Vigencia hasta</span><span class="value">${vence}</span></div>`:'');
+  const congeladoNote=p.congelado
+    ? `<div style="margin-top:14px;padding:8px 12px;background:#eff6ff;border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#1d4ed8;">❄️ Membresía actualmente congelada</div>`
+    : (p.dias_congelados>0?`<div style="margin-top:14px;padding:8px 12px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;font-size:11px;color:#166534;">✅ Incluye ${p.dias_congelados} días adicionales por congelamiento</div>`:'');
+
+  const html=`<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8"><title>Recibo — ${p.cliente}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#111;padding:48px 40px;max-width:480px;margin:0 auto;}
+.brand{font-size:11px;font-weight:900;letter-spacing:4px;color:${gymColor};margin-bottom:2px;}
+.gym{font-size:18px;font-weight:800;color:#111;margin-bottom:3px;}
+.tagline{font-size:11px;color:#888;margin-bottom:28px;}
+hr{border:none;border-top:1.5px solid #e5e5e5;margin:20px 0;}
+.section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-bottom:14px;}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px;}
+.row .label{color:#666;}
+.row .value{font-weight:600;color:#111;text-align:right;max-width:60%;}
+.total-wrap{display:flex;justify-content:space-between;align-items:center;padding:18px 0 8px;}
+.total-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#555;}
+.total-value{font-size:32px;font-weight:900;color:${gymColor};}
+.folio{font-size:10px;color:#ccc;margin-top:20px;text-align:center;letter-spacing:1.5px;}
+.print-btn{display:block;margin:28px auto 0;padding:12px 32px;background:${gymColor};color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px;}
+@media print{.no-print{display:none!important;}body{padding:24px;}}
+</style>
+</head>
+<body>
+  <div class="brand">✦ VELUM</div>
+  <div class="gym">${gymNombre}</div>
+  ${gymTagline?`<div class="tagline">${gymTagline}</div>`:'<div style="margin-bottom:28px;"></div>'}
+  <hr>
+  <div class="section-label">Recibo de Pago</div>
+  <div class="row"><span class="label">Cliente</span><span class="value">${p.cliente}</span></div>
+  <div class="row"><span class="label">Plan / Servicio</span><span class="value">${p.plan}</span></div>
+  <div class="row"><span class="label">Método de pago</span><span class="value">${p.metodo||'—'}</span></div>
+  <div class="row"><span class="label">Fecha de pago</span><span class="value">${fecha}</span></div>
+  ${extraRow}
+  ${congeladoNote}
+  <hr>
+  <div class="total-wrap">
+    <span class="total-label">Total pagado</span>
+    <span class="total-value">$${(p.monto||0).toLocaleString('es-MX')}</span>
+  </div>
+  <div class="folio">FOLIO ${folio}</div>
+  <div class="no-print"><button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button></div>
+</body></html>`;
+
+  const w=window.open('','_blank','width=560,height=740,menubar=no,toolbar=no');
+  if(!w){toast('Permite pop-ups para abrir el recibo','⚠️'); return;}
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ try{ w.print(); }catch(_){} },350);
+}
+
 async function deletePago(id){
   if(!await confirmDialog('¿Eliminar este pago? Esta acción no se puede deshacer.', {title:'Eliminar pago', icon:'💳'})) return;
   const { error } = await window.supabaseClient.from('pagos').delete().eq('id', id);
@@ -13920,11 +14063,21 @@ function renderPagos(){
         </div>
         <div class="pkg-bar" style="font-size:9px;color:var(--text3);margin-top:2px;">${p.clases_usadas}/${p.clases_totales} clases</div>`;
     } else {
-      venceCol = `${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span>`;
+      // 2.1 — mostrar ❄️ si congelado
+      const freezeBadge=p.congelado
+        ? `<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(96,165,250,.15);color:#60a5fa;font-weight:700;border:1px solid rgba(96,165,250,.3);">❄️ Congelado</span> `
+        : '';
+      venceCol = `${freezeBadge}${vBadge} <span style="font-size:11px;color:var(--text3);">${venceFmt}</span>`;
     }
     const descontarBtn = esPaquete
       ? `<button class="btn btn-outline btn-sm" onclick="descontarClase('${p.id}')" title="Descontar 1 clase" style="font-size:10px;padding:3px 8px;border-color:var(--accent);color:var(--accent);">−1 clase</button>`
       : '';
+    // 2.1 — Freeze toggle (solo en membresías con fecha, no paquetes)
+    const freezeBtn = !esPaquete && p.vence && p.vence!=='—'
+      ? `<button class="btn btn-outline btn-sm" onclick="toggleCongelarPago('${p.id}',${!!p.congelado})" title="${p.congelado?'Descongelar membresía':'Congelar membresía'}" style="font-size:11px;padding:3px 8px;${p.congelado?'border-color:#60a5fa;color:#60a5fa;':'border-color:var(--text3);color:var(--text3);'}">${p.congelado?'☀️':'❄️'}</button>`
+      : '';
+    // 2.3 — Recibo PDF
+    const reciboBtn=`<button class="btn btn-outline btn-sm" onclick="printRecibo('${p.id}')" title="Generar recibo" style="font-size:11px;padding:3px 8px;border-color:var(--text3);color:var(--text3);">🧾</button>`;
     html += `<tr>
       <td class="name">${esc(p.cliente)}</td>
       <td>${esc(p.plan)}</td>
@@ -13933,8 +14086,9 @@ function renderPagos(){
       <td>${fechaFmt}</td>
       <td>${venceCol}</td>
       <td class="tbl-action">
-        ${descontarBtn}
+        ${descontarBtn}${freezeBtn}
         ${gymStripeId ? `<button class="btn btn-outline btn-sm" onclick="openStripeCharge('${esc(p.cliente)}',${p.monto},'${esc(p.plan)}')" title="Generar link de cobro Stripe" style="font-size:10px;padding:3px 8px;border-color:#7c3aed;color:#a78bfa;">💳 Cobrar</button>` : ''}
+        ${reciboBtn}
         <button class="btn btn-outline btn-sm" onclick="openEditPago('${p.id}')" style="font-size:10px;padding:3px 8px;">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deletePago('${p.id}')" style="font-size:10px;padding:3px 8px;">🗑</button>
       </td>
