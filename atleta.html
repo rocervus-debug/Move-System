@@ -372,6 +372,18 @@ body::before{
 .stat-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
 .stat-sub{font-size:9px;color:var(--accent-light);font-weight:600;margin-top:2px;letter-spacing:.2px;}
 .stat-icon{font-size:16px;line-height:1;margin-bottom:2px;}
+/* ── Attendance heatmap (3.2) ── */
+.attend-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 16px 14px;margin-bottom:14px;}
+.attend-stats{display:flex;margin-bottom:18px;}
+.attend-stat{flex:1;text-align:center;border-right:1px solid var(--border);}
+.attend-stat:last-child{border-right:none;}
+.attend-n{font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;line-height:1;}
+.attend-l{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-top:3px;}
+.attend-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.attend-title{font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:1px;}
+.attend-legend{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text4);}
+.attend-legend-dot{width:9px;height:9px;border-radius:2px;}
+.attend-heatmap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
 /* Streak motivational banner */
 .streak-banner{background:linear-gradient(135deg,var(--accent-dim),rgba(255,255,255,.03));border:1px solid var(--border-accent);border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--accent-light);letter-spacing:.2px;margin:8px 0;}
 .streak-banner.fire{border-color:rgba(251,146,60,.35);background:linear-gradient(135deg,rgba(251,146,60,.1),rgba(255,255,255,.02));color:#FDBA74;}
@@ -1297,6 +1309,7 @@ body::before{
         <div class="greeting-name greeting-name-sm">Historial</div>
       </div>
       <div class="section">
+        <div id="attend-heatmap-section"></div>
         <div id="checkin-list">
           <div class="empty-state">
             <div class="es-ico">🏃</div>
@@ -2315,11 +2328,102 @@ async function doCheckout(planId){
   }
 }
 
+// ── 3.2 Attendance heatmap ───────────────────────────
+function buildAttendanceHeatmap(checkins){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const todayStr=today.toISOString().slice(0,10);
+
+  // Align grid start to Monday 11 weeks back
+  const dow=(today.getDay()+6)%7; // Mon=0…Sun=6
+  const gridStart=new Date(today);
+  gridStart.setDate(today.getDate()-dow-77); // back to first Mon of 12-week window
+
+  const visitedSet=new Set(checkins.map(c=>c.fecha));
+  const WEEKS=12, DAYS=7;
+
+  // Build grid rows[week][day]
+  const grid=Array.from({length:WEEKS},(_,w)=>
+    Array.from({length:DAYS},(_,d)=>{
+      const dt=new Date(gridStart);
+      dt.setDate(gridStart.getDate()+w*DAYS+d);
+      const ds=dt.toISOString().slice(0,10);
+      return{ds,vis:visitedSet.has(ds),future:dt>today,today:ds===todayStr,dt};
+    })
+  );
+
+  // Stats
+  const thisMonth=todayStr.slice(0,7);
+  const monthN=checkins.filter(c=>(c.fecha||'').startsWith(thisMonth)).length;
+  const weekCounts=grid.map(w=>w.filter(d=>d.vis).length);
+  const bestWeek=Math.max(0,...weekCounts);
+  const total=checkins.length;
+
+  // Month labels: show month name when it changes across weeks
+  const monthNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  let monthLabels='';
+  let lastMonth=-1;
+  const C=13,G=3; // cell, gap
+  grid.forEach((week,wi)=>{
+    const m=week[0].dt.getMonth();
+    if(m!==lastMonth){
+      const x=22+wi*(C+G);
+      monthLabels+=`<text x="${x}" y="${DAYS*(C+G)+12}" font-size="9" fill="var(--text4)" font-family="var(--fd)">${monthNames[m]}</text>`;
+      lastMonth=m;
+    }
+  });
+
+  // Day labels (even rows only: L, X, V, D)
+  const dayLbls=['L','','X','','V','','D'];
+  const dayLabelsSVG=dayLbls.map((l,i)=>
+    l?`<text x="16" y="${i*(C+G)+C}" text-anchor="end" font-size="9" fill="var(--text4)" font-family="var(--fd)">${l}</text>`:''
+  ).join('');
+
+  // Cells
+  let cells='';
+  grid.forEach((week,wi)=>{
+    week.forEach((day,di)=>{
+      const x=22+wi*(C+G), y=di*(C+G);
+      let fill='var(--surface)', opacity='1', stroke='';
+      if(day.future){ opacity='0.3'; }
+      else if(day.vis){ fill='var(--accent)'; }
+      if(day.today){ stroke=`stroke="var(--accent)" stroke-width="1.5"`; }
+      cells+=`<rect x="${x}" y="${y}" width="${C}" height="${C}" rx="2.5" fill="${fill}" fill-opacity="${opacity}" ${stroke}/>`;
+    });
+  });
+
+  const svgW=22+WEEKS*(C+G), svgH=DAYS*(C+G)+16;
+
+  return `<div class="attend-wrap">
+    <div class="attend-stats">
+      <div class="attend-stat"><div class="attend-n">${total}</div><div class="attend-l">Total visitas</div></div>
+      <div class="attend-stat"><div class="attend-n">${monthN}</div><div class="attend-l">Este mes</div></div>
+      <div class="attend-stat"><div class="attend-n">${bestWeek}</div><div class="attend-l">Mejor semana</div></div>
+    </div>
+    <div class="attend-hdr">
+      <span class="attend-title">Últimas 12 semanas</span>
+      <span class="attend-legend">
+        <span class="attend-legend-dot" style="background:var(--surface);"></span>Sin visita
+        <span class="attend-legend-dot" style="background:var(--accent);margin-left:4px;"></span>Visita
+      </span>
+    </div>
+    <div class="attend-heatmap">
+      <svg viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" style="display:block;overflow:visible;">
+        ${dayLabelsSVG}${cells}${monthLabels}
+      </svg>
+    </div>
+  </div>`;
+}
+
 // ── Historial (grouped timeline) ─────────────────────
 function renderHistorial(){
   if(!portalData) return;
   const checkins=portalData.checkins||[];
   const el=$('checkin-list');
+  const chartEl=$('attend-heatmap-section');
+
+  // Always render heatmap (shows zeros when no checkins)
+  if(chartEl) chartEl.innerHTML=buildAttendanceHeatmap(checkins);
+
   if(!checkins.length){
     el.innerHTML=`<div class="empty-state">
       <div class="es-ico">🏃</div>
