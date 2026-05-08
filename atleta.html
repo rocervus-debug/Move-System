@@ -491,6 +491,11 @@ body::before{
   font-size:10px;font-weight:800;color:var(--accent);
   text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;
 }
+/* Waitlist button */
+.cls-btn.waitlist{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.3);}
+.cls-btn.waitlist:active{transform:scale(.97);}
+.cls-btn.in-waitlist{background:rgba(167,139,250,.06);color:#8b6fdb;border:1px dashed rgba(167,139,250,.3);}
+.cls-waitlist-badge{font-size:10px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.22);border-radius:6px;padding:2px 7px;margin-top:4px;display:inline-block;}
 .cls-cupo-badge{
   flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px;
 }
@@ -2533,6 +2538,8 @@ const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábad
 let clasesHorarios   = [];   // weekly template from 'horarios' table
 let clasesReservas   = {};   // { horario_id+fecha: reserva } for current client
 let clasesCupos      = {};   // { horario_id+fecha: count }
+let clasesWaitlist   = {};   // { horario_id+fecha: waitlist_entry } for current client
+let clasesWaitlistN  = {};   // { horario_id+fecha: total waitlist count }
 let clasesActiveDia  = null; // currently selected day name (e.g. 'Lunes')
 let clasesLoading    = false;
 
@@ -2639,6 +2646,34 @@ async function loadClasesData(){
       }catch(_){ clasesCupos[key] = 0; }
     }));
 
+    // 4. Fetch waitlist for this token (next 7 days)
+    clasesWaitlist = {};
+    clasesWaitlistN = {};
+    try{
+      const wRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/waitlist?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=id,horario_id,fecha,posicion`,
+        { headers: _sbHeaders() }
+      );
+      const myWL = wRes.ok ? await wRes.json() : [];
+      myWL.forEach(w=>{ clasesWaitlist[w.horario_id+'_'+w.fecha]=w; });
+    }catch(_){}
+    // 5. Fetch waitlist counts per class/date (only for full classes)
+    await Promise.all(needed.filter(({hid,fecha})=>{
+      const h=clasesHorarios.find(x=>x.id===hid);
+      const key=hid+'_'+fecha;
+      return h && h.cupo>0 && (clasesCupos[key]||0)>=h.cupo;
+    }).map(async ({hid,fecha})=>{
+      const key=hid+'_'+fecha;
+      try{
+        const wRes=await fetch(
+          `${SUPABASE_URL}/rest/v1/waitlist?horario_id=eq.${hid}&fecha=eq.${fecha}&estado=eq.espera&select=id`,
+          {headers:{..._sbHeaders(),'Prefer':'count=exact'}}
+        );
+        const cr=wRes.headers.get('content-range')||'';
+        clasesWaitlistN[key]=parseInt((cr.split('/')[1])||'0',10)||0;
+      }catch(_){ clasesWaitlistN[key]=0; }
+    }));
+
     // Build tabs from days that have classes
     const diasConClases = [...new Set(clasesHorarios.map(h=>h.dia))];
     // Order by index in dates (next 7 days in order)
@@ -2737,6 +2772,9 @@ function renderClasesView(dates){
     const isFull     = cupoTotal > 0 && cupoLibre === 0;
     const miReserva  = clasesReservas[key];
     const isReserved = !!miReserva;
+    const miWaitlist = clasesWaitlist[key];
+    const inWaitlist = !!miWaitlist;
+    const wlCount    = clasesWaitlistN[key] || 0;
 
     // Cupo bar color
     let barColor = '#0fdf9a'; // green
@@ -2759,8 +2797,11 @@ function renderClasesView(dates){
       btnHtml = `<button class="cls-btn full" disabled>Pasado</button>`;
     } else if(isReserved){
       btnHtml = `<button class="cls-btn cancel" onclick="cancelarReserva('${miReserva.id}','${key}')">Cancelar</button>`;
+    } else if(isFull && inWaitlist){
+      const pos = miWaitlist.posicion || '?';
+      btnHtml = `<button class="cls-btn in-waitlist" onclick="salirWaitlist('${miWaitlist.id}','${key}')">📋 Lista #${pos} · Salir</button>`;
     } else if(isFull){
-      btnHtml = `<button class="cls-btn full" disabled>Lleno</button>`;
+      btnHtml = `<button class="cls-btn waitlist" onclick="entrarWaitlist('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">📋 Lista de espera${wlCount>0?' ('+wlCount+'en espera)':''}</button>`;
     } else if(!membOk){
       btnHtml = `<button class="cls-btn full" disabled>Sin membresía</button>`;
     } else {
@@ -2775,7 +2816,7 @@ function renderClasesView(dates){
         </div>
         <div class="cls-cupo-badge">
           <span class="cls-cupo-num" style="color:${cupoColor};">${cupoText}</span>
-          <span class="cls-cupo-lbl">disponibles</span>
+          <span class="cls-cupo-lbl">${isFull&&wlCount>0?wlCount+' en espera':'disponibles'}</span>
           <div class="cls-cupo-bar"><div class="cls-cupo-fill" style="width:${pct}%;background:${barColor};"></div></div>
         </div>
       </div>
@@ -2901,6 +2942,70 @@ async function cancelarReserva(reservaId, key){
   }catch(e){
     alert('❌ Error al cancelar. Intenta de nuevo.');
     if(btn){ btn.className='cls-btn cancel'; btn.disabled=false; btn.textContent='Cancelar'; }
+  }
+}
+
+// ── Waitlist ──────────────────────────────────────────
+async function entrarWaitlist(horarioId, fecha, tipo, hora){
+  if(!portalData) return;
+  const token  = portalData.cliente.portal_token;
+  const nombre = portalData.cliente.nombre;
+  const gymId  = await _resolveGymId();
+  const key    = horarioId+'_'+fecha;
+  const btn    = document.querySelector(`#cls-card-${key} .cls-btn.waitlist`);
+  if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Anotando…'; }
+  try{
+    // Get current waitlist size to set position
+    const cRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/waitlist?horario_id=eq.${horarioId}&fecha=eq.${fecha}&estado=eq.espera&select=id`,
+      {headers:{..._sbHeaders(),'Prefer':'count=exact'}}
+    );
+    const cr=cRes.headers.get('content-range')||'';
+    const posicion=(parseInt((cr.split('/')[1])||'0',10)||0)+1;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`,{
+      method:'POST',
+      headers:{..._sbHeaders(),'Prefer':'return=representation'},
+      body:JSON.stringify({gym_id:gymId,horario_id:horarioId,fecha,portal_token:token,cliente_nombre:nombre,posicion,estado:'espera'})
+    });
+    if(!res.ok) throw new Error('insert failed');
+    const rows=await res.json();
+    clasesWaitlist[key]=rows[0]||{id:'?',posicion};
+    clasesWaitlistN[key]=(clasesWaitlistN[key]||0)+1;
+    const today=new Date();
+    const dates=[];
+    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)});}
+    renderClasesView(dates);
+    // Small toast feedback
+    const toast=document.createElement('div');
+    toast.textContent=`✅ Anotado en lista de espera #${posicion}`;
+    toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a2e24;color:#5DCAA5;border:1px solid rgba(29,158,117,.4);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
+    document.body.appendChild(toast); setTimeout(()=>toast.remove(),3000);
+  }catch(e){
+    if(btn){ btn.className='cls-btn waitlist'; btn.disabled=false; btn.textContent='📋 Lista de espera'; }
+    alert('Error al anotarte. Puede que ya estés en la lista o inténtalo de nuevo.');
+  }
+}
+
+async function salirWaitlist(waitlistId, key){
+  if(!portalData) return;
+  if(!confirm('¿Salir de la lista de espera?')) return;
+  const btn=document.querySelector(`#cls-card-${key} .cls-btn.in-waitlist`);
+  if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Saliendo…'; }
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${waitlistId}`,{
+      method:'PATCH',
+      headers:_sbHeaders(),
+      body:JSON.stringify({estado:'cancelado'})
+    });
+    delete clasesWaitlist[key];
+    clasesWaitlistN[key]=Math.max(0,(clasesWaitlistN[key]||1)-1);
+    const today=new Date();
+    const dates=[];
+    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)});}
+    renderClasesView(dates);
+  }catch(_){
+    if(btn){ btn.className='cls-btn in-waitlist'; btn.disabled=false; }
+    alert('Error al salir de la lista.');
   }
 }
 

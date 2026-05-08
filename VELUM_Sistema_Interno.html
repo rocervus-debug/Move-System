@@ -2861,6 +2861,13 @@ select option{background:#0d1a16;color:var(--text);}
 
     <div class="nav-section nav-sec-empty">
       <div class="nav-label">Finanzas</div>
+      <div class="nav-item mob-hidden" id="nav-revenue" onclick="go('revenue',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="nav-label-text"> Revenue</span>
+      </div>
+      <div class="nav-item mob-hidden" id="nav-por-vencer" onclick="go('por-vencer',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-label-text"> Por Vencer</span>
+        <span class="nav-badge" id="pv-nav-badge" style="display:none;"></span>
+      </div>
       <div class="nav-item mob-hidden" id="nav-gastos" onclick="go('gastos',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="nav-label-text"> Gastos & Balance</span>
       </div>
@@ -3356,6 +3363,15 @@ select option{background:#0d1a16;color:var(--text);}
 
       <!-- Hidden for realtime counter compat -->
       <span id="checkins-hoy-count" style="display:none;">—</span>
+
+      <!-- ── Lista de Espera del Día ── -->
+      <div id="asist-waitlist-section" style="margin-top:20px;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">📋 Lista de Espera</div>
+          <button onclick="loadWaitlistHoy()" style="font-size:11px;padding:4px 10px;border-radius:7px;background:rgba(255,255,255,.05);color:var(--text3);border:1px solid var(--border);cursor:pointer;">↺ Actualizar</button>
+        </div>
+        <div id="asist-waitlist-list"></div>
+      </div>
 
       <!-- ── Historial de Check-ins por Mes ── -->
       <div id="asist-historial-section" style="margin-top:28px;">
@@ -3916,6 +3932,52 @@ select option{background:#0d1a16;color:var(--text);}
 
       <div id="prog-calendar-grid">
         <!-- Rendered by renderProgramaCalendar() -->
+      </div>
+    </div>
+
+    <!-- ── REVENUE DASHBOARD ── -->
+    <div class="view" id="v-revenue">
+      <div id="revenue-kpis" class="kpi-grid" style="margin-bottom:20px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;" id="revenue-two-col">
+        <!-- Trend chart -->
+        <div class="card" style="grid-column:span 2;" id="revenue-chart-card">
+          <div class="card-head"><span class="card-title">📈 Ingresos Mensuales</span><span class="card-sub" id="rev-chart-sub">Últimos 12 meses</span></div>
+          <div style="height:180px;position:relative;"><canvas id="revenueChart"></canvas></div>
+        </div>
+        <!-- Nuevos vs Renovaciones -->
+        <div class="card" id="revenue-breakdown-card">
+          <div class="card-head"><span class="card-title">🔄 Nuevos vs Renovaciones</span><span class="card-sub" id="rev-breakdown-sub">Este mes</span></div>
+          <div id="revenue-breakdown-body" style="padding-top:8px;"></div>
+        </div>
+        <!-- Top planes -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">🏆 Top Planes</span><span class="card-sub">Por ingresos este mes</span></div>
+          <div id="revenue-top-planes" style="padding-top:8px;"></div>
+        </div>
+      </div>
+      <!-- Por cliente ranking -->
+      <div class="card">
+        <div class="card-head"><span class="card-title">👥 Clientes — Ingresos Acumulados</span><span class="card-sub" id="rev-clients-sub"></span></div>
+        <div id="revenue-clients-list" style="margin-top:8px;max-height:320px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <!-- ── POR VENCER ── -->
+    <div class="view" id="v-por-vencer">
+      <!-- Filtro días -->
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;" id="pv-filter-row">
+        <button class="btn btn-sm active" id="pv-btn-7"  onclick="setPVFilter(7)"  style="padding:6px 14px;border-radius:20px;">🔴 7 días</button>
+        <button class="btn btn-sm btn-outline" id="pv-btn-14" onclick="setPVFilter(14)" style="padding:6px 14px;border-radius:20px;">🟡 14 días</button>
+        <button class="btn btn-sm btn-outline" id="pv-btn-30" onclick="setPVFilter(30)" style="padding:6px 14px;border-radius:20px;">🟢 30 días</button>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-sm" id="pv-btn-todos" onclick="pvEnviarTodos()" style="background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.3);padding:6px 14px;border-radius:20px;">📲 WhatsApp a todos</button>
+        </div>
+      </div>
+      <!-- Summary bar -->
+      <div id="pv-summary" style="margin-bottom:16px;"></div>
+      <!-- List -->
+      <div id="pv-list">
+        <div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">No hay membresías por vencer en los próximos días.</div></div>
       </div>
     </div>
 
@@ -7377,6 +7439,8 @@ const topTitles = {
   horario:     ['Calendario de Clases',      ()=>`Vista mensual · ${_mesLabel()}`],
   coaches:     ['Equipo de Coaches',         'Perfiles del equipo de entrenamiento'],
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
+  revenue:     ['Revenue Dashboard',          ()=>`Análisis financiero · ${_mesLabel()}`],
+  'por-vencer':['Por Vencer',                 'Membresías próximas a vencer — recordatorios WA'],
   gastos:      ['Gastos & Balance',          ()=>`Balance financiero · ${_mesLabel()}`],
   programa:    ['Programa de Entrenamiento', 'Calendario de entrenamientos por disciplina'],
   retencion:         ['Retención & Churn',          'Análisis de bajas, renovaciones y clientes en riesgo'],
@@ -7398,6 +7462,8 @@ const topBtnLabels = {
   horario:     '+ Plantilla',
   coaches:     '+ Agregar Coach',
   evaluaciones:'+ Evaluar Coach',
+  revenue:     '↓ Exportar CSV',
+  'por-vencer':'📲 WA a todos',
   gastos:      '+ Nuevo Gasto',
   programa:    '+ Entrenamiento',
   retencion:         '↗ Exportar',
@@ -7419,6 +7485,8 @@ const topBtnActions = {
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
   horario:     ()=>{ switchHorTab('plantilla'); setTimeout(openAddClaseModal,50); },
+  revenue:     ()=>exportRevenueCSV(),
+  'por-vencer':()=>pvEnviarTodos(),
   gastos:      ()=>openGastoModal(),
   programa:    ()=>openProgramaModal(''),
   retencion:         ()=>exportRetencionCSV(),
@@ -7453,13 +7521,15 @@ function go(id, el){
   if(id==='clientes')    renderClientes();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { loadClasesOperativas(); renderAsistHistorial(); }
+  if(id==='asistencia')  { loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
   if(id==='marketing')     renderCalendario();
   if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
+  if(id==='revenue')     { renderRevenue(); }
+  if(id==='por-vencer')  { renderPorVencer(); }
   if(id==='programa'){
     renderProgTabs();
     renderProgramaCalendar();
@@ -11500,6 +11570,18 @@ function renderDashboard(){
 
   // ── Alert strip + Quick Actions — se activa tras las animaciones countUp ──
   setTimeout(()=>updateAlertStrip(vencidasCount, porVencer30.length), 600);
+
+  // ── Por Vencer nav badge ──
+  const pvBadge=document.getElementById('pv-nav-badge');
+  if(pvBadge){
+    const in7=pagos.filter(p=>{
+      if(!p.vence||p.vence==='—'||esPaseDia(p.plan)||p.congelado) return false;
+      const v=new Date(p.vence+'T12:00:00'), c=new Date(now); c.setDate(now.getDate()+7);
+      return v>=now&&v<=c;
+    }).length;
+    if(in7>0){pvBadge.textContent=in7;pvBadge.style.display='inline-flex';}
+    else pvBadge.style.display='none';
+  }
 
   // Leads trend (el valor ya se seteó arriba con `total`)
   setTrend('kpi-leads-trend', leadsEsteMes, leadsLastMes, false);
@@ -17397,6 +17479,394 @@ function closeMasMenu(){
   const sheet   = document.getElementById('mas-sheet');
   if(overlay) overlay.style.display='none';
   if(sheet)   sheet.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+// TIER 4.2 — WAITLIST (ADMIN)
+// ══════════════════════════════════════════════════════
+async function loadWaitlistHoy(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const sec = document.getElementById('asist-waitlist-section');
+  const lst = document.getElementById('asist-waitlist-list');
+  if(!lst) return;
+  try{
+    const {data,error} = await window.supabaseClient
+      .from('waitlist')
+      .select('id,horario_id,fecha,cliente_nombre,posicion,estado,created_at')
+      .eq('fecha', hoy)
+      .eq('estado','espera')
+      .order('created_at',{ascending:true});
+    if(error) throw error;
+    const rows = data||[];
+    if(sec) sec.style.display = rows.length>0?'block':'none';
+    if(!rows.length){ lst.innerHTML=''; return; }
+    // Group by horario
+    const byHorario={};
+    rows.forEach(r=>{
+      const k=r.horario_id||'—';
+      if(!byHorario[k]) byHorario[k]=[];
+      byHorario[k].push(r);
+    });
+    lst.innerHTML=Object.entries(byHorario).map(([hid,entries])=>{
+      const hObj=horario.find(h=>h.id===hid)||{tipo:'Clase',hora:''};
+      const items=entries.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);">
+          <span style="font-size:11px;font-weight:800;color:var(--text3);width:18px;">${i+1}</span>
+          <span style="flex:1;font-size:13px;font-weight:700;">${esc(r.cliente_nombre)}</span>
+          <button onclick="notificarWaitlist('${r.id}','${esc(r.cliente_nombre)}')"
+            style="font-size:11px;padding:4px 10px;border-radius:7px;background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.2);cursor:pointer;">
+            ✓ Hay lugar</button>
+          <button onclick="removeWaitlistEntry('${r.id}')" style="font-size:11px;padding:4px 8px;border-radius:7px;background:rgba(239,68,68,.07);color:#f87171;border:1px solid rgba(239,68,68,.18);cursor:pointer;">✕</button>
+        </div>`).join('');
+      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px;">
+        <div style="padding:8px 12px;background:rgba(167,139,250,.06);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:#a78bfa;">
+          ${hObj.tipo||'Clase'} ${hObj.hora?'· '+hObj.hora:''} — ${entries.length} en espera
+        </div>
+        ${items}
+      </div>`;
+    }).join('');
+  }catch(e){ console.error('loadWaitlistHoy',e); }
+}
+
+async function notificarWaitlist(id, nombre){
+  const {error}=await window.supabaseClient.from('waitlist').update({estado:'notificado'}).eq('id',id);
+  if(error){ toast('Error al notificar ❌','✕'); return; }
+  toast(`${nombre.split(' ')[0]} notificado — hay lugar 🟢`,'✅');
+  loadWaitlistHoy();
+}
+
+async function removeWaitlistEntry(id){
+  if(!await confirmDialog('¿Remover de la lista de espera?',{title:'Lista de espera',icon:'📋'})) return;
+  await window.supabaseClient.from('waitlist').update({estado:'cancelado'}).eq('id',id);
+  loadWaitlistHoy();
+}
+
+// ══════════════════════════════════════════════════════
+// TIER 4.4 — REVENUE DASHBOARD
+// ══════════════════════════════════════════════════════
+let _revenueChartInst = null;
+
+function renderRevenue(){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const thisMonth = now.toISOString().slice(0,7);
+  const prevDate  = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const lastMonth = prevDate.toISOString().slice(0,7);
+
+  // ── 12-month revenue array (oldest first) ──
+  const months = [];
+  for(let i=11;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d.toISOString().slice(0,7));
+  }
+  const monthlyRevenue = months.map(m=>
+    pagos.filter(p=>(p.fecha||'').startsWith(m) && p.notas!=='__sin_pago__')
+         .reduce((s,p)=>s+p.monto,0)
+  );
+
+  const ingresosMes  = monthlyRevenue[monthlyRevenue.length-1];
+  const ingresosLast = monthlyRevenue[monthlyRevenue.length-2]||0;
+
+  // New vs Renewal
+  const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMonth)&&p.notas!=='__sin_pago__');
+  const nuevos=[],renov=[];
+  pagosEsteMes.forEach(p=>{
+    const tieneAntes=pagos.some(x=>x.cliente===p.cliente&&(x.fecha||'')<(p.fecha||'')&&!(x.fecha||'').startsWith(thisMonth));
+    (tieneAntes?renov:nuevos).push(p);
+  });
+  const ingrNuevos = nuevos.reduce((s,p)=>s+p.monto,0);
+  const ingrRenov  = renov.reduce((s,p)=>s+p.monto,0);
+
+  // Ticket promedio
+  const ticketProm = pagosEsteMes.length>0 ? Math.round(ingresosMes/pagosEsteMes.length) : 0;
+  // Proyección: ratio del día del mes
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const proyeccion  = dayOfMonth<daysInMonth && dayOfMonth>0 ? Math.round(ingresosMes/dayOfMonth*daysInMonth) : ingresosMes;
+
+  // Tasa de retención: clientes que pagaron el mes pasado Y este mes
+  const cliLastMes = new Set(pagos.filter(p=>(p.fecha||'').startsWith(lastMonth)&&p.notas!=='__sin_pago__').map(p=>p.cliente));
+  const cliEsteMes = new Set(pagosEsteMes.map(p=>p.cliente));
+  const retenidos  = [...cliLastMes].filter(c=>cliEsteMes.has(c)).length;
+  const tasaReten  = cliLastMes.size>0 ? Math.round((retenidos/cliLastMes.size)*100) : 0;
+
+  // ── KPI cards ──
+  const kpiEl = document.getElementById('revenue-kpis');
+  if(kpiEl){
+    const trendStr=(curr,prev)=>{
+      if(prev===0&&curr===0) return '';
+      const d=curr-prev, pct=prev>0?Math.round(d/prev*100):100;
+      const cls=d>0?'up':d<0?'down':'flat', arrow=d>0?'↑':d<0?'↓':'→';
+      return `<div class="kpi-trend ${cls}" style="margin-top:3px;display:inline-flex;">${arrow} ${d>=0?'+':''}${pct}% vs mes ant.</div>`;
+    };
+    kpiEl.innerHTML=`
+      <div class="kpi-card" style="cursor:default;">
+        <div class="kpi-label">Ingresos este mes</div>
+        <div class="kpi-value" style="font-size:28px;">$${ingresosMes.toLocaleString('es-MX')}</div>
+        ${trendStr(ingresosMes,ingresosLast)}
+      </div>
+      <div class="kpi-card" style="cursor:default;">
+        <div class="kpi-label">Proyección del mes</div>
+        <div class="kpi-value" style="font-size:28px;">$${proyeccion.toLocaleString('es-MX')}</div>
+        <div class="kpi-meta">Basada en ritmo actual (día ${dayOfMonth}/${daysInMonth})</div>
+      </div>
+      <div class="kpi-card" style="cursor:default;">
+        <div class="kpi-label">Ticket promedio</div>
+        <div class="kpi-value" style="font-size:28px;">$${ticketProm.toLocaleString('es-MX')}</div>
+        <div class="kpi-meta">${pagosEsteMes.length} pago${pagosEsteMes.length!==1?'s':''} este mes</div>
+      </div>
+      <div class="kpi-card" style="cursor:default;">
+        <div class="kpi-label">Tasa de retención</div>
+        <div class="kpi-value" style="font-size:28px;">${tasaReten}%</div>
+        <div class="kpi-meta">${retenidos} de ${cliLastMes.size} del mes pasado renovaron</div>
+      </div>`;
+  }
+
+  // ── Bar chart ──
+  setTimeout(()=>{
+    const canvas = document.getElementById('revenueChart');
+    if(!canvas) return;
+    const Chart = window.Chart;
+    if(!Chart) return;
+    if(_revenueChartInst){ _revenueChartInst.destroy(); _revenueChartInst=null; }
+    const LABELS = months.map(m=>{
+      const [yr,mo]=m.split('-');
+      return new Date(+yr,+mo-1,1).toLocaleDateString('es-MX',{month:'short',year:'2-digit'});
+    });
+    const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#1D9E75';
+    _revenueChartInst = new Chart(canvas, {
+      type:'bar',
+      data:{
+        labels:LABELS,
+        datasets:[{
+          label:'Ingresos',
+          data:monthlyRevenue,
+          backgroundColor: monthlyRevenue.map((_,i)=>i===monthlyRevenue.length-1?accentHex+'cc':'rgba(255,255,255,.08)'),
+          borderColor:    monthlyRevenue.map((_,i)=>i===monthlyRevenue.length-1?accentHex:'rgba(255,255,255,.15)'),
+          borderWidth:1,
+          borderRadius:6,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`$${ctx.parsed.y.toLocaleString('es-MX')}`}}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#666',font:{size:10}}},
+          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#666',font:{size:10},callback:v=>'$'+v.toLocaleString('es-MX')}},
+        }
+      }
+    });
+  },80);
+
+  // ── Nuevos vs Renovaciones ──
+  const bdEl = document.getElementById('revenue-breakdown-body');
+  const subEl= document.getElementById('rev-breakdown-sub');
+  if(subEl) subEl.textContent=`${pagosEsteMes.length} pagos · ${MESES_ES[now.getMonth()]||''} ${now.getFullYear()}`;
+  if(bdEl){
+    const total = ingresosMes||1;
+    const pctN = Math.round(ingrNuevos/total*100), pctR=100-pctN;
+    bdEl.innerHTML=`
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;font-weight:700;">
+            <span>🆕 Nuevos (${nuevos.length})</span><span>$${ingrNuevos.toLocaleString('es-MX')} · ${pctN}%</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;">
+            <div style="height:100%;width:${pctN}%;background:var(--accent);border-radius:99px;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;font-weight:700;">
+            <span>🔄 Renovaciones (${renov.length})</span><span>$${ingrRenov.toLocaleString('es-MX')} · ${pctR}%</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;">
+            <div style="height:100%;width:${pctR}%;background:#a78bfa;border-radius:99px;"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Top Planes ──
+  const tpEl = document.getElementById('revenue-top-planes');
+  if(tpEl){
+    const planMap={};
+    pagosEsteMes.forEach(p=>{
+      const k=p.plan||'Sin plan';
+      if(!planMap[k]) planMap[k]={count:0,sum:0};
+      planMap[k].count++; planMap[k].sum+=p.monto;
+    });
+    const sorted=Object.entries(planMap).sort((a,b)=>b[1].sum-a[1].sum).slice(0,5);
+    if(!sorted.length){ tpEl.innerHTML=`<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px;">Sin pagos este mes.</div>`; }
+    else {
+      const maxSum=sorted[0][1].sum||1;
+      tpEl.innerHTML=sorted.map(([plan,{count,sum}])=>`
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;font-weight:700;">
+            <span>${esc(plan)}</span><span style="color:var(--accent);">$${sum.toLocaleString('es-MX')} <small style="color:var(--text3);font-weight:500;">(${count})</small></span>
+          </div>
+          <div style="height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;">
+            <div style="height:100%;width:${Math.round(sum/maxSum*100)}%;background:var(--accent);border-radius:99px;"></div>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── Top Clientes ──
+  const clEl  = document.getElementById('revenue-clients-list');
+  const clSub = document.getElementById('rev-clients-sub');
+  if(clEl){
+    const cliMap={};
+    pagos.filter(p=>p.notas!=='__sin_pago__').forEach(p=>{
+      const k=p.cliente||'—';
+      cliMap[k]=(cliMap[k]||0)+p.monto;
+    });
+    const sorted2=Object.entries(cliMap).sort((a,b)=>b[1]-a[1]).slice(0,15);
+    if(clSub) clSub.textContent=`Top ${sorted2.length} por ingresos totales`;
+    const maxV=sorted2[0]?.[1]||1;
+    clEl.innerHTML=sorted2.map(([nombre,total],i)=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:800;color:var(--text3);width:20px;text-align:center;">${i+1}</div>
+        ${getAvatarHTML(nombre,32,null)}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nombre)}</div>
+          <div style="height:4px;background:rgba(255,255,255,.06);border-radius:99px;margin-top:4px;overflow:hidden;">
+            <div style="height:100%;width:${Math.round(total/maxV*100)}%;background:var(--accent);border-radius:99px;"></div>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;">$${total.toLocaleString('es-MX')}</div>
+      </div>`).join('');
+  }
+}
+
+function exportRevenueCSV(){
+  const now=new Date();
+  const rows=[['Cliente','Fecha','Plan','Monto']];
+  pagos.filter(p=>p.notas!=='__sin_pago__').forEach(p=>rows.push([p.cliente||'',p.fecha||'',p.plan||'',p.monto||0]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`velum_revenue_${now.toISOString().slice(0,10)}.csv`; a.click();
+}
+
+// ══════════════════════════════════════════════════════
+// TIER 4.1 — POR VENCER + WA RECORDATORIOS
+// ══════════════════════════════════════════════════════
+let _pvDays = 7;
+
+function setPVFilter(days){
+  _pvDays=days;
+  [7,14,30].forEach(d=>{
+    const b=document.getElementById('pv-btn-'+d);
+    if(!b) return;
+    const active=d===days;
+    b.classList.toggle('active',active);
+    b.classList.toggle('btn-outline',!active);
+  });
+  renderPorVencer();
+}
+
+function renderPorVencer(){
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const cutoff = new Date(now); cutoff.setDate(now.getDate()+_pvDays);
+
+  const lista = pagos.filter(p=>{
+    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false;
+    if(p.congelado) return false;
+    const v=new Date(p.vence+'T12:00:00');
+    return v>=now && v<=cutoff;
+  }).sort((a,b)=>(a.vence||'').localeCompare(b.vence||''));
+
+  // Nav badge
+  const badge = document.getElementById('pv-nav-badge');
+  if(badge){
+    if(lista.length>0){ badge.textContent=lista.length; badge.style.display='inline-flex'; }
+    else badge.style.display='none';
+  }
+
+  // Summary
+  const sumEl = document.getElementById('pv-summary');
+  if(sumEl){
+    const hoy    = lista.filter(p=>p.vence===now.toISOString().slice(0,10)).length;
+    const maña   = lista.filter(p=>{const d=new Date(now);d.setDate(d.getDate()+1);return p.vence===d.toISOString().slice(0,10);}).length;
+    const resto  = lista.length-hoy-maña;
+    const ingrEst= lista.reduce((s,p)=>s+(p.monto||0),0);
+    sumEl.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+      ${hoy>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(239,68,68,.12);color:#f87171;font-size:12px;font-weight:700;border:1px solid rgba(239,68,68,.25);">🔴 Hoy: ${hoy}</span>`:''}
+      ${maña>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(245,158,11,.12);color:#fbbf24;font-size:12px;font-weight:700;border:1px solid rgba(245,158,11,.25);">🟡 Mañana: ${maña}</span>`:''}
+      ${resto>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(74,222,128,.1);color:#4ade80;font-size:12px;font-weight:700;border:1px solid rgba(74,222,128,.2);">🟢 Próximos: ${resto}</span>`:''}
+      <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.04);color:var(--text2);font-size:12px;font-weight:700;border:1px solid var(--border);">💰 En riesgo: $${ingrEst.toLocaleString('es-MX')}</span>
+    </div>`;
+  }
+
+  const listEl = document.getElementById('pv-list');
+  if(!listEl) return;
+  if(!lista.length){
+    listEl.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">¡Todo al día!</div><div class="empty-sub">No hay membresías por vencer en los próximos ${_pvDays} días.</div></div>`;
+    return;
+  }
+
+  const gymNombre = gymConfig?.gym_nombre||'el gym';
+  listEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">` +
+    lista.map(p=>{
+      const v=new Date(p.vence+'T12:00:00');
+      const diffDays=Math.round((v-now)/(1000*60*60*24));
+      const urgColor=diffDays===0?'#f87171':diffDays<=3?'#fbbf24':diffDays<=7?'#f97316':'#4ade80';
+      const urgLabel=diffDays===0?'¡Hoy!':diffDays===1?'Mañana':`${diffDays} días`;
+      const vFmt=v.toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
+
+      // Pre-filled WA message
+      const tel=(p.telefono||'').replace(/\D/g,'');
+      const numWA=tel.length===10?'52'+tel:tel;
+      const msgWA=encodeURIComponent(buildWAMsg_PV(p.cliente, p.plan, p.vence, gymNombre));
+      const waHref=`https://wa.me/${numWA}?text=${msgWA}`;
+
+      const waBtn=numWA.length>=12
+        ?`<a href="${waHref}" target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
+                   background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
+                   text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;flex-shrink:0;">
+            ${WA_SVG} Recordatorio</a>`
+        :`<button onclick="abrirEditarTelefono('${esc(p.cliente)}')" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;background:var(--card2);color:var(--text3);font-size:12px;border:1px dashed var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0;">📱 Sin número</button>`;
+
+      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;border-left:3px solid ${urgColor};">
+        ${getAvatarHTML(p.cliente,40,null)}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:2px;">${esc(p.cliente)}</div>
+          <div style="font-size:11px;color:var(--text3);">${esc(p.plan||'—')} · vence ${vFmt}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-right:8px;">
+          <div style="font-size:13px;font-weight:800;color:${urgColor};">${urgLabel}</div>
+          <div style="font-size:10px;color:var(--text3);">$${(p.monto||0).toLocaleString('es-MX')}</div>
+        </div>
+        ${waBtn}
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function buildWAMsg_PV(nombre, plan, vence, gymNombre){
+  const nombre1=nombre?nombre.split(' ')[0]:nombre;
+  const vFmt=vence?new Date(vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long'}):vence;
+  return `Hola ${nombre1} 👋\n\nTe recordamos que tu membresía *${plan||''}* en *${gymNombre}* vence el *${vFmt}*.\n\nRenueva para seguir disfrutando de todos los beneficios sin interrupciones. 💪\n\n_Equipo ${gymNombre}_`;
+}
+
+function pvEnviarTodos(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  const cutoff=new Date(now); cutoff.setDate(now.getDate()+_pvDays);
+  const lista=pagos.filter(p=>{
+    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)||p.congelado) return false;
+    const v=new Date(p.vence+'T12:00:00');
+    return v>=now&&v<=cutoff;
+  });
+  const conNum=lista.filter(p=>(p.telefono||'').replace(/\D/g,'').length===10);
+  if(!conNum.length){ toast('Ninguno tiene número de WhatsApp registrado.','⚠️'); return; }
+  if(conNum.length>10){ toast(`Son ${conNum.length} clientes. Te abrirá 10 chats por vez para no saturar el navegador.`,'ℹ️'); }
+  const gymNombre=gymConfig?.gym_nombre||'el gym';
+  conNum.slice(0,10).forEach(p=>{
+    const tel=(p.telefono||'').replace(/\D/g,'');
+    const numWA='52'+tel;
+    const msg=encodeURIComponent(buildWAMsg_PV(p.cliente,p.plan,p.vence,gymNombre));
+    window.open(`https://wa.me/${numWA}?text=${msg}`,'_blank');
+  });
+  toast(`Abriendo ${Math.min(conNum.length,10)} conversaciones de WhatsApp...`,'📲');
 }
 
 // ══════════════════════════════════════════════════════
