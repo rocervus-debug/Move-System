@@ -205,8 +205,9 @@ const CHECKIN_URL  = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
 
-let resetTimer = null;
+let resetTimer  = null;
 let kioscoGymId = null;
+let gymBrand    = { nombre:'VELUM', color:'#1D9E75', logo:'' }; // default
 
 /* ── Helpers ── */
 function fmt(dateStr){
@@ -226,6 +227,48 @@ function daysUntil(dateStr){
   if(!dateStr) return null;
   const d = new Date(dateStr+'T12:00:00');
   return Math.round((d-new Date())/(1000*60*60*24));
+}
+
+/* ── Gym brand loader ── */
+async function loadGymBrand(gymId){
+  if(!gymId) return;
+  try{
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&select=key,value`,
+      { headers:{ 'apikey':ANON_KEY, 'Authorization':'Bearer '+ANON_KEY } }
+    );
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(!rows.length) return;
+    const cfg = {};
+    rows.forEach(r=>cfg[r.key]=r.value);
+
+    gymBrand.nombre = cfg.gym_nombre  || gymBrand.nombre;
+    gymBrand.color  = cfg.gym_color   || gymBrand.color;
+    gymBrand.logo   = cfg.gym_logo_url|| '';
+
+    // Apply brand color as CSS variable
+    const hex = gymBrand.color;
+    const r=parseInt(hex.slice(1,3),16)||29, g=parseInt(hex.slice(3,5),16)||158, b=parseInt(hex.slice(5,7),16)||117;
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--ok', hex);
+
+    // Update header: show gym logo or initial instead of VELUM
+    const logoEl  = document.querySelector('.logo');
+    const subEl   = document.getElementById('gym-sub');
+    if(logoEl){
+      const initial = gymBrand.nombre[0].toUpperCase();
+      if(gymBrand.logo){
+        logoEl.innerHTML = `<img src="${gymBrand.logo}" style="height:32px;width:32px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.12);"/> <span style="letter-spacing:3px;">${gymBrand.nombre.toUpperCase()}</span>`;
+      } else {
+        logoEl.innerHTML = `<span style="width:28px;height:28px;border-radius:8px;background:${hex};display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;">${initial}</span> <span style="letter-spacing:3px;">${gymBrand.nombre.toUpperCase()}</span>`;
+      }
+    }
+    if(subEl) subEl.textContent = 'Kiosco · Check-in';
+    document.title = `${gymBrand.nombre} — Check-in`;
+  }catch(e){
+    // Silently fail — kiosk still works with default VELUM branding
+  }
 }
 
 /* ── QR check-in (token mode) ── */
@@ -387,12 +430,11 @@ function renderError(msg, autoReset=false){
 /* ── Render: kiosco waiting screen with numpad ── */
 function renderKiosco(){
   if(resetTimer){ clearTimeout(resetTimer); resetTimer=null; }
-  document.getElementById('gym-sub').textContent = 'Kiosco · Check-in';
   document.getElementById('root').innerHTML = `
     <div class="kiosco-card">
       <div class="kiosco-icon">🏋️</div>
-      <div class="kiosco-title">Registro de entrada</div>
-      <div class="kiosco-sub">Ingresa tu número de cliente</div>
+      <div class="kiosco-title">Bienvenido a ${gymBrand.nombre}</div>
+      <div class="kiosco-sub">Ingresa tu número de cliente para registrar tu entrada</div>
 
       <div class="num-input-wrap">
         <input id="num-input" class="num-input" type="number" inputmode="numeric"
@@ -445,7 +487,8 @@ kioscoGymId   = params.get('gym_id') || params.get('gym') || null;
 if(token){
   doCheckin(token);
 } else if(kiosco){
-  renderKiosco();
+  // Load gym brand first (if gym_id given), then show kiosk
+  loadGymBrand(kioscoGymId).then(renderKiosco);
 } else {
   renderError('QR inválido. Escanea tu código QR personal.');
 }

@@ -5,14 +5,19 @@
                Offline fallback para el app shell
 ═══════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'velum-v5';
+const CACHE_VERSION = 'velum-v6';
 const CACHE_STATIC  = `move-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
   './VELUM_Sistema_Interno.html',
-  './checkin.html',
+  '/app',        // PWA start_url — debe estar en caché para funcionar offline
+  '/login',      // alias del admin
   './atleta.html',
+  '/atleta',     // PWA ruta limpia del portal atleta
+  './checkin.html',
+  '/checkin',    // PWA ruta limpia del kiosco
   './index.html',
+  '/',
   './manifest.json',
   './move-icon-192.png',
   './move-icon-512.png',
