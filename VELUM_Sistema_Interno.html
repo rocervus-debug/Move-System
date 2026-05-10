@@ -1729,6 +1729,14 @@ select option{background:#0d1a16;color:var(--text);}
 .hor-sub-orig{ color:rgba(255,255,255,.55);font-size:8px;text-decoration:line-through;text-align:center;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .hor-cob-btn{ display:inline-flex;align-items:center;justify-content:center;margin-top:3px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);border-radius:4px;font-size:9px;padding:1px 5px;cursor:pointer;color:rgba(255,255,255,.8);transition:background .15s;line-height:1.4;white-space:nowrap; }
 .hor-cob-btn:hover{ background:rgba(0,0,0,.55);color:#fff; }
+/* Cancel button inside class cell */
+.hor-cancel-btn{ display:inline-flex;align-items:center;justify-content:center;margin-top:3px;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.4);border-radius:4px;font-size:9px;padding:1px 5px;cursor:pointer;color:rgba(255,180,180,.95);transition:background .15s;line-height:1.4;white-space:nowrap; }
+.hor-cancel-btn:hover{ background:rgba(239,68,68,.45);color:#fff; }
+.hor-restore-btn{ background:rgba(16,185,129,.18);border-color:rgba(16,185,129,.4);color:rgba(110,255,200,.9); }
+.hor-restore-btn:hover{ background:rgba(16,185,129,.45);color:#fff; }
+/* Cancelled occurrence cell */
+.hor-cancelada-td{ background:repeating-linear-gradient(135deg,rgba(239,68,68,.04) 0,rgba(239,68,68,.04) 5px,transparent 5px,transparent 10px) !important;background-color:rgba(239,68,68,.08) !important;border-color:rgba(239,68,68,.25) !important; }
+.hor-cancelada-badge{ display:inline-block;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;font-size:8px;font-weight:800;border-radius:4px;padding:1px 5px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px; }
 /* Cerrado cell */
 .hor-cerrado-td{ background:repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 4px,transparent 4px,transparent 9px) !important;background-color:rgba(0,0,0,.35) !important; }
 .hor-cerrado-chip{ color:var(--text3);font-size:10px;font-weight:700;font-style:italic;letter-spacing:.3px;opacity:.6; }
@@ -5679,7 +5687,8 @@ let horario    = []; // loaded from Supabase
 let usuarios   = []; // loaded from Supabase (admin only)
 let currentUser = null; // active session
 let pagoFilter  = { estado:'todos', metodo:'todos', plan:'todos' };
-let horarioOverrides = []; // specific-date overrides for horario
+let horarioOverrides      = []; // specific-date overrides for horario
+let horarioCancelaciones  = []; // single-occurrence cancellations
 let hvYear  = new Date().getFullYear();
 let hvMonth = new Date().getMonth(); // 0-indexed
 // Gastos
@@ -7526,7 +7535,7 @@ function go(id, el){
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
   if(id==='marketing')     renderCalendario();
-  if(id==='horario')     { loadHorarioOverridesFromSupabase().then(()=>switchHorTab('mensual')); }
+  if(id==='horario')     { Promise.all([loadHorarioOverridesFromSupabase(),loadHorarioCancelaciones()]).then(()=>switchHorTab('mensual')); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='revenue')     { renderRevenue(); }
   if(id==='por-vencer')  { renderPorVencer(); }
@@ -14624,6 +14633,19 @@ async function loadHorarioOverridesFromSupabase(){
   }));
 }
 
+async function loadHorarioCancelaciones(){
+  const mm    = String(hvMonth+1).padStart(2,'0');
+  const start = `${hvYear}-${mm}-01`;
+  const end   = `${hvYear}-${mm}-31`;
+  const { data, error } = await gf(window.supabaseClient.from('horario_cancelaciones').select('id,horario_id,fecha,motivo')).gte('fecha', start).lte('fecha', end);
+  if(error){ console.error('Error cargando cancelaciones:', error); horarioCancelaciones=[]; return; }
+  horarioCancelaciones = data||[];
+}
+
+function isCancelada(claseId, fechaStr){
+  return horarioCancelaciones.find(c => String(c.horario_id)===String(claseId) && c.fecha===fechaStr);
+}
+
 function getEffectiveClase(fechaStr, hora){
   const ov = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
   if(ov !== undefined) return { ...ov, cerrado: ov.tipo==='CERRADO', _isOverride: true };
@@ -14649,7 +14671,7 @@ function changeHorMonth(delta){
   hvMonth += delta;
   if(hvMonth>11){ hvMonth=0; hvYear++; }
   if(hvMonth<0 ){ hvMonth=11; hvYear--; }
-  loadHorarioOverridesFromSupabase().then(()=>{
+  Promise.all([loadHorarioOverridesFromSupabase(), loadHorarioCancelaciones()]).then(()=>{
     renderHorarioMensual();
     renderQuincenaKPI();
     const lbl2 = document.getElementById('hor-mes-label2');
@@ -14734,15 +14756,30 @@ function renderHorarioMensual(){
             ? `<span class="hor-sub-badge" title="Cubrió a: ${esc(origCoachLabel)}">↔ Sub</span><span class="hor-sub-orig">${esc(origCoachLabel)}</span>`
             : (isOv ? '<span class="hor-cell-ov" title="Modificado"></span>' : '');
           const coberBtn = `<span class="hor-cob-btn" onclick="event.stopPropagation();openCoberturaModal('${fStr}','${hora}')" title="Cobertura">👤 Cubrió</span>`;
-          html += `<td class="hor-clase-td hor-filled" style="background:${color};border-color:${color};" onclick="openEditClaseCell('${fStr}','${hora}')">
-            <div class="hor-cell-block">
-              ${subBadge}
-              <span class="hor-cell-coach">${cn ? esc(cn) : esc(tipo)}</span>
-              ${cn && tipo ? `<span class="hor-cell-tipo">${esc(tipo)}</span>` : ''}
-              ${!cn ? `<span class="hor-cell-tipo" style="opacity:.5;">Sin coach</span>` : ''}
-              ${coberBtn}
-            </div>
-          </td>`;
+          const cancelInfo = isCancelada(clase.id, fStr);
+          if(cancelInfo){
+            // Cancelled occurrence — show greyed-out cell with restore option
+            html += `<td class="hor-clase-td hor-cancelada-td" onclick="openEditClaseCell('${fStr}','${hora}')">
+              <div class="hor-cell-block">
+                <span class="hor-cancelada-badge">✕ Cancelada</span>
+                <span class="hor-cell-coach" style="text-decoration:line-through;opacity:.55;">${cn ? esc(cn) : esc(tipo)}</span>
+                ${cancelInfo.motivo ? `<span class="hor-cell-tipo" style="opacity:.6;">${esc(cancelInfo.motivo)}</span>` : ''}
+                <span class="hor-cancel-btn hor-restore-btn" onclick="event.stopPropagation();restoreClaseOccurrence('${cancelInfo.id}')" title="Restaurar clase">↩ Restaurar</span>
+              </div>
+            </td>`;
+          } else {
+            const cancelBtn = `<span class="hor-cancel-btn" onclick="event.stopPropagation();cancelClaseOccurrence('${clase.id}','${fStr}','${hora}')" title="Cancelar esta clase">✕ Cancelar</span>`;
+            html += `<td class="hor-clase-td hor-filled" style="background:${color};border-color:${color};" onclick="openEditClaseCell('${fStr}','${hora}')">
+              <div class="hor-cell-block">
+                ${subBadge}
+                <span class="hor-cell-coach">${cn ? esc(cn) : esc(tipo)}</span>
+                ${cn && tipo ? `<span class="hor-cell-tipo">${esc(tipo)}</span>` : ''}
+                ${!cn ? `<span class="hor-cell-tipo" style="opacity:.5;">Sin coach</span>` : ''}
+                ${coberBtn}
+                ${cancelBtn}
+              </div>
+            </td>`;
+          }
         }
       }
       html += '</tr>';
@@ -14931,6 +14968,34 @@ async function saveCobertura(){
   toast(`${coachNom} cubrió la clase ✅`,'👤');
   renderHorarioMensual();
   renderQuincenaKPI();
+}
+
+/* ── Cancelaciones de clase (ocurrencia individual) ── */
+async function cancelClaseOccurrence(claseId, fechaStr, hora){
+  const motivo = prompt(`Motivo de cancelación (${fechaStr} · ${formatHoraDisplay(hora)})\nDeja en blanco si no aplica:`);
+  if(motivo === null) return; // user cancelled the prompt
+
+  const gymId = MOVE_GYM_ID||null;
+  const payload = { horario_id: claseId, fecha: fechaStr, motivo: motivo.trim()||null };
+  if(gymId) payload.gym_id = gymId;
+
+  const { error } = await window.supabaseClient.from('horario_cancelaciones').insert([payload]);
+  if(error){ alert('Error al cancelar: '+(error.message||error)); console.error(error); return; }
+
+  await loadHorarioCancelaciones();
+  renderHorarioMensual();
+  toast('Clase cancelada para esta fecha 🚫','🚫');
+}
+
+async function restoreClaseOccurrence(cancelId){
+  if(!confirm('¿Restaurar esta clase?')) return;
+
+  const { error } = await window.supabaseClient.from('horario_cancelaciones').delete().eq('id', cancelId);
+  if(error){ alert('Error al restaurar: '+(error.message||error)); console.error(error); return; }
+
+  horarioCancelaciones = horarioCancelaciones.filter(c=>String(c.id)!==String(cancelId));
+  renderHorarioMensual();
+  toast('Clase restaurada ✅','✅');
 }
 
 async function removeCobertura(){
@@ -15450,6 +15515,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadContenidosFromSupabase(),
     loadHorarioFromSupabase(),
     loadHorarioOverridesFromSupabase(),
+    loadHorarioCancelaciones(),
     loadGastosFromSupabase(),
     loadProgramasFromSupabase(),
     loadProgConfigFromSupabase(),

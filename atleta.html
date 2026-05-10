@@ -381,6 +381,8 @@ body::before{
 .medidas-empty-ico{font-size:32px;margin-bottom:10px;}
 .medidas-empty-title{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:6px;}
 .medidas-empty-sub{font-size:12px;color:var(--text3);line-height:1.5;max-width:240px;margin:0 auto;}
+.med-add-btn{display:block;width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:18px;letter-spacing:.3px;transition:opacity .15s;}
+.med-add-btn:active{opacity:.8;}
 .med-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
 .med-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;}
 .med-stat-n{font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;line-height:1;}
@@ -474,6 +476,16 @@ body::before{
 .cls-card.reserved{
   background:rgba(29,158,117,.05);
   border-color:rgba(29,158,117,.22);
+}
+.cls-card.cancelada{
+  background:rgba(239,68,68,.04);
+  border-color:rgba(239,68,68,.15);
+  opacity:.7;
+}
+.cls-cancel-badge{
+  font-size:11px;font-weight:700;color:#f87171;
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);
+  border-radius:8px;padding:4px 10px;
 }
 .cls-card.reserved::before{
   content:'';position:absolute;top:0;left:0;right:0;
@@ -1366,7 +1378,7 @@ body::before{
             <div class="medidas-empty">
               <div class="medidas-empty-ico">📏</div>
               <div class="medidas-empty-title">Sin mediciones aún</div>
-              <div class="medidas-empty-sub">Tu gym registrará tus mediciones aquí para que veas tu evolución.</div>
+              <div class="medidas-empty-sub">Registra tu primera medición para ver tu evolución.</div>
             </div>
           </div>
         </div>
@@ -1598,6 +1610,66 @@ body::before{
     <div class="pd-fecha" id="pd-fecha">—</div>
     <div id="pd-content"></div>
     <div class="sheet-close" onclick="closeSheet('prog-sheet')">Cerrar</div>
+  </div>
+</div>
+
+<!-- ── Medidas self-entry sheet ── -->
+<div class="sheet-backdrop" id="medidas-sheet" onclick="closeSheet('medidas-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;max-height:92vh;overflow-y:auto;">
+    <div class="sheet-handle"></div>
+    <div class="bit-sheet">
+      <div class="sheet-title">📏 Registrar medición</div>
+      <p style="font-size:12px;color:var(--text3);margin:-8px 0 16px;line-height:1.5;">Tus medidas son privadas y solo tú puedes verlas.</p>
+
+      <!-- Fecha -->
+      <div class="bit-field">
+        <label>Fecha</label>
+        <input type="date" id="med-fecha"/>
+      </div>
+
+      <!-- Peso + Grasa -->
+      <div class="bit-row2">
+        <div class="bit-field">
+          <label>Peso (kg)</label>
+          <input type="number" id="med-peso" min="0" step="0.1" placeholder="70.5" inputmode="decimal"/>
+        </div>
+        <div class="bit-field">
+          <label>% Grasa corporal</label>
+          <input type="number" id="med-grasa" min="0" max="80" step="0.1" placeholder="18.0" inputmode="decimal"/>
+        </div>
+      </div>
+
+      <!-- Medidas en cm -->
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Medidas (cm) — opcional</div>
+      <div class="bit-row2">
+        <div class="bit-field">
+          <label>Cintura</label>
+          <input type="number" id="med-cintura" min="0" step="0.5" placeholder="80" inputmode="decimal"/>
+        </div>
+        <div class="bit-field">
+          <label>Cadera</label>
+          <input type="number" id="med-cadera" min="0" step="0.5" placeholder="90" inputmode="decimal"/>
+        </div>
+      </div>
+      <div class="bit-row2">
+        <div class="bit-field">
+          <label>Pecho</label>
+          <input type="number" id="med-pecho" min="0" step="0.5" placeholder="95" inputmode="decimal"/>
+        </div>
+        <div class="bit-field">
+          <label>Brazo</label>
+          <input type="number" id="med-brazo" min="0" step="0.5" placeholder="34" inputmode="decimal"/>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="bit-field">
+        <label>Notas (opcional)</label>
+        <textarea id="med-notas" rows="2" placeholder="Observaciones, estado físico..."></textarea>
+      </div>
+
+      <button class="bit-save-btn" id="med-save-btn" onclick="saveMedicion()">Guardar medición</button>
+    </div>
   </div>
 </div>
 
@@ -2535,11 +2607,12 @@ function renderHistorial(){
 
 // ── Clases / Reservas ────────────────────────────────
 const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-let clasesHorarios   = [];   // weekly template from 'horarios' table
-let clasesReservas   = {};   // { horario_id+fecha: reserva } for current client
-let clasesCupos      = {};   // { horario_id+fecha: count }
-let clasesWaitlist   = {};   // { horario_id+fecha: waitlist_entry } for current client
-let clasesWaitlistN  = {};   // { horario_id+fecha: total waitlist count }
+let clasesHorarios      = [];   // weekly template from 'horarios' table
+let clasesReservas      = {};   // { horario_id+fecha: reserva } for current client
+let clasesCupos         = {};   // { horario_id+fecha: count }
+let clasesWaitlist      = {};   // { horario_id+fecha: waitlist_entry } for current client
+let clasesWaitlistN     = {};   // { horario_id+fecha: total waitlist count }
+let clasesCancelaciones = {};   // { horario_id+fecha: true } cancelled single occurrences
 let clasesActiveDia  = null; // currently selected day name (e.g. 'Lunes')
 let clasesLoading    = false;
 
@@ -2674,6 +2747,17 @@ async function loadClasesData(){
       }catch(_){ clasesWaitlistN[key]=0; }
     }));
 
+    // 6. Fetch single-occurrence cancellations for this 7-day window
+    clasesCancelaciones = {};
+    try{
+      const canRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/horario_cancelaciones?gym_id=eq.${gymId}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&select=horario_id,fecha`,
+        { headers: _sbHeaders() }
+      );
+      const canData = canRes.ok ? await canRes.json() : [];
+      canData.forEach(c=>{ clasesCancelaciones[c.horario_id+'_'+c.fecha] = true; });
+    }catch(_){ /* non-blocking */ }
+
     // Build tabs from days that have classes
     const diasConClases = [...new Set(clasesHorarios.map(h=>h.dia))];
     // Order by index in dates (next 7 days in order)
@@ -2765,6 +2849,18 @@ function renderClasesView(dates){
 
   el.innerHTML = clasesDia.map(h=>{
     const key        = h.id+'_'+fecha;
+    const isCancelada = !!clasesCancelaciones[key];
+    if(isCancelada){
+      return `<div class="cls-card cancelada">
+        <div class="cls-card-head">
+          <div>
+            <div class="cls-card-time" style="opacity:.45;">${_fmtHora(h.hora)}</div>
+            <div class="cls-card-type" style="opacity:.45;text-decoration:line-through;">${h.tipo||'Clase'}</div>
+          </div>
+          <div class="cls-cancel-badge">🚫 Cancelada</div>
+        </div>
+      </div>`;
+    }
     const cupoTotal  = h.cupo || 0;
     const cupoUsado  = clasesCupos[key] || 0;
     const cupoLibre  = Math.max(0, cupoTotal - cupoUsado);
@@ -3285,7 +3381,8 @@ function renderMedidasView(rows){
     el.innerHTML = `<div class="medidas-empty">
       <div class="medidas-empty-ico">📏</div>
       <div class="medidas-empty-title">Sin mediciones aún</div>
-      <div class="medidas-empty-sub">Tu gym registrará tus medidas en cada evaluación para que veas tu evolución aquí.</div>
+      <div class="medidas-empty-sub">Registra tu primera medición para comenzar a ver tu progreso.</div>
+      <button class="med-add-btn" onclick="openMedicionModal()">＋ Registrar medición</button>
     </div>`;
     return;
   }
@@ -3344,6 +3441,9 @@ function renderMedidasView(rows){
     </div>`;
   });
 
+  // Add button
+  html += `<button class="med-add-btn" onclick="openMedicionModal()" style="margin-bottom:16px;">＋ Nueva medición</button>`;
+
   // History table
   html += `<div class="med-history">
     <div class="med-history-hdr">Historial de mediciones</div>`;
@@ -3367,6 +3467,81 @@ function renderMedidasView(rows){
   html += `</div>`;
 
   el.innerHTML = html;
+}
+
+function openMedicionModal(){
+  // Set default date to today
+  const today = new Date().toISOString().slice(0,10);
+  const inp = document.getElementById('med-fecha');
+  if(inp) inp.value = today;
+  // Clear fields
+  ['med-peso','med-grasa','med-cintura','med-cadera','med-pecho','med-brazo'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const notasEl = document.getElementById('med-notas');
+  if(notasEl) notasEl.value = '';
+  const btn = document.getElementById('med-save-btn');
+  if(btn){ btn.disabled = false; btn.textContent = 'Guardar medición'; }
+  openSheet('medidas-sheet');
+}
+
+async function saveMedicion(){
+  if(!portalData) return;
+  const cliId = portalData.cliente?.id;
+  if(!cliId){ alert('Error: no se pudo identificar tu cuenta.'); return; }
+
+  const fechaEl = document.getElementById('med-fecha');
+  const fecha = fechaEl ? fechaEl.value : '';
+  if(!fecha){ alert('Selecciona la fecha de la medición.'); return; }
+
+  const fNum = id => {
+    const el = document.getElementById(id);
+    if(!el || !el.value.trim()) return null;
+    const n = parseFloat(el.value);
+    return isNaN(n) ? null : n;
+  };
+
+  const payload = {
+    cliente_id: cliId,
+    fecha,
+    peso_kg:    fNum('med-peso'),
+    grasa_pct:  fNum('med-grasa'),
+    cintura_cm: fNum('med-cintura'),
+    cadera_cm:  fNum('med-cadera'),
+    pecho_cm:   fNum('med-pecho'),
+    brazo_cm:   fNum('med-brazo'),
+    notas:      (document.getElementById('med-notas')?.value||'').trim() || null,
+  };
+
+  // Need at least one measurement
+  const hasMeasure = ['peso_kg','grasa_pct','cintura_cm','cadera_cm','pecho_cm','brazo_cm'].some(k=>payload[k]!=null);
+  if(!hasMeasure){ alert('Ingresa al menos una medida.'); return; }
+
+  const btn = document.getElementById('med-save-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/medidas`, {
+      method: 'POST',
+      headers: { ...apiHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const errText = await res.text();
+      throw new Error(errText || res.statusText);
+    }
+    const [saved] = await res.json();
+    // Invalidate cache and re-render
+    _medidasLoaded = false;
+    _medidasCache = null;
+    closeSheet('medidas-sheet');
+    await fetchAndRenderMedidas();
+  }catch(e){
+    console.error('saveMedicion error:', e);
+    alert('Error al guardar: '+(e.message||e));
+    if(btn){ btn.disabled = false; btn.textContent = 'Guardar medición'; }
+  }
 }
 
 function buildSparkline(vals, color){
