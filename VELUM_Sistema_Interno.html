@@ -2656,6 +2656,62 @@ select option{background:#0d1a16;color:var(--text);}
 }
 #va-send:hover{ background:#5DCAA5; }
 #va-send:disabled{ opacity:.4;cursor:not-allowed; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS — iOS-style panel navigation
+═══════════════════════════════════════════════════════════════ */
+.cfg-group-label{
+  font-size:11px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1px;
+  margin:22px 0 6px 4px;
+}
+.cfg-group-label:first-child{ margin-top:4px; }
+.cfg-menu-group{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+}
+.cfg-menu-item{
+  display:flex;align-items:center;gap:13px;
+  padding:13px 16px;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background .14s;
+}
+.cfg-menu-item:hover{ background:rgba(255,255,255,.04); }
+.cfg-menu-item:active{ background:rgba(255,255,255,.07); }
+.cfg-item-icon{
+  width:34px;height:34px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;flex-shrink:0;
+}
+.cfg-item-label{
+  font-size:14px;font-weight:600;color:var(--text);flex:1;min-width:0;
+}
+.cfg-item-desc{
+  font-size:11px;color:var(--text3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+  max-width:160px;
+}
+@media(max-width:600px){ .cfg-item-desc{ display:none; } }
+.cfg-chevron{
+  font-size:22px;color:var(--text4);font-weight:300;
+  margin-left:6px;flex-shrink:0;line-height:1;
+  opacity:.6;
+}
+.cfg-panel{ display:none; }
+.cfg-panel.cfg-panel-active{ display:block; }
+.cfg-panel-header{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:18px;
+}
+.cfg-back-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 16px;border-radius:20px;
+  background:var(--card2);border:1px solid var(--border);
+  color:var(--text);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+  font-family:var(--font);
+}
+.cfg-back-btn:hover{ background:var(--card);border-color:var(--accent);color:var(--accent); }
 </style>
 </head>
 <body>
@@ -4055,292 +4111,440 @@ select option{background:#0d1a16;color:var(--text);}
         <div class="sh-title">Configuración</div>
       </div>
 
-      <!-- Apariencia -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="settings-section">
-          <div class="settings-section-title">🖼 Apariencia</div>
-          <div class="settings-row">
-            <div>
-              <div class="settings-label">Foto de fondo del Dashboard</div>
-              <div class="settings-desc">Pega una URL de imagen (Drive público, Imgur, etc.). Déjalo vacío para quitar la foto.</div>
-            </div>
-            <div class="settings-control" style="flex:1;max-width:340px;">
-              <input class="settings-input" style="width:100%;" id="cfg-photo-url" type="text" placeholder="https://..." oninput="previewPhoto(this.value)"/>
-              <div style="display:flex;gap:8px;margin-top:8px;">
-                <button class="btn btn-primary btn-sm" onclick="savePhotoUrl()">Aplicar foto</button>
-                <button class="btn btn-outline btn-sm" onclick="clearPhoto()">Quitar foto</button>
-              </div>
-            </div>
+      <!-- ══ MENU LANDING ══ -->
+      <div id="cfg-menu-landing">
+
+        <div class="cfg-group-label">Mi Gym</div>
+        <div class="cfg-menu-group">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('apariencia')">
+            <span class="cfg-item-icon" style="background:rgba(251,191,36,.13);color:#fbbf24;">🖼</span>
+            <span class="cfg-item-label">Apariencia</span>
+            <span class="cfg-item-desc">Foto de fondo del dashboard</span>
+            <span class="cfg-chevron">›</span>
           </div>
-          <div id="photo-preview" style="display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(29,158,117,.2);max-height:160px;">
-            <img id="photo-preview-img" src="" style="width:100%;object-fit:cover;max-height:160px;" onerror="this.parentElement.style.display='none'"/>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('personalizacion')">
+            <span class="cfg-item-icon" style="background:rgba(167,139,250,.13);color:#a78bfa;">🎨</span>
+            <span class="cfg-item-label">Personalización</span>
+            <span class="cfg-item-desc">Colores, tema y logo del gym</span>
+            <span class="cfg-chevron">›</span>
+          </div>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('metas')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(29,158,117,.13);color:var(--accent);">🎯</span>
+            <span class="cfg-item-label">Metas de Negocio</span>
+            <span class="cfg-item-desc">Meta de ingresos mensual</span>
+            <span class="cfg-chevron">›</span>
           </div>
         </div>
-        <div class="settings-section" style="margin-top:20px;margin-bottom:0;">
-          <div class="settings-section-title">🎨 Personalización</div>
 
-          <!-- ── TEMA DE COLOR ── -->
-          <div class="gym-section-card">
-            <div class="gym-section-title">Tema de color</div>
-            <div class="theme-picker-grid" id="gym-theme-grid">
-              <!-- Populated by renderThemeGrid() -->
-            </div>
-            <!-- Custom color -->
-            <div class="color-custom-row">
-              <label>Color personalizado</label>
-              <input id="cfg-gym-color" type="color" value="#1D9E75"
-                style="width:40px;height:34px;border:none;background:none;cursor:pointer;border-radius:6px;padding:2px;flex-shrink:0;"
-                oninput="previewGymColor(this.value)"/>
-              <input id="cfg-gym-color-hex" type="text" placeholder="#1D9E75" value="#1D9E75"
-                style="width:90px;padding:7px 10px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:7px;color:var(--text);font-size:12px;font-family:var(--font);outline:none;"
-                oninput="syncColorPicker(this.value)"/>
-              <div id="cfg-color-preview"
-                style="width:30px;height:30px;border-radius:7px;background:#1D9E75;border:1px solid rgba(255,255,255,.12);flex-shrink:0;"></div>
-              <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="applyCustomColor()">Aplicar</button>
-            </div>
+        <div class="cfg-group-label">Operaciones</div>
+        <div class="cfg-menu-group">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('planes')">
+            <span class="cfg-item-icon" style="background:rgba(59,130,246,.13);color:#3b82f6;">📋</span>
+            <span class="cfg-item-label">Catálogo de Planes</span>
+            <span class="cfg-item-desc">Planes y precios de membresías</span>
+            <span class="cfg-chevron">›</span>
           </div>
-
-          <!-- ── MODO COLOR ── -->
-          <div class="gym-section-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-            <div>
-              <div class="gym-section-title" style="margin-bottom:4px;">Modo de interfaz</div>
-              <div style="font-size:12px;color:var(--text3);">Alterna entre modo oscuro y claro según tu preferencia.</div>
-            </div>
-            <button id="cfg-mode-btn" class="btn btn-outline" onclick="toggleColorMode()" style="min-width:148px;">☀️ Modo Claro</button>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('portal')">
+            <span class="cfg-item-icon" style="background:rgba(16,185,129,.13);color:#10b981;">🏃</span>
+            <span class="cfg-item-label">Portal de Atletas</span>
+            <span class="cfg-item-desc">Acceso y contraseña para socios</span>
+            <span class="cfg-chevron">›</span>
           </div>
-
-          <!-- ── IDENTIDAD ── -->
-          <div class="gym-section-card">
-            <div class="gym-section-title">Identidad</div>
-            <div class="identity-grid">
-              <div class="identity-field">
-                <label>Nombre del gym</label>
-                <input id="cfg-gym-nombre" type="text" placeholder="MOVE" value="MOVE"/>
-              </div>
-              <div class="identity-field">
-                <label>Subtítulo</label>
-                <input id="cfg-tagline" type="text" placeholder="Fitness Center" value="Fitness Center"/>
-              </div>
-            </div>
-            <div class="identity-field">
-              <label>URL del logo <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional — déjalo vacío para usar el nombre)</span></label>
-              <input id="cfg-gym-logo" type="text" placeholder="https://..." oninput="previewLogoUrl(this.value)"/>
-              <img id="cfg-logo-img" class="logo-preview-sm" src="" alt="Logo preview"
-                onerror="this.style.display='none'"/>
-            </div>
-          </div>
-
-          <!-- Gym ID (read-only, for multi-tenant reference) -->
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px;">
-            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">🔑 Gym ID (multi-tenant)</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <code id="cfg-gym-id-display" style="font-size:11px;color:var(--accent);background:var(--accent-bg);padding:3px 8px;border-radius:5px;border:1px solid var(--accent);letter-spacing:.5px;">—</code>
-              <span style="font-size:10px;color:var(--text4);">Identificador único de tu gym. No lo compartas.</span>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
-            <button class="btn btn-outline btn-sm" onclick="resetGymConfig()">↩ Defaults</button>
-            <button class="btn btn-primary btn-sm" onclick="saveGymConfig()">💾 Guardar cambios</button>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('kiosco')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(251,146,60,.13);color:#fb923c;">📱</span>
+            <span class="cfg-item-label">Kiosco de Check-in</span>
+            <span class="cfg-item-desc">URL pública y PIN de seguridad</span>
+            <span class="cfg-chevron">›</span>
           </div>
         </div>
-      </div>
 
-      <!-- Notificaciones -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">🔔 Notificaciones Push</div>
-          <div class="settings-row">
-            <div>
-              <div class="settings-label">Alertas de membresías</div>
-              <div class="settings-desc">Recibe una notificación diaria cuando haya membresías vencidas o a 3 días de vencer. Funciona aunque la app esté en segundo plano.</div>
-            </div>
-            <div class="settings-control">
-              <button class="btn btn-primary btn-sm" onclick="solicitarPermisosNotificaciones()">🔔 Activar notificaciones</button>
-            </div>
+        <div class="cfg-group-label">Pagos</div>
+        <div class="cfg-menu-group">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('stripe')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(99,102,241,.13);color:#6366f1;">💳</span>
+            <span class="cfg-item-label">Stripe / Pagos en Línea</span>
+            <span class="cfg-item-desc">Configura cobros online</span>
+            <span class="cfg-chevron">›</span>
           </div>
         </div>
-      </div>
 
-      <!-- Catálogo de planes -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">📋 Catálogo de Planes</div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el monto se llenará automático al seleccionar el plan.</div>
-          <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-            <div class="field" style="flex:1;min-width:140px;margin:0;">
-              <label>Nombre del plan</label>
-              <input id="plan-nuevo-nombre" type="text" class="settings-input" placeholder="Ej: Mensual, Quincenal..."/>
-            </div>
-            <div class="field" style="width:120px;margin:0;">
-              <label>Precio</label>
-              <input id="plan-nuevo-precio" type="number" class="settings-input" placeholder="1200"/>
-            </div>
-            <div class="field" style="width:100px;margin:0;">
-              <label>Días</label>
-              <input id="plan-nuevo-dias" type="number" class="settings-input" placeholder="30" title="Días de vigencia (para calcular vencimiento automático)"/>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="agregarPlan()" style="margin-bottom:1px;">+ Agregar</button>
+        <div class="cfg-group-label">Sistema</div>
+        <div class="cfg-menu-group">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('notificaciones')">
+            <span class="cfg-item-icon" style="background:rgba(239,68,68,.13);color:#ef4444;">🔔</span>
+            <span class="cfg-item-label">Notificaciones</span>
+            <span class="cfg-item-desc">Alertas de membresías por vencer</span>
+            <span class="cfg-chevron">›</span>
+          </div>
+          <div class="cfg-menu-item" id="cfg-menu-usuarios" onclick="openSettingsPanel('usuarios')">
+            <span class="cfg-item-icon" style="background:rgba(45,212,191,.13);color:#2dd4bf;">👥</span>
+            <span class="cfg-item-label">Usuarios del Sistema</span>
+            <span class="cfg-item-desc">Gestión de accesos y roles</span>
+            <span class="cfg-chevron">›</span>
+          </div>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('menu')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(100,116,139,.13);color:#94a3b8;">🗂</span>
+            <span class="cfg-item-label">Menú &amp; Navegación</span>
+            <span class="cfg-item-desc">Reordena y oculta secciones</span>
+            <span class="cfg-chevron">›</span>
           </div>
         </div>
-      </div>
 
-      <!-- Portal de Atletas -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">🏃 Portal de Atletas</div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
-            Configura el acceso de tus clientes a su portal personal. Ellos entran con su número de socio y la contraseña que tú elijas.
-          </div>
-          <div class="settings-row" style="flex-wrap:wrap;gap:14px;">
-            <div class="field" style="flex:1;min-width:140px;margin:0;">
-              <label>Código del Gym</label>
-              <input class="settings-input" id="cfg-portal-codigo" type="text" placeholder="ej. MOVE" style="text-transform:uppercase;" maxlength="12"/>
-              <div style="font-size:10px;color:var(--text3);margin-top:4px;">Los atletas lo usan para identificar tu gym en el login.</div>
-            </div>
-            <div class="field" style="flex:1;min-width:140px;margin:0;">
-              <label>Contraseña del Portal</label>
-              <input class="settings-input" id="cfg-portal-password" type="text" placeholder="ej. move2025" maxlength="30"/>
-              <div style="font-size:10px;color:var(--text3);margin-top:4px;">Una contraseña para todos tus socios. Cámbiala cuando quieras.</div>
-            </div>
-          </div>
-          <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="savePortalConfig()">💾 Guardar configuración</button>
-          <div id="portal-link-box" style="display:none;margin-top:16px;padding:12px 14px;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:10px;">
-            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;">🔗 Link para compartir con tus atletas:</div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <code id="portal-link-text" style="font-size:12px;color:var(--text);background:rgba(0,0,0,.2);padding:6px 10px;border-radius:6px;flex:1;word-break:break-all;"></code>
-              <button class="btn btn-outline btn-sm" onclick="copyPortalLink()" style="white-space:nowrap;">📋 Copiar</button>
-            </div>
+        <div class="cfg-group-label">Mi Cuenta</div>
+        <div class="cfg-menu-group" style="margin-bottom:32px;">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('cuenta')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(29,158,117,.13);color:var(--accent);">🔐</span>
+            <span class="cfg-item-label">Perfil y Contraseña</span>
+            <span class="cfg-item-desc">Edita tu perfil y cierra sesión</span>
+            <span class="cfg-chevron">›</span>
           </div>
         </div>
-      </div>
 
-      <!-- Kiosco URL -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">📱 Kiosco de Check-in</div>
-          <div class="settings-row">
-            <div>
-              <div class="settings-label">URL pública del kiosco</div>
-              <div class="settings-desc">Si subiste el sistema a Vercel o tu web, pega aquí la URL base (ej: <code style="font-size:10px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;">https://move-gym.vercel.app</code>). Los QR de tus clientes usarán esa URL para que puedan hacer check-in desde su celular. Sin URL, los QR funcionan solo con el escáner USB o cámara en el kiosco.</div>
-            </div>
-            <div class="settings-control" style="flex:1;max-width:340px;">
-              <input class="settings-input" style="width:100%;" id="cfg-kiosko-url" type="text" placeholder="https://tu-gym.vercel.app"/>
-              <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveKioskoUrl()">Guardar URL</button>
-            </div>
-          </div>
-          <div style="margin-top:14px;padding:10px 14px;background:rgba(29,158,117,.06);border-radius:8px;border:1px solid rgba(29,158,117,.15);font-size:11px;color:var(--text3);line-height:1.6;">
-            <strong style="color:var(--accent);">Escáner USB:</strong> conecta el escáner a la tablet/PC, abre <code>checkin.html</code> en Chrome y listo — no necesita cámara ni internet constante.<br>
-            <strong style="color:var(--accent);">Vercel (gratis):</strong> sube los archivos HTML a <a href="https://vercel.com" target="_blank" style="color:var(--accent);">vercel.com</a> → los clientes hacen check-in desde su celular sin kiosco.
-          </div>
+      </div><!-- /#cfg-menu-landing -->
 
-          <!-- ── PIN DE KIOSCO ── -->
-          <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:18px;">
+      <!-- ══ PANEL: Apariencia ══ -->
+      <div class="cfg-panel" id="cfg-panel-apariencia">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">🖼 Apariencia</div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">🔐 PIN de seguridad del kiosco</div>
-                <div class="settings-desc">Si configuras un PIN (4–6 dígitos), se pedirá antes de abrir el kiosco. Déjalo vacío para acceso sin PIN.</div>
+                <div class="settings-label">Foto de fondo del Dashboard</div>
+                <div class="settings-desc">Pega una URL de imagen (Drive público, Imgur, etc.). Déjalo vacío para quitar la foto.</div>
               </div>
-              <div class="settings-control" style="flex:1;max-width:240px;">
-                <input class="settings-input" style="width:100%;letter-spacing:6px;font-size:18px;text-align:center;" id="cfg-kiosco-pin" type="password" inputmode="numeric" maxlength="6" placeholder="——"/>
+              <div class="settings-control" style="flex:1;max-width:340px;">
+                <input class="settings-input" style="width:100%;" id="cfg-photo-url" type="text" placeholder="https://..." oninput="previewPhoto(this.value)"/>
                 <div style="display:flex;gap:8px;margin-top:8px;">
-                  <button class="btn btn-primary btn-sm" onclick="saveKioscoPin()">Guardar PIN</button>
-                  <button class="btn btn-outline btn-sm" onclick="clearKioscoPin()">Quitar PIN</button>
+                  <button class="btn btn-primary btn-sm" onclick="savePhotoUrl()">Aplicar foto</button>
+                  <button class="btn btn-outline btn-sm" onclick="clearPhoto()">Quitar foto</button>
+                </div>
+              </div>
+            </div>
+            <div id="photo-preview" style="display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(29,158,117,.2);max-height:160px;">
+              <img id="photo-preview-img" src="" style="width:100%;object-fit:cover;max-height:160px;" onerror="this.parentElement.style.display='none'"/>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-apariencia -->
+
+      <!-- ══ PANEL: Personalización ══ -->
+      <div class="cfg-panel" id="cfg-panel-personalizacion">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">🎨 Personalización</div>
+
+            <!-- ── TEMA DE COLOR ── -->
+            <div class="gym-section-card">
+              <div class="gym-section-title">Tema de color</div>
+              <div class="theme-picker-grid" id="gym-theme-grid">
+                <!-- Populated by renderThemeGrid() -->
+              </div>
+              <div class="color-custom-row">
+                <label>Color personalizado</label>
+                <input id="cfg-gym-color" type="color" value="#1D9E75"
+                  style="width:40px;height:34px;border:none;background:none;cursor:pointer;border-radius:6px;padding:2px;flex-shrink:0;"
+                  oninput="previewGymColor(this.value)"/>
+                <input id="cfg-gym-color-hex" type="text" placeholder="#1D9E75" value="#1D9E75"
+                  style="width:90px;padding:7px 10px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:7px;color:var(--text);font-size:12px;font-family:var(--font);outline:none;"
+                  oninput="syncColorPicker(this.value)"/>
+                <div id="cfg-color-preview"
+                  style="width:30px;height:30px;border-radius:7px;background:#1D9E75;border:1px solid rgba(255,255,255,.12);flex-shrink:0;"></div>
+                <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="applyCustomColor()">Aplicar</button>
+              </div>
+            </div>
+
+            <!-- ── MODO COLOR ── -->
+            <div class="gym-section-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+              <div>
+                <div class="gym-section-title" style="margin-bottom:4px;">Modo de interfaz</div>
+                <div style="font-size:12px;color:var(--text3);">Alterna entre modo oscuro y claro según tu preferencia.</div>
+              </div>
+              <button id="cfg-mode-btn" class="btn btn-outline" onclick="toggleColorMode()" style="min-width:148px;">☀️ Modo Claro</button>
+            </div>
+
+            <!-- ── IDENTIDAD ── -->
+            <div class="gym-section-card">
+              <div class="gym-section-title">Identidad</div>
+              <div class="identity-grid">
+                <div class="identity-field">
+                  <label>Nombre del gym</label>
+                  <input id="cfg-gym-nombre" type="text" placeholder="MOVE" value="MOVE"/>
+                </div>
+                <div class="identity-field">
+                  <label>Subtítulo</label>
+                  <input id="cfg-tagline" type="text" placeholder="Fitness Center" value="Fitness Center"/>
+                </div>
+              </div>
+              <div class="identity-field">
+                <label>URL del logo <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional — déjalo vacío para usar el nombre)</span></label>
+                <input id="cfg-gym-logo" type="text" placeholder="https://..." oninput="previewLogoUrl(this.value)"/>
+                <img id="cfg-logo-img" class="logo-preview-sm" src="" alt="Logo preview"
+                  onerror="this.style.display='none'"/>
+              </div>
+            </div>
+
+            <!-- Gym ID -->
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px;">
+              <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">🔑 Gym ID (multi-tenant)</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <code id="cfg-gym-id-display" style="font-size:11px;color:var(--accent);background:var(--accent-bg);padding:3px 8px;border-radius:5px;border:1px solid var(--accent);letter-spacing:.5px;">—</code>
+                <span style="font-size:10px;color:var(--text4);">Identificador único de tu gym. No lo compartas.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+              <button class="btn btn-outline btn-sm" onclick="resetGymConfig()">↩ Defaults</button>
+              <button class="btn btn-primary btn-sm" onclick="saveGymConfig()">💾 Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-personalizacion -->
+
+      <!-- ══ PANEL: Metas ══ -->
+      <div class="cfg-panel" id="cfg-panel-metas">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">🎯 Metas de Negocio</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Meta de ingresos mensual</div>
+                <div class="settings-desc">Se usa para calcular el % de avance en el Dashboard cada mes</div>
+              </div>
+              <div class="settings-control">
+                <input class="settings-input" id="cfg-meta-mensual" type="number" min="0" placeholder="Ej: 50000"/>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveMetaMensual()">Guardar meta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-metas -->
+
+      <!-- ══ PANEL: Catálogo de Planes ══ -->
+      <div class="cfg-panel" id="cfg-panel-planes">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">📋 Catálogo de Planes</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el monto se llenará automático al seleccionar el plan.</div>
+            <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+              <div class="field" style="flex:1;min-width:140px;margin:0;">
+                <label>Nombre del plan</label>
+                <input id="plan-nuevo-nombre" type="text" class="settings-input" placeholder="Ej: Mensual, Quincenal..."/>
+              </div>
+              <div class="field" style="width:120px;margin:0;">
+                <label>Precio</label>
+                <input id="plan-nuevo-precio" type="number" class="settings-input" placeholder="1200"/>
+              </div>
+              <div class="field" style="width:100px;margin:0;">
+                <label>Días</label>
+                <input id="plan-nuevo-dias" type="number" class="settings-input" placeholder="30" title="Días de vigencia (para calcular vencimiento automático)"/>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="agregarPlan()" style="margin-bottom:1px;">+ Agregar</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-planes -->
+
+      <!-- ══ PANEL: Portal de Atletas ══ -->
+      <div class="cfg-panel" id="cfg-panel-portal">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">🏃 Portal de Atletas</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
+              Configura el acceso de tus clientes a su portal personal. Ellos entran con su número de socio y la contraseña que tú elijas.
+            </div>
+            <div class="settings-row" style="flex-wrap:wrap;gap:14px;">
+              <div class="field" style="flex:1;min-width:140px;margin:0;">
+                <label>Código del Gym</label>
+                <input class="settings-input" id="cfg-portal-codigo" type="text" placeholder="ej. MOVE" style="text-transform:uppercase;" maxlength="12"/>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px;">Los atletas lo usan para identificar tu gym en el login.</div>
+              </div>
+              <div class="field" style="flex:1;min-width:140px;margin:0;">
+                <label>Contraseña del Portal</label>
+                <input class="settings-input" id="cfg-portal-password" type="text" placeholder="ej. move2025" maxlength="30"/>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px;">Una contraseña para todos tus socios. Cámbiala cuando quieras.</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="savePortalConfig()">💾 Guardar configuración</button>
+            <div id="portal-link-box" style="display:none;margin-top:16px;padding:12px 14px;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:10px;">
+              <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;">🔗 Link para compartir con tus atletas:</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <code id="portal-link-text" style="font-size:12px;color:var(--text);background:rgba(0,0,0,.2);padding:6px 10px;border-radius:6px;flex:1;word-break:break-all;"></code>
+                <button class="btn btn-outline btn-sm" onclick="copyPortalLink()" style="white-space:nowrap;">📋 Copiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-portal -->
+
+      <!-- ══ PANEL: Kiosco ══ -->
+      <div class="cfg-panel" id="cfg-panel-kiosco">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">📱 Kiosco de Check-in</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">URL pública del kiosco</div>
+                <div class="settings-desc">Si subiste el sistema a Vercel o tu web, pega aquí la URL base (ej: <code style="font-size:10px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;">https://move-gym.vercel.app</code>). Los QR de tus clientes usarán esa URL para que puedan hacer check-in desde su celular. Sin URL, los QR funcionan solo con el escáner USB o cámara en el kiosco.</div>
+              </div>
+              <div class="settings-control" style="flex:1;max-width:340px;">
+                <input class="settings-input" style="width:100%;" id="cfg-kiosko-url" type="text" placeholder="https://tu-gym.vercel.app"/>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveKioskoUrl()">Guardar URL</button>
+              </div>
+            </div>
+            <div style="margin-top:14px;padding:10px 14px;background:rgba(29,158,117,.06);border-radius:8px;border:1px solid rgba(29,158,117,.15);font-size:11px;color:var(--text3);line-height:1.6;">
+              <strong style="color:var(--accent);">Escáner USB:</strong> conecta el escáner a la tablet/PC, abre <code>checkin.html</code> en Chrome y listo — no necesita cámara ni internet constante.<br>
+              <strong style="color:var(--accent);">Vercel (gratis):</strong> sube los archivos HTML a <a href="https://vercel.com" target="_blank" style="color:var(--accent);">vercel.com</a> → los clientes hacen check-in desde su celular sin kiosco.
+            </div>
+            <!-- ── PIN DE KIOSCO ── -->
+            <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:18px;">
+              <div class="settings-row">
+                <div>
+                  <div class="settings-label">🔐 PIN de seguridad del kiosco</div>
+                  <div class="settings-desc">Si configuras un PIN (4–6 dígitos), se pedirá antes de abrir el kiosco. Déjalo vacío para acceso sin PIN.</div>
+                </div>
+                <div class="settings-control" style="flex:1;max-width:240px;">
+                  <input class="settings-input" style="width:100%;letter-spacing:6px;font-size:18px;text-align:center;" id="cfg-kiosco-pin" type="password" inputmode="numeric" maxlength="6" placeholder="——"/>
+                  <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveKioscoPin()">Guardar PIN</button>
+                    <button class="btn btn-outline btn-sm" onclick="clearKioscoPin()">Quitar PIN</button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </div><!-- /cfg-panel-kiosco -->
 
-      <!-- ── Stripe Connect ── -->
-      <div class="card" style="margin-bottom:18px;" id="stripe-settings-card">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">💳 Pagos en Línea — Stripe</div>
-          <div id="stripe-connect-status">
-            <!-- populated by renderStripeSettings() -->
-            <div style="color:var(--text3);font-size:13px;">Cargando estado de Stripe...</div>
-          </div>
+      <!-- ══ PANEL: Stripe ══ -->
+      <div class="cfg-panel" id="cfg-panel-stripe">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
         </div>
-      </div>
-
-      <!-- Meta mensual -->
-      <div class="card" style="margin-bottom:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title">🎯 Metas de Negocio</div>
-          <div class="settings-row">
-            <div>
-              <div class="settings-label">Meta de ingresos mensual</div>
-              <div class="settings-desc">Se usa para calcular el % de avance en el Dashboard cada mes</div>
-            </div>
-            <div class="settings-control">
-              <input class="settings-input" id="cfg-meta-mensual" type="number" min="0" placeholder="Ej: 50000"/>
-              <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveMetaMensual()">Guardar meta</button>
+        <div class="card" id="stripe-settings-card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">💳 Pagos en Línea — Stripe</div>
+            <div id="stripe-connect-status">
+              <div style="color:var(--text3);font-size:13px;">Cargando estado de Stripe...</div>
             </div>
           </div>
         </div>
-      </div>
+      </div><!-- /cfg-panel-stripe -->
 
-      <!-- Usuarios — solo visible para admin -->
-      <div class="card" id="users-section">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>👥 Usuarios del Sistema</span>
-            <button class="btn btn-primary btn-sm" onclick="openModal('add-user')">+ Nuevo Usuario</button>
-          </div>
-          <div id="users-list" style="margin-top:16px;">
-            <div class="empty-state" style="padding:30px;"><div class="empty-icon">👤</div><div class="empty-title">Cargando usuarios...</div></div>
-          </div>
+      <!-- ══ PANEL: Notificaciones ══ -->
+      <div class="cfg-panel" id="cfg-panel-notificaciones">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
         </div>
-      </div>
-
-      <!-- Mi cuenta -->
-      <div class="card" style="margin-top:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>🔐 Mi Cuenta</span>
-            <span class="role-badge" id="cfg-mi-rol">—</span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
-            <div>
-              <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre</label>
-              <input id="cfg-mi-nombre-input" type="text" class="settings-input" style="width:100%;" placeholder="Tu nombre"/>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Email</label>
-              <input id="cfg-mi-email" type="text" class="settings-input" style="width:100%;opacity:.6;cursor:not-allowed;" readonly/>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title">🔔 Notificaciones Push</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Alertas de membresías</div>
+                <div class="settings-desc">Recibe una notificación diaria cuando haya membresías vencidas o a 3 días de vencer. Funciona aunque la app esté en segundo plano.</div>
+              </div>
+              <div class="settings-control">
+                <button class="btn btn-primary btn-sm" onclick="solicitarPermisosNotificaciones()">🔔 Activar notificaciones</button>
+              </div>
             </div>
           </div>
-          <div style="margin-top:6px;">
-            <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nueva contraseña <span style="font-weight:400;text-transform:none;">(dejar vacío para no cambiar)</span></label>
-            <input id="cfg-mi-pass" type="password" class="settings-input" style="width:100%;max-width:320px;" placeholder="••••••••  (mínimo 8 caracteres)"/>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" onclick="saveMiCuenta()">💾 Guardar cambios</button>
-            <button class="btn btn-danger btn-sm" onclick="doLogout()">🚪 Cerrar Sesión</button>
-          </div>
-          <div id="cfg-cuenta-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
         </div>
-      </div>
+      </div><!-- /cfg-panel-notificaciones -->
 
-      <!-- Menú & Navegación -->
-      <div class="card" style="margin-top:18px;">
-        <div class="settings-section" style="margin-bottom:0;">
-          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <span>🗂 Menú &amp; Navegación</span>
-            <button class="btn btn-outline btn-sm" onclick="resetSidebarOrder()" style="font-size:11px;">↺ Restaurar</button>
-          </div>
-          <div style="font-size:12px;color:var(--text3);margin:10px 0 14px;line-height:1.5;">
-            Arrastra para reordenar · Usa el botón de ojo para ocultar secciones que no usas.
-          </div>
-          <div id="sidebar-customizer-list" style="display:flex;flex-direction:column;gap:5px;"></div>
-          <div style="margin-top:14px;">
-            <button class="btn btn-primary btn-sm" onclick="saveSidebarOrder()">💾 Guardar menú</button>
+      <!-- ══ PANEL: Usuarios ══ -->
+      <div class="cfg-panel" id="cfg-panel-usuarios">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card" id="users-section">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+              <span>👥 Usuarios del Sistema</span>
+              <button class="btn btn-primary btn-sm" onclick="openModal('add-user')">+ Nuevo Usuario</button>
+            </div>
+            <div id="users-list" style="margin-top:16px;">
+              <div class="empty-state" style="padding:30px;"><div class="empty-icon">👤</div><div class="empty-title">Cargando usuarios...</div></div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div><!-- /cfg-panel-usuarios -->
+
+      <!-- ══ PANEL: Menú & Navegación ══ -->
+      <div class="cfg-panel" id="cfg-panel-menu">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <span>🗂 Menú &amp; Navegación</span>
+              <button class="btn btn-outline btn-sm" onclick="resetSidebarOrder()" style="font-size:11px;">↺ Restaurar</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3);margin:10px 0 14px;line-height:1.5;">
+              Arrastra para reordenar · Usa el botón de ojo para ocultar secciones que no usas.
+            </div>
+            <div id="sidebar-customizer-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+            <div style="margin-top:14px;">
+              <button class="btn btn-primary btn-sm" onclick="saveSidebarOrder()">💾 Guardar menú</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-menu -->
+
+      <!-- ══ PANEL: Mi Cuenta ══ -->
+      <div class="cfg-panel" id="cfg-panel-cuenta">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="settings-section" style="margin-bottom:0;">
+            <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+              <span>🔐 Mi Cuenta</span>
+              <span class="role-badge" id="cfg-mi-rol">—</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+              <div>
+                <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre</label>
+                <input id="cfg-mi-nombre-input" type="text" class="settings-input" style="width:100%;" placeholder="Tu nombre"/>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Email</label>
+                <input id="cfg-mi-email" type="text" class="settings-input" style="width:100%;opacity:.6;cursor:not-allowed;" readonly/>
+              </div>
+            </div>
+            <div style="margin-top:6px;">
+              <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nueva contraseña <span style="font-weight:400;text-transform:none;">(dejar vacío para no cambiar)</span></label>
+              <input id="cfg-mi-pass" type="password" class="settings-input" style="width:100%;max-width:320px;" placeholder="••••••••  (mínimo 8 caracteres)"/>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="saveMiCuenta()">💾 Guardar cambios</button>
+              <button class="btn btn-danger btn-sm" onclick="doLogout()">🚪 Cerrar Sesión</button>
+            </div>
+            <div id="cfg-cuenta-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-cuenta -->
+
+    </div><!-- /#v-settings -->
 
     <!-- ══ SUPER ADMIN ══ -->
     <div class="view" id="v-superadmin">
@@ -7656,6 +7860,38 @@ const topBtnActions = {
   settings:    ()=>{ if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) openModal('add-user'); },
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// SETTINGS PANEL NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function openSettingsPanel(id){
+  const landing = document.getElementById('cfg-menu-landing');
+  if(landing) landing.style.display = 'none';
+  document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('cfg-panel-active'));
+  const panel = document.getElementById('cfg-panel-' + id);
+  if(panel) panel.classList.add('cfg-panel-active');
+  const view = document.getElementById('v-settings');
+  if(view) view.scrollTop = 0;
+  // Lazy-load panel-specific renders
+  if(id === 'planes')     renderPlanes();
+  if(id === 'stripe')     renderStripeSettings();
+  if(id === 'menu')       renderSidebarCustomizer();
+  if(id === 'personalizacion') renderThemeGrid();
+  if(id === 'portal')     updatePortalLinkBox();
+  if(id === 'usuarios' && currentUser && (currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios();
+  if(id === 'kiosco'){
+    const ku = document.getElementById('cfg-kiosko-url'); if(ku) ku.value = getKioskoUrl();
+    const kp = document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder = getKioscoPin() ? '●'.repeat(getKioscoPin().length) : '——';
+  }
+}
+
+function closeSettingsPanel(){
+  document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('cfg-panel-active'));
+  const landing = document.getElementById('cfg-menu-landing');
+  if(landing) landing.style.display = '';
+  const view = document.getElementById('v-settings');
+  if(view) view.scrollTop = 0;
+}
+
 function go(id, el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -7705,15 +7941,11 @@ function go(id, el){
   }
   if(id==='settings'){
     updateSidebarUser();
-    if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios();
-    renderPlanes(); renderStripeSettings();
-    const ku=document.getElementById('cfg-kiosko-url'); if(ku) ku.value=getKioskoUrl();
-    const kp=document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder=getKioscoPin()?'●'.repeat(getKioscoPin().length):'——';
-    // Portal de Atletas
+    // Always return to menu landing when navigating to settings
+    closeSettingsPanel();
+    // Populate account fields eagerly (visible immediately on Mi Cuenta panel)
     const pc=document.getElementById('cfg-portal-codigo'); if(pc) pc.value=gymConfig.portal_codigo||'';
     const pp=document.getElementById('cfg-portal-password'); if(pp) pp.value=gymConfig.portal_password||'';
-    updatePortalLinkBox();
-    renderSidebarCustomizer();
   }
   if(id==='superadmin'){ renderSuperAdmin(); }
 }
