@@ -2596,6 +2596,22 @@ function renderProgramaView(){
 function buildProgContent(dates,progMap,today){
   const cont=$('prog-content'); if(!cont) return;
   progItems=[];
+  // ── Empty state: ningún programa en toda la semana ──
+  const totalProgs=Object.values(progMap).flat().length;
+  if(totalProgs===0){
+    cont.innerHTML=`
+      <div style="text-align:center;padding:52px 24px 32px;">
+        <div style="font-size:52px;margin-bottom:16px;line-height:1;">🏋️</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Sin programa esta semana</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:280px;margin:0 auto 20px;">
+          Tu coach aún no ha publicado el entrenamiento. Revisa mañana o reserva una clase.
+        </div>
+        <div onclick="switchView('clases')" style="display:inline-block;padding:10px 22px;background:var(--accent);color:#fff;border-radius:22px;font-size:13px;font-weight:700;cursor:pointer;">
+          Ver clases disponibles →
+        </div>
+      </div>`;
+    return;
+  }
   if(isDesktop()){
     let html=`<div class="prog-desktop-grid">`;
     dates.forEach(dateStr=>{
