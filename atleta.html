@@ -1962,6 +1962,52 @@ function handlePhotoUpload(input){
 }
 
 // ── Gym branding ─────────────────────────────────────
+// ── PWA white-label branding ─────────────────────────
+let _pwaGymName = 'MOVE';
+
+function applyPWABranding(gymName, themeHex){
+  const name  = gymName  || _pwaGymName || 'MOVE';
+  const color = themeHex || '#1D9E75';
+  _pwaGymName = name;
+
+  // 1. Update apple + theme-color meta tags (runtime change)
+  const at = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if(at) at.content = name;
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.content = color;
+
+  // 2. Inject dynamic manifest via blob URL (no server needed)
+  try{
+    const origin = window.location.origin;
+    const pageUrl = window.location.pathname + window.location.search;
+    const short = name.length > 12 ? name.split(/\s+/)[0] : name;
+    const manifest = {
+      name, short_name: short,
+      description: `Portal de atleta — ${name}`,
+      start_url: pageUrl,
+      scope: window.location.pathname,
+      display: 'standalone',
+      orientation: 'portrait-primary',
+      background_color: '#04120f',
+      theme_color: color,
+      lang: 'es',
+      icons: [
+        { src:`${origin}/move-icon-192.png`, sizes:'192x192', type:'image/png', purpose:'any' },
+        { src:`${origin}/move-icon-512.png`, sizes:'512x512', type:'image/png', purpose:'any maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    const url  = URL.createObjectURL(blob);
+    let link = document.querySelector('link[rel="manifest"]');
+    if(!link){ link = document.createElement('link'); link.rel='manifest'; document.head.appendChild(link); }
+    if(link.href && link.href.startsWith('blob:')) URL.revokeObjectURL(link.href);
+    link.href = url;
+  }catch(_){}
+
+  // 3. Cache for next visit — pre-login branding
+  try{ localStorage.setItem('velum_pwa_brand', JSON.stringify({name, color})); }catch(_){}
+}
+
 async function fetchGymBranding(gymId){
   if(!gymId) return;
   try{
@@ -1990,6 +2036,8 @@ function applyGymAccent(hex){
   root.style.setProperty('--accent-dim',`rgba(${r},${g},${b},.15)`);
   root.style.setProperty('--accent-glow',`rgba(${r},${g},${b},.28)`);
   root.style.setProperty('--border-accent',`rgba(${r},${g},${b},.3)`);
+  // Re-apply PWA manifest with real brand color
+  applyPWABranding(_pwaGymName, hex);
 }
 
 // ── Show portal ──────────────────────────────────────
@@ -2006,6 +2054,7 @@ function showPortal(data){
   const initials=(data.cliente.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   const gymLogo=data.gym.logo;
   const gymName=data.gym.nombre||'MOVE';
+  applyPWABranding(gymName, null); // color actualizado en applyGymAccent cuando cargue
 
   ['gym-logo-sm','sb-gym-logo'].forEach(id=>{
     const e=$(id); if(!e) return;
@@ -3412,6 +3461,11 @@ async function init(){
   // Pre-fill gym from URL param or saved value
   const savedGym=gymParam||(()=>{ try{ return localStorage.getItem('velum_last_gym')||''; }catch(_){ return ''; } })();
   if(savedGym){ const gi=$('login-gym'); if(gi) gi.value=savedGym.toUpperCase(); }
+  // Pre-apply saved PWA branding (para visitas recurrentes, antes del login)
+  try{
+    const brand=JSON.parse(localStorage.getItem('velum_pwa_brand')||'null');
+    if(brand?.name) applyPWABranding(brand.name, brand.color||null);
+  }catch(_){}
 
   async function tryToken(tok){
     const res=await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(tok)}`,{headers:{'apikey':ANON_KEY}});
