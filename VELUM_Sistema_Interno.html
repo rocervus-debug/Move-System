@@ -2818,6 +2818,10 @@ select option{background:#0d1a16;color:var(--text);}
       <div class="nav-item" id="nav-pagos" onclick="go('pagos',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="nav-label-text nav-lbl-desktop"> Pagos & Renovaciones</span><span class="nav-lbl-mob">Pagos</span>
       </div>
+      <div class="nav-item mob-hidden" id="nav-visitas" onclick="go('visitas',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-label-text"> Visitas del Día</span>
+        <span class="nav-badge" id="badge-visitas-hoy" style="display:none;background:#a78bfa;">0</span>
+      </div>
       <div class="nav-item" id="nav-clientes" onclick="go('clientes',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span><span class="nav-label-text"> Clientes</span>
         <span class="nav-badge blue" id="badge-clientes" style="display:none;">0</span>
@@ -3101,6 +3105,10 @@ select option{background:#0d1a16;color:var(--text);}
             <button class="qa-btn qa-primary" onclick="openModal('pago')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
               + Pago
+            </button>
+            <button class="qa-btn qa-secondary" onclick="openModal('visita')" style="background:rgba(167,139,250,.12);color:#a78bfa;border-color:rgba(167,139,250,.25);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              🎫 Visita
             </button>
             <button class="qa-btn qa-secondary" onclick="openModal('solo-cliente')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
@@ -3850,6 +3858,48 @@ select option{background:#0d1a16;color:var(--text);}
 
     <!-- ══ SETTINGS ══ -->
     <!-- ══ GASTOS & BALANCE ══ -->
+    <!-- ── Visitas del Día ───────────────────────────── -->
+    <div class="view" id="v-visitas">
+      <div class="kpi-grid" style="margin-bottom:18px;" id="visitas-kpis">
+        <div class="kpi-card" style="--kpi-color:#a78bfa;">
+          <div class="kpi-label">🎫 Visitas Hoy</div>
+          <div class="kpi-value" id="vkpi-hoy">0</div>
+          <div class="kpi-meta" id="vkpi-hoy-meta">pases de día</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#a78bfa;">
+          <div class="kpi-label">📅 Visitas Este Mes</div>
+          <div class="kpi-value" id="vkpi-mes">0</div>
+          <div class="kpi-meta" id="vkpi-mes-meta">pases registrados</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--ok);">
+          <div class="kpi-label">💰 Revenue Visitas Mes</div>
+          <div class="kpi-value" id="vkpi-revenue">$0</div>
+          <div class="kpi-meta">ingresos por pases</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--accent);">
+          <div class="kpi-label">🔄 Visitantes Frecuentes</div>
+          <div class="kpi-value" id="vkpi-frecuentes">0</div>
+          <div class="kpi-meta">3+ visitas este mes</div>
+        </div>
+      </div>
+
+      <!-- Filtro fecha -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" id="vf-hoy" onclick="setVisitaFiltro('hoy',this)" style="background:rgba(167,139,250,.15);color:#a78bfa;border-color:rgba(167,139,250,.3);font-size:12px;font-weight:700;">Hoy</button>
+          <button class="btn btn-sm btn-outline" id="vf-semana" onclick="setVisitaFiltro('semana',this)" style="font-size:12px;">Esta semana</button>
+          <button class="btn btn-sm btn-outline" id="vf-mes" onclick="setVisitaFiltro('mes',this)" style="font-size:12px;">Este mes</button>
+        </div>
+        <input type="text" id="visitas-search" placeholder="Buscar por nombre..." oninput="renderVisitas()"
+          style="flex:1;min-width:140px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text1);font-size:13px;font-family:var(--font);"/>
+        <button class="btn btn-primary" onclick="openModal('visita')" style="background:#7c3aed;border-color:#7c3aed;white-space:nowrap;">🎫 + Registrar Visita</button>
+      </div>
+
+      <div id="visitas-list">
+        <div style="text-align:center;padding:40px;color:var(--text3);font-size:14px;">Cargando visitas…</div>
+      </div>
+    </div>
+
     <div class="view" id="v-gastos">
       <div class="kpi-grid" style="margin-bottom:18px;">
         <div class="kpi-card" style="--kpi-color:var(--ok)">
@@ -4662,7 +4712,12 @@ select option{background:#0d1a16;color:var(--text);}
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
-          <select id="p-plan" onchange="onPlanChange('p-plan','p-monto','p-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option><option value="Paquete de Clases">📦 Paquete de Clases</option></select>
+          <select id="p-plan" onchange="onPlanChange('p-plan','p-monto','p-vence');_checkPaseDiaWarn('p-plan','p-pasedia-warn')">
+            <option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option value="Paquete de Clases">📦 Paquete de Clases</option>
+          </select>
+          <div id="p-pasedia-warn" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);border-radius:8px;font-size:11px;color:#c4b5fd;">
+            🎫 Para pases de día usa <strong style="cursor:pointer;text-decoration:underline;" onclick="closeModal('pago');openModal('visita')">Registrar Visita</strong> — no crea membresía ni número de socio.
+          </div>
         </div>
         <div class="field"><label>Método de pago</label>
           <select id="p-metodo">
@@ -4710,6 +4765,66 @@ select option{background:#0d1a16;color:var(--text);}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('pago')">Cancelar</button>
       <button class="btn btn-primary" id="p-save-btn" onclick="savePago()">Registrar Pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Visita (Pase de Día) -->
+<div class="modal-overlay" id="modal-visita">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="modal-title">🎫 Registrar Visita</div>
+      <button class="modal-close" onclick="closeModal('visita')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#c4b5fd;margin-bottom:14px;line-height:1.5;">
+        🎫 <strong>Pase de día / visita ocasional.</strong> No crea membresía ni número de socio. El ingreso se suma al balance del mes.
+      </div>
+      <div class="field" style="position:relative;">
+        <label>Nombre *</label>
+        <input id="v-nombre" type="text" placeholder="Buscar socio o escribir nombre..." autocomplete="off"
+          oninput="_vAutoInput(this)" onfocus="_vAutoInput(this)" onblur="_vAutoBlur()"/>
+        <div id="v-nombre-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:9999;
+          background:var(--card);border:1px solid rgba(167,139,250,.3);border-radius:10px;
+          box-shadow:0 8px 32px rgba(0,0,0,.5);max-height:160px;overflow-y:auto;margin-top:4px;"></div>
+        <span class="field-err" id="v-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Monto (MXN) *</label>
+          <input id="v-monto" type="number" placeholder="150" min="0"/>
+          <span class="field-err" id="v-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Fecha *</label>
+          <input id="v-fecha" type="date"/>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Método de pago</label>
+          <select id="v-metodo">
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Tarjeta</option>
+            <option>TotalPass</option>
+            <option>Nessty</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>📱 WhatsApp (opcional)</label>
+          <input id="v-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notas</label>
+        <input id="v-notas" type="text" placeholder="Observaciones..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('visita')">Cancelar</button>
+      <button class="btn btn-primary" id="v-save-btn" style="background:#7c3aed;" onclick="saveVisita()">🎫 Registrar Visita</button>
     </div>
   </div>
 </div>
@@ -5130,6 +5245,7 @@ select option{background:#0d1a16;color:var(--text);}
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
           <select id="ep-plan" onchange="onPlanChange('ep-plan','ep-monto','ep-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option><option value="Paquete de Clases">📦 Paquete de Clases</option></select>
+          <!-- Pase de Día se conserva en editar para compatibilidad con pagos históricos -->
         </div>
         <div class="field"><label>Método de pago</label>
           <select id="ep-metodo">
@@ -5781,7 +5897,8 @@ async function doLogin(){
       loadEvalsFromSupabase(), loadPagosFromSupabase(), loadClientesFromSupabase(),
       loadCampanasFromSupabase(), loadSolicitudesFromSupabase(), loadContenidosFromSupabase(),
       loadHorarioFromSupabase(), loadGastosFromSupabase(), loadProgramasFromSupabase(),
-      loadProgConfigFromSupabase(), loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase()
+      loadProgConfigFromSupabase(), loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase(),
+      loadVisitasFromSupabase()
     ]);
     await autoCrearGastosRecurrentes();
     showApp();
@@ -7471,6 +7588,7 @@ const topTitles = {
   crm:         ['CRM & Prospectos',          'Gestión comercial de clientes y prospectos'],
   pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
   pagos:       ['Pagos & Renovaciones',      ()=>`Control de ingresos · ${_mesLabel()}`],
+  visitas:     ['Visitas del Día',           ()=>`Pases de día · ${_mesLabel()}`],
   clientes:    ['Clientes',                  'Directorio de socios activos y membresías'],
   asistencia:  ['Asistencia',               ()=>`Registro de asistencia · ${_todayLabel()}`],
   marketing:   ['Hub de Marketing',          'Calendario de contenido y campañas'],
@@ -7495,6 +7613,7 @@ const topBtnLabels = {
   pipeline:    '+ Nuevo Lead',
   pagos:       '+ Registrar Pago',
   clientes:    '+ Registrar Pago',
+  visitas:     '🎫 + Registrar Visita',
   asistencia:  '+ Registrar Clase',
   marketing:   '+ Contenido',
   campanas:    '+ Nueva Campaña',
@@ -7522,6 +7641,7 @@ const topBtnActions = {
   'landing-leads': ()=>exportLandingLeadsCSV(),
   pagos:       ()=>openModal('pago'),
   clientes:    ()=>openModal('pago'),
+  visitas:     ()=>openModal('visita'),
   asistencia:  ()=>openRegistrarClase(),
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
@@ -7560,6 +7680,7 @@ function go(id, el){
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
   if(id==='clientes')    renderClientes();
+  if(id==='visitas')     renderVisitas();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
   if(id==='asistencia')  { loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); }
@@ -7659,6 +7780,13 @@ function openModal(id){
     const dd = document.getElementById('p-cliente-dropdown');
     if(dd) dd.style.display = 'none';
     _clearPagoErrors();
+  }
+  if(id==='visita'){
+    const hoy = new Date().toISOString().slice(0,10);
+    const vf = document.getElementById('v-fecha'); if(vf) vf.value=hoy;
+    ['v-nombre','v-monto','v-telefono','v-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    const vm = document.getElementById('v-metodo'); if(vm) vm.selectedIndex=0;
+    ['v-nombre-err','v-monto-err'].forEach(fid=>{ const e=document.getElementById(fid); if(e){ e.style.display='none'; e.textContent=''; } });
   }
   if(id==='solo-cliente'){
     // Reset form completo
@@ -9742,10 +9870,15 @@ function renderClientes(){
 
   const hoy = new Date(); hoy.setHours(0,0,0,0);
 
-  // ── Construir set de nombres únicos: clientes tabla + pagos (por si acaso) ──
+  // ── Construir set de nombres únicos: solo desde tabla clientes (pagos ya no crean entradas huérfanas) ──
+  // Los pases de día ahora van a la tabla `visitas` — no al directorio de socios
   const nombresSet = new Set();
   clientesDB.forEach(c => { if(c.nombre) nombresSet.add(c.nombre.trim()); });
-  pagos.filter(p=>p.notas!=='__sin_pago__').forEach(p => { const n=(p.cliente||'').trim(); if(n) nombresSet.add(n); });
+  // Incluir nombres de pagos SOLO si ya tienen registro en clientesDB (para migración de datos históricos)
+  pagos.filter(p=>p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).forEach(p => {
+    const n=(p.cliente||'').trim();
+    if(n && clientesDB.some(c=>c.nombre===n)) nombresSet.add(n);
+  });
 
   // ── Zero-data empty state (no clients AND no payments at all) ──
   if(!nombresSet.size){
@@ -11331,6 +11464,11 @@ function syncPlanSelect(){
 }
 
 // Auto-llena monto y vencimiento al seleccionar plan
+function _checkPaseDiaWarn(selectId, warnId){
+  // (Reservado para expansión futura — Pase de Día ya fue removido del select de pagos)
+  const warn = document.getElementById(warnId); if(warn) warn.style.display='none';
+}
+
 function onPlanChange(selectId, montoId, venceId){
   const sel = document.getElementById(selectId);
   if(!sel) return;
@@ -11724,9 +11862,12 @@ function renderDashboard(){
   // Ingresos del mes (pagos registrados en el mes actual)
   const thisMonth = now.toISOString().slice(0,7); // "2026-04"
   const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMonth) && p.notas!=='__sin_pago__');
-  const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+p.monto,0);
-  // Total ingresos
-  const totalIngresos = pagos.reduce((s,p)=>s+p.monto,0);
+  const visitasEsteMes = (visitasDB||[]).filter(v=>(v.fecha||'').startsWith(thisMonth));
+  const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+p.monto,0)
+                     + visitasEsteMes.reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
+  // Total ingresos (membresías + visitas)
+  const totalIngresos = pagos.reduce((s,p)=>s+p.monto,0)
+                      + (visitasDB||[]).reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
   // Socios nuevos: clientes que tienen su primer pago este mes (unique por nombre)
   const clientesNuevos = new Set();
   pagosEsteMes.forEach(p=>{
@@ -12077,6 +12218,166 @@ async function autoCrearGastosRecurrentes(){
   const { error } = await window.supabaseClient.from('gastos').insert(payloads);
   if(!error){ await loadGastosFromSupabase(); renderGastos(); }
 }
+
+// ══════════════════════════════════════════════════════════
+// VISITAS — Pases de día (separado de pagos/membresías)
+// ══════════════════════════════════════════════════════════
+let visitasDB = [];
+let _visitaFiltro = 'hoy';
+
+async function loadVisitasFromSupabase(){
+  const { data, error } = await gf(window.supabaseClient.from('visitas').select('*')).order('fecha',{ascending:false}).order('created_at',{ascending:false});
+  if(error){ console.error('Error cargando visitas:', error); return; }
+  visitasDB = data||[];
+  _updateVisitasBadge();
+}
+
+function _updateVisitasBadge(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const n = visitasDB.filter(v=>v.fecha===hoy).length;
+  const badge = document.getElementById('badge-visitas-hoy');
+  if(badge){ badge.textContent=n; badge.style.display=n>0?'inline-flex':'none'; }
+}
+
+function setVisitaFiltro(f, el){
+  _visitaFiltro = f;
+  document.querySelectorAll('#v-visitas .btn-sm').forEach(b=>{
+    b.style.background=''; b.style.color=''; b.style.borderColor=''; b.classList.add('btn-outline');
+  });
+  if(el){ el.style.background='rgba(167,139,250,.15)'; el.style.color='#a78bfa'; el.style.borderColor='rgba(167,139,250,.3)'; el.classList.remove('btn-outline'); }
+  renderVisitas();
+}
+
+function renderVisitas(){
+  const listEl = document.getElementById('visitas-list'); if(!listEl) return;
+  const hoy  = new Date().toISOString().slice(0,10);
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const mesS = hoy.slice(0,7);
+  const busq = (document.getElementById('visitas-search')||{value:''}).value.toLowerCase().trim();
+
+  // Rango de fechas por filtro
+  let desde = hoy;
+  if(_visitaFiltro==='semana'){
+    const d=new Date(now); d.setDate(d.getDate()-d.getDay()); desde=d.toISOString().slice(0,10);
+  } else if(_visitaFiltro==='mes'){
+    desde = mesS+'-01';
+  }
+
+  let rows = visitasDB.filter(v=>{
+    if(v.fecha < desde) return false;
+    if(busq && !(v.nombre||'').toLowerCase().includes(busq)) return false;
+    return true;
+  });
+
+  // KPIs
+  const visitasHoy = visitasDB.filter(v=>v.fecha===hoy);
+  const visitasMes = visitasDB.filter(v=>(v.fecha||'').startsWith(mesS));
+  const revMes = visitasMes.reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
+  // Frecuentes: nombres con 3+ visitas en el mes
+  const contNombre = {};
+  visitasMes.forEach(v=>{ const n=(v.nombre||'').trim(); contNombre[n]=(contNombre[n]||0)+1; });
+  const frecuentes = Object.values(contNombre).filter(c=>c>=3).length;
+
+  const sethoy = n=>{ const e=document.getElementById(n); if(e) e.textContent=visitasHoy.length; };
+  const setmes = n=>{ const e=document.getElementById(n); if(e) e.textContent=visitasMes.length; };
+  const setrev = n=>{ const e=document.getElementById(n); if(e) e.textContent='$'+revMes.toLocaleString('es-MX'); };
+  const setfre = n=>{ const e=document.getElementById(n); if(e) e.textContent=frecuentes; };
+  sethoy('vkpi-hoy'); setmes('vkpi-mes'); setrev('vkpi-revenue'); setfre('vkpi-frecuentes');
+
+  if(!rows.length){
+    listEl.innerHTML = `<div class="empty-state" style="padding:50px 20px;">
+      <div class="empty-icon">🎫</div>
+      <div class="empty-title">Sin visitas en este periodo</div>
+      <div class="empty-sub">Registra el primer pase del día con el botón de arriba.</div>
+      <button class="btn btn-primary" style="margin-top:16px;background:#7c3aed;" onclick="openModal('visita')">🎫 + Registrar Visita</button>
+    </div>`; return;
+  }
+
+  // Agrupar por fecha
+  const grupos = {};
+  rows.forEach(v=>{ const f=v.fecha||'—'; if(!grupos[f]) grupos[f]=[]; grupos[f].push(v); });
+  const fechasOrd = Object.keys(grupos).sort((a,b)=>b.localeCompare(a));
+
+  listEl.innerHTML = fechasOrd.map(f=>{
+    const gs = grupos[f];
+    const totalDia = gs.reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
+    const label = f===hoy ? 'Hoy' : f===new Date(now.getTime()-86400000).toISOString().slice(0,10) ? 'Ayer' : f;
+    return `<div style="margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
+        <span style="font-size:12px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.5px;">${label}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text3);">${gs.length} visita${gs.length!==1?'s':''} · $${totalDia.toLocaleString('es-MX')}</span>
+      </div>
+      ${gs.map(v=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.25);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🎫</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(v.nombre||'—')}</div>
+            <div style="font-size:11px;color:var(--text3);">${v.metodo||'Efectivo'}${v.telefono?' · '+v.telefono:''}${v.notas?' · '+esc(v.notas):''}</div>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:var(--ok);flex-shrink:0;">$${parseFloat(v.monto||0).toLocaleString('es-MX')}</div>
+          <button onclick="deleteVisita(${v.id})" title="Eliminar visita"
+            style="background:none;border:none;cursor:pointer;color:var(--text4);font-size:16px;padding:4px;line-height:1;flex-shrink:0;">✕</button>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function saveVisita(){
+  const nombre = (document.getElementById('v-nombre').value||'').trim();
+  const monto  = parseFloat(document.getElementById('v-monto').value);
+  const fecha  = document.getElementById('v-fecha').value;
+  // Validación
+  const nErr = document.getElementById('v-nombre-err');
+  const mErr = document.getElementById('v-monto-err');
+  [nErr,mErr].forEach(e=>{ if(e){ e.style.display='none'; e.textContent=''; } });
+  let err=false;
+  if(!nombre){ if(nErr){nErr.textContent='El nombre es obligatorio.';nErr.style.display='block';} err=true; }
+  if(!monto||monto<=0){ if(mErr){mErr.textContent='Ingresa un monto válido.';mErr.style.display='block';} err=true; }
+  if(err) return;
+  const btn = document.getElementById('v-save-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+  const payload = {
+    nombre, monto,
+    fecha:    fecha || new Date().toISOString().slice(0,10),
+    metodo:   document.getElementById('v-metodo').value,
+    telefono: (document.getElementById('v-telefono').value||'').trim()||null,
+    notas:    (document.getElementById('v-notas').value||'').trim()||null,
+  };
+  const { error } = await window.supabaseClient.from('visitas').insert([withGymId(payload)]);
+  if(btn){ btn.disabled=false; btn.textContent='🎫 Registrar Visita'; }
+  if(error){ toast('Error al guardar visita: '+error.message,'❌'); return; }
+  await loadVisitasFromSupabase();
+  closeModal('visita');
+  ['v-nombre','v-monto','v-telefono','v-notas'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('v-metodo').selectedIndex=0;
+  toast(`Visita de ${nombre} registrada ($${monto.toLocaleString('es-MX')}).`,'🎫');
+  renderVisitas();
+}
+
+async function deleteVisita(id){
+  if(!await confirmDialog('¿Eliminar esta visita?',{title:'Eliminar visita',danger:true,confirmText:'Eliminar',icon:'🗑️'})) return;
+  const { error } = await window.supabaseClient.from('visitas').delete().eq('id',id);
+  if(error){ toast('Error al eliminar: '+error.message,'❌'); return; }
+  await loadVisitasFromSupabase();
+  renderVisitas();
+  toast('Visita eliminada.','✓');
+}
+
+// Autocomplete nombre en modal visita (reutiliza clientesDB)
+function _vAutoInput(inp){
+  const q=(inp.value||'').toLowerCase().trim();
+  const drop=document.getElementById('v-nombre-dropdown'); if(!drop) return;
+  if(!q){ drop.style.display='none'; return; }
+  const matches=(clientesDB||[]).filter(c=>c.nombre&&c.nombre.toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length){ drop.style.display='none'; return; }
+  drop.innerHTML=matches.map(c=>`
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text1);border-bottom:1px solid rgba(255,255,255,.04);"
+      onmousedown="document.getElementById('v-nombre').value='${esc(c.nombre)}';document.getElementById('v-nombre-dropdown').style.display='none';document.getElementById('v-telefono').value='${c.telefono||''}';">
+      ${esc(c.nombre)}${c.telefono?`<span style="font-size:11px;color:var(--text3);margin-left:6px;">${c.telefono}</span>`:''}
+    </div>`).join('');
+  drop.style.display='block';
+}
+function _vAutoBlur(){ setTimeout(()=>{ const d=document.getElementById('v-nombre-dropdown'); if(d) d.style.display='none'; },150); }
 
 async function loadGastosFromSupabase(){
   const { data, error } = await gf(window.supabaseClient.from('gastos').select('*')).order('fecha',{ascending:false});
@@ -12543,7 +12844,8 @@ async function saContextSwitch(gymId){
       loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
       loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
       loadGastosFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
-      loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase()
+      loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase(),
+      loadVisitasFromSupabase()
     ]);
     updateSaCtxLabel();
     renderDashboard();
@@ -12860,7 +13162,9 @@ function renderGastos(){
   const now = new Date(); now.setHours(0,0,0,0);
   const thisMes = gastoFilter.mes || now.toISOString().slice(0,7);
   const pagosEsteMes = pagos.filter(p=>(p.fecha||'').startsWith(thisMes) && p.notas!=='__sin_pago__');
-  const ingresosMes  = pagosEsteMes.reduce((s,p)=>s+(p.monto||0),0);
+  const visitasMesGastos = (visitasDB||[]).filter(v=>(v.fecha||'').startsWith(thisMes));
+  const ingresosMes = pagosEsteMes.reduce((s,p)=>s+(p.monto||0),0)
+                    + visitasMesGastos.reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
 
   // Coach nomina (sum from localStorage for selected month)
   const thisMesDate = new Date(thisMes+'-01T12:00:00');
@@ -15845,6 +16149,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadProgramasFromSupabase(),
     loadProgConfigFromSupabase(),
     loadLeadsLandingFromSupabase(),
+    loadVisitasFromSupabase(),
   ]);
   renderDashboard();
   renderCoaches();
