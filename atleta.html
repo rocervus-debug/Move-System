@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 /* ═══════════════════════════════════════════
-   VELUM PORTAL — Premium v4
+   MOVE PORTAL — Premium v4
    Mobile-first + Full Desktop Layout
 ═══════════════════════════════════════════ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1273,7 +1273,7 @@ body::before{
     <div class="topbar">
       <div class="topbar-gym">
         <div class="gym-logo-sm" id="gym-logo-sm">V</div>
-        <span class="gym-name-sm" id="gym-name-sm">VELUM</span>
+        <span class="gym-name-sm" id="gym-name-sm">MOVE</span>
       </div>
       <div class="topbar-avatar" id="topbar-avatar" onclick="openProfileSheet()">?</div>
     </div>
@@ -1524,7 +1524,7 @@ body::before{
       <div class="mas-item" onclick="closeMasSheet();switchView('programa')">
         <div class="mas-ico">🏋️</div><div class="mas-lbl">Programa</div>
       </div>
-      <div class="mas-item" onclick="closeMasSheet();switchView('medidas')">
+      <div class="mas-item" onclick="closeMasSheet();switchView('historial');setTimeout(()=>switchHistTab('progreso'),80)">
         <div class="mas-ico">📏</div><div class="mas-lbl">Medidas</div>
       </div>
       <div class="mas-item" onclick="closeMasSheet();switchView('referidos')">
@@ -1556,7 +1556,7 @@ body::before{
       </div>
     </div>
     <!-- Task #69 — Membresía info row -->
-    <div id="ps-memb-row" style="display:none;gap:10px;flex-wrap:wrap;margin:10px 0 4px;">
+    <div id="ps-memb-row" style="display:none;gap:8px;flex-wrap:wrap;margin:10px 0 12px;">
       <span id="ps-memb-chip" class="ps-memb-chip"></span>
       <span id="ps-socio-chip" class="ps-memb-chip ps-socio"></span>
       <span id="ps-vence-chip" class="ps-memb-chip ps-vence"></span>
@@ -1801,6 +1801,21 @@ function animateRings(){
 }
 
 // ── Sheet control ────────────────────────────────────
+// ── Toast global (Fix #6) ────────────────────────────
+function showToast(msg, icon='ℹ️', duration=3500){
+  let t = document.getElementById('atleta-toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'atleta-toast';
+    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;background:rgba(10,26,20,.95);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;backdrop-filter:blur(16px);transition:opacity .25s,transform .25s;opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 40px);';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(10px)'; }, duration);
+}
+
 function openSheet(id){ $(id).classList.add('open'); document.body.style.overflow='hidden'; }
 function closeSheet(id,e){
   if(!e||e.target===$(id)){ $(id).classList.remove('open'); document.body.style.overflow=''; }
@@ -1990,7 +2005,7 @@ function showPortal(data){
 
   const initials=(data.cliente.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   const gymLogo=data.gym.logo;
-  const gymName=data.gym.nombre||'VELUM';
+  const gymName=data.gym.nombre||'MOVE';
 
   ['gym-logo-sm','sb-gym-logo'].forEach(id=>{
     const e=$(id); if(!e) return;
@@ -2036,6 +2051,9 @@ function showPortal(data){
   $('login-screen').style.display='none';
   $('app').style.display='flex';
   handleDesktopLayout();
+
+  // Fix #1 — cargar reservas en background para que renderProximaClase() funcione en home
+  loadClasesData().then(()=>{ renderProximaClase(); }).catch(()=>{});
 }
 
 function handleDesktopLayout(){
@@ -3196,8 +3214,8 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     if(!res.ok){
       // Duplicate = already reserved (unique index violation)
       const isdup = JSON.stringify(data).includes('idx_reservas_no_duplicado');
-      const sbErr = data?.message || data?.details || data?.hint || JSON.stringify(data).slice(0,300);
-      alert(isdup ? '⚠️ Ya tienes esta clase reservada.' : `❌ No se pudo reservar.\n\n${sbErr}`);
+      const sbErr = data?.message || data?.details || data?.hint || JSON.stringify(data).slice(0,200);
+      showToast(isdup ? 'Ya tienes esta clase reservada' : 'No se pudo reservar: '+sbErr, isdup ? '⚠️' : '❌');
       if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
       return;
     }
@@ -3213,7 +3231,7 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     // Show WA self-reminder prompt
     _showReservaConfirmBanner(tipo, hora, fecha);
   }catch(e){
-    alert('❌ Error de conexión. Intenta de nuevo.');
+    showToast('Error de conexión. Intenta de nuevo.','❌');
     if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
   }
 }

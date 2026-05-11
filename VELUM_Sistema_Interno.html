@@ -9735,6 +9735,11 @@ function renderClientes(){
   const busq   = (document.getElementById('clientes-search')||{value:''}).value.toLowerCase().trim();
   if(!listEl) return;
 
+  // Actualizar conteo de portales pendientes en el botón
+  const sinPortal = clientesDB.filter(c=>!c.portal_token).length;
+  const btnBulk = document.getElementById('btn-bulk-portales');
+  if(btnBulk) btnBulk.textContent = sinPortal > 0 ? `🔗 Portales (${sinPortal})` : '🔗 Portales ✓';
+
   const hoy = new Date(); hoy.setHours(0,0,0,0);
 
   // ── Construir set de nombres únicos: clientes tabla + pagos (por si acaso) ──
@@ -11539,6 +11544,11 @@ async function renderCheckinsChart(){
 function renderBriefingHoy(){
   const el = document.getElementById('dash-briefing-hoy');
   if(!el) return;
+  // Guard: si horario aún no cargó, mostrar skeleton y salir
+  if(!horario || !horario.length){
+    el.innerHTML = `<div style="height:48px;background:rgba(255,255,255,.025);border-radius:14px;border:1px solid var(--border);animation:pulse 1.5s ease-in-out infinite;"></div>`;
+    return;
+  }
 
   const now   = new Date();
   const today = now.toISOString().slice(0,10);
@@ -14060,7 +14070,11 @@ async function saveClienteSinPago(){
     console.error('Error guardando cliente:', error);
     const m = error.message||'';
     if(m.includes('JWT')||m.includes('expired')){ _handleJwtExpiry(); return; }
-    if(m.includes('unique')||m.includes('duplicate')){ _scErr('email','Este email ya está registrado.'); return; }
+    if(m.includes('unique')||m.includes('duplicate')){
+      const isNombre = m.includes('nombre');
+      _scErr(isNombre?'nombre':'email', isNombre ? 'Ya existe un cliente con ese nombre exacto en este gym.' : 'Este email ya está registrado en este gym.');
+      return;
+    }
     toast('No se pudo guardar el cliente: '+m,'❌');
     return;
   }
