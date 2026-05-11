@@ -2869,10 +2869,10 @@ select option{background:#0d1a16;color:var(--text);}
 
     <div class="nav-section nav-sec-empty">
       <div class="nav-label">Finanzas</div>
-      <div class="nav-item mob-hidden" id="nav-revenue" onclick="go('revenue',this)">
+      <div class="nav-item" id="nav-revenue" onclick="go('revenue',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="nav-label-text"> Revenue</span>
       </div>
-      <div class="nav-item mob-hidden" id="nav-por-vencer" onclick="go('por-vencer',this)">
+      <div class="nav-item" id="nav-por-vencer" onclick="go('por-vencer',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-label-text"> Por Vencer</span>
         <span class="nav-badge" id="pv-nav-badge" style="display:none;"></span>
       </div>
@@ -3945,6 +3945,12 @@ select option{background:#0d1a16;color:var(--text);}
 
     <!-- ── REVENUE DASHBOARD ── -->
     <div class="view" id="v-revenue">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+        <button class="btn btn-sm btn-outline" onclick="exportRevenueXLSX()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Exportar Excel
+        </button>
+      </div>
       <div id="revenue-kpis" class="kpi-grid" style="margin-bottom:20px;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;" id="revenue-two-col">
         <!-- Trend chart -->
@@ -4913,6 +4919,27 @@ select option{background:#0d1a16;color:var(--text);}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('solicitud')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveSolicitud()">Crear Solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Notificación de cancelación de clase -->
+<div class="modal-overlay" id="modal-cancel-clase" onclick="if(event.target===this)closeModal('cancel-clase')">
+  <div class="modal" style="width:460px;">
+    <div class="modal-head">
+      <div class="modal-title">🚫 Clase cancelada</div>
+      <button class="modal-close" onclick="closeModal('cancel-clase')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cancel-clase-info" style="margin-bottom:14px;padding:12px 14px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:10px;font-size:13px;color:var(--text2);line-height:1.5;"></div>
+      <div id="cancel-clase-reservas-wrap">
+        <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Atletas con reservación</div>
+        <div id="cancel-clase-reservas-list" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
+      </div>
+      <div id="cancel-clase-noone" style="display:none;font-size:13px;color:var(--text3);text-align:center;padding:14px 0;">✅ No hay reservaciones para esta clase.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('cancel-clase')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -7494,7 +7521,7 @@ const topBtnActions = {
   marketing:   ()=>openModal('contenido'),
   evaluaciones:()=>document.getElementById('eval-coach-sel').focus(),
   horario:     ()=>{ switchHorTab('plantilla'); setTimeout(openAddClaseModal,50); },
-  revenue:     ()=>exportRevenueCSV(),
+  revenue:     ()=>exportRevenueXLSX(),
   'por-vencer':()=>pvEnviarTodos(),
   gastos:      ()=>openGastoModal(),
   programa:    ()=>openProgramaModal(''),
@@ -9897,9 +9924,16 @@ function renderClientes(){
          onmouseenter="this.style.background='rgba(239,68,68,.18)'" onmouseleave="this.style.background='rgba(239,68,68,.08)'">
          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
        </button>`;
-    const cliDbRec = clientesDB.find(x=>x.nombre===c.nombre)||{};
-    const qrToken  = cliDbRec.qr_token || '';
-    const cliDbId  = cliDbRec.id || c.cliId || '';
+    const cliDbRec    = clientesDB.find(x=>x.nombre===c.nombre)||{};
+    const qrToken     = cliDbRec.qr_token || '';
+    const cliDbId     = cliDbRec.id || c.cliId || '';
+    const portalToken = cliDbRec.portal_token || '';
+    const sinPortalBadge = cliDbId && !portalToken
+      ? `<span title="Portal no enviado — abre la ficha para generarlo"
+              style="font-size:10px;padding:2px 7px;border-radius:10px;
+                     background:rgba(251,146,60,.1);color:#FDBA74;font-weight:700;
+                     border:1px solid rgba(251,146,60,.25);cursor:help;">📵 Sin portal</span>`
+      : '';
     const qrBtn = qrToken ? `<button onclick="event.stopPropagation();showClientQR('${esc(c.nombre)}','${qrToken}')"
          title="Ver QR de check-in"
          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
@@ -9942,6 +9976,7 @@ function renderClientes(){
           ${tipoBadge}
           ${frozenClientes.has(c.nombre)?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(96,165,250,.12);color:#60a5fa;font-weight:700;border:1px solid rgba(96,165,250,.25);">❄️ Congelado</span>`:''}
           ${(refCount[c.nombre]||0)>0?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(167,139,250,.12);color:#a78bfa;font-weight:700;border:1px solid rgba(167,139,250,.25);">👥 ${refCount[c.nombre]} referido${refCount[c.nombre]!==1?'s':''}</span>`:''}
+          ${sinPortalBadge}
           <span style="font-size:10px;color:var(--text4);">${c.total} pago${c.total!==1?'s':''}</span>
         </div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:5px;">
@@ -10200,25 +10235,37 @@ function openClientePanel(nombreCliente){
   const qrWAMsg = encodeURIComponent(`Hola ${primerNombre}! Te enviamos tu codigo QR personal de ${gymConfig.gym_nombre||'el gym'}. Guardalo en tu celular — cada vez que llegues al gym solo presentalo en la entrada para registrar tu asistencia automaticamente. Sin escribir nada!`);
   // Portal del atleta
   const portalToken = cliRec.portal_token || '';
-  const portalUrl   = portalToken ? `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}atleta.html?t=${portalToken}` : '';
-  const portalWAMsg = portalToken ? encodeURIComponent(`Hola ${primerNombre} 👋 Aquí está tu acceso personal a VELUM. Desde ahí puedes ver tu membresía, el entrenamiento del día y tu QR de entrada:\n\n${portalUrl}\n\n¡Guárdalo o agrégalo a tu pantalla de inicio como app! 💪`) : '';
+  const gymNombre   = gymConfig.gym_nombre || 'el gym';
+  const portalUrl   = portalToken ? `https://myvelum.app/atleta?t=${portalToken}` : '';
+  const portalWAMsg = portalToken ? encodeURIComponent(`Hola ${primerNombre} 👋 Tu portal personal de ${gymNombre} ya está listo. Desde ahí puedes reservar clases, ver tu membresía, tu historial y tu QR de entrada:\n\n${portalUrl}\n\n💡 Tip: agrégalo a tu pantalla de inicio para abrirlo como app. Cualquier duda me avisas 💪`) : '';
+
   document.getElementById('cpanel-qr-body').innerHTML = `
-    ${portalToken?`<div style="padding:12px 14px;margin-bottom:12px;background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.2);border-radius:10px;">
-      <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📱 Portal Personal VELUM</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5;">El atleta puede ver su membresía, el entrenamiento del día y su QR desde su celular.</div>
+    ${portalToken ? `
+    <div style="padding:12px 14px;margin-bottom:12px;background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.2);border-radius:10px;">
+      <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📱 Portal Personal del Atleta</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Reserva de clases, historial, medidas, QR y más — desde el celular.</div>
+      <div style="font-size:10px;background:rgba(0,0,0,.2);padding:5px 8px;border-radius:6px;color:var(--text3);word-break:break-all;margin-bottom:10px;font-family:monospace;">${portalUrl}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${numWAForQR.length>=12?`<a href="https://wa.me/${numWAForQR}?text=${portalWAMsg}" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+        ${numWAForQR.length>=12 ? `<a href="https://wa.me/${numWAForQR}?text=${portalWAMsg}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:8px;
                  background:rgba(37,211,102,.15);color:#25d366;font-size:11px;font-weight:700;
                  text-decoration:none;border:1px solid rgba(37,211,102,.3);">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-          Enviar portal por WhatsApp</a>`:''}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+          💬 Enviar por WhatsApp</a>` : `<span style="font-size:10px;color:var(--text3);padding:6px 0;">⚠️ Agrega el teléfono del cliente para enviar por WA</span>`}
         <button onclick="navigator.clipboard.writeText('${portalUrl}').then(()=>toast('Link copiado ✓','📋'))"
-          style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+          style="display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:8px;
                  background:var(--card2);color:var(--text2);font-size:11px;font-weight:600;
                  border:1px solid var(--border);cursor:pointer;">📋 Copiar link</button>
       </div>
-    </div>`:''}
+    </div>` : `
+    <div style="padding:12px 14px;margin-bottom:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;">
+      <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">📱 Portal Personal del Atleta</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Este cliente no tiene acceso al portal todavía. Genera su link para que pueda reservar clases, ver su historial y más.</div>
+      <button onclick="generarPortalToken(${cliRec.id})"
+        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+               background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+               border:none;cursor:pointer;">✨ Generar acceso al portal</button>
+    </div>`}
     <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
       <div style="background:#fff;border-radius:10px;padding:7px;display:inline-block;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.5);">
         <img src="${qrImgUrl}" width="130" height="130" style="display:block;border-radius:4px;" alt="QR ${esc(nombreCliente)}"/>
@@ -11013,6 +11060,20 @@ function copyPortalLink(){
   const txt = document.getElementById('portal-link-text');
   if(!txt) return;
   navigator.clipboard.writeText(txt.textContent).then(()=>toast('Link copiado ✓','📋'));
+}
+
+// ─── Generar token de acceso al portal del atleta ─────────────────
+async function generarPortalToken(clienteId){
+  if(!clienteId){ toast('ID de cliente inválido','✕'); return; }
+  const newToken = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+  const { error } = await window.supabaseClient
+    .from('clientes')
+    .update({ portal_token: newToken })
+    .eq('id', clienteId);
+  if(error){ toast('Error generando acceso: '+error.message,'✕'); return; }
+  toast('Acceso al portal generado ✓','✨');
+  // Re-open the client record to refresh the QR panel
+  openCpanel(clienteId);
 }
 
 // ─── PIN Kiosco ────────────────────────────────────────────────────
@@ -14973,7 +15034,7 @@ async function saveCobertura(){
 /* ── Cancelaciones de clase (ocurrencia individual) ── */
 async function cancelClaseOccurrence(claseId, fechaStr, hora){
   const motivo = prompt(`Motivo de cancelación (${fechaStr} · ${formatHoraDisplay(hora)})\nDeja en blanco si no aplica:`);
-  if(motivo === null) return; // user cancelled the prompt
+  if(motivo === null) return; // user pressed Cancel on prompt
 
   const gymId = MOVE_GYM_ID||null;
   const payload = { horario_id: claseId, fecha: fechaStr, motivo: motivo.trim()||null };
@@ -14985,6 +15046,85 @@ async function cancelClaseOccurrence(claseId, fechaStr, hora){
   await loadHorarioCancelaciones();
   renderHorarioMensual();
   toast('Clase cancelada para esta fecha 🚫','🚫');
+
+  // Show notification modal with athletes who had reservations
+  showCancelClaseNotifModal(claseId, fechaStr, hora, motivo.trim());
+}
+
+async function showCancelClaseNotifModal(claseId, fechaStr, hora, motivo){
+  // Find clase name
+  const claseNombre = (horario||[]).find(h=>String(h.id)===String(claseId))?.tipo || 'Clase';
+  const displayFecha = new Date(fechaStr+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+
+  const infoEl = document.getElementById('cancel-clase-info');
+  if(infoEl){
+    infoEl.innerHTML = `<strong>🚫 ${claseNombre}</strong> — ${displayFecha} · ${formatHoraDisplay(hora)}`+
+      (motivo?`<br><span style="color:var(--text3);font-size:11px;">Motivo: ${motivo}</span>`:'');
+  }
+
+  // Query reservas for this horario_id + fecha
+  const { data: reservas, error } = await window.supabaseClient
+    .from('reservas')
+    .select('id, cliente_id, estado')
+    .eq('horario_id', claseId)
+    .eq('fecha', fechaStr)
+    .neq('estado', 'cancelada');
+
+  const listEl = document.getElementById('cancel-clase-reservas-list');
+  const wrapEl = document.getElementById('cancel-clase-reservas-wrap');
+  const noneEl = document.getElementById('cancel-clase-noone');
+
+  if(error){ console.error('Error buscando reservas:', error); }
+
+  const activas = (reservas||[]);
+
+  if(!activas.length){
+    if(listEl) listEl.innerHTML='';
+    if(wrapEl) wrapEl.style.display='none';
+    if(noneEl) noneEl.style.display='';
+    openModal('cancel-clase');
+    return;
+  }
+
+  if(wrapEl) wrapEl.style.display='';
+  if(noneEl) noneEl.style.display='none';
+
+  // Fetch client details for each reservation
+  const clienteIds = activas.map(r=>r.cliente_id);
+  const { data: clientesData } = await window.supabaseClient
+    .from('clientes')
+    .select('id,nombre,telefono')
+    .in('id', clienteIds);
+
+  const cliMap = {};
+  (clientesData||[]).forEach(c=>{ cliMap[c.id]=c; });
+
+  const gymWA = (gymConfig.gym_whatsapp||'').replace(/\D/g,'');
+  const waMsg = encodeURIComponent(`Hola, te avisamos que la clase *${claseNombre}* del ${displayFecha} a las ${formatHoraDisplay(hora)} ha sido cancelada.`+(motivo?` Motivo: ${motivo}.`:'')+ ' Disculpa los inconvenientes 🙏');
+
+  let html = '';
+  activas.forEach(r=>{
+    const cli = cliMap[r.cliente_id]||{};
+    const nombre = cli.nombre||'—';
+    const tel = (cli.telefono||'').replace(/\D/g,'');
+    const waLink = tel
+      ? `<a href="https://wa.me/${tel}?text=${waMsg}" target="_blank"
+           style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;
+                  background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25);
+                  color:#25D366;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;">
+           📲 Notificar
+         </a>`
+      : `<span style="font-size:10px;color:var(--text4);">Sin teléfono</span>`;
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+                          padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);
+                          border-radius:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text1);">${nombre}</div>
+      ${waLink}
+    </div>`;
+  });
+
+  if(listEl) listEl.innerHTML=html;
+  openModal('cancel-clase');
 }
 
 async function restoreClaseOccurrence(cancelId){
@@ -17820,6 +17960,7 @@ function renderRevenue(){
 }
 
 function exportRevenueCSV(){
+  // Legacy CSV — kept for fallback; primary export is exportRevenueXLSX()
   const now=new Date();
   const rows=[['Cliente','Fecha','Plan','Monto']];
   pagos.filter(p=>p.notas!=='__sin_pago__').forEach(p=>rows.push([p.cliente||'',p.fecha||'',p.plan||'',p.monto||0]));
@@ -17827,6 +17968,54 @@ function exportRevenueCSV(){
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`velum_revenue_${now.toISOString().slice(0,10)}.csv`; a.click();
+}
+
+async function exportRevenueXLSX(){
+  toast('Generando Excel…','📊');
+  try{
+    const XLSX = await ensureXLSX();
+    const now = new Date();
+    const gymNombre = gymConfig.gym_nombre || 'Gym';
+    const mesLabel  = _mesLabel ? _mesLabel() : now.toISOString().slice(0,7);
+
+    // ── Sheet 1: Todos los pagos ──────────────────────────────
+    const pagosFiltrados = pagos.filter(p=>p.notas!=='__sin_pago__');
+    const pagoRows = pagosFiltrados.map(p=>({
+      'Cliente': p.cliente||'',
+      'Fecha':   p.fecha||'',
+      'Plan':    p.plan||'',
+      'Monto':   typeof p.monto==='number'?p.monto:parseFloat(p.monto)||0,
+      'Notas':   p.notas||''
+    }));
+    const wsPagos = XLSX.utils.json_to_sheet(pagoRows, {header:['Cliente','Fecha','Plan','Monto','Notas']});
+    // Column widths
+    wsPagos['!cols'] = [{wch:28},{wch:12},{wch:22},{wch:10},{wch:30}];
+
+    // ── Sheet 2: Resumen mensual ──────────────────────────────
+    const byMonth = {};
+    pagosFiltrados.forEach(p=>{
+      const m = (p.fecha||'').slice(0,7); if(!m) return;
+      byMonth[m] = (byMonth[m]||0) + (parseFloat(p.monto)||0);
+    });
+    const resumenRows = Object.keys(byMonth).sort().map(m=>({
+      'Mes':    m,
+      'Total':  byMonth[m]
+    }));
+    const wsResumen = XLSX.utils.json_to_sheet(resumenRows, {header:['Mes','Total']});
+    wsResumen['!cols'] = [{wch:12},{wch:12}];
+
+    // ── Workbook ──────────────────────────────────────────────
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsPagos,   'Pagos');
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen Mensual');
+
+    const filename = `${gymNombre.replace(/\s+/g,'_')}_Revenue_${now.toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    toast('Excel descargado ✓','✅');
+  }catch(e){
+    console.error('Error exportando XLSX:', e);
+    toast('Error exportando Excel','✕');
+  }
 }
 
 // ══════════════════════════════════════════════════════

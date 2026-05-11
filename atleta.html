@@ -421,6 +421,13 @@ body::before{
 .streak-banner.fire{border-color:rgba(251,146,60,.35);background:linear-gradient(135deg,rgba(251,146,60,.1),rgba(255,255,255,.02));color:#FDBA74;}
 .streak-banner.gold{border-color:rgba(253,224,71,.35);background:linear-gradient(135deg,rgba(253,224,71,.1),rgba(255,255,255,.02));color:#FDE047;}
 
+/* Membership expiry alert banner */
+.memb-expiry-banner{display:none;margin:0 16px 10px;border-radius:14px;padding:13px 16px;font-size:12px;font-weight:700;line-height:1.45;cursor:pointer;transition:opacity .2s;}
+.memb-expiry-banner.expiring{background:linear-gradient(135deg,rgba(251,146,60,.15),rgba(251,146,60,.05));border:1px solid rgba(251,146,60,.4);color:#FDBA74;}
+.memb-expiry-banner.expired{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));border:1px solid rgba(239,68,68,.4);color:#FCA5A5;}
+.memb-expiry-banner .meb-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.memb-expiry-banner .meb-cta{font-size:11px;white-space:nowrap;opacity:.8;}
+
 /* ══════════════════════════════════════
    QUICK ACTIONS
 ══════════════════════════════════════ */
@@ -1254,6 +1261,7 @@ body::before{
           <div class="greeting-hi" id="greeting-hi">Buenos días 👋</div>
           <div class="greeting-name" id="atleta-nombre">—</div>
         </div>
+        <div id="memb-expiry-banner-mobile" class="memb-expiry-banner"></div>
         <div id="membership-card-wrap" class="au au2"></div>
         <div id="paquete-section" style="display:none;" class="section au au3">
           <div class="sec-hdr"><div class="sec-title">📦 Paquete activo</div></div>
@@ -1294,6 +1302,7 @@ body::before{
         </div>
         <div class="home-desktop-grid">
           <div class="home-left">
+            <div id="memb-expiry-banner-desk" class="memb-expiry-banner" style="margin:0 0 10px;"></div>
             <div id="membership-card-desk"></div>
             <div class="stats-row" id="stats-row-desk"></div>
             <div id="streak-banner-desk" class="streak-banner" style="display:none;"></div>
@@ -2142,6 +2151,9 @@ function renderHomeData(data){
 
   renderTodayWorkout(data.programasHoy);
 
+  // Membership expiry banner
+  renderMembExpiryBanner(data);
+
   // 1.4 — Streak motivational banner
   renderStreakBanner(data);
 
@@ -2156,6 +2168,42 @@ function renderHomeData(data){
 }
 
 // ── Streak motivational banner (1.4) ─────────────────
+function renderMembExpiryBanner(data){
+  const {cliente,gym} = data;
+  const ok    = cliente.membresiaOk;
+  const dias  = cliente.diasRestantes;
+  const ids   = ['memb-expiry-banner-mobile','memb-expiry-banner-desk'];
+
+  // Build WA link to contact the gym if a WA number is available
+  const gymWA = (gym && (gym.whatsapp||gym.telefono||'')).replace(/\D/g,'');
+  const waHref = gymWA ? `https://wa.me/${gymWA}?text=${encodeURIComponent('Hola, quiero renovar mi membresía 💪')}` : null;
+  const cta = waHref
+    ? `<a href="${waHref}" target="_blank" style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">📲 Contactar al gym →</a>`
+    : `<span onclick="switchView('planes')">💳 Ver planes →</span>`;
+
+  let cls='', msg='';
+  if(!ok){
+    cls='expired';
+    msg=`⚠️ Tu membresía ha vencido`;
+  } else if(dias!==null && dias<=7){
+    cls='expiring';
+    msg=`⏳ Tu membresía vence en <strong>${dias} ${dias===1?'día':'días'}</strong>`;
+  }
+
+  ids.forEach(id=>{
+    const el=$(id); if(!el) return;
+    if(cls){
+      el.className=`memb-expiry-banner ${cls}`;
+      el.style.display='block';
+      el.innerHTML=`<div class="meb-row"><span>${msg}</span><span class="meb-cta">${cta}</span></div>`;
+      if(!waHref){ el.onclick=()=>switchView('planes'); }
+    } else {
+      el.style.display='none';
+      el.className='memb-expiry-banner';
+    }
+  });
+}
+
 function renderStreakBanner(data){
   const checkins=data.checkins||[];
   const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
@@ -3009,10 +3057,63 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     const dates = [];
     for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)}); }
     renderClasesView(dates);
+
+    // Show WA self-reminder prompt
+    _showReservaConfirmBanner(tipo, hora, fecha);
   }catch(e){
     alert('❌ Error de conexión. Intenta de nuevo.');
     if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
   }
+}
+
+function _showReservaConfirmBanner(tipo, hora, fechaStr){
+  // Build human-readable date
+  const fechaDate = new Date(fechaStr+'T12:00:00');
+  const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const diaNombre = diasSemana[fechaDate.getDay()];
+  const diaNum = fechaDate.getDate();
+  const mesNombre = meses[fechaDate.getMonth()];
+  // Format hora
+  const [hh,mm] = (hora||'').split(':');
+  const hNum = parseInt(hh)||0;
+  const suffix = hNum>=12?'pm':'am';
+  const h12 = hNum>12?hNum-12:hNum||12;
+  const horaFmt = `${h12}:${mm||'00'} ${suffix}`;
+  const gymNom = (portalData&&portalData.gym&&portalData.gym.nombre)||'el gym';
+  const msg = `✅ Reservé mi lugar en *${tipo}* el ${diaNombre} ${diaNum} de ${mesNombre} a las ${horaFmt} en ${gymNom}`;
+  const waMsg = encodeURIComponent(msg);
+
+  // Try to use my own phone number as self-reminder
+  const miTel = (portalData&&portalData.cliente&&portalData.cliente.telefono||'').replace(/\D/g,'');
+  const waHref = miTel ? `https://wa.me/${miTel}?text=${waMsg}` : `https://wa.me/?text=${waMsg}`;
+
+  // Show a dismissible banner at the bottom of the clases view
+  let banner = document.getElementById('reserva-confirm-banner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'reserva-confirm-banner';
+    banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:900;width:calc(100% - 32px);max-width:420px;background:rgba(29,158,117,.18);border:1px solid rgba(29,158,117,.4);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);';
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = `
+    <div>
+      <div style="font-size:13px;font-weight:800;color:#fff;">✅ ¡Clase reservada!</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;">${tipo} · ${horaFmt} · ${diaNombre} ${diaNum}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <a href="${waHref}" target="_blank"
+         style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;
+                background:#25D366;color:#fff;font-size:11px;font-weight:800;text-decoration:none;white-space:nowrap;">
+        📲 Guardar recordatorio
+      </a>
+      <button onclick="document.getElementById('reserva-confirm-banner').style.display='none'"
+              style="background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+    </div>`;
+  banner.style.display = 'flex';
+  // Auto-hide after 12s
+  clearTimeout(banner._timer);
+  banner._timer = setTimeout(()=>{ if(banner) banner.style.display='none'; }, 12000);
 }
 
 async function cancelarReserva(reservaId, key){
