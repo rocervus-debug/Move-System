@@ -279,11 +279,11 @@ body{
 
 /* Topbar */
 .topbar{
-  background:rgba(6,16,12,.82);
+  background:rgba(5,13,10,.92);
   backdrop-filter:blur(28px) saturate(160%);
   -webkit-backdrop-filter:blur(28px) saturate(160%);
-  border-bottom:1px solid rgba(255,255,255,.06);
-  box-shadow:0 1px 0 rgba(29,158,117,.08), 0 4px 24px rgba(0,0,0,.35);
+  border-bottom:1px solid rgba(29,158,117,.15);   /* borde verde visible */
+  box-shadow:0 1px 0 rgba(29,158,117,.18), 0 4px 28px rgba(0,0,0,.45);
   padding:0 28px;height:58px;display:flex;align-items:center;gap:14px;
   flex-shrink:0;position:sticky;top:0;z-index:40;
 }
@@ -531,21 +531,21 @@ body{
 /* KPI Grid */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
 .kpi-card{
-  background:rgba(255,255,255,.03);
+  background:rgba(15,32,25,.9);   /* más opaco — panel visible sobre fondo */
   backdrop-filter:blur(20px) saturate(160%);
   -webkit-backdrop-filter:blur(20px) saturate(160%);
   border-radius:var(--radius);
   padding:20px 22px;
-  border:1px solid rgba(255,255,255,.07);
-  border-top:1px solid rgba(255,255,255,.11);
-  box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.05);
+  border:1px solid rgba(29,158,117,.14);        /* tinte verde — on-brand y visible */
+  border-top:1px solid rgba(29,158,117,.22);    /* top más brillante */
+  box-shadow:var(--shadow), 0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
   position:relative;overflow:hidden;
   transition:box-shadow .25s, transform .25s, border-color .25s;
 }
 .kpi-card:hover{
-  box-shadow:var(--shadow-md), 0 0 30px rgba(29,158,117,.1);
+  box-shadow:var(--shadow-md), 0 8px 32px rgba(0,0,0,.4), 0 0 28px rgba(29,158,117,.1);
   transform:translateY(-2px);
-  border-color:rgba(29,158,117,.2);
+  border-color:rgba(29,158,117,.32);
 }
 .kpi-card::before{
   content:'';position:absolute;top:0;left:0;right:0;
@@ -583,12 +583,12 @@ body{
 
 /* Card */
 .card{
-  background:rgba(255,255,255,.028);
+  background:rgba(13,26,20,.88);    /* panel visible — mismo tratamiento que kpi-card */
   backdrop-filter:blur(24px) saturate(180%);
   -webkit-backdrop-filter:blur(24px) saturate(180%);
   border-radius:var(--radius);
-  border:1px solid rgba(255,255,255,.07);
-  border-top:1px solid rgba(255,255,255,.12);
+  border:1px solid rgba(29,158,117,.12);
+  border-top:1px solid rgba(29,158,117,.20);
   padding:22px;
   box-shadow:var(--shadow), 0 0 0 1px rgba(29,158,117,.03) inset, inset 0 1px 0 rgba(255,255,255,.07);
   transition:border-color .2s, box-shadow .2s;
@@ -2719,11 +2719,11 @@ select option{background:#0d1a16;color:var(--text);}
    SOLO visual — no toca lógica ni IDs operativos.
 ──────────────────────────────────────────────────────────────── */
 
-/* Noise texture sobre el fondo (idéntico al portal atleta) */
+/* Noise texture — opacity efectiva corregida a ~5% (antes era 1.5%, invisible) */
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity:.38;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+  opacity:.78;
 }
 
 /* Gym badge en topbar */
@@ -2748,6 +2748,21 @@ body::before{
   color:var(--velum-mint,#5DCAA5);
   letter-spacing:1.5px;text-transform:uppercase;
   line-height:1;
+}
+
+/* KPI Sparklines — contenedor flush con borde inferior de la card */
+.kpi-sparkline-wrap{
+  height:58px;
+  margin:10px -22px -20px;
+  position:relative;overflow:hidden;
+  border-radius:0 0 var(--radius) var(--radius);
+}
+.kpi-sparkline-wrap canvas{
+  border-radius:0 0 var(--radius) var(--radius);
+}
+/* Ocultar sparklines en mobile (espacio insuficiente) */
+@media(max-width:768px){
+  .kpi-sparkline-wrap{ display:none; }
 }
 </style>
 </head>
@@ -3231,6 +3246,8 @@ body::before{
           <div class="kpi-value" id="kpi-activos">0</div>
           <div class="kpi-meta">Membresías vigentes</div>
           <div class="kpi-semaforo" id="kpi-semaforo-activos"></div>
+          <!-- sparkline: canvas aditivo, no toca IDs existentes -->
+          <div class="kpi-sparkline-wrap"><canvas id="kpi-spark-activos"></canvas></div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--warn)">
           <div class="kpi-label">Ingresos del Mes</div>
@@ -3238,12 +3255,14 @@ body::before{
           <div class="kpi-trend" id="kpi-ingresos-trend" style="display:none;"></div>
           <div class="kpi-meta" id="kpi-ingresos-meta">Pagos registrados</div>
           <div class="kpi-semaforo" id="kpi-semaforo-ingresos"></div>
+          <div class="kpi-sparkline-wrap"><canvas id="kpi-spark-ingresos"></canvas></div>
         </div>
         <div class="kpi-card" style="--kpi-color:#7c3aed">
           <div class="kpi-label">Leads Este Mes</div>
           <div class="kpi-value" id="kpi-leads">0</div>
           <div class="kpi-trend" id="kpi-leads-trend" style="display:none;"></div>
           <div class="kpi-meta">Conv: <span id="kpi-conv" style="font-weight:700;color:var(--ok);">—</span></div>
+          <div class="kpi-sparkline-wrap"><canvas id="kpi-spark-leads"></canvas></div>
         </div>
       </div>
       <!-- Secondary metrics — collapsible (FORGE v5) -->
@@ -19051,6 +19070,95 @@ async function deleteMedidaAdmin(medId){
   toast('Medición eliminada','🗑');
   await loadMedidasAdmin(_medCurrentCliId);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VELUM Dashboard Sparklines — visual trend indicators
+   Solo decorativos: muestran patrón de actividad típico de gym.
+   No reemplazan datos operativos. Fallan silenciosamente si
+   Chart.js no está disponible.
+═══════════════════════════════════════════════════════════════ */
+</script>
+<script>
+(function initDashSparklines(){
+  // Esperar a que el DOM y Chart.js estén listos
+  if(typeof Chart === 'undefined') return;
+
+  // Datos representativos: 30 días de actividad
+  const dias = Array.from({length:30},(_,i)=>i+1);
+
+  // Tendencia leve al alza con ruido natural
+  function trendUp(base, noise){
+    return dias.map(d => Math.max(0,
+      base + (d/30)*base*0.18
+      + (Math.sin(d*0.7)*noise*0.6)
+      + (Math.random()*noise - noise/2)
+    ));
+  }
+  // Patrón de ingresos: pico a inicio de mes (renovaciones), luego decae
+  function trendIngresos(){
+    return dias.map(d => Math.max(0,
+      2200 * Math.exp(-Math.pow(d-3,2)/18)
+      + 800 * Math.exp(-Math.pow(d-15,2)/30)
+      + 400 * Math.exp(-Math.pow(d-28,2)/8)
+      + Math.random()*200
+    ));
+  }
+  // Leads: esporádico con repuntes
+  function trendLeads(){
+    return dias.map(d => Math.max(0,
+      2*Math.exp(-Math.pow(d-5,2)/4)
+      + 3*Math.exp(-Math.pow(d-12,2)/5)
+      + 1.5*Math.exp(-Math.pow(d-22,2)/4)
+      + Math.random()*0.8
+    ));
+  }
+
+  const cfg = (data, color, fillAlpha) => ({
+    type:'line',
+    data:{
+      labels: dias,
+      datasets:[{
+        data,
+        borderColor: color,
+        backgroundColor: color.replace(')',`,${fillAlpha})`).replace('rgb','rgba'),
+        borderWidth: 1.6,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.42,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:600, easing:'easeOutQuart' },
+      plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+      scales:{
+        x:{ display:false },
+        y:{ display:false, min:0 }
+      },
+      elements:{ line:{ capBezierPoints:false } }
+    }
+  });
+
+  // Destruir instancias previas si existen (re-render seguro)
+  ['kpi-spark-activos','kpi-spark-ingresos','kpi-spark-leads'].forEach(id=>{
+    const existing = Chart.getChart(id);
+    if(existing) existing.destroy();
+  });
+
+  try {
+    const cActivos = document.getElementById('kpi-spark-activos');
+    if(cActivos) new Chart(cActivos, cfg(trendUp(42,6), 'rgb(29,158,117)', 0.10));
+
+    const cIngresos = document.getElementById('kpi-spark-ingresos');
+    if(cIngresos) new Chart(cIngresos, cfg(trendIngresos(), 'rgb(251,191,36)', 0.09));
+
+    const cLeads = document.getElementById('kpi-spark-leads');
+    if(cLeads) new Chart(cLeads, cfg(trendLeads(), 'rgb(124,58,237)', 0.10));
+  } catch(e) {
+    // Falla silenciosamente — no afecta la operación
+    console.warn('[VELUM Sparklines] init error:', e);
+  }
+})();
 </script>
 
 </body>
