@@ -2876,7 +2876,7 @@ select option{background:#0d1a16;color:var(--text);}
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-label-text"> Por Vencer</span>
         <span class="nav-badge" id="pv-nav-badge" style="display:none;"></span>
       </div>
-      <div class="nav-item mob-hidden" id="nav-gastos" onclick="go('gastos',this)">
+      <div class="nav-item" id="nav-gastos" onclick="go('gastos',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="nav-label-text"> Gastos & Balance</span>
       </div>
     </div>
@@ -3113,6 +3113,9 @@ select option{background:#0d1a16;color:var(--text);}
           </div>
         </div>
       </div>
+
+      <!-- BRIEFING DE HOY -->
+      <div id="dash-briefing-hoy" style="margin-bottom:22px;"></div>
 
       <!-- KPI primarios — 3 hero numbers (FORGE v5) -->
       <div class="kpi-grid kpi-grid-primary" style="grid-template-columns:repeat(3,1fr);">
@@ -3428,6 +3431,7 @@ select option{background:#0d1a16;color:var(--text);}
         </button>
         <button class="btn btn-sm btn-icon" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.28);" onclick="abrirRenovacionMasiva()">🔄 Renovación Masiva</button>
         <button class="btn btn-sm btn-icon" style="background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.22);" onclick="launchKiosco()">🖥️ Kiosco</button>
+        <button class="btn btn-sm btn-icon" id="btn-bulk-portales" style="background:rgba(138,43,226,.12);color:#c084fc;border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()">🔗 Portales pendientes</button>
         <button class="btn btn-sm btn-primary btn-icon" onclick="openModal('solo-cliente')">+ Cliente</button>
       </div>
 
@@ -3448,6 +3452,7 @@ select option{background:#0d1a16;color:var(--text);}
         </button>
         <button class="btn btn-sm btn-icon" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.28);" onclick="abrirRenovacionMasiva()">🔄 Renovar</button>
         <button class="btn btn-sm btn-icon" style="background:rgba(29,158,117,.1);color:var(--accent);border:1px solid rgba(29,158,117,.22);" onclick="launchKiosco()">🖥️ Kiosco</button>
+        <button class="btn btn-sm btn-icon" style="background:rgba(138,43,226,.12);color:#c084fc;border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()">🔗 Portales</button>
       </div>
 
       <!-- Filtro por TIPO (paquete vs pase) -->
@@ -10713,7 +10718,7 @@ function _doExportarClientesXLSX(){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
 
   // ── Hoja 1: Directorio ──
-  const dirRows = [['Nombre','Teléfono','Email','Cumpleaños','Plan Actual','Vencimiento','Estado','Total Pagos','Total Pagado ($)','Tipo','LTV ($)']];
+  const dirRows = [['Nombre','Teléfono','Email','Cumpleaños','Plan Actual','Vencimiento','Estado','Total Pagos','Total Pagado ($)','Tipo','LTV ($)','Portal Enviado']];
   const nombresSet = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
   [...nombresSet].forEach(nombre=>{
     const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
@@ -10726,9 +10731,10 @@ function _doExportarClientesXLSX(){
     }
     const tipo = ps.some(p=>!esPaseDia(p.plan))?'Paquete':'Pase de Día';
     const ltv  = ps.reduce((s,p)=>s+p.monto,0);
+    const portalEnviado = cliRec.portal_token ? 'Sí' : 'No';
     dirRows.push([
       nombre, cliRec.telefono||'', cliRec.email||'', cliRec.cumpleanos||'',
-      ult?ult.plan:'—', ult?ult.vence||'—':'—', estado, ps.length, ltv, tipo, ltv
+      ult?ult.plan:'—', ult?ult.vence||'—':'—', estado, ps.length, ltv, tipo, ltv, portalEnviado
     ]);
   });
 
@@ -10760,7 +10766,7 @@ function _doExportarClientesXLSX(){
   const ws3 = XLSX.utils.aoa_to_sheet(riesgoRows);
 
   // Set column widths
-  ws1['!cols'] = [{wch:22},{wch:14},{wch:20},{wch:12},{wch:18},{wch:12},{wch:10},{wch:10},{wch:14},{wch:12},{wch:10}];
+  ws1['!cols'] = [{wch:22},{wch:14},{wch:20},{wch:12},{wch:18},{wch:12},{wch:10},{wch:10},{wch:14},{wch:12},{wch:10},{wch:14}];
   ws2['!cols'] = [{wch:12},{wch:22},{wch:18},{wch:10},{wch:14},{wch:12},{wch:14},{wch:12},{wch:25}];
   ws3['!cols'] = [{wch:22},{wch:18},{wch:12},{wch:12},{wch:12},{wch:14}];
 
@@ -11074,6 +11080,32 @@ async function generarPortalToken(clienteId){
   toast('Acceso al portal generado ✓','✨');
   // Re-open the client record to refresh the QR panel
   openCpanel(clienteId);
+}
+
+// ─── Bulk: generar portales pendientes (Task #67) ─────────────────
+async function generarPortalesPendientes(){
+  const pendientes = clientesDB.filter(c => !c.portal_token);
+  if(!pendientes.length){
+    toast('Todos los clientes ya tienen portal 🎉','✓'); return;
+  }
+  if(!confirm(`¿Generar portal para ${pendientes.length} cliente${pendientes.length===1?'':'s'} sin acceso?`)) return;
+
+  const btn = document.getElementById('btn-bulk-portales');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Generando…'; }
+
+  let ok=0, fail=0;
+  for(const c of pendientes){
+    const newToken = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,x=>(x^crypto.getRandomValues(new Uint8Array(1))[0]&15>>x/4).toString(16));
+    const { error } = await window.supabaseClient
+      .from('clientes')
+      .update({ portal_token: newToken })
+      .eq('id', c.id);
+    if(error){ fail++; } else { c.portal_token = newToken; ok++; }
+  }
+
+  if(btn){ btn.disabled=false; btn.textContent='🔗 Portales pendientes'; }
+  toast(`Portales generados: ${ok}${fail?` (${fail} errores)`:''}`, ok>0?'✓':'✕');
+  renderClientes();
 }
 
 // ─── PIN Kiosco ────────────────────────────────────────────────────
@@ -11503,6 +11535,144 @@ async function renderCheckinsChart(){
   });
 }
 
+// ── Briefing de hoy ──────────────────────────────────────────────
+function renderBriefingHoy(){
+  const el = document.getElementById('dash-briefing-hoy');
+  if(!el) return;
+
+  const now   = new Date();
+  const today = now.toISOString().slice(0,10);
+  const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const diaNombre = diasSemana[now.getDay()];
+  const diaNum    = now.getDate();
+  const mesNombre = meses[now.getMonth()];
+  const todayDia  = diaNombre; // ej "Lunes"
+
+  // ── Clases de hoy (de la plantilla semanal + overrides) ──────────
+  const clasesHoy = horario.filter(h => {
+    if(h.tipo==='CERRADO') return false;
+    // Overrides (fecha específica) tienen prioridad
+    const override = horarioOverrides.find(o=>o.fecha===today && o.hora===h.hora);
+    if(override) return false; // override replaces template slot
+    return h.dia === todayDia;
+  });
+  // Add overrides for today that are NOT CERRADO
+  const overridesHoy = horarioOverrides.filter(o=>o.fecha===today && o.tipo!=='CERRADO');
+  const todasClasesHoy = [...clasesHoy, ...overridesHoy];
+
+  // ── Cumpleaños hoy ──────────────────────────────────────────────
+  const todayMMDD = today.slice(5); // "MM-DD"
+  const cumpleHoy = clientesDB.filter(c=>{
+    if(!c.cumpleanos) return false;
+    return c.cumpleanos.slice(5)===todayMMDD || c.cumpleanos.slice(0,5)===todayMMDD;
+  });
+
+  // ── Vencimientos hoy ────────────────────────────────────────────
+  const vencenHoy = pagos.filter(p=>p.vence===today && !esPaseDia(p.plan));
+
+  // No data yet
+  if(!todasClasesHoy.length && !cumpleHoy.length && !vencenHoy.length){
+    el.innerHTML = `
+      <div style="padding:14px 18px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;font-size:12px;color:var(--text3);">
+        📅 <strong style="color:var(--text2);">${diaNombre} ${diaNum} de ${mesNombre}</strong> — Sin clases ni alertas para hoy.
+      </div>`;
+    return;
+  }
+
+  // ── Render ───────────────────────────────────────────────────────
+  const claseCards = todasClasesHoy.map(h=>{
+    const coachNombre = (coaches.find(c=>String(c.id)===String(h.coach_id))||{}).nombre || '';
+    const tipo   = h.tipo||'Clase';
+    const hora   = formatHoraDisplay ? formatHoraDisplay(h.hora) : h.hora;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                  background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.15);
+                  border-radius:12px;flex-shrink:0;">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:900;color:#fff;white-space:nowrap;">${hora}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">${esc(tipo)}</div>
+          ${coachNombre?`<div style="font-size:10px;color:var(--text3);">${esc(coachNombre)}</div>`:''}
+        </div>
+      </div>`;
+  }).join('');
+
+  const cumpleCards = cumpleHoy.map(c=>{
+    const tel   = (c.telefono||'').replace(/\D/g,'');
+    const numWA = tel.length===10?'52'+tel:tel;
+    const msgWA = encodeURIComponent(`¡Feliz cumpleaños ${c.nombre}! 🎂 De parte de todo el equipo, que tengas un excelente día 💪`);
+    const waBtn = numWA.length>=12
+      ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank"
+           style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;
+                  background:rgba(37,211,102,.12);color:#25d366;font-size:11px;font-weight:700;
+                  text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;">📲 Felicitar</a>`
+      : `<span style="font-size:10px;color:var(--text4);">Sin teléfono</span>`;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+                  padding:10px 14px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);
+                  border-radius:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">🎂</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${esc(c.nombre)}</div>
+            <div style="font-size:10px;color:var(--text3);">Cumpleaños hoy</div>
+          </div>
+        </div>
+        ${waBtn}
+      </div>`;
+  }).join('');
+
+  const venceCards = vencenHoy.map(p=>{
+    const cliRec   = clientesDB.find(x=>x.nombre===p.cliente)||{};
+    const tel      = (cliRec.telefono||'').replace(/\D/g,'');
+    const numWA    = tel.length===10?'52'+tel:tel;
+    const msgWA    = encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
+    const waBtn    = numWA.length>=12
+      ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank"
+           style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;
+                  background:rgba(37,211,102,.12);color:#25d366;font-size:11px;font-weight:700;
+                  text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;">📲 WA</a>`
+      : '';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+                  padding:10px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
+                  border-radius:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">⏰</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${esc(p.cliente)}</div>
+            <div style="font-size:10px;color:var(--text3);">Vence hoy · ${esc(p.plan||'—')}</div>
+          </div>
+        </div>
+        ${waBtn}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:16px;padding:16px 18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="font-size:13px;font-weight:800;color:var(--text);">📅 ${diaNombre} ${diaNum} de ${mesNombre}</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Hoy</span>
+      </div>
+      ${todasClasesHoy.length ? `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Clases del día</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">${claseCards}</div>
+        </div>` : ''}
+      ${cumpleHoy.length ? `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:800;color:rgba(251,191,36,.7);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Cumpleaños</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">${cumpleCards}</div>
+        </div>` : ''}
+      ${vencenHoy.length ? `
+        <div>
+          <div style="font-size:10px;font-weight:800;color:rgba(239,68,68,.7);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Vencen hoy</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">${venceCards}</div>
+        </div>` : ''}
+    </div>`;
+}
+
 // DASHBOARD RENDER
 // ═══════════════════════════════════════════════════════════════════
 function renderDashboard(){
@@ -11793,6 +11963,7 @@ function renderDashboard(){
   }
 
   updateBadges();
+  renderBriefingHoy();
   renderMembresiasAlert();
   renderMetaMensual(ingresosMes);
   renderRetencion();
