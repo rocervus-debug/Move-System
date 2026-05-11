@@ -98,8 +98,8 @@
 
   /* Dimensions */
   --sidebar:256px;
-  --radius:12px;
-  --radius-sm:8px;
+  --radius:16px;
+  --radius-sm:10px;
   --shadow:0 1px 8px rgba(0,0,0,.5);
   --shadow-md:0 4px 24px rgba(0,0,0,.55);
   --shadow-lg:0 12px 48px rgba(0,0,0,.65);
@@ -1920,6 +1920,7 @@ select option{background:#0d1a16;color:var(--text);}
     backdrop-filter: blur(12px);
   }
   .topbar-left { flex: 1; min-width: 0; }
+  .topbar-gym-badge { display: none !important; } /* badge solo en desktop */
   .topbar-title { flex: 1; min-width: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar-sub { display: none !important; }
   .top-btn {
@@ -2712,6 +2713,42 @@ select option{background:#0d1a16;color:var(--text);}
   font-family:var(--font);
 }
 .cfg-back-btn:hover{ background:var(--card);border-color:var(--accent);color:var(--accent); }
+
+/* ── Dark Luxury Athletic — visual upgrades ──────────────────────
+   Noise texture, gym badge en topbar, gold activado.
+   SOLO visual — no toca lógica ni IDs operativos.
+──────────────────────────────────────────────────────────────── */
+
+/* Noise texture sobre el fondo (idéntico al portal atleta) */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.38;
+}
+
+/* Gym badge en topbar */
+.topbar-gym-badge{
+  display:flex;align-items:center;gap:7px;
+  padding:4px 10px;
+  background:rgba(29,158,117,.07);
+  border:1px solid rgba(29,158,117,.14);
+  border-radius:8px;flex-shrink:0;cursor:default;
+}
+.topbar-gym-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 7px rgba(29,158,117,.7);
+  flex-shrink:0;
+  animation:tbpulse 3s ease-in-out infinite;
+}
+@keyframes tbpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.topbar-gym-name-badge{
+  font-family:var(--font-display);
+  font-size:13px;font-weight:700;
+  color:var(--velum-mint,#5DCAA5);
+  letter-spacing:1.5px;text-transform:uppercase;
+  line-height:1;
+}
 </style>
 </head>
 <body>
@@ -3017,6 +3054,12 @@ select option{background:#0d1a16;color:var(--text);}
 ═══════════════════════════════════════ -->
 <div class="main">
   <div class="topbar">
+    <!-- Gym badge — identidad del gym en topbar (solo visual, nombre via JS) -->
+    <div class="topbar-gym-badge">
+      <div class="topbar-gym-dot"></div>
+      <span class="topbar-gym-name-badge" id="topbar-gym-badge-name">VELUM</span>
+    </div>
+    <div class="topbar-divider"></div>
     <span class="topbar-title" id="topTitle">Dashboard General</span>
     <div class="topbar-divider"></div>
     <span class="topbar-sub" id="topSub">—</span>
@@ -6854,7 +6897,7 @@ async function loadConfigFromSupabase(){
           gymConfig.gym_nombre = g.nombre;
           gymConfig.gym_plan   = g.plan || 'max';
           // Actualizar TODOS los elementos de nombre del gym
-          ['sidebar-gym-nombre','hero-gym-nombre'].forEach(id => {
+          ['sidebar-gym-nombre','hero-gym-nombre','topbar-gym-badge-name'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.textContent = g.nombre;
           });
