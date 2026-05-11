@@ -12360,6 +12360,7 @@ async function deleteVisita(id){
   if(error){ toast('Error al eliminar: '+error.message,'❌'); return; }
   await loadVisitasFromSupabase();
   renderVisitas();
+  renderPagos(); // actualiza lista y KPI de ingresos
   toast('Visita eliminada.','✓');
 }
 
@@ -18299,6 +18300,8 @@ function renderRevenue(){
   const monthlyRevenue = months.map(m=>
     pagos.filter(p=>(p.fecha||'').startsWith(m) && p.notas!=='__sin_pago__')
          .reduce((s,p)=>s+p.monto,0)
+    + (visitasDB||[]).filter(v=>(v.fecha||'').startsWith(m))
+         .reduce((s,v)=>s+(parseFloat(v.monto)||0),0)
   );
 
   const ingresosMes  = monthlyRevenue[monthlyRevenue.length-1];
