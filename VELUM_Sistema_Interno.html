@@ -14686,7 +14686,14 @@ function renderPagos(){
   if(kpiMesLbl) kpiMesLbl.textContent = _mesLabel(_pagosMes);
 
   const pagosSinAbono = pagos.filter(p=>p.notas!=='__sin_pago__');
-  const ingresosMes   = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(thisMonth)).reduce((s,p)=>s+(p.monto||0),0);
+  // Visitas del mes como filas sintéticas (no membresías, solo revenue)
+  const visitasMesPagos = (visitasDB||[])
+    .filter(v=>(v.fecha||'').startsWith(_pagosMes))
+    .map(v=>({ _esVisita:true, id:'v_'+v.id, cliente:v.nombre||'—', plan:'Pase de Día',
+      monto:parseFloat(v.monto)||0, fecha:v.fecha, metodo:v.metodo||'Efectivo',
+      vence:null, notas:v.notas||'', telefono:v.telefono||'', _visitaId:v.id }));
+  const ingresosMes = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(thisMonth)).reduce((s,p)=>s+(p.monto||0),0)
+                    + visitasMesPagos.reduce((s,v)=>s+(v.monto||0),0);
 
   // Proyección: promedio de últimos 3 meses
   const proyMeses = [1,2,3].map(i=>{ const d=new Date(today); d.setMonth(d.getMonth()-i); return d.toISOString().slice(0,7); });
@@ -14727,25 +14734,29 @@ function renderPagos(){
   }
 
   const el = document.getElementById('pagos-list');
-  if(!pagos.length){
+  if(!pagos.length && !(visitasDB||[]).length){
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Registra tu primer pago</div><div class="empty-sub">Aquí verás el historial de ingresos, renovaciones y membresías. Cada pago registrado activa alertas de vencimiento automáticas.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="openModal('pago')">+ Registrar primer pago →</button></div>`;
     return;
   }
 
   // Apply filters + text search
   const searchQ = (document.getElementById('pagos-search')?.value||'').toLowerCase().trim();
-  // Pre-filter by selected month
-  let filtered = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(_pagosMes));
+  // Pre-filter by selected month (membresías + visitas mezcladas)
+  let filtered = [
+    ...pagosSinAbono.filter(p=>(p.fecha||'').startsWith(_pagosMes)),
+    ...visitasMesPagos
+  ];
   if(searchQ) filtered = filtered.filter(p=>(p.cliente||'').toLowerCase().includes(searchQ));
   if(pagoFilter.estado !== 'todos'){
+    // Las visitas no tienen estado de membresía — solo se muestran en 'todos'
     filtered = filtered.filter(p=>{
+      if(p._esVisita) return false;
       const est = getPagoEstado(p, today, in7);
       return est === pagoFilter.estado;
     });
   }
   if(pagoFilter.plan === '__paquete_activo__'){
-    // Show only active packages (clases_totales set AND clases restantes > 0)
-    filtered = filtered.filter(p => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales);
+    filtered = filtered.filter(p => !p._esVisita && p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales);
   } else if(pagoFilter.plan !== 'todos'){
     filtered = filtered.filter(p=>(p.plan||'').includes(pagoFilter.plan));
   }
@@ -14764,6 +14775,21 @@ function renderPagos(){
     <th>Cliente</th><th>Plan</th><th>Monto</th><th>Método</th><th>Fecha Pago</th><th>Vencimiento / Clases</th><th></th>
   </tr></thead><tbody>`;
   sorted.forEach(p=>{
+    // ── Fila de visita (pase de día) ──────────────────────────
+    if(p._esVisita){
+      html += `<tr style="opacity:.9;">
+        <td class="name">${esc(p.cliente)}${p.telefono?`<br><span style="font-size:10px;color:var(--text3);">${p.telefono}</span>`:''}</td>
+        <td><span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(167,139,250,.12);color:#c4b5fd;font-weight:700;border:1px solid rgba(167,139,250,.2);">🎫 Pase de Día</span></td>
+        <td style="font-weight:700;color:var(--ok);">$${p.monto.toLocaleString('es-MX')}</td>
+        <td>${metodoBadge(p.metodo)}</td>
+        <td>${fmtDate(p.fecha)}</td>
+        <td><span style="font-size:11px;color:var(--text3);">Visita única</span></td>
+        <td class="tbl-action">
+          <button class="btn btn-danger btn-sm" onclick="deleteVisita(${p._visitaId})" style="font-size:10px;padding:3px 8px;">🗑</button>
+        </td>
+      </tr>`;
+      return;
+    }
     const esPaquete = (p.plan||'').includes('Paquete');
     const vencido = p.vence&&p.vence!=='—'&&new Date(p.vence)<new Date();
     const porVenc = p.vence&&p.vence!=='—'&&new Date(p.vence)<=in7&&new Date(p.vence)>=today;
