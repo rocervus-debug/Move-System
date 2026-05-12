@@ -25,8 +25,11 @@
 <meta name="description" content="VELUM — Sistema de gestión fitness. Membresías, pagos, coaches y más."/>
 
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<!-- SRI: genera los hashes con: curl -s <URL> | openssl dgst -sha384 -binary | base64 -w0
+     Luego añade integrity="sha384-<hash>" a cada script tag.
+     Supabase usa un build dinámico (@2) — no es compatible con SRI; fija la versión cuando sea posible. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js" crossorigin="anonymous"></script>
 <!-- XLSX se carga bajo demanda (lazy) al exportar — ver ensureXLSX() -->
 <style>
 /* ═══════════════════════════════════════
@@ -4440,7 +4443,7 @@ body::before{
               </div>
               <div class="field" style="flex:1;min-width:140px;margin:0;">
                 <label>Contraseña del Portal</label>
-                <input class="settings-input" id="cfg-portal-password" type="text" placeholder="ej. move2025" maxlength="30"/>
+                <input class="settings-input" id="cfg-portal-password" type="password" placeholder="ej. move2025" maxlength="30" autocomplete="new-password"/>
                 <div style="font-size:10px;color:var(--text3);margin-top:4px;">Una contraseña para todos tus socios. Cámbiala cuando quieras.</div>
               </div>
             </div>
@@ -6159,6 +6162,8 @@ async function doLogin(){
     currentUser = session;
     MOVE_GYM_ID = session.gym_id;
     auditLog('LOGIN','usuarios', session.id, `Login desde ${navigator.platform||'web'}`);
+    // Guard: verify gym_id is present before firing queries (prevents data bleed on misconfigured sessions)
+    if(!MOVE_GYM_ID){ errEl.textContent='Error: sesión sin gym_id — contacta soporte.'; errEl.classList.add('show'); currentUser=null; MOVE_GYM_ID=null; clearSession(); btn.textContent='ENTRAR'; btn.disabled=false; return; }
     // Reload all data filtered by the correct gym_id before showing app
     await Promise.all([
       loadConfigFromSupabase(), loadLeadsFromSupabase(), loadCoachesFromSupabase(),
@@ -7340,7 +7345,7 @@ async function loadEvalsFromSupabase(){
 }
 
 async function loadPagosFromSupabase(){
-  const { data, error } = await gf(window.supabaseClient.from('pagos').select('*')).order('created_at', {ascending: false});
+  const { data, error } = await gf(window.supabaseClient.from('pagos').select('*')).order('created_at', {ascending: false}).limit(2000);
   if(error){
     console.error('Error cargando pagos:', error);
     const m = error.message||'';
@@ -7358,7 +7363,7 @@ async function loadPagosFromSupabase(){
 }
 
 async function loadClientesFromSupabase(){
-  const { data, error } = await gf(window.supabaseClient.from('clientes').select('*')).order('nombre');
+  const { data, error } = await gf(window.supabaseClient.from('clientes').select('*')).order('nombre').limit(2000);
   if(error){
     console.error('Error cargando clientes:', error);
     clientesDB=[];
@@ -8182,6 +8187,17 @@ function _confirmResolveWith(val){
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
+  // ARIA — accessibility
+  if(!m.getAttribute('role')) m.setAttribute('role','dialog');
+  if(!m.getAttribute('aria-modal')) m.setAttribute('aria-modal','true');
+  // derive label from closest h2/h3 inside, or fall back to id
+  const heading = m.querySelector('h2,h3,.modal-title');
+  if(heading){
+    if(!heading.id) heading.id = (m.id||'modal')+'-title';
+    if(!m.getAttribute('aria-labelledby')) m.setAttribute('aria-labelledby', heading.id);
+  } else if(m.id && !m.getAttribute('aria-label')){
+    m.setAttribute('aria-label', m.id.replace('modal-','').replace(/-/g,' '));
+  }
 });
 
 // ══════════════════════════════════════════════════════════════════
@@ -10753,8 +10769,9 @@ function imprimirQRCliente(nombre){
     ? `${kioskoBase}/checkin.html?nombre=${encodeURIComponent(nombre)}`
     : `MOVE_CHECKIN:${nombre}`;
   const qrImgUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrContent)}&bgcolor=ffffff&color=000000&margin=4&qzone=2`;
+  const nombreE = esc(nombre);
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
-<title>QR — ${nombre}</title>
+<title>QR — ${nombreE}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -10771,8 +10788,8 @@ function imprimirQRCliente(nombre){
 <div class="card">
   <div class="logo">MOVE</div>
   <div class="sub">Fitness Center</div>
-  <img src="${qrImgUrl}" alt="QR ${nombre}"/>
-  <div class="name">${nombre}</div>
+  <img src="${qrImgUrl}" alt="QR ${nombreE}"/>
+  <div class="name">${nombreE}</div>
   <div class="inst">Presenta este QR en la entrada<br>para registrar tu asistencia</div>
   <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
 </div>
@@ -14768,8 +14785,9 @@ function printRecibo(pagoId){
     ? `<div style="margin-top:14px;padding:8px 12px;background:#eff6ff;border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#1d4ed8;">❄️ Membresía actualmente congelada</div>`
     : (p.dias_congelados>0?`<div style="margin-top:14px;padding:8px 12px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;font-size:11px;color:#166534;">✅ Incluye ${p.dias_congelados} días adicionales por congelamiento</div>`:'');
 
+  const _eC=esc(p.cliente), _eP=esc(p.plan), _eM=esc(p.metodo||'—'), _eGN=esc(gymNombre), _eGT=esc(gymTagline);
   const html=`<!DOCTYPE html><html lang="es">
-<head><meta charset="UTF-8"><title>Recibo — ${p.cliente}</title>
+<head><meta charset="UTF-8"><title>Recibo — ${_eC}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#111;padding:48px 40px;max-width:480px;margin:0 auto;}
@@ -14791,13 +14809,13 @@ hr{border:none;border-top:1.5px solid #e5e5e5;margin:20px 0;}
 </head>
 <body>
   <div class="brand">✦ VELUM</div>
-  <div class="gym">${gymNombre}</div>
-  ${gymTagline?`<div class="tagline">${gymTagline}</div>`:'<div style="margin-bottom:28px;"></div>'}
+  <div class="gym">${_eGN}</div>
+  ${_eGT?`<div class="tagline">${_eGT}</div>`:'<div style="margin-bottom:28px;"></div>'}
   <hr>
   <div class="section-label">Recibo de Pago</div>
-  <div class="row"><span class="label">Cliente</span><span class="value">${p.cliente}</span></div>
-  <div class="row"><span class="label">Plan / Servicio</span><span class="value">${p.plan}</span></div>
-  <div class="row"><span class="label">Método de pago</span><span class="value">${p.metodo||'—'}</span></div>
+  <div class="row"><span class="label">Cliente</span><span class="value">${_eC}</span></div>
+  <div class="row"><span class="label">Plan / Servicio</span><span class="value">${_eP}</span></div>
+  <div class="row"><span class="label">Método de pago</span><span class="value">${_eM}</span></div>
   <div class="row"><span class="label">Fecha de pago</span><span class="value">${fecha}</span></div>
   ${extraRow}
   ${congeladoNote}
@@ -16742,7 +16760,8 @@ async function enviarEmailsVencimiento(){
 </script>
 
 <!-- ═══ SUPABASE SDK + INIT ═══ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- NOTE: pin to exact version (e.g. @2.x.y) and add integrity="sha384-..." to enable SRI -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 <script>
   const supabaseUrl = 'https://savzjanpydyjtrgdkllx.supabase.co';
   const supabaseKey = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
@@ -16941,13 +16960,13 @@ ${meta>0?`
   <div class="section" style="margin-bottom:0;">
     <h2>Ingresos por Plan</h2>
     ${planesSorted.length?`<table><thead><tr><th>Plan</th><th>Pagos</th><th style="text-align:right;">Total</th></tr></thead><tbody>
-    ${planesSorted.map(([pl,v])=>`<tr><td>${pl}</td><td>${v.qty}</td><td class="amt">$${v.monto.toLocaleString('es-MX')}</td></tr>`).join('')}
+    ${planesSorted.map(([pl,v])=>`<tr><td>${esc(pl)}</td><td>${v.qty}</td><td class="amt">$${v.monto.toLocaleString('es-MX')}</td></tr>`).join('')}
     </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin pagos este mes.</div>'}
   </div>
   <div class="section" style="margin-bottom:0;">
     <h2>Top 5 Clientes del Mes</h2>
     ${top5.length?`<table><thead><tr><th>#</th><th>Cliente</th><th style="text-align:right;">Total</th></tr></thead><tbody>
-    ${top5.map(([n,m],i)=>`<tr><td style="color:#9ca3af;font-weight:700;">${i+1}</td><td>${n}</td><td class="amt">$${m.toLocaleString('es-MX')}</td></tr>`).join('')}
+    ${top5.map(([n,m],i)=>`<tr><td style="color:#9ca3af;font-weight:700;">${i+1}</td><td>${esc(n)}</td><td class="amt">$${m.toLocaleString('es-MX')}</td></tr>`).join('')}
     </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin datos este mes.</div>'}
   </div>
 </div>
@@ -16964,8 +16983,8 @@ ${pagosMes.length?`
   <h2>Registro de Pagos del Mes (${pagosMes.length})</h2>
   <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Plan</th><th>Método</th><th style="text-align:right;">Monto</th></tr></thead><tbody>
   ${[...pagosMes].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(p=>`<tr>
-    <td>${p.fecha||'—'}</td><td>${p.cliente||'—'}</td><td>${p.plan||'—'}</td>
-    <td>${p.metodo||'—'}</td><td class="amt">$${(p.monto||0).toLocaleString('es-MX')}</td>
+    <td>${p.fecha||'—'}</td><td>${esc(p.cliente||'—')}</td><td>${esc(p.plan||'—')}</td>
+    <td>${esc(p.metodo||'—')}</td><td class="amt">$${(p.monto||0).toLocaleString('es-MX')}</td>
   </tr>`).join('')}
   </tbody></table>
 </div>`:''}
@@ -16977,12 +16996,12 @@ ${porVencer30.length?`
   ${porVencer30.map(([nombre,p])=>{
     const dias = Math.round((new Date(p.vence+'T12:00:00')-hoyMs)/(1000*60*60*24));
     const dColor = dias<=7?'#dc2626':dias<=14?'#d97706':'#374151';
-    return `<tr><td>${nombre}</td><td>${p.plan||'—'}</td><td>${p.vence}</td><td style="font-weight:700;color:${dColor};">${dias} día${dias!==1?'s':''}</td></tr>`;
+    return `<tr><td>${esc(nombre)}</td><td>${esc(p.plan||'—')}</td><td>${p.vence}</td><td style="font-weight:700;color:${dColor};">${dias} día${dias!==1?'s':''}</td></tr>`;
   }).join('')}
   </tbody></table>
 </div>`:''}
 
-<div class="footer">${gymNombreRep} · Reporte Mensual ${mesNombre} ${year} · VELUM</div>
+<div class="footer">${esc(gymNombreRep)} · Reporte Mensual ${esc(mesNombre)} ${year} · VELUM</div>
 </body></html>`;
 
   win.document.write(html); win.document.close();

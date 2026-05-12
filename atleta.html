@@ -1749,6 +1749,8 @@ body::before{
 // ════════════════════════════════════
 //  VELUM Portal — v4 Premium
 // ════════════════════════════════════
+// XSS-safe HTML escaping
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
@@ -2478,7 +2480,7 @@ function parseWorkoutSections(txt){
 function renderWorkoutHTML(txt){
   const sections=parseWorkoutSections(txt);
   if(!sections.length) return '<div class="wk-empty">Sin contenido</div>';
-  return sections.map(s=>`<div class="wk-section">${s.header?`<div class="wk-section-hdr ${s.type}">${s.header}</div>`:''}${s.lines.map(l=>`<div class="wk-line">${l}</div>`).join('')}</div>`).join('');
+  return sections.map(s=>`<div class="wk-section">${s.header?`<div class="wk-section-hdr ${esc(s.type)}">${esc(s.header)}</div>`:''}${s.lines.map(l=>`<div class="wk-line">${esc(l)}</div>`).join('')}</div>`).join('');
 }
 
 // ── Today's workout ──────────────────────────────────
