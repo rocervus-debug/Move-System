@@ -26,7 +26,11 @@
   --bg2:#050f0b;
   --bg3:#0a1c14;
   --surface:rgba(255,255,255,.036);
+  --surface2:rgba(255,255,255,.052);
+  --surface3:rgba(255,255,255,.072);
   --surface-hover:rgba(255,255,255,.06);
+  --card:rgba(10,26,19,.88);
+  --text1:#e8f5f0;
   --border:rgba(255,255,255,.068);
   --border-strong:rgba(255,255,255,.12);
   --border-accent:rgba(29,158,117,.3);
@@ -2045,7 +2049,7 @@ function showPortal(data){
   portalData=data;
   // 1.1 — Apply gym brand color (async, non-blocking)
   if(data.gym?.id) fetchGymBranding(data.gym.id);
-  document.title=`${data.cliente.nombre.split(' ')[0]} — ${data.gym?.nombre||'MOVE'}`;
+  document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'MOVE'}`;
 
   if(data.cliente.portal_token){
     try{ localStorage.setItem('velum_session',JSON.stringify({token:data.cliente.portal_token})); }catch(_){}
@@ -2064,7 +2068,7 @@ function showPortal(data){
   set('gym-name-sm',gymName); set('sb-gym-name',gymName);
   ['topbar-avatar','sb-avatar'].forEach(id=>set(id,initials));
   set('ps-avatar-initials',initials);
-  set('sb-user-name',data.cliente.nombre.split(' ')[0]);
+  set('sb-user-name',(data.cliente.nombre||'').split(' ')[0]||'');
   set('ps-name',data.cliente.nombre);
   set('ps-gym',gymName);
 
@@ -2126,10 +2130,6 @@ function membershipCardHTML(data){
   if(!ok){ dotClass='danger'; statusTxt='Vencida'; cardStyle='style="background:linear-gradient(145deg,#7f1d1d,#450a0a)"'; }
   else if(dias!==null&&dias<=7){ dotClass='warn'; statusTxt='Vence pronto'; }
 
-  const ringR=30; const ringC=2*Math.PI*ringR;
-  const pct=dias!==null?Math.max(2,Math.min(100,Math.round((dias/30)*100))):100;
-  const dashOffset=ringC*(1-pct/100);
-
   const daysNum=dias!==null?dias:'∞';
   const daysLbl=dias===1?'día restante':dias===null?'sin límite':'días restantes';
   const venceStr=cliente.vence?'Vence '+new Date(cliente.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'';
@@ -2138,6 +2138,10 @@ function membershipCardHTML(data){
   const planDuracion=cliente.duracion_dias||30;
   const progressPct=dias!==null?Math.max(2,Math.min(100,Math.round((dias/planDuracion)*100))):100;
   const usedDays=dias!==null?Math.max(0,planDuracion-dias):0;
+  // Ring uses planDuracion (not hardcoded 30)
+  const ringR=30; const ringC=2*Math.PI*ringR;
+  const pct=progressPct;
+  const dashOffset=ringC*(1-pct/100);
 
   // Paquete mode: show classes remaining prominently in the card
   const pkgDaysNum = paquete ? paquete.clasesRestantes : daysNum;
@@ -2200,7 +2204,8 @@ function membershipCardHTML(data){
 
 // ── Package card HTML ────────────────────────────────
 function pkgCardHTML(paquete){
-  const pct=Math.max(2,Math.round((paquete.clasesRestantes/paquete.clasesTotal)*100));
+  const total=paquete.clasesTotal||1; // guard against division by zero
+  const pct=Math.max(2,Math.round((paquete.clasesRestantes/total)*100));
   const lowColor=paquete.clasesRestantes<=2?'style="color:var(--danger)"':'style="color:var(--ok)"';
   return `<div class="pkg-card">
     <div class="pkg-hdr">
@@ -3180,7 +3185,7 @@ function renderClasesView(dates){
       const pos = miWaitlist.posicion || '?';
       btnHtml = `<button class="cls-btn in-waitlist" onclick="salirWaitlist('${miWaitlist.id}','${key}')">📋 Lista #${pos} · Salir</button>`;
     } else if(isFull){
-      btnHtml = `<button class="cls-btn waitlist" onclick="entrarWaitlist('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">📋 Lista de espera${wlCount>0?' ('+wlCount+'en espera)':''}</button>`;
+      btnHtml = `<button class="cls-btn waitlist" onclick="entrarWaitlist('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">📋 Lista de espera${wlCount>0?' ('+wlCount+' en espera)':''}</button>`;
     } else if(!membOk){
       btnHtml = `<button class="cls-btn full" disabled>Sin membresía</button>`;
     } else {

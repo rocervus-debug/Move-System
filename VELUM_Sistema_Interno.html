@@ -1828,16 +1828,16 @@ select option{background:#0d1a16;color:var(--text);}
      so the app fills exactly the visible area — no gaps, no overflow.
   */
   #app-wrapper {
-    height: 100dvh !important;  /* Modern: dynamic viewport, keyboard-aware */
     height: 100vh !important;   /* Fallback for older browsers */
+    height: 100dvh !important;  /* Modern: dynamic viewport, keyboard-aware */
     min-height: 0 !important;
     overflow: hidden !important;
   }
 
   body {
     overflow: hidden !important;
-    height: 100dvh !important;
     height: 100vh !important;
+    height: 100dvh !important;
   }
 
   /* ── Desktop sidebar: HIDDEN on mobile — replaced by #mobile-bottom-nav ── */
@@ -8073,6 +8073,10 @@ function openModal(id){
     if(inp) inp.value = '';
     const dd = document.getElementById('p-cliente-dropdown');
     if(dd) dd.style.display = 'none';
+    // Default fecha de pago = hoy, bloquear fechas futuras
+    const hoy = new Date().toISOString().slice(0,10);
+    const pf = document.getElementById('p-fecha');
+    if(pf){ pf.value = hoy; pf.max = hoy; }
     _clearPagoErrors();
   }
   if(id==='visita'){
