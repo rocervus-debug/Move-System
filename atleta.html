@@ -2991,49 +2991,41 @@ async function loadClasesData(){
     clasesReservas = {};
     myReservas.forEach(r=>{ clasesReservas[r.horario_id+'_'+r.fecha] = r; });
 
-    // 3. Fetch cupo count per class/date (parallel)
+    // 3. Fetch ALL reservation counts in ONE batch request (instead of N parallel requests)
     clasesCupos = {};
-    await Promise.all(needed.map(async ({hid,fecha})=>{
-      const key = hid+'_'+fecha;
+    if(needed.length > 0){
+      const hids = [...new Set(needed.map(n=>n.hid))];
       try{
         const cRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reservas?horario_id=eq.${hid}&fecha=eq.${fecha}&estado=neq.cancelado&select=id`,
-          { headers: {..._sbHeaders(),'Prefer':'count=exact'} }
+          `${SUPABASE_URL}/rest/v1/reservas?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=neq.cancelado&select=horario_id,fecha`,
+          { headers: _sbHeaders() }
         );
-        // count in Content-Range header: "0-N/TOTAL"
-        const cr = cRes.headers.get('content-range')||'';
-        const total = parseInt((cr.split('/')[1])||'0',10);
-        clasesCupos[key] = isNaN(total) ? 0 : total;
-      }catch(_){ clasesCupos[key] = 0; }
-    }));
+        const allReservas = cRes.ok ? await cRes.json() : [];
+        // Count in JS — no more N parallel requests
+        allReservas.forEach(r=>{ const k=r.horario_id+'_'+r.fecha; clasesCupos[k]=(clasesCupos[k]||0)+1; });
+      }catch(_){ /* fallback to 0 counts */ }
+    }
 
-    // 4. Fetch waitlist for this token (next 7 days)
+    // 4. Fetch waitlist for this token (next 7 days) + ALL waitlist counts in ONE batch request
     clasesWaitlist = {};
     clasesWaitlistN = {};
-    try{
-      const wRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/waitlist?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=id,horario_id,fecha,posicion`,
-        { headers: _sbHeaders() }
-      );
-      const myWL = wRes.ok ? await wRes.json() : [];
-      myWL.forEach(w=>{ clasesWaitlist[w.horario_id+'_'+w.fecha]=w; });
-    }catch(_){}
-    // 5. Fetch waitlist counts per class/date (only for full classes)
-    await Promise.all(needed.filter(({hid,fecha})=>{
-      const h=clasesHorarios.find(x=>x.id===hid);
-      const key=hid+'_'+fecha;
-      return h && h.cupo>0 && (clasesCupos[key]||0)>=h.cupo;
-    }).map(async ({hid,fecha})=>{
-      const key=hid+'_'+fecha;
-      try{
-        const wRes=await fetch(
-          `${SUPABASE_URL}/rest/v1/waitlist?horario_id=eq.${hid}&fecha=eq.${fecha}&estado=eq.espera&select=id`,
-          {headers:{..._sbHeaders(),'Prefer':'count=exact'}}
-        );
-        const cr=wRes.headers.get('content-range')||'';
-        clasesWaitlistN[key]=parseInt((cr.split('/')[1])||'0',10)||0;
-      }catch(_){ clasesWaitlistN[key]=0; }
-    }));
+    if(needed.length > 0){
+      const hids = [...new Set(needed.map(n=>n.hid))];
+      const [wMyRes, wAllRes] = await Promise.all([
+        // My waitlist entries
+        fetch(
+          `${SUPABASE_URL}/rest/v1/waitlist?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=id,horario_id,fecha,posicion`,
+          { headers: _sbHeaders() }
+        ).catch(()=>null),
+        // All waitlist counts in one request (instead of N parallel)
+        fetch(
+          `${SUPABASE_URL}/rest/v1/waitlist?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=horario_id,fecha`,
+          { headers: _sbHeaders() }
+        ).catch(()=>null)
+      ]);
+      if(wMyRes?.ok){ const d=await wMyRes.json(); d.forEach(w=>{ clasesWaitlist[w.horario_id+'_'+w.fecha]=w; }); }
+      if(wAllRes?.ok){ const d=await wAllRes.json(); d.forEach(w=>{ const k=w.horario_id+'_'+w.fecha; clasesWaitlistN[k]=(clasesWaitlistN[k]||0)+1; }); }
+    }
 
     // 6. Fetch single-occurrence cancellations for this 7-day window
     clasesCancelaciones = {};
@@ -3070,7 +3062,7 @@ async function loadClasesData(){
   }catch(e){
     console.error('loadClasesData error',e);
     const el = $('cls-content');
-    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico">⚠️</div><div class="cls-empty-txt">Error al cargar clases. Intenta de nuevo.</div></div>';
+    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico">⚠️</div><div class="cls-empty-txt">Error al cargar clases.</div><button onclick="loadClasesData()" style="margin-top:14px;padding:9px 22px;border-radius:99px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">↻ Reintentar</button></div>';
   }finally{
     clasesLoading = false;
   }
@@ -3456,6 +3448,10 @@ async function doLogin(){
   if(!gym||!numero||!pwd){ errEl.textContent='Completa todos los campos.'; errEl.style.display='block'; return; }
   btn.disabled=true; btn.textContent='Verificando…';
   try{
+    // TODO (security): hash password client-side before sending once Edge Function
+    // and DB are migrated to store bcrypt/SHA-256 hashes instead of plaintext.
+    // Requires coordinated backend migration: update velum-atleta-portal Edge Function
+    // to compare hash(input) === stored_hash, then run migration script on clientes table.
     const res=await fetch(`${EDGE_BASE}/velum-atleta-portal`,{
       method:'POST',headers:{'Content-Type':'application/json','apikey':ANON_KEY},
       body:JSON.stringify({gym,numero:parseInt(numero,10),password:pwd})

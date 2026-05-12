@@ -556,6 +556,8 @@ body{
 .kpi-card::after{
   content:'';position:absolute;
   top:0;left:0;right:0;bottom:0;
+  /* Fallback for Safari <15 / Chrome <111 that don't support color-mix() */
+  background:radial-gradient(ellipse at 50% 0%, rgba(29,158,117,.08) 0%, transparent 70%);
   background:radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--kpi-color,var(--accent)) 8%, transparent) 0%, transparent 70%);
   pointer-events:none;
 }
@@ -9834,7 +9836,7 @@ async function deleteCoach(id){
   if(!await confirmDialog('¿Eliminar este coach?', {title:'Eliminar coach', icon:'🏋️'})) return;
   const { error } = await window.supabaseClient.from('coaches').delete().eq('id', id);
   if(error){ console.error('Error eliminando coach:', error); alert('No se pudo eliminar.'); return; }
-  coaches = coaches.filter(c=>c.id!==id);
+  await loadCoachesFromSupabase(); // reload from source of truth instead of mutating global array
   toast('Coach eliminado.','🗑');
   renderCoaches();
   renderEvalSelects();
@@ -9866,8 +9868,7 @@ async function saveEditCoach(){
   };
   const { error } = await window.supabaseClient.from('coaches').update(updates).eq('id', id);
   if(error){ console.error('Error actualizando coach:', error); alert('No se pudo actualizar.'); return; }
-  const c = coaches.find(x=>String(x.id)===String(id));
-  if(c) Object.assign(c, updates);
+  await loadCoachesFromSupabase(); // reload from source of truth — avoids in-place mutation of global array
   closeModal('edit-coach');
   toast(`Coach "${nombre}" actualizado.`,'✓');
   renderCoaches();
@@ -12250,12 +12251,21 @@ function renderDashboard(){
     el.className=`kpi-semaforo ${status} visible`;
     el.textContent=label;
   }
-  // Activos: vs total de clientes (sanos si >=70% activos)
-  const totalClientes = pagos.filter((p,i,a)=>a.findIndex(x=>x.cliente===p.cliente)===i).length || 1;
-  const activosPct = activos / Math.max(totalClientes, 1);
+  // Activos: membresías no vencidas vs total clientes con pagos reales
+  // (la variable `activos` de arriba es leads CRM — aquí usamos los datos de pagos)
+  const pagosSinPlaceholder = pagos.filter(p=>p.notas!=='__sin_pago__');
+  const totalMemb = pagosSinPlaceholder.filter((p,i,a)=>a.findIndex(x=>x.cliente===p.cliente)===i).length || 1;
+  const membActivos = pagosSinPlaceholder.filter((p,i,a)=>{
+    // solo el pago más reciente por cliente
+    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
+    if(!isLatest) return false;
+    if(!p.vence||p.vence==='—') return true; // sin vencimiento = activo indefinido
+    return new Date(p.vence+'T12:00:00') >= now;
+  }).length;
+  const activosPct = membActivos / totalMemb;
   setSemaforo('kpi-semaforo-activos',
-    activos===0?'danger': activosPct>=0.6?'ok': activosPct>=0.35?'warn':'danger',
-    activos===0?'Sin activos': activosPct>=0.6?'Base sana': activosPct>=0.35?'Atención':'Retención crítica'
+    membActivos===0?'danger': activosPct>=0.6?'ok': activosPct>=0.35?'warn':'danger',
+    membActivos===0?'Sin activos': activosPct>=0.6?'Base sana': activosPct>=0.35?'Atención':'Retención crítica'
   );
   // Ingresos: vs mes anterior
   const ingresosRatio = ingresosLastMes>0 ? ingresosMes/ingresosLastMes : (ingresosMes>0?1:0);
@@ -15540,7 +15550,7 @@ function switchHorTab(tab){
   });
   if(tab==='mensual')   renderHorarioMensual();
   if(tab==='plantilla') renderHorario();
-  if(tab==='nomina')    renderQuincenaKPI();
+  if(tab==='nomina')    loadCoachRates(hvYear, hvMonth);
 }
 
 function changeHorMonth(delta){
@@ -15549,7 +15559,7 @@ function changeHorMonth(delta){
   if(hvMonth<0 ){ hvMonth=11; hvYear--; }
   Promise.all([loadHorarioOverridesFromSupabase(), loadHorarioCancelaciones()]).then(()=>{
     renderHorarioMensual();
-    renderQuincenaKPI();
+    loadCoachRates(hvYear, hvMonth);
     const lbl2 = document.getElementById('hor-mes-label2');
     if(lbl2) lbl2.textContent = `${MESES_ES[hvMonth]} ${hvYear}`;
   });
@@ -15968,6 +15978,28 @@ async function removeCobertura(){
   renderQuincenaKPI();
 }
 
+// Load coach rates from Supabase into localStorage cache, then re-render
+async function loadCoachRates(year, month){
+  const gymId = window._currentGymId;
+  if(!gymId || !window.supabaseClient) return;
+  try{
+    const { data, error } = await window.supabaseClient
+      .from('coach_tarifas')
+      .select('coach_id,tarifa')
+      .eq('gym_id', gymId)
+      .eq('anio', year)
+      .eq('mes', month);
+    if(error) throw error;
+    if(data && data.length){
+      const rateKey = `move_coach_rate_${year}_${month}`;
+      const existing = JSON.parse(localStorage.getItem(rateKey)||'{}');
+      data.forEach(r=>{ existing[r.coach_id] = parseFloat(r.tarifa)||0; });
+      localStorage.setItem(rateKey, JSON.stringify(existing));
+    }
+  }catch(e){ console.warn('loadCoachRates error (using localStorage fallback)', e); }
+  renderQuincenaKPI();
+}
+
 function renderQuincenaKPI(){
   const el = document.getElementById('nomina-quincena-wrap');
   if(!el) return;
@@ -15998,6 +16030,7 @@ function renderQuincenaKPI(){
   }
 
   const rateKey = `move_coach_rate_${hvYear}_${hvMonth}`;
+  // Rates are loaded from Supabase into localStorage by loadCoachRates() before this renders
   const rates   = JSON.parse(localStorage.getItem(rateKey)||'{}');
 
   const rows = coaches.map((c,idx)=>{
@@ -16060,14 +16093,26 @@ function renderQuincenaKPI(){
       </tbody>
     </table>
     </div>
-    <div style="margin-top:10px;font-size:11px;color:var(--text3);">* Tarifas guardadas en este dispositivo. Los conteos incluyen clases de la plantilla + cambios específicos del mes.</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);">* Tarifas sincronizadas en la nube. Los conteos incluyen clases de la plantilla + cambios específicos del mes.</div>
   </div>`;
 }
 
-function saveCoachRate(coachId, rate){
+async function saveCoachRate(coachId, rate){
+  const tarifa = parseFloat(rate)||0;
+  const gymId  = window._currentGymId;
+  // Persist to Supabase (source of truth)
+  if(gymId && window.supabaseClient){
+    try{
+      await window.supabaseClient.from('coach_tarifas').upsert(
+        { gym_id:gymId, coach_id:coachId, anio:hvYear, mes:hvMonth, tarifa, updated_at:new Date().toISOString() },
+        { onConflict:'gym_id,coach_id,anio,mes' }
+      );
+    }catch(e){ console.warn('saveCoachRate Supabase error, falling back to localStorage', e); }
+  }
+  // Always mirror to localStorage as offline/fallback cache
   const rateKey = `move_coach_rate_${hvYear}_${hvMonth}`;
   const saved   = JSON.parse(localStorage.getItem(rateKey)||'{}');
-  saved[coachId] = parseFloat(rate)||0;
+  saved[coachId] = tarifa;
   localStorage.setItem(rateKey, JSON.stringify(saved));
   renderQuincenaKPI();
 }
