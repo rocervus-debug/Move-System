@@ -1235,9 +1235,23 @@ body::before{
 .qa{min-height:84px;}
 </style>
 
-  <!-- Capacitor runtime — inyectado por build.js -->
+  <!-- VELUM Brand config — inyectado por build.js -->
   <script>
-    // Shim: si no estamos en Capacitor, evitamos errores de undefined
+    window.VELUM_BRAND = {"appId":"app.myvelum.move","appName":"MOVE","gymCode":"MOVE","version":"1.0.0"};
+    // Si hay gymCode fijo (white-label), pre-rellenar el campo al cargar
+    if (window.VELUM_BRAND.gymCode) {
+      document.addEventListener('DOMContentLoaded', function() {
+        var gymInput = document.getElementById('login-gym');
+        if (gymInput) {
+          gymInput.value = window.VELUM_BRAND.gymCode;
+          gymInput.readOnly = true;
+          gymInput.style.opacity = '0.5';
+          var parent = gymInput.closest('div');
+          if (parent) parent.style.display = 'none'; // ocultar campo gym en white-label
+        }
+      });
+    }
+    // Shim: si no estamos en Capacitor
     if (typeof window.Capacitor === 'undefined') {
       window.Capacitor = { isNativePlatform: () => false, getPlatform: () => 'web', Plugins: {} };
     }

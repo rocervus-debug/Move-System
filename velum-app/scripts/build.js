@@ -1,12 +1,14 @@
 /**
  * VELUM Native Build Script
  * Copia atleta.html → www/index.html e inyecta:
- *   1. <script src="capacitor.js"> (runtime de Capacitor)
- *   2. <script src="native/bridge.js"> (mejoras nativas)
+ *   1. Brand config (gymCode, appName) como window.VELUM_BRAND
+ *   2. <script src="capacitor.js"> (runtime de Capacitor)
+ *   3. <script src="native/bridge.js"> (mejoras nativas)
  *
  * Uso:
- *   node scripts/build.js
- *   node scripts/build.js --watch  (re-ejecuta al cambiar atleta.html)
+ *   node scripts/build.js                  → build VELUM platform
+ *   VELUM_BRAND=move node scripts/build.js → build MOVE white-label
+ *   node scripts/build.js --watch          → re-ejecuta al cambiar archivos
  */
 
 const fs   = require('fs');
@@ -19,6 +21,16 @@ const DEST       = path.join(DEST_DIR, 'index.html');
 const BRIDGE_SRC = path.join(ROOT, 'native', 'bridge.js');
 const BRIDGE_DST = path.join(DEST_DIR, 'native', 'bridge.js');
 
+// ── Leer brand config ──
+const BRAND_SLUG  = (process.env.VELUM_BRAND || 'velum').toLowerCase();
+const brandFile   = path.join(ROOT, 'brands', `${BRAND_SLUG}.json`);
+let brand = { appId: 'app.myvelum.platform', appName: 'VELUM', gymCode: null };
+try { brand = { ...brand, ...JSON.parse(fs.readFileSync(brandFile, 'utf-8')) }; } catch {}
+
+console.log(`\n📱  Building: ${brand.appName} (${brand.appId})`);
+if (brand.gymCode) console.log(`    Gym code: ${brand.gymCode} (hardcoded, campo de login oculto)`);
+console.log('');
+
 function build() {
   // Leer atleta.html
   if (!fs.existsSync(SRC)) {
@@ -27,13 +39,30 @@ function build() {
   }
   let html = fs.readFileSync(SRC, 'utf-8');
 
-  // ── Inyectar Capacitor runtime ANTES de cualquier <script> ──
-  // capacitor.js lo genera Capacitor automáticamente en www/
-  // Solo se carga cuando corre en la app nativa
+  // ── Inyectar brand config + Capacitor runtime ──
   const capScript = `
-  <!-- Capacitor runtime — inyectado por build.js -->
+  <!-- VELUM Brand config — inyectado por build.js -->
   <script>
-    // Shim: si no estamos en Capacitor, evitamos errores de undefined
+    window.VELUM_BRAND = ${JSON.stringify({
+      appId:    brand.appId,
+      appName:  brand.appName,
+      gymCode:  brand.gymCode || null,
+      version:  brand.version || '1.0.0'
+    })};
+    // Si hay gymCode fijo (white-label), pre-rellenar el campo al cargar
+    if (window.VELUM_BRAND.gymCode) {
+      document.addEventListener('DOMContentLoaded', function() {
+        var gymInput = document.getElementById('login-gym');
+        if (gymInput) {
+          gymInput.value = window.VELUM_BRAND.gymCode;
+          gymInput.readOnly = true;
+          gymInput.style.opacity = '0.5';
+          var parent = gymInput.closest('div');
+          if (parent) parent.style.display = 'none'; // ocultar campo gym en white-label
+        }
+      });
+    }
+    // Shim: si no estamos en Capacitor
     if (typeof window.Capacitor === 'undefined') {
       window.Capacitor = { isNativePlatform: () => false, getPlatform: () => 'web', Plugins: {} };
     }
