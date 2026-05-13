@@ -1168,6 +1168,71 @@ body::before{
   .greeting-name{font-size:26px;}
   .stat-num{font-size:24px;}
 }
+
+/* ══════════════════════════════════════
+   BOOKING CONFIRM SHEET
+══════════════════════════════════════ */
+#booking-confirm-sheet .sheet{
+  padding-bottom:max(env(safe-area-inset-bottom,0px),20px);
+}
+.bcs-success-ring{
+  width:68px;height:68px;border-radius:50%;
+  background:rgba(29,158,117,.12);border:2px solid rgba(29,158,117,.35);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
+  animation:bcs-pop .35s cubic-bezier(.175,.885,.32,1.275) forwards;
+}
+@keyframes bcs-pop{
+  from{transform:scale(.5);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+.bcs-check{
+  width:28px;height:28px;stroke:var(--accent);stroke-width:2.5;
+  fill:none;stroke-linecap:round;stroke-linejoin:round;
+}
+.bcs-title{font-size:20px;font-weight:900;color:#fff;text-align:center;margin-bottom:4px;letter-spacing:-.2px;}
+.bcs-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:20px;}
+.bcs-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:16px 18px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;
+}
+.bcs-row{display:flex;align-items:center;gap:12px;}
+.bcs-ico-wrap{
+  width:36px;height:36px;border-radius:10px;background:rgba(29,158,117,.1);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.bcs-ico-wrap svg{width:16px;height:16px;stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.bcs-row-label{font-size:11px;color:var(--text3);margin-bottom:1px;}
+.bcs-row-val{font-size:14px;font-weight:700;color:#fff;}
+.bcs-wa-btn{
+  width:100%;padding:14px;border-radius:14px;
+  background:#25D366;border:none;color:#fff;font-size:14px;font-weight:800;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  letter-spacing:.2px;transition:opacity .15s;margin-bottom:10px;
+  text-decoration:none;
+}
+.bcs-wa-btn:active{opacity:.85;}
+.bcs-close-btn{
+  width:100%;padding:12px;border-radius:12px;background:var(--surface);
+  border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;
+  transition:background .15s;
+}
+.bcs-close-btn:active{background:var(--surface2);}
+
+/* ══════════════════════════════════════
+   QUICK ACTIONS — SVG UPGRADE
+══════════════════════════════════════ */
+.qa-svg-ico{
+  width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:3px;
+}
+.qa-svg-ico svg{width:18px;height:18px;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.qa-svg-ico.green{background:rgba(29,158,117,.15);}
+.qa-svg-ico.green svg{stroke:var(--accent);}
+.qa-svg-ico.blue{background:rgba(78,130,220,.15);}
+.qa-svg-ico.blue svg{stroke:#4e82dc;}
+.qa-svg-ico.amber{background:rgba(224,156,58,.15);}
+.qa-svg-ico.amber svg{stroke:#e09c3a;}
+.qa{min-height:84px;}
 </style>
 </head>
 <body>
@@ -1301,17 +1366,23 @@ body::before{
         <div id="proxima-clase-mobile" style="display:none;" class="section au au4"></div>
         <div class="quick-actions au au5">
           <div class="qa primary" onclick="openQRSheet()">
-            <div class="qa-ico">📲</div>
+            <div class="qa-svg-ico green">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
+            </div>
             <div class="qa-ttl">QR de Entrada</div>
             <div class="qa-sub">Muéstralo en recepción</div>
           </div>
           <div class="qa" onclick="switchView('clases')">
-            <div class="qa-ico">🗓️</div>
+            <div class="qa-svg-ico blue">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
             <div class="qa-ttl">Reservar clase</div>
             <div class="qa-sub">Ver clases disponibles</div>
           </div>
           <div class="qa" onclick="switchView('historial')">
-            <div class="qa-ico">📍</div>
+            <div class="qa-svg-ico amber">
+              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
             <div class="qa-ttl">Mis Visitas</div>
             <div class="qa-sub" id="qa-visits-sub">Ver historial</div>
           </div>
@@ -1538,6 +1609,43 @@ body::before{
         <div class="mas-ico">👤</div><div class="mas-lbl">Perfil</div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Booking confirm sheet -->
+<div class="sheet-backdrop" id="booking-confirm-sheet" onclick="closeSheet('booking-confirm-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;">
+    <div class="sheet-handle"></div>
+    <div class="bcs-success-ring">
+      <svg class="bcs-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="bcs-title">¡Clase reservada!</div>
+    <div class="bcs-sub" id="bcs-sub">Tu lugar está confirmado</div>
+    <div class="bcs-card">
+      <div class="bcs-row">
+        <div class="bcs-ico-wrap">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div><div class="bcs-row-label">Fecha</div><div class="bcs-row-val" id="bcs-fecha">—</div></div>
+      </div>
+      <div class="bcs-row">
+        <div class="bcs-ico-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div><div class="bcs-row-label">Hora</div><div class="bcs-row-val" id="bcs-hora">—</div></div>
+      </div>
+      <div class="bcs-row">
+        <div class="bcs-ico-wrap">
+          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div><div class="bcs-row-label">Clase</div><div class="bcs-row-val" id="bcs-tipo">—</div></div>
+      </div>
+    </div>
+    <a id="bcs-wa-link" href="#" target="_blank" class="bcs-wa-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Enviar recordatorio por WhatsApp
+    </a>
+    <button class="bcs-close-btn" onclick="closeSheet('booking-confirm-sheet')">Cerrar</button>
   </div>
 </div>
 
@@ -3317,37 +3425,27 @@ function _showReservaConfirmBanner(tipo, hora, fechaStr){
   const gymNom = (portalData&&portalData.gym&&portalData.gym.nombre)||'el gym';
   const msg = `✅ Reservé mi lugar en *${tipo}* el ${diaNombre} ${diaNum} de ${mesNombre} a las ${horaFmt} en ${gymNom}`;
   const waMsg = encodeURIComponent(msg);
-
-  // Try to use my own phone number as self-reminder
   const miTel = (portalData&&portalData.cliente&&portalData.cliente.telefono||'').replace(/\D/g,'');
   const waHref = miTel ? `https://wa.me/${miTel}?text=${waMsg}` : `https://wa.me/?text=${waMsg}`;
 
-  // Show a dismissible banner at the bottom of the clases view
-  let banner = document.getElementById('reserva-confirm-banner');
-  if(!banner){
-    banner = document.createElement('div');
-    banner.id = 'reserva-confirm-banner';
-    banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:900;width:calc(100% - 32px);max-width:420px;background:rgba(29,158,117,.18);border:1px solid rgba(29,158,117,.4);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);';
-    document.body.appendChild(banner);
-  }
-  banner.innerHTML = `
-    <div>
-      <div style="font-size:13px;font-weight:800;color:#fff;">✅ ¡Clase reservada!</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;">${tipo} · ${horaFmt} · ${diaNombre} ${diaNum}</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <a href="${waHref}" target="_blank"
-         style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;
-                background:#25D366;color:#fff;font-size:11px;font-weight:800;text-decoration:none;white-space:nowrap;">
-        📲 Guardar recordatorio
-      </a>
-      <button onclick="document.getElementById('reserva-confirm-banner').style.display='none'"
-              style="background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
-    </div>`;
-  banner.style.display = 'flex';
-  // Auto-hide after 12s
-  clearTimeout(banner._timer);
-  banner._timer = setTimeout(()=>{ if(banner) banner.style.display='none'; }, 12000);
+  // Populate booking confirm sheet
+  const sub = document.getElementById('bcs-sub');
+  const bFecha = document.getElementById('bcs-fecha');
+  const bHora = document.getElementById('bcs-hora');
+  const bTipo = document.getElementById('bcs-tipo');
+  const waLink = document.getElementById('bcs-wa-link');
+  if(sub) sub.textContent = `Tu lugar en ${gymNom} está confirmado`;
+  if(bFecha) bFecha.textContent = `${diaNombre}, ${diaNum} de ${mesNombre}`;
+  if(bHora) bHora.textContent = horaFmt;
+  if(bTipo) bTipo.textContent = tipo;
+  if(waLink) waLink.href = waHref;
+
+  // Replay pop animation on the ring
+  const ring = document.querySelector('#booking-confirm-sheet .bcs-success-ring');
+  if(ring){ ring.style.animation='none'; requestAnimationFrame(()=>{ ring.style.animation=''; }); }
+
+  // Open sheet
+  openSheet('booking-confirm-sheet');
 }
 
 async function cancelarReserva(reservaId, key){
