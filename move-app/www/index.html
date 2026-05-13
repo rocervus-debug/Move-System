@@ -1234,6 +1234,17 @@ body::before{
 .qa-svg-ico.amber svg{stroke:#e09c3a;}
 .qa{min-height:84px;}
 </style>
+
+  <!-- Capacitor runtime — inyectado por build.js -->
+  <script>
+    // Shim: si no estamos en Capacitor, evitamos errores de undefined
+    if (typeof window.Capacitor === 'undefined') {
+      window.Capacitor = { isNativePlatform: () => false, getPlatform: () => 'web', Plugins: {} };
+    }
+  </script>
+  <script src="capacitor.js"></script>
+  <!-- Native bridge: haptics, status bar, notifications, back button -->
+  <script src="native/bridge.js"></script>
 </head>
 <body>
 
