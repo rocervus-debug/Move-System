@@ -2342,6 +2342,105 @@ select option{background:#0d1a16;color:var(--text);}
   .user-row { flex-wrap: wrap; }
 }
 
+/* ══ Mobile Home Widget ══ */
+#mob-home-widget { display: none; }
+@media (max-width: 768px) {
+  #mob-home-widget {
+    display: block;
+    padding: 0 0 8px;
+  }
+  /* Hide complex hero + stat widgets on mobile — replaced by mob-home-widget */
+  #dash-hero           { display: none !important; }
+  #briefing-widget     { display: none !important; }
+  .kpi-grid-primary    { display: none !important; }
+  .dash-row            { display: none !important; }
+
+  /* Mobile home greeting */
+  .mhw-greeting { padding: 6px 18px 14px; }
+  .mhw-gym { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+  .mhw-date { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* 2×2 stats grid */
+  .mhw-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 18px 16px;
+  }
+  .mhw-stat {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 13px;
+  }
+  .mhw-stat-val { font-size: 22px; font-weight: 800; letter-spacing: -.5px; line-height: 1; }
+  .mhw-stat-val.green { color: var(--accent); }
+  .mhw-stat-val.amber { color: #e09c3a; }
+  .mhw-stat-val.red   { color: #e05252; }
+  .mhw-stat-lbl { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  /* 2×2 action grid */
+  .mhw-section-lbl {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--text4);
+    padding: 0 18px 9px;
+  }
+  .mhw-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 18px 16px;
+  }
+  .mhw-action {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 15px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .12s;
+  }
+  .mhw-action:active { background: var(--card3); transform: scale(.97); }
+  .mhw-action-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mhw-action-icon svg { width: 17px; height: 17px; stroke-width: 2; }
+  .mhw-ic-green { background: rgba(29,158,117,.15); }
+  .mhw-ic-blue  { background: rgba(78,130,220,.15); }
+  .mhw-ic-amber { background: rgba(224,156,58,.15); }
+  .mhw-ic-purple{ background: rgba(167,139,250,.15); }
+  .mhw-action-lbl { font-size: 13px; font-weight: 700; }
+  .mhw-action-sub { font-size: 11px; color: var(--text3); }
+
+  /* Alert cards */
+  .mhw-alerts { display: flex; flex-direction: column; gap: 7px; padding: 0 18px 18px; }
+  .mhw-alert {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 13px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mhw-alert:active { opacity: .8; }
+  .mhw-alert-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .mhw-alert-dot.amber { background: #e09c3a; }
+  .mhw-alert-dot.red   { background: #e05252; }
+  .mhw-alert-dot.green { background: var(--accent); }
+  .mhw-alert-txt { font-size: 12px; color: var(--text); flex: 1; line-height: 1.35; }
+  .mhw-alert-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
+  }
+  .mhw-alert-badge.amber { background: rgba(224,156,58,.15); color: #e09c3a; }
+  .mhw-alert-badge.red   { background: rgba(224,82,82,.15);  color: #e05252; }
+}
+
 /* ── Bottom nav: fade-right scroll hint ── */
 @media (max-width: 768px) {
   .sidebar::after {
@@ -3047,21 +3146,21 @@ body::before{
      Solo visible en mobile (max-width: 768px)
 ══════════════════════════════════════════════ -->
 <nav id="mobile-bottom-nav" role="navigation" aria-label="Navegación">
-  <button class="mbn-item active" id="mbn-dashboard" onclick="go('dashboard')">
+  <button class="mbn-item active" id="mbn-dashboard" onclick="go('dashboard',document.getElementById('nav-dashboard'))">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-    Dashboard
+    Inicio
   </button>
-  <button class="mbn-item" id="mbn-pagos" onclick="go('pagos')">
-    <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-    Pagos
-  </button>
-  <button class="mbn-item" id="mbn-clientes" onclick="go('clientes')">
-    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
-    Clientes
-  </button>
-  <button class="mbn-item" id="mbn-asistencia" onclick="go('asistencia')">
+  <button class="mbn-item" id="mbn-asistencia" onclick="go('asistencia',document.getElementById('nav-asistencia'))">
     <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Asistencia
+  </button>
+  <button class="mbn-item" id="mbn-cobrar" onclick="openModal('pago')">
+    <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    Cobrar
+  </button>
+  <button class="mbn-item" id="mbn-clientes" onclick="go('clientes',document.getElementById('nav-clientes'))">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Socios
   </button>
   <button class="mbn-item" id="mbn-mas" onclick="openMasMenu()">
     <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>
@@ -3160,6 +3259,68 @@ body::before{
 
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
+
+      <!-- ══ MOBILE HOME WIDGET — solo visible en móvil ══ -->
+      <div id="mob-home-widget">
+        <div class="mhw-greeting">
+          <div class="mhw-gym" id="mhw-gym-name">MOVE</div>
+          <div class="mhw-date" id="mhw-date">—</div>
+        </div>
+        <div class="mhw-stats">
+          <div class="mhw-stat">
+            <div class="mhw-stat-val green" id="mhw-ingresos">—</div>
+            <div class="mhw-stat-lbl">Ingresos hoy</div>
+          </div>
+          <div class="mhw-stat">
+            <div class="mhw-stat-val" id="mhw-activos">—</div>
+            <div class="mhw-stat-lbl">Miembros activos</div>
+          </div>
+          <div class="mhw-stat">
+            <div class="mhw-stat-val" id="mhw-checkins">—</div>
+            <div class="mhw-stat-lbl">Check-ins hoy</div>
+          </div>
+          <div class="mhw-stat">
+            <div class="mhw-stat-val amber" id="mhw-vencer">—</div>
+            <div class="mhw-stat-lbl">Por vencer</div>
+          </div>
+        </div>
+        <div class="mhw-section-lbl">Acciones rápidas</div>
+        <div class="mhw-actions">
+          <div class="mhw-action" onclick="openModal('pago')">
+            <div class="mhw-action-icon mhw-ic-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <div class="mhw-action-lbl">Cobrar</div>
+            <div class="mhw-action-sub">Registrar pago</div>
+          </div>
+          <div class="mhw-action" onclick="go('asistencia',document.getElementById('nav-asistencia'))">
+            <div class="mhw-action-icon mhw-ic-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4e82dc"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <div class="mhw-action-lbl">Asistencia</div>
+            <div class="mhw-action-sub">Check-ins de hoy</div>
+          </div>
+          <div class="mhw-action" onclick="go('por-vencer',document.getElementById('nav-por-vencer'))">
+            <div class="mhw-action-icon mhw-ic-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#e09c3a"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="mhw-action-lbl">Por vencer</div>
+            <div class="mhw-action-sub" id="mhw-vencer-sub">Membresías</div>
+          </div>
+          <div class="mhw-action" onclick="openModal('pago');document.getElementById('v-tipo')&&(document.getElementById('v-tipo').value='')">
+            <div class="mhw-action-icon mhw-ic-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa"><path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="mhw-action-lbl">Nuevo socio</div>
+            <div class="mhw-action-sub">Agregar miembro</div>
+          </div>
+        </div>
+        <div class="mhw-section-lbl">Alertas</div>
+        <div class="mhw-alerts" id="mhw-alerts-list">
+          <div style="font-size:12px;color:var(--text3);padding:4px 0;">Cargando alertas…</div>
+        </div>
+      </div>
+      <!-- /mob-home-widget -->
 
       <!-- ALERT STRIP — visible solo cuando hay urgencias (JS controla .visible) -->
       <div class="alert-strip" id="dash-alert-strip">
@@ -12140,6 +12301,86 @@ function renderBriefingHoy(){
 
 // DASHBOARD RENDER
 // ═══════════════════════════════════════════════════════════════════
+function renderMobileHome(){
+  if(window.innerWidth > 768) return; // only on mobile
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  const dias_es = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses_es = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  // Gym name
+  const gymEl = document.getElementById('mhw-gym-name');
+  if(gymEl) gymEl.textContent = gymConfig.gym_nombre || localStorage.getItem('move_gym_nombre') || 'MOVE';
+  const dateEl = document.getElementById('mhw-date');
+  if(dateEl) dateEl.textContent = `${dias_es[now.getDay()]}, ${now.getDate()} de ${meses_es[now.getMonth()]}`;
+
+  // Revenue today
+  const pagosHoy = (pagos||[]).filter(p=>p.fecha===todayStr && p.notas!=='__sin_pago__');
+  const ingresosHoy = pagosHoy.reduce((s,p)=>s+(p.monto||0),0);
+  const ingEl = document.getElementById('mhw-ingresos');
+  if(ingEl) ingEl.textContent = ingresosHoy > 0 ? '$'+ingresosHoy.toLocaleString('es-MX') : '$0';
+
+  // Active members (memberships not expired)
+  const pagosSinPH = (pagos||[]).filter(p=>p.notas!=='__sin_pago__');
+  const membActivos = pagosSinPH.filter((p,i,a)=>{
+    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
+    if(!isLatest) return false;
+    if(!p.vence||p.vence==='—') return true;
+    return new Date(p.vence+'T12:00:00') >= now;
+  }).length;
+  const actEl = document.getElementById('mhw-activos');
+  if(actEl) actEl.textContent = membActivos;
+
+  // Check-ins today (from cached window._mhwCheckins set by loadClasesOperativas)
+  const chkEl = document.getElementById('mhw-checkins');
+  if(chkEl) chkEl.textContent = typeof window._mhwCheckins === 'number' ? window._mhwCheckins : '—';
+
+  // Por vencer (next 7 days)
+  const in7 = new Date(now); in7.setDate(in7.getDate()+7);
+  const porVencer = pagosSinPH.filter((p,i,a)=>{
+    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
+    if(!isLatest||!p.vence||p.vence==='—') return false;
+    const vd = new Date(p.vence+'T12:00:00');
+    return vd >= now && vd <= in7;
+  });
+  const vencerEl = document.getElementById('mhw-vencer');
+  if(vencerEl){ vencerEl.textContent = porVencer.length; vencerEl.className = 'mhw-stat-val '+(porVencer.length>0?'amber':'green'); }
+  const vSubEl = document.getElementById('mhw-vencer-sub');
+  if(vSubEl) vSubEl.textContent = porVencer.length === 1 ? '1 membresía' : porVencer.length+' membresías';
+
+  // Alerts
+  const alertsEl = document.getElementById('mhw-alerts-list');
+  if(!alertsEl) return;
+  const alerts = [];
+
+  // Urgentes: vencen mañana
+  const manana = new Date(now); manana.setDate(manana.getDate()+1);
+  const mananaStr = manana.toISOString().slice(0,10);
+  const urgentes = pagosSinPH.filter((p,i,a)=>{
+    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
+    return isLatest && p.vence === mananaStr;
+  });
+  if(urgentes.length) alerts.push({dot:'red',txt:`<b>${urgentes.map(p=>p.cliente.split(' ')[0]).slice(0,2).join(', ')}</b> vence${urgentes.length>1?'n':''} mañana`,badge:'Urgente',badgeClass:'red',action:`go('por-vencer',document.getElementById('nav-por-vencer'))`});
+
+  // Por vencer en 7 días
+  const resto = porVencer.filter(p=>p.vence!==mananaStr);
+  if(resto.length) alerts.push({dot:'amber',txt:`<b>${resto.length} socio${resto.length!==1?'s':''}</b> vence${resto.length!==1?'n':''} en menos de 7 días`,badge:`${resto.length} días`,badgeClass:'amber',action:`go('por-vencer',document.getElementById('nav-por-vencer'))`});
+
+  // Cumpleaños hoy
+  const todayMMDD = todayStr.slice(5);
+  const cumples = (pagos||[]).filter(p=>p.cumpleanos&&p.cumpleanos.slice(5)===todayMMDD).map(p=>p.cliente);
+  const uniqCumples = [...new Set(cumples)];
+  if(uniqCumples.length) alerts.push({dot:'green',txt:`🎂 Hoy es el cumpleaños de <b>${uniqCumples[0].split(' ')[0]}${uniqCumples.length>1?' y '+(uniqCumples.length-1)+' más':''}</b>`,badge:null,action:null});
+
+  alertsEl.innerHTML = alerts.length
+    ? alerts.map(a=>`<div class="mhw-alert" ${a.action?`onclick="${a.action}"`:''}>
+        <div class="mhw-alert-dot ${a.dot}"></div>
+        <div class="mhw-alert-txt">${a.txt}</div>
+        ${a.badge?`<div class="mhw-alert-badge ${a.badgeClass}">${a.badge}</div>`:''}
+      </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:4px 0;">Sin alertas por ahora ✓</div>';
+}
+
 function renderDashboard(){
   // Show skeleton in KPI values while computing
   showKpiSkeleton(['kpi-activos','kpi-leads','kpi-ingresos-mes','kpi-total-ingresos','kpi-socios-nuevos','kpi-vencidas','kpi-por-vencer']);
@@ -12446,6 +12687,9 @@ function renderDashboard(){
   renderRetencion();
   renderHistIngresos();
   renderCumpleanos();
+
+  // ── Mobile home widget ──
+  renderMobileHome();
 
   // Pipeline bars
   const pipeEl = document.getElementById('dash-pipeline-bars');
@@ -17303,6 +17547,9 @@ async function loadClasesOperativas(){
     const {data:reservas} = await rQ;
     const rMap = {};
     (reservas||[]).forEach(r=>{ if(!r.horario_id) return; if(!rMap[r.horario_id]) rMap[r.horario_id]=[]; rMap[r.horario_id].push(r); });
+    // ── Feed check-in count to mobile home widget ──
+    window._mhwCheckins = (reservas||[]).filter(r=>r.estado==='checkin').length;
+    renderMobileHome();
     el.innerHTML = horarios.map(h=>{
       const lista    = rMap[h.id]||[];
       const ocupados = lista.length;
