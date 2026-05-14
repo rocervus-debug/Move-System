@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Atleta — MOVE</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080B0A;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    font-family: 'Barlow', sans-serif;
+  }
+
+  .card {
+    width: 540px;
+    background: #0D1210;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -120px; left: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,212,255,.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    bottom: 200px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 52px 44px 28px;
+    position: relative;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+
+  .logo-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,212,255,.15);
+    border: 1px solid rgba(0,212,255,.3);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #00D4FF;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: #00D4FF;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100%{opacity:1;transform:scale(1);}
+    50%{opacity:.4;transform:scale(.7);}
+  }
+
+  .headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 54px;
+    font-weight: 900;
+    color: #fff;
+    line-height: .95;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .headline em { font-style: normal; color: #00D4FF; }
+
+  .sub {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255,255,255,.42);
+    line-height: 1.55;
+    margin-top: 12px;
+    max-width: 330px;
+  }
+
+  /* ─────────────────────────────────────
+     SCREENSHOTS SECTION — 3 phones
+  ───────────────────────────────────── */
+  .screens-section {
+    position: relative;
+    height: 420px;
+    margin: 8px 0 0;
+    overflow: visible;
+  }
+
+  /* Shared phone shell */
+  .phone {
+    position: absolute;
+    width: 158px;
+    background: #111916;
+    border-radius: 28px;
+    border: 1.5px solid rgba(255,255,255,.1);
+    box-shadow: 0 32px 64px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+    overflow: hidden;
+  }
+
+  .phone-notch {
+    width: 60px; height: 18px;
+    background: #080B0A;
+    border-radius: 0 0 12px 12px;
+    margin: 0 auto;
+  }
+
+  /* Phone 1 — Home/Dashboard (left, slightly rotated) */
+  .phone-1 {
+    left: 28px;
+    top: 20px;
+    transform: rotate(-4deg);
+    z-index: 1;
+  }
+
+  /* Phone 2 — Clases (center, upright, front) */
+  .phone-2 {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    z-index: 3;
+    box-shadow: 0 40px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06), 0 0 40px rgba(0,212,255,.12);
+    border-color: rgba(0,212,255,.25);
+  }
+
+  /* Phone 3 — Progreso (right, slightly rotated) */
+  .phone-3 {
+    right: 28px;
+    top: 20px;
+    transform: rotate(4deg);
+    z-index: 1;
+  }
+
+  .screen-label {
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 800;
+    color: rgba(255,255,255,.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .phone-1 .screen-label { color: rgba(255,255,255,.25); }
+  .phone-2 .screen-label { color: #00D4FF; }
+  .phone-3 .screen-label { color: rgba(255,255,255,.25); }
+
+  /* ── Screen contents ── */
+  .ps { padding: 10px 10px 12px; background: #0D1210; }
+
+  /* -- HOME SCREEN -- */
+  .h-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .h-hi { font-size: 8px; font-weight: 600; color: rgba(255,255,255,.35); }
+  .h-name { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:900; color:#fff; letter-spacing:-.2px; }
+  .h-avatar {
+    width:24px; height:24px; border-radius:50%;
+    background: linear-gradient(135deg,#00D4FF,#0d6b50);
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:900; color:#fff;
+  }
+
+  .h-streak {
+    background: linear-gradient(135deg, rgba(251,146,60,.15), rgba(251,146,60,.05));
+    border: 1px solid rgba(251,146,60,.25);
+    border-radius: 8px;
+    padding: 7px 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .h-streak-ico { font-size: 16px; }
+  .h-streak-n { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:900; color:#fb923c; line-height:1; }
+  .h-streak-l { font-size: 8px; color: rgba(255,255,255,.4); font-weight:600; line-height:1.3; }
+
+  .h-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .h-stat {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px;
+    padding: 6px 8px;
+  }
+  .h-stat-n { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:900; color:#00D4FF; line-height:1; }
+  .h-stat-l { font-size:8px; color:rgba(255,255,255,.3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-top:1px; }
+
+  .h-next {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px;
+    padding: 7px 8px;
+    margin-bottom: 8px;
+  }
+  .h-next-lbl { font-size:8px; font-weight:700; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .h-next-name { font-size:11px; font-weight:800; color:#fff; }
+  .h-next-time { font-size:8px; color:rgba(255,255,255,.35); margin-top:1px; }
+
+  .h-nav {
+    display: flex;
+    justify-content: space-around;
+    padding: 7px 0 2px;
+    border-top: 1px solid rgba(255,255,255,.07);
+  }
+  .h-nav-item { text-align:center; }
+  .h-nav-ico { font-size:11px; }
+  .h-nav-lbl { font-size:6px; color:rgba(255,255,255,.22); margin-top:1px; font-weight:600; }
+  .h-nav-item.act .h-nav-lbl { color:#00D4FF; }
+
+  /* -- CLASES SCREEN -- */
+  .c-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .c-title { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:900; color:#fff; }
+  .c-date { font-size:8px; color:rgba(255,255,255,.35); font-weight:600; }
+
+  .c-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .c-tab {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+  }
+  .c-tab.act { background:#00D4FF; color:#fff; }
+  .c-tab.inn { background:rgba(255,255,255,.05); color:rgba(255,255,255,.3); }
+
+  .c-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    padding: 8px 9px;
+    margin-bottom: 6px;
+  }
+  .c-card.reserved {
+    background: rgba(0,212,255,.08);
+    border-color: rgba(0,212,255,.25);
+  }
+  .c-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px; }
+  .c-time { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:900; color:#fff; line-height:1; }
+  .c-time-am { font-size:9px; color:rgba(255,255,255,.4); font-weight:600; }
+  .c-cupo-wrap { text-align:right; }
+  .c-cupo-n { font-size:10px; font-weight:800; color:#00D4FF; }
+  .c-cupo-l { font-size:7px; color:rgba(255,255,255,.3); }
+  .c-bar { height:3px; background:rgba(255,255,255,.07); border-radius:2px; margin-bottom:6px; overflow:hidden; }
+  .c-bar-fill { height:100%; border-radius:2px; background:#00D4FF; }
+  .c-card-foot { display:flex; justify-content:space-between; align-items:center; }
+  .c-tipo { font-size:10px; font-weight:800; color:#fff; }
+  .c-coach { font-size:8px; color:rgba(255,255,255,.3); }
+  .c-btn {
+    border: none; border-radius:6px;
+    font-size:8px; font-weight:900;
+    padding: 4px 9px; cursor:pointer; letter-spacing:.3px;
+  }
+  .c-btn.res { background:#00D4FF; color:#fff; }
+  .c-btn.can { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.25); }
+  .c-badge-res { font-size:8px; color:#00D4FF; font-weight:800; }
+
+  .c-nav {
+    display: flex;
+    justify-content: space-around;
+    padding: 7px 0 2px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    margin-top: 4px;
+  }
+  .c-nav-item { text-align:center; }
+  .c-nav-ico { font-size:11px; }
+  .c-nav-lbl { font-size:6px; color:rgba(255,255,255,.22); margin-top:1px; font-weight:600; }
+  .c-nav-item.act .c-nav-lbl { color:#00D4FF; }
+
+  /* -- PROGRESO SCREEN -- */
+  .p-topbar { margin-bottom:8px; }
+  .p-title { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:900; color:#fff; }
+  .p-sub { font-size:8px; color:rgba(255,255,255,.3); font-weight:600; margin-top:1px; }
+
+  .p-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+  .p-stat {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px;
+    padding: 6px 5px;
+    text-align: center;
+  }
+  .p-stat-n { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:900; color:#fff; line-height:1; }
+  .p-stat-u { font-size:7px; color:#00D4FF; font-weight:700; }
+  .p-stat-l { font-size:7px; color:rgba(255,255,255,.28); margin-top:1px; font-weight:600; text-transform:uppercase; }
+
+  .p-delta {
+    display: inline-flex;
+    align-items: center;
+    gap:2px;
+    font-size:7px;
+    font-weight:800;
+    padding: 1px 5px;
+    border-radius:4px;
+  }
+  .p-delta.down { background:rgba(16,185,129,.12); color:#10b981; }
+  .p-delta.up { background:rgba(239,68,68,.12); color:#f87171; }
+
+  .p-chart-wrap {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px;
+    padding: 7px 8px;
+    margin-bottom: 8px;
+  }
+  .p-chart-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+  .p-chart-title { font-size:8px; font-weight:700; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:.5px; }
+  .p-chart-val { font-size:11px; font-weight:900; color:#fff; font-family:'Barlow Condensed',sans-serif; }
+
+  .p-add-btn {
+    width:100%; padding:8px;
+    background: #00D4FF; color:#fff;
+    border:none; border-radius:8px;
+    font-size:9px; font-weight:800;
+    cursor:pointer; letter-spacing:.3px;
+    text-transform:uppercase;
+    margin-bottom: 8px;
+  }
+
+  .p-history-hdr { font-size:8px; font-weight:800; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:5px; }
+  .p-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .p-row-date { font-size:8px; color:rgba(255,255,255,.35); }
+  .p-row-vals { display:flex; gap:5px; }
+  .p-chip { font-size:7px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(255,255,255,.05); border-radius:4px; padding:1px 5px; }
+
+  .p-nav {
+    display: flex;
+    justify-content: space-around;
+    padding: 7px 0 2px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    margin-top: 6px;
+  }
+  .p-nav-item { text-align:center; }
+  .p-nav-ico { font-size:11px; }
+  .p-nav-lbl { font-size:6px; color:rgba(255,255,255,.22); margin-top:1px; font-weight:600; }
+  .p-nav-item.act .p-nav-lbl { color:#00D4FF; }
+
+  /* ── Features ── */
+  .features-section {
+    padding: 52px 44px 36px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: rgba(255,255,255,.28);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 11px;
+  }
+
+  .feat {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 14px;
+    padding: 16px 15px;
+    position: relative;
+    overflow: hidden;
+  }
+  .feat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,.35), transparent);
+  }
+
+  .feat-ico { font-size: 20px; margin-bottom: 9px; display: block; }
+  .feat-name { font-size: 13px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 4px; }
+  .feat-desc { font-size: 11px; color: rgba(255,255,255,.33); line-height: 1.4; font-weight: 400; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    margin: 0 44px;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    padding: 28px 44px 52px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .cta-box {
+    background: linear-gradient(135deg, #00D4FF 0%, #16785a 100%);
+    border-radius: 16px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-text { font-size: 14px; font-weight: 800; color: #fff; line-height: 1.4; }
+  .cta-sub { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 3px; font-weight: 400; }
+  .cta-arrow {
+    font-size: 20px;
+    background: rgba(255,255,255,.15);
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-row">
+      <svg width="28" height="28" viewBox="0 0 34 34" fill="none">
+        <path d="M17 2 L19.5 14.5 L32 17 L19.5 19.5 L17 32 L14.5 19.5 L2 17 L14.5 14.5 Z" fill="#00D4FF"/>
+      </svg>
+      <span class="logo-name">MOVE</span>
+    </div>
+    <div class="tag">Tu portal de atleta</div>
+    <div class="headline">Todo tu<br><em>gym</em> en<br>tu celular.</div>
+    <p class="sub">Reserva clases, registra tu progreso y lleva el control de tu membresía desde la app.</p>
+  </div>
+
+  <!-- 3 Phone screenshots -->
+  <div class="screens-section">
+
+    <!-- Phone 1 — Home/Dashboard -->
+    <div class="phone phone-1">
+      <div class="phone-notch"></div>
+      <div class="ps">
+        <div class="h-topbar">
+          <div>
+            <div class="h-hi">Buen día</div>
+            <div class="h-name">Atleta 💪</div>
+          </div>
+          <div class="h-avatar">A</div>
+        </div>
+
+        <!-- Racha -->
+        <div class="h-streak">
+          <div class="h-streak-ico">🔥</div>
+          <div>
+            <div class="h-streak-n">14</div>
+            <div class="h-streak-l">días de racha</div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="h-stats">
+          <div class="h-stat">
+            <div class="h-stat-n">28</div>
+            <div class="h-stat-l">visitas/mes</div>
+          </div>
+          <div class="h-stat">
+            <div class="h-stat-n">Activa</div>
+            <div class="h-stat-l">membresía</div>
+          </div>
+        </div>
+
+        <!-- Next class -->
+        <div class="h-next">
+          <div class="h-next-lbl">Próxima clase</div>
+          <div class="h-next-name">Strength — 7:00 AM</div>
+          <div class="h-next-time">Mañana · 4 lugares disponibles</div>
+        </div>
+
+        <div class="h-nav">
+          <div class="h-nav-item act"><div class="h-nav-ico">🏠</div><div class="h-nav-lbl">Inicio</div></div>
+          <div class="h-nav-item"><div class="h-nav-ico">📅</div><div class="h-nav-lbl">Clases</div></div>
+          <div class="h-nav-item"><div class="h-nav-ico">📊</div><div class="h-nav-lbl">Progreso</div></div>
+          <div class="h-nav-item"><div class="h-nav-ico">💳</div><div class="h-nav-lbl">Planes</div></div>
+        </div>
+      </div>
+      <div class="screen-label">Inicio</div>
+    </div>
+
+    <!-- Phone 2 — Clases (CENTER, front) -->
+    <div class="phone phone-2">
+      <div class="phone-notch"></div>
+      <div class="ps">
+        <div class="c-topbar">
+          <div>
+            <div class="c-title">Clases</div>
+            <div class="c-date">Lun 12 · Mayo</div>
+          </div>
+        </div>
+
+        <div class="c-tabs">
+          <div class="c-tab act">Hoy</div>
+          <div class="c-tab inn">Mañana</div>
+          <div class="c-tab inn">Mié</div>
+        </div>
+
+        <!-- Clase 1 — Reservada -->
+        <div class="c-card reserved">
+          <div class="c-card-head">
+            <div>
+              <span class="c-time">6:00</span><span class="c-time-am"> AM</span>
+            </div>
+            <div class="c-cupo-wrap">
+              <div class="c-badge-res">✓ Reservado</div>
+            </div>
+          </div>
+          <div class="c-bar"><div class="c-bar-fill" style="width:80%;"></div></div>
+          <div class="c-card-foot">
+            <div>
+              <div class="c-tipo">Strength</div>
+              <div class="c-coach">👤 Coach Ramírez</div>
+            </div>
+            <button class="c-btn can">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Clase 2 — Disponible -->
+        <div class="c-card">
+          <div class="c-card-head">
+            <div>
+              <span class="c-time">9:00</span><span class="c-time-am"> AM</span>
+            </div>
+            <div class="c-cupo-wrap">
+              <div class="c-cupo-n">5 de 15</div>
+              <div class="c-cupo-l">disponibles</div>
+            </div>
+          </div>
+          <div class="c-bar"><div class="c-bar-fill" style="width:33%;background:#10b981;"></div></div>
+          <div class="c-card-foot">
+            <div>
+              <div class="c-tipo">Cardio HIIT</div>
+              <div class="c-coach">👤 Coach López</div>
+            </div>
+            <button class="c-btn res">Reservar</button>
+          </div>
+        </div>
+
+        <!-- Clase 3 — Llena -->
+        <div class="c-card">
+          <div class="c-card-head">
+            <div>
+              <span class="c-time">7:00</span><span class="c-time-am"> PM</span>
+            </div>
+            <div class="c-cupo-wrap">
+              <div class="c-cupo-n" style="color:#f87171;">Llena</div>
+              <div class="c-cupo-l">2 en espera</div>
+            </div>
+          </div>
+          <div class="c-bar"><div class="c-bar-fill" style="width:100%;background:#f87171;"></div></div>
+          <div class="c-card-foot">
+            <div>
+              <div class="c-tipo">Strength PM</div>
+              <div class="c-coach">👤 Coach Vega</div>
+            </div>
+            <button class="c-btn res" style="background:rgba(167,139,250,.2);color:#a78bfa;">Lista</button>
+          </div>
+        </div>
+
+        <div class="c-nav">
+          <div class="c-nav-item"><div class="c-nav-ico">🏠</div><div class="c-nav-lbl">Inicio</div></div>
+          <div class="c-nav-item act"><div class="c-nav-ico">📅</div><div class="c-nav-lbl">Clases</div></div>
+          <div class="c-nav-item"><div class="c-nav-ico">📊</div><div class="c-nav-lbl">Progreso</div></div>
+          <div class="c-nav-item"><div class="c-nav-ico">💳</div><div class="c-nav-lbl">Planes</div></div>
+        </div>
+      </div>
+      <div class="screen-label">Reserva de clases</div>
+    </div>
+
+    <!-- Phone 3 — Progreso/Medidas -->
+    <div class="phone phone-3">
+      <div class="phone-notch"></div>
+      <div class="ps">
+        <div class="p-topbar">
+          <div class="p-title">Progreso</div>
+          <div class="p-sub">Medidas privadas</div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="p-stats">
+          <div class="p-stat">
+            <div class="p-stat-n">74.2</div>
+            <div class="p-stat-u">kg</div>
+            <div class="p-stat-l">Peso</div>
+          </div>
+          <div class="p-stat">
+            <div class="p-stat-n">18.4</div>
+            <div class="p-stat-u">%</div>
+            <div class="p-stat-l">Grasa</div>
+          </div>
+          <div class="p-stat">
+            <div class="p-stat-n">82</div>
+            <div class="p-stat-u">cm</div>
+            <div class="p-stat-l">Cintura</div>
+          </div>
+        </div>
+
+        <!-- Delta badges -->
+        <div style="display:flex;gap:5px;margin-bottom:8px;">
+          <div class="p-delta down">▼ 1.3 kg</div>
+          <div class="p-delta down">▼ 0.8 %</div>
+          <div class="p-delta down">▼ 2 cm</div>
+        </div>
+
+        <!-- Sparkline chart -->
+        <div class="p-chart-wrap">
+          <div class="p-chart-hdr">
+            <span class="p-chart-title">Peso (kg)</span>
+            <span class="p-chart-val">74.2 <small style="font-size:7px;color:rgba(255,255,255,.3);font-weight:600;">kg</small></span>
+          </div>
+          <svg viewBox="0 0 138 30" style="width:100%;height:30px;display:block;">
+            <defs>
+              <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#00D4FF" stop-opacity=".25"/>
+                <stop offset="100%" stop-color="#00D4FF" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M4,24 L25,20 L46,22 L67,18 L88,15 L109,11 L130,8 L130,30 L4,30 Z" fill="url(#sg)" stroke="none"/>
+            <path d="M4,24 L25,20 L46,22 L67,18 L88,15 L109,11 L130,8" fill="none" stroke="#00D4FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="130" cy="8" r="2.5" fill="#00D4FF" stroke="#0D1210" stroke-width="1"/>
+          </svg>
+        </div>
+
+        <!-- Add button -->
+        <button class="p-add-btn">＋ Registrar medición</button>
+
+        <!-- History -->
+        <div class="p-history-hdr">Historial</div>
+        <div class="p-row">
+          <div class="p-row-date">3 mayo</div>
+          <div class="p-row-vals">
+            <div class="p-chip">74.2 kg</div>
+            <div class="p-chip">18.4%</div>
+          </div>
+        </div>
+        <div class="p-row">
+          <div class="p-row-date">18 abr</div>
+          <div class="p-row-vals">
+            <div class="p-chip">75.5 kg</div>
+            <div class="p-chip">19.2%</div>
+          </div>
+        </div>
+
+        <div class="p-nav">
+          <div class="p-nav-item"><div class="p-nav-ico">🏠</div><div class="p-nav-lbl">Inicio</div></div>
+          <div class="p-nav-item"><div class="p-nav-ico">📅</div><div class="p-nav-lbl">Clases</div></div>
+          <div class="p-nav-item act"><div class="p-nav-ico">📊</div><div class="p-nav-lbl">Progreso</div></div>
+          <div class="p-nav-item"><div class="p-nav-ico">💳</div><div class="p-nav-lbl">Planes</div></div>
+        </div>
+      </div>
+      <div class="screen-label">Medidas privadas</div>
+    </div>
+
+  </div><!-- /screens-section -->
+
+  <!-- Features -->
+  <div class="features-section">
+    <div class="section-label">¿Qué puedes hacer?</div>
+    <div class="features-grid">
+      <div class="feat">
+        <span class="feat-ico">📅</span>
+        <div class="feat-name">Reserva de clases</div>
+        <div class="feat-desc">Ve disponibilidad y reserva tu lugar en segundos</div>
+      </div>
+      <div class="feat">
+        <span class="feat-ico">✅</span>
+        <div class="feat-name">Check-in por QR</div>
+        <div class="feat-desc">Entra al gym con tu código QR personal</div>
+      </div>
+      <div class="feat">
+        <span class="feat-ico">📏</span>
+        <div class="feat-name">Mis medidas</div>
+        <div class="feat-desc">Registra peso, grasa y medidas. Solo tú puedes verlas</div>
+      </div>
+      <div class="feat">
+        <span class="feat-ico">💪</span>
+        <div class="feat-name">Bitácora</div>
+        <div class="feat-desc">Guarda tus entrenamientos y ve tu historial</div>
+      </div>
+      <div class="feat">
+        <span class="feat-ico">🔥</span>
+        <div class="feat-name">Asistencia</div>
+        <div class="feat-desc">Historial de visitas y racha de consistencia</div>
+      </div>
+      <div class="feat">
+        <span class="feat-ico">💳</span>
+        <div class="feat-name">Mi membresía</div>
+        <div class="feat-desc">Consulta tu plan, vigencia y historial de pagos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <div class="cta-box">
+      <div>
+        <div class="cta-text">Tu portal está listo 🎉</div>
+        <div class="cta-sub">Pide tu link de acceso en recepción</div>
+      </div>
+      <div class="cta-arrow">→</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

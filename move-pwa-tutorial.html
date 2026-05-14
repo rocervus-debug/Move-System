@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instala la app — MOVE</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080B0A;
+    display: flex;
+    justify-content: center;
+    font-family: 'Barlow', sans-serif;
+  }
+
+  .card {
+    width: 540px;
+    background: #0D1210;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 52px 44px 36px;
+    position: relative;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+
+  .logo-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,212,255,.12);
+    border: 1px solid rgba(0,212,255,.3);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #00D4FF;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+
+  .headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 50px;
+    font-weight: 900;
+    color: #fff;
+    line-height: .95;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .headline em { font-style: normal; color: #00D4FF; }
+
+  .sub {
+    font-size: 14px;
+    color: rgba(255,255,255,.45);
+    line-height: 1.5;
+    margin-top: 12px;
+    max-width: 320px;
+  }
+
+  /* ── App icon preview ── */
+  .icon-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin: 0 44px 36px;
+  }
+
+  .app-icon {
+    width: 60px; height: 60px;
+    background: #0D1210;
+    border: 1px solid rgba(0,212,255,.3);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,.4);
+  }
+
+  .app-icon svg { width: 32px; height: 32px; }
+
+  .icon-info { flex: 1; }
+  .icon-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: .5px;
+  }
+  .icon-url { font-size: 11px; color: rgba(255,255,255,.3); margin-top: 2px; }
+
+  .icon-badge {
+    background: rgba(0,212,255,.15);
+    border: 1px solid rgba(0,212,255,.3);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #00D4FF;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  /* ── OS sections ── */
+  .os-section {
+    padding: 0 44px;
+    margin-bottom: 32px;
+  }
+
+  .os-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+
+  .os-logo {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .os-ios { background: linear-gradient(135deg, #1C1C1E, #2C2C2E); }
+  .os-and { background: linear-gradient(135deg, #1a2e1a, #2a3e2a); }
+
+  .os-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: .3px;
+  }
+  .os-subtitle { font-size: 11px; color: rgba(255,255,255,.3); margin-top: 1px; }
+
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(0,212,255,.15);
+    border: 1px solid rgba(0,212,255,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #00D4FF;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-body { flex: 1; }
+
+  .step-action {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+
+  .step-detail {
+    font-size: 12px;
+    color: rgba(255,255,255,.35);
+    line-height: 1.4;
+  }
+
+  .step-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,.7);
+    margin-top: 6px;
+  }
+
+  /* ── Visual hint bars ── */
+  .visual-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,.03);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 6px;
+    border: 1px solid rgba(255,255,255,.06);
+  }
+
+  .vh-icon { font-size: 16px; }
+  .vh-text { font-size: 11px; color: rgba(255,255,255,.5); line-height: 1.4; }
+  .vh-text strong { color: rgba(255,255,255,.8); }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    margin: 0 44px 32px;
+  }
+
+  /* ── Bottom note ── */
+  .bottom-note {
+    padding: 0 44px 52px;
+  }
+
+  .note-box {
+    background: linear-gradient(135deg, rgba(0,212,255,.12), rgba(0,212,255,.04));
+    border: 1px solid rgba(0,212,255,.2);
+    border-radius: 16px;
+    padding: 20px 22px;
+  }
+
+  .note-ico { font-size: 24px; margin-bottom: 10px; }
+
+  .note-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .note-text {
+    font-size: 12px;
+    color: rgba(255,255,255,.45);
+    line-height: 1.6;
+  }
+
+  .note-text strong {
+    color: #00D4FF;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-row">
+      <svg width="28" height="28" viewBox="0 0 34 34" fill="none">
+        <path d="M17 2 L19.5 14.5 L32 17 L19.5 19.5 L17 32 L14.5 19.5 L2 17 L14.5 14.5 Z" fill="#00D4FF"/>
+      </svg>
+      <span class="logo-name">MOVE</span>
+    </div>
+
+    <div class="tag">Instalación rápida</div>
+    <div class="headline">Agrega la<br><em>app</em> a tu<br>pantalla.</div>
+    <p class="sub">En 3 pasos tienes el portal directo en inicio — sin descargar nada de la App Store.</p>
+  </div>
+
+  <!-- App icon preview -->
+  <div class="icon-preview">
+    <div class="app-icon">
+      <svg viewBox="0 0 34 34" fill="none">
+        <path d="M17 2 L19.5 14.5 L32 17 L19.5 19.5 L17 32 L14.5 19.5 L2 17 L14.5 14.5 Z" fill="#00D4FF"/>
+      </svg>
+    </div>
+    <div class="icon-info">
+      <div class="icon-name">MOVE Portal</div>
+      <div class="icon-url">myvelum.app/atleta</div>
+    </div>
+    <div class="icon-badge">Gratis</div>
+  </div>
+
+  <!-- iOS -->
+  <div class="os-section">
+    <div class="os-header">
+      <div class="os-logo os-ios">🍎</div>
+      <div>
+        <div class="os-title">iPhone / iPad</div>
+        <div class="os-subtitle">Safari únicamente</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-action">Abre Safari y ve a tu link</div>
+          <div class="step-detail">Asegúrate de usar Safari, no Chrome ni otro navegador</div>
+          <div class="visual-hint">
+            <span class="vh-icon">🔗</span>
+            <span class="vh-text">El link es <strong>myvelum.app/atleta?t=TU_TOKEN</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-action">Toca el botón Compartir</div>
+          <div class="step-detail">Es el ícono de la cajita con la flecha hacia arriba</div>
+          <div class="step-pill">□↑ Compartir</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-action">Toca "Agregar a pantalla de inicio"</div>
+          <div class="step-detail">Desplázate hacia abajo en el menú — aparecerá la opción</div>
+          <div class="step-pill">＋ Agregar a pantalla de inicio</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Android -->
+  <div class="os-section">
+    <div class="os-header">
+      <div class="os-logo os-and">🤖</div>
+      <div>
+        <div class="os-title">Android</div>
+        <div class="os-subtitle">Chrome recomendado</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-action">Abre Chrome y ve a tu link</div>
+          <div class="step-detail">Chrome es el navegador recomendado en Android</div>
+          <div class="visual-hint">
+            <span class="vh-icon">🔗</span>
+            <span class="vh-text">El link es <strong>myvelum.app/atleta?t=TU_TOKEN</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-action">Toca el menú de Chrome</div>
+          <div class="step-detail">Los tres puntos ⋮ en la esquina superior derecha</div>
+          <div class="step-pill">⋮ Más opciones</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-action">Toca "Agregar a pantalla de inicio"</div>
+          <div class="step-detail">También puede decir "Instalar app" — confirma y listo</div>
+          <div class="step-pill">＋ Agregar a pantalla de inicio</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom note -->
+  <div class="bottom-note">
+    <div class="note-box">
+      <div class="note-ico">✨</div>
+      <div class="note-title">¿Por qué instalarlo?</div>
+      <div class="note-text">
+        Se abre <strong>igual que una app nativa</strong>, sin barra de navegador.
+        Carga más rápido y funciona incluso con señal débil.
+        No ocupa espacio en tu teléfono como una app normal.
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
