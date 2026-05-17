@@ -1796,6 +1796,11 @@ select option{background:#091218;color:var(--text);}
 .prog-day-content{ font-size:10px;color:var(--text2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical; }
 .prog-day-has{ border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.06); }
 .prog-day-has .prog-day-num{ color:var(--accent); }
+/* Drag & drop */
+.prog-day-cell.prog-drag-active{ opacity:.45;transform:scale(.97);box-shadow:0 4px 20px rgba(0,212,255,.3); }
+.prog-day-cell.prog-drop-target{ border-color:rgba(139,92,246,.8)!important;background:rgba(139,92,246,.12)!important;border-top-color:rgba(139,92,246,.9)!important;box-shadow:0 0 0 2px rgba(139,92,246,.35); }
+.prog-day-drag-hint{ position:absolute;top:5px;right:5px;font-size:12px;color:rgba(0,212,255,.4);cursor:grab;line-height:1;user-select:none; }
+.prog-day-has:hover .prog-day-drag-hint{ color:rgba(0,212,255,.75); }
 .prog-week-selected{ border-color:rgba(139,92,246,.35)!important;background:rgba(139,92,246,.05)!important; }
 .prog-day-cell.prog-day-has.prog-week-selected{ border-color:rgba(139,92,246,.5)!important; }
 .prog-day-tag{ display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px; }
@@ -14566,10 +14571,17 @@ function renderProgramaCalendar(){
       const lines = prog.contenido.split('\n').map(l=>l.trim()).filter(l=>l);
       preview = esc(lines.slice(0,2).join(' · ').slice(0,90));
     }
-    html += `<div class="${cls}" onclick="openProgramaModal('${fStr}')">
+    // Drag & drop attributes
+    const draggableAttr = hasContent ? 'draggable="true"' : '';
+    const dragHandlers = hasContent
+      ? `ondragstart="progDragStart(event,'${fStr}')" ondragend="progDragEnd(event)"`
+      : '';
+    const dropHandlers = `ondragover="progDragOver(event)" ondragleave="progDragLeave(event)" ondrop="progDrop(event,'${fStr}')"`;
+
+    html += `<div class="${cls}" ${draggableAttr} ${dragHandlers} ${dropHandlers} onclick="openProgramaModal('${fStr}')">
       <div class="prog-day-num">${day}</div>
       ${hasContent
-        ? `<span class="prog-day-tag" style="background:${getDisciplinaColor(progTab)}22;color:${getDisciplinaColor(progTab)};border:1px solid ${getDisciplinaColor(progTab)}44;">${(VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'',nombre:progTab}).emoji} ${progTab}</span><div class="prog-day-content">${preview}</div>`
+        ? `<span class="prog-day-drag-hint" title="Arrastra para mover">⠿</span><span class="prog-day-tag" style="background:${getDisciplinaColor(progTab)}22;color:${getDisciplinaColor(progTab)};border:1px solid ${getDisciplinaColor(progTab)}44;">${(VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'',nombre:progTab}).emoji} ${progTab}</span><div class="prog-day-content">${preview}</div>`
         : `<div style="color:${isSelectedWeek?'rgba(139,92,246,.4)':'var(--border)'};font-size:${isSelectedWeek?'20':'18'}px;line-height:1;margin-top:8px;text-align:center;">+</div>`
       }
     </div>`;
@@ -14687,7 +14699,11 @@ async function savePrograma(){
   const payload = { tipo, fecha: fechaStr, contenido, notas };
   let err;
   if(id){
-    const r = await window.supabaseClient.from('programas').update(payload).eq('id', id);
+    // Include gym_id in both payload and WHERE clause to satisfy RLS policies
+    const r = await window.supabaseClient.from('programas')
+      .update(withGymId(payload))
+      .eq('id', id)
+      .eq('gym_id', MOVE_GYM_ID);
     err = r.error;
   } else {
     const r = await window.supabaseClient.from('programas').insert([withGymId(payload)]);
@@ -14698,6 +14714,67 @@ async function savePrograma(){
   await loadProgramasFromSupabase();
   renderProgramaCalendar();
   toast('Entrenamiento guardado ✓','💪');
+}
+
+// ─── Drag & Drop handlers ──────────────────────────────────────────
+let _dragSourceFecha = null;
+
+function progDragStart(ev, fecha){
+  _dragSourceFecha = fecha;
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('text/plain', fecha);
+  ev.currentTarget.classList.add('prog-drag-active');
+}
+
+function progDragEnd(ev){
+  ev.currentTarget.classList.remove('prog-drag-active');
+  // Remove all drop-target highlights
+  document.querySelectorAll('.prog-drop-target').forEach(el=>el.classList.remove('prog-drop-target'));
+}
+
+function progDragOver(ev){
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  ev.currentTarget.classList.add('prog-drop-target');
+}
+
+function progDragLeave(ev){
+  ev.currentTarget.classList.remove('prog-drop-target');
+}
+
+async function progDrop(ev, toFecha){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('prog-drop-target');
+  const fromFecha = _dragSourceFecha;
+  _dragSourceFecha = null;
+  if(!fromFecha || fromFecha === toFecha) return;
+  await moveProgramaToDate(fromFecha, toFecha);
+}
+
+// Move a workout from one date to another (used by drag & drop)
+async function moveProgramaToDate(fromFecha, toFecha){
+  if(fromFecha === toFecha) return;
+  const prog = programas.find(p=>p.fecha===fromFecha && p.tipo===progTab);
+  if(!prog) return;
+  // Check if target date already has content
+  const target = programas.find(p=>p.fecha===toFecha && p.tipo===progTab);
+  if(target){
+    const ok = await confirmDialog(
+      `El ${toFecha} ya tiene un entrenamiento. ¿Sobreescribirlo?`,
+      {title:'Mover entrenamiento', icon:'📅'}
+    );
+    if(!ok) return;
+    // Delete target first
+    await window.supabaseClient.from('programas').delete().eq('id', target.id).eq('gym_id', MOVE_GYM_ID);
+  }
+  const { error } = await window.supabaseClient.from('programas')
+    .update({ fecha: toFecha })
+    .eq('id', prog.id)
+    .eq('gym_id', MOVE_GYM_ID);
+  if(error){ toast('Error al mover ❌','✕'); console.error(error); return; }
+  await loadProgramasFromSupabase();
+  renderProgramaCalendar();
+  toast('Entrenamiento movido ✓','📅');
 }
 
 async function deletePrograma(){
