@@ -2673,12 +2673,16 @@ function renderQR(){
 }
 
 // ── Programa view ────────────────────────────────────
+function localDateStr(d){
+  // Always use local date, never toISOString() which converts to UTC
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 function getWeekDates(offset){
   const now=new Date(); const dow=now.getDay();
   const mon=new Date(now);
   mon.setDate(now.getDate()-dow+(dow===0?-6:1)+offset*7);
   mon.setHours(0,0,0,0);
-  return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d.toISOString().slice(0,10); });
+  return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return localDateStr(d); });
 }
 function navWeek(dir){ progWeekOffset+=dir; renderProgramaView(); }
 
