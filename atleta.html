@@ -1259,7 +1259,7 @@ body::before{
   <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
 </svg>
       </div>
-      <div class="login-brand-logo">MOVE</div>
+      <div class="login-brand-logo" id="login-brand-logo">VELUM</div>
       <div class="login-gym-title" id="login-gym-title">Portal de Atletas</div>
       <div class="login-tagline" id="login-tagline">Accede a tu membresía, programa y QR</div>
     </div>
@@ -3588,6 +3588,58 @@ async function doLogin(){
   finally{ btn.disabled=false; btn.textContent='Acceder al Portal'; }
 }
 
+// ── Prefetch gym branding for login screen ────────────────────────
+async function prefetchLoginGymBranding(gymCode){
+  if(!gymCode) return;
+  try{
+    // Step 1: resolve gym_id from portal_codigo
+    const r1 = await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?key=eq.portal_codigo&value=ilike.${encodeURIComponent(gymCode)}&select=gym_id&limit=1`,
+      {headers: apiHeaders()}
+    );
+    if(!r1.ok) return;
+    const rows1 = await r1.json();
+    if(!rows1.length) return;
+    const gymId = rows1[0].gym_id;
+
+    // Step 2: fetch name, color, logo
+    const r2 = await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&key=in.(gym_nombre,gym_color,gym_color_primario,gym_logo)&select=key,value`,
+      {headers: apiHeaders()}
+    );
+    if(!r2.ok) return;
+    const rows2 = await r2.json();
+    const cfg = {};
+    rows2.forEach(r=>cfg[r.key]=r.value);
+
+    const nombre = cfg['gym_nombre'];
+    const color  = cfg['gym_color'] || cfg['gym_color_primario'];
+    const logo   = cfg['gym_logo'];
+
+    // Update login brand
+    if(nombre){
+      const logoEl = $('login-brand-logo');
+      const titleEl = $('login-gym-title');
+      if(logoEl){
+        if(logo){
+          logoEl.innerHTML = `<img src="${logo}" alt="${nombre}" style="max-height:36px;max-width:160px;object-fit:contain;">`;
+        } else {
+          logoEl.textContent = nombre;
+        }
+      }
+      if(titleEl) titleEl.textContent = nombre;
+      // Update page title
+      document.title = `${nombre} — Portal Atleta`;
+    }
+
+    // Apply brand color
+    if(color) applyGymAccent(color);
+
+    // Cache for next visit
+    try{ localStorage.setItem('velum_pwa_brand', JSON.stringify({name: nombre||gymCode, color: color||null})); }catch(_){}
+  }catch(_){}
+}
+
 // ── Init ─────────────────────────────────────────────
 async function init(){
   const p=new URLSearchParams(window.location.search);
@@ -3641,6 +3693,9 @@ async function init(){
   let stored=null;
   try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); }catch(_){}
   if(stored?.token){ try{ showPortal(await tryToken(stored.token)); return; }catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} } }
+
+  // Prefetch gym branding for login screen (non-blocking)
+  if(savedGym) prefetchLoginGymBranding(savedGym);
 
   $('loading-screen').classList.add('hidden');
   $('login-screen').style.display='flex';
