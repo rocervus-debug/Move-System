@@ -1804,6 +1804,8 @@ select option{background:#091218;color:var(--text);}
 .prog-week-selected{ border-color:rgba(139,92,246,.35)!important;background:rgba(139,92,246,.05)!important; }
 .prog-day-cell.prog-day-has.prog-week-selected{ border-color:rgba(139,92,246,.5)!important; }
 .prog-day-tag{ display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px; }
+.prog-day-multi-chip{ display:block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;transition:filter .1s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.prog-day-multi-chip:hover{ filter:brightness(1.25); }
 .prog-tag-Strength{ background:rgba(139,92,246,.2);color:#8b5cf6; }
 .prog-tag-Hyrox{ background:rgba(239,68,68,.2);color:#ef4444; }
 .prog-tag-Endurance{ background:rgba(16,185,129,.2);color:#10b981; }
@@ -12391,11 +12393,16 @@ function renderDashboard(){
   showKpiSkeleton(['kpi-activos','kpi-leads','kpi-ingresos-mes','kpi-total-ingresos','kpi-socios-nuevos','kpi-vencidas','kpi-por-vencer']);
 
   const total   = leads.length;
-  const activos = leads.filter(l=>l.estado==='Cerrado – Ganado').length;
-  const conv    = total>0 ? Math.round((activos/total)*100)+'%' : '—';
+  const conv    = total>0 ? Math.round((leads.filter(l=>l.estado==='Cerrado – Ganado').length/total)*100)+'%' : '—';
+
+  // Clientes activos = membresías vigentes (not CRM leads)
+  const _hoyKpi = new Date(); _hoyKpi.setHours(0,0,0,0);
+  const _mapaUlt = {};
+  (pagos||[]).forEach(p=>{ const n=(p.cliente||'').trim(); if(!n) return; if(!_mapaUlt[n]||((p.vence||'')>(_mapaUlt[n].vence||''))) _mapaUlt[n]=p; });
+  const activosMembr = Object.values(_mapaUlt).filter(p=>{ if(!p.vence||p.vence.length<10) return false; return Math.ceil((new Date(p.vence+'T12:00:00')-_hoyKpi)/86400000)>=0; }).length;
 
   countUp(document.getElementById('kpi-leads'), total);
-  countUp(document.getElementById('kpi-activos'), activos);
+  countUp(document.getElementById('kpi-activos'), activosMembr);
   document.getElementById('kpi-conv').textContent    = conv;
   countUp(document.getElementById('mkt-leads'), total, {duration:500});
 
@@ -14422,11 +14429,13 @@ function renderProgTabs(){
     </div>`;
     return;
   }
-  // Make sure progTab is valid
-  if(!active.find(d=>d.id===progTab)) progTab = active[0].id;
-  container.innerHTML = active.map(d=>`
-    <div class="tab${d.id===progTab?' active':''}" id="prog-tab-${d.id}" onclick="switchProgTab('${d.id}')">${d.emoji} ${d.nombre}</div>
-  `).join('');
+  // Make sure progTab is valid (allow 'todos' + active disciplines)
+  if(progTab !== 'todos' && !active.find(d=>d.id===progTab)) progTab = active[0].id;
+  container.innerHTML =
+    `<div class="tab${progTab==='todos'?' active':''}" id="prog-tab-todos" onclick="switchProgTab('todos')" style="font-weight:700;">📋 Todos</div>` +
+    active.map(d=>`
+      <div class="tab${d.id===progTab?' active':''}" id="prog-tab-${d.id}" onclick="switchProgTab('${d.id}')">${d.emoji} ${d.nombre}</div>
+    `).join('');
   // Also refresh prog-tipo-sel
   populateProgTipoSel();
 }
@@ -14441,6 +14450,8 @@ function populateProgTipoSel(){
 
 function switchProgTab(tab){
   progTab = tab;
+  const todosEl = document.getElementById('prog-tab-todos');
+  if(todosEl) todosEl.classList.toggle('active', tab==='todos');
   getActiveDisciplinas().forEach(d=>{
     const el = document.getElementById('prog-tab-'+d.id);
     if(el) el.classList.toggle('active', d.id===tab);
@@ -14494,7 +14505,9 @@ function renderProgramaCalendar(){
   // Show / hide "no workouts" banner
   const mm0 = String(progMonth+1).padStart(2,'0');
   const mesPrefix = `${progYear}-${mm0}`;
-  const hasPrograms = programas.some(p => p.fecha?.startsWith(mesPrefix) && p.tipo === progTab);
+  const hasPrograms = progTab === 'todos'
+    ? programas.some(p => p.fecha?.startsWith(mesPrefix))
+    : programas.some(p => p.fecha?.startsWith(mesPrefix) && p.tipo === progTab);
   let banner = document.getElementById('prog-empty-banner');
   if(!hasPrograms && getActiveDisciplinas().length){
     if(!banner){
@@ -14502,14 +14515,14 @@ function renderProgramaCalendar(){
       banner.id = 'prog-empty-banner';
       grid.parentElement.insertBefore(banner, grid);
     }
-    const disc = VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'📄',nombre:progTab};
+    const disc = progTab === 'todos' ? {emoji:'📋',nombre:'ninguna disciplina'} : (VELUM_DISCIPLINAS.find(d=>d.id===progTab)||{emoji:'📄',nombre:progTab});
     banner.innerHTML = `<div style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <span style="font-size:24px;">${disc.emoji}</span>
       <div style="flex:1;min-width:180px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);">Sin sesiones de ${disc.nombre} en ${MESES_ES[progMonth]}</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px;">Genera semana a semana con IA, o toca cualquier día para escribir la sesión manualmente.</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="generateSemanaActual()" style="background:linear-gradient(135deg,#8b5cf6,#00D4FF);border:none;white-space:nowrap;">🤖 Generar semana con IA</button>
+      ${progTab!=='todos'?`<button class="btn btn-primary btn-sm" onclick="generateSemanaActual()" style="background:linear-gradient(135deg,#8b5cf6,#00D4FF);border:none;white-space:nowrap;">🤖 Generar semana con IA</button>`:''}
     </div>`;
   } else if(banner){
     banner.remove();
@@ -14557,6 +14570,31 @@ function renderProgramaCalendar(){
     const fStr= `${progYear}-${mm}-${dd}`;
     const dt  = new Date(fStr+'T12:00:00');
     const isToday = dt.getTime() === today.getTime();
+    const dropHandlers = `ondragover="progDragOver(event)" ondragleave="progDragLeave(event)" ondrop="progDrop(event,'${fStr}')"`;
+
+    if(progTab === 'todos'){
+      // ── Vista "Todos": mostrar chips de todas las disciplinas
+      const dayProgs = programas.filter(p=>p.fecha===fStr);
+      const hasContent = dayProgs.length > 0;
+      let cls = 'prog-day-cell';
+      if(isToday)        cls += ' prog-today';
+      if(hasContent)     cls += ' prog-day-has';
+      if(isSelectedWeek) cls += ' prog-week-selected';
+      html += `<div class="${cls}" ${dropHandlers} onclick="openProgramaModal('${fStr}')">
+        <div class="prog-day-num">${day}</div>
+        ${hasContent
+          ? dayProgs.map(p=>{
+              const disc = VELUM_DISCIPLINAS.find(d=>d.id===p.tipo)||{emoji:'📄',nombre:p.tipo};
+              const color = getDisciplinaColor(p.tipo);
+              const lines = (p.contenido||'').split('\n').map(l=>l.trim()).filter(l=>l);
+              const prev = esc(lines.slice(0,1).join('').slice(0,30));
+              return `<div class="prog-day-multi-chip" style="background:${color}22;border:1px solid ${color}44;color:${color};" onclick="event.stopPropagation();switchProgTab('${p.tipo}');openProgramaModal('${fStr}')" title="${esc(disc.nombre)}: ${prev}">${disc.emoji} ${esc(disc.nombre)}</div>`;
+            }).join('')
+          : `<div style="color:${isSelectedWeek?'rgba(139,92,246,.4)':'var(--border)'};font-size:${isSelectedWeek?'20':'18'}px;line-height:1;margin-top:8px;text-align:center;">+</div>`
+        }
+      </div>`;
+    } else {
+    // ── Vista disciplina individual
     // Find programa for this day + current tab
     const prog = programas.find(p=>p.fecha===fStr && p.tipo===progTab);
     const hasContent = prog && prog.contenido;
@@ -14576,7 +14614,6 @@ function renderProgramaCalendar(){
     const dragHandlers = hasContent
       ? `ondragstart="progDragStart(event,'${fStr}')" ondragend="progDragEnd(event)"`
       : '';
-    const dropHandlers = `ondragover="progDragOver(event)" ondragleave="progDragLeave(event)" ondrop="progDrop(event,'${fStr}')"`;
 
     html += `<div class="${cls}" ${draggableAttr} ${dragHandlers} ${dropHandlers} onclick="openProgramaModal('${fStr}')">
       <div class="prog-day-num">${day}</div>
@@ -14585,6 +14622,7 @@ function renderProgramaCalendar(){
         : `<div style="color:${isSelectedWeek?'rgba(139,92,246,.4)':'var(--border)'};font-size:${isSelectedWeek?'20':'18'}px;line-height:1;margin-top:8px;text-align:center;">+</div>`
       }
     </div>`;
+  }
   });
   html += '</div>';
   grid.innerHTML = html;

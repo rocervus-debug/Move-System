@@ -2724,12 +2724,19 @@ function renderProgramaView(){
   const tabsEl=$('prog-disc-tabs');
   if(allDiscs.length<=1){ tabsEl.innerHTML=''; if(allDiscs.length===1) progActiveDisc=allDiscs[0]; }
   else {
-    if(!progActiveDisc||!allDiscs.includes(progActiveDisc)) progActiveDisc=allDiscs[0];
-    tabsEl.innerHTML=allDiscs.map(d=>`<div class="wk-tab${d===progActiveDisc?' active':''}" onclick="progSelectDisc('${d}')">${EMOJIS[d]||'🏋️'} ${d}</div>`).join('');
+    // Allow 'todos' as valid state; default to 'todos' on first load
+    if(progActiveDisc!=='todos' && (!progActiveDisc||!allDiscs.includes(progActiveDisc))) progActiveDisc='todos';
+    tabsEl.innerHTML=
+      `<div class="wk-tab${progActiveDisc==='todos'?' active':''}" onclick="progSelectDisc('todos')">📋 Todos</div>` +
+      allDiscs.map(d=>`<div class="wk-tab${d===progActiveDisc?' active':''}" onclick="progSelectDisc('${d}')">${EMOJIS[d]||'🏋️'} ${d}</div>`).join('');
   }
   window.progSelectDisc=d=>{
     progActiveDisc=d;
-    document.querySelectorAll('#prog-disc-tabs .wk-tab').forEach(t=>t.classList.toggle('active',t.textContent.includes(d)));
+    document.querySelectorAll('#prog-disc-tabs .wk-tab').forEach(t=>{
+      const isTodos = d==='todos' && t.textContent.trim().startsWith('📋');
+      const isDisc  = d!=='todos' && t.textContent.includes(d);
+      t.classList.toggle('active', isTodos||isDisc);
+    });
     buildProgContent(dates,progMap,today);
   };
   buildProgContent(dates,progMap,today);
@@ -2759,7 +2766,7 @@ function buildProgContent(dates,progMap,today){
     dates.forEach(dateStr=>{
       const dt=new Date(dateStr+'T12:00:00');
       const isToday=dateStr===today;
-      const dayProgs=(progMap[dateStr]||[]).filter(p=>!progActiveDisc||p.tipo===progActiveDisc||!progActiveDisc);
+      const dayProgs=(progMap[dateStr]||[]).filter(p=>progActiveDisc==='todos'||!progActiveDisc||p.tipo===progActiveDisc);
       html+=`<div class="prog-desktop-day${isToday?' today':''}">
         <div class="prog-desktop-day-label${isToday?' today':''}">${DIAS_S[dt.getDay()]}</div>
         <div class="prog-desktop-date${isToday?' today':''}">${dt.getDate()}</div>`;
@@ -2782,7 +2789,7 @@ function buildProgContent(dates,progMap,today){
     dates.forEach(dateStr=>{
       const dt=new Date(dateStr+'T12:00:00');
       const isToday=dateStr===today;
-      const dayProgs=(progMap[dateStr]||[]).filter(p=>!progActiveDisc||p.tipo===progActiveDisc||!progActiveDisc);
+      const dayProgs=(progMap[dateStr]||[]).filter(p=>progActiveDisc==='todos'||!progActiveDisc||p.tipo===progActiveDisc);
       html+=`<div class="day-block">
         <div class="day-hdr">
           <span class="day-label${isToday?' today':''}">${isToday?'Hoy · ':DIAS_S[dt.getDay()]+' '}${dt.getDate()} ${MESES[dt.getMonth()].slice(0,3)}</span>
