@@ -1242,7 +1242,8 @@ body::before{
   <svg width="36" height="36" viewBox="0 0 100 100">
   <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
 </svg>
-  <div class="ls-logo">MOVE</div>
+  <div class="ls-logo" id="ls-gym-name">MOVE</div>
+  <script>try{var _lb=JSON.parse(localStorage.getItem('velum_pwa_brand')||'null');if(_lb&&_lb.name){document.getElementById('ls-gym-name').textContent=_lb.name;}}catch(_){}</script>
   <div class="ls-bar"><div class="ls-fill"></div></div>
 </div>
 
@@ -2118,7 +2119,15 @@ function applyPWABranding(gymName, themeHex){
     link.href = url;
   }catch(_){}
 
-  // 3. Cache for next visit — pre-login branding
+  // 3. Update login screen elements if visible
+  const _llEl = document.getElementById('login-brand-logo');
+  const _ltEl = document.getElementById('login-gym-title');
+  const _lsEl = document.getElementById('ls-gym-name');
+  if(_llEl) _llEl.textContent = name;
+  if(_ltEl && _ltEl.textContent !== 'Portal de Atletas') _ltEl.textContent = name;
+  if(_lsEl) _lsEl.textContent = name;
+
+  // 4. Cache for next visit — pre-login branding
   try{ localStorage.setItem('velum_pwa_brand', JSON.stringify({name, color})); }catch(_){}
 }
 
@@ -2688,7 +2697,21 @@ function navWeek(dir){ progWeekOffset+=dir; renderProgramaView(); }
 
 function renderProgramaView(){
   if(!portalData) return;
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDateStr(new Date());
+  const allProgs=portalData.programasSemana||portalData.programasHoy||[];
+  const allProgMap={};
+  allProgs.forEach(p=>{ const key=p.fecha||today; if(!allProgMap[key]) allProgMap[key]=[]; allProgMap[key].push(p); });
+
+  // Auto-advance to first week that has content if current week is empty
+  if(progWeekOffset===0){
+    const thisWeekDates=getWeekDates(0);
+    const hasThisWeek=thisWeekDates.some(d=>allProgMap[d]);
+    if(!hasThisWeek){
+      const nextWeekDates=getWeekDates(1);
+      if(nextWeekDates.some(d=>allProgMap[d])){ progWeekOffset=1; }
+    }
+  }
+
   const dates=getWeekDates(progWeekOffset);
   const d0=new Date(dates[0]+'T12:00:00'); const d6=new Date(dates[6]+'T12:00:00');
   set('prog-mes-title',MESES[d0.getMonth()]+(d0.getMonth()!==d6.getMonth()?' / '+MESES[d6.getMonth()]:''));
@@ -2696,8 +2719,6 @@ function renderProgramaView(){
   set('wn-year',d0.getFullYear());
   set('prog-gym-hi',portalData.gym.nombre);
   const progMap={};
-  // Use full week data if available, fall back to today-only data
-  const allProgs=portalData.programasSemana||portalData.programasHoy||[];
   allProgs.forEach(p=>{ const key=p.fecha||today; if(!progMap[key]) progMap[key]=[]; progMap[key].push(p); });
   const allDiscs=[...new Set(Object.values(progMap).flat().map(p=>p.tipo))];
   const tabsEl=$('prog-disc-tabs');

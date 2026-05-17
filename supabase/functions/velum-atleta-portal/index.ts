@@ -95,16 +95,16 @@ serve(async (req) => {
     const gym_id = cliente.gym_id;
     const today  = new Date().toISOString().slice(0, 10);
 
-    // Calculate current week range (Monday – Sunday)
+    // Calculate 2-week range: current Monday → next Sunday (14 days)
     const todayDate     = new Date();
     const dow           = todayDate.getDay();
     const mondayOffset  = dow === 0 ? -6 : 1 - dow;
     const monday        = new Date(todayDate);
     monday.setDate(todayDate.getDate() + mondayOffset);
-    const sunday        = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
+    const nextSunday    = new Date(monday);
+    nextSunday.setDate(monday.getDate() + 13); // current Mon + 13 = next week's Sunday
     const semanaInicio  = monday.toISOString().slice(0, 10);
-    const semanaFin     = sunday.toISOString().slice(0, 10);
+    const semanaFin     = nextSunday.toISOString().slice(0, 10);
 
     // Gym config
     const { data: cfgRows } = await supabase
