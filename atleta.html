@@ -214,25 +214,14 @@ body::before{
   background:var(--accent);border-radius:0 0 4px 4px;
   box-shadow:0 0 10px rgba(0,212,255,.7);
 }
-.bn-icon{font-size:20px;line-height:1;}
-.bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;}
+.bn-icon{
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;line-height:1;
+}
+.bn-icon svg{width:22px;height:22px;stroke:var(--text3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s;}
+.bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;transition:color .15s;}
 .bn-item.active .bn-lbl{color:var(--accent-light);}
-.bn-item.active .bn-icon{filter:drop-shadow(0 0 5px rgba(0,212,255,.5));}
-.bn-fab-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;}
-.bn-fab{
-  width:50px;height:50px;border-radius:15px;background:var(--accent);
-  display:flex;align-items:center;justify-content:center;font-size:22px;
-  transform:translateY(-12px);
-  box-shadow:0 4px 24px rgba(0,212,255,.6),0 0 0 3px rgba(3,10,8,1),0 0 0 5px rgba(0,212,255,.25);
-  transition:transform .15s,box-shadow .15s;
-}
-.bn-fab::before{
-  content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 60%);
-  pointer-events:none;
-}
-.bn-fab:active{transform:translateY(-10px) scale(.94);}
-.bn-fab-lbl{font-size:9px;font-weight:700;color:var(--accent-light);letter-spacing:.4px;text-transform:uppercase;margin-top:-7px;}
+.bn-item.active .bn-icon svg{stroke:var(--accent);filter:drop-shadow(0 0 5px rgba(0,212,255,.5));}
 
 /* ══════════════════════════════════════
    VIEWS
@@ -375,7 +364,8 @@ body::before{
 .stat-chip.classes .stat-num{color:#FCD34D;}
 .stat-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
 .stat-sub{font-size:9px;color:var(--accent-light);font-weight:600;margin-top:2px;letter-spacing:.2px;}
-.stat-icon{font-size:16px;line-height:1;margin-bottom:2px;}
+.stat-icon{width:20px;height:20px;margin-bottom:2px;display:flex;align-items:center;justify-content:center;}
+.stat-icon svg{width:20px;height:20px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 /* ── Historial sub-tabs (3.1 / 3.2) ── */
 .hist-tabs{display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:3px;margin-bottom:16px;}
 .hist-tab{flex:1;padding:8px 12px;border-radius:9px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:var(--font);}
@@ -449,16 +439,19 @@ body::before{
 /* ══════════════════════════════════════
    QUICK ACTIONS
 ══════════════════════════════════════ */
-.quick-actions{display:flex;gap:8px;padding:0 16px;margin-bottom:22px;}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px;margin-bottom:22px;}
 .qa{
-  flex:1;background:var(--surface);border:1px solid var(--border);
+  background:var(--surface);border:1px solid var(--border);
   border-radius:14px;padding:14px 12px;cursor:pointer;
   transition:background .15s,border-color .15s,transform .1s;
   display:flex;flex-direction:column;gap:5px;
 }
 .qa:active{transform:scale(.97);}
 .qa.primary{
+  grid-column:1/-1;
+  flex-direction:row;align-items:center;gap:14px;
   background:rgba(0,212,255,.07);border-color:rgba(0,212,255,.22);
+  padding:16px 16px;
   position:relative;overflow:hidden;
 }
 .qa.primary::before{
@@ -467,8 +460,18 @@ body::before{
   pointer-events:none;
 }
 .qa.primary:active{background:rgba(0,212,255,.13);}
+.qa-primary-arrow{
+  margin-left:auto;flex-shrink:0;
+  width:28px;height:28px;border-radius:8px;
+  background:rgba(0,212,255,.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.qa-primary-arrow svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.qa-primary-text{flex:1;}
 .qa-ico{font-size:22px;line-height:1;}
 .qa-ttl{font-size:12px;font-weight:800;color:#fff;}
+.qa.primary .qa-ttl{font-size:14px;}
+.qa.primary .qa-sub{font-size:11px;}
 .qa-sub{font-size:10px;color:var(--text3);}
 
 /* ══════════════════════════════════════
@@ -1057,7 +1060,11 @@ body::before{
     border-radius:0 3px 3px 0;
     box-shadow:0 0 8px rgba(0,212,255,.5);
   }
-  .sb-icon{font-size:18px;line-height:1;flex-shrink:0;}
+  .sb-icon{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .sb-icon svg{width:18px;height:18px;stroke:rgba(255,255,255,.5);transition:stroke .15s;}
+  .sb-item.active .sb-icon svg{stroke:var(--accent-light);}
+  .sb-item:hover .sb-icon svg{stroke:rgba(255,255,255,.7);}
+  .sb-logout-ico{display:flex;align-items:center;}
   .sb-lbl{font-size:13px;font-weight:700;color:#fff;letter-spacing:.2px;}
   .sb-item.active .sb-lbl{color:var(--accent-light);}
   /* Sidebar QR button */
@@ -1305,33 +1312,39 @@ body::before{
     </div>
     <div class="sb-nav">
       <div class="sb-item active" id="sbn-home" onclick="switchView('home')">
-        <div class="sb-icon">🏠</div><div class="sb-lbl">Inicio</div>
+        <div class="sb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div class="sb-lbl">Inicio</div>
       </div>
       <div class="sb-item" id="sbn-programa" onclick="switchView('programa')">
-        <div class="sb-icon">📅</div><div class="sb-lbl">Programa</div>
+        <div class="sb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div class="sb-lbl">Programa</div>
       </div>
       <div class="sb-item" id="sbn-clases" onclick="switchView('clases')">
-        <div class="sb-icon">🗓️</div><div class="sb-lbl">Reservar clase</div>
+        <div class="sb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg></div>
+        <div class="sb-lbl">Reservar clase</div>
       </div>
       <div class="sb-item" id="sbn-historial" onclick="switchView('historial')">
-        <div class="sb-icon">🕐</div><div class="sb-lbl">Historial</div>
+        <div class="sb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="sb-lbl">Historial</div>
       </div>
       <div class="sb-item" id="sbn-planes" onclick="switchView('planes')">
-        <div class="sb-icon">💳</div><div class="sb-lbl">Planes y Pagos</div>
+        <div class="sb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+        <div class="sb-lbl">Planes y Pagos</div>
       </div>
       <div class="sb-item" id="sbn-bitacora" onclick="switchView('bitacora')">
-        <div class="sb-icon">📓</div><div class="sb-lbl">Bitácora</div>
+        <div class="sb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="sb-lbl">Bitácora</div>
       </div>
     </div>
     <div class="sb-qr-btn" onclick="openQRSheet()">
-      <div class="sb-qr-ico">📲</div>
+      <div class="sb-qr-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent-light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="rgba(102,232,255,.7)" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="rgba(102,232,255,.7)" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="rgba(102,232,255,.7)" stroke="none"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg></div>
       <div class="sb-qr-txt">Mi QR de Entrada</div>
     </div>
     <div class="sb-footer">
       <div class="sb-user" onclick="openProfileSheet()">
         <div class="sb-avatar" id="sb-avatar">?</div>
         <div class="sb-user-name" id="sb-user-name">—</div>
-        <div class="sb-logout-ico">⚙️</div>
+        <div class="sb-logout-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></div>
       </div>
     </div>
   </div>
@@ -1368,10 +1381,15 @@ body::before{
         <div class="quick-actions au au5">
           <div class="qa primary" onclick="switchView('clases')">
             <div class="qa-svg-ico blue">
-              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg>
             </div>
-            <div class="qa-ttl">Reservar clase</div>
-            <div class="qa-sub">Ver clases disponibles</div>
+            <div class="qa-primary-text">
+              <div class="qa-ttl">Reservar clase</div>
+              <div class="qa-sub">Ver clases disponibles hoy</div>
+            </div>
+            <div class="qa-primary-arrow">
+              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
           </div>
           <div class="qa" onclick="switchView('historial')">
             <div class="qa-svg-ico amber">
@@ -1379,6 +1397,13 @@ body::before{
             </div>
             <div class="qa-ttl">Mis Visitas</div>
             <div class="qa-sub" id="qa-visits-sub">Ver historial</div>
+          </div>
+          <div class="qa" onclick="switchView('bitacora')">
+            <div class="qa-svg-ico green">
+              <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <div class="qa-ttl">Bitácora</div>
+            <div class="qa-sub">Registrar entreno</div>
           </div>
         </div>
         <div class="section au au6">
@@ -1403,14 +1428,22 @@ body::before{
             <div id="streak-banner-desk" class="streak-banner" style="display:none;"></div>
             <div class="quick-actions">
               <div class="qa primary" onclick="switchView('clases')">
-                <div class="qa-svg-ico blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <div class="qa-ttl">Reservar clase</div>
-                <div class="qa-sub">Ver clases disponibles</div>
+                <div class="qa-svg-ico blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg></div>
+                <div class="qa-primary-text">
+                  <div class="qa-ttl">Reservar clase</div>
+                  <div class="qa-sub">Ver clases disponibles hoy</div>
+                </div>
+                <div class="qa-primary-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
               </div>
               <div class="qa" onclick="switchView('historial')">
                 <div class="qa-svg-ico amber"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
                 <div class="qa-ttl">Mis Visitas</div>
                 <div class="qa-sub" id="qa-visits-desk">Ver historial</div>
+              </div>
+              <div class="qa" onclick="switchView('bitacora')">
+                <div class="qa-svg-ico green"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+                <div class="qa-ttl">Bitácora</div>
+                <div class="qa-sub">Registrar entreno</div>
               </div>
             </div>
           </div>
@@ -1553,20 +1586,24 @@ body::before{
   <!-- Mobile Bottom Nav -->
   <div class="bottom-nav">
     <div class="bn-item active" id="bn-home" onclick="switchView('home')">
-      <div class="bn-icon">🏠</div><div class="bn-lbl">Inicio</div>
+      <div class="bn-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="bn-lbl">Inicio</div>
     </div>
     <div class="bn-item" id="bn-clases" onclick="switchView('clases')">
-      <div class="bn-icon">🗓️</div><div class="bn-lbl">Clases</div>
-    </div>
-    <div class="bn-fab-wrap" onclick="openQRSheet()">
-      <div class="bn-fab">📲</div>
-      <div class="bn-fab-lbl">Check-in</div>
+      <div class="bn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="bn-lbl">Clases</div>
     </div>
     <div class="bn-item" id="bn-historial" onclick="switchView('historial')">
-      <div class="bn-icon">🕐</div><div class="bn-lbl">Historial</div>
+      <div class="bn-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="bn-lbl">Historial</div>
+    </div>
+    <div class="bn-item" id="bn-qr" onclick="openQRSheet()">
+      <div class="bn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" style="fill:var(--text3);stroke:none"/><rect x="16" y="5" width="3" height="3" style="fill:var(--text3);stroke:none"/><rect x="5" y="16" width="3" height="3" style="fill:var(--text3);stroke:none"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg></div>
+      <div class="bn-lbl">QR</div>
     </div>
     <div class="bn-item" id="bn-mas" onclick="openMasSheet()">
-      <div class="bn-icon">⋯</div><div class="bn-lbl">Más</div>
+      <div class="bn-icon"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+      <div class="bn-lbl">Más</div>
     </div>
   </div>
 
@@ -2308,10 +2345,6 @@ function membershipCardHTML(data){
       </div>
     </div>`:`<div class="card-bottom"><div></div><div class="card-right"><div class="card-numero">${numStr}</div><div class="card-gym">${gym.nombre}</div></div></div>`}
     ${ctaBlock}
-    <button onclick="openQRSheet()" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.7);font-size:10px;font-weight:600;letter-spacing:.5px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);" title="Ver QR de entrada">
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
-      QR
-    </button>
   </div>`;
 }
 
@@ -2367,20 +2400,26 @@ function statsRowHTML(data){
   const streakLabel=streakWeeks>=2?`${streakWeeks} sem.`:`${streak} días`;
   const streakFire=streak>=7?'🏆':streak>=3?'🔥':'🔥';
 
+  // SVG icons for stat chips
+  const svgVisits=`<svg viewBox="0 0 24 24" style="stroke:#8B5CF6"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+  const svgStreak=`<svg viewBox="0 0 24 24" style="stroke:#F97316"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+  const svgDays=`<svg viewBox="0 0 24 24" style="stroke:#00D4FF"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  const svgPkg=`<svg viewBox="0 0 24 24" style="stroke:#FCD34D"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+
   // 3rd chip: clases remaining if package, else days
   let thirdChip='';
   if(paquete){
     const remaining=paquete.clasesRestantes;
     const low=remaining<=2;
     thirdChip=`<div class="stat-chip classes">
-      <div class="stat-icon">📦</div>
+      <div class="stat-icon">${svgPkg}</div>
       <div class="stat-num" data-count="${remaining}" style="${low?'color:var(--danger)':''}">0</div>
       <div class="stat-lbl">Clases restantes</div>
     </div>`;
   } else {
     const diasNum=dias!==null?dias:0;
     thirdChip=`<div class="stat-chip days">
-      <div class="stat-icon">⏳</div>
+      <div class="stat-icon">${svgDays}</div>
       <div class="stat-num" data-count="${diasNum}">${dias!==null?'0':'∞'}</div>
       <div class="stat-lbl">Días restantes</div>
     </div>`;
@@ -2388,13 +2427,13 @@ function statsRowHTML(data){
 
   return `
     <div class="stat-chip visits">
-      <div class="stat-icon">📊</div>
+      <div class="stat-icon">${svgVisits}</div>
       <div class="stat-num" data-count="${visits}">0</div>
       <div class="stat-lbl">Visitas totales</div>
       ${monthSub}
     </div>
     <div class="stat-chip streak">
-      <div class="stat-icon">${streakFire}</div>
+      <div class="stat-icon">${svgStreak}</div>
       <div class="stat-num" data-count="${streak}">0</div>
       <div class="stat-lbl">Racha — ${streakLabel}</div>
     </div>
