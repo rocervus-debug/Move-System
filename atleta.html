@@ -1254,6 +1254,38 @@ body::before{
   <div class="ls-bar"><div class="ls-fill"></div></div>
 </div>
 
+<!-- GYM SELECT — primera vez, sin gymCode conocido -->
+<div id="gym-select-screen" style="display:none;flex-direction:column;position:relative;z-index:1;">
+  <div class="login-orb login-orb-1"></div>
+  <div class="login-orb login-orb-2"></div>
+  <div class="login-orb login-orb-3"></div>
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="login-brand-mark">
+        <svg width="40" height="40" viewBox="0 0 100 100">
+          <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
+        </svg>
+      </div>
+      <div class="login-brand-logo" style="font-size:28px;letter-spacing:6px;">VELUM</div>
+      <div class="login-gym-title" style="font-size:20px;margin-top:6px;">¡Bienvenido!</div>
+      <div class="login-tagline">Ingresa el código de tu gym para continuar</div>
+    </div>
+    <div class="login-card">
+      <div>
+        <label class="lf-label">Código del Gym</label>
+        <input class="lf-input" id="gymsel-code" type="text" placeholder="ej. MOVE" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:3px;font-weight:700;font-size:18px;text-align:center;"/>
+      </div>
+      <div id="gymsel-preview" style="display:none;padding:10px 14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:10px;text-align:center;transition:all .3s;">
+        <div id="gymsel-gym-name" style="font-weight:700;font-size:15px;color:var(--accent);"></div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Gym encontrado ✓</div>
+      </div>
+      <div class="login-err" id="gymsel-err"></div>
+      <button class="login-btn" id="gymsel-btn" onclick="confirmGymSelect()">Continuar</button>
+    </div>
+    <p class="login-foot">Pide el código a recepción si no lo tienes.<br>Solo se pedirá una vez — se guarda en tu dispositivo.</p>
+  </div>
+</div>
+
 <!-- LOGIN -->
 <div id="login-screen" style="display:none;flex-direction:column;position:relative;z-index:1;">
   <!-- Animated orbs -->
@@ -1700,6 +1732,10 @@ body::before{
       <span id="ps-vence-chip" class="ps-memb-chip ps-vence"></span>
     </div>
     <div class="ps-divider"></div>
+    <div class="ps-logout" style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);color:var(--text2);margin-bottom:8px;" onclick="doChangeGym()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Cambiar de gym</span>
+    </div>
     <div class="ps-logout" onclick="doLogout()"><span>🚪</span><span>Cerrar sesión</span></div>
   </div>
 </div>
@@ -2005,8 +2041,33 @@ function doLogout(){
   portalData=null;
   closeSheet('profile-sheet');
   $('app').style.display='none';
-  $('login-screen').style.display='flex';
-  ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
+  // Si hay gym guardado, ir directo al login; si no, al onboarding
+  const savedGym = (()=>{ try{ return localStorage.getItem('velum_last_gym')||''; }catch(_){ return ''; } })();
+  const hasKnownGym = savedGym || window.VELUM_BRAND?.gymCode;
+  if(hasKnownGym){
+    const gi=$('login-gym'); if(gi) gi.value=savedGym;
+    $('login-screen').style.display='flex';
+    ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.value= (id==='login-gym'?savedGym:''); });
+    ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doLogin(); }); });
+  } else {
+    $('gym-select-screen').style.display='flex';
+  }
+}
+
+// ── Change gym ───────────────────────────────────────
+function doChangeGym(){
+  if(!confirm('¿Cambiar de gym? Tendrás que ingresar el código de tu nuevo gym.')) return;
+  try{ localStorage.removeItem('velum_session'); }catch(_){}
+  try{ localStorage.removeItem('velum_last_gym'); }catch(_){}
+  try{ localStorage.removeItem('velum_pwa_brand'); }catch(_){}
+  clearProfilePhoto();
+  portalData=null;
+  closeSheet('profile-sheet');
+  $('app').style.display='none';
+  const gs=$('gym-select-screen');
+  if(gs){ gs.style.display='flex'; const gi=$('gymsel-code'); if(gi){ gi.value=''; gi.focus(); } }
+  $('gymsel-preview').style.display='none';
+  $('gymsel-err').textContent='';
 }
 
 // ── Profile photo ────────────────────────────────────
@@ -3706,6 +3767,68 @@ async function prefetchLoginGymBranding(gymCode){
   }catch(_){}
 }
 
+// ── Gym Select (first-time onboarding) ───────────────
+let _gymselVerifyTimer = null;
+
+function gymselOnInput(){
+  const code = ($('gymsel-code').value||'').trim().toUpperCase();
+  $('gymsel-err').textContent = '';
+  $('gymsel-preview').style.display = 'none';
+  clearTimeout(_gymselVerifyTimer);
+  if(code.length < 2) return;
+  _gymselVerifyTimer = setTimeout(()=>_gymselVerify(code), 600);
+}
+
+async function _gymselVerify(code){
+  try{
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?key=eq.portal_codigo&value=ilike.${encodeURIComponent(code)}&select=gym_id&limit=1`,
+      {headers: apiHeaders()}
+    );
+    const rows = await r.json();
+    if(!rows.length) return;
+    const gymId = rows[0].gym_id;
+    const r2 = await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&key=eq.gym_nombre&select=value&limit=1`,
+      {headers: apiHeaders()}
+    );
+    const rows2 = await r2.json();
+    if(rows2.length){
+      $('gymsel-gym-name').textContent = rows2[0].value;
+      $('gymsel-preview').style.display = '';
+    }
+  }catch(_){}
+}
+
+async function confirmGymSelect(){
+  const code = ($('gymsel-code').value||'').trim().toUpperCase();
+  const errEl = $('gymsel-err');
+  const btn = $('gymsel-btn');
+  if(!code){ errEl.textContent = 'Ingresa el código de tu gym.'; return; }
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  try{
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/gym_config?key=eq.portal_codigo&value=ilike.${encodeURIComponent(code)}&select=gym_id&limit=1`,
+      {headers: apiHeaders()}
+    );
+    const rows = await r.json();
+    if(!rows.length){
+      errEl.textContent = 'Código de gym no encontrado. Verifica con recepción.';
+      btn.disabled = false; btn.textContent = 'Continuar';
+      return;
+    }
+  }catch(_){
+    // Si falla la verificación de red, igual dejamos pasar (se valida en doLogin)
+  }
+  try{ localStorage.setItem('velum_last_gym', code); }catch(_){}
+  const gi = $('login-gym'); if(gi) gi.value = code;
+  prefetchLoginGymBranding(code);
+  $('gym-select-screen').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+  ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doLogin(); }); });
+  setTimeout(()=> $('login-numero')?.focus(), 150);
+}
+
 // ── Init ─────────────────────────────────────────────
 async function init(){
   const p=new URLSearchParams(window.location.search);
@@ -3760,10 +3883,21 @@ async function init(){
   try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); }catch(_){}
   if(stored?.token){ try{ showPortal(await tryToken(stored.token)); return; }catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} } }
 
+  $('loading-screen').classList.add('hidden');
+
+  // Si no hay gym conocido y no es white-label con gymCode fijo → onboarding
+  const hasKnownGym = savedGym || window.VELUM_BRAND?.gymCode;
+  if(!hasKnownGym){
+    const gs = $('gym-select-screen');
+    if(gs){ gs.style.display='flex'; }
+    const gi = $('gymsel-code'); if(gi) gi.addEventListener('keydown',ev=>{ if(ev.key==='Enter') confirmGymSelect(); });
+    const gi2 = $('gymsel-code'); if(gi2) gi2.addEventListener('input', gymselOnInput);
+    return;
+  }
+
   // Prefetch gym branding for login screen (non-blocking)
   if(savedGym) prefetchLoginGymBranding(savedGym);
 
-  $('loading-screen').classList.add('hidden');
   $('login-screen').style.display='flex';
   ['login-gym','login-numero','login-pwd'].forEach(id=>{ const e=$(id); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doLogin(); }); });
 }
