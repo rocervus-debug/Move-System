@@ -1831,6 +1831,10 @@ select option{background:#091218;color:var(--text);}
 }
 
 /* ── 768px breakpoint ── */
+/* ── Panel detalle clase — global, no restringido a mobile ── */
+#asist-detalle-panel.open{display:flex!important;}
+#asist-detalle-overlay.open{display:block!important;}
+
 @media (max-width: 768px) {
 
   /* ──────────── PWA Viewport fix ──────────── */
@@ -2070,8 +2074,7 @@ select option{background:#091218;color:var(--text);}
   .cupo-dot.ok{background:#0fdf9a;box-shadow:0 0 6px rgba(15,223,154,.5);}
   .cupo-dot.warn{background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,.4);}
   .cupo-dot.full{background:#f06060;box-shadow:0 0 6px rgba(240,96,96,.4);}
-  #asist-detalle-panel.open{display:flex!important;}
-  #asist-detalle-overlay.open{display:block!important;}
+  /* moved to global scope — see below */
   .asist-search-wrap{position:relative;}
   .asist-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;}
   .asist-search-wrap input{width:100%;padding:10px 12px 10px 34px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;}
@@ -17705,7 +17708,9 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
   console.log('[VELUM] panel encontrado:', !!panel, '| overlay:', !!overlay);
   if(!panel||!overlay){ console.error('[VELUM] Panel o overlay no encontrado'); return; }
   panel.classList.add('open');
+  panel.style.display = 'flex';   // belt-and-suspenders: bypass any media-query CSS
   overlay.classList.add('open');
+  overlay.style.display = 'block';
   document.body.style.overflow='hidden';
 
   // Store context on window so inline handlers can reference safely without string escaping issues
@@ -17764,8 +17769,8 @@ function _agregarDesdeLista(idx, estado){
 function cerrarDetalleClase(){
   const panel   = document.getElementById('asist-detalle-panel');
   const overlay = document.getElementById('asist-detalle-overlay');
-  panel.classList.remove('open');
-  overlay.classList.remove('open');
+  if(panel)  { panel.classList.remove('open');   panel.style.display   = 'none'; }
+  if(overlay){ overlay.classList.remove('open'); overlay.style.display = 'none'; }
   document.body.style.overflow='';
   _detalleCtx = null;
   loadClasesOperativas();
