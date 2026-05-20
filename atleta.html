@@ -2314,6 +2314,29 @@ function showPortal(data){
 
   // Fix #1 — cargar reservas en background para que renderProximaClase() funcione en home
   loadClasesData().then(()=>{ renderProximaClase(); }).catch(()=>{});
+
+  // Cargar ausentes para cálculo correcto de racha (async, no bloquea UI)
+  if(data.cliente?.portal_token){
+    fetch(`${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${encodeURIComponent(data.cliente.portal_token)}&estado=eq.ausente&select=fecha`,
+      {headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`}})
+      .then(r=>r.ok?r.json():[])
+      .then(ausentes=>{
+        portalData.ausentes=ausentes||[];
+        // Re-renderizar streak banners con la información actualizada
+        renderStreakBanner(portalData);
+        // Re-renderizar stat chips de streak
+        const statsHTML=statsRowHTML(portalData);
+        const sM=$('stats-row-mobile'); if(sM) sM.innerHTML=statsHTML;
+        const sD=$('stats-row-desk');   if(sD) sD.innerHTML=statsHTML;
+        setTimeout(()=>{
+          document.querySelectorAll('.stat-num[data-count]').forEach(el=>{
+            const t=parseInt(el.getAttribute('data-count'),10);
+            if(!isNaN(t)&&t>0) countUp(el,t);
+          });
+        },60);
+      })
+      .catch(()=>{ portalData.ausentes=[]; });
+  }
 }
 
 function handleDesktopLayout(){
@@ -2431,25 +2454,31 @@ function pkgCardHTML(paquete){
   </div>`;
 }
 
+// ── Streak calculator ────────────────────────────────
+// checkin = suma racha | ausente = rompe racha | sin marcar = neutro (no rompe)
+function calcStreak(checkins, ausentes){
+  const checkinSet=new Set((checkins||[]).map(c=>c.fecha));
+  const ausenteSet=new Set((ausentes||[]).map(a=>a.fecha));
+  let streak=0;
+  const todayMs=new Date(new Date().toISOString().slice(0,10)).getTime();
+  for(let i=0;i<365;i++){
+    const ds=new Date(todayMs-i*86400000).toISOString().slice(0,10);
+    if(checkinSet.has(ds))      { streak++; }
+    else if(ausenteSet.has(ds)) { break; }   // ausente rompe la racha
+    // sin marcar → neutro, continúa buscando hacia atrás
+  }
+  return streak;
+}
+
 // ── Stats row HTML ───────────────────────────────────
 function statsRowHTML(data){
   const checkins=data.checkins||[];
   const visits=checkins.length;
   const dias=data.cliente.diasRestantes;
   const paquete=data.paquete;
-  const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
 
-  // Streak: consecutive days attended
-  let streak=0;
-  if(distinctDates.length){
-    const today=new Date().toISOString().slice(0,10);
-    let cursor=today;
-    for(const d of distinctDates){
-      const diff=(new Date(cursor)-new Date(d))/(1000*60*60*24);
-      if(diff<=1){ streak++; const dt=new Date(d); dt.setDate(dt.getDate()-1); cursor=dt.toISOString().slice(0,10); }
-      else break;
-    }
-  }
+  // Streak usa ausentes para romper la racha
+  const streak=calcStreak(checkins, data.ausentes||[]);
 
   // 1.2 — Monthly count
   const monthPrefix=new Date().toISOString().slice(0,7);
@@ -2582,17 +2611,7 @@ function renderMembExpiryBanner(data){
 
 function renderStreakBanner(data){
   const checkins=data.checkins||[];
-  const distinctDates=[...new Set(checkins.map(c=>c.fecha))].sort().reverse();
-  let streak=0;
-  if(distinctDates.length){
-    const today=new Date().toISOString().slice(0,10);
-    let cursor=today;
-    for(const d of distinctDates){
-      const diff=(new Date(cursor)-new Date(d))/(1000*60*60*24);
-      if(diff<=1){ streak++; const dt=new Date(d); dt.setDate(dt.getDate()-1); cursor=dt.toISOString().slice(0,10); }
-      else break;
-    }
-  }
+  const streak=calcStreak(checkins, data.ausentes||[]);
   let msg='', cls='';
   if(streak>=14){ msg=`🏆 ${streak} días seguidos. Nivel élite.`; cls='gold'; }
   else if(streak>=7){ msg=`🔥 ¡Una semana seguida! ${streak} días en racha.`; cls='fire'; }

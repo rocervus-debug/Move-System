@@ -17701,12 +17701,10 @@ async function loadClasesOperativas(){
 let _detalleCtx = null;
 
 async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
-  console.log('[VELUM] abrirDetalleClase llamado →', {horarioId,hora,tipo});
   _detalleCtx = {horarioId,hora,tipo,coach,cupo};
   const panel   = document.getElementById('asist-detalle-panel');
   const overlay = document.getElementById('asist-detalle-overlay');
-  console.log('[VELUM] panel encontrado:', !!panel, '| overlay:', !!overlay);
-  if(!panel||!overlay){ console.error('[VELUM] Panel o overlay no encontrado'); return; }
+  if(!panel||!overlay) return;
   panel.classList.add('open');
   panel.style.display = 'flex';   // belt-and-suspenders: bypass any media-query CSS
   overlay.classList.add('open');
@@ -17726,8 +17724,8 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
       <button onclick="cerrarDetalleClase()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
 
-    <!-- ② Buscador — sticky, NUNCA scroll, overflow:visible para que dropdown sea visible -->
-    <div id="detalle-search-wrap" style="padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;">
+    <!-- ② Buscador — sticky, overflow:visible para que dropdown sea visible -->
+    <div id="detalle-search-wrap" style="padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:20;isolation:isolate;background:var(--bg2,var(--bg));">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <span style="font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;">+ Reservar cliente</span>
         <span style="font-size:11px;color:var(--text4);">Nombre, número o teléfono</span>
@@ -17739,7 +17737,7 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
           autocomplete="off" inputmode="search"
           style="width:100%;padding:11px 12px 11px 34px;background:var(--card2);border:1.5px solid var(--accent);border-radius:10px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;"
           oninput="_detalleSearch(this.value)"/>
-        <div id="asist-add-results" class="asist-search-results" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:9999;"></div>
+        <div id="asist-add-results" class="asist-search-results" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:9999;background:var(--bg2,#0a1f18);"></div>
       </div>
     </div>
 
@@ -17790,35 +17788,46 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     if(error) throw error;
     const lista     = reservas||[];
     const checkins  = lista.filter(r=>r.estado==='checkin');
-    const pendientes= lista.filter(r=>r.estado!=='checkin');
+    const ausentes  = lista.filter(r=>r.estado==='ausente');
+    const pendientes= lista.filter(r=>r.estado==='reservado');
     const libres    = Math.max(0,(cupo||0)-lista.length);
     const hEsc = esc(hora), tEsc = esc(tipo);
     body.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 10px;text-align:center;">
-          <div style="font-size:24px;font-weight:900;font-family:var(--fd);">${lista.length}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Reservados</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px;">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 8px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;font-family:var(--fd);">${lista.length}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Total</div>
         </div>
-        <div style="background:rgba(15,223,154,.06);border:1px solid rgba(15,223,154,.18);border-radius:12px;padding:14px 10px;text-align:center;">
-          <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:var(--ok);">${checkins.length}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Check-in</div>
+        <div style="background:rgba(15,223,154,.06);border:1px solid rgba(15,223,154,.18);border-radius:12px;padding:12px 8px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;font-family:var(--fd);color:var(--ok);">${checkins.length}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Asistió</div>
         </div>
-        <div style="background:${libres===0?'rgba(240,96,96,.06)':'rgba(255,255,255,.04)'};border:1px solid ${libres===0?'rgba(240,96,96,.25)':'rgba(255,255,255,.07)'};border-radius:12px;padding:14px 10px;text-align:center;">
-          <div style="font-size:24px;font-weight:900;font-family:var(--fd);color:${libres===0?'#f06060':'#fff'};">${libres}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Libres</div>
+        <div style="background:${ausentes.length?'rgba(240,96,96,.06)':'rgba(255,255,255,.04)'};border:1px solid ${ausentes.length?'rgba(240,96,96,.25)':'rgba(255,255,255,.07)'};border-radius:12px;padding:12px 8px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;font-family:var(--fd);color:${ausentes.length?'#f06060':'var(--text3)'};">${ausentes.length}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">No asistió</div>
+        </div>
+        <div style="background:${libres===0?'rgba(240,96,96,.06)':'rgba(255,255,255,.04)'};border:1px solid ${libres===0?'rgba(240,96,96,.25)':'rgba(255,255,255,.07)'};border-radius:12px;padding:12px 8px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;font-family:var(--fd);color:${libres===0?'#f06060':'#fff'};">${libres}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Libres</div>
         </div>
       </div>
 
       ${checkins.length?`
-        <div style="font-size:11px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">✅ Check-in · ${checkins.length}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">✅ Asistió · ${checkins.length}</div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
-          ${checkins.map(r=>_renderPersonaRow(r,true,horarioId,hEsc,tEsc)).join('')}
+          ${checkins.map(r=>_renderPersonaRow(r,'checkin',horarioId,hEsc,tEsc)).join('')}
+        </div>`:''}
+
+      ${ausentes.length?`
+        <div style="font-size:11px;font-weight:700;color:#f06060;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">❌ No asistió · ${ausentes.length}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+          ${ausentes.map(r=>_renderPersonaRow(r,'ausente',horarioId,hEsc,tEsc)).join('')}
         </div>`:''}
 
       ${pendientes.length?`
-        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">⏳ Reservados · ${pendientes.length}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">⏳ Pendiente · ${pendientes.length}</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          ${pendientes.map(r=>_renderPersonaRow(r,false,horarioId,hEsc,tEsc)).join('')}
+          ${pendientes.map(r=>_renderPersonaRow(r,'reservado',horarioId,hEsc,tEsc)).join('')}
         </div>`:''}
 
       ${!lista.length?`<div style="padding:32px 20px;text-align:center;font-size:13px;color:var(--text3);">Sin reservas para esta clase.<br>Usa el campo de arriba para agregar clientes.</div>`:''}`;
@@ -17828,16 +17837,27 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
   }
 }
 
-function _renderPersonaRow(r,isCheckin,horarioId,hora,tipo){
+function _renderPersonaRow(r,estado,horarioId,hora,tipo){
   const n = esc(r.cliente_nombre||'—');
-  return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}">
-    <div style="width:36px;height:36px;border-radius:50%;background:${isCheckin?'rgba(15,223,154,.15)':'rgba(255,255,255,.07)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">${isCheckin?'✅':'👤'}</div>
+  const isCheckin = estado==='checkin';
+  const isAusente = estado==='ausente';
+  const avatar = isCheckin?'rgba(15,223,154,.15)':isAusente?'rgba(240,96,96,.15)':'rgba(255,255,255,.07)';
+  const icon   = isCheckin?'✅':isAusente?'❌':'👤';
+  const label  = isCheckin?'Asistió ✓':isAusente?'No asistió':'Pendiente';
+  const lColor = isCheckin?'var(--ok)':isAusente?'#f06060':'var(--text3)';
+  return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}" style="${isAusente?'border-color:rgba(240,96,96,.2);background:rgba(240,96,96,.04);':''}">
+    <div style="width:36px;height:36px;border-radius:50%;background:${avatar};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">${icon}</div>
     <div style="flex:1;min-width:0;">
       <div style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</div>
-      <div style="font-size:11px;color:${isCheckin?'var(--ok)':'var(--text3)'};">${isCheckin?'Check-in ✓':'Reservado'}</div>
+      <div style="font-size:11px;color:${lColor};">${label}</div>
     </div>
-    ${!isCheckin?`<button onclick="marcarPresenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
-      style="flex-shrink:0;padding:8px 13px;border-radius:8px;background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.3);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:36px;">✓ Presente</button>`:''}
+    ${estado==='reservado'?`
+    <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+      <button onclick="marcarPresenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
+        style="padding:6px 10px;border-radius:7px;background:rgba(15,223,154,.12);color:var(--ok);border:1px solid rgba(15,223,154,.3);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✓ Asistió</button>
+      <button onclick="marcarAusenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
+        style="padding:6px 10px;border-radius:7px;background:rgba(240,96,96,.1);color:#f06060;border:1px solid rgba(240,96,96,.25);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✗ No asistió</button>
+    </div>`:''}
   </div>`;
 }
 
@@ -17961,16 +17981,32 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
 }
 
 async function marcarPresenteReserva(reservaId,nombre,horarioId,hora,tipo){
-  const btn = document.querySelector(`#prow-${reservaId} button`);
-  if(btn){ btn.disabled=true; btn.textContent='…'; }
+  const row = document.getElementById(`prow-${reservaId}`);
+  const btns = row?.querySelectorAll('button');
+  btns?.forEach(b=>{ b.disabled=true; });
   const {error} = await window.supabaseClient.from('reservas').update({estado:'checkin'}).eq('id',reservaId);
   if(error){
     toast(`Error: ${error.message}`,'❌');
-    if(btn){ btn.disabled=false; btn.textContent='✓ Presente'; }
+    btns?.forEach(b=>{ b.disabled=false; });
     return;
   }
-  toast(`${nombre} ✓ presente`,'✅');
+  toast(`${nombre} ✓ asistió`,'✅');
   navigator.vibrate?.([50,30,50]);
+  await loadDetalleClase(horarioId,hora,tipo,_detalleCtx?.cupo||0);
+}
+
+async function marcarAusenteReserva(reservaId,nombre,horarioId,hora,tipo){
+  const row = document.getElementById(`prow-${reservaId}`);
+  const btns = row?.querySelectorAll('button');
+  btns?.forEach(b=>{ b.disabled=true; });
+  const {error} = await window.supabaseClient.from('reservas').update({estado:'ausente'}).eq('id',reservaId);
+  if(error){
+    toast(`Error: ${error.message}`,'❌');
+    btns?.forEach(b=>{ b.disabled=false; });
+    return;
+  }
+  toast(`${nombre} — no asistió registrado`,'📋');
+  navigator.vibrate?.([30]);
   await loadDetalleClase(horarioId,hora,tipo,_detalleCtx?.cupo||0);
 }
 
