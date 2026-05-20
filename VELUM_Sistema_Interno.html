@@ -9392,13 +9392,13 @@ function initDashboardCustomize(){
 
   // Restore saved order
   const saved = _loadDashLayout();
-  if(saved.order.length){
+  if(Array.isArray(saved.order) && saved.order.length){
     const refs = {};
     grid.querySelectorAll('.dash-widget').forEach(w => refs[w.dataset.widgetId] = w);
     saved.order.forEach(id => { if(refs[id]) grid.appendChild(refs[id]); });
   }
   // Restore hidden state
-  if(saved.hidden.length){
+  if(Array.isArray(saved.hidden) && saved.hidden.length){
     grid.querySelectorAll('.dash-widget').forEach(w => {
       if(saved.hidden.includes(w.dataset.widgetId)) w.classList.add('widget-hidden');
     });
@@ -18954,7 +18954,7 @@ async function loadWaitlistHoy(){
       .eq('fecha', hoy)
       .eq('estado','espera')
       .order('created_at',{ascending:true});
-    if(error) throw error;
+    if(error){ if(sec) sec.style.display='none'; return; } // tabla no existe aún — ocultar silenciosamente
     const rows = data||[];
     if(sec) sec.style.display = rows.length>0?'block':'none';
     if(!rows.length){ lst.innerHTML=''; return; }
