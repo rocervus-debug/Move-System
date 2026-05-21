@@ -1091,6 +1091,19 @@ body::before{
 }
 .ex-prog-pct{color:var(--cyan);font-weight:700;}
 
+/* ── Workout cards inline in chat ── */
+.chat-workout-wrap{
+  width:100%;
+  background:var(--bg-card);border:1px solid var(--border-accent);
+  border-radius:16px;padding:12px;
+  box-shadow:var(--glow-soft);
+}
+.chat-workout-wrap .ex-card{margin-bottom:6px;}
+.chat-workout-wrap .ex-card:last-child{margin-bottom:0;}
+.chat-workout-wrap .ex-section-hdr{
+  padding:8px 0 6px;margin-bottom:6px;
+}
+
 /* ── Coach IA inline panel ── */
 .plan-chat-wrap{
   display:flex;flex-direction:column;gap:0;
@@ -4318,12 +4331,54 @@ function initPlanCoach(){
   renderPlanCoachMsgs();
 }
 
+function isWorkoutMsg(text){
+  // Detect if message contains a structured workout (section headers + exercise lines)
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const hasSectionHeader=lines.some(l=>/^[A-ZÁÉÍÓÚ\s]{4,}$/.test(l)&&l.length<35);
+  const hasExerciseLine=lines.some(l=>/\d+\s*[x×X]\s*\d+|-\s*\d+\s*(min|seg|s\b)/i.test(l));
+  return hasSectionHeader&&hasExerciseLine&&lines.length>=4;
+}
+function stripMarkdown(text){
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'$1')  // **bold** → bold
+    .replace(/\*(.+?)\*/g,'$1')       // *italic* → italic
+    .replace(/`(.+?)`/g,'$1')         // `code` → code
+    .replace(/^#{1,3}\s*/gm,'');      // ## headers → plain
+}
+function renderWorkoutAsCards(text){
+  const exercises=parseExercises(text);
+  if(!exercises.length) return `<div class="msg msg-ai">${esc(stripMarkdown(text))}</div>`;
+  let html='<div class="chat-workout-wrap">';
+  exercises.forEach(item=>{
+    if(item.type==='section'){
+      html+=`<div class="ex-section-hdr">${esc(item.name)}</div>`;
+    } else {
+      html+=`<div class="ex-card" style="cursor:default;">
+        <div class="ex-num" style="color:var(--text3);">${esc(item.name.slice(0,1).toUpperCase())}</div>
+        <div class="ex-body">
+          <div class="ex-name">${esc(item.name)}</div>
+          ${item.chips.length?`<div class="ex-chips">${item.chips.map(c=>`<span class="ex-chip">${esc(c)}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }
+  });
+  html+='</div>';
+  return html;
+}
 function renderPlanCoachMsgs(){
   const wrap=$('plan-coach-msgs'); if(!wrap) return;
   wrap.innerHTML=_planCoachMsgs.map(m=>{
     if(m.role==='typing') return `<div class="typing-dots"><span></span><span></span><span></span></div>`;
-    const cls=m.role==='ai'?'msg msg-ai':'msg msg-user';
-    return `<div class="${cls}">${m.text}</div>`;
+    if(m.role==='user') return `<div class="msg msg-user">${esc(m.text)}</div>`;
+    // AI message — detect workout vs normal
+    if(isWorkoutMsg(m.text)) return renderWorkoutAsCards(m.text);
+    // Normal text — strip markdown, preserve line breaks as paragraphs
+    const cleaned=stripMarkdown(m.text);
+    const paras=cleaned.split(/\n\n+/).filter(p=>p.trim());
+    const html=paras.length>1
+      ? paras.map(p=>`<div class="msg msg-ai" style="margin-bottom:4px;">${esc(p.trim())}</div>`).join('')
+      : `<div class="msg msg-ai">${esc(cleaned.trim())}</div>`;
+    return html;
   }).join('');
   wrap.scrollTop=wrap.scrollHeight;
   // Hide suggestions after first user message
