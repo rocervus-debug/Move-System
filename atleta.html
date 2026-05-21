@@ -1470,6 +1470,428 @@ body::before{
 .qa-svg-ico.amber{background:rgba(224,156,58,.15);}
 .qa-svg-ico.amber svg{stroke:#e09c3a;}
 .qa{min-height:84px;}
+
+/* ══════════════════════════════════════
+   BAR CHART (Progreso)
+══════════════════════════════════════ */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:8px;}
+.bar{
+  flex:1;background:linear-gradient(180deg,var(--cyan),var(--cyan-dark));
+  border-radius:4px 4px 0 0;min-height:6px;position:relative;
+  animation:bar-grow 1s var(--ease-out) forwards;
+  transform-origin:bottom;transform:scaleY(0);
+}
+@keyframes bar-grow{to{transform:scaleY(1);}}
+.bar.dim{background:var(--bg-elevated);}
+.chart-labels{
+  display:flex;justify-content:space-around;
+  font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.5px;
+}
+
+/* ══════════════════════════════════════
+   PAYMENT ROWS
+══════════════════════════════════════ */
+.payment-row{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:12px;padding:12px;margin-bottom:6px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.payment-info{display:flex;align-items:center;gap:10px;}
+.payment-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--cyan-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.payment-icon svg{width:16px;height:16px;fill:var(--cyan);}
+.payment-month{font-size:12px;font-weight:600;color:var(--text);}
+.payment-date{font-family:var(--fm);font-size:10px;color:var(--text3);letter-spacing:.5px;margin-top:1px;}
+.payment-amount{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text);}
+
+/* ══════════════════════════════════════
+   TOAST / META COMPLETE
+══════════════════════════════════════ */
+.atleta-toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-12px);
+  background:rgba(8,18,30,.92);border:1px solid var(--border-accent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:999px;padding:10px 16px;
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--fm);font-size:11px;letter-spacing:1px;color:var(--cyan);
+  text-transform:uppercase;z-index:600;box-shadow:var(--glow-medium);
+  animation:toast-slide-in 500ms var(--ease-spring) forwards;pointer-events:none;
+}
+@keyframes toast-slide-in{
+  from{opacity:0;transform:translateX(-50%) translateY(-12px);}
+  to{opacity:1;transform:translateX(-50%) translateY(0);}
+}
+@keyframes toast-fade-out{
+  from{opacity:1;transform:translateX(-50%) translateY(0);}
+  to{opacity:0;transform:translateX(-50%) translateY(-12px);}
+}
+
+/* ══════════════════════════════════════
+   ONBOARDING / META PICKER
+══════════════════════════════════════ */
+.onboarding-hero{text-align:center;padding:24px 12px 20px;position:relative;}
+.onb-logo{
+  width:64px;height:64px;margin:0 auto 20px;position:relative;
+  animation:sparkle-breath 4s ease-in-out infinite;
+}
+.onb-logo svg{width:100%;height:100%;filter:drop-shadow(0 0 16px rgba(0,212,255,.6));}
+.onb-welcome{
+  font-family:var(--fm);font-size:10px;letter-spacing:2.5px;color:var(--cyan);
+  text-transform:uppercase;margin-bottom:10px;
+}
+.onb-title{
+  font-family:var(--fd);font-size:26px;font-weight:700;letter-spacing:-.025em;
+  line-height:1.1;margin-bottom:10px;
+}
+.onb-sub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:20px;}
+.onb-step-label{
+  font-family:var(--fm);font-size:10px;letter-spacing:1.8px;color:var(--text3);
+  text-transform:uppercase;margin:4px 0 12px;
+}
+.goal-card{
+  background:var(--bg-card);border:1px solid var(--border-soft);border-radius:18px;
+  padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;
+  cursor:pointer;transition:all 200ms var(--ease-out);position:relative;
+}
+.goal-card:hover{border-color:var(--border-medium);transform:translateX(2px);}
+.goal-card.selected{
+  border-color:var(--cyan);
+  background:linear-gradient(135deg,var(--cyan-dim),var(--bg-card));
+  box-shadow:var(--glow-soft);
+}
+.goal-icon{
+  width:36px;height:36px;border-radius:10px;background:var(--bg-elevated);
+  display:grid;place-items:center;flex-shrink:0;transition:background 200ms;
+}
+.goal-card.selected .goal-icon{background:var(--cyan);}
+.goal-icon svg{width:18px;height:18px;fill:var(--cyan);transition:fill 200ms;}
+.goal-card.selected .goal-icon svg{fill:#001828;}
+.goal-name{font-family:var(--fd);font-size:15px;font-weight:600;margin-bottom:2px;}
+.goal-desc{font-size:11px;color:var(--text2);}
+.goal-check{
+  width:22px;height:22px;border-radius:50%;border:1.5px solid var(--text3);
+  flex-shrink:0;display:grid;place-items:center;transition:all 200ms var(--ease-out);
+}
+.goal-card.selected .goal-check{background:var(--cyan);border-color:var(--cyan);}
+.goal-card.selected .goal-check::after{content:'✓';color:#001828;font-size:12px;font-weight:700;}
+.weekly-picker{
+  background:var(--bg-card);border:1px solid var(--border-soft);border-radius:22px;
+  padding:20px 16px;text-align:center;margin-top:14px;position:relative;overflow:hidden;
+}
+.weekly-picker::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,var(--cyan-dim),transparent 60%);
+  pointer-events:none;
+}
+.weekly-picker-label{
+  font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);
+  text-transform:uppercase;margin-bottom:14px;position:relative;
+}
+.weekly-ring-wrap{
+  position:relative;width:130px;height:130px;margin:0 auto 14px;
+}
+.weekly-ring-num{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:var(--fd);font-size:44px;font-weight:800;letter-spacing:-.04em;
+}
+.weekly-ring-num small{
+  font-size:11px;color:var(--text2);font-weight:400;letter-spacing:1px;
+  display:block;margin-top:-4px;text-transform:uppercase;
+}
+.stepper{display:flex;gap:10px;justify-content:center;position:relative;}
+.stepper-btn{
+  width:38px;height:38px;border-radius:50%;background:var(--bg-elevated);
+  border:1px solid var(--border-medium);color:var(--cyan);
+  font-family:var(--fd);font-size:20px;font-weight:600;cursor:pointer;
+  transition:all 200ms var(--ease-out);
+}
+.stepper-btn:hover{background:var(--cyan-dim);transform:scale(1.08);}
+.cta-primary{
+  width:100%;margin-top:18px;padding:14px;background:var(--cyan);color:#001828;
+  border:none;border-radius:14px;font-family:var(--fm);font-weight:700;
+  font-size:12px;letter-spacing:2px;cursor:pointer;
+  transition:all 220ms var(--ease-out);box-shadow:0 0 24px rgba(0,212,255,.25);
+}
+.cta-primary:hover{background:var(--cyan-light);box-shadow:var(--glow-strong);}
+
+/* ══════════════════════════════════════
+   QR v2 (new design)
+══════════════════════════════════════ */
+.qr-screen-v2{text-align:center;padding:12px 4px 0;}
+.qr-title-v2{font-family:var(--fd);font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+.qr-sub-v2{font-size:12px;color:var(--text2);margin-bottom:20px;}
+.qr-frame-v2{
+  width:220px;height:220px;margin:0 auto 16px;position:relative;
+  background:#fff;border-radius:22px;padding:14px;
+  box-shadow:0 0 32px rgba(0,212,255,.18);
+  animation:qr-pulse-v2 2.6s ease-in-out infinite;
+}
+@keyframes qr-pulse-v2{
+  0%,100%{box-shadow:0 0 32px rgba(0,212,255,.18);}
+  50%{box-shadow:0 0 64px rgba(0,212,255,.5);}
+}
+.qr-frame-corner{
+  position:absolute;width:28px;height:28px;
+  border:2.5px solid var(--cyan);border-radius:4px;
+}
+.qr-frame-corner.tl{top:-10px;left:-10px;border-right:none;border-bottom:none;}
+.qr-frame-corner.br{bottom:-10px;right:-10px;border-left:none;border-top:none;}
+.qr-scan-line-v2{
+  position:absolute;left:10%;right:10%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  filter:drop-shadow(0 0 6px var(--cyan));top:10%;
+  animation:scan-down-v2 2.2s ease-in-out infinite;
+}
+@keyframes scan-down-v2{
+  0%,100%{top:10%;opacity:1;}
+  50%{top:88%;opacity:.8;}
+}
+.qr-status-pill{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 16px;
+  background:var(--cyan-dim);border:1px solid var(--border-accent);
+  border-radius:999px;font-family:var(--fm);font-size:10px;
+  letter-spacing:1.5px;color:var(--cyan);margin-bottom:16px;
+}
+.pulse-dot{
+  width:8px;height:8px;background:var(--cyan);border-radius:50%;
+  animation:pulse-dot 1.4s ease-in-out infinite;flex-shrink:0;
+}
+@keyframes pulse-dot{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.3;transform:scale(.6);}
+}
+.qr-info-card{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:18px;padding:16px;text-align:left;margin-bottom:12px;
+}
+.qr-info-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px dashed var(--border-soft);
+}
+.qr-info-row:last-child{border-bottom:none;}
+.qr-info-key{font-family:var(--fm);font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;}
+.qr-info-val{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--text);}
+.qr-streak-card{
+  background:linear-gradient(135deg,var(--cyan-dim),transparent);
+  border:1px solid var(--border-accent);border-radius:18px;padding:14px;
+  display:flex;align-items:center;gap:12px;margin-bottom:12px;
+}
+.streak-flame-v2{
+  width:36px;height:36px;border-radius:10px;background:var(--cyan);
+  display:grid;place-items:center;font-size:18px;flex-shrink:0;
+}
+.streak-num-v2{font-family:var(--fd);font-size:22px;font-weight:800;color:var(--cyan);line-height:1;}
+.streak-num-v2 span{font-size:11px;color:var(--text2);font-weight:400;margin-left:4px;}
+.streak-lbl-v2{font-size:11px;color:var(--text2);margin-top:2px;}
+
+/* ══════════════════════════════════════
+   COACH IA CHAT SHEET
+══════════════════════════════════════ */
+.chat-view-wrap{padding:0 0 8px;}
+.chat-header{
+  display:flex;align-items:center;gap:12px;padding-bottom:14px;
+  border-bottom:1px solid var(--border-soft);margin-bottom:16px;
+}
+.chat-avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan-dark));
+  display:grid;place-items:center;flex-shrink:0;box-shadow:var(--glow-soft);
+}
+.chat-avatar svg{width:22px;height:22px;fill:#001828;}
+.chat-name{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text);}
+.chat-status{
+  font-family:var(--fm);font-size:10px;color:var(--cyan);
+  letter-spacing:1px;display:flex;align-items:center;gap:6px;margin-top:2px;
+}
+.chat-status .pulse-dot{width:6px;height:6px;}
+.chat-messages{
+  display:flex;flex-direction:column;gap:10px;margin-bottom:14px;
+  min-height:120px;max-height:320px;overflow-y:auto;scrollbar-width:none;
+}
+.chat-messages::-webkit-scrollbar{display:none;}
+.msg{
+  max-width:82%;padding:10px 14px;border-radius:18px;font-size:13px;line-height:1.45;
+  animation:msg-in 320ms ease-out both;
+}
+@keyframes msg-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.msg-ai{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-bottom-left-radius:6px;color:var(--text);align-self:flex-start;
+}
+.msg-user{
+  background:var(--cyan);color:#001828;align-self:flex-end;
+  border-bottom-right-radius:6px;font-weight:500;
+}
+.msg-time{
+  font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--text3);
+  align-self:flex-start;margin-left:6px;margin-top:-4px;text-transform:uppercase;
+}
+.typing-dots{
+  display:inline-flex;gap:4px;padding:12px 16px;
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:18px;border-bottom-left-radius:6px;align-self:flex-start;
+}
+.typing-dots span{
+  width:6px;height:6px;background:var(--cyan);border-radius:50%;
+  animation:typing-bounce 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.15s;}
+.typing-dots span:nth-child(3){animation-delay:.30s;}
+@keyframes typing-bounce{
+  0%,60%,100%{transform:translateY(0);opacity:.4;}
+  30%{transform:translateY(-4px);opacity:1;}
+}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.suggest-chip{
+  padding:7px 12px;background:var(--bg-card);border:1px solid var(--border-medium);
+  border-radius:999px;color:var(--cyan);font-size:11px;font-weight:500;cursor:pointer;
+  transition:all 200ms var(--ease-out);
+}
+.suggest-chip:hover{background:var(--cyan-dim);transform:translateY(-1px);}
+.chat-input-row{
+  display:flex;gap:8px;padding:10px;background:var(--bg-input);
+  border:1px solid var(--border-soft);border-radius:999px;margin-top:4px;
+}
+.chat-input-field{
+  flex:1;background:transparent;border:none;color:var(--text2);
+  font-family:var(--font);font-size:13px;padding:4px 8px;outline:none;
+}
+.chat-input-field::placeholder{color:var(--text3);}
+.chat-send-btn{
+  width:34px;height:34px;border-radius:50%;background:var(--cyan);
+  border:none;display:grid;place-items:center;cursor:pointer;flex-shrink:0;
+  transition:transform 200ms var(--ease-out);
+}
+.chat-send-btn:hover{transform:scale(1.08);}
+.chat-send-btn svg{width:14px;height:14px;fill:#001828;}
+
+/* ══════════════════════════════════════
+   CLASS DETAIL SHEET
+══════════════════════════════════════ */
+.class-detail-hero{
+  background:linear-gradient(160deg,var(--cyan-dim),var(--bg-card));
+  border:1px solid var(--border-accent);border-radius:22px;
+  padding:20px 18px;margin-bottom:14px;position:relative;overflow:hidden;
+}
+.class-detail-hero::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:140px;height:140px;
+  background:radial-gradient(circle,var(--cyan-bright),transparent 70%);pointer-events:none;
+}
+.class-detail-tag{
+  display:inline-block;font-family:var(--fm);font-size:9px;letter-spacing:1.5px;
+  color:var(--cyan);padding:4px 10px;background:var(--bg);
+  border:1px solid var(--border-accent);border-radius:999px;margin-bottom:12px;position:relative;
+}
+.class-detail-title{
+  font-family:var(--fd);font-size:24px;font-weight:800;letter-spacing:-.025em;
+  margin-bottom:4px;position:relative;
+}
+.class-detail-coach{font-size:13px;color:var(--text2);margin-bottom:14px;position:relative;}
+.class-detail-meta{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;position:relative;
+}
+.cd-meta-item{
+  background:rgba(4,12,20,.5);border:1px solid var(--border-soft);
+  border-radius:14px;padding:10px 8px;text-align:center;backdrop-filter:blur(8px);
+}
+.cd-meta-label{font-family:var(--fm);font-size:8px;letter-spacing:1.2px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;}
+.cd-meta-value{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text);}
+.cd-meta-value small{font-size:9px;color:var(--text2);font-weight:400;letter-spacing:.5px;display:block;margin-top:2px;}
+.attendees-section{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:18px;padding:16px;margin-bottom:14px;
+}
+.attendees-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.attendees-title{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;}
+.attendees-count{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--cyan);}
+.avatar-stack{display:flex;margin-bottom:12px;}
+.avatar-item{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan-dark),var(--cyan));
+  border:2px solid var(--bg-card);margin-left:-8px;display:grid;place-items:center;
+  font-family:var(--fm);font-size:10px;font-weight:700;color:#001828;flex-shrink:0;
+}
+.avatar-item:first-child{margin-left:0;}
+.avatar-item.more{background:var(--bg-elevated);color:var(--cyan);border-color:var(--border-medium);}
+.spots-bar-wrap{margin-top:8px;}
+.spots-bar-bg{height:6px;background:var(--bg-elevated);border-radius:999px;overflow:hidden;}
+.spots-bar-fill{
+  height:100%;background:linear-gradient(90deg,var(--cyan-dark),var(--cyan));
+  border-radius:999px;transition:width 1.2s var(--ease-out);
+}
+.spots-bar-meta{
+  display:flex;justify-content:space-between;font-family:var(--fm);font-size:9px;
+  color:var(--text3);margin-top:8px;letter-spacing:1px;text-transform:uppercase;
+}
+.cd-wod-card{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:18px;padding:16px;margin-bottom:14px;
+}
+.cd-wod-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;}
+.cd-wod-text{font-size:13px;color:var(--text2);line-height:1.6;}
+.cd-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.cd-action-primary{
+  padding:14px;background:var(--cyan);color:#001828;border:none;border-radius:14px;
+  font-family:var(--fm);font-weight:700;font-size:11px;letter-spacing:1.5px;cursor:pointer;
+  box-shadow:0 0 24px rgba(0,212,255,.25);transition:all 200ms var(--ease-out);
+}
+.cd-action-primary:hover{background:var(--cyan-light);transform:translateY(-1px);}
+.cd-action-secondary{
+  padding:14px;background:transparent;color:var(--text2);
+  border:1px solid var(--border-medium);border-radius:14px;
+  font-family:var(--fm);font-weight:600;font-size:11px;letter-spacing:1.5px;cursor:pointer;
+  transition:all 200ms var(--ease-out);
+}
+.cd-action-secondary:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ══════════════════════════════════════
+   VIEW — PLAN (Coach IA header prepend)
+══════════════════════════════════════ */
+.plan-coach-ia-wrap{padding:0 16px;margin-bottom:4px;}
+.plan-coach-ia-btn{
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,var(--bg-card),rgba(0,212,255,.06));
+  border:1px solid var(--border-accent);border-radius:18px;
+  padding:14px 16px;cursor:pointer;transition:all 200ms var(--ease-out);
+  box-shadow:var(--glow-soft);
+}
+.plan-coach-ia-btn:hover{box-shadow:var(--glow-medium);border-color:var(--cyan);}
+.pcia-icon{
+  width:38px;height:38px;background:linear-gradient(135deg,var(--cyan-dark),var(--cyan));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 0 16px rgba(0,212,255,.3);
+}
+.pcia-icon svg{width:22px;height:22px;fill:none;stroke:#001828;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pcia-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.pcia-meta{font-family:var(--fm);font-size:10px;color:var(--text2);letter-spacing:.5px;}
+.pcia-arrow{margin-left:auto;color:var(--cyan);font-size:16px;flex-shrink:0;}
+
+/* ══════════════════════════════════════
+   VIEW — PROG (Progress hero)
+══════════════════════════════════════ */
+.prog-view-header{padding:8px 20px 4px;}
+.prog-view-hi{font-size:12px;color:var(--cyan-light);font-weight:600;letter-spacing:.3px;margin-bottom:3px;}
+.prog-view-title{font-family:var(--fd);font-size:28px;font-weight:800;color:#fff;letter-spacing:-.01em;margin-bottom:0;}
+.prog-view-meta{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;padding:0 20px 14px;}
+
+/* ══════════════════════════════════════
+   VIEW — YO / MI CUENTA
+══════════════════════════════════════ */
+.yo-view-hero{padding:0 16px 14px;}
+.yo-qr-btn{
+  width:100%;padding:14px;border:none;border-radius:14px;margin-top:16px;
+  background:var(--bg-elevated);border:1px solid var(--border-medium);
+  color:var(--cyan);font-family:var(--fm);font-size:11px;font-weight:700;
+  letter-spacing:1.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all 200ms var(--ease-out);
+}
+.yo-qr-btn:hover{background:var(--cyan-dim);border-color:var(--cyan);}
+.yo-qr-btn svg{width:16px;height:16px;stroke:var(--cyan);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.yo-payment-section{padding:0 16px 20px;}
+.yo-payment-label{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);margin:0 0 10px;text-transform:uppercase;}
 </style>
 </head>
 <body>
@@ -1728,11 +2150,24 @@ body::before{
       </div>
     </div>
 
-    <!-- ── PROGRAMA ── -->
+    <!-- ── PROGRAMA (PLAN tab) ── -->
     <div class="view" id="view-programa">
       <div class="greeting">
-        <div class="greeting-hi" id="prog-gym-hi">Programa</div>
+        <div class="greeting-hi" id="prog-gym-hi">Mi Plan</div>
         <div class="greeting-name greeting-name-sm" id="prog-mes-title">—</div>
+      </div>
+      <!-- Coach IA entry point -->
+      <div class="plan-coach-ia-wrap" id="plan-coach-ia-wrap">
+        <div class="plan-coach-ia-btn" onclick="openCoachIA()">
+          <div class="pcia-icon">
+            <svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          </div>
+          <div>
+            <div class="pcia-title">Coach IA</div>
+            <div class="pcia-meta">PLAN PERSONALIZADO · ACTIVO</div>
+          </div>
+          <div class="pcia-arrow">›</div>
+        </div>
       </div>
       <div class="section">
         <div class="week-nav">
@@ -1784,21 +2219,42 @@ body::before{
       </div>
     </div>
 
-    <!-- ── PLANES ── -->
+    <!-- ── YO / MI CUENTA (planes tab) ── -->
     <div class="view" id="view-planes">
       <div class="greeting">
-        <div class="greeting-hi" id="planes-gym-hi">Planes</div>
-        <div class="greeting-name greeting-name-sm">Planes y Pagos</div>
+        <div class="greeting-hi" id="planes-gym-hi">Mi cuenta</div>
+        <div class="greeting-name greeting-name-sm">Membresía y pagos</div>
       </div>
+
+      <!-- Membership hero (injected by renderPlanes) -->
+      <div id="yo-memb-hero" class="yo-view-hero"></div>
+
+      <!-- QR Access button -->
+      <div style="padding:0 16px 16px;">
+        <button class="yo-qr-btn" onclick="openQRSheet()">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" style="fill:var(--cyan);stroke:none"/><rect x="16" y="5" width="3" height="3" style="fill:var(--cyan);stroke:none"/><rect x="5" y="16" width="3" height="3" style="fill:var(--cyan);stroke:none"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg>
+          VER MI QR DE ENTRADA
+        </button>
+      </div>
+
+      <!-- Payment success banner (optional) -->
       <div id="payment-success-wrap" style="display:none;">
         <div class="payment-success-banner">
           <div class="payment-success-ico">🎉</div>
           <div>
             <div class="payment-success-title">¡Pago completado!</div>
-            <div class="payment-success-sub">Tu membresía o paquete fue activado. Actualizando tu información…</div>
+            <div class="payment-success-sub">Tu membresía fue activada. Actualizando…</div>
           </div>
         </div>
       </div>
+
+      <!-- Payment history rows -->
+      <div id="yo-payment-section" class="yo-payment-section" style="display:none;">
+        <div class="yo-payment-label">HISTORIAL DE PAGOS</div>
+        <div id="yo-payment-rows"></div>
+      </div>
+
+      <!-- Plans for purchase -->
       <div id="planes-content">
         <div class="planes-empty">
           <div class="planes-empty-ico">💳</div>
@@ -1849,27 +2305,47 @@ body::before{
 
   </div><!-- /main-scroll -->
 
-  <!-- Mobile Bottom Nav -->
+  <!-- Mobile Bottom Nav — mockup v5 -->
   <div class="bottom-nav">
     <div class="bn-item active" id="bn-home" onclick="switchView('home')">
-      <div class="bn-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-      <div class="bn-lbl">Inicio</div>
+      <div class="bn-icon">
+        <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+      </div>
+      <div class="bn-lbl">HOME</div>
     </div>
     <div class="bn-item" id="bn-clases" onclick="switchView('clases')">
-      <div class="bn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-      <div class="bn-lbl">Clases</div>
+      <div class="bn-icon">
+        <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;">
+          <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+        </svg>
+      </div>
+      <div class="bn-lbl">CLASES</div>
     </div>
-    <div class="bn-item" id="bn-historial" onclick="switchView('historial')">
-      <div class="bn-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <div class="bn-lbl">Historial</div>
+    <div class="bn-item" id="bn-plan" onclick="switchView('programa')">
+      <div class="bn-icon">
+        <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;">
+          <path d="M13 2L4.09 12.12A1 1 0 005 14h6v8l8.91-10.12A1 1 0 0019 10h-6V2z"/>
+        </svg>
+      </div>
+      <div class="bn-lbl">PLAN</div>
     </div>
-    <div class="bn-item" id="bn-qr" onclick="openQRSheet()">
-      <div class="bn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" style="fill:var(--text3);stroke:none"/><rect x="16" y="5" width="3" height="3" style="fill:var(--text3);stroke:none"/><rect x="5" y="16" width="3" height="3" style="fill:var(--text3);stroke:none"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg></div>
-      <div class="bn-lbl">QR</div>
+    <div class="bn-item" id="bn-prog" onclick="switchViewProg()">
+      <div class="bn-icon">
+        <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;">
+          <path d="M5 20h2v-8H5v8zm4 0h2V4H9v16zm4 0h2v-4h-2v4zm4 0h2v-12h-2v12z"/>
+        </svg>
+      </div>
+      <div class="bn-lbl">PROG</div>
     </div>
-    <div class="bn-item" id="bn-mas" onclick="openMasSheet()">
-      <div class="bn-icon"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
-      <div class="bn-lbl">Más</div>
+    <div class="bn-item" id="bn-yo" onclick="switchView('planes')">
+      <div class="bn-icon">
+        <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+      <div class="bn-lbl">YO</div>
     </div>
   </div>
 
@@ -1974,23 +2450,170 @@ body::before{
   </div>
 </div>
 
+<!-- QR Sheet — v2 redesign -->
 <div class="sheet-backdrop" id="qr-sheet" onclick="closeSheet('qr-sheet',event)">
-  <div class="sheet" style="align-items:center;max-width:520px;margin:0 auto;width:100%;">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;padding-bottom:env(safe-area-inset-bottom,16px);">
     <div class="sheet-handle"></div>
-    <div class="qr-label">Mi QR de Entrada</div>
-    <div class="qr-wrap"><div id="qr-canvas"></div></div>
-    <div class="qr-info">
-      <div class="qr-name" id="qr-nombre">—</div>
-      <div class="qr-plan" id="qr-plan-lbl">—</div>
-    </div>
-    <div id="qr-status-banner"></div>
-    <div class="qr-hint">Muestra este código en la entrada del gym.<br>Se genera de forma segura para tu acceso.</div>
-    <div class="ios-banner" id="ios-banner" style="display:none;">
-      <div style="font-size:18px;flex-shrink:0;">📲</div>
-      <div class="ios-banner-txt"><strong>Agrega MOVE a tu pantalla de inicio</strong> para acceder en 1 toque. Toca <strong>Compartir →</strong> luego <strong>"En pantalla de inicio"</strong>.</div>
-      <div class="ios-banner-x" onclick="document.getElementById('ios-banner').style.display='none'">✕</div>
+    <div class="qr-screen-v2">
+      <div class="qr-title-v2">Check-in</div>
+      <div class="qr-sub-v2">Acerca tu QR al escáner del gym</div>
+
+      <!-- QR frame with scan animation -->
+      <div class="qr-frame-v2" id="qr-canvas-v2">
+        <div class="qr-frame-corner tl"></div>
+        <div class="qr-frame-corner br"></div>
+        <div class="qr-scan-line-v2" id="qr-scan-line"></div>
+        <div id="qr-canvas"></div>
+      </div>
+
+      <!-- Status pill -->
+      <div id="qr-status-pill" class="qr-status-pill">
+        <span class="pulse-dot"></span>
+        <span id="qr-status-text">ESPERANDO SCAN</span>
+      </div>
+
+      <!-- Info card -->
+      <div class="qr-info-card" id="qr-info-card">
+        <div class="qr-info-row">
+          <span class="qr-info-key">Atleta</span>
+          <span class="qr-info-val" id="qr-nombre">—</span>
+        </div>
+        <div class="qr-info-row" id="qr-next-class-row" style="display:none;">
+          <span class="qr-info-key">Próxima clase</span>
+          <span class="qr-info-val" id="qr-next-class-val">—</span>
+        </div>
+        <div class="qr-info-row">
+          <span class="qr-info-key">Estado</span>
+          <span class="qr-info-val" id="qr-memb-status">—</span>
+        </div>
+      </div>
+
+      <!-- Streak card -->
+      <div class="qr-streak-card" id="qr-streak-card">
+        <div class="streak-flame-v2">⚡</div>
+        <div style="flex:1;">
+          <div class="streak-num-v2" id="qr-streak-num">0<span>días seguidos</span></div>
+          <div class="streak-lbl-v2" id="qr-streak-lbl">Sigue entrenando</div>
+        </div>
+      </div>
+
+      <!-- iOS PWA banner -->
+      <div class="ios-banner" id="ios-banner" style="display:none;">
+        <div style="font-size:18px;flex-shrink:0;">📲</div>
+        <div class="ios-banner-txt"><strong>Agrega MOVE a tu pantalla de inicio</strong> para acceder en 1 toque.</div>
+        <div class="ios-banner-x" onclick="document.getElementById('ios-banner').style.display='none'">✕</div>
+      </div>
     </div>
     <div class="sheet-close" onclick="closeSheet('qr-sheet')">Cerrar</div>
+  </div>
+</div>
+
+<!-- Coach IA Chat Sheet -->
+<div class="sheet-backdrop" id="coach-ia-sheet" onclick="closeSheet('coach-ia-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px);">
+    <div class="sheet-handle"></div>
+    <div class="chat-view-wrap">
+      <div class="chat-header">
+        <div class="chat-avatar">
+          <svg viewBox="0 0 100 100"><polygon points="50,5 65,35 95,50 65,65 50,95 35,65 5,50 35,35"/></svg>
+        </div>
+        <div style="flex:1;">
+          <div class="chat-name">Coach IA</div>
+          <div class="chat-status"><span class="pulse-dot"></span> EN LÍNEA · APRENDIENDO</div>
+        </div>
+        <div onclick="closeSheet('coach-ia-sheet')" style="color:var(--text3);font-size:20px;cursor:pointer;padding:4px 8px;">✕</div>
+      </div>
+
+      <div class="chat-messages" id="coach-ia-messages">
+        <!-- Messages injected by JS -->
+      </div>
+
+      <div class="chat-suggestions" id="coach-ia-suggestions">
+        <button class="suggest-chip" onclick="coachIASend('📋 Ver mi plan de esta semana')">📋 Mi plan de esta semana</button>
+        <button class="suggest-chip" onclick="coachIASend('💪 ¿Qué hago hoy?')">💪 ¿Qué hago hoy?</button>
+        <button class="suggest-chip" onclick="coachIASend('📊 Mis PRs del mes')">📊 Mis PRs del mes</button>
+        <button class="suggest-chip" onclick="coachIASend('🎯 ¿Cómo voy con mi meta?')">🎯 Cómo voy con mi meta</button>
+      </div>
+
+      <div class="chat-input-row">
+        <input type="text" class="chat-input-field" id="coach-ia-input" placeholder="Pregúntale a Coach IA..." onkeydown="if(event.key==='Enter')coachIASendInput()"/>
+        <button class="chat-send-btn" onclick="coachIASendInput()">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Class Detail Sheet -->
+<div class="sheet-backdrop" id="class-detail-sheet" onclick="closeSheet('class-detail-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px);">
+    <div class="sheet-handle"></div>
+    <div id="class-detail-content">
+      <!-- Injected by openClassDetail() -->
+    </div>
+    <div class="sheet-close" onclick="closeSheet('class-detail-sheet')">Cerrar</div>
+  </div>
+</div>
+
+<!-- Meta Picker Sheet (Onboarding / Meta semanal) -->
+<div class="sheet-backdrop" id="meta-picker-sheet" onclick="closeSheet('meta-picker-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px);">
+    <div class="sheet-handle"></div>
+    <div style="padding:0 4px 8px;">
+      <div class="onboarding-hero">
+        <div class="onb-logo">
+          <svg viewBox="0 0 100 100"><polygon points="50,4 62,38 96,50 62,62 50,96 38,62 4,50 38,38" fill="#00D4FF"/></svg>
+        </div>
+        <div class="onb-welcome">Configura tu meta</div>
+        <div class="onb-title">Tu semana ideal</div>
+        <div class="onb-sub">Define cuántas clases quieres hacer cada semana.</div>
+      </div>
+
+      <div class="onb-step-label">01 · OBJETIVO PRINCIPAL</div>
+      <div id="goal-cards-wrap">
+        <div class="goal-card" data-goal="weight" onclick="selectGoal(this)">
+          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg></div>
+          <div style="flex:1;"><div class="goal-name">Perder peso</div><div class="goal-desc">Déficit + cardio + fuerza</div></div>
+          <div class="goal-check"></div>
+        </div>
+        <div class="goal-card" data-goal="strength" onclick="selectGoal(this)">
+          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg></div>
+          <div style="flex:1;"><div class="goal-name">Hipertrofia · Fuerza</div><div class="goal-desc">Volumen progresivo + PRs</div></div>
+          <div class="goal-check"></div>
+        </div>
+        <div class="goal-card" data-goal="performance" onclick="selectGoal(this)">
+          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div>
+          <div style="flex:1;"><div class="goal-name">Performance · CrossFit</div><div class="goal-desc">WODs + skills + condición</div></div>
+          <div class="goal-check"></div>
+        </div>
+        <div class="goal-card" data-goal="endurance" onclick="selectGoal(this)">
+          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg></div>
+          <div style="flex:1;"><div class="goal-name">Hyrox · Resistencia</div><div class="goal-desc">Run + functional + race prep</div></div>
+          <div class="goal-check"></div>
+        </div>
+      </div>
+
+      <div class="onb-step-label" style="margin-top:20px;">02 · META SEMANAL</div>
+      <div class="weekly-picker">
+        <div class="weekly-picker-label">¿Cuántas clases a la semana?</div>
+        <div class="weekly-ring-wrap" id="meta-ring-wrap">
+          <svg width="130" height="130" viewBox="0 0 130 130" style="position:absolute;inset:0;">
+            <circle cx="65" cy="65" r="58" fill="none" stroke="var(--bg-elevated)" stroke-width="8"/>
+            <circle id="meta-ring-arc" cx="65" cy="65" r="58" fill="none" stroke="var(--cyan)" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="364" stroke-dashoffset="91"
+                    style="transform:rotate(-90deg);transform-origin:65px 65px;filter:drop-shadow(0 0 12px var(--cyan));transition:stroke-dashoffset .4s var(--ease-out);"/>
+          </svg>
+          <div class="weekly-ring-num" id="meta-ring-num">4<small>CLASES</small></div>
+        </div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="adjustMeta(-1)">−</button>
+          <button class="stepper-btn" onclick="adjustMeta(1)">+</button>
+        </div>
+      </div>
+
+      <button class="cta-primary" id="meta-save-btn" onclick="saveMeta()">GUARDAR MI META →</button>
+    </div>
   </div>
 </div>
 
@@ -2238,20 +2861,281 @@ function closeMasSheet(){ closeSheet('mas-sheet',null); document.body.style.over
 // ── View switching ───────────────────────────────────
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  const masViews = ['planes','bitacora','programa','medidas','referidos'];
-  const isMasView = masViews.includes(name);
+
+  // Map view name → nav button ID
+  const navMap = {
+    home:'bn-home', clases:'bn-clases',
+    programa:'bn-plan', historial:'bn-prog',
+    planes:'bn-yo',
+    // legacy/sheet views keep no active nav
+  };
+  ['bn-home','bn-clases','bn-plan','bn-prog','bn-yo'].forEach(id=>{
+    const b=$(id); if(b) b.classList.remove('active');
+  });
+  const activeNavId = navMap[name];
+  if(activeNavId){ const b=$(activeNavId); if(b) b.classList.add('active'); }
+
+  // Also update legacy sidebar nav
   ['home','clases','historial','planes','bitacora','programa','medidas','referidos','progreso'].forEach(n=>{
-    const b=$('bn-'+n); if(b) b.classList.toggle('active',n===name);
     const s=$('sbn-'+n); if(s) s.classList.toggle('active',n===name);
   });
-  const bnMas=$('bn-mas'); if(bnMas) bnMas.classList.toggle('active', isMasView);
+
   const v=$('view-'+name); if(v) v.classList.add('active');
   activeView=name;
   if(name==='programa') renderProgramaView();
   if(name==='clases') loadClasesData();
-  if(name==='historial'){ renderHistorial(); /* sub-tab state preserved */ }
-  if(name==='planes') renderPlanes();
+  if(name==='historial'){ renderHistorial(); }
+  if(name==='planes'){ renderPlanes(); renderYoView(); }
   if(name==='bitacora') loadAndRenderBitacora();
+}
+
+// PROG tab — historial defaulting to progreso sub-tab
+function switchViewProg(){
+  switchView('historial');
+  setTimeout(()=>switchHistTab('progreso'),60);
+}
+
+// ── Coach IA Chat ────────────────────────────────────
+let coachMessages = [];
+function openCoachIA(){
+  // Init with greeting if empty
+  if(!coachMessages.length){
+    const nombre = portalData?.cliente?.nombre?.split(' ')[0] || 'atleta';
+    const meta = portalData?.cliente?.meta_semanal || 4;
+    coachMessages = [
+      {role:'ai', text:`¡Hola, ${nombre}! 👋 Soy tu Coach IA. Tu meta es llegar a ${meta} clases por semana. ¿En qué te ayudo hoy?`, time:'ahora'}
+    ];
+  }
+  renderCoachMessages();
+  openSheet('coach-ia-sheet');
+  setTimeout(()=>{ const inp=$('coach-ia-input'); if(inp) inp.focus(); },350);
+}
+function renderCoachMessages(){
+  const wrap=$('coach-ia-messages'); if(!wrap) return;
+  wrap.innerHTML = coachMessages.map(m=>{
+    if(m.role==='typing') return `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+    const cls = m.role==='ai'?'msg msg-ai':'msg msg-user';
+    return `<div class="${cls}">${m.text}</div>${m.time?`<div class="msg-time">${m.time}</div>`:''}`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function coachIASendInput(){
+  const inp=$('coach-ia-input'); if(!inp||!inp.value.trim()) return;
+  coachIASend(inp.value.trim()); inp.value='';
+}
+function coachIASend(text){
+  coachMessages.push({role:'user',text});
+  coachMessages.push({role:'typing'});
+  renderCoachMessages();
+  // Simulated AI response
+  setTimeout(()=>{
+    coachMessages = coachMessages.filter(m=>m.role!=='typing');
+    const replies = [
+      'Anotado. Tu plan está adaptado a tu objetivo y asistencia reciente.',
+      '¡Excelente! Con esa constancia vas a romper tu PR este mes. 💪',
+      'Te recomiendo priorizar descanso hoy. Mañana tienes sesión de piernas planificada.',
+      'Tu meta semanal va bien. ¡Una clase más y cierras el anillo! 🎯',
+      'Analizando tu historial… El mejor día para ti es antes de las 7am.',
+    ];
+    const r = replies[Math.floor(Math.random()*replies.length)];
+    const now = new Date();
+    coachMessages.push({role:'ai',text:r,time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`});
+    renderCoachMessages();
+  },1400);
+}
+
+// ── Class Detail Sheet ───────────────────────────────
+function openClassDetail(key){
+  if(!portalData) return;
+  const all = portalData.clasesHorarios || [];
+  const h = all.find(x=>(x.id||x.dia+x.hora)===key);
+  if(!h) return;
+  const reservas = portalData.reservasHoy || [];
+  const isReserved = reservas.some(r=>r.horario_id===h.id||r.horario_key===key);
+  const maxCupo = h.cupo_maximo||15;
+  const cupoActual = h.reservas_count||0;
+  const libres = Math.max(0,maxCupo-cupoActual);
+  const pct = Math.round((cupoActual/maxCupo)*100);
+  const now=new Date();
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const dateTag=`${dias[now.getDay()]} ${now.getDate()} ${meses[now.getMonth()]} · ${h.hora||'—'}`;
+
+  // Fake attendees initials
+  const fakeNames=['DM','AS','LR','JM','PG','CG','RF'];
+  const showing = Math.min(cupoActual,5);
+  const avatarHtml = fakeNames.slice(0,showing).map(n=>`<div class="avatar-item">${n}</div>`).join('')
+    + (cupoActual>5?`<div class="avatar-item more">+${cupoActual-5}</div>`:'');
+
+  const btnHtml = isReserved
+    ? `<button class="cd-action-primary" onclick="cancelarReservaKey('${key}');closeSheet('class-detail-sheet');">CANCELAR RESERVA</button>`
+    : libres>0
+      ? `<button class="cd-action-primary" onclick="reservarClase('${key}');closeSheet('class-detail-sheet');">RESERVAR CLASE</button>`
+      : `<button class="cd-action-primary" style="opacity:.5;cursor:default;">LLENA</button>`;
+
+  $('class-detail-content').innerHTML=`
+    <div class="class-detail-hero">
+      <span class="class-detail-tag">${dateTag}</span>
+      <div class="class-detail-title">${h.tipo||'Clase'}</div>
+      <div class="class-detail-coach">${h.coach?`con ${h.coach}`:'Box principal'}</div>
+      <div class="class-detail-meta">
+        <div class="cd-meta-item">
+          <div class="cd-meta-label">DURACIÓN</div>
+          <div class="cd-meta-value">${h.duracion||60}<small>min</small></div>
+        </div>
+        <div class="cd-meta-item">
+          <div class="cd-meta-label">CUPOS</div>
+          <div class="cd-meta-value">${libres}<small>libres</small></div>
+        </div>
+        <div class="cd-meta-item">
+          <div class="cd-meta-label">NIVEL</div>
+          <div class="cd-meta-value">${h.nivel||'TODOS'}<small></small></div>
+        </div>
+      </div>
+    </div>
+    <div class="attendees-section">
+      <div class="attendees-head">
+        <span class="attendees-title">QUIÉN VIENE</span>
+        <span class="attendees-count">${cupoActual} / ${maxCupo}</span>
+      </div>
+      <div class="avatar-stack">${cupoActual>0?avatarHtml:'<span style="font-size:12px;color:var(--text3);">Sé el primero</span>'}</div>
+      <div class="spots-bar-wrap">
+        <div class="spots-bar-bg"><div class="spots-bar-fill" style="width:${pct}%"></div></div>
+        <div class="spots-bar-meta">
+          <span>${cupoActual} inscritos</span>
+          <span>${libres} libres</span>
+        </div>
+      </div>
+    </div>
+    ${h.descripcion?`<div class="cd-wod-card"><div class="cd-wod-label">WOD / DESCRIPCIÓN</div><div class="cd-wod-text">${h.descripcion}</div></div>`:''}
+    <div class="cd-actions">
+      ${btnHtml}
+      <button class="cd-action-secondary" onclick="closeSheet('class-detail-sheet')">CERRAR</button>
+    </div>
+  `;
+  openSheet('class-detail-sheet');
+}
+
+// ── Meta Picker (Onboarding semanal) ─────────────────
+let metaPickerValue = 4;
+let selectedGoal = '';
+function openMetaPicker(){
+  metaPickerValue = portalData?.cliente?.meta_semanal || 4;
+  selectedGoal = portalData?.cliente?.objetivo || '';
+  updateMetaRing();
+  // Restore selected goal card
+  document.querySelectorAll('.goal-card').forEach(c=>{
+    c.classList.toggle('selected',c.dataset.goal===selectedGoal);
+  });
+  openSheet('meta-picker-sheet');
+}
+function selectGoal(el){
+  document.querySelectorAll('.goal-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedGoal = el.dataset.goal;
+}
+function adjustMeta(dir){
+  metaPickerValue = Math.min(7,Math.max(1,metaPickerValue+dir));
+  updateMetaRing();
+}
+function updateMetaRing(){
+  const num=$('meta-ring-num'); if(num) num.innerHTML=`${metaPickerValue}<small>CLASES</small>`;
+  const arc=$('meta-ring-arc');
+  if(arc){
+    const circ=2*Math.PI*58; // r=58
+    const offset=circ*(1-metaPickerValue/7);
+    arc.style.strokeDashoffset=offset;
+  }
+}
+async function saveMeta(){
+  const btn=$('meta-save-btn');
+  if(btn){btn.disabled=true;btn.textContent='GUARDANDO…';}
+  try{
+    if(portalData?.cliente){
+      portalData.cliente.meta_semanal=metaPickerValue;
+      if(selectedGoal) portalData.cliente.objetivo=selectedGoal;
+      try{
+        await fetch(`${SUPABASE_URL}/rest/v1/clientes?id=eq.${portalData.cliente.id}`,{
+          method:'PATCH',
+          headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+          body:JSON.stringify({meta_semanal:metaPickerValue,...(selectedGoal?{objetivo:selectedGoal}:{})})
+        });
+      }catch(_){}
+      renderHomeRing(portalData);
+    }
+    closeSheet('meta-picker-sheet');
+    showToast(`Meta: ${metaPickerValue} clases/semana ✓`);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='GUARDAR MI META →';}
+  }
+}
+
+// ── Toast helper ─────────────────────────────────────
+function showToast(msg,duration=3000){
+  let t=document.getElementById('atleta-toast');
+  if(t) t.remove();
+  t=document.createElement('div');
+  t.id='atleta-toast';
+  t.className='atleta-toast';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{
+    t.style.animation='toast-fade-out 400ms var(--ease-out) forwards';
+    setTimeout(()=>t.remove(),420);
+  },duration);
+}
+
+// ── Render YO view (membership hero + payment history) ─
+function renderYoView(){
+  if(!portalData) return;
+  const c=portalData.cliente;
+  const gym=portalData.gym;
+  const heroWrap=$('yo-memb-hero'); if(!heroWrap) return;
+
+  const ok=c.membresiaOk;
+  const dias=c.diasRestantes;
+  const statusClass=ok?'':'inactive';
+  const statusTxt=ok?'ACTIVO':'VENCIDO';
+  const planLabel=c.plan||'Sin plan';
+  const venceRow=dias!==null
+    ? `<div class="plan-detail-row"><span class="plan-detail-label">Vence</span><span class="plan-detail-value">${c.fechaVencimiento||'—'}</span></div>`
+    : '';
+  const diasRow=dias!==null
+    ? `<div class="plan-detail-row"><span class="plan-detail-label">Días restantes</span><span class="plan-detail-value">${dias}</span></div>`
+    : '';
+  const clasesTxt=c.clasesTotal?`${c.clasesUsadas||0} / ${c.clasesTotal} clases`:'Ilimitadas';
+
+  heroWrap.innerHTML=`
+    <div class="membership-hero" style="margin:0 16px 0;">
+      <div class="plan-name">${planLabel}</div>
+      <span class="plan-status ${statusClass}">${statusTxt}</span>
+      ${venceRow}${diasRow}
+      <div class="plan-detail-row"><span class="plan-detail-label">Clases</span><span class="plan-detail-value">${clasesTxt}</span></div>
+      <div class="plan-detail-row"><span class="plan-detail-label">Gym</span><span class="plan-detail-value">${gym.nombre||'—'}</span></div>
+    </div>
+  `;
+
+  // Payment history
+  const pagos=portalData.pagos||[];
+  const paySection=$('yo-payment-section');
+  const payRows=$('yo-payment-rows');
+  if(paySection&&payRows&&pagos.length){
+    const meses2=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    payRows.innerHTML=pagos.slice(0,6).map(p=>{
+      const d=p.fecha?new Date(p.fecha+'T12:00:00'):null;
+      const mesLabel=d?`${meses2[d.getMonth()]} ${d.getFullYear()}`:'—';
+      const dateLabel=d?`${d.getDate()} ${meses2[d.getMonth()].toUpperCase()}`:'';
+      const amt=p.monto?`$${Number(p.monto).toLocaleString('es-MX')}`:'—';
+      return `<div class="payment-row">
+        <div class="payment-info">
+          <div class="payment-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+          <div><div class="payment-month">${mesLabel}</div><div class="payment-date">${dateLabel}${p.metodo?' · '+p.metodo.toUpperCase():''}</div></div>
+        </div>
+        <div class="payment-amount">${amt}</div>
+      </div>`;
+    }).join('');
+    paySection.style.display='block';
+  }
 }
 
 // ── Historial sub-tabs ────────────────────────────────
@@ -2840,7 +3724,7 @@ function renderHomeRing(data){
     :remaining===1?'Una clase más para tu meta'
     :`${remaining} clase${remaining===1?'':'s'} para tu meta`;
 
-  el.innerHTML=`<div class="ring-card-v">
+  el.innerHTML=`<div class="ring-card-v" onclick="openMetaPicker()" style="cursor:pointer;">
     <div class="rcv-ring">
       <svg width="80" height="80" viewBox="0 0 80 80">
         <circle class="rcv-ring-bg" cx="40" cy="40" r="36"/>
@@ -3138,46 +4022,68 @@ window.todayTab=(cid,t)=>{ window[`todayTab_${cid}`]&&window[`todayTab_${cid}`](
 function renderQR(){
   if(!portalData) return;
   const container=$('qr-canvas');
-  // Clear any previous QR
   container.innerHTML='';
+  container.style.cssText='width:192px;height:192px;display:flex;align-items:center;justify-content:center;';
+
   const tok=portalData.cliente.portal_token||'';
   const url=`${SUPABASE_URL}/functions/v1/move-checkin?token=${tok}`;
   try{
     new QRCode(container,{
       text:url,
-      width:172,
-      height:172,
-      colorDark:'#0a3828',
+      width:192,
+      height:192,
+      colorDark:'#001828',
       colorLight:'#ffffff',
       correctLevel:QRCode.CorrectLevel.M
     });
   }catch(e){
-    // Fallback: show token text
-    container.style.cssText='font-size:7px;word-break:break-all;color:#00D4FF;padding:4px;';
+    container.style.cssText='font-size:7px;word-break:break-all;color:#00D4FF;padding:6px;';
     container.textContent=url;
   }
-  set('qr-nombre',portalData.cliente.nombre);
-  set('qr-plan-lbl',(portalData.gym.nombre||'')+(portalData.cliente.plan?' · '+portalData.cliente.plan:''));
 
-  // Status banner
-  const banner=$('qr-status-banner');
-  if(banner){
-    const ok=portalData.cliente.membresiaOk;
-    const dias=portalData.cliente.diasRestantes;
-    if(!ok){
-      banner.innerHTML=`<div class="qr-status danger">⛔ Membresía vencida · Renueva en recepción o en Planes</div>`;
-    } else if(dias!==null&&dias<=5){
-      banner.innerHTML=`<div class="qr-status warn">⚠️ Vence en ${dias} día${dias===1?'':'s'} · Considera renovar pronto</div>`;
-    } else {
-      banner.innerHTML=`<div class="qr-status ok"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>Membresía activa${dias!==null?' · '+dias+' días restantes':''}</div>`;
-    }
+  // Athlete name
+  set('qr-nombre',portalData.cliente.nombre||'—');
+
+  // Membership status
+  const ok=portalData.cliente.membresiaOk;
+  const dias=portalData.cliente.diasRestantes;
+  const statusEl=$('qr-memb-status');
+  if(statusEl){
+    if(!ok) statusEl.innerHTML=`<span style="color:var(--danger);">VENCIDA ⛔</span>`;
+    else if(dias!==null&&dias<=5) statusEl.innerHTML=`<span style="color:var(--warn);">ACTIVA · ${dias}d restantes ⚠️</span>`;
+    else statusEl.innerHTML=`<span style="color:var(--ok);">ACTIVA ✓</span>`;
   }
 
-  // Only show PWA install banner in browser, never in native Capacitor app
+  // Status pill text
+  const pillTxt=$('qr-status-text');
+  if(pillTxt) pillTxt.textContent=ok?'LISTO PARA SCAN':'VERIFICAR MEMBRESÍA';
+
+  // Next class row
+  const nextRow=$('qr-next-class-row');
+  const nextVal=$('qr-next-class-val');
+  const proxima=portalData.proximaClaseReservada||portalData.proximaClase;
+  if(nextRow&&nextVal&&proxima){
+    nextVal.textContent=`${proxima.tipo||'Clase'} · ${proxima.hora||'—'}`;
+    nextRow.style.display='flex';
+  }
+
+  // Streak
+  const streak=portalData.cliente.streakActual||portalData.cliente.racha||0;
+  set('qr-streak-num',`${streak}`);
+  const lbl=$('qr-streak-lbl');
+  if(lbl){
+    if(streak>=7) lbl.textContent='¡Racha épica! Sigue así 🔥';
+    else if(streak>=3) lbl.textContent='Buena racha esta semana';
+    else lbl.textContent='Construye tu racha diaria';
+  }
+  const numEl=$('qr-streak-num');
+  if(numEl) numEl.innerHTML=`${streak}<span>días seguidos</span>`;
+
+  // iOS PWA banner
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isNative = !!(window.Capacitor?.isNativePlatform?.() || window.Capacitor?.platform);
+  const isNative=!!(window.Capacitor?.isNativePlatform?.());
   if(isIOS&&!window.navigator.standalone&&!sessionStorage.getItem('ios_dismissed')&&!isNative){
-    $('ios-banner').style.display='flex';
+    const b=$('ios-banner'); if(b) b.style.display='flex';
   }
 }
 
@@ -3824,18 +4730,18 @@ function renderClasesView(dates){
     // Button state
     let btnHtml = '';
     if(isPast){
-      btnHtml = `<button class="cls-btn full" disabled>Pasado</button>`;
+      btnHtml = `<button class="cls-btn full" onclick="event.stopPropagation()" disabled>Pasado</button>`;
     } else if(isReserved){
-      btnHtml = `<button class="cls-btn cancel" onclick="cancelarReserva('${miReserva.id}','${key}')">Cancelar</button>`;
+      btnHtml = `<button class="cls-btn cancel" onclick="event.stopPropagation();cancelarReserva('${miReserva.id}','${key}')">Cancelar</button>`;
     } else if(isFull && inWaitlist){
       const pos = miWaitlist.posicion || '?';
-      btnHtml = `<button class="cls-btn in-waitlist" onclick="salirWaitlist('${miWaitlist.id}','${key}')">📋 Lista #${pos} · Salir</button>`;
+      btnHtml = `<button class="cls-btn in-waitlist" onclick="event.stopPropagation();salirWaitlist('${miWaitlist.id}','${key}')">📋 Lista #${pos} · Salir</button>`;
     } else if(isFull){
-      btnHtml = `<button class="cls-btn waitlist" onclick="entrarWaitlist('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">📋 Lista de espera${wlCount>0?' ('+wlCount+' en espera)':''}</button>`;
+      btnHtml = `<button class="cls-btn waitlist" onclick="event.stopPropagation();entrarWaitlist('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">📋 Lista de espera${wlCount>0?' ('+wlCount+' en espera)':''}</button>`;
     } else if(!membOk){
-      btnHtml = `<button class="cls-btn full" disabled>Sin membresía</button>`;
+      btnHtml = `<button class="cls-btn full" onclick="event.stopPropagation()" disabled>Sin membresía</button>`;
     } else {
-      btnHtml = `<button class="cls-btn reserve" onclick="crearReserva('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">Reservar</button>`;
+      btnHtml = `<button class="cls-btn reserve" onclick="event.stopPropagation();crearReserva('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">Reservar</button>`;
     }
 
     // Parse hour/meridiem for time block
@@ -3855,7 +4761,7 @@ function renderClasesView(dates){
     const reservedBadge = isReserved?`<div class="h-badge" style="margin-bottom:4px;font-size:8px;">✓ RESERVADO</div>`:'';
     const coachTxt = h.coach_nombre||'';
 
-    return `<div class="cls-card${isReserved?' reserved':''}${isFull&&!isReserved?' full':''}" id="cls-card-${key}">
+    return `<div class="cls-card${isReserved?' reserved':''}${isFull&&!isReserved?' full':''}" id="cls-card-${key}" onclick="openClassDetail('${key}')">
       <div class="cls-time-block">
         <div class="cls-time-hour">${displayHour}</div>
         <div class="cls-time-mer">${meridiem}</div>
