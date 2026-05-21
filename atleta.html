@@ -1462,11 +1462,78 @@ body::before{
 .ios-banner-txt{font-size:11px;color:var(--text2);line-height:1.5;flex:1;}
 .ios-banner-x{font-size:14px;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;}
 
-/* Prog detail sheet */
-.pd-tipo{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;}
-.pd-fecha{font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;}
-#pd-content .wk-section{margin-bottom:16px;}
-.prog-sheet-inner{max-height:75vh;overflow-y:auto;}
+/* ── Prog detail sheet ────────────────────────── */
+.pd-tipo{font-size:10px;font-weight:800;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px;}
+.pd-fecha{font-family:var(--fd);font-size:21px;font-weight:900;color:#fff;margin-bottom:18px;}
+.prog-sheet-inner{max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+/* ── Program content viewer (pw-*) ───────────── */
+#pd-content{padding-bottom:8px;}
+.pw-block{
+  margin-bottom:12px;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  overflow:hidden;
+}
+.pw-block-hdr{
+  display:flex;align-items:center;gap:9px;
+  padding:10px 14px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.pw-dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:var(--cyan);
+}
+.pw-block.warm .pw-dot{background:#F5A623;}
+.pw-block.cool .pw-dot{background:#60a5fa;}
+.pw-block.finish .pw-dot{background:#f87171;}
+.pw-block.main .pw-dot{background:var(--cyan);}
+.pw-block-title{
+  font-family:var(--fm);font-size:9px;font-weight:800;
+  letter-spacing:1.4px;color:var(--text2);text-transform:uppercase;
+}
+.pw-block.warm .pw-block-title{color:#F5A623;}
+.pw-block.cool .pw-block-title{color:#60a5fa;}
+.pw-block.finish .pw-block-title{color:#f87171;}
+.pw-block.main .pw-block-title{color:var(--cyan);}
+.pw-lines{padding:10px 14px 12px;display:flex;flex-direction:column;gap:0;}
+.pw-line{
+  font-size:13px;color:var(--text2);line-height:1.65;
+  padding:3px 0;
+}
+/* Structural lines: RONDAS, AMRAP, EMOM, FOR TIME, OBJETIVO, DESCANSO */
+.pw-line.pw-meta{
+  font-family:var(--fm);font-size:10px;font-weight:700;
+  color:var(--text3);letter-spacing:.5px;
+  padding:5px 0 4px;
+  border-top:1px solid rgba(255,255,255,.05);
+  margin-top:4px;
+  text-transform:uppercase;
+}
+.pw-line.pw-meta:first-child{border-top:none;margin-top:0;}
+/* Exercise lines: have dash separator or alphanumeric ID */
+.pw-line.pw-exer{
+  font-size:13px;font-weight:500;color:#fff;
+  padding:4px 0;display:flex;align-items:baseline;gap:8px;
+}
+.pw-exer-id{
+  font-family:var(--fm);font-size:9px;font-weight:700;
+  color:var(--cyan);flex-shrink:0;letter-spacing:.3px;min-width:18px;
+}
+.pw-exer-txt{flex:1;color:var(--text);}
+.pw-exer-detail{
+  font-family:var(--fm);font-size:10px;font-weight:700;
+  color:var(--text3);white-space:nowrap;letter-spacing:.3px;
+}
+/* Plain block (no section header) */
+.pw-plain{
+  margin-bottom:10px;padding:12px 14px;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+}
+.pw-plain .pw-line{font-size:13px;color:var(--text2);line-height:1.7;}
 
 /* ══════════════════════════════════════
    ANIMATIONS
@@ -4253,30 +4320,99 @@ function renderProximaClase(){
 }
 
 // ── Workout content parser ───────────────────────────
+// ── Section header detection ─────────────────────────
+const _SECTION_HDR_RX = /^(🔥|💪|⚡|🧘|🏃|🔩|⬆|🎯|🌡|WARM\s*UP|COOL\s*DOWN|CALENTAMIENTO|ENFRIAMIENTO|ESTIRAMIENTOS?|MOVILIDAD|TRABAJO\s*PRINCIPAL|MAIN\s*WORKOUT|BLOQUE\s*[A-Z0-9]?|FINALIZADOR|FINALIZACION|FINALIZACIÓN|CONDITIONING|METCON|AMRAP|EMOM|FOR\s*TIME|FUERZA|CARDIO|ACCESORIOS|PARTE\s*PRINCIPAL|ACTIVACION|ACTIVACIÓN|ESTRUCTURA|OBJETIVO[S]?:?)/i;
+
+function _sectionType(raw){
+  if(/warm|calent|movilidad|activac/i.test(raw)) return 'warm';
+  if(/cool|enfria|estirami/i.test(raw)) return 'cool';
+  if(/finaliz|conditioning|metcon/i.test(raw)) return 'finish';
+  return 'main';
+}
+
 function parseWorkoutSections(txt){
   const lines=(txt||'').trim().split('\n');
   let sections=[],current=null;
   lines.forEach(raw=>{
     const t=raw.trim(); if(!t) return;
-    const isHdr=/^(🔥|💪|⚡|🧘|WARM UP|COOL DOWN|BLOQUE|FINALIZADOR|OBJETIVO|ESTRUCTURA|MODALIDAD)/i.test(t)||/^[🔥💪⚡🧘]/u.test(t);
+    const isHdr=_SECTION_HDR_RX.test(t)||/^[🔥💪⚡🧘🏃🔩⬆🎯🌡]/u.test(t);
     if(isHdr){
       if(current) sections.push(current);
-      let type='main';
-      if(/warm up|calentamiento|movilidad/i.test(t)) type='warm';
-      else if(/cool|enfriamiento|estiramient/i.test(t)) type='cool';
-      else if(/finaliz|conditioning|metcon/i.test(t)) type='finish';
-      current={header:t,type,lines:[]};
+      current={header:t,type:_sectionType(t),lines:[]};
     } else if(current){ current.lines.push(t); }
-    else { if(!current) current={header:null,type:'main',lines:[]}; current.lines.push(t); }
+    else { current={header:null,type:'main',lines:[]}; current.lines.push(t); }
   });
   if(current) sections.push(current);
   return sections;
 }
 
+// ── Legacy: used by today-card on HOME ───────────────
 function renderWorkoutHTML(txt){
   const sections=parseWorkoutSections(txt);
   if(!sections.length) return '<div class="wk-empty">Sin contenido</div>';
   return sections.map(s=>`<div class="wk-section">${s.header?`<div class="wk-section-hdr ${esc(s.type)}">${esc(s.header)}</div>`:''}${s.lines.map(l=>`<div class="wk-line">${esc(l)}</div>`).join('')}</div>`).join('');
+}
+
+// ── Premium program content renderer ────────────────
+// Classifies each line within a section as:
+//   pw-meta  → structural info: RONDAS, AMRAP X min, DESCANSO, FOR TIME, etc.
+//   pw-exer  → exercise line: "A1. Sentadilla - 4x10 @ 80%"
+//   pw-line  → plain text line
+function _classifyLine(line){
+  const t=line.trim();
+  // Structural/meta: RONDAS, ROUNDS, AMRAP, EMOM, DESCANSO, FOR TIME, OBJETIVO, MODALIDAD
+  if(/^(RONDAS|ROUNDS|AMRAP|EMOM|FOR\s*TIME|DESCANSO|REST|OBJETIVO|MODALIDAD|DURACI[OÓ]N|REPETICIONES|TIEMPO|ESTRUCTURA)[\s:]/i.test(t)) return 'meta';
+  if(/^(RONDAS|ROUNDS)\s*:?\s*\d/i.test(t)) return 'meta';
+  // Exercise: alphanumeric ID + dot/paren, OR line has "- NxN" or "x N" pattern
+  if(/^[A-Z]\d*[\.\)]\s/i.test(t)||/^\d+[\.\)]\s/i.test(t)) return 'exer';
+  if(/[-–]\s*\d+\s*[x×X]\s*\d+/.test(t)||/\d+\s*[x×X]\s*\d+\s*(reps?|series?)?/.test(t)) return 'exer';
+  if(/@\s*\d+%/.test(t)) return 'exer'; // percentage weight
+  return 'line';
+}
+
+function _parseExerLine(line){
+  const t=line.trim();
+  let id='', rest=t;
+  const idMatch=t.match(/^([A-Z]\d*[\.\)]\s|\d+[\.\)]\s)/i);
+  if(idMatch){ id=idMatch[0].replace(/[\.\)]\s*$/,''); rest=t.slice(idMatch[0].length); }
+  // Split name from detail at the last " - " or " – " before numbers
+  const splitMatch=rest.match(/^(.+?)\s*[-–]\s*(\d.*)$/);
+  if(splitMatch) return {id, name:splitMatch[1].trim(), detail:splitMatch[2].trim()};
+  return {id, name:rest, detail:''};
+}
+
+function renderProgramContent(txt){
+  const sections=parseWorkoutSections(txt||'');
+  if(!sections.length) return `<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px;">Sin contenido</div>`;
+
+  return sections.map(s=>{
+    const linesHTML=s.lines.map(l=>{
+      const cls=_classifyLine(l);
+      if(cls==='meta'){
+        return `<div class="pw-line pw-meta">${esc(l)}</div>`;
+      }
+      if(cls==='exer'){
+        const {id,name,detail}=_parseExerLine(l);
+        return `<div class="pw-line pw-exer">
+          ${id?`<span class="pw-exer-id">${esc(id)}</span>`:''}
+          <span class="pw-exer-txt">${esc(name)}</span>
+          ${detail?`<span class="pw-exer-detail">${esc(detail)}</span>`:''}
+        </div>`;
+      }
+      return `<div class="pw-line">${esc(l)}</div>`;
+    }).join('');
+
+    if(!s.header){
+      return `<div class="pw-plain">${linesHTML}</div>`;
+    }
+    return `<div class="pw-block ${s.type}">
+      <div class="pw-block-hdr">
+        <div class="pw-dot"></div>
+        <div class="pw-block-title">${esc(s.header)}</div>
+      </div>
+      ${s.lines.length?`<div class="pw-lines">${linesHTML}</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 // ── Today's workout ──────────────────────────────────
@@ -4751,43 +4887,8 @@ window.openProgDetail=function(idx){
   const dt=new Date(item.fecha+'T12:00:00');
   set('pd-tipo',item.tipo);
   set('pd-fecha',`${DIAS_L[dt.getDay()]}, ${dt.getDate()} de ${MESES[dt.getMonth()]}`);
-
-  const exercises=parseExercises(item.contenido);
-  const exItems=exercises.filter(e=>e.type==='exercise');
-  _exChecked=exItems.map(()=>false);
-
-  let html=''; let exIdx=0;
-  exercises.forEach(item=>{
-    if(item.type==='section'){
-      html+=`<div class="ex-section-hdr">${esc(item.name)}</div>`;
-    } else {
-      const i=exIdx++;
-      const isWarm=item.section&&/warm|calent|movilidad/i.test(item.section);
-      html+=`<div class="ex-card" id="ex-card-${i}" onclick="toggleExercise(${i})">
-        <div class="ex-num">${i+1}</div>
-        <div class="ex-body">
-          <div class="ex-name">${esc(item.name)}</div>
-          ${item.chips.length?`<div class="ex-chips">${item.chips.map(c=>`<span class="ex-chip${isWarm?' warm':''}">${esc(c)}</span>`).join('')}</div>`:''}
-        </div>
-        <div class="ex-check" id="ex-check-${i}">
-          <svg viewBox="0 0 24 24" width="12" height="12"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-      </div>`;
-    }
-  });
-
-  if(!html) html=renderWorkoutHTML(item.contenido); // fallback
-
-  $('pd-content').innerHTML=html;
-  $('pd-progress').innerHTML=exItems.length?`<div class="ex-progress">
-    <div class="ex-prog-label">PROGRESO DE HOY</div>
-    <div class="ex-prog-bar-wrap"><div class="ex-prog-bar" id="pd-prog-bar" style="width:0%"></div></div>
-    <div class="ex-prog-meta">
-      <span id="pd-prog-txt">0 / ${exItems.length} ejercicios</span>
-      <span class="ex-prog-pct" id="pd-prog-pct">0%</span>
-    </div>
-  </div>`:'';
-
+  $('pd-content').innerHTML = renderProgramContent(item.contenido);
+  $('pd-progress').innerHTML = ''; // no checkbox progress for gym programs
   openSheet('prog-sheet');
 };
 
