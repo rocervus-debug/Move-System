@@ -2050,57 +2050,22 @@ body::before{
       <!-- Mobile layout -->
       <div id="home-mobile">
         <div class="greeting au au1">
-          <div class="greeting-hi" id="greeting-hi">Buenos días</div>
+          <div class="greeting-hi" id="greeting-hi">Hola,</div>
           <div class="greeting-name" id="atleta-nombre">—</div>
         </div>
         <div class="screen-date-line au au1" id="screen-date-line">—</div>
         <div id="home-ring-wrap" class="au au2"></div>
         <div id="next-class-wrap-mobile" class="au au3"></div>
         <div class="home-mini-stats au au3" id="home-mini-stats-mobile"></div>
-        <div id="memb-expiry-banner-mobile" class="memb-expiry-banner"></div>
-        <div id="membership-card-wrap" class="au au4" style="display:none;"></div>
-        <div id="paquete-section" style="display:none;" class="section au au4">
-          <div class="sec-hdr"><div class="sec-title">📦 Paquete activo</div></div>
-          <div id="pkg-card-container"></div>
-        </div>
-        <div class="stats-row au au4" id="stats-row-mobile" style="display:none;"></div>
-        <div id="streak-banner-mobile" class="streak-banner" style="display:none;"></div>
-        <div id="proxima-clase-mobile" style="display:none;" class="section" style="display:none;"></div>
-        <div class="quick-actions au au5">
-          <div class="qa primary" onclick="switchView('clases')">
-            <div class="qa-svg-ico blue">
-              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg>
-            </div>
-            <div class="qa-primary-text">
-              <div class="qa-ttl">Reservar clase</div>
-              <div class="qa-sub">Ver clases disponibles hoy</div>
-            </div>
-            <div class="qa-primary-arrow">
-              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-          </div>
-          <div class="qa" onclick="switchView('historial')">
-            <div class="qa-svg-ico amber">
-              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            </div>
-            <div class="qa-ttl">Mis Visitas</div>
-            <div class="qa-sub" id="qa-visits-sub">Ver historial</div>
-          </div>
-          <div class="qa" onclick="switchView('bitacora')">
-            <div class="qa-svg-ico green">
-              <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            </div>
-            <div class="qa-ttl">Bitácora</div>
-            <div class="qa-sub">Registrar entreno</div>
-          </div>
-        </div>
-        <div class="section au au6">
-          <div class="sec-hdr">
-            <div class="sec-title">Entrenamiento de hoy</div>
-            <div class="sec-link" onclick="switchView('programa')">Ver semana →</div>
-          </div>
-          <div id="today-wk-container"><div class="wk-empty-state"><div class="wk-es-ico">🏋️</div><div class="wk-es-msg">Sin programa para hoy</div><div class="wk-es-cta" onclick="switchView('clases')">Ver clases disponibles →</div></div></div>
-        </div>
+        <!-- hidden legacy containers (keep IDs for JS compat) -->
+        <div id="memb-expiry-banner-mobile" style="display:none;"></div>
+        <div id="membership-card-wrap" style="display:none;"></div>
+        <div id="paquete-section" style="display:none;"></div>
+        <div id="stats-row-mobile" style="display:none;"></div>
+        <div id="streak-banner-mobile" style="display:none;"></div>
+        <div id="proxima-clase-mobile" style="display:none;"></div>
+        <div id="today-wk-container" style="display:none;"></div>
+        <div id="qa-visits-sub" style="display:none;"></div>
       </div>
       <!-- Desktop layout -->
       <div id="home-desktop" style="display:none;">
@@ -3463,7 +3428,7 @@ function handleDesktopLayout(){
   if(sidebar) sidebar.style.display=desk?'flex':'none';
   $('home-mobile').style.display=desk?'none':'block';
   $('home-desktop').style.display=desk?'block':'none';
-  ['greeting-hi','greeting-hi-desk'].forEach(id=>set(id,greet()));
+  ['greeting-hi','greeting-hi-desk'].forEach(id=>set(id,'Hola,'));
   const fname=(portalData.cliente.nombre||'').split(' ')[0];
   ['atleta-nombre','atleta-nombre-desk'].forEach(id=>set(id,fname));
 }
@@ -3747,22 +3712,69 @@ function renderHomeMiniStats(data){
   const el=$('home-mini-stats-mobile'); if(!el) return;
   const checkins=data.checkins||[];
   const streak=calcStreak(checkins,data.ausentes||[]);
-  const monthPrefix=new Date().toISOString().slice(0,7);
-  const monthCount=checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
 
+  // ── Streak card ──
   const streakColor=streak>=7?'var(--warn)':streak>=3?'var(--ok)':'var(--text3)';
-  const streakTrend=streak>=14?'🏆 Élite':streak>=7?'🔥 ¡Una semana!':streak>=3?'💪 ¡Sigue así!':'';
+  // Check if this is a personal record streak
+  const allStreaks=[];
+  let cur=0;
+  const sorted=[...checkins].sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
+  for(let i=0;i<sorted.length;i++){
+    const prev=i>0?sorted[i-1].fecha:'';
+    if(prev){
+      const diff=(new Date(sorted[i].fecha)-new Date(prev))/(86400000);
+      if(diff===1) cur++;
+      else { allStreaks.push(cur); cur=1; }
+    } else cur=1;
+  }
+  allStreaks.push(cur);
+  const maxStreak=Math.max(...allStreaks,0);
+  const isRecord=streak>0&&streak>=maxStreak;
+  const streakBadge=isRecord?`<div class="hms-trend" style="color:var(--cyan)">RÉCORD</div>`:
+    streak>=7?`<div class="hms-trend">🔥 ¡Semana!</div>`:
+    streak>=3?`<div class="hms-trend">💪 ¡Sigue!</div>`:`<div class="hms-trend" style="opacity:.4">—</div>`;
 
-  el.innerHTML=`
+  // ── PR MES card (best peso_kg this month from medidas cache) ──
+  const monthPrefix=new Date().toISOString().slice(0,7);
+  const prevMonthDate=new Date(); prevMonthDate.setMonth(prevMonthDate.getMonth()-1);
+  const prevPrefix=prevMonthDate.toISOString().slice(0,7);
+
+  let prCard='';
+  if(_medidasCache&&_medidasCache.length){
+    const thisMes=_medidasCache.filter(m=>(m.fecha||'').startsWith(monthPrefix)&&m.peso_kg!=null);
+    const prevMes=_medidasCache.filter(m=>(m.fecha||'').startsWith(prevPrefix)&&m.peso_kg!=null);
+    if(thisMes.length){
+      const latest=thisMes.sort((a,b)=>b.fecha>a.fecha?1:-1)[0].peso_kg;
+      let trendHtml='';
+      if(prevMes.length){
+        const prev=prevMes.sort((a,b)=>b.fecha>a.fecha?1:-1)[0].peso_kg;
+        const diff=+(latest-prev).toFixed(1);
+        const sign=diff>0?'+':'';
+        const col=diff<0?'var(--ok)':diff>0?'#f87171':'var(--text3)';
+        trendHtml=`<div class="hms-trend" style="color:${col}">${sign}${diff}kg</div>`;
+      }
+      prCard=`<div class="hms-card">
+        <div class="hms-label">PR MES</div>
+        <div class="hms-value">${latest}<span class="hms-unit">kg</span></div>
+        ${trendHtml||`<div class="hms-trend" style="opacity:.4">sin comparativa</div>`}
+      </div>`;
+    }
+  }
+  // Fallback: clases este mes
+  if(!prCard){
+    const monthCount=checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
+    prCard=`<div class="hms-card">
+      <div class="hms-label">ESTE MES</div>
+      <div class="hms-value">${monthCount}<span class="hms-unit">clases</span></div>
+      <div class="hms-trend" style="opacity:.5">${checkins.length} total</div>
+    </div>`;
+  }
+
+  el.innerHTML=`${prCard}
     <div class="hms-card">
       <div class="hms-label">RACHA</div>
       <div class="hms-value" style="color:${streakColor}">${streak}<span class="hms-unit">días</span></div>
-      ${streakTrend?`<div class="hms-trend">${streakTrend}</div>`:''}
-    </div>
-    <div class="hms-card">
-      <div class="hms-label">ESTE MES</div>
-      <div class="hms-value">${monthCount}<span class="hms-unit">clases</span></div>
-      <div class="hms-trend">${checkins.length} total</div>
+      ${streakBadge}
     </div>`;
 }
 
@@ -3787,14 +3799,13 @@ function renderNextClassCard(){
     });
 
   if(!proximas.length){
-    // No reservation — show CTA to book
     wrap.innerHTML=`<div class="next-class-card" onclick="switchView('clases')">
-      <span class="h-badge">PRÓXIMA CLASE</span>
+      <span class="h-badge">SIGUIENTE CLASE</span>
       <div class="ncc-title">Sin reservas activas</div>
       <div class="ncc-coach">Reserva una clase para verla aquí</div>
       <div class="ncc-time-row">
         <div>
-          <div class="ncc-time" style="font-size:15px;color:var(--text3)">Ver clases →</div>
+          <div class="ncc-time" style="font-size:15px;color:var(--text3)">—</div>
           <div class="ncc-countdown">HORARIO DISPONIBLE</div>
         </div>
         <button class="ncc-btn reservar" onclick="event.stopPropagation();switchView('clases')">RESERVAR</button>
@@ -3807,38 +3818,52 @@ function renderNextClassCard(){
   const fechaDate=new Date(fecha+'T12:00:00');
   const todayDate=new Date(today+'T12:00:00');
   const diff=Math.round((fechaDate-todayDate)/(1000*60*60*24));
-  const diasLbl=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const cuandoLabel=diff===0?'HOY':diff===1?'MAÑANA':diasLbl[fechaDate.getDay()].toUpperCase();
 
   const tipo=slot.tipo||'Clase';
-  const hora=(_fmtHora?_fmtHora(slot.hora):slot.hora)||'';
-  const coach=slot.coach?`con ${slot.coach}`:'';
+  // Show raw hour large (e.g. "18:00")
+  const rawHora=(slot.hora||'').replace(/[apm\s]/gi,'').trim();
+  const coachNombre=slot.coach_nombre||slot.coach||'';
+  const coachLine=coachNombre?`con ${coachNombre}`:'';
+  const gymNombre=portalData?.gym?.nombre||'';
+  const subtitleParts=[coachLine,gymNombre].filter(Boolean);
+  const subtitleTxt=subtitleParts.join(' · ');
 
-  // Calculate countdown if today
+  // Countdown
   let countdownTxt='';
   if(diff===0){
-    const [hh,mm]=(slot.hora||'00:00').split(':').map(Number);
+    const rawH=slot.hora||'00:00';
+    const ispm=rawH.toLowerCase().includes('pm');
+    const isam=rawH.toLowerCase().includes('am');
+    const clean=rawH.replace(/[apm\s]/gi,'');
+    let [hh,mm]=(clean+':00').split(':').map(Number);
+    if(ispm&&hh!==12) hh+=12;
+    if(isam&&hh===12) hh=0;
     const now=new Date();
-    const claseMs=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm).getTime()-now.getTime();
+    const claseMs=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm||0).getTime()-now.getTime();
     if(claseMs>0){
       const mins=Math.floor(claseMs/60000);
-      if(mins<60) countdownTxt=`EN ${mins} MIN`;
-      else countdownTxt=`EN ${Math.floor(mins/60)}H ${mins%60}MIN`;
+      countdownTxt=mins<60?`EN ${mins} MIN`:`EN ${Math.floor(mins/60)} HORA${Math.floor(mins/60)>1?'S':''}`;
     } else {
       countdownTxt='EN CURSO';
     }
+  } else {
+    const diasLbl=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    countdownTxt=diff===1?'MAÑANA':diasLbl[fechaDate.getDay()].toUpperCase();
   }
 
+  const isToday=diff===0;
+  const btnLabel=isToday?'CHECK-IN':'VER →';
+
   wrap.innerHTML=`<div class="next-class-card" onclick="switchView('clases')">
-    <span class="h-badge">${cuandoLabel}</span>
+    <span class="h-badge">SIGUIENTE CLASE</span>
     <div class="ncc-title">${tipo}</div>
-    ${coach?`<div class="ncc-coach">${coach}</div>`:''}
+    ${subtitleTxt?`<div class="ncc-coach">${subtitleTxt}</div>`:''}
     <div class="ncc-time-row">
       <div>
-        <div class="ncc-time">${hora}</div>
-        ${countdownTxt?`<div class="ncc-countdown">${countdownTxt}</div>`:''}
+        <div class="ncc-time">${rawHora||'—'}</div>
+        <div class="ncc-countdown">${countdownTxt}</div>
       </div>
-      <button class="ncc-btn" onclick="event.stopPropagation();switchView('clases')">VER →</button>
+      <button class="ncc-btn${isToday?'':' reservar'}" onclick="event.stopPropagation();switchView('clases')">${btnLabel}</button>
     </div>
   </div>`;
 }
