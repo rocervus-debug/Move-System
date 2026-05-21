@@ -3395,8 +3395,8 @@ function showPortal(data){
   // Señal para el native bridge (oculta splash, etc.)
   window.dispatchEvent(new CustomEvent('velum:appReady'));
 
-  // Fix #1 — cargar reservas en background para que renderProximaClase() funcione en home
-  loadClasesData().then(()=>{ renderProximaClase(); }).catch(()=>{});
+  // Fix #1 — cargar reservas en background; luego re-render tarjetas que dependen de clasesReservas
+  loadClasesData().then(()=>{ renderProximaClase(); renderNextClassCard(); }).catch(()=>{});
 
   // Cargar ausentes para cálculo correcto de racha (async, no bloquea UI)
   if(data.cliente?.portal_token){
@@ -3914,7 +3914,7 @@ function renderStreakBanner(data){
   else if(streak>=3){ msg=`💪 ${streak} días seguidos — ¡sigue así!`; cls=''; }
   else if(checkins.length===0){ msg='⚡ ¡Bienvenido! Registra tu primera visita con el QR.'; cls=''; }
 
-  ['streak-banner-mobile','streak-banner-desk'].forEach(id=>{
+  ['streak-banner-desk'].forEach(id=>{ // mobile home no longer shows streak banner
     const el=$(id); if(!el) return;
     if(msg){ el.className=`streak-banner${cls?' '+cls:''}`; el.textContent=msg; el.style.display=''; }
     else { el.style.display='none'; }
@@ -3923,7 +3923,7 @@ function renderStreakBanner(data){
 
 // ── Próxima clase reservada (Task #64) ──────────────
 function renderProximaClase(){
-  const ids = ['proxima-clase-mobile','proxima-clase-desk'];
+  const ids = ['proxima-clase-desk']; // mobile uses renderNextClassCard() instead
   const today = new Date().toISOString().slice(0,10);
 
   // Build list of upcoming reservations: filter clasesReservas keys where fecha >= today
