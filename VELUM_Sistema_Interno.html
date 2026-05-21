@@ -15768,22 +15768,45 @@ function mktPrevMonth(){ _mktMonth--; if(_mktMonth<1){_mktMonth=12;_mktYear--;} 
 function mktNextMonth(){ _mktMonth++; if(_mktMonth>12){_mktMonth=1;_mktYear++;} renderCalendario(); }
 function mktGoToday(){ _mktYear=new Date().getFullYear(); _mktMonth=new Date().getMonth()+1; renderCalendario(); }
 
-// ── Días festivos fijos de México (mes 1-12, día)
+// ── Días festivos fijos de México — Calendario SEP + LFT (mes 1-12, día)
 const MX_FESTIVOS_FIJOS = [
+  // ── ENERO
   [1,1,'🎊 Año Nuevo'],
+  // ── FEBRERO
   [2,5,'🏛 Día de la Constitución'],
-  [3,21,'⚖️ Natalicio de Juárez'],
+  // ── MARZO
+  [3,21,'⚖️ Natalicio de Benito Juárez'],
+  // ── ABRIL
+  [4,30,'🧒 Día del Niño'],
+  // ── MAYO
   [5,1,'👷 Día del Trabajo'],
+  [5,3,'✝️ Día de la Santa Cruz'],
+  [5,5,'⚔️ Batalla de Puebla'],
   [5,10,'💐 Día de las Madres'],
+  [5,15,'🍎 Día del Maestro'],
+  // ── JUNIO
+  [6,1,'⚓ Día de la Marina'],
+  // ── JULIO
+  [7,4,'👨‍⚕️ Día del Médico'],
+  // ── AGOSTO
+  [8,10,'💪 Día del Entrenador Deportivo'],
+  // ── SEPTIEMBRE
+  [9,13,'🦅 Niños Héroes de Chapultepec'],
   [9,15,'🎆 Grito de Independencia'],
-  [9,16,'🇲🇽 Independencia'],
+  [9,16,'🇲🇽 Día de la Independencia'],
+  // ── OCTUBRE
   [10,12,'🌎 Día de la Raza'],
-  [11,1,'👼 Día de Todos los Santos'],
+  // ── NOVIEMBRE
+  [11,1,'👼 Día de Todos Santos'],
   [11,2,'💀 Día de Muertos'],
-  [12,12,'🌹 Virgen de Guadalupe'],
+  [11,20,'🎖 Revolución Mexicana'],
+  // ── DICIEMBRE
+  [12,1,'🏛 Transmisión del Poder Ejecutivo (cada 6 años)'],
+  [12,12,'🌹 Día de la Virgen de Guadalupe'],
+  [12,23,'🎄 Inicio vacaciones invernales (SEP)'],
   [12,24,'🎄 Nochebuena'],
   [12,25,'🎅 Navidad'],
-  [12,31,'🥂 Fin de Año'],
+  [12,31,'🥂 Víspera de Año Nuevo'],
 ];
 
 // ── Algoritmo de Pascua (Gregoriano anónimo)
@@ -15809,25 +15832,57 @@ function getNthWeekday(year, month, dow, nth){
   return null;
 }
 
-// ── Festivos calculables por año (puentes LFT + Semana Santa)
+// ── Festivos calculables por año (puentes LFT + Semana Santa + vacaciones SEP)
 function getMxFestivos(year, month){
   const result = [];
-  // Fijos
+
+  // ── Fijos del catálogo
   MX_FESTIVOS_FIJOS.forEach(([m,d,label])=>{ if(m===month) result.push({day:d,label}); });
-  // Puente: Constitución → 1er lunes de febrero (LFT)
-  if(month===2){ const d=getNthWeekday(year,2,1,1); if(d) result.push({day:d,label:'🏛 Constitución (puente)'}); }
-  // Puente: Juárez → 3er lunes de marzo (LFT)
-  if(month===3){ const d=getNthWeekday(year,3,1,3); if(d) result.push({day:d,label:'⚖️ Natalicio Juárez (puente)'}); }
-  // Puente: Revolución → 3er lunes de noviembre (LFT)
-  if(month===11){ const d=getNthWeekday(year,11,1,3); if(d) result.push({day:d,label:'🎖 Revolución Mexicana (puente)'}); }
-  // Semana Santa (móvil)
+
+  // ── Puentes LFT (descanso oficial trasladado al lunes)
+  if(month===2){
+    const d=getNthWeekday(year,2,1,1); // 1er lunes feb
+    if(d) result.push({day:d,label:'🏛 Constitución (puente LFT)'});
+  }
+  if(month===3){
+    const d=getNthWeekday(year,3,1,3); // 3er lunes mar
+    if(d) result.push({day:d,label:'⚖️ Juárez (puente LFT)'});
+  }
+  if(month===11){
+    const d=getNthWeekday(year,11,1,3); // 3er lunes nov
+    if(d) result.push({day:d,label:'🎖 Revolución (puente LFT)'});
+  }
+
+  // ── Semana Santa — toda la semana (SEP da asueto completo)
   const easter = getEasterSunday(year);
-  const jueves = new Date(easter); jueves.setDate(easter.getDate()-3);
-  const viernes= new Date(easter); viernes.setDate(easter.getDate()-2);
-  const sabado = new Date(easter); sabado.setDate(easter.getDate()-1);
-  [[jueves,'✝️ Jueves Santo'],[viernes,'✝️ Viernes Santo'],[sabado,'🐣 Sábado de Gloria'],[easter,'🌅 Pascua']].forEach(([dt,label])=>{
+  // Lunes a Domingo de Semana Santa (lunes -6 días antes de Pascua)
+  const semanaLabels = [
+    [-6,'🕊 Lunes Santo'],
+    [-5,'🕊 Martes Santo'],
+    [-4,'🕊 Miércoles Santo'],
+    [-3,'✝️ Jueves Santo'],
+    [-2,'✝️ Viernes Santo (LFT)'],
+    [-1,'🐣 Sábado de Gloria'],
+    [0, '🌅 Domingo de Pascua'],
+  ];
+  semanaLabels.forEach(([offset,label])=>{
+    const dt=new Date(easter); dt.setDate(easter.getDate()+offset);
     if(dt.getMonth()+1===month) result.push({day:dt.getDate(),label});
   });
+
+  // ── Vacaciones de verano SEP — primera semana de julio (aprox)
+  // No hay fecha fija, marcamos el inicio tradicional: 1er lunes de julio
+  if(month===7){
+    const d=getNthWeekday(year,7,1,1);
+    if(d) result.push({day:d,label:'☀️ Inicio vacaciones de verano (SEP)'});
+  }
+
+  // ── Transmisión del Poder Ejecutivo solo en años de cambio presidencial (cada 6 años desde 2024)
+  // 2024, 2030, 2036... ya está en los fijos como nota; aquí solo aplicamos si corresponde
+  if(month===12 && (year-2024)%6===0){
+    // Ya aparece como fijo — no duplicar
+  }
+
   return result;
 }
 
@@ -15891,13 +15946,14 @@ async function saveEditContenido(){
 }
 
 // ── Caché de cumpleaños para no re-fetchear cada render
+// El campo en Supabase se llama `cumpleanos` (sin tilde)
 let _bdays_cache = null;
 async function _getBirthdays(){
   if(_bdays_cache) return _bdays_cache;
   try{
     const { data } = await window.supabaseClient
-      .from('clientes').select('nombre,fecha_nacimiento').not('fecha_nacimiento','is',null);
-    _bdays_cache = (data||[]).map(c=>({nombre:(c.nombre||'?').split(' ')[0], fn:c.fecha_nacimiento}));
+      .from('clientes').select('nombre,cumpleanos').not('cumpleanos','is',null);
+    _bdays_cache = (data||[]).map(c=>({nombre:(c.nombre||'?').split(' ')[0], fn:c.cumpleanos}));
   }catch(_){ _bdays_cache=[]; }
   return _bdays_cache;
 }
