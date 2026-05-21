@@ -706,9 +706,25 @@ body::before{
 .cls-info{flex:1;min-width:0;}
 .cls-card-type{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}
 .cls-coach{font-size:11px;color:var(--text2);}
-/* Spots / status right */
+/* Spots / status right — legacy kept for compat */
 .cls-spots{text-align:right;font-family:var(--fm);flex-shrink:0;}
 .cls-cupo-num{font-size:12px;color:var(--cyan);font-weight:700;}
+/* ── New status blocks (mockup v2) ── */
+.cls-status-cupo,.cls-status-reserved,.cls-status-full,.cls-status-past{
+  flex-shrink:0;text-align:right;font-family:var(--fm);min-width:52px;
+}
+.csc-num{font-size:18px;font-weight:800;line-height:1;letter-spacing:-.5px;}
+.csc-num .csc-tot{font-size:11px;font-weight:600;opacity:.6;}
+.csc-lbl{font-size:9px;letter-spacing:1px;color:var(--text3);margin-top:2px;}
+.csr-check{font-size:18px;font-weight:800;color:var(--cyan);line-height:1;}
+.csr-lbl{font-size:9px;letter-spacing:1px;color:var(--cyan);margin-top:2px;}
+.csf-lbl{font-size:14px;font-weight:800;color:var(--cyan);line-height:1;}
+.csf-sub{font-size:9px;letter-spacing:.5px;color:var(--cyan);opacity:.7;margin-top:3px;}
+.csp-lbl{font-size:10px;letter-spacing:1px;color:var(--text3);opacity:.5;}
+/* Full card dim */
+.cls-card.full{opacity:.55;}
+.cls-card.full .cls-card-type,.cls-card.full .cls-coach{color:var(--text3)!important;}
+.cls-card.full .cls-time-hour,.cls-card.full .cls-time-mer{opacity:.5;}
 .cls-cupo-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
 .cls-cupo-bar{height:3px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;width:44px;margin-top:4px;}
 .cls-cupo-fill{height:100%;border-radius:99px;transition:width .4s ease;}
@@ -2251,8 +2267,8 @@ body::before{
     <!-- ── CLASES ── -->
     <div class="view" id="view-clases">
       <div class="greeting">
-        <div class="greeting-hi" id="cls-gym-hi">Clases</div>
-        <div class="greeting-name greeting-name-sm">Reservar clase</div>
+        <div class="greeting-name">Mis clases</div>
+        <div class="screen-date-line" style="padding:4px 0 0;color:var(--cyan-light);font-size:12px;letter-spacing:.5px;font-family:var(--fd);">Reserva, cancela, lista de espera.</div>
       </div>
       <div id="cls-warn-banner" style="display:none;" class="cls-warn-banner">
         <span>⚠️</span><span>Tu membresía está vencida. Renueva para reservar clases.</span>
@@ -4752,23 +4768,6 @@ function renderClasesView(dates){
       ? (isFull ? '0 lugares' : `${cupoLibre} de ${cupoTotal}`)
       : '—';
 
-    // Button state
-    let btnHtml = '';
-    if(isPast){
-      btnHtml = `<button class="cls-btn full" onclick="event.stopPropagation()" disabled>Pasado</button>`;
-    } else if(isReserved){
-      btnHtml = `<button class="cls-btn cancel" onclick="event.stopPropagation();cancelarReserva('${miReserva.id}','${key}')">Cancelar</button>`;
-    } else if(isFull && inWaitlist){
-      const pos = miWaitlist.posicion || '?';
-      btnHtml = `<button class="cls-btn in-waitlist" onclick="event.stopPropagation();salirWaitlist('${miWaitlist.id}','${key}')">📋 Lista #${pos} · Salir</button>`;
-    } else if(isFull){
-      btnHtml = `<button class="cls-btn waitlist" onclick="event.stopPropagation();entrarWaitlist('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">📋 Lista de espera${wlCount>0?' ('+wlCount+' en espera)':''}</button>`;
-    } else if(!membOk){
-      btnHtml = `<button class="cls-btn full" onclick="event.stopPropagation()" disabled>Sin membresía</button>`;
-    } else {
-      btnHtml = `<button class="cls-btn reserve" onclick="event.stopPropagation();crearReserva('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">Reservar</button>`;
-    }
-
     // Parse hour/meridiem for time block
     const rawHora = h.hora||'';
     const isPm24 = (()=>{ const hNum=parseInt(rawHora.split(':')[0],10); return hNum>=12&&!rawHora.toLowerCase().includes('am'); })();
@@ -4782,26 +4781,50 @@ function renderClasesView(dates){
       displayHour=`${h12}:${mNum}`;
     }
     const meridiem = isAmSuffix?'AM':isPmSuffix?'PM':isPm24?'PM':'AM';
-
-    const reservedBadge = isReserved?`<div class="h-badge" style="margin-bottom:4px;font-size:8px;">✓ RESERVADO</div>`:'';
     const coachTxt = h.coach_nombre||'';
 
-    return `<div class="cls-card${isReserved?' reserved':''}${isFull&&!isReserved?' full':''}" id="cls-card-${key}" onclick="openClassDetail('${key}')">
+    // ── Status block (right column) ──
+    let statusHtml;
+    if(isReserved){
+      statusHtml = `<div class="cls-status-reserved">
+        <div class="csr-check">✓</div>
+        <div class="csr-lbl">RESERVADA</div>
+      </div>`;
+    } else if(isFull){
+      statusHtml = `<div class="cls-status-full">
+        <div class="csf-lbl">FULL</div>
+        ${wlCount>0?`<div class="csf-sub">+${wlCount} ESPERA</div>`:''}
+      </div>`;
+    } else if(isPast){
+      statusHtml = `<div class="cls-status-past"><div class="csp-lbl">PASADO</div></div>`;
+    } else {
+      const cupoNum = cupoTotal>0 ? cupoUsado : '—';
+      const cupoTot = cupoTotal>0 ? cupoTotal : '';
+      statusHtml = `<div class="cls-status-cupo">
+        <div class="csc-num" style="color:${cupoColor};">${cupoNum}<span class="csc-tot">${cupoTot?'/'+cupoTot:''}</span></div>
+        <div class="csc-lbl">CUPOS</div>
+      </div>`;
+    }
+
+    // ── Coach subtitle ──
+    let coachLine = coachTxt||'';
+    if(isReserved && coachLine) coachLine += ' · Reservada';
+    else if(inWaitlist && coachLine) coachLine += ' · Lista espera';
+    else if(!coachLine && isReserved) coachLine = 'Reservada';
+    else if(!coachLine && inWaitlist) coachLine = 'Lista espera';
+
+    const cardClass = `cls-card${isReserved?' reserved':''}${isFull&&!isReserved?' full':''}`;
+
+    return `<div class="${cardClass}" id="cls-card-${key}" onclick="openClassDetail('${key}')">
       <div class="cls-time-block">
         <div class="cls-time-hour">${displayHour}</div>
         <div class="cls-time-mer">${meridiem}</div>
       </div>
       <div class="cls-info">
-        ${reservedBadge}
         <div class="cls-card-type">${h.tipo||'Clase'}</div>
-        <div class="cls-coach">${coachTxt||'<span style="opacity:.4">Sin coach</span>'}</div>
+        <div class="cls-coach">${coachLine||'<span style="opacity:.3">—</span>'}</div>
       </div>
-      <div class="cls-spots">
-        <div class="cls-cupo-num" style="color:${cupoColor};">${cupoText}</div>
-        <div class="cls-cupo-lbl">${isFull&&wlCount>0?wlCount+' espera':cupoTotal>0?'lugares':'—'}</div>
-        <div class="cls-cupo-bar"><div class="cls-cupo-fill" style="width:${pct}%;background:${barColor};"></div></div>
-        <div style="margin-top:8px;">${btnHtml}</div>
-      </div>
+      ${statusHtml}
     </div>`;
   }).join('');
 }
