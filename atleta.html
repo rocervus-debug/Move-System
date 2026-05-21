@@ -10,7 +10,9 @@
 <meta name="apple-mobile-web-app-title" content="MOVE"/>
 <link rel="apple-touch-icon" href="move-icon-180.png"/>
 <meta name="theme-color" content="#040C14"/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
 /* ═══════════════════════════════════════════
    MOVE PORTAL — Premium v4
@@ -18,46 +20,75 @@
 ═══════════════════════════════════════════ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
+  /* ── New design tokens (VELUM v5 — cyan fixed) ── */
   --accent:#00D4FF;
   --accent-light:#66E8FF;
-  --accent-dim:rgba(0,212,255,.15);
+  --accent-dim:rgba(0,212,255,.12);
+  --accent-bright:rgba(0,212,255,.25);
   --accent-glow:rgba(0,212,255,.28);
-  --bg:#030810;
-  --bg2:#050A12;
-  --bg3:#0A1420;
+  --cyan:#00D4FF;
+  --cyan-light:#66E8FF;
+  --cyan-dim:rgba(0,212,255,.12);
+  --cyan-bright:rgba(0,212,255,.25);
+  --cyan-dark:#005A7A;
+  /* Backgrounds */
+  --bg:#040C14;
+  --bg-card:#08121E;
+  --bg-elevated:#0D1B2A;
+  --bg-input:#050E18;
+  --bg2:#08121E;
+  --bg3:#0D1B2A;
+  /* Legacy surface aliases */
   --surface:rgba(255,255,255,.036);
   --surface2:rgba(255,255,255,.052);
   --surface3:rgba(255,255,255,.072);
   --surface-hover:rgba(255,255,255,.06);
-  --card:rgba(4,12,20,.88);
-  --text1:#e8f5f0;
-  --border:rgba(255,255,255,.068);
-  --border-strong:rgba(255,255,255,.12);
-  --border-accent:rgba(0,212,255,.3);
-  --text:#c8d5dd;
-  --text2:#6EB0BF;
-  --text3:#264558;
-  --ok:#0fdf9a;
-  --warn:#f5a623;
-  --danger:#f06060;
+  --card:rgba(8,18,30,.88);
+  /* Text */
+  --text:#E8EDF5;
+  --text1:#E8EDF5;
+  --text2:#7ABFCC;
+  --text3:#2A4A5A;
+  /* Borders */
+  --border:rgba(0,212,255,.08);
+  --border-soft:rgba(0,212,255,.08);
+  --border-medium:rgba(0,212,255,.18);
+  --border-strong:rgba(0,212,255,.18);
+  --border-accent:rgba(0,212,255,.40);
+  /* Glows */
+  --glow-soft:0 0 24px rgba(0,212,255,.08);
+  --glow-medium:0 0 48px rgba(0,212,255,.18);
+  --glow-strong:0 0 96px rgba(0,212,255,.35);
+  /* Status */
+  --ok:#10E8A0;
+  --success:#10E8A0;
+  --warn:#C4922A;
+  --danger:#F87171;
   --purple:#8B5CF6;
   --purple-dim:rgba(139,92,246,.1);
   --orange:#F97316;
   --orange-dim:rgba(249,115,22,.1);
-  --font:'Barlow',system-ui,sans-serif;
-  --fd:'Barlow Condensed',system-ui,sans-serif;
+  /* Typography */
+  --font:'Inter',system-ui,sans-serif;
+  --fd:'Outfit',system-ui,sans-serif;
+  --fm:'Geist Mono',monospace;
+  /* Easing */
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  /* Layout */
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --sidebar-w:264px;
-  --nav-h:68px;
+  --nav-h:72px;
+  --radius-card:24px;
 }
 
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
 body{
-  background-image:
-    radial-gradient(ellipse 140% 50% at 50% -5%,rgba(0,212,255,.1),transparent),
-    radial-gradient(ellipse 80% 40% at -5% 65%,rgba(0,212,255,.05),transparent),
-    radial-gradient(ellipse 60% 50% at 105% 80%,rgba(0,212,255,.04),transparent);
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -5%,rgba(0,212,255,.10),transparent 60%),
+    radial-gradient(ellipse 50% 30% at 90% 100%,rgba(0,212,255,.06),transparent 70%),
+    var(--bg);
   min-height:100vh;overflow-x:hidden;
 }
 body::before{
@@ -75,7 +106,7 @@ body::before{
   transition:opacity .5s,visibility .5s;
 }
 #loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
-.ls-logo{font-family:var(--fd);font-size:22px;font-weight:900;letter-spacing:8px;color:rgba(255,255,255,.7);}
+.ls-logo{font-family:var(--fm);font-size:16px;font-weight:700;letter-spacing:6px;color:rgba(255,255,255,.7);}
 .ls-bar{width:44px;height:2px;background:rgba(0,212,255,.12);border-radius:99px;overflow:hidden;}
 .ls-fill{height:100%;width:0;background:var(--accent);animation:lf 1.4s ease-in-out infinite;}
 @keyframes lf{0%{width:0;margin-left:0}55%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
@@ -168,7 +199,7 @@ body::before{
 #app{
   display:none;flex-direction:column;min-height:100vh;
   padding-top:var(--safe-top);
-  padding-bottom:calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom:calc(var(--nav-h) + 20px + var(--safe-bottom));
   position:relative;z-index:1;
 }
 
@@ -192,36 +223,40 @@ body::before{
 }
 .topbar-avatar:active{background:rgba(0,212,255,.2);}
 
-/* ── Bottom Nav (mobile) ── */
+/* ── Bottom Nav (mobile) — pill design ── */
 .bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;
-  height:calc(var(--nav-h) + var(--safe-bottom));
-  padding-bottom:var(--safe-bottom);
-  background:rgba(3,10,8,.97);
-  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
-  border-top:1px solid rgba(255,255,255,.07);
-  display:flex;align-items:center;z-index:100;
+  position:fixed;bottom:10px;left:10px;right:10px;
+  background:rgba(8,18,30,.92);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid var(--border-soft);
+  border-radius:999px;
+  padding:8px 10px;
+  padding-bottom:calc(8px + var(--safe-bottom));
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:100;
+  box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 1px rgba(0,212,255,.04) inset;
 }
+/* Legacy bn-item aliases → nav-btn style */
 .bn-item{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;padding:8px 2px;cursor:pointer;opacity:.32;transition:opacity .2s;
-  position:relative;
+  gap:2px;padding:6px 10px;cursor:pointer;
+  color:var(--text3);
+  border-radius:999px;
+  transition:all 200ms var(--ease-out);
+  position:relative;border:none;background:transparent;
 }
-.bn-item.active{opacity:1;}
-.bn-item.active::before{
-  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:28px;height:2.5px;
-  background:var(--accent);border-radius:0 0 4px 4px;
-  box-shadow:0 0 10px rgba(0,212,255,.7);
+.bn-item.active{
+  color:var(--cyan);
+  background:var(--cyan-dim);
 }
 .bn-icon{
-  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;line-height:1;
 }
-.bn-icon svg{width:22px;height:22px;stroke:var(--text3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s;}
-.bn-lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;transition:color .15s;}
-.bn-item.active .bn-lbl{color:var(--accent-light);}
-.bn-item.active .bn-icon svg{stroke:var(--accent);filter:drop-shadow(0 0 5px rgba(0,212,255,.5));}
+.bn-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s;}
+.bn-lbl{font-family:var(--fm);font-size:8px;font-weight:500;color:inherit;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;}
+.bn-item.active .bn-lbl{color:var(--cyan-light);}
+.bn-item.active .bn-icon svg{stroke:var(--cyan);filter:drop-shadow(0 0 4px rgba(0,212,255,.6));}
 
 /* ══════════════════════════════════════
    VIEWS
@@ -232,9 +267,68 @@ body::before{
 /* ══════════════════════════════════════
    HOME — GREETING
 ══════════════════════════════════════ */
-.greeting{padding:8px 20px 18px;}
-.greeting-hi{font-size:12px;color:var(--accent-light);font-weight:600;letter-spacing:.3px;margin-bottom:3px;}
-.greeting-name{font-family:var(--fd);font-size:30px;font-weight:900;color:#fff;letter-spacing:.5px;}
+.greeting{padding:8px 20px 14px;}
+.greeting-hi{font-size:12px;color:var(--cyan-light);font-weight:600;letter-spacing:.3px;margin-bottom:3px;}
+.greeting-name{font-family:var(--fd);font-size:30px;font-weight:800;color:#fff;letter-spacing:-.01em;}
+.screen-date-line{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;padding:0 20px 16px;}
+
+/* ── Ring Card — Weekly Goal ── */
+.ring-card-v{
+  background:var(--bg-card);border:1px solid var(--border-soft);border-radius:24px;
+  padding:20px;display:flex;align-items:center;gap:16px;
+  margin:0 16px 12px;position:relative;overflow:hidden;
+}
+.ring-card-v::before{
+  content:'';position:absolute;top:-40px;left:-40px;
+  width:120px;height:120px;
+  background:radial-gradient(circle,var(--cyan-dim) 0%,transparent 70%);
+  border-radius:50%;pointer-events:none;
+}
+.rcv-ring{position:relative;width:80px;height:80px;flex-shrink:0;}
+.rcv-ring svg{transform:rotate(-90deg);}
+.rcv-ring-bg{fill:none;stroke:var(--bg-elevated);stroke-width:7;}
+.rcv-ring-prog{fill:none;stroke:var(--cyan);stroke-width:7;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(0,212,255,.6));transition:stroke-dashoffset 1.2s var(--ease-out);}
+.rcv-pct{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:var(--fd);font-size:18px;font-weight:700;color:#fff;
+}
+.rcv-info{flex:1;}
+.rcv-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
+.rcv-value{font-family:var(--fd);font-size:22px;font-weight:700;color:#fff;line-height:1.1;}
+.rcv-meta{font-size:11px;color:var(--text2);margin-top:4px;}
+
+/* ── Home badge ── */
+.h-badge{display:inline-block;font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--cyan);padding:4px 10px;background:var(--cyan-dim);border-radius:999px;margin-bottom:10px;}
+
+/* ── Next Class card (new style) ── */
+.next-class-card{
+  background:var(--bg-card);border:1px solid var(--border-accent);border-radius:24px;
+  padding:20px;box-shadow:var(--glow-soft);margin:0 16px 12px;
+  position:relative;overflow:hidden;cursor:pointer;
+}
+.next-class-card::before{
+  content:'';position:absolute;top:0;right:-50px;width:200px;height:100%;
+  background:radial-gradient(ellipse,var(--cyan-dim) 0%,transparent 60%);
+  pointer-events:none;
+}
+.ncc-title{font-family:var(--fd);font-size:19px;font-weight:700;margin-bottom:2px;position:relative;}
+.ncc-coach{font-size:12px;color:var(--text2);margin-bottom:14px;position:relative;}
+.ncc-time-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-input);border-radius:14px;position:relative;}
+.ncc-time{font-family:var(--fd);font-size:22px;font-weight:700;}
+.ncc-countdown{font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--text3);}
+.ncc-btn{background:var(--cyan);color:#001828;border:none;border-radius:12px;padding:10px 18px;font-family:var(--fm);font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 200ms var(--ease-out);box-shadow:0 0 16px rgba(0,212,255,.3);white-space:nowrap;flex-shrink:0;}
+.ncc-btn:hover{background:var(--cyan-light);box-shadow:var(--glow-strong);transform:scale(1.02);}
+.ncc-btn.reservar{background:var(--bg-elevated);color:var(--cyan);border:1px solid var(--border-accent);}
+.ncc-btn.reservar:hover{background:var(--cyan-dim);}
+
+/* ── Home Mini Stats ── */
+.home-mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 16px;}
+.hms-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:16px;}
+.hms-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
+.hms-value{font-family:var(--fd);font-size:24px;font-weight:700;color:#fff;line-height:1;}
+.hms-unit{font-size:11px;color:var(--text3);font-family:var(--fm);margin-left:3px;}
+.hms-trend{font-family:var(--fm);font-size:10px;color:var(--ok);margin-top:4px;}
+.hms-trend.warn{color:var(--warn);}
 
 /* ══════════════════════════════════════
    MEMBERSHIP CARD (Premium)
@@ -378,14 +472,14 @@ body::before{
 .med-add-btn{display:block;width:100%;padding:13px;background:var(--accent);color:#001828;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:18px;letter-spacing:.3px;transition:opacity .15s;}
 .med-add-btn:active{opacity:.8;}
 .med-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
-.med-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;}
+.med-stat-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:12px;padding:12px 10px;text-align:center;}
 .med-stat-n{font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;line-height:1;}
 .med-stat-delta{font-size:10px;font-weight:700;margin-top:2px;letter-spacing:.3px;}
 .med-stat-delta.up{color:#f87171;}
 .med-stat-delta.down{color:#4ade80;}
 .med-stat-delta.neutral{color:var(--text3);}
 .med-stat-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-top:4px;}
-.med-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 12px;margin-bottom:10px;}
+.med-chart-wrap{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:12px;padding:14px 12px;margin-bottom:10px;}
 .med-chart-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
 .med-chart-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;}
 .med-chart-val{font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;}
@@ -399,7 +493,7 @@ body::before{
 .med-chip{font-size:11px;font-weight:700;color:var(--text);background:var(--surface-hover);border-radius:6px;padding:3px 8px;}
 .med-chip small{color:var(--text3);font-weight:500;font-size:10px;}
 /* ── Attendance heatmap (3.2) ── */
-.attend-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 16px 14px;margin-bottom:14px;}
+.attend-wrap{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:18px 16px 14px;margin-bottom:14px;}
 .attend-stats{display:flex;margin-bottom:18px;}
 .attend-stat{flex:1;text-align:center;border-right:1px solid var(--border);}
 .attend-stat:last-child{border-right:none;}
@@ -435,6 +529,78 @@ body::before{
 .memb-expiry-banner.expired{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));border:1px solid rgba(239,68,68,.4);color:#FCA5A5;}
 .memb-expiry-banner .meb-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .memb-expiry-banner .meb-cta{font-size:11px;white-space:nowrap;opacity:.8;}
+
+/* ── Metric Hero (Progreso v5) ── */
+.metric-hero{
+  background:var(--bg-card);border:1px solid var(--border-accent);
+  border-radius:24px;padding:24px;margin-bottom:12px;
+  box-shadow:var(--glow-soft);position:relative;overflow:hidden;
+}
+.metric-hero::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,var(--cyan-dim) 0%,transparent 60%);
+  border-radius:50%;
+}
+.metric-hero-label{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;position:relative;}
+.metric-hero-value{font-family:var(--fd);font-size:52px;font-weight:800;line-height:1;letter-spacing:-.03em;margin-bottom:4px;position:relative;}
+.metric-hero-unit{font-size:16px;color:var(--text2);font-weight:500;margin-left:4px;}
+.metric-trend-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--fm);font-size:11px;color:var(--ok);
+  padding:4px 10px;background:rgba(16,232,160,.1);border-radius:6px;
+  position:relative;
+}
+.metric-trend-pill.neg{color:var(--danger);background:rgba(248,113,113,.1);}
+
+/* ── Chart card ── */
+.chart-card{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:16px;padding:16px;margin-bottom:8px;
+}
+.chart-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.chart-title-text{font-size:13px;font-weight:600;color:var(--text);}
+.chart-period{font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--text3);}
+
+/* ── PR Card ── */
+.pr-card{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:16px;padding:16px;margin-bottom:8px;
+}
+.pr-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:12px;text-transform:uppercase;}
+.pr-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft);}
+.pr-row:last-child{border-bottom:none;}
+.pr-name{font-size:12px;color:var(--text2);}
+.pr-value{font-family:var(--fd);font-size:16px;font-weight:700;color:#fff;}
+.pr-unit{font-size:11px;color:var(--text3);margin-left:2px;}
+
+/* ── Membership Hero (v5 plan/QR view) ── */
+.membership-hero{
+  background:linear-gradient(135deg,var(--bg-card),rgba(0,212,255,.08));
+  border:1px solid var(--border-accent);border-radius:24px;
+  padding:24px;margin-bottom:16px;
+  box-shadow:var(--glow-medium);position:relative;overflow:hidden;
+}
+.membership-hero::before{
+  content:'';position:absolute;top:-80px;right:-80px;
+  width:240px;height:240px;
+  background:radial-gradient(circle,var(--cyan-bright) 0%,transparent 60%);
+  border-radius:50%;
+}
+.plan-name{font-family:var(--fd);font-size:28px;font-weight:800;letter-spacing:-.02em;position:relative;margin-bottom:4px;}
+.plan-status{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--fm);font-size:10px;color:var(--ok);
+  padding:3px 8px;background:rgba(16,232,160,.1);border-radius:999px;
+  margin-bottom:16px;position:relative;
+}
+.plan-status::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);}
+.plan-status.inactive{color:var(--danger);background:rgba(248,113,113,.1);}
+.plan-status.inactive::before{background:var(--danger);box-shadow:0 0 6px var(--danger);}
+.plan-detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft);position:relative;}
+.plan-detail-row:last-child{border-bottom:none;}
+.plan-detail-label{font-size:12px;color:var(--text2);}
+.plan-detail-value{font-size:13px;font-weight:600;color:var(--text);}
 
 /* ══════════════════════════════════════
    QUICK ACTIONS
@@ -478,11 +644,13 @@ body::before{
    CLASES — Reservas View
 ══════════════════════════════════════ */
 /* Day tab strip */
+/* ── Week strip (new pill design) ── */
 .cls-day-tabs{
   display:flex;gap:6px;padding:0 16px 14px;
   overflow-x:auto;scrollbar-width:none;flex-shrink:0;
 }
 .cls-day-tabs::-webkit-scrollbar{display:none;}
+/* Legacy pill tab (kept for backwards compat) */
 .cls-day-tab{
   flex-shrink:0;padding:7px 14px;border-radius:99px;
   font-size:11px;font-weight:800;color:var(--text3);
@@ -493,44 +661,61 @@ body::before{
   background:rgba(0,212,255,.12);border-color:var(--border-accent);
   color:var(--accent-light);box-shadow:0 0 10px rgba(0,212,255,.12);
 }
-.cls-day-tab:active{transform:scale(.95);}
-/* Class card */
+/* New day-pill (tall box) */
+.day-pill{
+  flex-shrink:0;width:48px;background:var(--bg-card);
+  border:1px solid var(--border-soft);border-radius:12px;
+  padding:10px 4px;text-align:center;cursor:pointer;
+  transition:all 200ms var(--ease-out);
+}
+.day-pill-label{font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.5px;margin-bottom:4px;text-transform:uppercase;}
+.day-pill-num{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text);}
+.day-pill.active{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 16px rgba(0,212,255,.4);}
+.day-pill.active .day-pill-label,.day-pill.active .day-pill-num{color:#001828;}
+.day-pill.has-class::after{content:'';display:block;width:4px;height:4px;background:var(--cyan);border-radius:50%;margin:4px auto 0;}
+.day-pill.active.has-class::after{background:#001828;}
+
+/* ── Class card (new design) ── */
 .cls-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:18px;overflow:hidden;
-  margin-bottom:10px;transition:border-color .15s,background .15s;
-  position:relative;
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:16px;padding:14px;margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;
+  transition:all 200ms var(--ease-out);position:relative;overflow:hidden;
+  cursor:pointer;
 }
-.cls-card.reserved{
-  background:rgba(0,212,255,.05);
-  border-color:rgba(0,212,255,.22);
-}
-.cls-card.cancelada{
-  background:rgba(239,68,68,.04);
-  border-color:rgba(239,68,68,.15);
-  opacity:.7;
-}
+.cls-card:hover{border-color:var(--border-medium);transform:translateX(2px);}
+.cls-card.reserved{border-color:var(--border-accent);background:linear-gradient(135deg,var(--bg-card),rgba(0,212,255,.04));}
+.cls-card.cancelada{opacity:.5;pointer-events:none;}
 .cls-cancel-badge{
   font-size:11px;font-weight:700;color:#f87171;
   background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);
-  border-radius:8px;padding:4px 10px;
+  border-radius:8px;padding:4px 10px;flex-shrink:0;
 }
 .cls-card.reserved::before{
   content:'';position:absolute;top:0;left:0;right:0;
-  height:2px;background:var(--accent);border-radius:18px 18px 0 0;
+  height:2px;background:var(--cyan);border-radius:16px 16px 0 0;
 }
-.cls-card-head{
-  display:flex;align-items:flex-start;justify-content:space-between;
-  padding:14px 16px 10px;
+/* Time block inside card */
+.cls-time-block{
+  background:var(--bg-input);border-radius:10px;
+  padding:8px 10px;text-align:center;flex-shrink:0;min-width:56px;
 }
-.cls-card-time{
-  font-family:var(--fd);font-size:24px;font-weight:900;color:#fff;
-  line-height:1;letter-spacing:-.5px;
-}
-.cls-card-type{
-  font-size:10px;font-weight:800;color:var(--accent);
-  text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;
-}
+.cls-time-hour{font-family:var(--fd);font-size:17px;font-weight:700;line-height:1;color:#fff;}
+.cls-time-mer{font-family:var(--fm);font-size:8px;color:var(--text3);letter-spacing:.5px;margin-top:2px;}
+/* Class info */
+.cls-info{flex:1;min-width:0;}
+.cls-card-type{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.cls-coach{font-size:11px;color:var(--text2);}
+/* Spots / status right */
+.cls-spots{text-align:right;font-family:var(--fm);flex-shrink:0;}
+.cls-cupo-num{font-size:12px;color:var(--cyan);font-weight:700;}
+.cls-cupo-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.cls-cupo-bar{height:3px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;width:44px;margin-top:4px;}
+.cls-cupo-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+/* Legacy head/body structure (kept for compat) */
+.cls-card-head{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 16px 10px;}
+.cls-card-time{font-family:var(--fd);font-size:24px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.5px;}
+.cls-card-body{padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 /* Waitlist button */
 .cls-btn.waitlist{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.3);}
 .cls-btn.waitlist:active{transform:scale(.97);}
@@ -599,7 +784,7 @@ body::before{
 .bit-search-input:focus{border-color:var(--accent);}
 .bit-day-group{padding:0 16px;margin-bottom:20px;}
 .bit-day-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
-.bit-entry{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;}
+.bit-entry{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;}
 .bit-type-dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
 .bit-type-dot.fuerza{background:rgba(139,92,246,.12);}
 .bit-type-dot.cardio{background:rgba(249,115,22,.12);}
@@ -703,6 +888,51 @@ body::before{
 .wk-es-msg{font-size:13px;color:var(--text2);font-weight:500;margin-bottom:10px;}
 .wk-es-cta{display:inline-block;font-size:12px;font-weight:700;color:var(--accent);border:1px solid rgba(0,212,255,.35);border-radius:20px;padding:6px 16px;cursor:pointer;transition:background .15s;}
 .wk-es-cta:hover,.wk-es-cta:active{background:rgba(0,212,255,.1);}
+
+/* ── Coach IA Header (Plan v5) ── */
+.coach-ia-header{
+  background:linear-gradient(135deg,var(--bg-card),rgba(0,212,255,.06));
+  border:1px solid var(--border-accent);border-radius:18px;
+  padding:16px;margin-bottom:16px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:var(--glow-soft);
+}
+.coach-ia-icon{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--cyan-dark),var(--cyan));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 0 16px rgba(0,212,255,.3);
+}
+.coach-ia-icon svg{width:22px;height:22px;fill:none;stroke:#001828;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.coach-ia-title{font-size:13px;font-weight:600;margin-bottom:2px;color:var(--text);}
+.coach-ia-meta{font-family:var(--fm);font-size:10px;color:var(--text2);letter-spacing:.5px;}
+
+/* ── Exercise Card (Plan v5) ── */
+.exercise-card{
+  background:var(--bg-card);border:1px solid var(--border-soft);
+  border-radius:14px;padding:14px;margin-bottom:8px;
+  transition:all 200ms var(--ease-out);
+}
+.exercise-card.done{opacity:.5;}
+.exercise-card.active{border-color:var(--cyan);box-shadow:var(--glow-soft);}
+.exercise-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.exercise-number{font-family:var(--fm);font-size:10px;color:var(--text3);letter-spacing:1px;}
+.exercise-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.exercise-sets{display:flex;gap:6px;flex-wrap:wrap;}
+.set-chip{
+  font-family:var(--fm);font-size:10px;padding:4px 8px;
+  background:var(--bg-input);border:1px solid var(--border-soft);
+  border-radius:6px;color:var(--text2);
+}
+.set-chip.done{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan);}
+.exercise-check{
+  width:22px;height:22px;border-radius:50%;
+  border:1.5px solid var(--border-medium);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 200ms var(--ease-out);flex-shrink:0;
+}
+.exercise-check.checked{background:var(--cyan);border-color:var(--cyan);}
+.exercise-check.checked svg{width:12px;height:12px;fill:#001828;}
 
 /* ══════════════════════════════════════
    PROGRAMA VIEW
@@ -1398,18 +1628,22 @@ body::before{
       <!-- Mobile layout -->
       <div id="home-mobile">
         <div class="greeting au au1">
-          <div class="greeting-hi" id="greeting-hi">Buenos días 👋</div>
+          <div class="greeting-hi" id="greeting-hi">Buenos días</div>
           <div class="greeting-name" id="atleta-nombre">—</div>
         </div>
+        <div class="screen-date-line au au1" id="screen-date-line">—</div>
+        <div id="home-ring-wrap" class="au au2"></div>
+        <div id="next-class-wrap-mobile" class="au au3"></div>
+        <div class="home-mini-stats au au3" id="home-mini-stats-mobile"></div>
         <div id="memb-expiry-banner-mobile" class="memb-expiry-banner"></div>
-        <div id="membership-card-wrap" class="au au2"></div>
-        <div id="paquete-section" style="display:none;" class="section au au3">
+        <div id="membership-card-wrap" class="au au4" style="display:none;"></div>
+        <div id="paquete-section" style="display:none;" class="section au au4">
           <div class="sec-hdr"><div class="sec-title">📦 Paquete activo</div></div>
           <div id="pkg-card-container"></div>
         </div>
-        <div class="stats-row au au3" id="stats-row-mobile"></div>
+        <div class="stats-row au au4" id="stats-row-mobile" style="display:none;"></div>
         <div id="streak-banner-mobile" class="streak-banner" style="display:none;"></div>
-        <div id="proxima-clase-mobile" style="display:none;" class="section au au4"></div>
+        <div id="proxima-clase-mobile" style="display:none;" class="section" style="display:none;"></div>
         <div class="quick-actions au au5">
           <div class="qa primary" onclick="switchView('clases')">
             <div class="qa-svg-ico blue">
@@ -2534,13 +2768,14 @@ function statsRowHTML(data){
 // ── Render home data ─────────────────────────────────
 function renderHomeData(data){
   const {paquete,checkins}=data;
+
+  // Desktop: membership card (unchanged)
   const cardHTML=membershipCardHTML(data);
-  const wrap=$('membership-card-wrap'); if(wrap) wrap.innerHTML=cardHTML;
   const wDesk=$('membership-card-desk'); if(wDesk) wDesk.innerHTML=cardHTML;
 
+  // Desktop: stats row
   const statsHTML=statsRowHTML(data);
-  const statsM=$('stats-row-mobile'); if(statsM) statsM.innerHTML=statsHTML;
-  const statsD=$('stats-row-desk');   if(statsD) statsD.innerHTML=statsHTML;
+  const statsD=$('stats-row-desk'); if(statsD) statsD.innerHTML=statsHTML;
 
   const visits=(checkins||[]).length;
   ['qa-visits-sub','qa-visits-desk'].forEach(id=>set(id,visits?`${visits} visitas registradas`:'Sin check-ins aún'));
@@ -2552,17 +2787,19 @@ function renderHomeData(data){
   }
 
   renderTodayWorkout(data.programasHoy);
-
-  // Membership expiry banner
   renderMembExpiryBanner(data);
-
-  // 1.4 — Streak motivational banner
   renderStreakBanner(data);
 
-  // Task #64 — próxima clase reservada
+  // ── New v5 home components ──
+  renderScreenDateLine();
+  renderHomeRing(data);
+  renderHomeMiniStats(data);
+  renderNextClassCard();   // New-style next-class card (replaces proxima-clase)
+
+  // Legacy proxima-clase (desktop still uses it)
   renderProximaClase();
 
-  // Animate ring + count-up after a frame
+  // Animate ring + count-up
   setTimeout(()=>{
     animateRings();
     document.querySelectorAll('.stat-num[data-count]').forEach(el=>{
@@ -2570,6 +2807,156 @@ function renderHomeData(data){
       if(!isNaN(t)&&t>0) countUp(el,t);
     });
   },120);
+}
+
+// ── Screen date line ──────────────────────────────────
+function renderScreenDateLine(){
+  const el=$('screen-date-line'); if(!el) return;
+  const now=new Date();
+  const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  el.textContent=`${DIAS[now.getDay()]} · ${now.getDate()} ${MESES[now.getMonth()]} · ${now.getFullYear()}`;
+}
+
+// ── Home Ring Card — weekly goal ──────────────────────
+function renderHomeRing(data){
+  const el=$('home-ring-wrap'); if(!el) return;
+  const checkins=data.checkins||[];
+  const meta=parseInt(data.cliente?.meta_semanal)||4;
+
+  // Count checkins Mon–today (current week)
+  const now=new Date();
+  const dow=now.getDay(); // 0=Sun
+  const mondayMs=new Date(now).setDate(now.getDate() - (dow===0?6:dow-1));
+  const mondayStr=new Date(mondayMs).toISOString().slice(0,10);
+  const todayStr=now.toISOString().slice(0,10);
+  const weekCheckins=checkins.filter(c=>(c.fecha||'')>=mondayStr&&(c.fecha||'')<=todayStr).length;
+
+  const pct=Math.min(100,Math.round((weekCheckins/meta)*100));
+  const circ=2*Math.PI*36; // r=36 → circumference ≈ 226
+  const offset=circ*(1-pct/100);
+  const remaining=Math.max(0,meta-weekCheckins);
+  const metaMsg=remaining===0?'¡Meta semanal cumplida! 🎉'
+    :remaining===1?'Una clase más para tu meta'
+    :`${remaining} clase${remaining===1?'':'s'} para tu meta`;
+
+  el.innerHTML=`<div class="ring-card-v">
+    <div class="rcv-ring">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle class="rcv-ring-bg" cx="40" cy="40" r="36"/>
+        <circle class="rcv-ring-prog" cx="40" cy="40" r="36"
+          stroke-dasharray="${circ.toFixed(1)}"
+          stroke-dashoffset="${offset.toFixed(1)}"/>
+      </svg>
+      <div class="rcv-pct">${pct}%</div>
+    </div>
+    <div class="rcv-info">
+      <div class="rcv-label">META SEMANAL</div>
+      <div class="rcv-value">${weekCheckins} / ${meta}</div>
+      <div class="rcv-meta">${metaMsg}</div>
+    </div>
+  </div>`;
+}
+
+// ── Home Mini Stats ───────────────────────────────────
+function renderHomeMiniStats(data){
+  const el=$('home-mini-stats-mobile'); if(!el) return;
+  const checkins=data.checkins||[];
+  const streak=calcStreak(checkins,data.ausentes||[]);
+  const monthPrefix=new Date().toISOString().slice(0,7);
+  const monthCount=checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
+
+  const streakColor=streak>=7?'var(--warn)':streak>=3?'var(--ok)':'var(--text3)';
+  const streakTrend=streak>=14?'🏆 Élite':streak>=7?'🔥 ¡Una semana!':streak>=3?'💪 ¡Sigue así!':'';
+
+  el.innerHTML=`
+    <div class="hms-card">
+      <div class="hms-label">RACHA</div>
+      <div class="hms-value" style="color:${streakColor}">${streak}<span class="hms-unit">días</span></div>
+      ${streakTrend?`<div class="hms-trend">${streakTrend}</div>`:''}
+    </div>
+    <div class="hms-card">
+      <div class="hms-label">ESTE MES</div>
+      <div class="hms-value">${monthCount}<span class="hms-unit">clases</span></div>
+      <div class="hms-trend">${checkins.length} total</div>
+    </div>`;
+}
+
+// ── Next Class card v5 (new styled for next-class-wrap-mobile) ──
+function renderNextClassCard(){
+  const wrap=$('next-class-wrap-mobile'); if(!wrap) return;
+  const today=new Date().toISOString().slice(0,10);
+
+  const proximas=Object.entries(clasesReservas)
+    .map(([key,r])=>{
+      const fecha=key.split('_').slice(1).join('_');
+      const hid=r.horario_id;
+      const slot=clasesHorarios.find(h=>h.id===hid);
+      if(!slot||!fecha) return null;
+      if(clasesCancelaciones[key]) return null;
+      return {fecha,slot,r};
+    })
+    .filter(x=>x&&x.fecha>=today)
+    .sort((a,b)=>{
+      if(a.fecha!==b.fecha) return a.fecha<b.fecha?-1:1;
+      return _horaToMin(a.slot.hora)-_horaToMin(b.slot.hora);
+    });
+
+  if(!proximas.length){
+    // No reservation — show CTA to book
+    wrap.innerHTML=`<div class="next-class-card" onclick="switchView('clases')">
+      <span class="h-badge">PRÓXIMA CLASE</span>
+      <div class="ncc-title">Sin reservas activas</div>
+      <div class="ncc-coach">Reserva una clase para verla aquí</div>
+      <div class="ncc-time-row">
+        <div>
+          <div class="ncc-time" style="font-size:15px;color:var(--text3)">Ver clases →</div>
+          <div class="ncc-countdown">HORARIO DISPONIBLE</div>
+        </div>
+        <button class="ncc-btn reservar" onclick="event.stopPropagation();switchView('clases')">RESERVAR</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const {fecha,slot}=proximas[0];
+  const fechaDate=new Date(fecha+'T12:00:00');
+  const todayDate=new Date(today+'T12:00:00');
+  const diff=Math.round((fechaDate-todayDate)/(1000*60*60*24));
+  const diasLbl=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const cuandoLabel=diff===0?'HOY':diff===1?'MAÑANA':diasLbl[fechaDate.getDay()].toUpperCase();
+
+  const tipo=slot.tipo||'Clase';
+  const hora=(_fmtHora?_fmtHora(slot.hora):slot.hora)||'';
+  const coach=slot.coach?`con ${slot.coach}`:'';
+
+  // Calculate countdown if today
+  let countdownTxt='';
+  if(diff===0){
+    const [hh,mm]=(slot.hora||'00:00').split(':').map(Number);
+    const now=new Date();
+    const claseMs=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm).getTime()-now.getTime();
+    if(claseMs>0){
+      const mins=Math.floor(claseMs/60000);
+      if(mins<60) countdownTxt=`EN ${mins} MIN`;
+      else countdownTxt=`EN ${Math.floor(mins/60)}H ${mins%60}MIN`;
+    } else {
+      countdownTxt='EN CURSO';
+    }
+  }
+
+  wrap.innerHTML=`<div class="next-class-card" onclick="switchView('clases')">
+    <span class="h-badge">${cuandoLabel}</span>
+    <div class="ncc-title">${tipo}</div>
+    ${coach?`<div class="ncc-coach">${coach}</div>`:''}
+    <div class="ncc-time-row">
+      <div>
+        <div class="ncc-time">${hora}</div>
+        ${countdownTxt?`<div class="ncc-countdown">${countdownTxt}</div>`:''}
+      </div>
+      <button class="ncc-btn" onclick="event.stopPropagation();switchView('clases')">VER →</button>
+    </div>
+  </div>`;
 }
 
 // ── Streak motivational banner (1.4) ─────────────────
@@ -3305,13 +3692,27 @@ async function loadClasesData(){
       clasesActiveDia = tabDias[0] || null;
     }
 
-    // Render day tabs
+    // Render day pills (v5 design)
     const tabsEl = $('cls-day-tabs');
     if(tabsEl){
+      const DIASCORTO=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
       tabsEl.innerHTML = tabDias.map(d=>{
         const dd = dates.find(x=>x.dia===d);
-        const label = _diaLabel(d, dd ? dd.fecha : null);
-        return `<div class="cls-day-tab${d===clasesActiveDia?' active':''}" onclick="clsSelectDia('${d}')">${label}</div>`;
+        const fecha = dd ? dd.fecha : null;
+        const today2 = new Date().toISOString().slice(0,10);
+        const tom2 = new Date(); tom2.setDate(tom2.getDate()+1);
+        const tomStr2 = tom2.toISOString().slice(0,10);
+        // Pill label: 3-letter day name, unless today/mañana
+        let lblTop = fecha===today2?'HOY':fecha===tomStr2?'MAÑ':d.slice(0,3).toUpperCase();
+        // Pill number: day of month
+        const dateNum = fecha ? parseInt(fecha.slice(8,10),10) : '';
+        // Has classes indicator
+        const hasCls = clasesHorarios.some(h=>h.dia===d);
+        const isActive = d===clasesActiveDia;
+        return `<div class="day-pill${isActive?' active':''}${hasCls?' has-class':''}" onclick="clsSelectDia('${d}')">
+          <div class="day-pill-label">${lblTop}</div>
+          <div class="day-pill-num">${dateNum}</div>
+        </div>`;
       }).join('');
     }
 
@@ -3338,19 +3739,15 @@ function _diaLabel(dia, fecha){
 
 function clsSelectDia(dia){
   clasesActiveDia = dia;
-  // Update tab active state
-  document.querySelectorAll('.cls-day-tab').forEach(t=>{
-    t.classList.toggle('active', t.textContent.trim()===_diaLabel(dia, _fechaForDia(dia)) || t.onclick?.toString().includes(`'${dia}'`));
-  });
-  // Re-render tabs highlighting correct one
+  // Update pill active states
   const tabsEl = $('cls-day-tabs');
   if(tabsEl){
-    tabsEl.querySelectorAll('.cls-day-tab').forEach(t=>{
-      const matches = t.getAttribute('onclick')===`clsSelectDia('${dia}')`;
+    tabsEl.querySelectorAll('.day-pill,.cls-day-tab').forEach(t=>{
+      const matches = (t.getAttribute('onclick')||'').includes(`'${dia}'`);
       t.classList.toggle('active', matches);
     });
   }
-  // Rebuild dates array
+  // Rebuild dates array and render
   const today = new Date();
   const dates = [];
   for(let i=0;i<7;i++){
@@ -3389,13 +3786,13 @@ function renderClasesView(dates){
     const isCancelada = !!clasesCancelaciones[key];
     if(isCancelada){
       return `<div class="cls-card cancelada">
-        <div class="cls-card-head">
-          <div>
-            <div class="cls-card-time" style="opacity:.45;">${_fmtHora(h.hora)}</div>
-            <div class="cls-card-type" style="opacity:.45;text-decoration:line-through;">${h.tipo||'Clase'}</div>
-          </div>
-          <div class="cls-cancel-badge">🚫 Cancelada</div>
+        <div class="cls-time-block" style="opacity:.4;">
+          <div class="cls-time-hour" style="text-decoration:line-through;font-size:13px;">${h.hora||'—'}</div>
         </div>
+        <div class="cls-info" style="opacity:.4;">
+          <div class="cls-card-type">${h.tipo||'Clase'}</div>
+        </div>
+        <div class="cls-cancel-badge">🚫 Cancelada</div>
       </div>`;
     }
     const cupoTotal  = h.cupo || 0;
@@ -3441,21 +3838,38 @@ function renderClasesView(dates){
       btnHtml = `<button class="cls-btn reserve" onclick="crearReserva('${h.id}','${fecha}','${(h.tipo||'').replace(/'/g,"\\'")}','${(h.hora||'').replace(/'/g,"\\'")}')">Reservar</button>`;
     }
 
-    return `<div class="cls-card${isReserved?' reserved':''}" id="cls-card-${key}">
-      <div class="cls-card-head">
-        <div>
-          <div class="cls-card-time">${_fmtHora(h.hora)}</div>
-          <div class="cls-card-type">${h.tipo||'Clase'}${isReserved?' · ✓ Reservado':''}</div>
-        </div>
-        <div class="cls-cupo-badge">
-          <span class="cls-cupo-num" style="color:${cupoColor};">${cupoText}</span>
-          <span class="cls-cupo-lbl">${isFull&&wlCount>0?wlCount+' en espera':'disponibles'}</span>
-          <div class="cls-cupo-bar"><div class="cls-cupo-fill" style="width:${pct}%;background:${barColor};"></div></div>
-        </div>
+    // Parse hour/meridiem for time block
+    const rawHora = h.hora||'';
+    const isPm24 = (()=>{ const hNum=parseInt(rawHora.split(':')[0],10); return hNum>=12&&!rawHora.toLowerCase().includes('am'); })();
+    const isAmSuffix = rawHora.toLowerCase().includes('am');
+    const isPmSuffix = rawHora.toLowerCase().includes('pm');
+    let displayHour = rawHora.replace(/[apm\s]/gi,'');
+    if(!isAmSuffix&&!isPmSuffix&&displayHour){
+      const hNum=parseInt(displayHour.split(':')[0],10);
+      const mNum=displayHour.split(':')[1]||'00';
+      const h12=hNum>12?hNum-12:hNum||12;
+      displayHour=`${h12}:${mNum}`;
+    }
+    const meridiem = isAmSuffix?'AM':isPmSuffix?'PM':isPm24?'PM':'AM';
+
+    const reservedBadge = isReserved?`<div class="h-badge" style="margin-bottom:4px;font-size:8px;">✓ RESERVADO</div>`:'';
+    const coachTxt = h.coach_nombre||'';
+
+    return `<div class="cls-card${isReserved?' reserved':''}${isFull&&!isReserved?' full':''}" id="cls-card-${key}">
+      <div class="cls-time-block">
+        <div class="cls-time-hour">${displayHour}</div>
+        <div class="cls-time-mer">${meridiem}</div>
       </div>
-      <div class="cls-card-body">
-        <div class="cls-coach">${h.coach_nombre ? '👤 <span>'+h.coach_nombre+'</span>' : '<span style="opacity:.4;">Sin coach asignado</span>'}</div>
-        ${btnHtml}
+      <div class="cls-info">
+        ${reservedBadge}
+        <div class="cls-card-type">${h.tipo||'Clase'}</div>
+        <div class="cls-coach">${coachTxt||'<span style="opacity:.4">Sin coach</span>'}</div>
+      </div>
+      <div class="cls-spots">
+        <div class="cls-cupo-num" style="color:${cupoColor};">${cupoText}</div>
+        <div class="cls-cupo-lbl">${isFull&&wlCount>0?wlCount+' espera':cupoTotal>0?'lugares':'—'}</div>
+        <div class="cls-cupo-bar"><div class="cls-cupo-fill" style="width:${pct}%;background:${barColor};"></div></div>
+        <div style="margin-top:8px;">${btnHtml}</div>
       </div>
     </div>`;
   }).join('');
