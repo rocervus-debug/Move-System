@@ -1005,6 +1005,16 @@ body{
 .cp-email{background:rgba(96,165,250,.15);color:#60a5fa;}
 .cp-reel{background:rgba(251,191,36,.15);color:#fbbf24;}
 .cp-story{background:rgba(16,232,160,.15);color:var(--ok);}
+.cp-aviso{background:rgba(239,68,68,.15);color:#f87171;}
+
+/* ── Marketing calendar enhanced ── */
+.cal-mkt-nav{display:flex;align-items:center;gap:8px;}
+.cal-holiday-badge{font-size:8px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(251,191,36,.18);color:#fbbf24;margin-bottom:2px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;cursor:default;}
+.cal-birthday-badge{font-size:8px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(236,72,153,.18);color:#f472b6;margin-bottom:2px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;cursor:default;}
+.cal-day{cursor:pointer;}
+.cal-day.today{border-color:var(--accent)!important;background:rgba(0,212,255,.07)!important;}
+.cal-day.holiday-day{background:rgba(251,191,36,.03);}
+.cal-today-num{color:var(--accent);font-weight:900;}
 
 /* Campaign cards */
 .camp-card{
@@ -3971,13 +3981,27 @@ body::before{
         <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value" id="mkt-solicitudes">0</div><div class="kpi-meta">Sin responder</div></div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">📅 Calendario de Contenido</div><button class="btn btn-primary btn-sm" onclick="openModal('contenido')">+ Agregar</button></div>
+        <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+          <div class="card-title">📅 Calendario de Contenido</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="cal-mkt-nav">
+              <button class="btn btn-outline btn-sm" onclick="mktPrevMonth()" style="padding:3px 10px;font-size:14px;">‹</button>
+              <span id="mkt-mes-label" style="font-size:14px;font-weight:800;min-width:140px;text-align:center;color:var(--text1);">—</span>
+              <button class="btn btn-outline btn-sm" onclick="mktNextMonth()" style="padding:3px 10px;font-size:14px;">›</button>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="mktGoToday()" style="font-size:11px;">Hoy</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('contenido')">+ Agregar</button>
+          </div>
+        </div>
         <div class="cal-grid" id="cal-grid"></div>
-        <div style="display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="display:flex;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center;">
           <span class="cal-post cp-reel" style="display:inline;">🎬 Reel</span>
           <span class="cal-post cp-ig" style="display:inline;">📸 Feed</span>
           <span class="cal-post cp-story" style="display:inline;">📲 Story</span>
           <span class="cal-post cp-email" style="display:inline;">📧 Email</span>
+          <span class="cal-post cp-aviso" style="display:inline;">📢 Aviso</span>
+          <span class="cal-holiday-badge" style="display:inline;margin:0;">🏛 Festivo MX</span>
+          <span class="cal-birthday-badge" style="display:inline;margin:0;">🎂 Cumpleaños</span>
         </div>
       </div>
     </div>
@@ -5509,9 +5533,9 @@ body::before{
     </div>
     <div class="modal-body">
       <div class="field-grid">
-        <div class="field"><label>Día de Abril *</label><input id="co-dia" type="number" placeholder="1" min="1" max="30"/></div>
+        <div class="field"><label>Fecha *</label><input id="co-fecha" type="date"/></div>
         <div class="field"><label>Tipo</label>
-          <select id="co-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option></select>
+          <select id="co-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option><option value="Aviso">📢 Aviso comunidad</option></select>
         </div>
       </div>
       <div class="field"><label>Título / Descripción *</label><input id="co-titulo" type="text" placeholder="Ej: Reel Strength – tutorial snatch"/></div>
@@ -5533,9 +5557,9 @@ body::before{
     <div class="modal-body">
       <input type="hidden" id="eco-id"/>
       <div class="field-grid">
-        <div class="field"><label>Día de Abril *</label><input id="eco-dia" type="number" placeholder="1" min="1" max="30"/></div>
+        <div class="field"><label>Fecha *</label><input id="eco-fecha" type="date"/></div>
         <div class="field"><label>Tipo</label>
-          <select id="eco-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option></select>
+          <select id="eco-tipo"><option value="Reel">🎬 Reel</option><option value="Feed">📸 Feed</option><option value="Story">📲 Story</option><option value="Email">📧 Email</option><option value="Aviso">📢 Aviso comunidad</option></select>
         </div>
       </div>
       <div class="field"><label>Título / Descripción *</label><input id="eco-titulo" type="text" placeholder="Ej: Reel Strength – tutorial snatch"/></div>
@@ -7978,10 +8002,10 @@ async function loadSolicitudesFromSupabase(){
 }
 
 async function loadContenidosFromSupabase(){
-  const { data, error } = await gf(window.supabaseClient.from('contenidos').select('*')).order('dia');
+  const { data, error } = await gf(window.supabaseClient.from('contenidos').select('*')).order('fecha',{ascending:true});
   if(error){ console.error('Error cargando contenidos:', error); return; }
   contenidos = (data||[]).map(c=>({
-    id: c.id, dia: c.dia||1, tipo: c.tipo||'', titulo: c.titulo||''
+    id: c.id, dia: c.dia||null, fecha: c.fecha||null, tipo: c.tipo||'', titulo: c.titulo||''
   }));
 }
 
@@ -15732,31 +15756,109 @@ function renderSolicitudes(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CALENDARIO DE CONTENIDO
+// CALENDARIO DE CONTENIDO — con festivos MX y cumpleaños
 // ═══════════════════════════════════════════════════════════════════
-const CON_TIPO_CLASS = {Reel:'cp-reel',Feed:'cp-ig',Story:'cp-story',Email:'cp-email'};
-const CON_TIPO_ICO   = {Reel:'🎬',Feed:'📸',Story:'📲',Email:'📧'};
+const CON_TIPO_CLASS = {Reel:'cp-reel',Feed:'cp-ig',Story:'cp-story',Email:'cp-email',Aviso:'cp-aviso'};
+const CON_TIPO_ICO   = {Reel:'🎬',Feed:'📸',Story:'📲',Email:'📧',Aviso:'📢'};
+
+let _mktYear  = new Date().getFullYear();
+let _mktMonth = new Date().getMonth() + 1; // 1-indexed
+
+function mktPrevMonth(){ _mktMonth--; if(_mktMonth<1){_mktMonth=12;_mktYear--;} renderCalendario(); }
+function mktNextMonth(){ _mktMonth++; if(_mktMonth>12){_mktMonth=1;_mktYear++;} renderCalendario(); }
+function mktGoToday(){ _mktYear=new Date().getFullYear(); _mktMonth=new Date().getMonth()+1; renderCalendario(); }
+
+// ── Días festivos fijos de México (mes 1-12, día)
+const MX_FESTIVOS_FIJOS = [
+  [1,1,'🎊 Año Nuevo'],
+  [2,5,'🏛 Día de la Constitución'],
+  [3,21,'⚖️ Natalicio de Juárez'],
+  [5,1,'👷 Día del Trabajo'],
+  [5,10,'💐 Día de las Madres'],
+  [9,15,'🎆 Grito de Independencia'],
+  [9,16,'🇲🇽 Independencia'],
+  [10,12,'🌎 Día de la Raza'],
+  [11,1,'👼 Día de Todos los Santos'],
+  [11,2,'💀 Día de Muertos'],
+  [12,12,'🌹 Virgen de Guadalupe'],
+  [12,24,'🎄 Nochebuena'],
+  [12,25,'🎅 Navidad'],
+  [12,31,'🥂 Fin de Año'],
+];
+
+// ── Algoritmo de Pascua (Gregoriano anónimo)
+function getEasterSunday(year){
+  const a=year%19, b=Math.floor(year/100), c=year%100;
+  const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31);
+  const day=((h+l-7*m+114)%31)+1;
+  return new Date(year, month-1, day);
+}
+
+// ── N-ésimo día de la semana en un mes (ej: 1er lunes de febrero)
+function getNthWeekday(year, month, dow, nth){
+  // dow: 0=Dom,1=Lun...6=Sáb | nth: 1-based
+  let count=0;
+  const max=new Date(year,month,0).getDate();
+  for(let d=1;d<=max;d++){
+    if(new Date(year,month-1,d).getDay()===dow){ count++; if(count===nth) return d; }
+  }
+  return null;
+}
+
+// ── Festivos calculables por año (puentes LFT + Semana Santa)
+function getMxFestivos(year, month){
+  const result = [];
+  // Fijos
+  MX_FESTIVOS_FIJOS.forEach(([m,d,label])=>{ if(m===month) result.push({day:d,label}); });
+  // Puente: Constitución → 1er lunes de febrero (LFT)
+  if(month===2){ const d=getNthWeekday(year,2,1,1); if(d) result.push({day:d,label:'🏛 Constitución (puente)'}); }
+  // Puente: Juárez → 3er lunes de marzo (LFT)
+  if(month===3){ const d=getNthWeekday(year,3,1,3); if(d) result.push({day:d,label:'⚖️ Natalicio Juárez (puente)'}); }
+  // Puente: Revolución → 3er lunes de noviembre (LFT)
+  if(month===11){ const d=getNthWeekday(year,11,1,3); if(d) result.push({day:d,label:'🎖 Revolución Mexicana (puente)'}); }
+  // Semana Santa (móvil)
+  const easter = getEasterSunday(year);
+  const jueves = new Date(easter); jueves.setDate(easter.getDate()-3);
+  const viernes= new Date(easter); viernes.setDate(easter.getDate()-2);
+  const sabado = new Date(easter); sabado.setDate(easter.getDate()-1);
+  [[jueves,'✝️ Jueves Santo'],[viernes,'✝️ Viernes Santo'],[sabado,'🐣 Sábado de Gloria'],[easter,'🌅 Pascua']].forEach(([dt,label])=>{
+    if(dt.getMonth()+1===month) result.push({day:dt.getDate(),label});
+  });
+  return result;
+}
+
+// ── Abrir modal pre-llenando la fecha del día clickeado
+function openContenidoForDay(fecha){
+  const inp = document.getElementById('co-fecha');
+  if(inp) inp.value = fecha;
+  openModal('contenido');
+}
 
 async function saveContenido(){
   const titulo = document.getElementById('co-titulo').value.trim();
-  const dia    = parseInt(document.getElementById('co-dia').value);
-  if(!titulo){ alert('El título es obligatorio.'); return; }
-  if(!dia||dia<1||dia>31){ alert('El día debe ser entre 1 y 31.'); return; }
-  const payload = { titulo, dia, tipo: document.getElementById('co-tipo').value };
+  const fecha  = document.getElementById('co-fecha').value;
+  if(!titulo){ toast('El título es obligatorio.','⚠️'); return; }
+  if(!fecha)  { toast('Selecciona una fecha.','⚠️'); return; }
+  const dia = parseInt(fecha.slice(8,10), 10);
+  const payload = { titulo, fecha, dia, tipo: document.getElementById('co-tipo').value };
   const { error } = await window.supabaseClient.from('contenidos').insert([withGymId(payload)]);
-  if(error){ console.error('Error guardando contenido:', error); alert('No se pudo guardar.'); return; }
+  if(error){ console.error('Error guardando contenido:', error); toast('No se pudo guardar.','❌'); return; }
   await loadContenidosFromSupabase();
   closeModal('contenido');
   document.getElementById('co-titulo').value='';
-  document.getElementById('co-dia').value='';
-  toast(`Contenido "${titulo}" programado para día ${dia}.`,'📅');
+  document.getElementById('co-fecha').value='';
+  toast(`"${titulo}" programado para el ${fecha.split('-').reverse().join('/')}.`,'📅');
   renderCalendario();
 }
 
 async function deleteContenido(id){
   if(!await confirmDialog('¿Eliminar este contenido?', {title:'Eliminar contenido', icon:'📄'})) return;
   const { error } = await window.supabaseClient.from('contenidos').delete().eq('id', id);
-  if(error){ console.error('Error eliminando contenido:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando contenido:', error); toast('No se pudo eliminar.','❌'); return; }
   contenidos = contenidos.filter(c=>String(c.id)!==String(id));
   toast('Contenido eliminado.','🗑');
   renderCalendario();
@@ -15764,10 +15866,10 @@ async function deleteContenido(id){
 
 function openEditContenido(id){
   const c = contenidos.find(x=>String(x.id)===String(id));
-  if(!c){ alert('Contenido no encontrado.'); return; }
-  document.getElementById('eco-id').value    = id;
-  document.getElementById('eco-titulo').value= c.titulo||'';
-  document.getElementById('eco-dia').value   = c.dia||'';
+  if(!c) return;
+  document.getElementById('eco-id').value     = id;
+  document.getElementById('eco-titulo').value = c.titulo||'';
+  document.getElementById('eco-fecha').value  = c.fecha||'';
   setSelectVal('eco-tipo', c.tipo||'Reel');
   openModal('edit-contenido');
 }
@@ -15775,63 +15877,114 @@ function openEditContenido(id){
 async function saveEditContenido(){
   const id     = document.getElementById('eco-id').value;
   const titulo = document.getElementById('eco-titulo').value.trim();
-  const dia    = parseInt(document.getElementById('eco-dia').value);
-  if(!titulo){ alert('El título es obligatorio.'); return; }
-  if(!dia||dia<1||dia>31){ alert('El día debe ser entre 1 y 31.'); return; }
-  const payload = { titulo, dia, tipo: document.getElementById('eco-tipo').value };
+  const fecha  = document.getElementById('eco-fecha').value;
+  if(!titulo){ toast('El título es obligatorio.','⚠️'); return; }
+  if(!fecha)  { toast('Selecciona una fecha.','⚠️'); return; }
+  const dia = parseInt(fecha.slice(8,10), 10);
+  const payload = { titulo, fecha, dia, tipo: document.getElementById('eco-tipo').value };
   const { error } = await window.supabaseClient.from('contenidos').update(payload).eq('id', id);
-  if(error){ console.error('Error editando contenido:', error); alert('No se pudo guardar.'); return; }
+  if(error){ console.error('Error editando contenido:', error); toast('No se pudo guardar.','❌'); return; }
   await loadContenidosFromSupabase();
   closeModal('edit-contenido');
-  toast(`Contenido actualizado.`,'✅');
+  toast('Contenido actualizado.','✅');
   renderCalendario();
 }
 
-function renderCalendario(){
-  const grid = document.getElementById('cal-grid');
+// ── Caché de cumpleaños para no re-fetchear cada render
+let _bdays_cache = null;
+async function _getBirthdays(){
+  if(_bdays_cache) return _bdays_cache;
+  try{
+    const { data } = await window.supabaseClient
+      .from('clientes').select('nombre,fecha_nacimiento').not('fecha_nacimiento','is',null);
+    _bdays_cache = (data||[]).map(c=>({nombre:(c.nombre||'?').split(' ')[0], fn:c.fecha_nacimiento}));
+  }catch(_){ _bdays_cache=[]; }
+  return _bdays_cache;
+}
+
+async function renderCalendario(){
+  const grid  = document.getElementById('cal-grid');
+  const label = document.getElementById('mkt-mes-label');
   if(!grid) return;
-  const _now = new Date();
-  const TODAY = _now.getDate();
-  // Calculate the day-of-week offset for the 1st of this month (Mon=0)
-  const firstDay = new Date(_now.getFullYear(), _now.getMonth(), 1);
-  const startOffset = (firstDay.getDay() + 6) % 7; // convert Sun=0 to Mon=0
-  const daysInMonth = new Date(_now.getFullYear(), _now.getMonth()+1, 0).getDate();
 
-  let html = '';
-  // Day headers
+  const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const y=_mktYear, m=_mktMonth;
+  if(label) label.textContent=`${MESES_FULL[m-1]} ${y}`;
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todayY   = parseInt(todayStr.slice(0,4),10);
+  const todayM   = parseInt(todayStr.slice(5,7),10);
+  const todayD   = parseInt(todayStr.slice(8,10),10);
+
+  const firstDay    = new Date(y, m-1, 1);
+  const startOffset = (firstDay.getDay()+6)%7; // Lun=0
+  const daysInMonth = new Date(y, m, 0).getDate();
+
+  // Festivos del mes
+  const festivos = getMxFestivos(y, m);
+  const festivoMap = {};
+  festivos.forEach(f=>{ if(!festivoMap[f.day]) festivoMap[f.day]=[]; festivoMap[f.day].push(f.label); });
+
+  // Cumpleaños del mes
+  const allBdays = await _getBirthdays();
+  const bdayMap  = {};
+  allBdays.forEach(b=>{
+    if(!b.fn) return;
+    const parts=b.fn.split('-');
+    if(parts.length>=3 && parseInt(parts[1],10)===m){
+      const d=parseInt(parts[2],10);
+      if(!bdayMap[d]) bdayMap[d]=[];
+      bdayMap[d].push(b.nombre);
+    }
+  });
+
+  // Contenidos del mes (con fecha completa, o legados con solo dia + mes actual)
+  const monthStr = `${y}-${String(m).padStart(2,'0')}`;
+  const isCurrentMonth = (y===todayY && m===todayM);
+  const myContenidos = contenidos.filter(c=>{
+    if(c.fecha) return c.fecha.startsWith(monthStr);
+    return isCurrentMonth && c.dia!=null; // backward compat
+  });
+
+  // Construir HTML
+  let html='';
   ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(d=>{ html+=`<div class="cal-dh">${d}</div>`; });
-
-  // Empty cells before April 1
-  for(let i=0;i<startOffset;i++) html += `<div class="cal-day" style="background:transparent;"></div>`;
+  for(let i=0;i<startOffset;i++) html+=`<div class="cal-day" style="background:transparent;border-color:transparent;pointer-events:none;"></div>`;
 
   for(let d=1;d<=daysInMonth;d++){
-    const isToday = d===TODAY;
-    const items   = contenidos.filter(c=>c.dia===d);
-    let inner = `<div class="cal-date">${d}${isToday?' 📌':''}</div>`;
+    const isToday  = (y===todayY && m===todayM && d===todayD);
+    const hasFest  = !!festivoMap[d];
+    const fests    = festivoMap[d]||[];
+    const bdays    = bdayMap[d]||[];
+    const items    = myContenidos.filter(c=> c.fecha ? parseInt(c.fecha.slice(8,10),10)===d : c.dia===d);
+    const fechaStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+    let inner=`<div class="cal-date${isToday?' cal-today-num':''}">${d}</div>`;
+    fests.forEach(f=>{ inner+=`<div class="cal-holiday-badge" title="${f}">${f}</div>`; });
+    bdays.forEach(n=>{ inner+=`<div class="cal-birthday-badge">🎂 ${esc(n)}</div>`; });
     items.forEach(c=>{
-      const cls = CON_TIPO_CLASS[c.tipo]||'cp-ig';
-      const ico = CON_TIPO_ICO[c.tipo]||'📄';
-      inner += `<div class="cal-post ${cls}">${ico} <span style="margin-right:22px;">${esc(c.titulo)}</span><div class="cal-post-actions"><button onclick="event.stopPropagation();openEditContenido('${c.id}')" title="Editar">✏️</button><button onclick="event.stopPropagation();deleteContenido('${c.id}')" title="Eliminar">🗑</button></div></div>`;
+      const cls=CON_TIPO_CLASS[c.tipo]||'cp-ig';
+      const ico=CON_TIPO_ICO[c.tipo]||'📄';
+      inner+=`<div class="cal-post ${cls}" style="position:relative;">${ico} <span style="margin-right:22px;display:inline-block;max-width:calc(100% - 50px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${esc(c.titulo)}</span><div class="cal-post-actions"><button onclick="event.stopPropagation();openEditContenido('${c.id}')" title="Editar">✏️</button><button onclick="event.stopPropagation();deleteContenido('${c.id}')" title="Eliminar">🗑</button></div></div>`;
     });
-    html += `<div class="cal-day ${isToday?'today':''}">${inner}</div>`;
+
+    html+=`<div class="cal-day${isToday?' today':''}${hasFest?' holiday-day':''}" onclick="openContenidoForDay('${fechaStr}')">${inner}</div>`;
   }
 
-  // Remaining empty cells to complete the last row
-  const totalCells = startOffset + daysInMonth;
-  const remainder  = totalCells % 7;
-  if(remainder!==0){ for(let i=0;i<(7-remainder);i++) html+=`<div class="cal-day" style="background:transparent;"></div>`; }
+  const totalCells=startOffset+daysInMonth;
+  const remainder=totalCells%7;
+  if(remainder!==0) for(let i=0;i<(7-remainder);i++) html+=`<div class="cal-day" style="background:transparent;border-color:transparent;pointer-events:none;"></div>`;
 
-  grid.innerHTML = html;
+  grid.innerHTML=html;
 
-  // Update marketing KPI
-  const published = document.getElementById('v-marketing');
-  if(published){
-    const kpis = published.querySelectorAll('.kpi-value');
-    if(kpis[1]) kpis[1].textContent = contenidos.length+'/30';
-    // campaigns count
-    if(kpis[2]) kpis[2].textContent = campanas.filter(c=>c.estado==='Activa').length;
-    const pend = solicitudes.filter(s=>s.estado!=='Completada'&&s.estado!=='Cancelada').length;
-    if(kpis[3]) kpis[3].textContent = pend;
+  // KPIs
+  const vw=document.getElementById('v-marketing');
+  if(vw){
+    const kpis=vw.querySelectorAll('.kpi-value');
+    if(kpis[1]) kpis[1].textContent=myContenidos.length;
+    if(kpis[2]) kpis[2].textContent=campanas.filter(c=>c.estado==='Activa').length;
+    const pend=solicitudes.filter(s=>s.estado!=='Completada'&&s.estado!=='Cancelada').length;
+    if(kpis[3]) kpis[3].textContent=pend;
   }
 }
 
