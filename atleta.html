@@ -492,6 +492,86 @@ body::before{
 .med-row-fields{display:flex;flex-wrap:wrap;gap:5px;flex:1;}
 .med-chip{font-size:11px;font-weight:700;color:var(--text);background:var(--surface-hover);border-radius:6px;padding:3px 8px;}
 .med-chip small{color:var(--text3);font-weight:500;font-size:10px;}
+/* ── Tu Progreso — PROG tab v2 ── */
+.prog-peso-card{
+  background:var(--bg-card);border:1px solid var(--border-accent);
+  border-radius:18px;padding:20px;margin-bottom:12px;
+  box-shadow:var(--glow-soft);
+}
+.prog-peso-label{
+  font-family:var(--fm);font-size:10px;font-weight:700;color:var(--text3);
+  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;
+}
+.prog-peso-num{
+  font-size:60px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1;
+}
+.prog-peso-unit{font-size:22px;font-weight:700;color:var(--text2);margin-left:2px;vertical-align:baseline;}
+.prog-delta-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--fm);font-size:11px;font-weight:700;
+  padding:5px 12px;border-radius:99px;margin-top:12px;
+}
+.prog-delta-chip.down{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2);}
+.prog-delta-chip.up{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);}
+.prog-delta-chip.neutral{background:var(--surface);color:var(--text3);border:1px solid var(--border);}
+.prog-asist-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:18px;padding:18px 20px;margin-bottom:12px;
+}
+.prog-asist-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;
+}
+.prog-asist-title{font-size:15px;font-weight:700;color:#fff;}
+.prog-asist-badge{
+  font-family:var(--fm);font-size:9px;font-weight:700;color:var(--text3);
+  letter-spacing:.8px;
+}
+.prog-bar-chart{
+  display:flex;align-items:flex-end;gap:6px;height:76px;
+}
+.prog-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.prog-bar-inner,.prog-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;}
+.prog-bar-fill{
+  width:100%;border-radius:5px 5px 0 0;height:18px;
+  background:rgba(255,255,255,.06);
+  transition:height .45s var(--ease-out),opacity .3s;
+}
+.prog-bar-fill.active{height:54px;background:linear-gradient(to top,#008FB5,var(--cyan));}
+.prog-bar-fill.today{height:54px;background:linear-gradient(to top,#00C4EF,#8FFFFF);box-shadow:0 0 10px rgba(0,212,255,.35);}
+.prog-bar-day{
+  font-family:var(--fm);font-size:9px;font-weight:700;
+  color:var(--text3);letter-spacing:.3px;
+}
+.prog-bar-day.today{color:var(--cyan);}
+.prog-prs-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:18px;padding:18px 20px;margin-bottom:12px;
+}
+.prog-prs-hdr{
+  display:flex;align-items:center;gap:6px;margin-bottom:14px;
+}
+.prog-prs-title{
+  font-family:var(--fm);font-size:10px;font-weight:700;color:var(--cyan);
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+.prog-pr-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 0;border-bottom:1px solid var(--border);
+}
+.prog-pr-row:last-child{border-bottom:none;padding-bottom:0;}
+.prog-pr-name{font-size:14px;font-weight:500;color:var(--text);}
+.prog-pr-val{font-size:17px;font-weight:800;color:#fff;}
+.prog-pr-unit{font-size:11px;font-weight:600;color:var(--text3);margin-left:2px;}
+.prog-add-btn{
+  width:100%;padding:14px;border:1.5px dashed rgba(0,212,255,.22);
+  background:rgba(0,212,255,.03);border-radius:14px;
+  font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:1.2px;
+  color:var(--cyan);cursor:pointer;text-align:center;
+  transition:all .2s var(--ease-out);
+}
+.prog-add-btn:active{background:rgba(0,212,255,.1);}
+
 /* ── Attendance heatmap (3.2) ── */
 .attend-wrap{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:18px 16px 14px;margin-bottom:14px;}
 .attend-stats{display:flex;margin-bottom:18px;}
@@ -2328,39 +2408,59 @@ body::before{
       </div>
     </div>
 
-    <!-- ── HISTORIAL ── -->
+    <!-- ── PROGRESO ── -->
     <div class="view" id="view-historial">
       <div class="greeting">
-        <div class="greeting-hi" id="hist-greeting-hi">Mis visitas</div>
-        <div class="greeting-name greeting-name-sm" id="hist-greeting-title">Historial</div>
+        <div class="greeting-hi">Tu progreso</div>
+        <div class="greeting-name greeting-name-sm" style="color:var(--text2);font-size:13px;font-weight:500;">Últimos 30 días.</div>
       </div>
-      <div class="section">
-        <!-- Sub-tabs -->
-        <div class="hist-tabs">
-          <button class="hist-tab active" id="ht-asistencia" onclick="switchHistTab('asistencia')">🕐 Asistencia</button>
-          <button class="hist-tab" id="ht-progreso" onclick="switchHistTab('progreso')">Progreso</button>
-        </div>
-        <!-- Panel: Asistencia -->
-        <div id="hpanel-asistencia">
-          <div id="attend-heatmap-section"></div>
-          <div id="checkin-list">
-            <div class="empty-state">
-              <div class="es-ico">🏃</div>
-              <div class="es-title">¡Haz tu primer check-in!</div>
-              <div class="es-sub">Muestra tu QR en la entrada del gym y aquí verás tu historial de visitas.</div>
+      <div class="section" style="padding-top:0;">
+
+        <!-- Peso actual card -->
+        <div id="prog-peso-wrap">
+          <div class="prog-peso-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--text3);">PESO ACTUAL</span>
+              <span id="prog-peso-date" style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.3px;"></span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:12px;">
+              <span id="prog-peso-num" class="prog-peso-num">—</span>
+              <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:6px;">
+                <span style="font-size:18px;font-weight:300;color:var(--text3);line-height:1;">kg</span>
+                <span id="prog-delta-chip" class="prog-delta-chip" style="display:none;"></span>
+              </div>
             </div>
           </div>
         </div>
-        <!-- Panel: Progreso -->
-        <div id="hpanel-progreso" style="display:none;">
-          <div id="medidas-content">
-            <div class="medidas-empty">
-              <div class="medidas-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3)"><path d="M2 12h4m0 0l2-2m-2 2l2 2M6 12h12m0 0l-2-2m2 2l-2 2M18 12h4"/><rect x="2" y="8" width="20" height="8" rx="2" stroke-width="1.5"/></svg></div>
-              <div class="medidas-empty-title">Sin mediciones aún</div>
-              <div class="medidas-empty-sub">Registra tu primera medición para ver tu evolución.</div>
+
+        <!-- Asistencia 7 días -->
+        <div id="prog-asist-wrap">
+          <div class="prog-asist-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--text3);">ASISTENCIA — ÚLTIMOS 7 DÍAS</span>
+              <span id="prog-asist-count" style="font-family:var(--fm);font-size:9px;color:var(--cyan);letter-spacing:.3px;"></span>
+            </div>
+            <div id="prog-bar-chart" class="prog-bar-chart">
+              <!-- injected by renderProgAsist() -->
             </div>
           </div>
         </div>
+
+        <!-- PRs del mes -->
+        <div id="prog-prs-wrap">
+          <div class="prog-prs-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--text3);">PRS DEL MES</span>
+            </div>
+            <div id="prog-prs-list">
+              <div style="padding:24px 0;text-align:center;color:var(--text3);font-size:12px;">Sin PRs este mes. ¡A romper récords!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registrar medición -->
+        <button class="prog-add-btn" onclick="openMedicionModal()">+ REGISTRAR MEDICIÓN</button>
+
       </div>
     </div>
 
@@ -3284,19 +3384,8 @@ function renderYoView(){
   }
 }
 
-// ── Historial sub-tabs ────────────────────────────────
-function switchHistTab(tab){
-  const isAsist = tab==='asistencia';
-  $('hpanel-asistencia').style.display = isAsist?'':'none';
-  $('hpanel-progreso').style.display   = isAsist?'none':'';
-  $('ht-asistencia').classList.toggle('active', isAsist);
-  $('ht-progreso').classList.toggle('active', !isAsist);
-  const histHi    = $('hist-greeting-hi');
-  const histTitle = $('hist-greeting-title');
-  if(histHi) histHi.textContent    = isAsist ? 'Mis visitas' : 'Mi progreso';
-  if(histTitle) histTitle.textContent = isAsist ? 'Historial'  : 'Medidas';
-  if(!isAsist) fetchAndRenderMedidas();
-}
+// ── Historial sub-tabs (legacy, no longer used) ───────
+function switchHistTab(tab){ /* replaced by new PROG tab */ }
 
 // ── Logout ───────────────────────────────────────────
 function doLogout(){
@@ -4858,56 +4947,143 @@ function buildAttendanceHeatmap(checkins){
   </div>`;
 }
 
-// ── Historial (grouped timeline) ─────────────────────
+// ── PROG tab (Tu progreso) ────────────────────────────
 function renderHistorial(){
   if(!portalData) return;
-  const checkins=portalData.checkins||[];
-  const el=$('checkin-list');
-  const chartEl=$('attend-heatmap-section');
+  renderProgAsist();
+  renderProgPesoAsync();
+  renderProgPRsAsync();
+}
 
-  // Always render heatmap (shows zeros when no checkins)
-  if(chartEl) chartEl.innerHTML=buildAttendanceHeatmap(checkins);
+function renderProgAsist(){
+  const checkins = portalData?.checkins || [];
+  const chartEl  = $('prog-bar-chart');
+  const countEl  = $('prog-asist-count');
+  if(!chartEl) return;
 
-  if(!checkins.length){
-    el.innerHTML=`<div class="empty-state">
-      <div class="es-ico">🏃</div>
-      <div class="es-title">¡Haz tu primer check-in!</div>
-      <div class="es-sub">Muestra tu QR en la entrada del gym y aquí verás tu historial de visitas.</div>
-    </div>`; return;
+  const now = new Date();
+  const days = [];
+  for(let i=6; i>=0; i--){
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const str     = d.toISOString().slice(0,10);
+    const dayName = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()];
+    const attended = checkins.some(c => c.fecha === str);
+    days.push({ str, dayName, attended, isToday: i === 0 });
   }
-  const MI={QR:`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>`,Manual:`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,App:`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,default:`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`};
-  const todayStr=new Date().toISOString().slice(0,10);
-  const yesterdayStr=new Date(Date.now()-86400000).toISOString().slice(0,10);
-  const weekAgoStr=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
 
-  function ciItemHTML(c){
-    const dt=new Date(c.fecha+'T12:00:00');
-    const lbl=dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
-    const hora=c.hora?c.hora.slice(0,5):'';
-    return `<div class="ci-item">
-      <div class="ci-icon">${MI[c.metodo]||MI.default}</div>
-      <div>
-        <div class="ci-date">${lbl}</div>
-        <div class="ci-time">${hora?hora+' hrs':'Check-in registrado'}</div>
+  const attended7 = days.filter(d => d.attended).length;
+  if(countEl) countEl.textContent = `${attended7} / 7`;
+
+  chartEl.innerHTML = days.map(d => `
+    <div class="prog-bar-col">
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-fill ${d.attended ? (d.isToday ? 'today' : 'active') : ''}"></div>
       </div>
-      ${c.metodo?`<div class="ci-badge">${c.metodo}</div>`:''}
-    </div>`;
+      <div class="prog-bar-day${d.isToday ? ' today' : ''}">${d.dayName}</div>
+    </div>`).join('');
+}
+
+async function renderProgPesoAsync(){
+  const numEl  = $('prog-peso-num');
+  const chipEl = $('prog-delta-chip');
+  const dateEl = $('prog-peso-date');
+  if(!numEl || !portalData) return;
+
+  const cliId = portalData.cliente?.id;
+  if(!cliId) return;
+
+  if(!_medidasLoaded){
+    numEl.textContent = '…';
+    try{
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/medidas?cliente_id=eq.${cliId}&order=fecha.desc&limit=50`,
+        {headers: apiHeaders()}
+      );
+      if(res.ok){ _medidasCache = await res.json(); _medidasLoaded = true; }
+    }catch(_){ _medidasCache = []; _medidasLoaded = true; }
   }
 
-  const groups=[
-    {label:'Hoy',         items:checkins.filter(c=>c.fecha===todayStr)},
-    {label:'Ayer',        items:checkins.filter(c=>c.fecha===yesterdayStr)},
-    {label:'Esta semana', items:checkins.filter(c=>c.fecha<yesterdayStr&&c.fecha>=weekAgoStr)},
-    {label:'Anterior',    items:checkins.filter(c=>c.fecha<weekAgoStr)},
-  ].filter(g=>g.items.length);
+  const asc = (_medidasCache||[])
+    .filter(r => r.peso_kg != null)
+    .sort((a,b) => a.fecha.localeCompare(b.fecha));
 
-  let html='<div class="ci-timeline">';
-  groups.forEach(g=>{
-    html+=`<div class="ci-group-hdr">${g.label}</div>`;
-    html+=`<div class="ci-items">${g.items.map(ciItemHTML).join('')}</div>`;
-  });
-  html+='</div>';
-  el.innerHTML=html;
+  if(!asc.length){ numEl.textContent = '—'; return; }
+
+  const latest = asc[asc.length-1];
+  const prev   = asc.length >= 2 ? asc[asc.length-2] : null;
+
+  numEl.textContent = parseFloat(latest.peso_kg).toFixed(1);
+
+  if(dateEl){
+    const dt = new Date(latest.fecha + 'T12:00:00');
+    dateEl.textContent = dt.toLocaleDateString('es-MX', {day:'numeric', month:'short'});
+  }
+
+  if(prev && chipEl){
+    const d = parseFloat(latest.peso_kg) - parseFloat(prev.peso_kg);
+    if(Math.abs(d) >= 0.05){
+      const sign = d > 0 ? '+' : '';
+      const cls  = d > 0 ? 'up' : 'down';
+      chipEl.textContent = `${sign}${d.toFixed(1)} kg`;
+      chipEl.className   = `prog-delta-chip ${cls}`;
+      chipEl.style.display = '';
+    }
+  }
+}
+
+async function renderProgPRsAsync(){
+  const el = $('prog-prs-list');
+  if(!el || !portalData) return;
+
+  const token = portalData.cliente?.qr_token;
+  if(!token){
+    el.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:12px;">Sin datos de entrenamiento.</div>';
+    return;
+  }
+
+  const monthPrefix = new Date().toISOString().slice(0,7);
+  try{
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&fecha=gte.${monthPrefix}-01&tipo=eq.fuerza&select=ejercicio,peso,unidad_peso,fecha&order=peso.desc&limit=200`,
+      {headers: apiHeaders()}
+    );
+    if(!res.ok) throw new Error('fetch failed');
+    const entries = await res.json();
+
+    // Best peso per ejercicio this month
+    const map = {};
+    entries.forEach(e => {
+      if(!e.ejercicio || !e.peso) return;
+      const k = e.ejercicio.toLowerCase().trim();
+      if(!map[k] || parseFloat(e.peso) > parseFloat(map[k].peso)) map[k] = e;
+    });
+
+    const prs = Object.values(map)
+      .sort((a,b) => parseFloat(b.peso) - parseFloat(a.peso))
+      .slice(0, 6);
+
+    if(!prs.length){
+      el.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:12px;">Sin PRs este mes. ¡A romper récords!</div>';
+      return;
+    }
+
+    el.innerHTML = prs.map((p, i) => `
+      <div class="prog-pr-row"${i===prs.length-1?' style="border-bottom:none"':''}>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${esc(p.ejercicio)}</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--text3);margin-top:2px;letter-spacing:.3px;">
+            ${new Date(p.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})}
+          </div>
+        </div>
+        <div style="font-family:var(--fm);font-size:17px;font-weight:700;color:var(--cyan);">
+          ${parseFloat(p.peso).toFixed(1)}<span style="font-size:10px;font-weight:500;color:var(--text3);margin-left:2px;">${esc(p.unidad_peso||'kg')}</span>
+        </div>
+      </div>`).join('');
+  }catch(e){
+    console.error('renderProgPRsAsync:', e);
+    el.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:12px;">No se pudieron cargar los PRs.</div>';
+  }
 }
 
 // ── Clases / Reservas ────────────────────────────────
@@ -5880,12 +6056,11 @@ let _medidasCache = null;
 let _medidasLoaded = false;
 
 async function fetchAndRenderMedidas(){
-  const el = $('medidas-content');
-  if(!el || !portalData) return;
+  // Legacy: kept for compatibility. New PROG tab uses renderProgPesoAsync().
+  if(!portalData) return;
   const cliId = portalData.cliente?.id;
-  if(!cliId){ renderMedidasView([]); return; }
+  if(!cliId) return;
   if(!_medidasLoaded){
-    el.innerHTML = `<div class="medidas-empty"><div class="medidas-empty-ico">⏳</div><div class="medidas-empty-title">Cargando medidas…</div></div>`;
     try{
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/medidas?cliente_id=eq.${cliId}&order=fecha.desc&limit=50`,
@@ -5894,12 +6069,10 @@ async function fetchAndRenderMedidas(){
       if(!res.ok) throw new Error('fetch failed');
       _medidasCache = await res.json();
       _medidasLoaded = true;
-    }catch(_){
-      _medidasCache = [];
-      _medidasLoaded = true;
-    }
+    }catch(_){ _medidasCache = []; _medidasLoaded = true; }
   }
-  renderMedidasView(_medidasCache||[]);
+  // Refresh peso card on PROG tab if visible
+  renderProgPesoAsync();
 }
 
 function renderMedidasView(rows){
@@ -6032,6 +6205,7 @@ async function saveMedicion(){
 
   const payload = {
     cliente_id: cliId,
+    gym_id:     portalData?.gym?.id,
     fecha,
     peso_kg:    fNum('med-peso'),
     grasa_pct:  fNum('med-grasa'),
