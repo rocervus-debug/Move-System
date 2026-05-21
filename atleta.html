@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
 <title>MOVE — Portal Atleta</title>
 <link rel="manifest" href="manifest.json"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -1129,7 +1129,7 @@ body::before{
 }
 .plan-chat-input{
   flex:1;background:var(--bg-input);border:1px solid var(--border-medium);
-  border-radius:12px;padding:10px 14px;font-size:14px;color:var(--text);
+  border-radius:12px;padding:10px 14px;font-size:16px;color:var(--text);
   font-family:var(--fd);outline:none;
 }
 .plan-chat-input:focus{border-color:var(--cyan);}
@@ -4331,12 +4331,27 @@ function initPlanCoach(){
   renderPlanCoachMsgs();
 }
 
+// Pre-process Claude's workout text — insert newlines when missing
+function normalizeWorkoutText(text){
+  // Known section keywords
+  const SECTIONS=['CALENTAMIENTO','WARM.UP','TRABAJO PRINCIPAL','MAIN','ENFRIAMIENTO','COOL.DOWN','CONDITIONING','METCON','FUERZA','CARDIO','MOVILIDAD','ACCESORIOS','FINALIZACION','FINALIZACIÓN'];
+  const sectionRx=new RegExp(`(${SECTIONS.join('|')})`, 'gi');
+  // Insert newline before section headers
+  let t=text.replace(sectionRx, '\n$1');
+  // Insert newline before exercise patterns like "Nombre - 3x10" or "Nombre - 3 min"
+  // Match: word chars + spaces + ' - ' + digits pattern
+  t=t.replace(/\s([A-ZÁÉÍÓÚ][a-záéíóúñA-Z\s]+\s-\s\d)/g, '\n$1');
+  // Clean up multiple newlines
+  t=t.replace(/\n{3,}/g,'\n\n').trim();
+  return t;
+}
 function isWorkoutMsg(text){
-  // Detect if message contains a structured workout (section headers + exercise lines)
-  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const hasSectionHeader=lines.some(l=>/^[A-ZÁÉÍÓÚ\s]{4,}$/.test(l)&&l.length<35);
-  const hasExerciseLine=lines.some(l=>/\d+\s*[x×X]\s*\d+|-\s*\d+\s*(min|seg|s\b)/i.test(l));
-  return hasSectionHeader&&hasExerciseLine&&lines.length>=4;
+  // Detect workout in original OR normalized text
+  const normalized=normalizeWorkoutText(text);
+  const lines=normalized.split('\n').map(l=>l.trim()).filter(Boolean);
+  const hasSectionHeader=lines.some(l=>/^(CALENTAMIENTO|WARM.UP|TRABAJO PRINCIPAL|ENFRIAMIENTO|COOL.DOWN|FUERZA|CARDIO|MOVILIDAD|ACCESORIOS|MAIN|METCON)/i.test(l));
+  const hasExerciseLine=lines.some(l=>/\d+\s*[x×X]\s*\d+|\d+\s*(min|seg|s\b)/i.test(l));
+  return hasSectionHeader&&hasExerciseLine;
 }
 function stripMarkdown(text){
   return text
@@ -4346,15 +4361,17 @@ function stripMarkdown(text){
     .replace(/^#{1,3}\s*/gm,'');      // ## headers → plain
 }
 function renderWorkoutAsCards(text){
-  const exercises=parseExercises(text);
+  const exercises=parseExercises(normalizeWorkoutText(text));
   if(!exercises.length) return `<div class="msg msg-ai">${esc(stripMarkdown(text))}</div>`;
   let html='<div class="chat-workout-wrap">';
+  let exIdx=0;
   exercises.forEach(item=>{
     if(item.type==='section'){
       html+=`<div class="ex-section-hdr">${esc(item.name)}</div>`;
     } else {
+      const n=++exIdx;
       html+=`<div class="ex-card" style="cursor:default;">
-        <div class="ex-num" style="color:var(--text3);">${esc(item.name.slice(0,1).toUpperCase())}</div>
+        <div class="ex-num">${n}</div>
         <div class="ex-body">
           <div class="ex-name">${esc(item.name)}</div>
           ${item.chips.length?`<div class="ex-chips">${item.chips.map(c=>`<span class="ex-chip">${esc(c)}</span>`).join('')}</div>`:''}
