@@ -292,6 +292,25 @@ body::before{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   font-family:var(--fd);font-size:18px;font-weight:700;color:#fff;
 }
+/* Ring — meta cumplida */
+@keyframes ring-pulse{
+  0%,100%{ filter:drop-shadow(0 0 8px rgba(0,212,255,.6)); }
+  50%{ filter:drop-shadow(0 0 22px rgba(0,212,255,1)) drop-shadow(0 0 40px rgba(0,212,255,.35)); }
+}
+@keyframes check-fade-in{
+  from{ opacity:0;transform:translate(-50%,-50%) scale(.5); }
+  to{ opacity:1;transform:translate(-50%,-50%) scale(1); }
+}
+.rcv-ring-prog.complete{
+  stroke:var(--cyan);
+  animation:ring-pulse 2.2s ease-in-out infinite;
+}
+.rcv-check{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:26px;line-height:1;font-weight:700;color:#fff;
+  animation:check-fade-in .55s cubic-bezier(.34,1.56,.64,1) both;
+  text-shadow:0 0 12px rgba(0,212,255,.8);
+}
 .rcv-info{flex:1;}
 .rcv-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
 .rcv-value{font-family:var(--fd);font-size:22px;font-weight:700;color:#fff;line-height:1.1;}
@@ -571,6 +590,20 @@ body::before{
   transition:all .2s var(--ease-out);
 }
 .prog-add-btn:active{background:rgba(0,212,255,.1);}
+
+/* ── PROG tab mini-stats grid (GAP 4) ── */
+.prog-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.prog-mini-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:16px 14px;}
+.prog-mini-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
+.prog-mini-val{font-family:var(--fd);font-size:22px;font-weight:700;color:#fff;line-height:1;}
+.prog-mini-unit{font-size:10px;color:var(--text3);font-family:var(--fm);margin-top:2px;}
+.prog-mini-trend{font-family:var(--fm);font-size:10px;color:var(--ok);margin-top:4px;}
+.prog-mini-trend.warn{color:#f87171;}
+
+/* ── Plan sheet: workout title + foco chip (GAP 3) ── */
+.workout-day-title{font-family:var(--fd);font-size:22px;font-weight:800;color:#fff;margin:0 0 8px;}
+.workout-focus{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--cyan);background:var(--cyan-dim);padding:6px 12px;border-radius:99px;border:1px solid rgba(0,212,255,.2);text-transform:uppercase;margin-bottom:18px;}
+.workout-focus-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);flex-shrink:0;}
 
 /* ── Attendance heatmap (3.2) ── */
 .attend-wrap{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:18px 16px 14px;margin-bottom:14px;}
@@ -2525,6 +2558,20 @@ body::before{
           </div>
         </div>
 
+        <!-- Mini-stats: VOL SEMANA + CLASES MES (GAP 4) -->
+        <div class="prog-mini-grid" id="prog-mini-stats-wrap">
+          <div class="prog-mini-card">
+            <div class="prog-mini-label">VOL. SEMANA</div>
+            <div class="prog-mini-val" id="prog-vol-val">—</div>
+            <div class="prog-mini-unit">kg totales</div>
+          </div>
+          <div class="prog-mini-card">
+            <div class="prog-mini-label">CLASES MES</div>
+            <div class="prog-mini-val" id="prog-cmes-val">—</div>
+            <div class="prog-mini-trend" id="prog-cmes-trend"></div>
+          </div>
+        </div>
+
         <!-- Registrar medición -->
         <button class="prog-add-btn" onclick="openMedicionModal()">+ REGISTRAR MEDICIÓN</button>
 
@@ -3018,6 +3065,8 @@ body::before{
     <div class="sheet-handle"></div>
     <div class="pd-tipo" id="pd-tipo">—</div>
     <div class="pd-fecha" id="pd-fecha">—</div>
+    <div id="pd-workout-title" class="workout-day-title" style="display:none;"></div>
+    <div id="pd-foco-chip" style="display:none;margin-bottom:18px;"></div>
     <div id="pd-content"></div>
     <div id="pd-progress"></div>
     <div class="sheet-close" onclick="closeSheet('prog-sheet')">Cerrar</div>
@@ -4026,15 +4075,21 @@ function renderHomeRing(data){
     :remaining===1?'Una clase más para tu meta'
     :`${remaining} clase${remaining===1?'':'s'} para tu meta`;
 
+  const isComplete = weekCheckins >= meta;
+  const centerEl = isComplete
+    ? `<div class="rcv-check">✓</div>`
+    : `<div class="rcv-pct">${pct}%</div>`;
+  const progClass = isComplete ? 'rcv-ring-prog complete' : 'rcv-ring-prog';
+
   el.innerHTML=`<div class="ring-card-v" onclick="openMetaPicker()" style="cursor:pointer;">
     <div class="rcv-ring">
       <svg width="80" height="80" viewBox="0 0 80 80">
         <circle class="rcv-ring-bg" cx="40" cy="40" r="36"/>
-        <circle class="rcv-ring-prog" cx="40" cy="40" r="36"
+        <circle class="${progClass}" cx="40" cy="40" r="36"
           stroke-dasharray="${circ.toFixed(1)}"
-          stroke-dashoffset="${offset.toFixed(1)}"/>
+          stroke-dashoffset="${isComplete?'0':offset.toFixed(1)}"/>
       </svg>
-      <div class="rcv-pct">${pct}%</div>
+      ${centerEl}
     </div>
     <div class="rcv-info">
       <div class="rcv-label">META SEMANAL</div>
@@ -4088,7 +4143,8 @@ function renderHomeMiniStats(data){
         const diff=+(latest-prev).toFixed(1);
         const sign=diff>0?'+':'';
         const col=diff<0?'var(--ok)':diff>0?'#f87171':'var(--text3)';
-        trendHtml=`<div class="hms-trend" style="color:${col}">${sign}${diff}kg</div>`;
+        const arrow=diff<0?'↓ ':diff>0?'↑ ':'';
+        trendHtml=`<div class="hms-trend" style="color:${col}">${arrow}${sign}${diff}kg</div>`;
       }
       prCard=`<div class="hms-card">
         <div class="hms-label">PR MES</div>
@@ -4887,6 +4943,32 @@ window.openProgDetail=function(idx){
   const dt=new Date(item.fecha+'T12:00:00');
   set('pd-tipo',item.tipo);
   set('pd-fecha',`${DIAS_L[dt.getDay()]}, ${dt.getDate()} de ${MESES[dt.getMonth()]}`);
+
+  // GAP 3 — workout day title + foco chip
+  const titleEl=$('pd-workout-title');
+  const focoEl=$('pd-foco-chip');
+  if(titleEl&&focoEl){
+    // Count week-day position for this item in progItems (Day 1, Day 2, …)
+    const dayNum=idx+1;
+    titleEl.textContent=`Día ${dayNum} — ${item.tipo||'Entrenamiento'}`;
+    titleEl.style.display='';
+
+    // Estimate duration from content (count exercise lines)
+    const lines=(item.contenido||'').split('\n').filter(l=>l.trim().length>3);
+    const exerCount=lines.filter(l=>/\d+[xX×]\d+|\d+ rep|\d+ seg/i.test(l)).length||lines.length;
+    const tipoLow=(item.tipo||'').toLowerCase();
+    let estMin=45;
+    if(tipoLow.includes('fuerza')||tipoLow.includes('hipertrofia')) estMin=60;
+    else if(tipoLow.includes('hiit')||tipoLow.includes('funcional')) estMin=40;
+    else if(tipoLow.includes('cardio')) estMin=35;
+    else if(tipoLow.includes('recovery')||tipoLow.includes('movilidad')) estMin=30;
+    else if(exerCount>10) estMin=65;
+    else if(exerCount>6) estMin=50;
+
+    focoEl.innerHTML=`<span class="workout-focus"><span class="workout-focus-dot"></span>${item.tipo||'Entrenamiento'} · ~${estMin} min</span>`;
+    focoEl.style.display='';
+  }
+
   $('pd-content').innerHTML = renderProgramContent(item.contenido);
   $('pd-progress').innerHTML = ''; // no checkbox progress for gym programs
   openSheet('prog-sheet');
@@ -5054,6 +5136,7 @@ function renderHistorial(){
   renderProgAsist();
   renderProgPesoAsync();
   renderProgPRsAsync();
+  renderProgMiniStatsAsync();
 }
 
 function renderProgAsist(){
@@ -5184,6 +5267,80 @@ async function renderProgPRsAsync(){
   }catch(e){
     console.error('renderProgPRsAsync:', e);
     el.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:12px;">No se pudieron cargar los PRs.</div>';
+  }
+}
+
+// ── PROG mini-stats: VOL SEMANA + CLASES MES (GAP 4) ─
+async function renderProgMiniStatsAsync(){
+  const volEl  = $('prog-vol-val');
+  const cmesEl = $('prog-cmes-val');
+  const trendEl= $('prog-cmes-trend');
+  if(!volEl||!cmesEl||!portalData) return;
+
+  // ── CLASES MES (from checkins — no extra fetch needed) ──
+  const checkins = portalData.checkins||[];
+  const now = new Date();
+  const monthPrefix = now.toISOString().slice(0,7);
+  const prevDate = new Date(now); prevDate.setMonth(prevDate.getMonth()-1);
+  const prevPrefix = prevDate.toISOString().slice(0,7);
+  const cMes  = checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
+  const cPrev = checkins.filter(c=>(c.fecha||'').startsWith(prevPrefix)).length;
+  cmesEl.textContent = cMes;
+  if(trendEl){
+    if(cPrev > 0){
+      const delta = cMes - cPrev;
+      const sign  = delta >= 0 ? '+' : '';
+      const arrow = delta > 0 ? '↑ ' : delta < 0 ? '↓ ' : '';
+      const col   = delta >= 0 ? '' : 'warn';
+      trendEl.textContent = `${arrow}${sign}${delta} vs mes ant.`;
+      trendEl.className   = `prog-mini-trend${col?' '+col:''}`;
+    } else {
+      trendEl.textContent='primer mes';
+      trendEl.className='prog-mini-trend';
+      trendEl.style.opacity='.5';
+    }
+  }
+
+  // ── VOL SEMANA (from bitácora_atleta — fetch this week) ──
+  const token = portalData.cliente?.qr_token;
+  if(!token){ volEl.textContent='—'; return; }
+
+  // Monday of current week
+  const dow = now.getDay();
+  const mondayMs = new Date(now).setDate(now.getDate()-(dow===0?6:dow-1));
+  const mondayStr = new Date(mondayMs).toISOString().slice(0,10);
+  const todayStr  = now.toISOString().slice(0,10);
+
+  try{
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&fecha=gte.${mondayStr}&fecha=lte.${todayStr}&tipo=eq.fuerza&select=series,repeticiones,peso&limit=500`,
+      {headers: apiHeaders()}
+    );
+    if(!res.ok) throw new Error('vol fetch failed');
+    const entries = await res.json();
+
+    let totalVol = 0;
+    entries.forEach(e => {
+      const s = parseFloat(e.series)||1;
+      const r = parseFloat(e.repeticiones)||0;
+      const p = parseFloat(e.peso)||0;
+      totalVol += s * r * p;
+    });
+
+    if(totalVol > 0){
+      // Format: show in tons if >1000kg, else kg
+      if(totalVol >= 1000){
+        volEl.textContent = (totalVol/1000).toFixed(1) + ' t';
+        $('prog-vol-val').nextElementSibling && ($('prog-vol-val').nextElementSibling.textContent='toneladas');
+      } else {
+        volEl.textContent = Math.round(totalVol).toLocaleString('es-MX');
+      }
+    } else {
+      volEl.textContent = '0';
+    }
+  } catch(e){
+    console.warn('renderProgMiniStatsAsync vol:', e);
+    volEl.textContent = '—';
   }
 }
 
