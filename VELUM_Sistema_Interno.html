@@ -14101,7 +14101,7 @@ async function renderAsistHistorial(){
     const diaLabel = dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
     const items = checkins.map(c=>{
       const nombre = c.clientes?.nombre || '—';
-      const hora = c.hora||'—';
+      const hora = _horaUTCtoLocal(fecha, c.hora);
       const metodoBadge = c.metodo==='qr'
         ? `<span style="font-size:9px;padding:1px 5px;border-radius:5px;background:rgba(15,223,154,.12);color:var(--ok);border:1px solid rgba(15,223,154,.25);">QR</span>`
         : `<span style="font-size:9px;padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.07);color:var(--text3);border:1px solid var(--border);">Manual</span>`;
@@ -18250,6 +18250,16 @@ async function loadReservasHoy(){
 // ══════════════════════════════════════════════════════════════════
 
 const _DIAS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+/* Convierte hora almacenada en UTC a hora local del browser
+   fecha: "2026-05-22", horaUTC: "19:44:41" → "13:44:41" en UTC-6 */
+function _horaUTCtoLocal(fecha, horaUTC){
+  if(!horaUTC || horaUTC === '—') return horaUTC || '—';
+  try{
+    const dt = new Date(`${fecha}T${horaUTC}Z`);
+    return dt.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  }catch(_){ return horaUTC; }
+}
 
 function fmtHoraClase(h){
   if(!h) return '—';
