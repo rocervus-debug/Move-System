@@ -2996,7 +2996,6 @@ body::before{
     <div id="class-detail-content">
       <!-- Injected by openClassDetail() -->
     </div>
-    <div class="sheet-close" onclick="closeSheet('class-detail-sheet')">Cerrar</div>
   </div>
 </div>
 
@@ -4615,10 +4614,23 @@ function renderNextClassCard(){
     countdownTxt=diff===1?'MAÑANA':diasLbl[fechaDate.getDay()].toUpperCase();
   }
 
-  const isToday=diff===0;
-  const btnLabel=isToday?'CHECK-IN':'VER →';
+  const isToday = diff===0;
+  const portalToken = portalData?.cliente?.portal_token || '';
 
-  wrap.innerHTML=`<div class="next-class-card" onclick="switchView('clases')">
+  // Check if already checked in today (cached in portalData)
+  const yaCheckIn = isToday && portalData?._checkedInToday === true;
+
+  const btnHtml = isToday
+    ? yaCheckIn
+      ? `<button class="ncc-btn" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);cursor:default;pointer-events:none;" disabled>
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>LISTO
+         </button>`
+      : `<button class="ncc-btn" id="ncc-checkin-btn" onclick="event.stopPropagation();doAtletaCheckIn('${portalToken}')">
+           CHECK-IN
+         </button>`
+    : `<button class="ncc-btn reservar" onclick="event.stopPropagation();switchView('clases')">VER →</button>`;
+
+  wrap.innerHTML=`<div class="next-class-card" onclick="${isToday?'':'switchView(\'clases\')'}">
     <span class="h-badge">SIGUIENTE CLASE</span>
     <div class="ncc-title">${tipo}</div>
     ${subtitleTxt?`<div class="ncc-coach">${subtitleTxt}</div>`:''}
@@ -4627,9 +4639,48 @@ function renderNextClassCard(){
         <div class="ncc-time">${rawHora||'—'}</div>
         <div class="ncc-countdown">${countdownTxt}</div>
       </div>
-      <button class="ncc-btn${isToday?'':' reservar'}" onclick="event.stopPropagation();switchView('clases')">${btnLabel}</button>
+      ${btnHtml}
     </div>
   </div>`;
+}
+
+// ── Check-in desde app del atleta ────────────────────
+async function doAtletaCheckIn(portalToken){
+  if(!portalToken){ toast('Error: token no disponible','✕'); return; }
+
+  const btn = document.getElementById('ncc-checkin-btn');
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
+
+  try{
+    const resp = await fetch(`${EDGE_BASE}/move-checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: portalToken }),
+    });
+    const d = await resp.json();
+
+    if(!resp.ok || d.error){
+      toast(d.error || 'Error al hacer check-in','✕',3500);
+      if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
+      return;
+    }
+
+    if(d.already_checked_in){
+      toast('Ya registraste tu entrada hoy ✓','🟢',2500);
+    } else {
+      toast('¡Check-in registrado! Que buena sesión 💪','✅',3000);
+      if(window.haptic) window.haptic('success');
+    }
+
+    // Marcar en caché y re-renderizar botón como "LISTO"
+    if(portalData) portalData._checkedInToday = true;
+    renderNextClassCard();
+
+  }catch(e){
+    console.error('[checkin]',e);
+    toast('Sin conexión. Intenta de nuevo','✕',3000);
+    if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
+  }
 }
 
 // ── Streak motivational banner (1.4) ─────────────────
