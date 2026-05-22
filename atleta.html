@@ -4119,7 +4119,8 @@ async function requestPushPermission(){
     await _subscribePush(token);
     toast('Notificaciones activadas ✓','🔔',2500);
   }catch(e){
-    console.warn('[PWA] requestPushPermission error:', e);
+    console.error('[PWA] requestPushPermission error:', e);
+    toast('Error al activar notificaciones: '+(e.message||e),'✕',4000);
   }
 }
 
@@ -4133,16 +4134,22 @@ async function _subscribePush(portalToken){
       applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
   }
-  await fetch(`${SUPABASE_URL}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`,{
+  const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`,{
     method: 'PATCH',
     headers:{
       'Content-Type':'application/json',
       'apikey': ANON_KEY,
       'Authorization': 'Bearer ' + ANON_KEY,
+      'Prefer': 'return=minimal',
     },
     body: JSON.stringify({ web_push_subscription: sub.toJSON() }),
   });
-  console.log('[PWA] Web Push suscripción registrada');
+  if(!patchRes.ok){
+    const errText = await patchRes.text();
+    console.error('[PWA] Web Push PATCH failed:', patchRes.status, errText);
+    throw new Error(`PATCH ${patchRes.status}: ${errText}`);
+  }
+  console.log('[PWA] Web Push suscripción registrada ✓', sub.endpoint.slice(-20));
 }
 
 /* Mostrar banner solo si el permiso aún no ha sido decidido */
