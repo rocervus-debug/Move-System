@@ -3223,6 +3223,7 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
+const VAPID_PUBLIC_KEY = 'BNQQblmWqQGybB5G7l4V_2aKhT_6z6gSd8jB30hk3ie7Fv1XXt8IBJof4D_3qDFvJlCevlMa9__x2SONOm016YI';
 const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const DIAS_L = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -3968,6 +3969,14 @@ function showPortal(data){
     window.registerPush(data.cliente.portal_token, SUPABASE_URL, ANON_KEY).catch(()=>{});
   }
 
+  // Web Push VAPID (PWA/browser) — registro async, no bloquea
+  if(data.cliente?.portal_token){
+    registerWebPush(data.cliente.portal_token).catch(()=>{});
+  }
+
+  // Guardar snapshot para uso offline
+  _cachePortalData(data);
+
   // Fix #1 — cargar reservas en background; luego re-render tarjetas que dependen de clasesReservas
   loadClasesData().then(()=>{ renderProximaClase(); renderNextClassCard(); }).catch(()=>{});
 
@@ -3994,6 +4003,125 @@ function showPortal(data){
       .catch(()=>{ portalData.ausentes=[]; });
   }
 }
+
+/* ─── Offline data cache ─────────────────────────────────────────
+   Guarda un snapshot mínimo del portalData en localStorage.
+   Si Supabase no responde al iniciar, cargamos desde caché
+   y mostramos un banner de "datos del [fecha]".
+──────────────────────────────────────────────────────────────── */
+function _cachePortalData(data){
+  try{
+    const snap={
+      _cachedAt: Date.now(),
+      token: data.cliente?.portal_token || '',
+      cliente: {
+        nombre:        data.cliente?.nombre,
+        membresiaOk:   data.cliente?.membresiaOk,
+        vencimiento:   data.cliente?.vencimiento,
+        streakActual:  data.cliente?.streakActual || data.cliente?.racha || 0,
+        meta_semanal:  data.cliente?.meta_semanal || 4,
+        objetivo:      data.cliente?.objetivo,
+        numero_cliente:data.cliente?.numero_cliente,
+        portal_token:  data.cliente?.portal_token,
+      },
+      gym:           { id: data.gym?.id, nombre: data.gym?.nombre, logo: data.gym?.logo },
+      checkins:      (data.checkins   || []).slice(0, 60),
+      programasHoy:  (data.programasHoy   || []).slice(0, 5),
+      programasSemana:(data.programasSemana|| []).slice(0, 14),
+    };
+    localStorage.setItem('velum_cached_portal', JSON.stringify(snap));
+  }catch(_){}
+}
+
+function _loadCachedPortalData(token){
+  try{
+    const raw = localStorage.getItem('velum_cached_portal');
+    if(!raw) return null;
+    const snap = JSON.parse(raw);
+    // Solo usar caché del mismo token (mismo atleta)
+    if(snap.token && token && snap.token !== token) return null;
+    // Caché válida máximo 7 días
+    if(Date.now() - snap._cachedAt > 7 * 24 * 60 * 60 * 1000) return null;
+    return snap;
+  }catch(_){ return null; }
+}
+
+function _showOfflineBanner(cachedAt){
+  // Banner temporal en la pantalla de home
+  const existing = document.getElementById('velum-offline-banner');
+  if(existing) return;
+  const ago   = cachedAt ? new Date(cachedAt) : null;
+  const label = ago ? ago.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) : 'antes';
+  const banner = document.createElement('div');
+  banner.id = 'velum-offline-banner';
+  banner.style.cssText = [
+    'position:fixed;top:0;left:0;right:0;z-index:8000',
+    'background:rgba(239,68,68,.92);color:#fff',
+    'font-size:11px;font-weight:700;text-align:center',
+    'padding:10px 16px;letter-spacing:.3px',
+    'padding-top:calc(env(safe-area-inset-top,0px) + 10px)',
+  ].join(';');
+  banner.innerHTML = `Sin conexión — mostrando datos del ${label} <span style="opacity:.7;margin-left:6px;cursor:pointer;" onclick="document.getElementById('velum-offline-banner').remove()">✕</span>`;
+  document.body.appendChild(banner);
+  // Auto-ocultar al recuperar red y recargar
+  window.addEventListener('online', () => {
+    banner.textContent = 'Conexión restaurada, actualizando…';
+    banner.style.background = 'rgba(34,197,94,.92)';
+    setTimeout(() => window.location.reload(), 1200);
+  }, { once: true });
+}
+
+/* ─── Web Push VAPID registration ────────────────────────────────
+   Se llama después del login. Registra la suscripción push del
+   browser en Supabase para que la Edge Function pueda enviarla.
+──────────────────────────────────────────────────────────────── */
+async function registerWebPush(portalToken){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(!portalToken || !VAPID_PUBLIC_KEY) return;
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    // Verificar permiso actual
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted') return;
+
+    // Obtener o reutilizar suscripción existente
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+
+    // Guardar en Supabase
+    await fetch(`${SUPABASE_URL}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`,{
+      method: 'PATCH',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey': ANON_KEY,
+        'Authorization': 'Bearer ' + ANON_KEY,
+      },
+      body: JSON.stringify({ web_push_subscription: sub.toJSON() }),
+    });
+    console.log('[PWA] Web Push suscripción registrada');
+  }catch(e){
+    console.warn('[PWA] Web Push registration error:', e);
+  }
+}
+
+function _urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+// Escuchar mensajes del SW para navegación desde notificaciones
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  if(event.data?.type === 'velum:navigate' && event.data.view){
+    if(typeof window.switchView === 'function') window.switchView(event.data.view);
+  }
+});
 
 function handleDesktopLayout(){
   const desk=isDesktop();
@@ -6646,7 +6774,24 @@ async function init(){
 
   let stored=null;
   try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); }catch(_){}
-  if(stored?.token){ try{ showPortal(await tryToken(stored.token)); return; }catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} } }
+  if(stored?.token){
+    try{
+      showPortal(await tryToken(stored.token));
+      return;
+    }catch(err){
+      // Si es error de red (no de auth), intentar datos cacheados
+      const isNetworkError = !navigator.onLine || (err instanceof TypeError);
+      if(isNetworkError){
+        const cached = _loadCachedPortalData(stored.token);
+        if(cached){
+          showPortal(cached);
+          _showOfflineBanner(cached._cachedAt);
+          return;
+        }
+      }
+      try{ localStorage.removeItem('velum_session'); }catch(_){}
+    }
+  }
 
   $('loading-screen').classList.add('hidden');
 

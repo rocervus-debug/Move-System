@@ -5,7 +5,7 @@
                Offline fallback para el app shell
 ═══════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'velum-v20';
+const CACHE_VERSION = 'velum-v21';
 const CACHE_STATIC  = `move-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -103,6 +103,47 @@ self.addEventListener('fetch', event => {
           }))
         ))
       )
+  );
+});
+
+/* ── Web Push — mostrar notificación ── */
+self.addEventListener('push', event => {
+  let payload = { title: 'MOVE', body: '' };
+  try { payload = event.data?.json() || payload; } catch(_) {}
+
+  const options = {
+    body:    payload.body   || '',
+    icon:    '/move-icon-192.png',
+    badge:   '/move-icon-192.png',
+    tag:     payload.tag    || 'velum',
+    data:    payload.data   || {},
+    vibrate: [100, 50, 100],
+    actions: payload.actions || [],
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, options)
+  );
+});
+
+/* ── Tap en notificación → navegar a la vista correcta ── */
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const data = event.notification.data || {};
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Si la app ya está abierta, enfócarla y navegar
+      for (const client of clientList) {
+        if (client.url.includes('/atleta') && 'focus' in client) {
+          if (data.view) client.postMessage({ type: 'velum:navigate', view: data.view });
+          return client.focus();
+        }
+      }
+      // Si no está abierta, abrirla
+      const url = data.view ? `/atleta?view=${data.view}` : '/atleta';
+      return clients.openWindow(url);
+    })
   );
 });
 
