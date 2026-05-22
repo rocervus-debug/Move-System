@@ -2148,6 +2148,44 @@ select option{background:#08121E;color:var(--text);}
   .persona-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);}
   .persona-row.checkin{background:rgba(15,223,154,.05);border-color:rgba(15,223,154,.18);}
 
+  /* ── Day Picker Strip ── */
+  .asist-day-strip{
+    display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;
+    scrollbar-width:none;-ms-overflow-style:none;
+    margin-bottom:16px;
+  }
+  .asist-day-strip::-webkit-scrollbar{display:none;}
+  .asist-day-pill{
+    display:flex;flex-direction:column;align-items:center;
+    padding:10px 14px;border-radius:14px;cursor:pointer;
+    border:1px solid rgba(255,255,255,.07);
+    background:rgba(255,255,255,.04);
+    transition:all .2s cubic-bezier(.34,1.56,.64,1);
+    flex-shrink:0;min-width:52px;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    position:relative;overflow:hidden;
+  }
+  .asist-day-pill::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,.18) 0%,transparent 70%);
+    opacity:0;transition:opacity .2s;
+  }
+  .asist-day-pill:hover{background:rgba(255,255,255,.07);transform:translateY(-1px);}
+  .asist-day-pill.active{
+    background:rgba(0,212,255,.12);
+    border-color:rgba(0,212,255,.45);
+    box-shadow:0 0 18px rgba(0,212,255,.2),0 2px 8px rgba(0,0,0,.3);
+    transform:translateY(-2px) scale(1.04);
+  }
+  .asist-day-pill.active::before{opacity:1;}
+  .asist-day-pill.today-pill .adp-day{color:var(--accent);}
+  .adp-day{font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:5px;transition:color .2s;}
+  .adp-num{font-size:18px;font-weight:900;font-family:var(--fd);color:var(--text);line-height:1;transition:color .2s;}
+  .adp-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);margin-top:5px;opacity:0;transition:opacity .2s;}
+  .asist-day-pill.active .adp-day{color:var(--accent);}
+  .asist-day-pill.active .adp-num{color:#fff;}
+  .asist-day-pill.active .adp-dot{opacity:1;}
+
   /* ──────────── Tables ──────────── */
   div[style*="overflow-x:auto"],
   div[style*="overflow-x: auto"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
@@ -3630,7 +3668,7 @@ body::before{
     <div class="view" id="v-asistencia">
 
       <!-- Header operativo -->
-      <div class="sh" style="margin-bottom:16px;">
+      <div class="sh" style="margin-bottom:12px;">
         <div>
           <div class="sh-title" id="asist-dia-label">Clases de Hoy</div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="asist-fecha-label">—</div>
@@ -3640,6 +3678,9 @@ body::before{
           <button onclick="loadClasesOperativas()" style="font-size:12px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border);cursor:pointer;font-weight:700;" title="Actualizar">↺</button>
         </div>
       </div>
+
+      <!-- Day Picker Strip -->
+      <div class="asist-day-strip" id="asist-day-strip"></div>
 
       <!-- Lista de clases del día -->
       <div id="asist-clases-list" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -8335,7 +8376,7 @@ function go(id, el){
   if(id==='visitas')     renderVisitas();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); }
+  if(id==='asistencia')  { _asistDayOffset=0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
@@ -18283,16 +18324,53 @@ function _horaToMinutes(h){
   return hr*60+mn;
 }
 
+/* ── Day offset global (0 = hoy, 1 = mañana, …) ── */
+let _asistDayOffset = 0;
+
+function renderAsistDayStrip(){
+  const strip = document.getElementById('asist-day-strip');
+  if(!strip) return;
+  const diasAbrev = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+  const hoy = new Date();
+  strip.innerHTML = Array.from({length:7},(_,i)=>{
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() + i);
+    const isToday = i===0;
+    const isActive = i===_asistDayOffset;
+    return `<div class="asist-day-pill${isActive?' active':''}${isToday?' today-pill':''}" onclick="selectAsistDia(${i})">
+      <div class="adp-day">${isToday?'HOY':diasAbrev[d.getDay()]}</div>
+      <div class="adp-num">${d.getDate()}</div>
+      <div class="adp-dot"></div>
+    </div>`;
+  }).join('');
+}
+
+function selectAsistDia(offset){
+  _asistDayOffset = offset;
+  renderAsistDayStrip();
+  loadClasesOperativas();
+}
+
 async function loadClasesOperativas(){
   const el     = document.getElementById('asist-clases-list');
   const lbl    = document.getElementById('asist-dia-label');
   const fLbl   = document.getElementById('asist-fecha-label');
   if(!el) return;
-  const hoy    = new Date();
-  const hoyStr = hoy.toISOString().slice(0,10);
-  const diaHoy = _DIAS_ES[hoy.getDay()];
-  if(lbl)  lbl.textContent  = `Clases del ${diaHoy}`;
-  if(fLbl) fLbl.textContent = hoy.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const base   = new Date();
+  const target = new Date(base);
+  target.setDate(base.getDate() + _asistDayOffset);
+
+  // Build local date string (YYYY-MM-DD) without UTC shift
+  const yyyy = target.getFullYear();
+  const mm   = String(target.getMonth()+1).padStart(2,'0');
+  const dd   = String(target.getDate()).padStart(2,'0');
+  const hoyStr = `${yyyy}-${mm}-${dd}`;
+
+  const diaHoy = _DIAS_ES[target.getDay()];
+  const esHoy  = _asistDayOffset === 0;
+  if(lbl)  lbl.textContent  = esHoy ? `Clases de Hoy` : `Clases del ${diaHoy}`;
+  if(fLbl) fLbl.textContent = target.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   el.innerHTML = '<div style="padding:28px 0;text-align:center;font-size:13px;color:var(--text3);">Cargando clases…</div>';
   try{
     const gymId = MOVE_GYM_ID||null;
