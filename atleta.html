@@ -4652,15 +4652,23 @@ async function doAtletaCheckIn(portalToken){
   if(btn){ btn.disabled=true; btn.textContent='…'; }
 
   try{
+    // AbortController para timeout de 10s
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 10000);
+
     const resp = await fetch(`${EDGE_BASE}/move-checkin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: portalToken }),
+      signal: ctrl.signal,
     });
-    const d = await resp.json();
+    clearTimeout(timer);
+
+    let d = {};
+    try{ d = await resp.json(); }catch(_){}
 
     if(!resp.ok || d.error){
-      toast(d.error || 'Error al hacer check-in','✕',3500);
+      toast(d.error || `Error ${resp.status} al hacer check-in`,'✕',3500);
       if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
       return;
     }
@@ -4677,8 +4685,9 @@ async function doAtletaCheckIn(portalToken){
     renderNextClassCard();
 
   }catch(e){
-    console.error('[checkin]',e);
-    toast('Sin conexión. Intenta de nuevo','✕',3000);
+    console.error('[checkin]', e.name, e.message);
+    const msg = e.name==='AbortError' ? 'Tiempo de espera agotado. Intenta de nuevo' : 'Sin conexión. Intenta de nuevo';
+    toast(msg,'✕',3000);
     if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
   }
 }
