@@ -20,6 +20,22 @@ const DEST_DIR   = path.join(ROOT, 'www');
 const DEST       = path.join(DEST_DIR, 'index.html');
 const BRIDGE_SRC = path.join(ROOT, 'native', 'bridge.js');
 const BRIDGE_DST = path.join(DEST_DIR, 'native', 'bridge.js');
+const SW_PATH    = path.resolve(ROOT, '..', 'sw.js');
+
+// ── Auto-bump sw.js CACHE_VERSION on every build ──
+function bumpSwVersion() {
+  if (!fs.existsSync(SW_PATH)) return;
+  let sw = fs.readFileSync(SW_PATH, 'utf-8');
+  sw = sw.replace(
+    /(const CACHE_VERSION\s*=\s*['"]velum-v)(\d+)(['"]\s*;)/,
+    (_, prefix, num, suffix) => {
+      const next = parseInt(num, 10) + 1;
+      console.log(`🔄  sw.js: velum-v${num} → velum-v${next}`);
+      return `${prefix}${next}${suffix}`;
+    }
+  );
+  fs.writeFileSync(SW_PATH, sw, 'utf-8');
+}
 
 // ── Leer brand config ──
 const BRAND_SLUG  = (process.env.VELUM_BRAND || 'velum').toLowerCase();
@@ -32,6 +48,9 @@ if (brand.gymCode) console.log(`    Gym code: ${brand.gymCode} (hardcoded, campo
 console.log('');
 
 function build() {
+  // Bump service worker cache version (forces PWA to update)
+  bumpSwVersion();
+
   // Leer atleta.html
   if (!fs.existsSync(SRC)) {
     console.error('❌  No encontré atleta.html en:', SRC);
@@ -40,7 +59,8 @@ function build() {
   let html = fs.readFileSync(SRC, 'utf-8');
 
   // ── Inyectar brand config + Capacitor runtime ──
-  const capScript = `
+  // Brand config + capacitor.js → en </head> (disponible antes de que corra el app)
+  const headScript = `
   <!-- VELUM Brand config — inyectado por build.js -->
   <script>
     window.VELUM_BRAND = ${JSON.stringify({
@@ -62,17 +82,24 @@ function build() {
         }
       });
     }
-    // Shim: si no estamos en Capacitor
+    // Shim: si no estamos en Capacitor (browser normal)
     if (typeof window.Capacitor === 'undefined') {
       window.Capacitor = { isNativePlatform: () => false, getPlatform: () => 'web', Plugins: {} };
     }
   </script>
-  <script src="capacitor.js"></script>
-  <!-- Native bridge: haptics, status bar, notifications, back button -->
+  <script src="capacitor.js"></script>`;
+
+  // Bridge → al final de </body> para que corra DESPUÉS de los scripts del app.
+  // Así window.haptic del bridge (Capacitor real) sobreescribe el fallback de navigator.vibrate.
+  const bridgeScript = `
+  <!-- Native bridge: haptics reales, status bar, notificaciones, back button -->
+  <!-- IMPORTANTE: va antes de </body> para correr DESPUÉS de los scripts del app -->
   <script src="native/bridge.js"></script>`;
 
-  // Insertar justo antes de </head>
-  html = html.replace('</head>', capScript + '\n</head>');
+  // Insertar brand config antes de </head>
+  html = html.replace('</head>', headScript + '\n</head>');
+  // Insertar bridge antes de </body>
+  html = html.replace('</body>', bridgeScript + '\n</body>');
 
   // ── Actualizar meta viewport para viewport-fit=cover ──
   html = html.replace(

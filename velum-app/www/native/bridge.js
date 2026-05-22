@@ -208,7 +208,75 @@
     }
   }
 
-  /* ─── 10. Señal "app lista" al hide splash ── */
+  /* ─── 10. Push notifications ────────────────── */
+  /**
+   * Registra el dispositivo para push notifications.
+   * Al obtener el token lo guarda en Supabase (campo push_token del cliente).
+   * Llámalo después de que el atleta haya hecho login.
+   *
+   * window.registerPush(portalToken, supabaseUrl, anonKey)
+   */
+  const { PushNotifications } = window.Capacitor.Plugins;
+  if (PushNotifications) {
+    window.registerPush = async function (portalToken, supabaseUrl, anonKey) {
+      if (!portalToken || !supabaseUrl) return;
+      try {
+        const perm = await PushNotifications.requestPermissions();
+        if (perm.receive !== 'granted') {
+          console.log('[Bridge] Push: permiso denegado');
+          return;
+        }
+        await PushNotifications.register();
+
+        // Escuchar el token una sola vez
+        const onReg = PushNotifications.addListener('registration', async (token) => {
+          console.log('[Bridge] Push token:', token.value);
+          onReg.remove();
+          // Guardar token en Supabase
+          try {
+            await fetch(`${supabaseUrl}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': anonKey,
+                'Authorization': 'Bearer ' + anonKey
+              },
+              body: JSON.stringify({ push_token: token.value, push_platform: IS_IOS ? 'ios' : 'android' })
+            });
+          } catch (e) {
+            console.warn('[Bridge] Error guardando push token:', e);
+          }
+        });
+
+        PushNotifications.addListener('registrationError', (err) => {
+          console.warn('[Bridge] Push registration error:', err);
+        });
+
+        // Manejar notificaciones recibidas en primer plano
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('[Bridge] Push recibida:', notification.title);
+          // Mostrar como toast si la app está activa
+          if (typeof window.showToast === 'function') {
+            window.showToast(notification.body || notification.title || 'Nueva notificación');
+          }
+        });
+
+        // Manejar tap en notificación (app en background)
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          const data = action.notification.data || {};
+          // Navegar a la sección correcta según el payload
+          if (data.view && typeof window.switchView === 'function') {
+            window.switchView(data.view);
+          }
+        });
+
+      } catch (e) {
+        console.warn('[Bridge] Push setup error:', e);
+      }
+    };
+  }
+
+  /* ─── 11. Señal "app lista" al hide splash ── */
   // La emitimos cuando el portal ha terminado su init
   window._nativeBridgeReady = true;
 

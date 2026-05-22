@@ -512,6 +512,7 @@ body::before{
 .med-chip{font-size:11px;font-weight:700;color:var(--text);background:var(--surface-hover);border-radius:6px;padding:3px 8px;}
 .med-chip small{color:var(--text3);font-weight:500;font-size:10px;}
 /* ── Tu Progreso — PROG tab v2 ── */
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .prog-peso-card{
   background:var(--bg-card);border:1px solid var(--border-accent);
   border-radius:18px;padding:20px;margin-bottom:12px;
@@ -593,12 +594,22 @@ body::before{
 
 /* ── PROG tab mini-stats grid (GAP 4) ── */
 .prog-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.prog-mini-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:16px 14px;}
+.prog-mini-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:16px 14px;position:relative;overflow:hidden;}
 .prog-mini-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
 .prog-mini-val{font-family:var(--fd);font-size:22px;font-weight:700;color:#fff;line-height:1;}
 .prog-mini-unit{font-size:10px;color:var(--text3);font-family:var(--fm);margin-top:2px;}
 .prog-mini-trend{font-family:var(--fm);font-size:10px;color:var(--ok);margin-top:4px;}
 .prog-mini-trend.warn{color:#f87171;}
+/* ── PROG Coach IA insight card ── */
+.prog-insight-card{background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(0,212,255,.03));border:1px solid rgba(0,212,255,.18);border-radius:16px;padding:15px 16px;margin-bottom:12px;}
+.prog-insight-label{font-family:var(--fm);font-size:8px;font-weight:700;letter-spacing:1.6px;color:var(--cyan);margin-bottom:7px;opacity:.75;text-transform:uppercase;}
+.prog-insight-text{font-size:13px;color:var(--text);line-height:1.55;margin-bottom:5px;}
+.prog-insight-text:last-child{margin-bottom:0;}
+/* ── PROG goal progress bar ── */
+.prog-goal-bar{height:4px;border-radius:99px;background:var(--border-soft);overflow:hidden;margin-top:8px;}
+.prog-goal-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+/* ── PROG streak fire ── */
+.prog-streak-fire{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:26px;opacity:.28;pointer-events:none;}
 
 /* ── Plan sheet: workout title + foco chip (GAP 3) ── */
 .workout-day-title{font-family:var(--fd);font-size:22px;font-weight:800;color:#fff;margin:0 0 8px;}
@@ -1761,6 +1772,20 @@ body::before{
   .stat-num{font-size:24px;}
 }
 
+/* ── Pull to refresh ── */
+#ptr-indicator{
+  position:fixed;top:calc(var(--safe-top) + 12px);left:50%;transform:translateX(-50%) translateY(-60px);
+  z-index:9998;background:rgba(8,18,30,.92);border:1px solid var(--border-medium);
+  border-radius:99px;padding:8px 16px;display:flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:700;color:var(--cyan);
+  transition:transform .25s var(--ease-out),opacity .25s;opacity:0;pointer-events:none;
+  backdrop-filter:blur(12px);
+}
+#ptr-indicator.visible{opacity:1;}
+#ptr-indicator.released{transform:translateX(-50%) translateY(0);}
+@keyframes ptr-spin{to{transform:rotate(360deg);}}
+#ptr-indicator .ptr-spin{animation:ptr-spin .7s linear infinite;}
+
 /* ══════════════════════════════════════
    BOOKING CONFIRM SHEET
 ══════════════════════════════════════ */
@@ -1795,14 +1820,6 @@ body::before{
 .bcs-ico-wrap svg{width:16px;height:16px;stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
 .bcs-row-label{font-size:11px;color:var(--text3);margin-bottom:1px;}
 .bcs-row-val{font-size:14px;font-weight:700;color:#fff;}
-.bcs-wa-btn{
-  width:100%;padding:14px;border-radius:14px;
-  background:#25D366;border:none;color:#fff;font-size:14px;font-weight:800;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  letter-spacing:.2px;transition:opacity .15s;margin-bottom:10px;
-  text-decoration:none;
-}
-.bcs-wa-btn:active{opacity:.85;}
 .bcs-close-btn{
   width:100%;padding:12px;border-radius:12px;background:var(--surface);
   border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;
@@ -1874,6 +1891,7 @@ body::before{
   text-transform:uppercase;z-index:600;box-shadow:var(--glow-medium);
   animation:toast-slide-in 500ms var(--ease-spring) forwards;pointer-events:none;
 }
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 @keyframes toast-slide-in{
   from{opacity:0;transform:translateX(-50%) translateY(-12px);}
   to{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -1907,7 +1925,7 @@ body::before{
 }
 .goal-card{
   background:var(--bg-card);border:1px solid var(--border-soft);border-radius:18px;
-  padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;
+  padding:14px 14px;display:flex;align-items:center;gap:10px;margin-bottom:0;
   cursor:pointer;transition:all 200ms var(--ease-out);position:relative;
 }
 .goal-card:hover{border-color:var(--border-medium);transform:translateX(2px);}
@@ -1917,14 +1935,13 @@ body::before{
   box-shadow:var(--glow-soft);
 }
 .goal-icon{
-  width:36px;height:36px;border-radius:10px;background:var(--bg-elevated);
-  display:grid;place-items:center;flex-shrink:0;transition:background 200ms;
+  width:34px;height:34px;border-radius:10px;background:var(--bg-elevated);
+  display:grid;place-items:center;flex-shrink:0;font-size:18px;
+  transition:background 200ms,transform 200ms;
 }
-.goal-card.selected .goal-icon{background:var(--cyan);}
-.goal-icon svg{width:18px;height:18px;fill:var(--cyan);transition:fill 200ms;}
-.goal-card.selected .goal-icon svg{fill:#001828;}
-.goal-name{font-family:var(--fd);font-size:15px;font-weight:600;margin-bottom:2px;}
-.goal-desc{font-size:11px;color:var(--text2);}
+.goal-card.selected .goal-icon{background:var(--accent-dim);transform:scale(1.1);}
+.goal-name{font-family:var(--fd);font-size:13px;font-weight:700;margin-bottom:2px;line-height:1.2;}
+.goal-desc{font-size:10px;color:var(--text2);line-height:1.3;}
 .goal-check{
   width:22px;height:22px;border-radius:50%;border:1.5px solid var(--text3);
   flex-shrink:0;display:grid;place-items:center;transition:all 200ms var(--ease-out);
@@ -2532,6 +2549,12 @@ body::before{
       </div>
       <div class="section" style="padding-top:0;">
 
+        <!-- Coach IA Insight -->
+        <div id="prog-insight-wrap"></div>
+
+        <!-- Racha + Meta semanal -->
+        <div id="prog-streak-wrap"></div>
+
         <!-- Peso actual card -->
         <div id="prog-peso-wrap">
           <div class="prog-peso-card">
@@ -2539,12 +2562,15 @@ body::before{
               <span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--text3);">PESO ACTUAL</span>
               <span id="prog-peso-date" style="font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:.3px;"></span>
             </div>
-            <div style="display:flex;align-items:flex-end;gap:12px;">
-              <span id="prog-peso-num" class="prog-peso-num">—</span>
-              <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:6px;">
-                <span style="font-size:18px;font-weight:300;color:var(--text3);line-height:1;">kg</span>
-                <span id="prog-delta-chip" class="prog-delta-chip" style="display:none;"></span>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:flex-end;gap:10px;">
+                <span id="prog-peso-num" class="prog-peso-num">—</span>
+                <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:6px;">
+                  <span style="font-size:18px;font-weight:300;color:var(--text3);line-height:1;">kg</span>
+                  <span id="prog-delta-chip" class="prog-delta-chip" style="display:none;"></span>
+                </div>
               </div>
+              <div id="prog-peso-sparkline" style="padding-bottom:6px;opacity:.7;"></div>
             </div>
           </div>
         </div>
@@ -2554,7 +2580,10 @@ body::before{
           <div class="prog-asist-card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
               <span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--text3);">ASISTENCIA — ÚLTIMOS 7 DÍAS</span>
-              <span id="prog-asist-count" style="font-family:var(--fm);font-size:9px;color:var(--cyan);letter-spacing:.3px;"></span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="prog-consist-chip" style="display:none;font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.3px;border-radius:99px;padding:3px 8px;"></span>
+                <span id="prog-asist-count" style="font-family:var(--fm);font-size:9px;color:var(--cyan);letter-spacing:.3px;"></span>
+              </div>
             </div>
             <div id="prog-bar-chart" class="prog-bar-chart">
               <!-- injected by renderProgAsist() -->
@@ -2580,6 +2609,7 @@ body::before{
             <div class="prog-mini-label">VOL. SEMANA</div>
             <div class="prog-mini-val" id="prog-vol-val">—</div>
             <div class="prog-mini-unit">kg totales</div>
+            <div class="prog-mini-trend" id="prog-vol-trend" style="display:none;"></div>
           </div>
           <div class="prog-mini-card">
             <div class="prog-mini-label">CLASES MES</div>
@@ -2632,7 +2662,7 @@ body::before{
       <!-- Plans for purchase -->
       <div id="planes-content">
         <div class="planes-empty">
-          <div class="planes-empty-ico">💳</div>
+          <div class="planes-empty-ico"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
           <div class="planes-empty-title">Planes del gym</div>
           <div class="planes-empty-sub">Aquí verás los planes disponibles para tu membresía.</div>
         </div>
@@ -2651,9 +2681,10 @@ body::before{
       </div>
       <div id="bitacora-list">
         <div class="bit-empty">
-          <div class="bit-empty-ico">🏋️</div>
+          <div class="bit-empty-ico"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4M7 12h10"/></svg></div>
           <div class="bit-empty-ttl">Tu diario de entrenamiento</div>
-          <div class="bit-empty-sub">Registra cada sesión — ejercicios, pesos, tiempos. Ve tu progreso con el tiempo.</div>
+          <div class="bit-empty-sub">Registra cada sesión — pesos, tiempos, ejercicios.</div>
+          <button onclick="openBitacoraSheet()" style="margin-top:18px;padding:13px 28px;background:var(--accent);color:#001828;border:none;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.3px;">+ Registrar sesión</button>
         </div>
       </div>
     </div>
@@ -2671,7 +2702,7 @@ body::before{
       <div class="section" style="padding-top:0;">
         <div id="cls-content">
           <div class="cls-empty">
-            <div class="cls-empty-ico">⏳</div>
+            <div class="cls-empty-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1.2s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
             <div class="cls-empty-txt">Cargando horario…</div>
           </div>
         </div>
@@ -2680,7 +2711,7 @@ body::before{
 
   </div><!-- /main-scroll -->
 
-  <!-- Mobile Bottom Nav — mockup v5 -->
+  <!-- Mobile Bottom Nav — v6 labels claros -->
   <div class="bottom-nav">
     <div class="bn-item active" id="bn-home" onclick="switchView('home')">
       <div class="bn-icon">
@@ -2688,7 +2719,7 @@ body::before{
           <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
         </svg>
       </div>
-      <div class="bn-lbl">HOME</div>
+      <div class="bn-lbl">INICIO</div>
     </div>
     <div class="bn-item" id="bn-clases" onclick="switchView('clases')">
       <div class="bn-icon">
@@ -2704,7 +2735,7 @@ body::before{
           <path d="M13 2L4.09 12.12A1 1 0 005 14h6v8l8.91-10.12A1 1 0 0019 10h-6V2z"/>
         </svg>
       </div>
-      <div class="bn-lbl">PLAN</div>
+      <div class="bn-lbl">ENTRENO</div>
     </div>
     <div class="bn-item" id="bn-prog" onclick="switchViewProg()">
       <div class="bn-icon">
@@ -2712,7 +2743,7 @@ body::before{
           <path d="M5 20h2v-8H5v8zm4 0h2V4H9v16zm4 0h2v-4h-2v4zm4 0h2v-12h-2v12z"/>
         </svg>
       </div>
-      <div class="bn-lbl">PROG</div>
+      <div class="bn-lbl">AVANCE</div>
     </div>
     <div class="bn-item" id="bn-yo" onclick="switchView('planes')">
       <div class="bn-icon">
@@ -2720,7 +2751,7 @@ body::before{
           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
         </svg>
       </div>
-      <div class="bn-lbl">YO</div>
+      <div class="bn-lbl">MI CUENTA</div>
     </div>
   </div>
 
@@ -2784,10 +2815,6 @@ body::before{
         <div><div class="bcs-row-label">Clase</div><div class="bcs-row-val" id="bcs-tipo">—</div></div>
       </div>
     </div>
-    <a id="bcs-wa-link" href="#" target="_blank" class="bcs-wa-btn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Enviar recordatorio por WhatsApp
-    </a>
     <button class="bcs-close-btn" onclick="closeSheet('booking-confirm-sheet')">Cerrar</button>
   </div>
 </div>
@@ -2945,28 +2972,34 @@ body::before{
         <div class="onb-sub">Define cuántas clases quieres hacer cada semana.</div>
       </div>
 
-      <div class="onb-step-label">01 · OBJETIVO PRINCIPAL</div>
-      <div id="goal-cards-wrap">
-        <div class="goal-card" data-goal="weight" onclick="selectGoal(this)">
-          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg></div>
-          <div style="flex:1;"><div class="goal-name">Perder peso</div><div class="goal-desc">Déficit + cardio + fuerza</div></div>
+      <div class="onb-step-label">01 · ¿CUÁL ES TU META?</div>
+      <div id="goal-cards-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="goal-card" data-goal="fat_loss" data-label="Quemar grasa" data-emoji="🔥" onclick="selectGoal(this)">
+          <div class="goal-icon">🔥</div>
+          <div style="flex:1;"><div class="goal-name">Quemar grasa</div><div class="goal-desc">Déficit + cardio</div></div>
           <div class="goal-check"></div>
         </div>
-        <div class="goal-card" data-goal="strength" onclick="selectGoal(this)">
-          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg></div>
-          <div style="flex:1;"><div class="goal-name">Hipertrofia · Fuerza</div><div class="goal-desc">Volumen progresivo + PRs</div></div>
+        <div class="goal-card" data-goal="muscle" data-label="Ganar músculo" data-emoji="💪" onclick="selectGoal(this)">
+          <div class="goal-icon">💪</div>
+          <div style="flex:1;"><div class="goal-name">Ganar músculo</div><div class="goal-desc">Fuerza + volumen</div></div>
           <div class="goal-check"></div>
         </div>
-        <div class="goal-card" data-goal="performance" onclick="selectGoal(this)">
-          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div>
-          <div style="flex:1;"><div class="goal-name">Performance · CrossFit</div><div class="goal-desc">WODs + skills + condición</div></div>
+        <div class="goal-card" data-goal="fitness" data-label="Condición física" data-emoji="⚡" onclick="selectGoal(this)">
+          <div class="goal-icon">⚡</div>
+          <div style="flex:1;"><div class="goal-name">Condición física</div><div class="goal-desc">Energía + resistencia</div></div>
           <div class="goal-check"></div>
         </div>
-        <div class="goal-card" data-goal="endurance" onclick="selectGoal(this)">
-          <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg></div>
-          <div style="flex:1;"><div class="goal-name">Hyrox · Resistencia</div><div class="goal-desc">Run + functional + race prep</div></div>
+        <div class="goal-card" data-goal="wellness" data-label="Salud y bienestar" data-emoji="🧘" onclick="selectGoal(this)">
+          <div class="goal-icon">🧘</div>
+          <div style="flex:1;"><div class="goal-name">Salud y bienestar</div><div class="goal-desc">Moverse y sentirme bien</div></div>
           <div class="goal-check"></div>
         </div>
+      </div>
+
+      <!-- Goal tips panel — shown on selection -->
+      <div id="goal-tips-panel" style="display:none;margin-top:10px;background:var(--bg-elevated);border:1px solid var(--border-accent);border-radius:16px;padding:14px 16px;transition:all .2s;">
+        <div id="goal-tips-title" style="font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--cyan);margin-bottom:10px;">CÓMO TE AYUDA LA APP</div>
+        <div id="goal-tips-list" style="display:flex;flex-direction:column;gap:7px;"></div>
       </div>
 
       <div class="onb-step-label" style="margin-top:20px;">02 · META SEMANAL</div>
@@ -3212,6 +3245,12 @@ function animateRings(){
 }
 
 // ── Sheet control ────────────────────────────────────
+// ── Local date helper (avoids UTC off-by-one in GMT-N timezones) ──
+function _localDate(d){
+  const dt=d||new Date();
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+
 // ── Toast global (Fix #6) ────────────────────────────
 function showToast(msg, icon='ℹ️', duration=3500){
   let t = document.getElementById('atleta-toast');
@@ -3230,6 +3269,12 @@ function showToast(msg, icon='ℹ️', duration=3500){
 function openSheet(id){ $(id).classList.add('open'); document.body.style.overflow='hidden'; }
 function closeSheet(id,e){
   if(!e||e.target===$(id)){ $(id).classList.remove('open'); document.body.style.overflow=''; }
+}
+// ── Haptic feedback (PWA / mobile) ──────────────────
+function haptic(type='light'){
+  if(!navigator.vibrate) return;
+  const patterns = { light:[8], medium:[15], success:[10,50,10], error:[40,30,40] };
+  navigator.vibrate(patterns[type]||patterns.light);
 }
 function openQRSheet(){ renderQR(); openSheet('qr-sheet'); }
 function openProfileSheet(){ openSheet('profile-sheet'); }
@@ -3280,8 +3325,16 @@ function openCoachIA(){
   if(!coachMessages.length){
     const nombre = portalData?.cliente?.nombre?.split(' ')[0] || 'atleta';
     const meta = portalData?.cliente?.meta_semanal || 4;
+    const obj  = portalData?.cliente?.objetivo || '';
+    const GOAL_GREET = {
+      fat_loss:  `Tu objetivo es quemar grasa 🔥 — con ${meta} clases/semana y buen déficit vas directo al cambio.`,
+      muscle:    `Tu objetivo es ganar músculo 💪 — registra tus pesos en la Bitácora para detectar PRs semana a semana.`,
+      fitness:   `Tu objetivo es condición física ⚡ — mantén tu racha activa y mezcla tipos de clase para progresar.`,
+      wellness:  `Tu objetivo es salud y bienestar 🧘 — la consistencia es tu superpoder. ${meta} clases/semana y listo.`
+    };
+    const goalLine = GOAL_GREET[obj] || `Tu meta es llegar a ${meta} clases por semana.`;
     coachMessages = [
-      {role:'ai', text:`¡Hola, ${nombre}! 👋 Soy tu Coach IA. Tu meta es llegar a ${meta} clases por semana. ¿En qué te ayudo hoy?`, time:'ahora'}
+      {role:'ai', text:`¡Hola, ${nombre}! 👋 Soy tu Coach IA. ${goalLine} ¿En qué te ayudo hoy?`, time:'ahora'}
     ];
   }
   renderCoachMessages();
@@ -3301,25 +3354,51 @@ function coachIASendInput(){
   const inp=$('coach-ia-input'); if(!inp||!inp.value.trim()) return;
   coachIASend(inp.value.trim()); inp.value='';
 }
-function coachIASend(text){
+async function coachIASend(text){
   coachMessages.push({role:'user',text});
   coachMessages.push({role:'typing'});
   renderCoachMessages();
-  // Simulated AI response
-  setTimeout(()=>{
+  try{
+    const c = portalData?.cliente||{};
+    const prog = (portalData?.programasSemana||portalData?.programasHoy||[]).slice(0,5)
+      .map(p=>`${p.fecha||'hoy'}: ${p.tipo} — ${(p.contenido||'').slice(0,120)}`).join('\n');
+    const ctx = {
+      nombre:          c.nombre||'atleta',
+      streak:          c.streakActual||c.racha||0,
+      meta_semanal:    c.meta_semanal||3,
+      clases_mes:      portalData?.clasesEsteMes||0,
+      objetivo:        c.objetivo||'',
+      programa_semana: prog||'Sin programa esta semana',
+      proxima_clase:   portalData?.proximaClaseReservada
+        ? `${portalData.proximaClaseReservada.tipo||''} ${portalData.proximaClaseReservada.hora||''}`.trim()||null
+        : null,
+    };
+    const history = coachMessages
+      .filter(m=>m.role!=='typing')
+      .slice(-12)
+      .map(m=>({role:m.role==='ai'?'assistant':'user',content:m.text}));
+    const res = await fetch(`${EDGE_BASE}/velum-coach-ia`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':ANON_KEY},
+      body:JSON.stringify({
+        portal_token: portalData?.cliente?.portal_token||'',
+        messages: history,
+        context: ctx
+      })
+    });
+    const d = await res.json();
     coachMessages = coachMessages.filter(m=>m.role!=='typing');
-    const replies = [
-      'Anotado. Tu plan está adaptado a tu objetivo y asistencia reciente.',
-      '¡Excelente! Con esa constancia vas a romper tu PR este mes. 💪',
-      'Te recomiendo priorizar descanso hoy. Mañana tienes sesión de piernas planificada.',
-      'Tu meta semanal va bien. ¡Una clase más y cierras el anillo! 🎯',
-      'Analizando tu historial… El mejor día para ti es antes de las 7am.',
-    ];
-    const r = replies[Math.floor(Math.random()*replies.length)];
-    const now = new Date();
-    coachMessages.push({role:'ai',text:r,time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`});
-    renderCoachMessages();
-  },1400);
+    if(res.ok && d.reply){
+      const now = new Date();
+      coachMessages.push({role:'ai', text:d.reply, time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`});
+    } else {
+      coachMessages.push({role:'ai', text:'No pude conectar con el servidor. Intenta de nuevo en un momento.'});
+    }
+  } catch(e){
+    coachMessages = coachMessages.filter(m=>m.role!=='typing');
+    coachMessages.push({role:'ai', text:'Error de conexión. Revisa tu red e intenta de nuevo.'});
+  }
+  renderCoachMessages();
 }
 
 // ── Class Detail Sheet ───────────────────────────────
@@ -3360,7 +3439,7 @@ function openClassDetail(key){
   let btnHtml;
   if(isReserved){
     const rid = reserva.id || '';
-    btnHtml = `<button class="cd-action-primary cancel" onclick="closeSheet('class-detail-sheet');cancelarReserva('${rid}','${key}');">CANCELAR RESERVA</button>`;
+    btnHtml = `<button class="cd-action-primary cancel" onclick="cancelarReserva('${rid}','${key}');">CANCELAR RESERVA</button>`;
   } else if(libres > 0){
     btnHtml = `<button class="cd-action-primary" onclick="closeSheet('class-detail-sheet');crearReserva('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">RESERVAR CLASE</button>`;
   } else if(!inWaitlist){
@@ -3419,16 +3498,57 @@ function openMetaPicker(){
   metaPickerValue = portalData?.cliente?.meta_semanal || 4;
   selectedGoal = portalData?.cliente?.objetivo || '';
   updateMetaRing();
-  // Restore selected goal card
+  // Restore selected goal card + tips
   document.querySelectorAll('.goal-card').forEach(c=>{
     c.classList.toggle('selected',c.dataset.goal===selectedGoal);
   });
+  if(selectedGoal){
+    const panel=document.getElementById('goal-tips-panel');
+    const list=document.getElementById('goal-tips-list');
+    const tips=GOAL_TIPS[selectedGoal]||[];
+    if(panel&&list&&tips.length){
+      list.innerHTML=tips.map(t=>`<div style="font-size:12px;color:var(--text2);line-height:1.5;">${t}</div>`).join('');
+      panel.style.display='block';
+    }
+  }
   openSheet('meta-picker-sheet');
 }
+const GOAL_TIPS = {
+  fat_loss:[
+    '📊 Mide tu progreso en cintura y cadera en la sección Medidas',
+    '🔥 Mantén tu racha activa — la constancia quema más que una sesión intensa',
+    '📅 Define cuántas clases de cardio por semana y cumple tu meta'
+  ],
+  muscle:[
+    '📓 Registra pesos, series y reps en tu Bitácora para detectar PRs',
+    '📈 La sección Progreso muestra tu volumen semanal y tendencia de fuerza',
+    '💪 2–4 sesiones de fuerza por semana es el rango óptimo de hipertrofia'
+  ],
+  fitness:[
+    '⚡ Tu racha de asistencia mide tu constancia semana a semana',
+    '📅 Reserva clases con variedad: fuerza + cardio + movilidad',
+    '🏆 Ve tu progreso mensual de asistencia en la pestaña PROG'
+  ],
+  wellness:[
+    '🧘 La consistencia importa más que la intensidad — cumple tu meta semanal',
+    '📊 Registra tus medidas mes a mes para ver cambios reales en tu cuerpo',
+    '😌 Mezcla clases de distintos tipos para mantener el hábito sin agotarte'
+  ]
+};
+
 function selectGoal(el){
   document.querySelectorAll('.goal-card').forEach(c=>c.classList.remove('selected'));
   el.classList.add('selected');
   selectedGoal = el.dataset.goal;
+  // Show tips
+  const panel = document.getElementById('goal-tips-panel');
+  const list  = document.getElementById('goal-tips-list');
+  const tips  = GOAL_TIPS[selectedGoal]||[];
+  if(panel && list && tips.length){
+    list.innerHTML = tips.map(t=>`<div style="font-size:12px;color:var(--text2);line-height:1.5;">${t}</div>`).join('');
+    panel.style.display='block';
+    panel.style.animation='fadeIn .25s ease';
+  }
 }
 function adjustMeta(dir){
   metaPickerValue = Math.min(7,Math.max(1,metaPickerValue+dir));
@@ -3466,20 +3586,6 @@ async function saveMeta(){
   }
 }
 
-// ── Toast helper ─────────────────────────────────────
-function showToast(msg,duration=3000){
-  let t=document.getElementById('atleta-toast');
-  if(t) t.remove();
-  t=document.createElement('div');
-  t.id='atleta-toast';
-  t.className='atleta-toast';
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>{
-    t.style.animation='toast-fade-out 400ms var(--ease-out) forwards';
-    setTimeout(()=>t.remove(),420);
-  },duration);
-}
 
 // ── Render YO view (membership hero + payment history) ─
 function renderYoView(){
@@ -3559,7 +3665,18 @@ function doLogout(){
 
 // ── Change gym ───────────────────────────────────────
 function doChangeGym(){
-  if(!confirm('¿Cambiar de gym? Tendrás que ingresar el código de tu nuevo gym.')) return;
+  // Show branded inline confirm instead of native confirm()
+  const btn = document.querySelector('.ps-logout[onclick="doChangeGym()"]');
+  if(btn && !btn.dataset.confirming){
+    btn.dataset.confirming='1';
+    const orig = btn.innerHTML;
+    btn.innerHTML=`<span style="flex:1;color:var(--danger);font-size:12px;">¿Seguro? Tendrás que ingresar el código de tu nuevo gym.</span><span onclick="event.stopPropagation();this.closest('button').dataset.confirming='';this.closest('button').innerHTML='${orig.replace(/'/g,"\\'")}'" style="font-size:11px;color:var(--text3);text-decoration:underline;white-space:nowrap;cursor:pointer;">Cancelar</span>`;
+    btn.onclick=function(){ _execChangeGym(); };
+    return;
+  }
+  _execChangeGym();
+}
+function _execChangeGym(){
   try{ localStorage.removeItem('velum_session'); }catch(_){}
   try{ localStorage.removeItem('velum_last_gym'); }catch(_){}
   try{ localStorage.removeItem('velum_pwa_brand'); }catch(_){}
@@ -3815,6 +3932,11 @@ function showPortal(data){
   // Señal para el native bridge (oculta splash, etc.)
   window.dispatchEvent(new CustomEvent('velum:appReady'));
 
+  // Registrar push notifications en app nativa (no-op en browser)
+  if(window.registerPush && data.cliente?.portal_token){
+    window.registerPush(data.cliente.portal_token, SUPABASE_URL, ANON_KEY).catch(()=>{});
+  }
+
   // Fix #1 — cargar reservas en background; luego re-render tarjetas que dependen de clasesReservas
   loadClasesData().then(()=>{ renderProximaClase(); renderNextClassCard(); }).catch(()=>{});
 
@@ -3963,9 +4085,9 @@ function calcStreak(checkins, ausentes){
   const checkinSet=new Set((checkins||[]).map(c=>c.fecha));
   const ausenteSet=new Set((ausentes||[]).map(a=>a.fecha));
   let streak=0;
-  const todayMs=new Date(new Date().toISOString().slice(0,10)).getTime();
+  const todayMs=new Date(_localDate()).getTime();
   for(let i=0;i<365;i++){
-    const ds=new Date(todayMs-i*86400000).toISOString().slice(0,10);
+    const ds=_localDate(new Date(todayMs-i*86400000));
     if(checkinSet.has(ds))      { streak++; }
     else if(ausenteSet.has(ds)) { break; }   // ausente rompe la racha
     // sin marcar → neutro, continúa buscando hacia atrás
@@ -4097,8 +4219,8 @@ function renderHomeRing(data){
   const now=new Date();
   const dow=now.getDay(); // 0=Sun
   const mondayMs=new Date(now).setDate(now.getDate() - (dow===0?6:dow-1));
-  const mondayStr=new Date(mondayMs).toISOString().slice(0,10);
-  const todayStr=now.toISOString().slice(0,10);
+  const mondayStr=_localDate(new Date(mondayMs));
+  const todayStr=_localDate(now);
   const weekCheckins=checkins.filter(c=>(c.fecha||'')>=mondayStr&&(c.fecha||'')<=todayStr).length;
 
   const pct=Math.min(100,Math.round((weekCheckins/meta)*100));
@@ -4129,6 +4251,11 @@ function renderHomeRing(data){
       <div class="rcv-label">META SEMANAL</div>
       <div class="rcv-value">${weekCheckins} / ${meta}</div>
       <div class="rcv-meta">${metaMsg}</div>
+      ${(()=>{
+        const obj=data.cliente?.objetivo;
+        const GOAL_MAP={fat_loss:'🔥 Quemar grasa',muscle:'💪 Ganar músculo',fitness:'⚡ Condición física',wellness:'🧘 Salud y bienestar'};
+        return obj&&GOAL_MAP[obj]?`<div style="display:inline-block;margin-top:7px;font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);border-radius:99px;padding:3px 10px;">${GOAL_MAP[obj]}</div>`:'';
+      })()}
     </div>
   </div>`;
 }
@@ -4208,7 +4335,7 @@ function renderHomeMiniStats(data){
 // ── Next Class card v5 (new styled for next-class-wrap-mobile) ──
 function renderNextClassCard(){
   const wrap=$('next-class-wrap-mobile'); if(!wrap) return;
-  const today=new Date().toISOString().slice(0,10);
+  const today=_localDate();
 
   const proximas=Object.entries(clasesReservas)
     .map(([key,r])=>{
@@ -4353,7 +4480,7 @@ function renderStreakBanner(data){
 // ── Próxima clase reservada (Task #64) ──────────────
 function renderProximaClase(){
   const ids = ['proxima-clase-desk']; // mobile uses renderNextClassCard() instead
-  const today = new Date().toISOString().slice(0,10);
+  const today = _localDate();
 
   // Build list of upcoming reservations: filter clasesReservas keys where fecha >= today
   const proximas = Object.entries(clasesReservas)
@@ -5069,13 +5196,13 @@ async function doCheckout(planId){
     });
     const d=await res.json();
     if(!res.ok||d.error){
-      alert(d.error||'Error al iniciar el pago. Intenta de nuevo.');
+      showToast(d.error||'Error al iniciar el pago. Intenta de nuevo.','❌',6000);
       document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Comprar ahora →'; });
       return;
     }
     if(d.url) window.location.href=d.url;
   }catch(e){
-    alert('Error de conexión. Intenta de nuevo.');
+    showToast('Error de conexión. Intenta de nuevo.','❌',5000);
     document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Comprar ahora →'; });
   }
 }
@@ -5083,7 +5210,7 @@ async function doCheckout(planId){
 // ── 3.2 Attendance heatmap ───────────────────────────
 function buildAttendanceHeatmap(checkins){
   const today=new Date(); today.setHours(0,0,0,0);
-  const todayStr=today.toISOString().slice(0,10);
+  const todayStr=_localDate(today);
 
   // Align grid start to Monday 11 weeks back
   const dow=(today.getDay()+6)%7; // Mon=0…Sun=6
@@ -5098,7 +5225,7 @@ function buildAttendanceHeatmap(checkins){
     Array.from({length:DAYS},(_,d)=>{
       const dt=new Date(gridStart);
       dt.setDate(gridStart.getDate()+w*DAYS+d);
-      const ds=dt.toISOString().slice(0,10);
+      const ds=_localDate(dt);
       return{ds,vis:visitedSet.has(ds),future:dt>today,today:ds===todayStr,dt};
     })
   );
@@ -5167,18 +5294,171 @@ function buildAttendanceHeatmap(checkins){
 }
 
 // ── PROG tab (Tu progreso) ────────────────────────────
+// ── PROG helpers ─────────────────────────────────────────────────
+
+// Returns consecutive active weeks (at least 1 class per week)
+function _calcStreak(checkins){
+  const now = new Date();
+  let streak = 0;
+  for(let w=0; w<=52; w++){
+    const wStart = new Date(now);
+    const dow = wStart.getDay();
+    wStart.setDate(wStart.getDate() - (dow===0?6:dow-1) - w*7);
+    wStart.setHours(0,0,0,0);
+    const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate()+6);
+    const wSStr=_localDate(wStart), wEStr=_localDate(wEnd);
+    const cnt = checkins.filter(c=>(c.fecha||'')>=wSStr&&(c.fecha||'')<=wEStr).length;
+    if(cnt < 1) break;
+    streak++;
+  }
+  return streak;
+}
+
+// Returns SVG sparkline string for an array of numeric values
+function _sparklineSvg(vals, width, height){
+  if(!vals||vals.length<2) return '';
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max-min)||1;
+  const pts = vals.map((v,i)=>{
+    const x = (i/(vals.length-1))*width;
+    const y = height - 2 - ((v-min)/range)*(height-6);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lastDown = vals[vals.length-1] <= vals[0];
+  const col = lastDown ? '#4ade80' : '#f87171';
+  const lx = parseFloat(pts.split(' ').pop().split(',')[0]);
+  const ly = parseFloat(pts.split(' ').pop().split(',')[1]);
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow:visible;display:block;">
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+    <circle cx="${lx}" cy="${ly}" r="2.5" fill="${col}"/>
+  </svg>`;
+}
+
+// ── renderProgInsight — Coach IA personalised message ────────────
+function renderProgInsight(){
+  const el = $('prog-insight-wrap');
+  if(!el||!portalData) return;
+  const checkins = portalData.checkins||[];
+  const meta = portalData.cliente?.meta_config;
+  const obj = meta?.objetivo;
+  const goalPerWeek = parseInt(meta?.clases_semana)||3;
+  const now = new Date();
+  const monthPrefix = _localDate(now).slice(0,7);
+  const prevDate = new Date(now); prevDate.setMonth(prevDate.getMonth()-1);
+  const prevPrefix = _localDate(prevDate).slice(0,7);
+  const cMes  = checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
+  const cPrev = checkins.filter(c=>(c.fecha||'').startsWith(prevPrefix)).length;
+  const streak = _calcStreak(checkins);
+  const asc = (_medidasCache||[]).filter(r=>r.peso_kg!=null).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const latestW = asc.length ? parseFloat(asc[asc.length-1].peso_kg) : null;
+  const firstW  = asc.length>=2 ? parseFloat(asc[0].peso_kg) : null;
+  const insights = [];
+  // Streak insight
+  if(streak>=4) insights.push(`🏆 <strong>${streak} semanas activas seguidas</strong> — eso es disciplina de élite. No pares.`);
+  else if(streak>=2) insights.push(`🔥 Llevas <strong>${streak} semanas activas</strong> — el hábito ya está tomando forma.`);
+  // Weight trend insight
+  if(latestW!==null && firstW!==null){
+    const diff = latestW-firstW;
+    if(obj==='fat_loss'&&diff<=-0.5) insights.push(`⚖️ Bajaste <strong>${Math.abs(diff).toFixed(1)} kg</strong> desde tu primer registro. Tu cuerpo está respondiendo.`);
+    else if(obj==='muscle'&&diff>=0.3) insights.push(`💪 Ganaste <strong>${diff.toFixed(1)} kg</strong> desde tu primer registro — sigue progresando.`);
+    else if(diff<=-0.5&&obj!=='muscle') insights.push(`⚖️ <strong>${Math.abs(diff).toFixed(1)} kg menos</strong> que al empezar. El progreso es real.`);
+  }
+  // Attendance vs goal
+  if(cMes>0 && cPrev>0){
+    const delta=cMes-cPrev;
+    if(delta>0) insights.push(`📈 <strong>${cMes} clases</strong> este mes — ${delta} más que el mes pasado. Vas en ascenso.`);
+    else if(delta===0) insights.push(`📊 <strong>${cMes} clases</strong> este mes, igual que el pasado. Consistencia sólida.`);
+  }
+  // Goal-based defaults if nothing else
+  if(!insights.length){
+    const DEFAULTS={
+      fat_loss:'Registra tu peso cada semana — la tendencia importa más que el número de hoy.',
+      muscle:'Anota tus pesos en la Bitácora para ver tus PRs subir semana a semana.',
+      fitness:'Tu asistencia es la métrica más importante. Mantén la racha activa.',
+      wellness:'La consistencia es tu superpoder. Una clase a la vez, semana a semana.',
+    };
+    insights.push(DEFAULTS[obj]||'Cada clase registrada cuenta. Sigue construyendo tu historial.');
+  }
+  el.innerHTML = `<div class="prog-insight-card">
+    <div class="prog-insight-label">Coach IA</div>
+    ${insights.slice(0,2).map(t=>`<div class="prog-insight-text">${t}</div>`).join('')}
+  </div>`;
+}
+
+// ── renderProgStreakAndGoal — Racha + Meta semanal ───────────────
+function renderProgStreakAndGoal(){
+  const el = $('prog-streak-wrap');
+  if(!el||!portalData) return;
+  const checkins = portalData.checkins||[];
+  const meta = portalData.cliente?.meta_config;
+  const goalPerWeek = parseInt(meta?.clases_semana)||3;
+  const now = new Date();
+  // This-week range
+  const dow = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate()-(dow===0?6:dow-1));
+  monday.setHours(0,0,0,0);
+  const mondayStr=_localDate(monday), todayStr=_localDate(now);
+  const thisWeek = checkins.filter(c=>(c.fecha||'')>=mondayStr&&(c.fecha||'')<=todayStr).length;
+  const metaDone = thisWeek>=goalPerWeek;
+  const metaPct  = Math.min(100,Math.round(thisWeek/goalPerWeek*100));
+  const streak   = _calcStreak(checkins);
+  const streakCol = streak>=3?'var(--cyan)':(streak>=1?'#fff':'var(--text3)');
+  const fillGrad  = metaDone
+    ? 'linear-gradient(90deg,#22c55e,#4ade80)'
+    : 'linear-gradient(90deg,var(--cyan),#8FFFFF)';
+  const metaLabel = metaDone
+    ? '✓ meta de la semana'
+    : (thisWeek===0?'¡empieza esta semana!':`${goalPerWeek-thisWeek} más para tu meta`);
+  el.innerHTML = `<div class="prog-mini-grid">
+    <div class="prog-mini-card">
+      <div class="prog-mini-label">Racha activa</div>
+      <div class="prog-mini-val" style="color:${streakCol};">${streak}</div>
+      <div class="prog-mini-unit">${streak===1?'semana':'semanas'}</div>
+      ${streak>=3?`<div class="prog-streak-fire">🔥</div>`:''}
+    </div>
+    <div class="prog-mini-card">
+      <div class="prog-mini-label">Meta semanal</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <div class="prog-mini-val" style="${metaDone?'color:#4ade80':''}">${thisWeek}</div>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--fm);">/ ${goalPerWeek}</span>
+      </div>
+      <div class="prog-goal-bar"><div class="prog-goal-fill" style="width:${metaPct}%;background:${fillGrad};"></div></div>
+      <div class="prog-mini-unit" style="margin-top:6px;">${metaLabel}</div>
+    </div>
+  </div>`;
+}
+
 function renderHistorial(){
   if(!portalData) return;
+  // Show a single top-level shimmer banner — does NOT destroy inner elements
+  const section = document.querySelector('#view-historial .section');
+  let skBanner = document.getElementById('prog-skeleton-banner');
+  if(!skBanner && section){
+    skBanner = document.createElement('div');
+    skBanner.id = 'prog-skeleton-banner';
+    skBanner.style.cssText='height:4px;border-radius:99px;margin:0 0 16px;background:linear-gradient(90deg,var(--bg-elevated) 25%,rgba(0,212,255,.25) 50%,var(--bg-elevated) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;';
+    section.prepend(skBanner);
+  }
+  // Load real data — functions target their own child elements directly
   renderProgAsist();
-  renderProgPesoAsync();
-  renderProgPRsAsync();
-  renderProgMiniStatsAsync();
+  renderProgStreakAndGoal();
+  renderProgPesoAsync().then(()=>{
+    renderProgInsight(); // after peso so _medidasCache is populated
+  }).finally(()=>{
+    renderProgPRsAsync().finally(()=>{
+      renderProgMiniStatsAsync().finally(()=>{
+        skBanner && skBanner.remove();
+      });
+    });
+  });
 }
 
 function renderProgAsist(){
   const checkins = portalData?.checkins || [];
   const chartEl  = $('prog-bar-chart');
   const countEl  = $('prog-asist-count');
+  const consistEl= $('prog-consist-chip');
   if(!chartEl) return;
 
   const now = new Date();
@@ -5186,7 +5466,7 @@ function renderProgAsist(){
   for(let i=6; i>=0; i--){
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const str     = d.toISOString().slice(0,10);
+    const str     = _localDate(d);
     const dayName = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()];
     const attended = checkins.some(c => c.fecha === str);
     days.push({ str, dayName, attended, isToday: i === 0 });
@@ -5194,6 +5474,31 @@ function renderProgAsist(){
 
   const attended7 = days.filter(d => d.attended).length;
   if(countEl) countEl.textContent = `${attended7} / 7`;
+
+  // Consistency: % of last 4 weeks with ≥1 class
+  if(consistEl){
+    const meta = portalData?.cliente?.meta_config;
+    const goalPW = parseInt(meta?.clases_semana)||1;
+    let activeWeeks=0;
+    for(let w=0;w<4;w++){
+      const wStart=new Date(now);
+      const wd=wStart.getDay();
+      wStart.setDate(wStart.getDate()-(wd===0?6:wd-1)-w*7);
+      wStart.setHours(0,0,0,0);
+      const wEnd=new Date(wStart);wEnd.setDate(wStart.getDate()+6);
+      const wSS=_localDate(wStart),wES=_localDate(wEnd);
+      const cnt=checkins.filter(c=>(c.fecha||'')>=wSS&&(c.fecha||'')<=wES).length;
+      if(cnt>=goalPW) activeWeeks++;
+    }
+    const pct = Math.round(activeWeeks/4*100);
+    if(pct>0){
+      const col = pct>=75?'rgba(34,197,94,.15)':pct>=50?'rgba(0,212,255,.12)':'rgba(239,68,68,.12)';
+      const tcol= pct>=75?'#4ade80':pct>=50?'var(--cyan)':'#f87171';
+      consistEl.style.cssText=`background:${col};color:${tcol};border:1px solid ${tcol.replace(')',',0.25)').replace('rgb','rgba')};font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.3px;border-radius:99px;padding:3px 8px;display:inline-block;`;
+      consistEl.textContent=`${pct}% constante`;
+      consistEl.style.display='';
+    }
+  }
 
   chartEl.innerHTML = days.map(d => `
     <div class="prog-bar-col">
@@ -5249,6 +5554,13 @@ async function renderProgPesoAsync(){
       chipEl.className   = `prog-delta-chip ${cls}`;
       chipEl.style.display = '';
     }
+  }
+
+  // Sparkline (last 8 weight entries)
+  const sparkEl = $('prog-peso-sparkline');
+  if(sparkEl && asc.length >= 3){
+    const sparkVals = asc.slice(-8).map(r=>parseFloat(r.peso_kg));
+    sparkEl.innerHTML = _sparklineSvg(sparkVals, 72, 30);
   }
 }
 
@@ -5316,14 +5628,25 @@ async function renderProgMiniStatsAsync(){
   // ── CLASES MES (from checkins — no extra fetch needed) ──
   const checkins = portalData.checkins||[];
   const now = new Date();
-  const monthPrefix = now.toISOString().slice(0,7);
+  const monthPrefix = _localDate(now).slice(0,7);
   const prevDate = new Date(now); prevDate.setMonth(prevDate.getMonth()-1);
-  const prevPrefix = prevDate.toISOString().slice(0,7);
+  const prevPrefix = _localDate(prevDate).slice(0,7);
   const cMes  = checkins.filter(c=>(c.fecha||'').startsWith(monthPrefix)).length;
   const cPrev = checkins.filter(c=>(c.fecha||'').startsWith(prevPrefix)).length;
+  // Best month ever
+  const monthCounts = {};
+  checkins.forEach(c=>{ const m=(c.fecha||'').slice(0,7); if(m) monthCounts[m]=(monthCounts[m]||0)+1; });
+  const bestEver = Math.max(0,...Object.values(monthCounts));
+  const isBestMonth = cMes>0 && cMes>=bestEver;
   cmesEl.textContent = cMes;
+  if(isBestMonth && Object.keys(monthCounts).length>1){
+    cmesEl.style.color='#4ade80';
+  }
   if(trendEl){
-    if(cPrev > 0){
+    if(isBestMonth && Object.keys(monthCounts).length>1){
+      trendEl.textContent='🏆 mejor mes';
+      trendEl.className='prog-mini-trend';
+    } else if(cPrev > 0){
       const delta = cMes - cPrev;
       const sign  = delta >= 0 ? '+' : '';
       const arrow = delta > 0 ? '↑ ' : delta < 0 ? '↓ ' : '';
@@ -5337,39 +5660,51 @@ async function renderProgMiniStatsAsync(){
     }
   }
 
-  // ── VOL SEMANA (from bitácora_atleta — fetch this week) ──
+  // ── VOL SEMANA (from bitácora_atleta — fetch this week + last week) ──
   const token = portalData.cliente?.qr_token;
   if(!token){ volEl.textContent='—'; return; }
 
-  // Monday of current week
   const dow = now.getDay();
   const mondayMs = new Date(now).setDate(now.getDate()-(dow===0?6:dow-1));
-  const mondayStr = new Date(mondayMs).toISOString().slice(0,10);
-  const todayStr  = now.toISOString().slice(0,10);
+  const mondayStr = _localDate(new Date(mondayMs));
+  const todayStr  = _localDate(now);
+  // Last week range
+  const lastMonMs = new Date(mondayMs); lastMonMs.setDate(new Date(mondayMs).getDate()-7);
+  const lastMonStr = _localDate(new Date(lastMonMs));
+  const lastSunMs  = new Date(mondayMs); lastSunMs.setDate(new Date(mondayMs).getDate()-1);
+  const lastSunStr = _localDate(new Date(lastSunMs));
+
+  const volTrendEl = $('prog-vol-trend');
 
   try{
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&fecha=gte.${mondayStr}&fecha=lte.${todayStr}&tipo=eq.fuerza&select=series,repeticiones,peso&limit=500`,
-      {headers: apiHeaders()}
-    );
-    if(!res.ok) throw new Error('vol fetch failed');
-    const entries = await res.json();
-
-    let totalVol = 0;
-    entries.forEach(e => {
-      const s = parseFloat(e.series)||1;
-      const r = parseFloat(e.repeticiones)||0;
-      const p = parseFloat(e.peso)||0;
-      totalVol += s * r * p;
-    });
+    const [resThis, resLast] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&fecha=gte.${mondayStr}&fecha=lte.${todayStr}&tipo=eq.fuerza&select=series,repeticiones,peso&limit=500`,{headers:apiHeaders()}),
+      fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&fecha=gte.${lastMonStr}&fecha=lte.${lastSunStr}&tipo=eq.fuerza&select=series,repeticiones,peso&limit=500`,{headers:apiHeaders()})
+    ]);
+    const calcVol = entries => entries.reduce((sum,e)=>{
+      return sum+(parseFloat(e.series)||1)*(parseFloat(e.repeticiones)||0)*(parseFloat(e.peso)||0);
+    },0);
+    const entriesThis = resThis.ok ? await resThis.json() : [];
+    const entriesLast = resLast.ok ? await resLast.json() : [];
+    const totalVol = calcVol(entriesThis);
+    const lastVol  = calcVol(entriesLast);
 
     if(totalVol > 0){
-      // Format: show in tons if >1000kg, else kg
       if(totalVol >= 1000){
-        volEl.textContent = (totalVol/1000).toFixed(1) + ' t';
-        $('prog-vol-val').nextElementSibling && ($('prog-vol-val').nextElementSibling.textContent='toneladas');
+        volEl.textContent = (totalVol/1000).toFixed(1);
+        const unitEl = volEl.nextElementSibling;
+        if(unitEl && unitEl.classList.contains('prog-mini-unit')) unitEl.textContent='toneladas';
       } else {
         volEl.textContent = Math.round(totalVol).toLocaleString('es-MX');
+      }
+      // VOL trend vs last week
+      if(volTrendEl && lastVol > 0){
+        const pct = Math.round((totalVol-lastVol)/lastVol*100);
+        const sign = pct>=0?'+':'';
+        const arrow= pct>0?'↑ ':pct<0?'↓ ':'';
+        volTrendEl.textContent=`${arrow}${sign}${pct}% vs sem. ant.`;
+        volTrendEl.className=`prog-mini-trend${pct<0?' warn':''}`;
+        volTrendEl.style.display='';
       }
     } else {
       volEl.textContent = '0';
@@ -5458,7 +5793,7 @@ async function loadClasesData(){
     const dates = []; // [{ dia: 'Lunes', fecha: '2025-05-05' }, ...]
     for(let i=0;i<7;i++){
       const d = new Date(today); d.setDate(today.getDate()+i);
-      dates.push({ dia: DIAS[d.getDay()], fecha: d.toISOString().slice(0,10) });
+      dates.push({ dia: DIAS[d.getDay()], fecha: _localDate(d) });
     }
 
     // Build set of (horario_id, fecha) combos we need cupos for
@@ -5542,9 +5877,9 @@ async function loadClasesData(){
       tabsEl.innerHTML = tabDias.map(d=>{
         const dd = dates.find(x=>x.dia===d);
         const fecha = dd ? dd.fecha : null;
-        const today2 = new Date().toISOString().slice(0,10);
+        const today2 = _localDate();
         const tom2 = new Date(); tom2.setDate(tom2.getDate()+1);
-        const tomStr2 = tom2.toISOString().slice(0,10);
+        const tomStr2 = _localDate(tom2);
         // Pill label: 3-letter day name, unless today/mañana
         let lblTop = fecha===today2?'HOY':fecha===tomStr2?'MAÑ':d.slice(0,3).toUpperCase();
         // Pill number: day of month
@@ -5571,9 +5906,9 @@ async function loadClasesData(){
 
 function _diaLabel(dia, fecha){
   if(!fecha) return dia;
-  const today = new Date().toISOString().slice(0,10);
+  const today = _localDate();
   const tom   = new Date(); tom.setDate(tom.getDate()+1);
-  const tomStr = tom.toISOString().slice(0,10);
+  const tomStr = _localDate(tom);
   if(fecha===today) return 'Hoy';
   if(fecha===tomStr) return 'Mañana';
   // Short day name (3 chars)
@@ -5595,7 +5930,7 @@ function clsSelectDia(dia){
   const dates = [];
   for(let i=0;i<7;i++){
     const d = new Date(today); d.setDate(today.getDate()+i);
-    dates.push({ dia: DIAS[d.getDay()], fecha: d.toISOString().slice(0,10) });
+    dates.push({ dia: DIAS[d.getDay()], fecha: _localDate(d) });
   }
   renderClasesView(dates);
 }
@@ -5604,7 +5939,7 @@ function _fechaForDia(dia){
   const today = new Date();
   for(let i=0;i<7;i++){
     const d = new Date(today); d.setDate(today.getDate()+i);
-    if(DIAS[d.getDay()]===dia) return d.toISOString().slice(0,10);
+    if(DIAS[d.getDay()]===dia) return _localDate(d);
   }
   return null;
 }
@@ -5622,7 +5957,7 @@ function renderClasesView(dates){
   if(!clasesDia.length){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">🏋️</div><div class="cls-empty-txt">No hay clases programadas para este día.</div></div>'; return; }
 
   const nowDate = new Date();
-  const today = nowDate.toISOString().slice(0,10);
+  const today = _localDate(nowDate);
   const nowMin = nowDate.getHours()*60 + nowDate.getMinutes();
   // A class is "past" if the date is before today, OR it's today but the hour already started
   function _isClassPast(h){
@@ -5784,7 +6119,7 @@ async function crearReserva(horarioId, fecha, tipo, hora){
 
   // ── Guard 1: clase ya pasó ──
   const ahora = new Date();
-  const hoy   = ahora.toISOString().slice(0,10);
+  const hoy   = _localDate(ahora);
   if(fecha < hoy){ showToast('Esta clase ya pasó','⚠️'); return; }
   if(fecha === hoy){
     const rawH = (hora||'').toLowerCase().trim();
@@ -5859,8 +6194,9 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     // Re-render just this card
     const today = new Date();
     const dates = [];
-    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)}); }
+    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); }
     renderClasesView(dates);
+    renderNextClassCard(); // sync HOME card after new booking
 
     // Confirmación (sheet + WA reminder)
     _showReservaConfirmBanner(tipo, hora, fecha);
@@ -5882,44 +6218,43 @@ function _showReservaConfirmBanner(tipo, hora, fechaStr){
   const diaNombre = diasSemana[fechaDate.getDay()];
   const diaNum = fechaDate.getDate();
   const mesNombre = meses[fechaDate.getMonth()];
-  // Format hora
-  const [hh,mm] = (hora||'').split(':');
-  const hNum = parseInt(hh)||0;
+  // Format hora — strip any trailing am/pm from the raw string before parsing
+  const hRaw = (hora||'').toLowerCase();
+  const hasPm = hRaw.includes('pm');
+  const hasAm = hRaw.includes('am');
+  const hClean = hRaw.replace(/[apm\s]/g,'');
+  const [hStr, mStr] = hClean.split(':');
+  let hNum = parseInt(hStr)||0;
+  const mNum = parseInt(mStr)||0;
+  if(hasPm && hNum!==12) hNum += 12;
+  if(hasAm && hNum===12) hNum = 0;
   const suffix = hNum>=12?'pm':'am';
-  const h12 = hNum>12?hNum-12:hNum||12;
-  const horaFmt = `${h12}:${mm||'00'} ${suffix}`;
+  const h12 = hNum>12?hNum-12:(hNum||12);
+  const horaFmt = `${h12}:${String(mNum).padStart(2,'0')} ${suffix}`;
   const gymNom = (portalData&&portalData.gym&&portalData.gym.nombre)||'el gym';
-  const msg = `✅ Reservé mi lugar en *${tipo}* el ${diaNombre} ${diaNum} de ${mesNombre} a las ${horaFmt} en ${gymNom}`;
-  const waMsg = encodeURIComponent(msg);
-  const miTel = (portalData&&portalData.cliente&&portalData.cliente.telefono||'').replace(/\D/g,'');
-  const waHref = miTel ? `https://wa.me/${miTel}?text=${waMsg}` : `https://wa.me/?text=${waMsg}`;
 
   // Populate booking confirm sheet
   const sub = document.getElementById('bcs-sub');
   const bFecha = document.getElementById('bcs-fecha');
   const bHora = document.getElementById('bcs-hora');
   const bTipo = document.getElementById('bcs-tipo');
-  const waLink = document.getElementById('bcs-wa-link');
   if(sub) sub.textContent = `Tu lugar en ${gymNom} está confirmado`;
   if(bFecha) bFecha.textContent = `${diaNombre}, ${diaNum} de ${mesNombre}`;
   if(bHora) bHora.textContent = horaFmt;
   if(bTipo) bTipo.textContent = tipo;
-  if(waLink) waLink.href = waHref;
 
   // Replay pop animation on the ring
   const ring = document.querySelector('#booking-confirm-sheet .bcs-success-ring');
   if(ring){ ring.style.animation='none'; requestAnimationFrame(()=>{ ring.style.animation=''; }); }
 
-  // Open sheet
+  // Notificación local 1h antes (solo en app nativa)
+  if(window.scheduleClassReminder) window.scheduleClassReminder(tipo, hora, fecha).catch(()=>{});
+  haptic('success');
   openSheet('booking-confirm-sheet');
 }
 
 async function cancelarReserva(reservaId, key){
   if(!portalData) return;
-  // confirm() called only when invoked from card button (not from detail sheet, where sheet closes first)
-  const fromCard = !!(document.querySelector(`#cls-card-${key} .cls-btn`));
-  if(fromCard && !confirm('¿Cancelar tu reserva para esta clase?')) return;
-
   const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Cancelando…'; }
 
@@ -5939,11 +6274,14 @@ async function cancelarReserva(reservaId, key){
     clasesCupos[key] = Math.max(0,(clasesCupos[key]||1)-1);
     const today = new Date();
     const dates = [];
-    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)}); }
+    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); }
+    haptic('medium');
     renderClasesView(dates);
     renderNextClassCard(); // sync HOME card after cancel
+    try{ closeSheet('class-detail-sheet',null); }catch(_){}
   }catch(e){
-    alert('❌ Error al cancelar. Intenta de nuevo.');
+    haptic('error');
+    showToast('Error al cancelar. Intenta de nuevo.','❌');
     if(btn){ btn.className='cls-btn cancel'; btn.disabled=false; btn.textContent='Cancelar'; }
   }
 }
@@ -5954,6 +6292,69 @@ window._velumRefresh = function(){
     loadPortalData(portalData.cliente.portal_token).catch(()=>{});
   }
 };
+
+// ── Pull to refresh ──────────────────────────────────
+(function(){
+  let startY=0, pulling=false, triggered=false;
+  const THRESHOLD=70;
+  function _ptr(){
+    let el=document.getElementById('ptr-indicator');
+    if(!el){
+      el=document.createElement('div');
+      el.id='ptr-indicator';
+      el.innerHTML='<span class="ptr-spin">↻</span><span>Actualizando…</span>';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  document.addEventListener('touchstart',e=>{
+    const scroll=document.getElementById('main-scroll');
+    if(scroll&&scroll.scrollTop>0) return;
+    startY=e.touches[0].clientY;
+    pulling=true; triggered=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!pulling) return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>20&&!triggered){
+      const ind=_ptr();
+      ind.classList.add('visible');
+      if(dy>THRESHOLD&&!triggered){
+        ind.querySelector('.ptr-spin').style.animation='none';
+        ind.querySelector('span:last-child').textContent='Soltar para actualizar';
+      }
+    }
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    if(!pulling) return;
+    pulling=false;
+    const dy=e.changedTouches[0].clientY-startY;
+    const ind=_ptr();
+    if(dy>THRESHOLD&&!triggered){
+      triggered=true;
+      ind.classList.add('released');
+      ind.querySelector('span:last-child').textContent='Actualizando…';
+      ind.querySelector('.ptr-spin').style.animation='ptr-spin .7s linear infinite';
+      setTimeout(async ()=>{
+        try{
+          if(portalData) await loadPortalData(portalData.cliente.portal_token);
+          else { window.location.reload(); return; }
+        }catch(_){}
+        // Show success state before hiding
+        const spinEl = ind.querySelector('.ptr-spin');
+        const txtEl  = ind.querySelector('span:last-child');
+        if(spinEl){ spinEl.style.animation='none'; spinEl.textContent='✓'; }
+        if(txtEl) txtEl.textContent='Actualizado';
+        await new Promise(r=>setTimeout(r,900));
+        ind.classList.remove('visible','released');
+        if(spinEl){ spinEl.textContent='↻'; spinEl.style.animation='ptr-spin .7s linear infinite'; }
+        if(txtEl) txtEl.textContent='Actualizando…';
+      },400);
+    } else {
+      ind.classList.remove('visible','released');
+    }
+  },{passive:true});
+})();
 
 // ── Waitlist ──────────────────────────────────────────
 async function entrarWaitlist(horarioId, fecha, tipo, hora){
@@ -5983,22 +6384,18 @@ async function entrarWaitlist(horarioId, fecha, tipo, hora){
     clasesWaitlistN[key]=(clasesWaitlistN[key]||0)+1;
     const today=new Date();
     const dates=[];
-    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)});}
+    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)});}
+    haptic('light');
     renderClasesView(dates);
-    // Small toast feedback
-    const toast=document.createElement('div');
-    toast.textContent=`✅ Anotado en lista de espera #${posicion}`;
-    toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a2e24;color:#00D4FF;border:1px solid rgba(0,212,255,.4);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
-    document.body.appendChild(toast); setTimeout(()=>toast.remove(),3000);
+    showToast(`Anotado en lista de espera #${posicion}`,'📋');
   }catch(e){
     if(btn){ btn.className='cls-btn waitlist'; btn.disabled=false; btn.textContent='📋 Lista de espera'; }
-    alert('Error al anotarte. Puede que ya estés en la lista o inténtalo de nuevo.');
+    showToast('No se pudo anotar. Intenta de nuevo.','❌');
   }
 }
 
 async function salirWaitlist(waitlistId, key){
   if(!portalData) return;
-  if(!confirm('¿Salir de la lista de espera?')) return;
   const btn=document.querySelector(`#cls-card-${key} .cls-btn.in-waitlist`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Saliendo…'; }
   try{
@@ -6011,11 +6408,11 @@ async function salirWaitlist(waitlistId, key){
     clasesWaitlistN[key]=Math.max(0,(clasesWaitlistN[key]||1)-1);
     const today=new Date();
     const dates=[];
-    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)});}
+    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)});}
     renderClasesView(dates);
   }catch(_){
     if(btn){ btn.className='cls-btn in-waitlist'; btn.disabled=false; }
-    alert('Error al salir de la lista.');
+    showToast('Error al salir de la lista.','❌');
   }
 }
 
@@ -6262,7 +6659,7 @@ function _bitGymId(){ return portalData?.cliente?.gym_id || null; }
 
 function openBitacoraSheet(){
   // defaults
-  $('bit-fecha').value  = new Date().toISOString().slice(0,10);
+  $('bit-fecha').value  = _localDate();
   $('bit-ejercicio').value = '';
   $('bit-series').value = '';
   $('bit-reps').value   = '';
@@ -6287,11 +6684,11 @@ function setBitTipo(tipo){
 
 async function saveBitacoraEntry(){
   const token = _bitToken();
-  if(!token){ alert('Sesión no válida, vuelve a iniciar sesión.'); return; }
+  if(!token){ showToast('Sesión no válida, vuelve a iniciar sesión.','❌'); return; }
   const ejercicio = $('bit-ejercicio').value.trim();
   if(!ejercicio){ $('bit-ejercicio').focus(); return; }
   const tipo  = bitTipoActivo;
-  const fecha = $('bit-fecha').value || new Date().toISOString().slice(0,10);
+  const fecha = $('bit-fecha').value || _localDate();
 
   const payload = {
     qr_token:   token,
@@ -6317,7 +6714,7 @@ async function saveBitacoraEntry(){
   });
 
   btn.disabled = false; btn.textContent = 'Guardar sesión';
-  if(!res.ok){ const e=await res.text(); console.error(e); alert('No se pudo guardar.'); return; }
+  if(!res.ok){ const e=await res.text(); console.error(e); showToast('No se pudo guardar.','❌'); return; }
   closeSheet('bitacora-sheet');
   await loadAndRenderBitacora();
 }
@@ -6347,8 +6744,8 @@ function renderBitacora(query=''){
 
   if(!data.length){
     el.innerHTML = q
-      ? `<div class="bit-empty"><div class="bit-empty-ico">🔍</div><div class="bit-empty-ttl">Sin resultados</div><div class="bit-empty-sub">No encontramos ejercicios con "${query}".</div></div>`
-      : `<div class="bit-empty"><div class="bit-empty-ico">🏋️</div><div class="bit-empty-ttl">Tu diario de entrenamiento</div><div class="bit-empty-sub">Toca + para registrar tu primera sesión.</div></div>`;
+      ? `<div class="bit-empty"><div class="bit-empty-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="bit-empty-ttl">Sin resultados</div><div class="bit-empty-sub">No encontramos ejercicios con "${query}".</div></div>`
+      : `<div class="bit-empty"><div class="bit-empty-ico"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4M7 12h10"/></svg></div><div class="bit-empty-ttl">Tu diario de entrenamiento</div><div class="bit-empty-sub">Registra cada sesión — pesos, tiempos, ejercicios.</div><button onclick="openBitacoraSheet()" style="margin-top:18px;padding:13px 28px;background:var(--accent);color:#001828;border:none;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.3px;">+ Registrar sesión</button></div>`;
     return;
   }
   // Agrupar por fecha
@@ -6388,7 +6785,6 @@ function renderBitacora(query=''){
 }
 
 async function deleteBitacoraEntry(id){
-  if(!confirm('¿Eliminar este registro?')) return;
   await fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta?id=eq.${id}`, {
     method: 'DELETE',
     headers: apiHeaders(),
@@ -6520,7 +6916,7 @@ function renderMedidasView(rows){
 
 function openMedicionModal(){
   // Set default date to today
-  const today = new Date().toISOString().slice(0,10);
+  const today = _localDate();
   const inp = document.getElementById('med-fecha');
   if(inp) inp.value = today;
   // Clear fields
@@ -6538,11 +6934,11 @@ function openMedicionModal(){
 async function saveMedicion(){
   if(!portalData) return;
   const cliId = portalData.cliente?.id;
-  if(!cliId){ alert('Error: no se pudo identificar tu cuenta.'); return; }
+  if(!cliId){ showToast('Error: no se pudo identificar tu cuenta.','❌'); return; }
 
   const fechaEl = document.getElementById('med-fecha');
   const fecha = fechaEl ? fechaEl.value : '';
-  if(!fecha){ alert('Selecciona la fecha de la medición.'); return; }
+  if(!fecha){ showToast('Selecciona la fecha de la medición.','⚠️'); return; }
 
   const fNum = id => {
     const el = document.getElementById(id);
@@ -6566,7 +6962,7 @@ async function saveMedicion(){
 
   // Need at least one measurement
   const hasMeasure = ['peso_kg','grasa_pct','cintura_cm','cadera_cm','pecho_cm','brazo_cm'].some(k=>payload[k]!=null);
-  if(!hasMeasure){ alert('Ingresa al menos una medida.'); return; }
+  if(!hasMeasure){ showToast('Ingresa al menos una medida.','⚠️'); return; }
 
   const btn = document.getElementById('med-save-btn');
   if(btn){ btn.disabled = true; btn.textContent = 'Guardando…'; }
@@ -6589,7 +6985,7 @@ async function saveMedicion(){
     await fetchAndRenderMedidas();
   }catch(e){
     console.error('saveMedicion error:', e);
-    alert('Error al guardar: '+(e.message||e));
+    showToast('Error al guardar. Intenta de nuevo.','❌');
     if(btn){ btn.disabled = false; btn.textContent = 'Guardar medición'; }
   }
 }
