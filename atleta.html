@@ -2182,6 +2182,9 @@ body::before{
   box-shadow:0 0 24px rgba(0,212,255,.25);transition:all 200ms var(--ease-out);
 }
 .cd-action-primary:hover{background:var(--cyan-light);transform:translateY(-1px);}
+.cd-action-primary.cancel{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);box-shadow:none;}
+.cd-action-primary.cancel:hover{background:rgba(239,68,68,.22);transform:translateY(-1px);}
+.cd-action-primary.waitlist{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid rgba(245,158,11,.25);box-shadow:none;}
 .cd-action-secondary{
   padding:14px;background:transparent;color:var(--text2);
   border:1px solid var(--border-medium);border-radius:14px;
@@ -3309,31 +3312,49 @@ function coachIASend(text){
 // ── Class Detail Sheet ───────────────────────────────
 function openClassDetail(key){
   if(!portalData) return;
-  const all = portalData.clasesHorarios || [];
-  const h = all.find(x=>(x.id||x.dia+x.hora)===key);
-  if(!h) return;
-  const reservas = portalData.reservasHoy || [];
-  const isReserved = reservas.some(r=>r.horario_id===h.id||r.horario_key===key);
-  const maxCupo = h.cupo_maximo||15;
-  const cupoActual = h.reservas_count||0;
-  const libres = Math.max(0,maxCupo-cupoActual);
-  const pct = Math.round((cupoActual/maxCupo)*100);
-  const now=new Date();
+
+  // key = horarioId + '_' + fecha  (e.g. "abc-123_2026-05-21")
+  const parts   = key.split('_');
+  const fecha   = parts.pop();                // last segment is date
+  const horarioId = parts.join('_');          // rest is the id (may contain underscores)
+
+  // Use module-level clasesHorarios (loaded by loadClasesData)
+  const h = clasesHorarios.find(x => x.id === horarioId);
+  if(!h){ console.warn('openClassDetail: horario not found for key', key); return; }
+
+  // State from module-level globals
+  const reserva   = clasesReservas[key];
+  const isReserved = !!reserva;
+  const inWaitlist = !!clasesWaitlist[key];
+  const maxCupo   = h.cupo_maximo || 15;
+  const cupoActual = clasesCupos[key] ?? h.reservas_count ?? 0;
+  const libres    = Math.max(0, maxCupo - cupoActual);
+  const pct       = maxCupo > 0 ? Math.round((cupoActual / maxCupo) * 100) : 0;
+
+  // Date label
+  const dt = new Date(fecha + 'T12:00:00');
   const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const dateTag=`${dias[now.getDay()]} ${now.getDate()} ${meses[now.getMonth()]} · ${h.hora||'—'}`;
+  const dateTag = `${dias[dt.getDay()]} ${dt.getDate()} ${meses[dt.getMonth()]} · ${h.hora||'—'}`;
 
-  // Fake attendees initials
+  // Attendee avatars
   const fakeNames=['DM','AS','LR','JM','PG','CG','RF'];
-  const showing = Math.min(cupoActual,5);
-  const avatarHtml = fakeNames.slice(0,showing).map(n=>`<div class="avatar-item">${n}</div>`).join('')
-    + (cupoActual>5?`<div class="avatar-item more">+${cupoActual-5}</div>`:'');
+  const showing = Math.min(cupoActual, 5);
+  const avatarHtml = fakeNames.slice(0, showing).map(n=>`<div class="avatar-item">${n}</div>`).join('')
+    + (cupoActual > 5 ? `<div class="avatar-item more">+${cupoActual-5}</div>` : '');
 
-  const btnHtml = isReserved
-    ? `<button class="cd-action-primary" onclick="cancelarReservaKey('${key}');closeSheet('class-detail-sheet');">CANCELAR RESERVA</button>`
-    : libres>0
-      ? `<button class="cd-action-primary" onclick="reservarClase('${key}');closeSheet('class-detail-sheet');">RESERVAR CLASE</button>`
-      : `<button class="cd-action-primary" style="opacity:.5;cursor:default;">LLENA</button>`;
+  // Action button — correct function signatures
+  let btnHtml;
+  if(isReserved){
+    const rid = reserva.id || '';
+    btnHtml = `<button class="cd-action-primary cancel" onclick="closeSheet('class-detail-sheet');cancelarReserva('${rid}','${key}');">CANCELAR RESERVA</button>`;
+  } else if(libres > 0){
+    btnHtml = `<button class="cd-action-primary" onclick="closeSheet('class-detail-sheet');crearReserva('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">RESERVAR CLASE</button>`;
+  } else if(!inWaitlist){
+    btnHtml = `<button class="cd-action-primary waitlist" onclick="closeSheet('class-detail-sheet');entrarWaitlist('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">UNIRSE A LISTA ESPERA</button>`;
+  } else {
+    btnHtml = `<button class="cd-action-primary" style="opacity:.5;cursor:default;">EN LISTA DE ESPERA</button>`;
+  }
 
   $('class-detail-content').innerHTML=`
     <div class="class-detail-hero">
@@ -5829,7 +5850,9 @@ function _showReservaConfirmBanner(tipo, hora, fechaStr){
 
 async function cancelarReserva(reservaId, key){
   if(!portalData) return;
-  if(!confirm('¿Cancelar tu reserva para esta clase?')) return;
+  // confirm() called only when invoked from card button (not from detail sheet, where sheet closes first)
+  const fromCard = !!(document.querySelector(`#cls-card-${key} .cls-btn`));
+  if(fromCard && !confirm('¿Cancelar tu reserva para esta clase?')) return;
 
   const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Cancelando…'; }
