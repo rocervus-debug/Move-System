@@ -5,7 +5,7 @@
                Offline fallback para el app shell
 ═══════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'velum-v19';
+const CACHE_VERSION = 'velum-v20';
 const CACHE_STATIC  = `move-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   './index.html',
   '/',
   './manifest.json',
+  './offline.html',
   './move-icon-192.png',
   './move-icon-512.png',
   'https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700;800&display=swap',
@@ -96,9 +97,11 @@ self.addEventListener('fetch', event => {
         return res;
       })
       .catch(() => caches.match(event.request)
-        .then(cached => cached || new Response('<h2>Sin conexión</h2><p>Abre MOVE cuando tengas internet.</p>', {
-          headers: { 'Content-Type': 'text/html' }
-        }))
+        .then(cached => cached || caches.match('/offline.html')
+          .then(offlinePage => offlinePage || new Response('<h2>Sin conexión</h2>', {
+            headers: { 'Content-Type': 'text/html' }
+          }))
+        ))
       )
   );
 });

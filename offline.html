@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Sin conexión — MOVE</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    --bg:        #040C14;
+    --bg2:       #0B1929;
+    --accent:    #00D4FF;
+    --text1:     #F0F4F8;
+    --text2:     #8899AA;
+    --text3:     #4A5A6A;
+    --safe-top:  env(safe-area-inset-top,0px);
+    --safe-bot:  env(safe-area-inset-bottom,0px);
+  }
+
+  html,body{
+    height:100%;
+    background:var(--bg);
+    color:var(--text1);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:calc(var(--safe-top) + 32px) 24px calc(var(--safe-bot) + 32px);
+    text-align:center;
+  }
+
+  /* ── Animated wifi icon ── */
+  .icon-wrap{
+    width:96px;height:96px;
+    border-radius:28px;
+    background:var(--bg2);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:32px;
+    position:relative;
+    box-shadow:0 0 0 1px rgba(255,255,255,.06);
+  }
+
+  .icon-wrap svg{
+    width:48px;height:48px;
+    opacity:.35;
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse{
+    0%,100%{opacity:.25;transform:scale(.95)}
+    50%{opacity:.5;transform:scale(1)}
+  }
+
+  /* ── Dots loading ── */
+  .dots{
+    display:flex;gap:6px;
+    margin-bottom:36px;
+  }
+  .dots span{
+    width:6px;height:6px;
+    border-radius:50%;
+    background:var(--text3);
+    animation:dot 1.4s ease-in-out infinite;
+  }
+  .dots span:nth-child(2){animation-delay:.2s}
+  .dots span:nth-child(3){animation-delay:.4s}
+
+  @keyframes dot{
+    0%,80%,100%{transform:scale(.8);background:var(--text3)}
+    40%{transform:scale(1.2);background:var(--accent)}
+  }
+
+  /* ── Text ── */
+  h1{
+    font-size:22px;font-weight:700;
+    letter-spacing:-.3px;
+    margin-bottom:10px;
+    color:var(--text1);
+  }
+
+  p{
+    font-size:14px;
+    color:var(--text2);
+    line-height:1.6;
+    max-width:280px;
+    margin:0 auto 40px;
+  }
+
+  /* ── Button ── */
+  .btn-retry{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:14px 28px;
+    background:var(--accent);
+    color:#040C14;
+    font-size:14px;font-weight:700;
+    border:none;border-radius:14px;
+    cursor:pointer;
+    letter-spacing:.2px;
+    transition:opacity .15s,transform .15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-retry:active{opacity:.8;transform:scale(.97)}
+
+  /* ── Logo chip ── */
+  .logo-chip{
+    position:fixed;
+    top:calc(var(--safe-top) + 20px);
+    left:50%;transform:translateX(-50%);
+    font-size:13px;font-weight:800;
+    letter-spacing:2px;
+    color:var(--text3);
+  }
+
+  /* ── Status bar spacer for native ── */
+  .status-spacer{height:var(--safe-top)}
+</style>
+</head>
+<body>
+
+<div class="logo-chip">MOVE</div>
+
+<div class="icon-wrap">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="1" y1="1" x2="23" y2="23"/>
+    <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+    <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+    <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+    <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+    <line x1="12" y1="20" x2="12.01" y2="20"/>
+  </svg>
+</div>
+
+<div class="dots">
+  <span></span><span></span><span></span>
+</div>
+
+<h1>Sin conexión</h1>
+<p>Revisa tu red Wi‑Fi o datos móviles y vuelve a intentarlo.</p>
+
+<button class="btn-retry" onclick="retry()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+    <path d="M3 3v5h5"/>
+  </svg>
+  Reintentar
+</button>
+
+<script>
+  function retry(){
+    // Haptic feedback si estamos en nativo
+    if(window.haptic) window.haptic('light');
+    window.location.reload();
+  }
+
+  // Auto-retry cuando recupera conexión
+  window.addEventListener('online', () => {
+    setTimeout(() => window.location.reload(), 800);
+  });
+
+  // Mostrar cuando recupera conexión
+  window.addEventListener('online', () => {
+    document.querySelector('h1').textContent = 'Reconectado ✓';
+    document.querySelector('p').textContent = 'Volviendo al portal…';
+    document.querySelector('.btn-retry').style.display = 'none';
+  });
+</script>
+</body>
+</html>
