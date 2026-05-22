@@ -2412,11 +2412,12 @@ body::before{
           <div class="greeting-name" id="atleta-nombre">—</div>
         </div>
         <div class="screen-date-line au au1" id="screen-date-line">—</div>
+        <!-- Membership expiry banner — shown by renderMembExpiryBanner() when expiring -->
+        <div id="memb-expiry-banner-mobile" class="memb-expiry-banner" style="margin:0 16px 10px;"></div>
         <div id="home-ring-wrap" class="au au2"></div>
         <div id="next-class-wrap-mobile" class="au au3"></div>
         <div class="home-mini-stats au au3" id="home-mini-stats-mobile"></div>
         <!-- hidden legacy containers (keep IDs for JS compat) -->
-        <div id="memb-expiry-banner-mobile" style="display:none;"></div>
         <div id="membership-card-wrap" style="display:none;"></div>
         <div id="paquete-section" style="display:none;"></div>
         <div id="stats-row-mobile" style="display:none;"></div>
@@ -4311,10 +4312,12 @@ function renderMembExpiryBanner(data){
   let cls='', msg='';
   if(!ok){
     cls='expired';
-    msg=`⚠️ Tu membresía ha vencido`;
-  } else if(dias!==null && dias<=7){
+    msg=`⚠️ Tu membresía ha vencido — renueva para seguir entrenando`;
+  } else if(dias!==null && dias<=14){
     cls='expiring';
-    msg=`⏳ Tu membresía vence en <strong>${dias} ${dias===1?'día':'días'}</strong>`;
+    msg=dias===0
+      ? `⏳ Tu membresía <strong>vence hoy</strong>`
+      : `⏳ Tu membresía vence en <strong>${dias} ${dias===1?'día':'días'}</strong>`;
   }
 
   ids.forEach(id=>{
@@ -5618,8 +5621,26 @@ function renderClasesView(dates){
   const clasesDia = clasesHorarios.filter(h=>h.dia===clasesActiveDia);
   if(!clasesDia.length){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">🏋️</div><div class="cls-empty-txt">No hay clases programadas para este día.</div></div>'; return; }
 
-  const today = new Date().toISOString().slice(0,10);
-  const isPast = fecha < today;
+  const nowDate = new Date();
+  const today = nowDate.toISOString().slice(0,10);
+  const nowMin = nowDate.getHours()*60 + nowDate.getMinutes();
+  // A class is "past" if the date is before today, OR it's today but the hour already started
+  function _isClassPast(h){
+    if(fecha < today) return true;
+    if(fecha > today) return false;
+    // fecha === today — check hora
+    const rawH = (h.hora||'').toLowerCase().trim();
+    const isPm = rawH.includes('pm');
+    const isAm = rawH.includes('am');
+    const clean = rawH.replace(/[apm\s]/g,'');
+    const [hStr,mStr] = clean.split(':');
+    let hNum = parseInt(hStr,10)||0;
+    const mNum = parseInt(mStr,10)||0;
+    if(isPm && hNum!==12) hNum += 12;
+    if(isAm && hNum===12) hNum = 0;
+    return (hNum*60+mNum) <= nowMin;
+  }
+  const isPast = fecha < today; // whole-day check for card style
 
   el.innerHTML = clasesDia.map(h=>{
     const key        = h.id+'_'+fecha;
@@ -5687,7 +5708,7 @@ function renderClasesView(dates){
         <div class="csr-check">✓</div>
         <div class="csr-lbl">RESERVADA</div>
       </div>`;
-    } else if(isPast){
+    } else if(isPast || _isClassPast(h)){
       statusHtml = `<div class="cls-status-past"><div class="csp-lbl">PASADO</div></div>`;
     } else if(isFull){
       statusHtml = inWaitlist
@@ -5760,6 +5781,40 @@ async function crearReserva(horarioId, fecha, tipo, hora){
   if(!portalData) return;
   const key = horarioId+'_'+fecha;
   const btn = document.querySelector(`#cls-card-${key} .cls-btn, #cls-card-${key} .cls-reserve-btn`);
+
+  // ── Guard 1: clase ya pasó ──
+  const ahora = new Date();
+  const hoy   = ahora.toISOString().slice(0,10);
+  if(fecha < hoy){ showToast('Esta clase ya pasó','⚠️'); return; }
+  if(fecha === hoy){
+    const rawH = (hora||'').toLowerCase().trim();
+    const isPm = rawH.includes('pm'); const isAm = rawH.includes('am');
+    const clean = rawH.replace(/[apm\s]/g,'');
+    const [hStr,mStr] = clean.split(':');
+    let hNum = parseInt(hStr,10)||0; const mNum = parseInt(mStr,10)||0;
+    if(isPm && hNum!==12) hNum+=12; if(isAm && hNum===12) hNum=0;
+    const claseMin = hNum*60+mNum;
+    const ahoraMin = ahora.getHours()*60+ahora.getMinutes();
+    if(claseMin <= ahoraMin){ showToast('Esta clase ya comenzó','⚠️'); return; }
+  }
+
+  // ── Guard 2: máximo 5 reservas activas ──
+  const totalActivas = Object.keys(clasesReservas).length;
+  if(totalActivas >= 5){
+    showToast('Tienes el máximo de 5 reservas. Cancela una para poder reservar.','⚠️');
+    return;
+  }
+
+  // ── Guard 3: máximo 1 reserva por día ──
+  const yaEseDia = Object.keys(clasesReservas).find(k=>{
+    const f = k.split('_').slice(1).join('_');
+    return f === fecha;
+  });
+  if(yaEseDia){
+    showToast('Ya tienes una clase reservada para ese día.','⚠️');
+    return;
+  }
+
   if(btn){ btn.disabled=true; btn.textContent='…'; btn.style.opacity='.5'; }
 
   const gymId   = await _resolveGymId();
@@ -5886,6 +5941,7 @@ async function cancelarReserva(reservaId, key){
     const dates = [];
     for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:d.toISOString().slice(0,10)}); }
     renderClasesView(dates);
+    renderNextClassCard(); // sync HOME card after cancel
   }catch(e){
     alert('❌ Error al cancelar. Intenta de nuevo.');
     if(btn){ btn.className='cls-btn cancel'; btn.disabled=false; btn.textContent='Cancelar'; }
