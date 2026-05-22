@@ -834,6 +834,18 @@ body::before{
 .csf-lbl{font-size:14px;font-weight:800;color:var(--cyan);line-height:1;}
 .csf-sub{font-size:9px;letter-spacing:.5px;color:var(--cyan);opacity:.7;margin-top:3px;}
 .csp-lbl{font-size:10px;letter-spacing:1px;color:var(--text3);opacity:.5;}
+/* Direct action buttons on card */
+.cls-reserve-btn{
+  background:var(--cyan);color:#001828;border:none;border-radius:10px;
+  padding:9px 13px;font-family:var(--fm);font-weight:800;font-size:10px;
+  letter-spacing:1.2px;cursor:pointer;flex-shrink:0;white-space:nowrap;
+  transition:all 200ms var(--ease-out);box-shadow:0 0 14px rgba(0,212,255,.25);
+}
+.cls-reserve-btn:active{transform:scale(.96);background:var(--cyan-light);}
+.cls-reserve-btn.waitlist{
+  background:rgba(167,139,250,.12);color:#a78bfa;
+  border:1px solid rgba(167,139,250,.3);box-shadow:none;
+}
 /* Full card dim */
 .cls-card.full{opacity:.55;}
 .cls-card.full .cls-card-type,.cls-card.full .cls-coach{color:var(--text3)!important;}
@@ -5456,7 +5468,7 @@ async function loadClasesData(){
     const fechaMin = dates[0].fecha;
     const fechaMax = dates[6].fecha;
     const rRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=neq.cancelado&select=id,horario_id,fecha,estado`,
+      `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado`,
       { headers: _sbHeaders() }
     );
     const myReservas = rRes.ok ? await rRes.json() : [];
@@ -5664,27 +5676,26 @@ function renderClasesView(dates){
     const meridiem = isAmSuffix?'AM':isPmSuffix?'PM':isPm24?'PM':'AM';
     const coachTxt = h.coach_nombre||'';
 
-    // ── Status block (right column) ──
+    // ── Status / action block (right column) ──
+    const safeKey = key.replace(/'/g,"\\'");
+    const safeTipo = (h.tipo||'Clase').replace(/'/g,"\\'");
+    const safeHora = (h.hora||'').replace(/'/g,"\\'");
     let statusHtml;
     if(isReserved){
+      // Show checkmark + tap card to open detail (cancel from there)
       statusHtml = `<div class="cls-status-reserved">
         <div class="csr-check">✓</div>
         <div class="csr-lbl">RESERVADA</div>
       </div>`;
-    } else if(isFull){
-      statusHtml = `<div class="cls-status-full">
-        <div class="csf-lbl">FULL</div>
-        ${wlCount>0?`<div class="csf-sub">+${wlCount} ESPERA</div>`:''}
-      </div>`;
     } else if(isPast){
       statusHtml = `<div class="cls-status-past"><div class="csp-lbl">PASADO</div></div>`;
+    } else if(isFull){
+      statusHtml = inWaitlist
+        ? `<div class="cls-status-full"><div class="csf-lbl" style="color:#a78bfa;font-size:11px;">EN ESPERA</div></div>`
+        : `<button class="cls-reserve-btn waitlist" onclick="event.stopPropagation();entrarWaitlist('${h.id}','${fecha}','${safeTipo}','${safeHora}')">ESPERA</button>`;
     } else {
-      const cupoNum = cupoTotal>0 ? cupoUsado : '—';
-      const cupoTot = cupoTotal>0 ? cupoTotal : '';
-      statusHtml = `<div class="cls-status-cupo">
-        <div class="csc-num" style="color:${cupoColor};">${cupoNum}<span class="csc-tot">${cupoTot?'/'+cupoTot:''}</span></div>
-        <div class="csc-lbl">CUPOS</div>
-      </div>`;
+      // Available — direct RESERVAR button
+      statusHtml = `<button class="cls-reserve-btn" onclick="event.stopPropagation();crearReserva('${h.id}','${fecha}','${safeTipo}','${safeHora}')">RESERVAR</button>`;
     }
 
     // ── Coach subtitle ──
@@ -5748,14 +5759,14 @@ function _fmtHora(hora){
 async function crearReserva(horarioId, fecha, tipo, hora){
   if(!portalData) return;
   const key = horarioId+'_'+fecha;
-  const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
-  if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Reservando…'; }
+  const btn = document.querySelector(`#cls-card-${key} .cls-btn, #cls-card-${key} .cls-reserve-btn`);
+  if(btn){ btn.disabled=true; btn.textContent='…'; btn.style.opacity='.5'; }
 
   const gymId   = await _resolveGymId();
   const cliente = portalData.cliente;
   if(!gymId){
-    alert('❌ No se pudo identificar el gimnasio. Contacta a recepción.');
-    if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
+    showToast('No se pudo identificar el gimnasio. Contacta a recepción.','❌');
+    if(btn){ btn.disabled=false; btn.textContent='RESERVAR'; btn.style.opacity=''; }
     return;
   }
   const diaIdx  = new Date(fecha+'T12:00:00').getDay();
@@ -5784,7 +5795,7 @@ async function crearReserva(horarioId, fecha, tipo, hora){
       const isdup = JSON.stringify(data).includes('idx_reservas_no_duplicado');
       const sbErr = data?.message || data?.details || data?.hint || JSON.stringify(data).slice(0,200);
       showToast(isdup ? 'Ya tienes esta clase reservada' : 'No se pudo reservar: '+sbErr, isdup ? '⚠️' : '❌');
-      if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
+      if(btn){ btn.disabled=false; btn.textContent='RESERVAR'; btn.style.opacity=''; }
       return;
     }
     const newReserva = Array.isArray(data) ? data[0] : data;
@@ -5804,7 +5815,7 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     }
   }catch(e){
     showToast('Error de conexión. Intenta de nuevo.','❌');
-    if(btn){ btn.className='cls-btn reserve'; btn.disabled=false; btn.textContent='Reservar'; }
+    if(btn){ btn.disabled=false; btn.textContent='RESERVAR'; btn.style.opacity=''; }
   }
 }
 
