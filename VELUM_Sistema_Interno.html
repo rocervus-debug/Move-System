@@ -4587,23 +4587,46 @@ body::before{
         <div class="card">
           <div class="settings-section" style="margin-bottom:0;">
             <div class="settings-section-title">Catálogo de Planes</div>
-            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el monto se llenará automático al seleccionar el plan.</div>
-            <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-              <div class="field" style="flex:1;min-width:140px;margin:0;">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el precio se llena automático al seleccionar el plan. Cambios sincronizados con la base de datos.</div>
+            <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+
+            <!-- Fila 1: básico -->
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px;">
+              <div class="field" style="flex:1;min-width:160px;margin:0;">
                 <label>Nombre del plan</label>
-                <input id="plan-nuevo-nombre" type="text" class="settings-input" placeholder="Ej: Mensual, Quincenal..."/>
+                <input id="plan-nuevo-nombre" type="text" class="settings-input" placeholder="Ej: Mensual, Pack 10 clases…"/>
               </div>
               <div class="field" style="width:120px;margin:0;">
-                <label>Precio</label>
-                <input id="plan-nuevo-precio" type="number" class="settings-input" placeholder="1200"/>
+                <label>Precio (MXN)</label>
+                <input id="plan-nuevo-precio" type="number" class="settings-input" placeholder="1200" min="0"/>
               </div>
               <div class="field" style="width:100px;margin:0;">
-                <label>Días</label>
-                <input id="plan-nuevo-dias" type="number" class="settings-input" placeholder="30" title="Días de vigencia (para calcular vencimiento automático)"/>
+                <label>Vigencia (días)</label>
+                <input id="plan-nuevo-dias" type="number" class="settings-input" placeholder="30" min="1" title="Días de vigencia para calcular el vencimiento"/>
               </div>
-              <button class="btn btn-primary btn-sm" onclick="agregarPlan()" style="margin-bottom:1px;">+ Agregar</button>
             </div>
+
+            <!-- Fila 2: tipo + clases + descuento -->
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+              <div class="field" style="width:160px;margin:0;">
+                <label>Tipo de plan</label>
+                <select id="plan-nuevo-tipo" class="settings-input" onchange="_togglePlanTipo()">
+                  <option value="ilimitado">Membresía ilimitada</option>
+                  <option value="paquete">Paquete de N clases</option>
+                </select>
+              </div>
+              <div class="field" id="plan-nuevo-clases-field" style="width:120px;margin:0;display:none;">
+                <label>Núm. clases</label>
+                <input id="plan-nuevo-clases" type="number" class="settings-input" placeholder="10" min="1" max="999"/>
+              </div>
+              <div class="field" style="margin:0;display:flex;align-items:center;gap:6px;padding-bottom:10px;">
+                <input id="plan-nuevo-permite-desc" type="checkbox" checked style="width:14px;height:14px;cursor:pointer;"/>
+                <label for="plan-nuevo-permite-desc" style="margin:0;cursor:pointer;font-size:12px;color:var(--text2);user-select:none;">Permite descuento</label>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="agregarPlan()" style="margin-bottom:1px;">+ Agregar al catálogo</button>
+            </div>
+
+            <div id="plan-nuevo-err" style="display:none;font-size:11px;color:var(--danger);margin-top:8px;"></div>
           </div>
         </div>
       </div><!-- /cfg-panel-planes -->
@@ -8310,7 +8333,13 @@ function openSettingsPanel(id){
   const view = document.getElementById('v-settings');
   if(view) view.scrollTop = 0;
   // Lazy-load panel-specific renders
-  if(id === 'planes')     renderPlanes();
+  if(id === 'planes'){
+    // v2: render skeleton + fetch async desde Supabase packages
+    const ls = document.getElementById('planes-lista');
+    if(ls) ls.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0;">Cargando catálogo…</div>`;
+    if(typeof _togglePlanTipo === 'function') _togglePlanTipo();
+    loadPackagesFromCatalog().then(()=>renderPlanes());
+  }
   if(id === 'stripe')     renderStripeSettings();
   if(id === 'menu')       renderSidebarCustomizer();
   if(id === 'personalizacion') renderThemeGrid();
@@ -12326,64 +12355,157 @@ function renderRetencion(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CATÁLOGO DE PLANES
+// CATÁLOGO DE PLANES (V2 — Supabase `packages` table)
+// _packagesDB (global) es la cache. Se llena con loadPackagesFromCatalog().
+// loadPlanes() existe para backwards-compat (retorna formato viejo).
 // ═══════════════════════════════════════════════════════════════════
-function loadPlanes(){
-  return JSON.parse(localStorage.getItem('move_planes')||'[]');
+async function loadPackagesFromCatalog(){
+  try{
+    const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+    const { data, error } = await window.supabaseClient
+      .from('packages')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active')
+      .eq('gym_id', gymId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if(error){ console.error('loadPackagesFromCatalog error:', error); return; }
+    _packagesDB = data || [];
+  }catch(e){
+    console.error('loadPackagesFromCatalog exception:', e);
+  }
 }
-function savePlanesLS(data){ localStorage.setItem('move_planes', JSON.stringify(data)); }
 
-function agregarPlan(){
+// Backwards-compat: retorna el formato viejo {id, nombre, precio, dias}
+function loadPlanes(){
+  return (_packagesDB || []).map(p => ({
+    id: p.id,
+    nombre: p.name,
+    precio: p.price_mxn,
+    dias: p.duration_days
+  }));
+}
+
+// LEGACY no-op (los datos viejos de localStorage quedan ignorados)
+function savePlanesLS(_data){ /* no-op v2: ahora todo va a Supabase */ }
+
+function _togglePlanTipo(){
+  const tipo = document.getElementById('plan-nuevo-tipo')?.value;
+  const clasesField = document.getElementById('plan-nuevo-clases-field');
+  if(clasesField) clasesField.style.display = (tipo === 'paquete') ? '' : 'none';
+}
+
+async function agregarPlan(){
+  const errEl = document.getElementById('plan-nuevo-err');
+  const showErr = (msg)=>{ if(errEl){ errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; } };
+  showErr('');
+
   const nombre = document.getElementById('plan-nuevo-nombre').value.trim();
   const precio = parseFloat(document.getElementById('plan-nuevo-precio').value)||0;
   const dias   = parseInt(document.getElementById('plan-nuevo-dias').value)||0;
-  if(!nombre||!precio){ toast('Escribe nombre y precio del plan.','⚠️'); return; }
-  const planes = loadPlanes();
-  planes.push({ id: Date.now(), nombre, precio, dias });
-  savePlanesLS(planes);
-  document.getElementById('plan-nuevo-nombre').value='';
-  document.getElementById('plan-nuevo-precio').value='';
-  document.getElementById('plan-nuevo-dias').value='';
+  const tipo   = document.getElementById('plan-nuevo-tipo')?.value || 'ilimitado';
+  const clases = parseInt(document.getElementById('plan-nuevo-clases')?.value)||null;
+  const permiteDesc = document.getElementById('plan-nuevo-permite-desc')?.checked !== false;
+
+  if(!nombre){ showErr('Escribe el nombre del plan.'); return; }
+  if(precio <= 0){ showErr('El precio debe ser mayor a 0.'); return; }
+  if(dias < 1){ showErr('La vigencia debe ser al menos 1 día.'); return; }
+  if(tipo === 'paquete' && (!clases || clases < 1)){ showErr('Para paquete de clases, indica cuántas clases incluye.'); return; }
+
+  const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+  const nextSort = ((_packagesDB||[]).reduce((m,p)=>Math.max(m, p.sort_order||0), 0)) + 1;
+
+  const payload = {
+    gym_id: gymId,
+    name: nombre,
+    price_mxn: Math.round(precio),
+    duration_days: dias,
+    num_classes: tipo === 'paquete' ? clases : null,
+    unlimited_classes: tipo === 'ilimitado',
+    allow_discount: permiteDesc,
+    max_discount_pct: permiteDesc ? 100 : 0,
+    is_active: true,
+    internal_only: false,
+    sort_order: nextSort
+  };
+
+  const { error } = await window.supabaseClient.from('packages').insert([payload]);
+  if(error){
+    console.error('agregarPlan error:', error);
+    const m = error.message || '';
+    if(m.includes('unique_active_name_per_gym') || m.includes('duplicate')){
+      showErr(`Ya existe un plan "${nombre}" en tu catálogo.`);
+    } else {
+      showErr('No se pudo agregar: ' + m);
+    }
+    return;
+  }
+
+  // Reset form
+  document.getElementById('plan-nuevo-nombre').value = '';
+  document.getElementById('plan-nuevo-precio').value = '';
+  document.getElementById('plan-nuevo-dias').value = '';
+  document.getElementById('plan-nuevo-clases').value = '';
+  document.getElementById('plan-nuevo-tipo').value = 'ilimitado';
+  document.getElementById('plan-nuevo-permite-desc').checked = true;
+  _togglePlanTipo();
+
+  await loadPackagesFromCatalog();
   renderPlanes();
-  syncPlanSelect();
-  toast(`Plan "${nombre}" agregado ✓`,'📋');
+  toast(`Plan "${nombre}" agregado al catálogo ✓`, '📋');
 }
 
-function eliminarPlan(id){
-  const planes = loadPlanes().filter(p=>p.id!==id);
-  savePlanesLS(planes);
+async function eliminarPlan(id){
+  if(!await confirmDialog('¿Eliminar este plan del catálogo? Los pagos existentes que lo referencian no se borran.',
+    {title:'Eliminar plan', danger:true, confirmText:'Sí, eliminar', icon:'🗑'})) return;
+
+  // Soft delete: marcar is_active=false (preserva integridad referencial)
+  const { error } = await window.supabaseClient.from('packages')
+    .update({ is_active: false })
+    .eq('id', id);
+  if(error){ toast('Error al eliminar: ' + error.message, '❌'); return; }
+
+  await loadPackagesFromCatalog();
   renderPlanes();
-  syncPlanSelect();
+  toast('Plan eliminado del catálogo ✓', '✅');
 }
 
 function renderPlanes(){
   const el = document.getElementById('planes-lista');
   if(!el) return;
-  const planes = loadPlanes();
+  const planes = _packagesDB || [];
   if(!planes.length){
-    el.innerHTML=`<div style="font-size:12px;color:var(--text3);padding:8px 0;">Sin planes configurados aún.</div>`;
+    el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0;">Sin planes en tu catálogo. Crea el primero abajo ↓</div>`;
     return;
   }
-  el.innerHTML = planes.map(p=>`
+  el.innerHTML = planes.map(p=>{
+    const tipo = p.unlimited_classes ? 'Ilimitado' : (p.num_classes ? `${p.num_classes} clases` : 'Sin clases');
+    const descBadge = p.allow_discount === false
+      ? '<span style="font-size:9px;background:rgba(251,191,36,.15);color:var(--warn);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">SIN DESC</span>'
+      : '';
+    return `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:9px;">
-      <div style="flex:1;">
-        <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(p.nombre)}</span>
-        <span style="font-size:12px;color:var(--ok);margin-left:8px;font-weight:700;">$${p.precio.toLocaleString('es-MX')}</span>
-        ${p.dias?`<span style="font-size:11px;color:var(--text3);margin-left:8px;">${p.dias} días</span>`:''}
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(p.name)}</span>
+          <span style="font-size:12px;color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${descBadge}
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">
+          ${p.duration_days} día${p.duration_days===1?'':'s'} · ${tipo}
+        </div>
       </div>
-      <button onclick="eliminarPlan(${p.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;opacity:.5;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">✕</button>
-    </div>`).join('');
+      <button onclick="eliminarPlan(${p.id})" title="Eliminar del catálogo" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;opacity:.5;padding:6px 8px;" onmouseenter="this.style.opacity=1;this.style.color='var(--danger)'" onmouseleave="this.style.opacity=.5;this.style.color='var(--text3)'">✕</button>
+    </div>`;
+  }).join('');
 }
 
-// Sincroniza el <select> de planes en el modal de pago
+// Sincroniza el <select> de planes en otros modales (renovar membresía, editar pago)
+// que aún usan el flujo viejo de plan-string. El modal nuevo (p-package) carga directo.
 function syncPlanSelect(){
   const planes = loadPlanes();
-  ['p-plan','ep-plan'].forEach(id=>{
+  ['ep-plan'].forEach(id=>{
     const sel = document.getElementById(id);
     if(!sel) return;
-    // Guarda las opciones hardcoded originales
     const hardcoded = ['Mensual','Quincenal','Trimestral','Semestral','Anual','Pase de Día'];
-    // Opciones del catálogo
     const catOpts = planes.map(p=>`<option value="${esc(p.nombre)}" data-precio="${p.precio}" data-dias="${p.dias}">${esc(p.nombre)} — $${p.precio.toLocaleString('es-MX')}</option>`).join('');
     const baseOpts = hardcoded.map(n=>`<option value="${n}">${n}</option>`).join('');
     sel.innerHTML = (planes.length ? catOpts+'<option disabled>──────────</option>' : '') + baseOpts;
