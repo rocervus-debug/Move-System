@@ -5,8 +5,9 @@
 
 ---
 
-## ✅ FIXES APLICADOS EN PRODUCCIÓN (24 May 2026)
+## ✅ FIXES APLICADOS EN PRODUCCIÓN (24 May 2026 · 2 rondas)
 
+### Ronda 1 — Bloqueo crítico
 | Fix | Migración | Impacto |
 |---|---|---|
 | RLS activado en `login_attempts` | `enable_rls_login_attempts` | Anon ya no puede leer/escribir tabla de audit |
@@ -15,32 +16,41 @@
 | 7 funciones con `search_path` fijado | `fix_function_search_path` | Bloquea search_path injection |
 | `notify_new_lead` REVOKE EXECUTE público | `revoke_notify_new_lead_public_exec` | Trigger ya no callable via /rest/v1/rpc/ |
 
-**Resultado:** Advisor pasó de **3 ERRORS + 17 WARNS → 1 ERROR + 8 WARNS** (60% reducción).
+### Ronda 2 — Tightening con auth real del admin
+| Fix | Migración | Impacto |
+|---|---|---|
+| `gym_config` split anon/authenticated | `tighten_gym_config_rls` + `tighten_gym_config_split_roles` | **`portal_password` ya NO leíble por anon.** Branding keys públicas siguen accesibles |
+| `horario_cancelaciones` RLS habilitado + split | `tighten_horario_cancelaciones` | Anon solo lee. Solo authenticated del gym puede insertar/modificar |
+| `packages` policy temporal removida | `tighten_packages_rls` | Solo authenticated del gym puede crear/editar/borrar planes |
+
+**Hallazgo clave Ronda 2:** El admin (`Sistema_Interno.html`) YA implementa auth completa correctamente:
+- `move-login` edge function genera JWT firmado con `SUPABASE_JWT_SECRET` (incluye `gym_id`, `role:'authenticated'`)
+- `doLogin()` llama `initAuthClient(jwt)` que re-crea el cliente Supabase con `Authorization: Bearer {jwt}`
+- Sesión persiste con restore JWT
+- Esto permitió tightening sin auth refactor adicional para tablas admin-only
+
+**Resultado advisor:** 3 ERRORS + 17 WARNS → **0 ERRORS + 11 WARNS** (80% de los issues críticos cerrados).
 
 ---
 
-## 🟡 PENDIENTES — Requieren AUTH REFACTOR
+## 🟡 PENDIENTES — Requieren AUTH ATLETA REFACTOR
 
-Estos issues NO se pueden arreglar tightening directo de RLS porque romperían la app actual. Requieren primero implementar **Supabase Auth real** en el cliente.
+3 tablas siguen vulnerables porque el atleta.html escribe directo con anon key. Para tightenear necesitan que el portal del atleta implemente auth real (no portal_token directo).
 
-### Issue 1: `horario_cancelaciones` RLS desactivado
-- **Riesgo:** Cualquiera con anon key puede crear/borrar cancelaciones de horarios
-- **Por qué no se arregla solo:** El admin escribe a esta tabla desde Sistema_Interno con anon key
-- **Solución:** Después de auth refactor, activar RLS + policy `gym_id = auth.gym_id()` para INSERT/UPDATE/DELETE
-
-### Issue 2-8: Policies `USING (true)` en 7 tablas
-
-| Tabla | Policy | Comando | Vector de ataque |
+| Tabla | Policy actual | Vector de ataque | Plan |
 |---|---|---|---|
-| `bitacora_atleta` | `bitacora_delete_anon` | DELETE | Cualquiera borra bitácoras de cualquier atleta |
-| `bitacora_atleta` | `bitacora_insert_anon` | INSERT | Cualquiera escribe bitácoras a nombre de cualquier atleta |
-| `error_logs` | `error_logs_insert` | INSERT | Cualquiera contamina logs de error |
-| `gym_config` ⚠ | `allow_all_gym_config` | ALL | **Cualquiera lee/edita `portal_password` en texto plano** |
-| `leads_landing` | `anon_insert_leads_landing` | INSERT | Cualquiera spammea leads (acceptable, son leads públicos) |
-| `medidas` | `atleta_insert_medidas` + `gym_update_medidas` + `gym_delete_medidas` | INSERT/UPDATE/DELETE | Cualquiera escribe/modifica/borra medidas de atletas |
-| `reservas` | `insert_reservas` + `update_reservas` | INSERT/UPDATE | Cualquiera reserva clases a nombre de otros |
+| `bitacora_atleta` | `bitacora_delete_anon` + `bitacora_insert_anon` (anon true) | Cualquiera borra/escribe bitácoras de cualquier atleta | Tighten con `cliente_id=auth_cliente_id()` post-refactor |
+| `medidas` | `atleta_insert_medidas` + `gym_update_medidas` + `gym_delete_medidas` (true) | Cualquiera escribe/modifica/borra medidas de atletas | Tighten con `cliente_id=auth_cliente_id()` post-refactor |
+| `reservas` | `insert_reservas` + `update_reservas` (true) | Cualquiera reserva clases a nombre de otros | Tighten con `cliente_id=auth_cliente_id()` post-refactor |
 
-⚠ `gym_config` es el más grave porque contiene credenciales del portal.
+## 🟢 ACCEPTABLE RISK (documentado)
+
+| Tabla | Policy | Justificación |
+|---|---|---|
+| `leads_landing` | `anon_insert_leads_landing INSERT true` | Captura de leads desde landing pública requiere anon INSERT. SELECT ya tiene tenant policy. Mitigación futura: rate-limit + captcha frontend |
+| `error_logs` | `error_logs_insert INSERT true` | Client-side error tracking requiere anon INSERT. SELECT ya tiene tenant policy. Mitigación futura: rate-limit |
+| `pg_net` extension en `public` schema | — | Cosmético. Mover a schema dedicado requiere coordinación con edge functions |
+| `login_attempts` RLS sin policy | INFO level | Correcto: solo service_role debe acceder. Sin policies = anon/authenticated denied |
 
 ---
 
