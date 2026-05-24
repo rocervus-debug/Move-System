@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FORGE Mockup — VELUM Atleta v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --accent:#00D4FF;
+  --accent2:#0fdf9a;
+  --accent-dim:rgba(0,212,255,.12);
+  --bg:#030810;
+  --bg2:#060d18;
+  --bg3:#0a1525;
+  --surface:rgba(255,255,255,.038);
+  --surface2:rgba(255,255,255,.056);
+  --surface3:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.12);
+  --border-accent:rgba(0,212,255,.25);
+  --text1:#eef4f8;
+  --text2:#7fafc0;
+  --text3:#3a6070;
+  --ok:#0fdf9a;
+  --warn:#f5a623;
+  --danger:#f06060;
+  --font:'Barlow',system-ui,sans-serif;
+  --fd:'Barlow Condensed',system-ui,sans-serif;
+}
+html,body{height:100%;background:#0f1117;color:var(--text1);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+
+/* ─── DEMO SHELL ─── */
+.demo-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;background:#0a0c12;padding:40px 20px 80px;}
+.demo-header{width:100%;max-width:900px;margin-bottom:40px;}
+.demo-header h1{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+.demo-header h2{font-size:28px;font-weight:700;color:var(--text1);margin-bottom:6px;line-height:1.2;}
+.demo-header p{font-size:14px;color:var(--text2);max-width:560px;line-height:1.6;}
+.demo-divider{width:100%;max-width:900px;height:1px;background:var(--border);margin:32px 0;}
+.section-label{width:100%;max-width:900px;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:20px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ─── PHONE FRAME ─── */
+.phones-row{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;max-width:900px;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.phone-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);}
+.phone{
+  width:320px;height:672px;
+  background:var(--bg);
+  border-radius:48px;
+  border:1.5px solid rgba(255,255,255,.1);
+  box-shadow:0 32px 80px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04) inset,0 0 60px rgba(0,212,255,.04);
+  overflow:hidden;position:relative;
+  display:flex;flex-direction:column;
+}
+.phone::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:90px;height:28px;background:#0a0c12;border-radius:0 0 18px 18px;z-index:100;
+}
+.phone-screen{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+
+/* ─── SCREEN INNER ─── */
+.screen{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 120% 40% at 50% -8%,rgba(0,212,255,.09),transparent),
+    radial-gradient(ellipse 70% 35% at -5% 55%,rgba(0,212,255,.04),transparent);
+}
+.screen-scroll{flex:1;overflow-y:auto;padding:0 0 80px;scrollbar-width:none;}
+.screen-scroll::-webkit-scrollbar{display:none;}
+
+/* ─── STATUS BAR ─── */
+.status-bar{
+  height:44px;padding:12px 22px 0;display:flex;justify-content:space-between;align-items:center;
+  flex-shrink:0;position:relative;z-index:10;
+}
+.sb-time{font-size:13px;font-weight:700;color:var(--text1);}
+.sb-icons{display:flex;align-items:center;gap:5px;}
+.sb-icons svg{width:14px;height:14px;fill:var(--text1);}
+
+/* ─── NAV HEADER ─── */
+.nav-header{
+  padding:8px 20px 12px;display:flex;justify-content:space-between;align-items:center;
+  flex-shrink:0;
+}
+.nav-greeting{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);}
+.nav-name{font-size:18px;font-weight:700;color:var(--text1);line-height:1.2;}
+.nav-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(0,212,255,.3),rgba(0,212,255,.08));
+  border:1.5px solid rgba(0,212,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:var(--accent);
+}
+
+/* ─── MEMBERSHIP CARD ─── */
+.member-card{
+  margin:0 16px 20px;
+  background:linear-gradient(135deg,#041828 0%,#062033 40%,#082840 100%);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:20px;
+  padding:20px;
+  position:relative;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.member-card::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+.member-card::after{
+  content:'';position:absolute;bottom:-30px;left:10px;
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(15,223,154,.07) 0%,transparent 70%);
+  pointer-events:none;
+}
+.mc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.mc-gym{font-family:var(--fd);font-size:11px;font-weight:800;letter-spacing:4px;color:rgba(0,212,255,.6);text-transform:uppercase;}
+.mc-badge{
+  background:rgba(15,223,154,.12);border:1px solid rgba(15,223,154,.3);
+  color:var(--ok);font-size:10px;font-weight:700;letter-spacing:1.5px;
+  padding:4px 10px;border-radius:20px;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;
+}
+.mc-badge-dot{width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);}
+.mc-name{font-size:19px;font-weight:700;color:var(--text1);margin-bottom:2px;}
+.mc-plan{font-size:12px;color:var(--text2);font-weight:500;}
+.mc-footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;}
+.mc-days{display:flex;flex-direction:column;}
+.mc-days-num{font-family:var(--fd);font-size:28px;font-weight:900;color:var(--text1);line-height:1;}
+.mc-days-label{font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--text2);text-transform:uppercase;margin-top:2px;}
+.mc-progress{flex:1;margin-left:20px;}
+.mc-progress-track{height:3px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-bottom:5px;}
+.mc-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.mc-progress-label{font-size:10px;color:var(--text2);text-align:right;}
+.mc-qr-btn{
+  width:32px;height:32px;border-radius:10px;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  flex-shrink:0;margin-left:12px;
+  transition:background .15s;
+}
+.mc-qr-btn:active{background:rgba(0,212,255,.2);}
+.mc-qr-btn svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:1.8;}
+
+/* ─── STATS ROW ─── */
+.stats-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  padding:0 16px;margin-bottom:20px;
+}
+.stat-chip{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;
+  position:relative;overflow:hidden;
+}
+.stat-chip::before{
+  content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
+  width:60px;height:30px;border-radius:50%;
+  opacity:.5;
+  pointer-events:none;
+}
+.stat-chip.visits::before{background:radial-gradient(circle,rgba(0,212,255,.15),transparent);}
+.stat-chip.streak::before{background:radial-gradient(circle,rgba(249,115,22,.2),transparent);}
+.stat-chip.days::before{background:radial-gradient(circle,rgba(139,92,246,.15),transparent);}
+.stat-icon{width:20px;height:20px;}
+.stat-icon svg{width:100%;height:100%;stroke-width:1.8;}
+.stat-chip.visits .stat-icon svg{stroke:#00D4FF;fill:none;}
+.stat-chip.streak .stat-icon svg{stroke:#F97316;fill:none;}
+.stat-chip.days .stat-icon svg{stroke:#8B5CF6;fill:none;}
+.stat-num{font-family:var(--fd);font-size:22px;font-weight:900;color:var(--text1);line-height:1;}
+.stat-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);}
+
+/* ─── SECTION HEADER ─── */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;padding:0 16px;margin-bottom:12px;}
+.sec-hdr-title{font-size:13px;font-weight:700;color:var(--text1);letter-spacing:.3px;}
+.sec-hdr-action{font-size:11px;font-weight:600;color:var(--accent);}
+
+/* ─── ACTION CARDS (2-col grid) ─── */
+.actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px;margin-bottom:20px;}
+.action-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:16px 14px;display:flex;flex-direction:column;gap:10px;
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:border-color .15s,background .15s;
+}
+.action-card:active{background:var(--surface2);}
+.action-card.primary{
+  grid-column:1/-1;
+  flex-direction:row;align-items:center;gap:14px;
+  background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(0,212,255,.04));
+  border-color:rgba(0,212,255,.2);
+}
+.action-card.primary .ac-icon{
+  width:44px;height:44px;border-radius:14px;
+  background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.25);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.action-card.primary .ac-icon svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:1.8;}
+.action-card.primary .ac-text{flex:1;}
+.action-card.primary .ac-title{font-size:14px;font-weight:700;color:var(--text1);}
+.action-card.primary .ac-sub{font-size:11px;color:var(--text2);margin-top:1px;}
+.action-card.primary .ac-arrow{
+  width:28px;height:28px;border-radius:8px;background:rgba(0,212,255,.1);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.action-card.primary .ac-arrow svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:2;}
+.ac-icon-sm{
+  width:36px;height:36px;border-radius:12px;
+  background:var(--surface2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+}
+.ac-icon-sm svg{width:17px;height:17px;stroke-width:1.8;stroke:var(--text1);fill:none;}
+.ac-title-sm{font-size:12px;font-weight:700;color:var(--text1);}
+.ac-sub-sm{font-size:10px;color:var(--text2);}
+
+/* ─── TODAY WORKOUT ─── */
+.today-card{
+  margin:0 16px 20px;
+  background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(139,92,246,.04));
+  border:1px solid rgba(139,92,246,.2);border-radius:18px;padding:16px;
+}
+.tc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.tc-label{font-size:11px;font-weight:700;letter-spacing:2px;color:rgba(139,92,246,.8);text-transform:uppercase;}
+.tc-date{font-size:10px;color:var(--text2);}
+.tc-workout-name{font-size:16px;font-weight:700;color:var(--text1);margin-bottom:4px;}
+.tc-workout-desc{font-size:11px;color:var(--text2);line-height:1.5;}
+.tc-chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.tc-chip{
+  font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;
+}
+.tc-chip.type{background:rgba(139,92,246,.15);color:rgba(139,92,246,.9);border:1px solid rgba(139,92,246,.2);}
+.tc-chip.coach{background:var(--surface);color:var(--text2);border:1px solid var(--border);}
+
+/* ─── BOTTOM NAV ─── */
+.bottom-nav{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(3,8,16,.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  padding:10px 0 28px;z-index:50;
+  display:flex;justify-content:space-around;align-items:center;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;padding:4px 16px;border-radius:12px;
+  transition:opacity .15s;flex:1;
+}
+.nav-item svg{width:20px;height:20px;stroke-width:1.8;stroke:var(--text3);fill:none;transition:stroke .15s;}
+.nav-item span{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);transition:color .15s;}
+.nav-item.active svg{stroke:var(--accent);}
+.nav-item.active span{color:var(--accent);}
+
+/* ─── CLASSES SCREEN ─── */
+.class-item{
+  margin:0 16px 8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:14px 16px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:background .12s;
+}
+.class-item:active{background:var(--surface2);}
+.class-time-block{display:flex;flex-direction:column;align-items:center;min-width:44px;}
+.class-time{font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text1);}
+.class-ampm{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text2);text-transform:uppercase;}
+.class-divider{width:1px;height:36px;background:var(--border2);}
+.class-info{flex:1;}
+.class-name{font-size:14px;font-weight:700;color:var(--text1);margin-bottom:2px;}
+.class-meta{font-size:11px;color:var(--text2);}
+.class-spots{
+  font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;
+}
+.class-spots.open{background:rgba(15,223,154,.1);color:var(--ok);border:1px solid rgba(15,223,154,.2);}
+.class-spots.full{background:rgba(240,96,96,.1);color:var(--danger);border:1px solid rgba(240,96,96,.2);}
+.filter-row{
+  display:flex;gap:6px;padding:8px 16px 12px;overflow-x:auto;scrollbar-width:none;
+}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-pill{
+  flex-shrink:0;padding:6px 14px;border-radius:20px;
+  font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;
+  border:1px solid var(--border2);background:transparent;color:var(--text2);
+}
+.filter-pill.active{background:var(--accent-dim);border-color:rgba(0,212,255,.3);color:var(--accent);}
+
+/* ─── HISTORY / HEATMAP ─── */
+.heatmap-card{
+  margin:0 16px 20px;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;
+}
+.heatmap-title{font-size:13px;font-weight:700;color:var(--text1);margin-bottom:14px;}
+.heatmap-grid{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;}
+.hm-cell{
+  aspect-ratio:1;border-radius:3px;
+  background:rgba(255,255,255,.05);
+}
+.hm-cell.v1{background:rgba(0,212,255,.15);}
+.hm-cell.v2{background:rgba(0,212,255,.3);}
+.hm-cell.v3{background:rgba(0,212,255,.5);}
+.hm-cell.v4{background:rgba(0,212,255,.75);}
+.history-item{
+  margin:0 16px 8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:12px 14px;display:flex;align-items:center;gap:12px;
+}
+.hi-icon{
+  width:34px;height:34px;border-radius:10px;
+  background:rgba(15,223,154,.1);border:1px solid rgba(15,223,154,.15);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.hi-icon svg{width:16px;height:16px;stroke:var(--ok);fill:none;stroke-width:1.8;}
+.hi-text{flex:1;}
+.hi-name{font-size:13px;font-weight:700;color:var(--text1);}
+.hi-meta{font-size:11px;color:var(--text2);margin-top:1px;}
+.hi-time{font-size:11px;color:var(--text2);}
+
+/* ─── QR SCREEN ─── */
+.qr-screen{display:flex;flex-direction:column;align-items:center;padding:24px 20px;}
+.qr-screen .qr-subtitle{font-size:12px;color:var(--text2);text-align:center;line-height:1.6;max-width:220px;margin-bottom:24px;}
+.qr-box{
+  width:200px;height:200px;
+  background:white;border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 40px rgba(0,212,255,.2);
+  margin-bottom:20px;
+}
+.qr-box img{width:180px;height:180px;}
+.qr-name-tag{
+  background:var(--surface);border:1px solid var(--border-accent);border-radius:14px;
+  padding:12px 24px;text-align:center;margin-bottom:16px;
+}
+.qr-name-tag .name{font-size:16px;font-weight:700;color:var(--text1);}
+.qr-name-tag .gym{font-size:11px;color:var(--text2);margin-top:2px;}
+.qr-refresh-btn{
+  display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:99px;
+  border:1px solid var(--border2);background:var(--surface);
+  font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;
+}
+.qr-refresh-btn svg{width:14px;height:14px;stroke:var(--text2);fill:none;stroke-width:2;}
+
+/* ─── PROFILE SCREEN ─── */
+.profile-header{
+  padding:20px 16px 0;display:flex;flex-direction:column;align-items:center;text-align:center;
+  margin-bottom:20px;
+}
+.profile-avatar{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(0,212,255,.3),rgba(0,212,255,.08));
+  border:2px solid rgba(0,212,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;font-weight:700;color:var(--accent);margin-bottom:12px;
+}
+.profile-name{font-size:20px;font-weight:700;color:var(--text1);margin-bottom:2px;}
+.profile-gym{font-size:12px;color:var(--text2);}
+.profile-section{margin:0 16px 8px;}
+.profile-section-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;padding:0 4px;}
+.profile-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;
+  margin-bottom:2px;cursor:pointer;
+}
+.profile-item:first-of-type{border-radius:14px 14px 6px 6px;}
+.profile-item:last-of-type{border-radius:6px 6px 14px 14px;}
+.profile-item:only-of-type{border-radius:14px;}
+.pi-icon{width:28px;height:28px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pi-icon svg{width:14px;height:14px;stroke:var(--text2);fill:none;stroke-width:1.8;}
+.pi-text{flex:1;font-size:13px;font-weight:600;color:var(--text1);}
+.pi-arrow svg{width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:2;}
+
+/* ─── ANNOTATION SYSTEM ─── */
+.annotation-layer{position:absolute;inset:0;pointer-events:none;z-index:200;}
+.ann{position:absolute;pointer-events:none;}
+.ann-dot{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--accent);color:#000;
+  font-size:9px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 3px rgba(0,212,255,.25),0 0 12px rgba(0,212,255,.5);
+}
+.ann-line{
+  position:absolute;height:1px;background:rgba(0,212,255,.4);transform-origin:left center;
+}
+
+/* ─── LEGEND / NOTES PANEL ─── */
+.forge-notes{width:100%;max-width:900px;margin-top:40px;}
+.forge-note-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.forge-note{
+  background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:16px;
+  padding:18px;
+}
+.fn-num{font-family:var(--fd);font-size:11px;font-weight:900;letter-spacing:2px;color:var(--accent);margin-bottom:6px;}
+.fn-title{font-size:14px;font-weight:700;color:var(--text1);margin-bottom:6px;}
+.fn-desc{font-size:12px;color:var(--text2);line-height:1.6;}
+.fn-status{
+  display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px;
+}
+.fn-status.fix{background:rgba(249,115,22,.1);color:#F97316;border:1px solid rgba(249,115,22,.2);}
+.fn-status.new{background:rgba(15,223,154,.1);color:var(--ok);border:1px solid rgba(15,223,154,.2);}
+.fn-status.improve{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+
+/* ─── COMPARISON ─── */
+.comparison{display:flex;gap:24px;width:100%;max-width:900px;margin-top:40px;flex-wrap:wrap;justify-content:center;}
+.comp-col{flex:1;min-width:280px;}
+.comp-label{
+  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.comp-label.before{color:#f06060;}
+.comp-label.after{color:var(--ok);}
+.comp-label::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.comp-item{
+  display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:12px;
+  margin-bottom:8px;
+}
+.comp-item.bad{background:rgba(240,96,96,.06);border:1px solid rgba(240,96,96,.12);}
+.comp-item.good{background:rgba(15,223,154,.06);border:1px solid rgba(15,223,154,.12);}
+.comp-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.comp-text{font-size:12px;color:var(--text2);line-height:1.5;}
+.comp-text strong{color:var(--text1);}
+
+/* ─── NAV TABS for demo ─── */
+.demo-nav{
+  display:flex;gap:0;margin-bottom:40px;width:100%;max-width:900px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+}
+.demo-nav-btn{
+  flex:1;padding:10px;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  background:transparent;color:var(--text2);border:none;cursor:pointer;transition:all .15s;
+}
+.demo-nav-btn.active{background:var(--accent);color:#000;}
+
+/* ─── INTERACTIVE ─── */
+.screen-view{display:none;}
+.screen-view.visible{display:flex;flex-direction:column;height:100%;}
+</style>
+</head>
+<body>
+<div class="demo-page">
+
+  <!-- HEADER -->
+  <div class="demo-header">
+    <h1>FORGE — VELUM Atleta v5</h1>
+    <h2>Propuesta de Rediseño Premium</h2>
+    <p>Audit completo + mockup interactivo. Selecciona cada pantalla en el navegador de abajo para revisar el rediseño. Confirma para proceder a implementación.</p>
+  </div>
+
+  <!-- SCREEN SELECTOR -->
+  <div class="demo-nav" id="screenNav">
+    <button class="demo-nav-btn active" onclick="showScreen('home')">Home</button>
+    <button class="demo-nav-btn" onclick="showScreen('clases')">Clases</button>
+    <button class="demo-nav-btn" onclick="showScreen('historial')">Historial</button>
+    <button class="demo-nav-btn" onclick="showScreen('qr')">QR</button>
+    <button class="demo-nav-btn" onclick="showScreen('perfil')">Perfil</button>
+  </div>
+
+  <!-- PHONE + NOTES ROW -->
+  <div class="phones-row">
+
+    <!-- PHONE -->
+    <div class="phone-wrap">
+      <div class="phone-label">Diseño propuesto</div>
+      <div class="phone">
+        <div class="phone-screen">
+
+          <!-- ══════ HOME SCREEN ══════ -->
+          <div class="screen-view visible" id="sv-home">
+            <div class="screen">
+              <!-- Status bar -->
+              <div class="status-bar">
+                <span class="sb-time">9:41</span>
+                <div class="sb-icons">
+                  <svg viewBox="0 0 24 24"><path d="M1 6l5.5 5.5L12 6l5.5 5.5L23 6"/><rect x="0" y="0" width="5" height="24" fill="white" opacity="0"/></svg>
+                  <svg viewBox="0 0 24 24"><path d="M5 12.5c1.9-2.5 4.8-4 7-4s5.1 1.5 7 4" stroke-linecap="round"/><path d="M8 16c1-1.3 2.5-2 4-2s3 .7 4 2" stroke-linecap="round"/><circle cx="12" cy="19" r="1" fill="white"/></svg>
+                  <svg viewBox="0 0 24 24" style="width:22px"><rect x="2" y="7" width="18" height="10" rx="2" stroke-width="1.5" stroke="white" fill="none"/><path d="M20 10h2v4h-2" stroke="white" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="11" height="6" rx="1" fill="white"/></svg>
+                </div>
+              </div>
+
+              <!-- Nav header -->
+              <div class="nav-header">
+                <div>
+                  <div class="nav-greeting">Buenos días</div>
+                  <div class="nav-name">Adrian González</div>
+                </div>
+                <div class="nav-avatar">AG</div>
+              </div>
+
+              <!-- Scroll content -->
+              <div class="screen-scroll">
+
+                <!-- Membership card -->
+                <div class="member-card">
+                  <div class="mc-top">
+                    <div class="mc-gym">MOVE GYM</div>
+                    <div class="mc-badge"><div class="mc-badge-dot"></div>Activo</div>
+                  </div>
+                  <div class="mc-name">Adrian González</div>
+                  <div class="mc-plan">Membresía Elite · Mensual</div>
+                  <div class="mc-footer">
+                    <div class="mc-days">
+                      <div class="mc-days-num">18</div>
+                      <div class="mc-days-label">Días restantes</div>
+                    </div>
+                    <div class="mc-progress">
+                      <div class="mc-progress-track">
+                        <div class="mc-progress-fill" style="width:40%"></div>
+                      </div>
+                      <div class="mc-progress-label">40% usado</div>
+                    </div>
+                    <!-- QR mini button — OUTSIDE overflow:hidden issue fixed -->
+                    <div class="mc-qr-btn" onclick="showScreen('qr');navClick('qr')">
+                      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none" style="fill:rgba(0,212,255,.7)"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none" style="fill:rgba(0,212,255,.7)"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none" style="fill:rgba(0,212,255,.7)"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-row">
+                  <div class="stat-chip visits">
+                    <div class="stat-icon">
+                      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    </div>
+                    <div class="stat-num">24</div>
+                    <div class="stat-label">Visitas</div>
+                  </div>
+                  <div class="stat-chip streak">
+                    <div class="stat-icon">
+                      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </div>
+                    <div class="stat-num">7</div>
+                    <div class="stat-label">Racha</div>
+                  </div>
+                  <div class="stat-chip days">
+                    <div class="stat-icon">
+                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="stat-num">18</div>
+                    <div class="stat-label">Días</div>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="sec-hdr" style="padding-top:4px;">
+                  <div class="sec-hdr-title">Acciones rápidas</div>
+                </div>
+                <div class="actions-grid">
+                  <!-- Primary action: Reservar (promoted) -->
+                  <div class="action-card primary">
+                    <div class="ac-icon">
+                      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg>
+                    </div>
+                    <div class="ac-text">
+                      <div class="ac-title">Reservar Clase</div>
+                      <div class="ac-sub">3 clases disponibles hoy</div>
+                    </div>
+                    <div class="ac-arrow">
+                      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
+                  </div>
+                  <!-- Secondary -->
+                  <div class="action-card">
+                    <div class="ac-icon-sm">
+                      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <div>
+                      <div class="ac-title-sm">Mis Visitas</div>
+                      <div class="ac-sub-sm">Historial completo</div>
+                    </div>
+                  </div>
+                  <div class="action-card">
+                    <div class="ac-icon-sm">
+                      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+                    </div>
+                    <div>
+                      <div class="ac-title-sm">Bitácora</div>
+                      <div class="ac-sub-sm">Registrar entreno</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Today's workout -->
+                <div class="sec-hdr">
+                  <div class="sec-hdr-title">Entrenamiento hoy</div>
+                  <div class="sec-hdr-action">Ver programa</div>
+                </div>
+                <div class="today-card">
+                  <div class="tc-hdr">
+                    <div class="tc-label">Lun 18</div>
+                    <div class="tc-date">Semana 3</div>
+                  </div>
+                  <div class="tc-workout-name">Fuerza Upper Body + Core</div>
+                  <div class="tc-workout-desc">Press banca · Pull-ups · Dips · Planks. 4 series por ejercicio, descanso 90s.</div>
+                  <div class="tc-chips">
+                    <div class="tc-chip type">Fuerza</div>
+                    <div class="tc-chip coach">Coach: Marco</div>
+                  </div>
+                </div>
+
+              </div><!-- /scroll -->
+
+              <!-- Bottom nav -->
+              <div class="bottom-nav">
+                <div class="nav-item active" id="ni-home" onclick="showScreen('home');navClick('home')">
+                  <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                  <span>Home</span>
+                </div>
+                <div class="nav-item" id="ni-clases" onclick="showScreen('clases');navClick('clases')">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span>Clases</span>
+                </div>
+                <div class="nav-item" id="ni-historial" onclick="showScreen('historial');navClick('historial')">
+                  <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  <span>Historial</span>
+                </div>
+                <div class="nav-item" id="ni-qr" onclick="showScreen('qr');navClick('qr')">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="white"/><rect x="16" y="5" width="3" height="3" fill="white"/><rect x="5" y="16" width="3" height="3" fill="white"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg>
+                  <span>QR</span>
+                </div>
+                <div class="nav-item" id="ni-perfil" onclick="showScreen('perfil');navClick('perfil')">
+                  <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>Perfil</span>
+                </div>
+              </div>
+
+            </div><!-- /screen -->
+          </div><!-- /sv-home -->
+
+          <!-- ══════ CLASES SCREEN ══════ -->
+          <div class="screen-view" id="sv-clases">
+            <div class="screen">
+              <div class="status-bar">
+                <span class="sb-time">9:41</span>
+                <div class="sb-icons"><svg viewBox="0 0 24 24" style="width:22px"><rect x="2" y="7" width="18" height="10" rx="2" stroke-width="1.5" stroke="white" fill="none"/><path d="M20 10h2v4h-2" stroke="white" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="11" height="6" rx="1" fill="white"/></svg></div>
+              </div>
+              <div class="nav-header" style="padding-bottom:4px;">
+                <div>
+                  <div class="nav-greeting">Agenda</div>
+                  <div class="nav-name">Clases de hoy</div>
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-pill active">Todas</div>
+                <div class="filter-pill">CrossFit</div>
+                <div class="filter-pill">Yoga</div>
+                <div class="filter-pill">Fuerza</div>
+                <div class="filter-pill">Cardio</div>
+              </div>
+              <div class="screen-scroll">
+                <div class="class-item">
+                  <div class="class-time-block"><div class="class-time">6:00</div><div class="class-ampm">am</div></div>
+                  <div class="class-divider"></div>
+                  <div class="class-info">
+                    <div class="class-name">CrossFit Open</div>
+                    <div class="class-meta">Coach Marco · 60 min</div>
+                  </div>
+                  <div class="class-spots open">4 lugares</div>
+                </div>
+                <div class="class-item">
+                  <div class="class-time-block"><div class="class-time">7:30</div><div class="class-ampm">am</div></div>
+                  <div class="class-divider"></div>
+                  <div class="class-info">
+                    <div class="class-name">Fuerza y Potencia</div>
+                    <div class="class-meta">Coach Luis · 75 min</div>
+                  </div>
+                  <div class="class-spots full">Lleno</div>
+                </div>
+                <div class="class-item">
+                  <div class="class-time-block"><div class="class-time">9:00</div><div class="class-ampm">am</div></div>
+                  <div class="class-divider"></div>
+                  <div class="class-info">
+                    <div class="class-name">Yoga Flow</div>
+                    <div class="class-meta">Coach Ana · 60 min</div>
+                  </div>
+                  <div class="class-spots open">8 lugares</div>
+                </div>
+                <div class="class-item">
+                  <div class="class-time-block"><div class="class-time">6:00</div><div class="class-ampm">pm</div></div>
+                  <div class="class-divider"></div>
+                  <div class="class-info">
+                    <div class="class-name">Metcon</div>
+                    <div class="class-meta">Coach Marco · 45 min</div>
+                  </div>
+                  <div class="class-spots open">2 lugares</div>
+                </div>
+                <div class="class-item">
+                  <div class="class-time-block"><div class="class-time">7:30</div><div class="class-ampm">pm</div></div>
+                  <div class="class-divider"></div>
+                  <div class="class-info">
+                    <div class="class-name">Olympic Lifting</div>
+                    <div class="class-meta">Coach Roberto · 90 min</div>
+                  </div>
+                  <div class="class-spots open">6 lugares</div>
+                </div>
+              </div>
+              <!-- Bottom nav -->
+              <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('home');navClick('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Home</span></div>
+                <div class="nav-item active" onclick="showScreen('clases');navClick('clases')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Clases</span></div>
+                <div class="nav-item" onclick="showScreen('historial');navClick('historial')"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Historial</span></div>
+                <div class="nav-item" onclick="showScreen('qr');navClick('qr')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="white"/><rect x="16" y="5" width="3" height="3" fill="white"/><rect x="5" y="16" width="3" height="3" fill="white"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg><span>QR</span></div>
+                <div class="nav-item" onclick="showScreen('perfil');navClick('perfil')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></div>
+              </div>
+            </div>
+          </div><!-- /sv-clases -->
+
+          <!-- ══════ HISTORIAL SCREEN ══════ -->
+          <div class="screen-view" id="sv-historial">
+            <div class="screen">
+              <div class="status-bar">
+                <span class="sb-time">9:41</span>
+                <div class="sb-icons"><svg viewBox="0 0 24 24" style="width:22px"><rect x="2" y="7" width="18" height="10" rx="2" stroke-width="1.5" stroke="white" fill="none"/><path d="M20 10h2v4h-2" stroke="white" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="11" height="6" rx="1" fill="white"/></svg></div>
+              </div>
+              <div class="nav-header" style="padding-bottom:4px;">
+                <div>
+                  <div class="nav-greeting">Actividad</div>
+                  <div class="nav-name">Tu historial</div>
+                </div>
+              </div>
+              <div class="screen-scroll">
+                <!-- Heatmap -->
+                <div class="heatmap-card">
+                  <div class="heatmap-title">Mayo 2026 · 24 visitas</div>
+                  <div class="heatmap-grid">
+                    <div class="hm-cell"></div><div class="hm-cell v2"></div><div class="hm-cell v4"></div><div class="hm-cell v1"></div><div class="hm-cell v3"></div><div class="hm-cell"></div><div class="hm-cell v2"></div>
+                    <div class="hm-cell v4"></div><div class="hm-cell v1"></div><div class="hm-cell"></div><div class="hm-cell v3"></div><div class="hm-cell v4"></div><div class="hm-cell v2"></div><div class="hm-cell v1"></div>
+                    <div class="hm-cell"></div><div class="hm-cell v3"></div><div class="hm-cell v4"></div><div class="hm-cell v2"></div><div class="hm-cell"></div><div class="hm-cell v4"></div><div class="hm-cell v3"></div>
+                    <div class="hm-cell v1"></div><div class="hm-cell v4"></div><div class="hm-cell v2"></div><div class="hm-cell v3"></div><div class="hm-cell v4"></div><div class="hm-cell v1"></div><div class="hm-cell"></div>
+                  </div>
+                </div>
+                <!-- List -->
+                <div class="sec-hdr"><div class="sec-hdr-title">Recientes</div></div>
+                <div class="history-item">
+                  <div class="hi-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                  <div class="hi-text">
+                    <div class="hi-name">CrossFit Open</div>
+                    <div class="hi-meta">Lun 18 mayo · QR Kiosco</div>
+                  </div>
+                  <div class="hi-time">9:41 am</div>
+                </div>
+                <div class="history-item">
+                  <div class="hi-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                  <div class="hi-text">
+                    <div class="hi-name">Fuerza Upper Body</div>
+                    <div class="hi-meta">Vie 16 mayo · App</div>
+                  </div>
+                  <div class="hi-time">6:05 am</div>
+                </div>
+                <div class="history-item">
+                  <div class="hi-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                  <div class="hi-text">
+                    <div class="hi-name">Metcon Thursday</div>
+                    <div class="hi-meta">Jue 15 mayo · Manual</div>
+                  </div>
+                  <div class="hi-time">7:32 pm</div>
+                </div>
+                <div class="history-item">
+                  <div class="hi-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                  <div class="hi-text">
+                    <div class="hi-name">Olympic Lifting</div>
+                    <div class="hi-meta">Mié 14 mayo · QR Kiosco</div>
+                  </div>
+                  <div class="hi-time">6:00 pm</div>
+                </div>
+              </div>
+              <!-- Bottom nav -->
+              <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('home');navClick('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Home</span></div>
+                <div class="nav-item" onclick="showScreen('clases');navClick('clases')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Clases</span></div>
+                <div class="nav-item active" onclick="showScreen('historial');navClick('historial')"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Historial</span></div>
+                <div class="nav-item" onclick="showScreen('qr');navClick('qr')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="white"/><rect x="16" y="5" width="3" height="3" fill="white"/><rect x="5" y="16" width="3" height="3" fill="white"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg><span>QR</span></div>
+                <div class="nav-item" onclick="showScreen('perfil');navClick('perfil')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></div>
+              </div>
+            </div>
+          </div><!-- /sv-historial -->
+
+          <!-- ══════ QR SCREEN ══════ -->
+          <div class="screen-view" id="sv-qr">
+            <div class="screen">
+              <div class="status-bar">
+                <span class="sb-time">9:41</span>
+                <div class="sb-icons"><svg viewBox="0 0 24 24" style="width:22px"><rect x="2" y="7" width="18" height="10" rx="2" stroke-width="1.5" stroke="white" fill="none"/><path d="M20 10h2v4h-2" stroke="white" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="11" height="6" rx="1" fill="white"/></svg></div>
+              </div>
+              <div class="nav-header" style="padding-bottom:4px;">
+                <div>
+                  <div class="nav-greeting">Check-in</div>
+                  <div class="nav-name">Tu código QR</div>
+                </div>
+              </div>
+              <div class="screen-scroll">
+                <div class="qr-screen">
+                  <p class="qr-subtitle">Muestra este código al kiosco o al staff para registrar tu entrada</p>
+                  <!-- SVG QR placeholder -->
+                  <div class="qr-box">
+                    <svg viewBox="0 0 180 180" style="width:170px;height:170px;">
+                      <rect width="180" height="180" fill="white"/>
+                      <!-- Corner squares -->
+                      <rect x="10" y="10" width="50" height="50" rx="6" fill="#111"/>
+                      <rect x="16" y="16" width="38" height="38" rx="4" fill="white"/>
+                      <rect x="22" y="22" width="26" height="26" rx="2" fill="#111"/>
+                      <rect x="120" y="10" width="50" height="50" rx="6" fill="#111"/>
+                      <rect x="126" y="16" width="38" height="38" rx="4" fill="white"/>
+                      <rect x="132" y="22" width="26" height="26" rx="2" fill="#111"/>
+                      <rect x="10" y="120" width="50" height="50" rx="6" fill="#111"/>
+                      <rect x="16" y="126" width="38" height="38" rx="4" fill="white"/>
+                      <rect x="22" y="132" width="26" height="26" rx="2" fill="#111"/>
+                      <!-- Data pattern -->
+                      <rect x="72" y="10" width="6" height="6" fill="#111"/><rect x="84" y="10" width="6" height="6" fill="#111"/><rect x="96" y="10" width="6" height="6" fill="#111"/><rect x="108" y="10" width="6" height="6" fill="#111"/>
+                      <rect x="72" y="22" width="6" height="6" fill="#111"/><rect x="84" y="22" width="12" height="6" fill="#111"/><rect x="102" y="22" width="6" height="6" fill="#111"/>
+                      <rect x="72" y="34" width="6" height="6" fill="#111"/><rect x="90" y="34" width="6" height="6" fill="#111"/><rect x="102" y="34" width="12" height="6" fill="#111"/>
+                      <rect x="72" y="46" width="6" height="6" fill="#111"/><rect x="84" y="46" width="6" height="6" fill="#111"/><rect x="96" y="46" width="6" height="6" fill="#111"/>
+                      <rect x="10" y="72" width="6" height="6" fill="#111"/><rect x="22" y="72" width="12" height="6" fill="#111"/><rect x="40" y="72" width="6" height="6" fill="#111"/><rect x="52" y="72" width="6" height="6" fill="#111"/>
+                      <rect x="10" y="84" width="6" height="6" fill="#111"/><rect x="28" y="84" width="6" height="6" fill="#111"/><rect x="46" y="84" width="6" height="6" fill="#111"/>
+                      <rect x="72" y="72" width="6" height="6" fill="#111"/><rect x="84" y="72" width="6" height="6" fill="#111"/><rect x="96" y="72" width="12" height="6" fill="#111"/><rect x="114" y="72" width="6" height="6" fill="#111"/><rect x="126" y="72" width="6" height="6" fill="#111"/><rect x="138" y="72" width="18" height="6" fill="#111"/>
+                      <rect x="72" y="84" width="12" height="6" fill="#111"/><rect x="90" y="84" width="6" height="6" fill="#111"/><rect x="102" y="84" width="12" height="6" fill="#111"/><rect x="120" y="84" width="6" height="6" fill="#111"/><rect x="138" y="84" width="6" height="6" fill="#111"/>
+                      <rect x="72" y="96" width="6" height="6" fill="#111"/><rect x="84" y="96" width="6" height="6" fill="#111"/><rect x="96" y="96" width="6" height="6" fill="#111"/><rect x="108" y="96" width="18" height="6" fill="#111"/><rect x="132" y="96" width="12" height="6" fill="#111"/>
+                      <rect x="10" y="96" width="12" height="6" fill="#111"/><rect x="28" y="96" width="6" height="6" fill="#111"/><rect x="40" y="96" width="6" height="6" fill="#111"/><rect x="52" y="96" width="6" height="6" fill="#111"/>
+                      <rect x="72" y="108" width="6" height="6" fill="#111"/><rect x="84" y="108" width="12" height="6" fill="#111"/><rect x="102" y="108" width="6" height="6" fill="#111"/><rect x="114" y="108" width="6" height="6" fill="#111"/><rect x="132" y="108" width="6" height="6" fill="#111"/><rect x="144" y="108" width="12" height="6" fill="#111"/>
+                      <rect x="120" y="120" width="6" height="6" fill="#111"/><rect x="132" y="120" width="12" height="6" fill="#111"/>
+                      <rect x="120" y="132" width="12" height="6" fill="#111"/><rect x="138" y="132" width="6" height="6" fill="#111"/>
+                      <rect x="120" y="144" width="6" height="6" fill="#111"/><rect x="132" y="144" width="12" height="6" fill="#111"/>
+                      <rect x="120" y="156" width="18" height="6" fill="#111"/><rect x="144" y="156" width="12" height="6" fill="#111"/>
+                    </svg>
+                  </div>
+                  <div class="qr-name-tag">
+                    <div class="name">Adrian González</div>
+                    <div class="gym">MOVE GYM · Membresía Elite</div>
+                  </div>
+                  <div class="qr-refresh-btn">
+                    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                    Actualizar código
+                  </div>
+                </div>
+              </div>
+              <!-- Bottom nav -->
+              <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('home');navClick('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Home</span></div>
+                <div class="nav-item" onclick="showScreen('clases');navClick('clases')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Clases</span></div>
+                <div class="nav-item" onclick="showScreen('historial');navClick('historial')"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Historial</span></div>
+                <div class="nav-item active" onclick="showScreen('qr');navClick('qr')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="white"/><rect x="16" y="5" width="3" height="3" fill="white"/><rect x="5" y="16" width="3" height="3" fill="white"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg><span>QR</span></div>
+                <div class="nav-item" onclick="showScreen('perfil');navClick('perfil')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></div>
+              </div>
+            </div>
+          </div><!-- /sv-qr -->
+
+          <!-- ══════ PERFIL SCREEN ══════ -->
+          <div class="screen-view" id="sv-perfil">
+            <div class="screen">
+              <div class="status-bar">
+                <span class="sb-time">9:41</span>
+                <div class="sb-icons"><svg viewBox="0 0 24 24" style="width:22px"><rect x="2" y="7" width="18" height="10" rx="2" stroke-width="1.5" stroke="white" fill="none"/><path d="M20 10h2v4h-2" stroke="white" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="11" height="6" rx="1" fill="white"/></svg></div>
+              </div>
+              <div class="screen-scroll">
+                <div class="profile-header">
+                  <div class="profile-avatar">AG</div>
+                  <div class="profile-name">Adrian González</div>
+                  <div class="profile-gym">MOVE GYM · Activo</div>
+                </div>
+
+                <div class="profile-section">
+                  <div class="profile-section-label">Mi plan</div>
+                  <div class="profile-item">
+                    <div class="pi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
+                    <div class="pi-text">Mi código QR</div>
+                    <div class="pi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                  <div class="profile-item">
+                    <div class="pi-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+                    <div class="pi-text">Estado de membresía</div>
+                    <div class="pi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+
+                <div class="profile-section" style="margin-top:12px;">
+                  <div class="profile-section-label">Progreso</div>
+                  <div class="profile-item">
+                    <div class="pi-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                    <div class="pi-text">Medidas corporales</div>
+                    <div class="pi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                  <div class="profile-item">
+                    <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg></div>
+                    <div class="pi-text">Bitácora de entrenos</div>
+                    <div class="pi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+
+                <div class="profile-section" style="margin-top:12px;">
+                  <div class="profile-section-label">Cuenta</div>
+                  <div class="profile-item">
+                    <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <div class="pi-text">Editar perfil</div>
+                    <div class="pi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                  <div class="profile-item">
+                    <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+                    <div class="pi-text">Cerrar sesión</div>
+                    <div class="pi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+
+              </div>
+              <!-- Bottom nav -->
+              <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('home');navClick('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Home</span></div>
+                <div class="nav-item" onclick="showScreen('clases');navClick('clases')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Clases</span></div>
+                <div class="nav-item" onclick="showScreen('historial');navClick('historial')"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Historial</span></div>
+                <div class="nav-item" onclick="showScreen('qr');navClick('qr')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="white"/><rect x="16" y="5" width="3" height="3" fill="white"/><rect x="5" y="16" width="3" height="3" fill="white"/><path d="M14 14h3v3M17 17v3h3M14 20h3"/></svg><span>QR</span></div>
+                <div class="nav-item active" onclick="showScreen('perfil');navClick('perfil')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></div>
+              </div>
+            </div>
+          </div><!-- /sv-perfil -->
+
+        </div><!-- /phone-screen -->
+      </div><!-- /phone -->
+    </div><!-- /phone-wrap -->
+  </div><!-- /phones-row -->
+
+  <div class="demo-divider"></div>
+
+  <!-- COMPARISON -->
+  <div class="section-label">Antes vs. Después — cambios clave</div>
+  <div class="comparison">
+    <div class="comp-col">
+      <div class="comp-label before">Versión actual — problemas</div>
+      <div class="comp-item bad"><div class="comp-icon">✕</div><div class="comp-text"><strong>QR como acción primaria</strong> — card gigante para una función que se usa 1 vez al día y sólo en kiosco</div></div>
+      <div class="comp-item bad"><div class="comp-icon">✕</div><div class="comp-text"><strong>Mini QR hidden</strong> — <code>overflow:hidden</code> en la membresía card corta el botón absoluto</div></div>
+      <div class="comp-item bad"><div class="comp-icon">✕</div><div class="comp-text"><strong>Emojis en stats</strong> — 📊🔥⌛ degradan la percepción premium de la app</div></div>
+      <div class="comp-item bad"><div class="comp-icon">✕</div><div class="comp-text"><strong>Jerarquía plana</strong> — todas las acciones tienen el mismo peso visual; el usuario no sabe qué hacer primero</div></div>
+      <div class="comp-item bad"><div class="comp-icon">✕</div><div class="comp-text"><strong>Sin contexto diario</strong> — el home no dice nada sobre qué pasa hoy en el gym</div></div>
+    </div>
+    <div class="comp-col">
+      <div class="comp-label after">Propuesta v5 — soluciones</div>
+      <div class="comp-item good"><div class="comp-icon">✓</div><div class="comp-text"><strong>QR en nav + mini-icono en card</strong> — accesible siempre desde el nav bottom, sin dominar el home</div></div>
+      <div class="comp-item good"><div class="comp-icon">✓</div><div class="comp-text"><strong>QR button en membership card resuelto</strong> — diseñado como parte del layout sin overflow:hidden conflict</div></div>
+      <div class="comp-item good"><div class="comp-icon">✓</div><div class="comp-text"><strong>SVG icons en stats con color semántico</strong> — azul, naranja, morado; cada stat tiene su lenguaje visual</div></div>
+      <div class="comp-item good"><div class="comp-icon">✓</div><div class="comp-text"><strong>Reservar Clase como acción primaria</strong> — card full-width con CTA claro; Visitas y Bitácora como secundarios</div></div>
+      <div class="comp-item good"><div class="comp-icon">✓</div><div class="comp-text"><strong>Today's workout card</strong> — sección contextual que conecta al atleta con su programa diario desde el home</div></div>
+    </div>
+  </div>
+
+  <div class="demo-divider"></div>
+
+  <!-- FORGE NOTES -->
+  <div class="section-label">Decisiones de diseño — FORGE audit</div>
+  <div class="forge-notes">
+    <div class="forge-note-grid">
+
+      <div class="forge-note">
+        <div class="fn-num">01 — QR</div>
+        <div class="fn-title">QR demoted al nav + mini-icono</div>
+        <div class="fn-desc">El QR se usa una vez por visita y sólo frente al kiosco. En el home v4 ocupaba la primera posición — una tarjeta enorme para una función contextual. En v5: ícono permanente en la bottom nav (siempre disponible), micro-botón en la card de membresía. El home recobra protagonismo.</div>
+        <div class="fn-status fix">Bug fixed</div>
+      </div>
+
+      <div class="forge-note">
+        <div class="fn-num">02 — Stats</div>
+        <div class="fn-title">Chips con SVGs cromáticos</div>
+        <div class="fn-desc">Visitas → azul (continuidad), Racha → naranja (energía), Días → morado (tiempo/progreso). El color aporta significado semántico, no sólo decoración. Eliminados emojis. Números en Barlow Condensed 900 para máximo impacto visual.</div>
+        <div class="fn-status improve">Premium upgrade</div>
+      </div>
+
+      <div class="forge-note">
+        <div class="fn-num">03 — Jerarquía de acciones</div>
+        <div class="fn-title">Grid 2-col con acción primaria full-width</div>
+        <div class="fn-desc">Reservar Clase = siempre primario (más contexto: "3 clases disponibles hoy"). Mis Visitas y Bitácora en grid 2-col como acciones secundarias. La jerarquía guía al usuario sin texto explicativo.</div>
+        <div class="fn-status new">New pattern</div>
+      </div>
+
+      <div class="forge-note">
+        <div class="fn-num">04 — Membership Card</div>
+        <div class="fn-title">Progress bar + QR resuelto</div>
+        <div class="fn-desc">La card muestra: gym name, badge Activo, nombre del atleta, plan, días restantes con número grande, barra de progreso del ciclo, y el QR mini-button integrado en el footer row (no absolutamente posicionado = no hay overflow conflict).</div>
+        <div class="fn-status fix">Overflow fixed</div>
+      </div>
+
+      <div class="forge-note">
+        <div class="fn-num">05 — Clases</div>
+        <div class="fn-title">Filter pills + tiempo como anclaje</div>
+        <div class="fn-desc">El horario de la clase es el anclaje visual principal (Barlow Condensed, tamaño grande). Nombre y coach al centro. Badge de disponibilidad a la derecha. Filter pills horizontales en scroll para disciplinas. Patrón más legible que el diseño anterior.</div>
+        <div class="fn-status improve">UX improve</div>
+      </div>
+
+      <div class="forge-note">
+        <div class="fn-num">06 — Today's Workout</div>
+        <div class="fn-title">Sección contextual nueva</div>
+        <div class="fn-desc">Un card que muestra el entrenamiento programado para hoy. Conecta el home con la funcionalidad de programa/bitácora. Contexto inmediato = el atleta sabe qué le espera antes de entrar al gym. Subtle purple gradient lo diferencia visualmente del resto.</div>
+        <div class="fn-status new">New feature</div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /demo-page -->
+
+<script>
+const screens = ['home','clases','historial','qr','perfil'];
+
+function showScreen(name) {
+  screens.forEach(s => {
+    const el = document.getElementById('sv-'+s);
+    if(el) el.classList.toggle('visible', s === name);
+  });
+  // Update demo nav
+  document.querySelectorAll('.demo-nav-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', screens[i] === name);
+  });
+}
+
+function navClick(name) {
+  // Update ALL bottom navs across all screens
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const onclick = item.getAttribute('onclick') || '';
+    item.classList.toggle('active', onclick.includes("'"+name+"'"));
+  });
+}
+
+// Init
+showScreen('home');
+</script>
+</body>
+</html>

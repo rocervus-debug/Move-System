@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELUM · Simulador de Costo Coach IA (Claude API)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #040C14;
+  --bg-card: #08121E;
+  --bg-elevated: #0D1B2A;
+  --bg-input: #050E18;
+  --cyan: #00D4FF;
+  --cyan-light: #66E8FF;
+  --cyan-dim: rgba(0, 212, 255, 0.12);
+  --cyan-bright: rgba(0, 212, 255, 0.25);
+  --success: #10E8A0;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --text: #E8EDF5;
+  --text-2: #7ABFCC;
+  --text-3: #3A5A6A;
+  --border-soft: rgba(0, 212, 255, 0.08);
+  --border-medium: rgba(0, 212, 255, 0.18);
+  --border-accent: rgba(0, 212, 255, 0.40);
+  --glow-soft: 0 0 24px rgba(0, 212, 255, 0.08);
+  --glow-medium: 0 0 48px rgba(0, 212, 255, 0.18);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(0, 212, 255, 0.10), transparent 60%),
+    radial-gradient(ellipse 50% 30% at 90% 100%, rgba(0, 212, 255, 0.06), transparent 70%),
+    var(--bg);
+}
+
+.container { max-width: 1280px; margin: 0 auto; padding: 40px 24px 80px; }
+
+.header { margin-bottom: 40px; max-width: 760px; }
+.eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--cyan); margin-bottom: 12px; text-transform: uppercase; }
+h1 { font-family: 'Outfit', sans-serif; font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 14px; }
+.sub { color: var(--text-2); font-size: 16px; line-height: 1.55; }
+
+.layout { display: grid; grid-template-columns: 380px 1fr; gap: 28px; }
+
+@media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
+
+/* ============ CONTROL PANEL ============ */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 28px;
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+}
+
+.panel-title {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.control { margin-bottom: 22px; }
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.control-label-text {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.control-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: -0.02em;
+}
+
+.control-value small {
+  font-size: 10px;
+  color: var(--text-2);
+  font-weight: 400;
+  letter-spacing: 1px;
+  margin-left: 3px;
+  text-transform: uppercase;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--cyan);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+  transition: transform 200ms;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--cyan);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+}
+
+.model-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.model-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 200ms;
+}
+
+.model-tab.active {
+  background: var(--cyan);
+  color: #001828;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+}
+
+.model-tab:hover:not(.active) { color: var(--cyan); }
+
+.opt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-soft);
+}
+
+.opt-row:last-child { border-bottom: none; }
+
+.opt-label {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.opt-desc {
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 1px;
+  letter-spacing: 0.3px;
+}
+
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 200ms;
+  border: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+.toggle.on {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-2);
+  border-radius: 50%;
+  transition: all 200ms;
+}
+
+.toggle.on::after {
+  left: 20px;
+  background: #001828;
+}
+
+/* ============ RESULTS ============ */
+.results { display: flex; flex-direction: column; gap: 20px; }
+
+.hero-card {
+  background: linear-gradient(160deg, var(--cyan-dim), var(--bg-card));
+  border: 1px solid var(--border-accent);
+  border-radius: 22px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--glow-medium);
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--cyan-bright), transparent 70%);
+  pointer-events: none;
+}
+
+.hero-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.hero-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 68px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.hero-value-mxn {
+  font-family: 'Geist Mono', monospace;
+  font-size: 14px;
+  color: var(--text-2);
+  margin-bottom: 18px;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.hero-stat {
+  background: rgba(4, 12, 20, 0.55);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px;
+  backdrop-filter: blur(8px);
+}
+
+.hero-stat-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.hero-stat-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Margin card */
+.margin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.margin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.margin-row:last-child { border-bottom: none; }
+
+.margin-key {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.margin-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.margin-val.cyan { color: var(--cyan); }
+.margin-val.success { color: var(--success); }
+.margin-val.warning { color: var(--warning); }
+.margin-val.danger { color: var(--danger); }
+
+.margin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 14px;
+}
+
+.margin-status.healthy {
+  background: rgba(16, 232, 160, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 232, 160, 0.3);
+}
+
+.margin-status.tight {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.margin-status.bad {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* Breakdown chart */
+.breakdown {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.breakdown-title {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-3);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+.breakdown-bar {
+  display: flex;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.breakdown-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #001828;
+  transition: all 400ms ease-out;
+}
+
+.breakdown-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  color: var(--text-2);
+  font-size: 11px;
+}
+
+.legend-value {
+  font-family: 'Geist Mono', monospace;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Pricing footer */
+.pricing-info {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 18px 22px;
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.6;
+  font-family: 'Geist Mono', monospace;
+}
+
+.pricing-info strong { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="eyebrow">VELUM · COACH IA · COST SIMULATOR</div>
+    <h1>¿Cuánto cuesta el Coach IA?</h1>
+    <p class="sub">Modelo de costo con Claude API. Mueve los sliders, cambia de modelo, activa optimizaciones. Las cifras se recalculan en vivo.</p>
+  </div>
+
+  <div class="layout">
+
+    <!-- ============ PANEL DE CONTROL ============ -->
+    <div class="panel">
+      <div class="panel-title">⚙ VARIABLES</div>
+
+      <div class="control">
+        <div class="control-label">
+          <span class="control-label-text">Atletas activos en IA</span>
+          <span class="control-value" id="v-atletas">1,000<small>atletas</small></span>
+        </div>
+        <input type="range" id="atletas" min="100" max="20000" step="100" value="1000">
+      </div>
+
+      <div class="control">
+        <div class="control-label">
+          <span class="control-label-text">Intensidad de uso</span>
+          <span class="control-value" id="v-intensity">100<small>%</small></span>
+        </div>
+        <input type="range" id="intensity" min="40" max="200" step="10" value="100">
+      </div>
+
+      <div class="control">
+        <div class="control-label">
+          <span class="control-label-text">Pricing VELUM / gym / mes</span>
+          <span class="control-value" id="v-price">$2,500<small>MXN</small></span>
+        </div>
+        <input type="range" id="price" min="1000" max="6000" step="100" value="2500">
+      </div>
+
+      <div class="control">
+        <div class="control-label">
+          <span class="control-label-text">Atletas promedio por gym</span>
+          <span class="control-value" id="v-perGym">100<small></small></span>
+        </div>
+        <input type="range" id="perGym" min="30" max="300" step="10" value="100">
+      </div>
+
+      <div class="control">
+        <div class="control-label">
+          <span class="control-label-text">Modelo Claude</span>
+        </div>
+        <div class="model-tabs">
+          <button class="model-tab" data-model="haiku">Haiku</button>
+          <button class="model-tab active" data-model="hybrid">Híbrido</button>
+          <button class="model-tab" data-model="sonnet">Sonnet</button>
+        </div>
+      </div>
+
+      <div class="panel-title" style="margin-top: 28px;">⚡ OPTIMIZACIONES</div>
+
+      <div class="opt-row">
+        <div>
+          <div class="opt-label">Prompt caching</div>
+          <div class="opt-desc">System prompt + perfil cacheados</div>
+        </div>
+        <div class="toggle on" data-opt="cache"></div>
+      </div>
+
+      <div class="opt-row">
+        <div>
+          <div class="opt-label">Batch API (plan diario)</div>
+          <div class="opt-desc">50% off en procesos nocturnos</div>
+        </div>
+        <div class="toggle on" data-opt="batch"></div>
+      </div>
+
+      <div class="opt-row">
+        <div>
+          <div class="opt-label">Routing inteligente</div>
+          <div class="opt-desc">Haiku para queries simples</div>
+        </div>
+        <div class="toggle on" data-opt="routing"></div>
+      </div>
+
+      <div class="opt-row">
+        <div>
+          <div class="opt-label">Cache de respuestas FAQ</div>
+          <div class="opt-desc">70% queries comunes desde DB</div>
+        </div>
+        <div class="toggle" data-opt="faq"></div>
+      </div>
+
+    </div>
+
+    <!-- ============ RESULTADOS ============ -->
+    <div class="results">
+
+      <!-- Hero card -->
+      <div class="hero-card">
+        <div class="hero-label">Costo mensual estimado</div>
+        <div class="hero-value" id="totalCostUSD">$700</div>
+        <div class="hero-value-mxn" id="totalCostMXN">≈ $12,250 MXN/mes</div>
+
+        <div class="hero-grid">
+          <div class="hero-stat">
+            <div class="hero-stat-label">POR ATLETA</div>
+            <div class="hero-stat-value" id="perAtletaUSD">$0.70</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-label">ANUAL</div>
+            <div class="hero-stat-value" id="annualUSD">$8,400</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-label">TOKENS / MES</div>
+            <div class="hero-stat-value" id="totalTokens">235M</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Margin analysis -->
+      <div class="margin-card">
+        <div class="panel-title">📊 ANÁLISIS DE MARGEN</div>
+        <div class="margin-row">
+          <span class="margin-key">Gyms estimados</span>
+          <span class="margin-val cyan" id="numGyms">25 gyms</span>
+        </div>
+        <div class="margin-row">
+          <span class="margin-key">Revenue mensual VELUM</span>
+          <span class="margin-val success" id="revenueMXN">$62,500 MXN</span>
+        </div>
+        <div class="margin-row">
+          <span class="margin-key">Costo IA mensual</span>
+          <span class="margin-val warning" id="costMXN">$12,250 MXN</span>
+        </div>
+        <div class="margin-row">
+          <span class="margin-key">% del revenue</span>
+          <span class="margin-val" id="costPct">19.6%</span>
+        </div>
+        <div class="margin-row">
+          <span class="margin-key">Margen bruto restante</span>
+          <span class="margin-val cyan" id="marginMXN">$50,250 MXN</span>
+        </div>
+        <div id="status-pill"></div>
+      </div>
+
+      <!-- Cost breakdown -->
+      <div class="breakdown">
+        <div class="breakdown-title">📉 DESGLOSE DE COSTO</div>
+        <div class="breakdown-bar" id="breakdownBar"></div>
+        <div class="breakdown-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #00D4FF;"></div>
+            <div>
+              <div class="legend-label">Output tokens</div>
+              <div class="legend-value" id="legend-out">$420</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #66E8FF;"></div>
+            <div>
+              <div class="legend-label">Input frescos</div>
+              <div class="legend-value" id="legend-in">$220</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #2A4A5A;"></div>
+            <div>
+              <div class="legend-label">Cached reads</div>
+              <div class="legend-value" id="legend-cache">$60</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pricing-info">
+        <strong>// SUPUESTOS:</strong> Cada atleta activo genera ~85K tokens input frescos + ~150K cached + ~64K output por mes, distribuidos entre plan diario (30/mes), chat IA (20/mes), ajustes mid-WOD (8/mes), recap semanal y eventos. Precios Claude API: <strong>Haiku 4.5</strong> $1/$5 por MTok · <strong>Sonnet 4.6</strong> $3/$15 por MTok · cache reads al 10% del input. Tipo de cambio: 17.5 MXN/USD.
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+const USD_TO_MXN = 17.5;
+
+// Base token usage per active athlete per month
+const TOKENS_PER_ATLETA = {
+  inputFresh: 85000,
+  cachedRead: 150000,
+  output: 64000
+};
+
+// Model pricing per million tokens (USD)
+const PRICING = {
+  haiku:   { in: 1.00, out: 5.00,  cacheRead: 0.10 },
+  sonnet:  { in: 3.00, out: 15.00, cacheRead: 0.30 },
+  hybrid:  { in: 2.20, out: 11.00, cacheRead: 0.22 }  // ~60% sonnet 40% haiku weighted
+};
+
+const state = {
+  atletas: 1000,
+  intensity: 100,
+  price: 2500,
+  perGym: 100,
+  model: 'hybrid',
+  opts: { cache: true, batch: true, routing: true, faq: false }
+};
+
+function compute() {
+  const mult = state.intensity / 100;
+  let inputFresh = TOKENS_PER_ATLETA.inputFresh * state.atletas * mult;
+  let cachedRead = TOKENS_PER_ATLETA.cachedRead * state.atletas * mult;
+  let output = TOKENS_PER_ATLETA.output * state.atletas * mult;
+
+  // Optimizations
+  if (!state.opts.cache) {
+    // If no caching, cached portion becomes fresh input at full price
+    inputFresh += cachedRead;
+    cachedRead = 0;
+  }
+
+  let modelKey = state.model;
+  if (state.opts.routing && modelKey === 'sonnet') {
+    // Routing on Sonnet effectively becomes hybrid
+    modelKey = 'hybrid';
+  }
+
+  const p = PRICING[modelKey];
+  let inCost = (inputFresh / 1_000_000) * p.in;
+  let cacheCost = (cachedRead / 1_000_000) * p.cacheRead;
+  let outCost = (output / 1_000_000) * p.out;
+
+  // Batch API: 50% discount applies to ~30% of usage (daily plan generation)
+  if (state.opts.batch) {
+    const batchPortion = 0.30;
+    inCost *= (1 - batchPortion * 0.5);
+    outCost *= (1 - batchPortion * 0.5);
+  }
+
+  // FAQ cache: 70% of chat queries served from DB → ~25% of total tokens eliminated
+  if (state.opts.faq) {
+    const reduction = 0.25;
+    inCost *= (1 - reduction);
+    cacheCost *= (1 - reduction);
+    outCost *= (1 - reduction);
+  }
+
+  const totalCost = inCost + cacheCost + outCost;
+  const totalTokens = inputFresh + cachedRead + output;
+  const numGyms = Math.max(1, Math.round(state.atletas / (state.perGym * 0.4)));
+  const revenue = numGyms * state.price;
+  const costMXN = totalCost * USD_TO_MXN;
+  const pct = (costMXN / revenue) * 100;
+  const margin = revenue - costMXN;
+
+  return {
+    inCost, cacheCost, outCost, totalCost, totalTokens,
+    numGyms, revenue, costMXN, pct, margin,
+    perAtleta: totalCost / Math.max(1, state.atletas)
+  };
+}
+
+function fmt$(n) {
+  if (n >= 1000) return '$' + Math.round(n).toLocaleString('en-US');
+  if (n >= 10) return '$' + n.toFixed(0);
+  if (n >= 1) return '$' + n.toFixed(2);
+  return '$' + n.toFixed(3);
+}
+
+function fmtMXN(n) {
+  return '$' + Math.round(n).toLocaleString('es-MX') + ' MXN';
+}
+
+function fmtTokens(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(0) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+
+function render() {
+  const r = compute();
+
+  // Update slider displays
+  document.getElementById('v-atletas').innerHTML = state.atletas.toLocaleString() + '<small>atletas</small>';
+  document.getElementById('v-intensity').innerHTML = state.intensity + '<small>%</small>';
+  document.getElementById('v-price').innerHTML = '$' + state.price.toLocaleString() + '<small>MXN</small>';
+  document.getElementById('v-perGym').innerHTML = state.perGym + '<small></small>';
+
+  // Hero
+  document.getElementById('totalCostUSD').textContent = fmt$(r.totalCost) + ' USD';
+  document.getElementById('totalCostMXN').textContent = '≈ ' + fmtMXN(r.costMXN) + ' / mes';
+  document.getElementById('perAtletaUSD').textContent = fmt$(r.perAtleta);
+  document.getElementById('annualUSD').textContent = fmt$(r.totalCost * 12);
+  document.getElementById('totalTokens').textContent = fmtTokens(r.totalTokens);
+
+  // Margin
+  document.getElementById('numGyms').textContent = r.numGyms + ' gyms';
+  document.getElementById('revenueMXN').textContent = fmtMXN(r.revenue);
+  document.getElementById('costMXN').textContent = fmtMXN(r.costMXN);
+  document.getElementById('costPct').textContent = r.pct.toFixed(1) + '%';
+  document.getElementById('marginMXN').textContent = fmtMXN(r.margin);
+
+  // Color code pct
+  const pctEl = document.getElementById('costPct');
+  pctEl.classList.remove('success', 'warning', 'danger', 'cyan');
+  if (r.pct < 15) pctEl.classList.add('success');
+  else if (r.pct < 25) pctEl.classList.add('warning');
+  else pctEl.classList.add('danger');
+
+  // Status pill
+  const pill = document.getElementById('status-pill');
+  if (r.pct < 15) {
+    pill.innerHTML = '<div class="margin-status healthy">● MARGEN SANO · BAJO RIESGO</div>';
+  } else if (r.pct < 25) {
+    pill.innerHTML = '<div class="margin-status tight">● MARGEN AJUSTADO · OPTIMIZAR O SUBIR PRICING</div>';
+  } else {
+    pill.innerHTML = '<div class="margin-status bad">● MARGEN ROJO · ADD-ON DE PAGO O TIER FREE/PRO</div>';
+  }
+
+  // Breakdown bar
+  const total = r.inCost + r.cacheCost + r.outCost || 1;
+  const segOut = (r.outCost / total) * 100;
+  const segIn = (r.inCost / total) * 100;
+  const segCache = (r.cacheCost / total) * 100;
+
+  document.getElementById('breakdownBar').innerHTML = `
+    <div class="breakdown-segment" style="background:#00D4FF; width:${segOut}%;">${segOut > 10 ? Math.round(segOut)+'%' : ''}</div>
+    <div class="breakdown-segment" style="background:#66E8FF; width:${segIn}%;">${segIn > 10 ? Math.round(segIn)+'%' : ''}</div>
+    <div class="breakdown-segment" style="background:#2A4A5A; width:${segCache}%; color:var(--text);">${segCache > 8 ? Math.round(segCache)+'%' : ''}</div>
+  `;
+  document.getElementById('legend-out').textContent = fmt$(r.outCost) + ' USD';
+  document.getElementById('legend-in').textContent = fmt$(r.inCost) + ' USD';
+  document.getElementById('legend-cache').textContent = fmt$(r.cacheCost) + ' USD';
+}
+
+// Wire up sliders
+['atletas', 'intensity', 'price', 'perGym'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    state[id] = parseInt(e.target.value);
+    render();
+  });
+});
+
+// Wire up model tabs
+document.querySelectorAll('.model-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.model-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.model = tab.dataset.model;
+    render();
+  });
+});
+
+// Wire up toggles
+document.querySelectorAll('.toggle').forEach(toggle => {
+  toggle.addEventListener('click', () => {
+    toggle.classList.toggle('on');
+    state.opts[toggle.dataset.opt] = toggle.classList.contains('on');
+    render();
+  });
+});
+
+render();
+</script>
+
+</body>
+</html>

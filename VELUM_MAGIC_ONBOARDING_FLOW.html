@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELUM · Magic Onboarding Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #040C14;
+  --bg-2: #06101A;
+  --bg-card: #08121E;
+  --bg-elevated: #0D1B2A;
+  --bg-input: #050E18;
+  --cyan: #00D4FF;
+  --cyan-light: #66E8FF;
+  --cyan-dim: rgba(0, 212, 255, 0.12);
+  --cyan-bright: rgba(0, 212, 255, 0.25);
+  --cyan-dark: #005A7A;
+  --success: #10E8A0;
+  --warning: #FBBF24;
+  --text: #E8EDF5;
+  --text-2: #7ABFCC;
+  --text-3: #3A5A6A;
+  --border-soft: rgba(0, 212, 255, 0.08);
+  --border-medium: rgba(0, 212, 255, 0.18);
+  --border-accent: rgba(0, 212, 255, 0.40);
+  --glow-soft: 0 0 24px rgba(0, 212, 255, 0.08);
+  --glow-medium: 0 0 48px rgba(0, 212, 255, 0.18);
+  --glow-strong: 0 0 96px rgba(0, 212, 255, 0.35);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 212, 255, 0.10), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 0% 80%, rgba(0, 212, 255, 0.06), transparent 70%),
+    var(--bg);
+}
+
+/* ============ TOP HEADER ============ */
+.top {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-soft);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(4, 12, 20, 0.85);
+  backdrop-filter: blur(20px);
+}
+
+.top-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-sym {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.6));
+  animation: breath 4s ease-in-out infinite;
+}
+
+@keyframes breath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.brand-name {
+  font-family: 'Geist Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+
+.subtitle-tag {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  padding: 6px 12px;
+  border: 1px solid var(--border-medium);
+  border-radius: 999px;
+  background: var(--cyan-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ============ INTRO ============ */
+.intro {
+  padding: 56px 32px 32px;
+  text-align: center;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.intro-eyebrow {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.intro h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 18px;
+}
+
+.intro h1 .accent { color: var(--cyan); }
+
+.intro p {
+  font-size: 17px;
+  color: var(--text-2);
+  line-height: 1.55;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* ============ STEP TIMELINE ============ */
+.timeline {
+  padding: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+}
+
+.tl-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: opacity 200ms;
+  opacity: 0.4;
+}
+
+.tl-step:hover { opacity: 0.75; }
+.tl-step.active { opacity: 1; }
+.tl-step.done { opacity: 0.85; }
+
+.tl-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-medium);
+  display: grid;
+  place-items: center;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+  transition: all 220ms var(--ease-out);
+}
+
+.tl-step.active .tl-num {
+  background: var(--cyan);
+  color: #001828;
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+  transform: scale(1.12);
+}
+
+.tl-step.done .tl-num {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.tl-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) { .tl-label { display: none; } }
+
+.tl-divider {
+  width: 24px;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+/* ============ STAGE ============ */
+.stage {
+  padding: 20px 32px 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .stage { grid-template-columns: 1fr; }
+}
+
+/* ============ STAGE VISUAL ============ */
+.stage-visual {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  padding: 48px 32px;
+  min-height: 720px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.stage-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 20%, var(--cyan-dim), transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(0, 212, 255, 0.08), transparent 60%);
+  pointer-events: none;
+}
+
+.scene { display: none; position: relative; width: 100%; }
+.scene.active { display: block; animation: scene-in 600ms var(--ease-out); }
+
+@keyframes scene-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ iPhone Frame ============ */
+.iphone {
+  width: 320px;
+  height: 660px;
+  background: linear-gradient(145deg, #1a2a3a, #0a1420);
+  border-radius: 42px;
+  padding: 9px;
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.08),
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    var(--glow-medium);
+  position: relative;
+  margin: 0 auto;
+}
+
+.iphone-screen {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  border-radius: 34px;
+  overflow: hidden;
+  position: relative;
+}
+
+.iphone-notch {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 22px;
+  background: #000;
+  border-radius: 999px;
+  z-index: 50;
+}
+
+.status-bar {
+  position: absolute;
+  top: 12px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 51;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.status-icons { display: flex; gap: 4px; }
+.status-icons svg { width: 12px; height: 12px; fill: var(--text); }
+
+.phone-content {
+  height: 100%;
+  padding-top: 44px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.phone-content::-webkit-scrollbar { display: none; }
+
+/* ============ STAGE COPY (right side) ============ */
+.stage-copy {
+  padding: 32px 24px;
+  position: sticky;
+  top: 130px;
+}
+
+.copy-step-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 78px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--cyan);
+  margin-bottom: 8px;
+  opacity: 0.85;
+}
+
+.copy-step-num small {
+  font-size: 28px;
+  color: var(--text-3);
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.copy-timing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--border-medium);
+  border-radius: 999px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.copy-step-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.copy-step-desc {
+  font-size: 16px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.copy-bullets {
+  list-style: none;
+  margin-bottom: 28px;
+}
+
+.copy-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.copy-bullet-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px var(--cyan);
+}
+
+.behind-scenes {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 28px;
+}
+
+.bs-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.bs-text {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.bs-text code {
+  color: var(--cyan);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+/* Navigation buttons */
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-btn-large {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: none;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 220ms var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.nav-prev {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-medium);
+}
+
+.nav-prev:hover:not(:disabled) {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.nav-prev:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.nav-next {
+  background: var(--cyan);
+  color: #001828;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.nav-next:hover {
+  background: var(--cyan-light);
+  box-shadow: var(--glow-strong);
+  transform: translateY(-1px);
+}
+
+/* ============ SCENE 1: CHECKOUT ============ */
+.scene-checkout {
+  background: var(--bg);
+  height: 100%;
+  padding: 60px 16px 20px;
+}
+
+.checkout-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 18px;
+  padding: 18px 16px;
+}
+
+.checkout-step {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.checkout-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.checkout-summary {
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+  font-size: 11px;
+}
+
+.cs-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  color: var(--text-2);
+}
+
+.cs-row.total {
+  color: var(--text);
+  border-top: 1px dashed var(--border-soft);
+  padding-top: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cs-row.total strong {
+  color: var(--cyan);
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.checkout-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.processing-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 0;
+  margin-top: 14px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-elevated);
+  border-top-color: var(--cyan);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.processing-text {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.processing-sub {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ============ SCENE 2: SUCCESS PAGE ============ */
+.scene-success {
+  background: var(--bg);
+  height: 100%;
+  padding: 56px 14px 20px;
+}
+
+.success-ring {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 18px;
+  position: relative;
+}
+
+.success-ring svg { transform: rotate(-90deg); }
+.success-ring .ring-bg { stroke: var(--bg-elevated); }
+.success-ring .ring-fg {
+  stroke: var(--cyan);
+  stroke-linecap: round;
+  stroke-dasharray: 282;
+  stroke-dashoffset: 282;
+  animation: draw 1.4s var(--ease-out) forwards;
+  filter: drop-shadow(0 0 12px var(--cyan));
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.success-check {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+  color: var(--cyan);
+  opacity: 0;
+  animation: check-in 500ms var(--ease-spring) 1.2s forwards;
+}
+
+@keyframes check-in {
+  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.6); }
+}
+
+.success-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+
+.success-sub {
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.success-pkg {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.spk-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.spk-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text);
+  padding: 3px 0;
+}
+
+.spk-row.total {
+  border-top: 1px dashed var(--border-soft);
+  padding-top: 8px;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.next-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nc-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cyan-dim);
+  border: 1px solid var(--border-accent);
+  display: grid;
+  place-items: center;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+
+.nc-info { flex: 1; }
+.nc-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.nc-sub { font-size: 10px; color: var(--text-3); }
+
+.nc-arrow svg { width: 14px; height: 14px; fill: var(--cyan); }
+
+.next-card.primary {
+  background: linear-gradient(135deg, var(--cyan-dim), var(--bg-card));
+  border-color: var(--cyan);
+}
+
+/* ============ SCENE 3: WHATSAPP NOTIF ============ */
+.wa-scene {
+  background: linear-gradient(180deg, #1a3a3f, #0f2528);
+  height: 100%;
+  position: relative;
+  padding-top: 44px;
+}
+
+.wa-lockscreen-time {
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 56px;
+  font-weight: 200;
+  letter-spacing: -0.04em;
+  color: white;
+  margin-top: 30px;
+  margin-bottom: 6px;
+}
+
+.wa-lockscreen-date {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 32px;
+}
+
+.wa-notif {
+  margin: 0 12px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  animation: notif-slide 600ms var(--ease-spring) 0.5s both;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+@keyframes notif-slide {
+  from { opacity: 0; transform: translateY(-30px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.wa-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #25D366;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.wa-icon svg { width: 22px; height: 22px; fill: white; }
+
+.wa-notif-body { flex: 1; min-width: 0; }
+
+.wa-notif-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+
+.wa-from {
+  font-weight: 600;
+  font-size: 13px;
+  color: white;
+}
+
+.wa-time-stamp {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+}
+
+.wa-preview {
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Chat opens */
+.wa-chat-view {
+  background: #0B1416;
+  position: absolute;
+  inset: 44px 0 0;
+  display: none;
+  flex-direction: column;
+  animation: slide-in 500ms var(--ease-out);
+}
+
+.wa-chat-view.show { display: flex; }
+
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.wa-chat-header {
+  background: #1F2C32;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wa-back svg { width: 16px; height: 16px; fill: rgba(255,255,255,0.7); }
+
+.wa-chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+  display: grid;
+  place-items: center;
+  color: #001828;
+  font-weight: 800;
+  font-size: 12px;
+  font-family: 'Geist Mono', monospace;
+}
+
+.wa-chat-info { flex: 1; min-width: 0; }
+.wa-chat-name { color: white; font-weight: 600; font-size: 13px; }
+.wa-chat-stat { color: rgba(255,255,255,0.5); font-size: 10px; }
+
+.wa-chat-msgs {
+  flex: 1;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.wa-bubble {
+  background: #1F2C32;
+  border-radius: 8px 8px 8px 2px;
+  padding: 8px 10px;
+  max-width: 90%;
+  font-size: 12px;
+  line-height: 1.45;
+  color: white;
+  align-self: flex-start;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.wa-bubble strong { color: var(--cyan-light); }
+
+.wa-link-card {
+  background: #2A3942;
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 6px;
+  border-left: 3px solid var(--cyan);
+  font-size: 11px;
+}
+
+.wa-link-title { font-weight: 600; margin-bottom: 2px; color: white; }
+.wa-link-url { color: var(--cyan); font-family: 'Geist Mono', monospace; font-size: 10px; }
+
+.wa-bubble-time {
+  font-size: 9px;
+  color: rgba(255,255,255,0.5);
+  align-self: flex-end;
+  margin-left: 10px;
+}
+
+/* ============ SCENE 4: EMAIL ============ */
+.email-scene {
+  background: #1a1a1a;
+  height: 100%;
+}
+
+.email-header {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid #2a2a2a;
+  margin-top: 32px;
+}
+
+.email-from-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.email-from-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+  display: grid;
+  place-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #001828;
+}
+
+.email-from-info { flex: 1; min-width: 0; }
+
+.email-from-name {
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.email-from-detail {
+  color: rgba(255,255,255,0.5);
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+.email-subj {
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 8px 14px;
+  background: #1a1a1a;
+}
+
+.email-body {
+  padding: 16px 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.85);
+}
+
+.email-body h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.email-body p { margin-bottom: 12px; }
+
+.email-receipt-box {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.email-cta {
+  display: block;
+  background: var(--cyan);
+  color: #001828;
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 12px 0;
+  text-decoration: none;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+}
+
+.email-meta {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  margin-top: 16px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 1px;
+}
+
+/* ============ SCENE 5: APP HOME ============ */
+.app-scene {
+  background: var(--bg);
+  height: 100%;
+  padding: 56px 16px 70px;
+  overflow-y: auto;
+}
+
+.welcome-banner {
+  background: linear-gradient(135deg, var(--cyan-dim), var(--bg-card));
+  border: 1px solid var(--border-accent);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, var(--cyan-bright), transparent 70%);
+  pointer-events: none;
+}
+
+.welcome-eyebrow {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.welcome-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.welcome-desc {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.app-ring-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.app-ring-mini {
+  width: 66px;
+  height: 66px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.app-ring-mini svg { transform: rotate(-90deg); }
+.app-ring-mini .bg { stroke: var(--bg-elevated); fill: none; stroke-width: 6; }
+.app-ring-mini .fg {
+  stroke: var(--cyan);
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 188;
+  stroke-dashoffset: 188;
+  animation: draw2 1.4s var(--ease-out) forwards;
+  filter: drop-shadow(0 0 6px var(--cyan));
+}
+
+@keyframes draw2 {
+  to { stroke-dashoffset: 188; } /* 0% para nuevo atleta */
+}
+
+.app-ring-pct {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.app-ring-info-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.app-ring-info-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.app-ring-info-sub {
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.first-class-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-accent);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--glow-soft);
+  margin-bottom: 10px;
+}
+
+.fc-badge {
+  display: inline-block;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.fc-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.fc-coach {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+
+.fc-cta {
+  width: 100%;
+  background: var(--cyan);
+  color: #001828;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(8, 18, 30, 0.92);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  padding: 8px 16px 18px;
+  justify-content: space-around;
+}
+
+.bn-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-3);
+}
+
+.bn-item.active { color: var(--cyan); }
+
+.bn-item svg { width: 18px; height: 18px; fill: currentColor; }
+
+.bn-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.8px;
+}
+
+/* ============ SCENE 6: COACH IA CHAT ============ */
+.ia-scene {
+  background: var(--bg);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ia-header {
+  padding: 50px 14px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ia-avatar-sc {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: var(--glow-soft);
+}
+
+.ia-avatar-sc svg { width: 22px; height: 22px; fill: #001828; }
+
+.ia-h-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.ia-h-stat {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.ia-h-stat .pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: pulse-d 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-d {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.ia-chat-msgs {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.ia-bubble {
+  max-width: 84%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  animation: msg-pop 400ms var(--ease-out) both;
+}
+
+@keyframes msg-pop {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ia-bubble.ai {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+  align-self: flex-start;
+}
+
+.ia-bubble.ai strong { color: var(--cyan); }
+
+.plan-preview {
+  background: linear-gradient(135deg, var(--cyan-dim), transparent);
+  border: 1px solid var(--border-accent);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.pp-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.pp-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.pp-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-2);
+  padding: 2px 0;
+}
+
+.pp-row strong { color: var(--text); }
+
+.suggest-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 14px 12px;
+}
+
+.suggest-c {
+  padding: 5px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 999px;
+  color: var(--cyan);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.ia-input-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 16px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg-input);
+}
+
+.ia-input-fld {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 11px;
+  padding: 6px;
+  pointer-events: none;
+}
+
+.ia-send {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--cyan);
+  display: grid;
+  place-items: center;
+}
+
+.ia-send svg { width: 12px; height: 12px; fill: #001828; }
+
+/* ============ INSIGHT BLOCK ============ */
+.insight-block {
+  background: linear-gradient(135deg, var(--cyan-dim), transparent);
+  border: 1px solid var(--border-accent);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 24px;
+}
+
+.insight-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.insight-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.insight-text strong { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP ============ -->
+<div class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <svg class="brand-sym" viewBox="0 0 100 100">
+        <polygon points="50,5 65,35 95,50 65,65 50,95 35,65 5,50 35,35" fill="#00D4FF"/>
+      </svg>
+      <span class="brand-name">VELUM</span>
+    </div>
+    <span class="subtitle-tag">// Magic Onboarding Flow</span>
+  </div>
+</div>
+
+<!-- ============ INTRO ============ -->
+<div class="intro">
+  <div class="intro-eyebrow">PASO A PASO · POST-COMPRA</div>
+  <h1>De pagar a su <span class="accent">primera clase reservada</span> en menos de 60 segundos.</h1>
+  <p>Cero contraseñas. Cero códigos. Cero fricción. Así se ve el flujo completo desde que el cliente paga hasta que está dentro de la app con Coach IA listo.</p>
+</div>
+
+<!-- ============ TIMELINE ============ -->
+<div class="timeline">
+  <div class="timeline-track" id="timeline">
+    <!-- Inyectado por JS -->
+  </div>
+</div>
+
+<!-- ============ STAGE ============ -->
+<div class="stage">
+
+  <!-- VISUAL -->
+  <div class="stage-visual">
+
+    <!-- SCENE 1: CHECKOUT PROCESSING -->
+    <div class="scene active" data-scene="1">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="iphone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="phone-content scene-checkout">
+            <div class="checkout-card">
+              <div class="checkout-step">PASO 3 DE 3 · PAGO</div>
+              <div class="checkout-title">Iron Box Bajío</div>
+
+              <div class="checkout-summary">
+                <div class="cs-row"><span>Pack 10 clases</span><span>$1,500</span></div>
+                <div class="cs-row"><span>IVA</span><span>incluido</span></div>
+                <div class="cs-row total"><span>Total</span><strong>$1,500</strong></div>
+              </div>
+
+              <input class="checkout-input" value="4242 4242 4242 4242" disabled>
+              <input class="checkout-input" value="•••• •••• MM/YY · CVC" disabled>
+
+              <div class="processing-state">
+                <div class="spinner"></div>
+                <div class="processing-text">Procesando tu pago</div>
+                <div class="processing-sub">Stripe valida tu tarjeta...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 2: SUCCESS PAGE -->
+    <div class="scene" data-scene="2">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="iphone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="phone-content scene-success">
+            <div class="success-ring">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle class="ring-bg" cx="50" cy="50" r="45" fill="none" stroke-width="7"/>
+                <circle class="ring-fg" cx="50" cy="50" r="45" fill="none" stroke-width="7"/>
+              </svg>
+              <div class="success-check">✓</div>
+            </div>
+
+            <div class="success-title">¡Bienvenido,<br>Daniel!</div>
+            <div class="success-sub">Tu compra en Iron Box Bajío está lista</div>
+
+            <div class="success-pkg">
+              <div class="spk-label">TU PAQUETE</div>
+              <div class="spk-row"><span>Pack 10 clases</span><span>60 días</span></div>
+              <div class="spk-row total"><span>Total pagado</span><span style="color: var(--cyan); font-weight:700;">$1,500</span></div>
+            </div>
+
+            <div class="next-card primary">
+              <div class="nc-num">1</div>
+              <div class="nc-info">
+                <div class="nc-title">Reserva tu 1ra clase</div>
+                <div class="nc-sub">Ver horario semanal</div>
+              </div>
+              <div class="nc-arrow">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+
+            <div class="next-card">
+              <div class="nc-num">2</div>
+              <div class="nc-info">
+                <div class="nc-title">Descargar app móvil</div>
+                <div class="nc-sub">iOS · Android · QR</div>
+              </div>
+              <div class="nc-arrow">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+
+            <div class="next-card">
+              <div class="nc-num">3</div>
+              <div class="nc-info">
+                <div class="nc-title">Hablar con Coach IA</div>
+                <div class="nc-sub">Tu plan ya está listo</div>
+              </div>
+              <div class="nc-arrow">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 3: WHATSAPP NOTIFICATION -->
+    <div class="scene" data-scene="3">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="iphone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+            </div>
+          </div>
+          <div class="wa-scene">
+            <div class="wa-lockscreen-time">9:41</div>
+            <div class="wa-lockscreen-date">JUEVES, 21 DE MAYO</div>
+
+            <div class="wa-notif">
+              <div class="wa-icon">
+                <svg viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+              </div>
+              <div class="wa-notif-body">
+                <div class="wa-notif-head">
+                  <span class="wa-from">Iron Box Bajío</span>
+                  <span class="wa-time-stamp">ahora</span>
+                </div>
+                <div class="wa-preview">¡Bienvenido a Iron Box Bajío, Daniel! 🎉 Tu Coach IA personal ya tiene tu plan inicial listo. 👉 Abre tu app aquí (sin contraseña)...</div>
+              </div>
+            </div>
+
+            <!-- Chat expanded view -->
+            <div class="wa-chat-view show">
+              <div class="wa-chat-header">
+                <div class="wa-back">
+                  <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </div>
+                <div class="wa-chat-avatar">IB</div>
+                <div class="wa-chat-info">
+                  <div class="wa-chat-name">Iron Box Bajío</div>
+                  <div class="wa-chat-stat">cuenta de empresa · en línea</div>
+                </div>
+              </div>
+
+              <div class="wa-chat-msgs">
+                <div class="wa-bubble">
+                  ¡Bienvenido a <strong>Iron Box Bajío, Daniel!</strong> 🎉<br><br>
+                  Tu compra está lista. Tu Coach IA personal ya tiene tu plan inicial preparado.
+                  <span class="wa-bubble-time">9:41 ✓✓</span>
+                </div>
+
+                <div class="wa-bubble">
+                  👉 Abre tu app aquí (sin contraseña):
+                  <div class="wa-link-card">
+                    <div class="wa-link-title">Abrir mi app VELUM</div>
+                    <div class="wa-link-url">myvelum.app/m/abc123...</div>
+                  </div>
+                  Este link funciona desde cualquier dispositivo.
+                  <span class="wa-bubble-time">9:41 ✓✓</span>
+                </div>
+
+                <div class="wa-bubble">
+                  📱 App iOS: apps.apple.com/...<br>
+                  📱 App Android: play.google.com/...<br><br>
+                  ¿Dudas? Responde este chat — te ayudamos en minutos.<br><br>
+                  — <strong>Coach Daniel</strong>
+                  <span class="wa-bubble-time">9:41 ✓✓</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 4: EMAIL -->
+    <div class="scene" data-scene="4">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="iphone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="email-scene">
+            <div class="email-header">
+              <div class="email-from-row">
+                <div class="email-from-avatar">IB</div>
+                <div class="email-from-info">
+                  <div class="email-from-name">Iron Box Bajío</div>
+                  <div class="email-from-detail">via myvelum.app · hace 30s</div>
+                </div>
+              </div>
+            </div>
+            <div class="email-subj">¡Bienvenido a Iron Box, Daniel! Tu plan está listo 💪</div>
+
+            <div class="email-body">
+              <h3>Tu compra fue exitosa</h3>
+              <p>Hola Daniel, gracias por confiar en nosotros. Tu Coach IA personal ya tiene tu primer plan preparado y tu cuenta en la app ya está activa.</p>
+
+              <div class="email-receipt-box">
+                <div style="font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--cyan); margin-bottom: 6px; text-transform: uppercase;">RECIBO</div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0;"><span>Pack 10 clases</span><span>$1,500 MXN</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; color: rgba(255,255,255,0.5);"><span>Vigencia</span><span>60 días</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; color: rgba(255,255,255,0.5);"><span>Folio</span><span>VEL-2026-0521</span></div>
+              </div>
+
+              <p>Para empezar a reservar tus clases, abre la app con este link:</p>
+
+              <a class="email-cta">ABRIR MI APP →</a>
+
+              <p style="font-size: 11px; color: rgba(255,255,255,0.5); text-align: center;">Este link es único y funciona por 30 días sin necesidad de contraseña</p>
+
+              <div class="email-meta">// PROCESADO POR STRIPE · myvelum.app</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 5: APP HOME (logged in) -->
+    <div class="scene" data-scene="5">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="iphone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="app-scene">
+
+            <div class="welcome-banner">
+              <div class="welcome-eyebrow">★ BIENVENIDO</div>
+              <div class="welcome-title">Hola, Daniel 👋</div>
+              <div class="welcome-desc">Tu Coach IA tiene tu primer plan listo. Reserva tu primera clase abajo.</div>
+            </div>
+
+            <div class="app-ring-card">
+              <div class="app-ring-mini">
+                <svg width="66" height="66" viewBox="0 0 66 66">
+                  <circle class="bg" cx="33" cy="33" r="30"/>
+                  <circle class="fg" cx="33" cy="33" r="30"/>
+                </svg>
+                <div class="app-ring-pct">0%</div>
+              </div>
+              <div>
+                <div class="app-ring-info-label">META SEMANAL</div>
+                <div class="app-ring-info-val">0 / 3</div>
+                <div class="app-ring-info-sub">Empieza con tu primera clase</div>
+              </div>
+            </div>
+
+            <div class="first-class-card">
+              <span class="fc-badge">★ TU PRIMERA CLASE</span>
+              <div class="fc-title">Foundations · Mañana 9 AM</div>
+              <div class="fc-coach">con Coach Daniel · Recomendada por IA</div>
+              <button class="fc-cta">RESERVAR</button>
+            </div>
+
+            <div style="background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px 12px; margin-top: 10px;">
+              <div style="font-family: 'Geist Mono', monospace; font-size: 9px; color: var(--text-3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px;">SIGUIENTE PASO</div>
+              <div style="font-size: 11px;">📩 Coach IA te mandó un mensaje</div>
+            </div>
+
+          </div>
+
+          <div class="bottom-nav">
+            <div class="bn-item active">
+              <svg viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg>
+              <span class="bn-label">HOME</span>
+            </div>
+            <div class="bn-item">
+              <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V10h14z"/></svg>
+              <span class="bn-label">CLASES</span>
+            </div>
+            <div class="bn-item">
+              <svg viewBox="0 0 24 24"><polygon points="12,2 14.5,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9.5,9"/></svg>
+              <span class="bn-label">PLAN</span>
+            </div>
+            <div class="bn-item">
+              <svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+              <span class="bn-label">PROG</span>
+            </div>
+            <div class="bn-item">
+              <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+              <span class="bn-label">YO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 6: COACH IA CHAT -->
+    <div class="scene" data-scene="6">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="iphone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="ia-scene">
+            <div class="ia-header">
+              <div class="ia-avatar-sc">
+                <svg viewBox="0 0 100 100"><polygon points="50,5 65,35 95,50 65,65 50,95 35,65 5,50 35,35"/></svg>
+              </div>
+              <div>
+                <div class="ia-h-name">Coach IA</div>
+                <div class="ia-h-stat">
+                  <span class="pulse"></span>
+                  ACTIVO · LISTO PARA TI
+                </div>
+              </div>
+            </div>
+
+            <div class="ia-chat-msgs">
+              <div class="ia-bubble ai">¡Hola Daniel! 🎉 Soy Coach IA. Vi que vienes con objetivo de <strong>hipertrofia</strong> y disponibilidad de 3 días/semana.</div>
+
+              <div class="ia-bubble ai">Te armé tu primer plan considerando que eres nuevo en CrossFit. Vamos a enfocarnos en técnica las primeras 4 semanas:</div>
+
+              <div class="ia-bubble ai" style="padding: 0; background: transparent; border: none;">
+                <div class="plan-preview">
+                  <div class="pp-label">★ TU PLAN · SEMANA 1</div>
+                  <div class="pp-title">Plan Foundations + Strength</div>
+                  <div class="pp-row"><span>Lunes</span><strong>Foundations · 9 AM</strong></div>
+                  <div class="pp-row"><span>Miércoles</span><strong>Strength · 7 PM</strong></div>
+                  <div class="pp-row"><span>Sábado</span><strong>WOD Open · 10 AM</strong></div>
+                  <div class="pp-row" style="border-top: 1px dashed var(--border-soft); padding-top: 6px; margin-top: 4px;"><span>Focus</span><strong>Técnica · 80% volumen</strong></div>
+                </div>
+              </div>
+
+              <div class="ia-bubble ai">¿Te late? Si quieres ajustar algo (horario, ejercicios, intensidad), dime y lo modifico ahora mismo. 💪</div>
+            </div>
+
+            <div class="suggest-row">
+              <span class="suggest-c">📅 Reservar lunes 9 AM</span>
+              <span class="suggest-c">🔄 Cambiar día</span>
+              <span class="suggest-c">📊 Ver más detalle</span>
+              <span class="suggest-c">❓ Qué llevar</span>
+            </div>
+
+            <div class="ia-input-row">
+              <input class="ia-input-fld" placeholder="Pregúntale a Coach IA..." disabled>
+              <div class="ia-send">
+                <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COPY / CONTEXT -->
+  <div class="stage-copy">
+    <div class="copy-step-num"><span id="stepNum">01</span><small>/ 06</small></div>
+    <div class="copy-timing" id="copyTiming">⏱ T+ 0 SEG</div>
+
+    <h2 class="copy-step-title" id="copyTitle">Cliente paga en Storefront</h2>
+    <p class="copy-step-desc" id="copyDesc">El prospect terminó de chatear con Coach IA, eligió su paquete y captura su tarjeta en checkout. Stripe procesa el pago.</p>
+
+    <ul class="copy-bullets" id="copyBullets">
+      <li class="copy-bullet"><div class="copy-bullet-dot"></div><div>Stripe valida tarjeta (5 segundos)</div></li>
+      <li class="copy-bullet"><div class="copy-bullet-dot"></div><div>El cliente NO crea cuenta ni elige contraseña</div></li>
+      <li class="copy-bullet"><div class="copy-bullet-dot"></div><div>Solo da: nombre, email, WhatsApp y tarjeta</div></li>
+    </ul>
+
+    <div class="behind-scenes">
+      <div class="bs-label">// BEHIND THE SCENES</div>
+      <div class="bs-text" id="bsText">
+        <code>POST /api/checkout</code> crea PaymentIntent con <code>application_fee_amount</code> = 2% comisión VELUM. Stripe Connect dirige el monto al gym automáticamente. El cliente nunca toca tu sistema directamente.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="nav-btn-large nav-prev" id="btnPrev" disabled>← Atrás</button>
+      <button class="nav-btn-large nav-next" id="btnNext">Siguiente →</button>
+    </div>
+
+    <div class="insight-block">
+      <div class="insight-label">★ INSIGHT VELUM</div>
+      <div class="insight-text">
+        En sistemas tradicionales el cliente pierde 30-50% de su energía emocional entre <strong>"pagué"</strong> y <strong>"estoy adentro"</strong>. VELUM colapsa ese tiempo a cero.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const steps = [
+  {
+    num: '01',
+    title: 'Cliente paga en Storefront',
+    desc: 'El prospect terminó de chatear con Coach IA, eligió su paquete y captura su tarjeta en checkout. Stripe procesa el pago.',
+    timing: '⏱ T+ 0 SEG',
+    bullets: [
+      'Stripe valida tarjeta (5 segundos)',
+      'El cliente NO crea cuenta ni elige contraseña',
+      'Solo da: nombre, email, WhatsApp y tarjeta'
+    ],
+    bs: '<code>POST /api/checkout</code> crea PaymentIntent con <code>application_fee_amount</code> = 2% comisión VELUM. Stripe Connect dirige el monto al gym automáticamente. El cliente nunca toca tu sistema directamente.',
+    insight: 'En sistemas tradicionales el cliente pierde 30-50% de su energía emocional entre <strong>"pagué"</strong> y <strong>"estoy adentro"</strong>. VELUM colapsa ese tiempo a cero.'
+  },
+  {
+    num: '02',
+    title: 'Success Page · YA LOGUEADO',
+    desc: 'La pantalla de éxito aparece con sesión activa. Sin login, sin contraseña, sin código. Solo 3 botones grandes: reservar clase, descargar app, hablar con Coach IA.',
+    timing: '⏱ T+ 5 SEG',
+    bullets: [
+      'Ring cyan que cierra con animación de check',
+      'Resumen del paquete con folio y vigencia',
+      '3 cards de "next steps" jerarquizados (la 1ra destacada)',
+      'Cliente está autenticado SIN haber escrito ni una contraseña'
+    ],
+    bs: 'Webhook de Stripe <code>payment_intent.succeeded</code> dispara: 1) <code>supabase.auth.admin.createUser()</code> sin password, 2) genera session token (1 hora), 3) asocia gym + paquete, 4) redirige a success con token en URL.',
+    insight: 'Este paso es el más crítico de todo el flow. Aquí es donde el 60% de los SaaS pierden a sus clientes recién pagados.'
+  },
+  {
+    num: '03',
+    title: 'WhatsApp llega al teléfono',
+    desc: 'En paralelo al success page, el cliente recibe un WhatsApp del gym (vía Meta Business API) con su magic link. Sin contraseñas, sin códigos. Solo un link que funciona.',
+    timing: '⏱ T+ 30 SEG',
+    bullets: [
+      'WhatsApp Business API manda template aprobado por Meta',
+      'Magic link único válido 30 días desde cualquier dispositivo',
+      'Links a App Store + Google Play para descarga móvil',
+      'Coach Daniel personalizado en la firma del mensaje'
+    ],
+    bs: 'Edge function <code>onboarding-send</code> usa <code>graph.facebook.com/v18.0/{PHONE_ID}/messages</code> con template <code>velum_welcome_magic</code> aprobado previamente. Latencia típica: 200-500ms.',
+    insight: 'El cliente puede cerrar el browser sin miedo. El link en WhatsApp + email es backup permanente. <strong>Imposible perder el acceso.</strong>'
+  },
+  {
+    num: '04',
+    title: 'Email con recibo + magic link',
+    desc: 'Email transaccional con recibo formal, datos del paquete, link mágico para entrar y guía de "qué llevar". El cliente tiene 3 puntos de entrada redundantes.',
+    timing: '⏱ T+ 45 SEG',
+    bullets: [
+      'Recibo formal con folio y vigencia',
+      'CTA principal: "Abrir mi app" (magic link)',
+      'Instrucciones para primera clase (horario, qué llevar)',
+      'Sin "número de cliente" ni códigos absurdos'
+    ],
+    bs: 'Edge function dispara email vía <code>Resend</code> o <code>SendGrid</code>. Template HTML con tokens para personalización. Magic link genera con <code>supabase.auth.admin.generateLink({ type: "magiclink" })</code>.',
+    insight: 'El email NO es lo principal — es respaldo. El cliente ya está dentro desde la success page. Pero si quiere abrir en su laptop después, el email tiene todo.'
+  },
+  {
+    num: '05',
+    title: 'App abierta · Cero fricción',
+    desc: 'Click en cualquier link (success page, WhatsApp o email) → app abre directamente en Home con sesión activa. Banner de bienvenida personalizado. Sin login screen.',
+    timing: '⏱ T+ 60 SEG',
+    bullets: [
+      'Welcome banner cyan con nombre del cliente',
+      'Ring de meta semanal en 0/3 (recién empieza)',
+      'Card destacada: "Tu primera clase recomendada"',
+      'Notificación en home: "Coach IA te mandó un mensaje"'
+    ],
+    bs: 'Si abre desde browser: <code>atleta.html?token=xxx</code> setea cookie de sesión. Si abre desde app móvil: <code>velum://login?token=xxx</code> via Universal Links (iOS) o App Links (Android) gestionados por Capacitor.',
+    insight: 'A este punto el cliente lleva <strong>60 segundos</strong> desde que pagó. Comparado con sistemas tradicionales (20-90 minutos), VELUM colapsa el time-to-value en 99%.'
+  },
+  {
+    num: '06',
+    title: 'Coach IA está esperándolo',
+    desc: 'El cliente abre el chat de Coach IA y encuentra un mensaje personalizado con su primer plan ya armado, basado en objetivos capturados durante checkout. Cero setup manual.',
+    timing: '⏱ T+ 60 SEG (paralelo)',
+    bullets: [
+      'IA usa contexto del checkout (objetivo, nivel, disponibilidad)',
+      'Plan de Semana 1 generado y listo para ver',
+      'Sugerencias clickeables: reservar, ajustar, ver detalle',
+      'Tono cálido pero directo, en español MX'
+    ],
+    bs: 'Edge function <code>generate-initial-plan</code> corre en background post-pago. Llama Claude Sonnet con system prompt: perfil del gym + objetivo del cliente + disponibilidad + historial vacío. Output: plan semanal + mensaje de bienvenida.',
+    insight: 'Coach IA es el cierre del flow: convierte "te di acceso" en <strong>"ya tengo un coach personal"</strong>. Es lo que retiene al cliente más allá de la primera clase.'
+  }
+];
+
+// Build timeline
+const timelineEl = document.getElementById('timeline');
+const labels = ['Paga', 'Success', 'WhatsApp', 'Email', 'App', 'Coach IA'];
+steps.forEach((s, i) => {
+  const stepDiv = document.createElement('div');
+  stepDiv.className = 'tl-step' + (i === 0 ? ' active' : '');
+  stepDiv.dataset.idx = i;
+  stepDiv.innerHTML = `
+    <div class="tl-num">${i + 1}</div>
+    <div class="tl-label">${labels[i]}</div>
+  `;
+  stepDiv.addEventListener('click', () => goTo(i));
+  timelineEl.appendChild(stepDiv);
+  if (i < steps.length - 1) {
+    const div = document.createElement('div');
+    div.className = 'tl-divider';
+    timelineEl.appendChild(div);
+  }
+});
+
+let currentStep = 0;
+
+function render() {
+  const s = steps[currentStep];
+
+  document.getElementById('stepNum').textContent = s.num;
+  document.getElementById('copyTitle').textContent = s.title;
+  document.getElementById('copyDesc').textContent = s.desc;
+  document.getElementById('copyTiming').textContent = s.timing;
+  document.getElementById('bsText').innerHTML = s.bs;
+
+  const bulletsList = document.getElementById('copyBullets');
+  bulletsList.innerHTML = s.bullets.map(b => `
+    <li class="copy-bullet">
+      <div class="copy-bullet-dot"></div>
+      <div>${b}</div>
+    </li>
+  `).join('');
+
+  document.querySelector('.insight-text').innerHTML = s.insight;
+
+  // Update scenes
+  document.querySelectorAll('.scene').forEach((sc, idx) => {
+    sc.classList.toggle('active', idx === currentStep);
+  });
+
+  // Update timeline
+  document.querySelectorAll('.tl-step').forEach((tl, idx) => {
+    tl.classList.remove('active', 'done');
+    if (idx === currentStep) tl.classList.add('active');
+    else if (idx < currentStep) tl.classList.add('done');
+  });
+
+  // Update nav buttons
+  document.getElementById('btnPrev').disabled = currentStep === 0;
+  document.getElementById('btnNext').textContent = currentStep === steps.length - 1 ? 'Reiniciar ↺' : 'Siguiente →';
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= steps.length) {
+    currentStep = 0;
+  } else {
+    currentStep = idx;
+  }
+  render();
+}
+
+document.getElementById('btnNext').addEventListener('click', () => {
+  if (currentStep === steps.length - 1) goTo(0);
+  else goTo(currentStep + 1);
+});
+
+document.getElementById('btnPrev').addEventListener('click', () => goTo(currentStep - 1));
+
+// Keyboard arrows
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') goTo(currentStep + 1);
+  if (e.key === 'ArrowLeft') goTo(currentStep - 1);
+});
+
+render();
+</script>
+
+</body>
+</html>

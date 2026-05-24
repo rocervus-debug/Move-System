@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELUM Admin · Registrar Pago</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #040C14;
+  --bg-2: #06101A;
+  --bg-card: #08121E;
+  --bg-elevated: #0D1B2A;
+  --bg-input: #050E18;
+  --cyan: #00D4FF;
+  --cyan-light: #66E8FF;
+  --cyan-dim: rgba(0, 212, 255, 0.12);
+  --cyan-bright: rgba(0, 212, 255, 0.25);
+  --cyan-dark: #005A7A;
+  --success: #10E8A0;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --text: #E8EDF5;
+  --text-2: #7ABFCC;
+  --text-3: #3A5A6A;
+  --border-soft: rgba(0, 212, 255, 0.08);
+  --border-medium: rgba(0, 212, 255, 0.18);
+  --border-accent: rgba(0, 212, 255, 0.40);
+  --glow-soft: 0 0 24px rgba(0, 212, 255, 0.08);
+  --glow-medium: 0 0 48px rgba(0, 212, 255, 0.18);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 212, 255, 0.08), transparent 60%),
+    var(--bg);
+}
+
+/* TOP NAV (admin) */
+.admin-top {
+  background: rgba(4, 12, 20, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 16px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.admin-top-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-logo {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.6));
+}
+
+.admin-name {
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 3px;
+}
+
+.admin-name small {
+  color: var(--text-3);
+  letter-spacing: 1.5px;
+  margin-left: 8px;
+}
+
+.admin-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.admin-context strong { color: var(--cyan); font-weight: 600; }
+
+/* MAIN CONTAINER */
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 24px;
+}
+
+.breadcrumb a { color: var(--text-2); text-decoration: none; }
+.breadcrumb a:hover { color: var(--cyan); }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-title-block h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.page-sub {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.action-btn-text {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-medium);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* CARDS */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.card-head-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--border-accent);
+  display: grid;
+  place-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  color: var(--cyan);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.card-head-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.card-head-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.required {
+  display: inline-block;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+
+/* FORM */
+.form-group { margin-bottom: 20px; }
+.form-group:last-child { margin-bottom: 0; }
+
+.form-label {
+  display: block;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.form-label .req-star { color: var(--cyan); margin-left: 4px; }
+
+.form-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  transition: border 200ms;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--cyan);
+  background: var(--bg-elevated);
+}
+
+.form-input::placeholder { color: var(--text-3); }
+
+.form-input.with-icon {
+  padding-left: 44px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="rgba(122,191,204,0.6)"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 18px;
+}
+
+/* CLIENTE SEARCH RESULT */
+.cliente-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cliente-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+  display: grid;
+  place-items: center;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  color: #001828;
+  font-size: 14px;
+}
+
+.cliente-info { flex: 1; }
+.cliente-name { font-weight: 600; font-size: 14px; }
+.cliente-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.cliente-meta strong { color: var(--cyan); }
+
+.cliente-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.cliente-clear:hover { color: var(--danger); }
+
+/* PACKAGE DROPDOWN */
+.pkg-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pkg-option {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 220ms var(--ease-out);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.pkg-option:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-elevated);
+}
+
+.pkg-option.selected {
+  border-color: var(--cyan);
+  background: linear-gradient(135deg, var(--cyan-dim), var(--bg-card));
+  box-shadow: var(--glow-soft);
+}
+
+.pkg-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-3);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: all 200ms;
+}
+
+.pkg-option.selected .pkg-radio {
+  border-color: var(--cyan);
+  background: var(--cyan);
+}
+
+.pkg-option.selected .pkg-radio::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #001828;
+}
+
+.pkg-option-info { flex: 1; }
+.pkg-option-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.pkg-option-desc {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.pkg-option-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.pkg-option-price {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.pkg-option-price small {
+  display: block;
+  font-size: 9px;
+  color: var(--text-3);
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 1px;
+  font-weight: 400;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.pkg-option-tag {
+  position: absolute;
+  top: 12px;
+  right: 80px;
+  background: var(--warning);
+  color: #1a1300;
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.pkg-option.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pkg-option.locked .pkg-option-name {
+  text-decoration: line-through;
+}
+
+/* DISCOUNT TOGGLE */
+.discount-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 220ms;
+}
+
+.discount-toggle-row:hover { border-color: var(--border-medium); }
+
+.discount-toggle-row.on {
+  background: linear-gradient(135deg, var(--cyan-dim), var(--bg-elevated));
+  border-color: var(--cyan);
+}
+
+.discount-toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.discount-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  color: var(--cyan);
+}
+
+.discount-icon svg { width: 16px; height: 16px; fill: currentColor; }
+
+.discount-toggle-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.discount-toggle-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  transition: all 200ms;
+}
+
+.discount-toggle-row.on .toggle-switch {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--text-2);
+  border-radius: 50%;
+  transition: all 200ms;
+}
+
+.discount-toggle-row.on .toggle-switch::after {
+  left: 22px;
+  background: #001828;
+}
+
+/* DISCOUNT FIELDS (collapsed by default) */
+.discount-fields {
+  margin-top: 14px;
+  padding: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: 14px;
+  display: none;
+  animation: slide-in 320ms var(--ease-out);
+}
+
+.discount-fields.show { display: block; }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.price-row-discount {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.price-display {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.price-display-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.price-display-value {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.price-display-value.list {
+  color: var(--text-2);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-3);
+}
+
+.price-display-value.applied { color: var(--cyan); }
+
+.discount-input-wrap {
+  position: relative;
+}
+
+.discount-input-wrap .currency-prefix {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.discount-amount-input {
+  padding-left: 32px !important;
+}
+
+.discount-pct {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--success);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* DISCOUNT REASONS */
+.reasons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) { .reasons-grid { grid-template-columns: 1fr 1fr; } }
+
+.reason-btn {
+  background: var(--bg);
+  border: 1.5px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 200ms;
+  position: relative;
+}
+
+.reason-btn:hover {
+  border-color: var(--border-medium);
+}
+
+.reason-btn.selected {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.reason-btn-icon { display: inline-block; margin-right: 6px; }
+
+.reason-btn-name { font-weight: 600; }
+
+.reason-note-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 60px;
+  margin-top: 6px;
+}
+
+.reason-note-textarea:focus { outline: none; border-color: var(--cyan); }
+
+.reason-note-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+/* PAYMENT METHODS */
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 600px) { .method-grid { grid-template-columns: 1fr 1fr; } }
+
+.method-btn {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 200ms;
+}
+
+.method-btn:hover { border-color: var(--border-medium); }
+
+.method-btn.selected {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+}
+
+.method-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--text-2);
+  margin-bottom: 6px;
+}
+
+.method-btn.selected .method-icon svg { fill: var(--cyan); }
+
+.method-name {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.method-btn.selected .method-name { color: var(--cyan); }
+
+/* SIDEBAR SUMMARY */
+.summary-sidebar {
+  position: sticky;
+  top: 110px;
+  height: fit-content;
+}
+
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: var(--glow-soft);
+}
+
+.summary-title {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-soft);
+}
+
+.summary-row:last-of-type { border-bottom: none; }
+
+.summary-key {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.summary-val {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.summary-val.muted { color: var(--text-3); }
+
+.summary-val.discount-row { color: var(--warning); }
+
+.summary-total {
+  margin-top: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, var(--cyan-dim), var(--bg-elevated));
+  border: 1px solid var(--border-accent);
+  border-radius: 14px;
+}
+
+.summary-total-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.summary-total-amount {
+  font-family: 'Outfit', sans-serif;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--cyan);
+  line-height: 1;
+}
+
+.summary-total-amount small {
+  font-size: 14px;
+  color: var(--text-2);
+  font-weight: 400;
+  letter-spacing: 1px;
+  margin-left: 4px;
+}
+
+.summary-warnings {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--warning);
+  line-height: 1.5;
+  display: none;
+}
+
+.summary-warnings.show { display: block; }
+
+.summary-warnings strong {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.submit-btn {
+  width: 100%;
+  margin-top: 18px;
+  background: var(--cyan);
+  color: #001828;
+  border: none;
+  padding: 16px;
+  border-radius: 14px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 220ms var(--ease-out);
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--cyan-light);
+  transform: translateY(-1px);
+  box-shadow: 0 0 48px rgba(0, 212, 255, 0.5);
+}
+
+.submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cancel-btn {
+  width: 100%;
+  margin-top: 10px;
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-medium);
+  padding: 14px;
+  border-radius: 14px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* RULES INFO BOX */
+.rules-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-top: 24px;
+}
+
+.rules-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.rules-list { list-style: none; }
+
+.rules-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.5;
+  padding: 4px 0;
+}
+
+.rules-list li::before {
+  content: '✓';
+  color: var(--cyan);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.rules-list strong { color: var(--text); }
+
+/* DEMO TIP */
+.demo-tip {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 150;
+  max-width: 280px;
+  background: rgba(8, 18, 30, 0.95);
+  border: 1px solid var(--border-accent);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.5;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--glow-soft);
+}
+
+.demo-tip strong {
+  color: var(--cyan);
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+</style>
+</head>
+<body>
+
+<!-- DEMO TIP -->
+<div class="demo-tip">
+  <strong>// MOCKUP DEMO</strong>
+  Esta es la pantalla "Registrar Pago" en el admin del gym. <strong style="color:var(--cyan)">package_id obligatorio</strong>. Descuento solo con motivo predefinido.
+</div>
+
+<!-- ADMIN TOP -->
+<div class="admin-top">
+  <div class="admin-top-inner">
+    <div class="admin-brand">
+      <svg class="admin-logo" viewBox="0 0 100 100">
+        <polygon points="50,5 65,35 95,50 65,65 50,95 35,65 5,50 35,35" fill="#00D4FF"/>
+      </svg>
+      <div class="admin-name">VELUM<small>· ADMIN</small></div>
+    </div>
+    <div class="admin-context">
+      Gym: <strong>Iron Box Bajío</strong>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="breadcrumb">
+    <a href="#">Admin</a>
+    <span>›</span>
+    <a href="#">Pagos</a>
+    <span>›</span>
+    <span style="color:var(--cyan);">Registrar pago</span>
+  </div>
+
+  <div class="page-header">
+    <div class="page-title-block">
+      <h1>Registrar Pago</h1>
+      <div class="page-sub">Todo pago debe estar vinculado a un paquete del catálogo. Los descuentos requieren motivo.</div>
+    </div>
+    <button class="action-btn-text">Ver historial →</button>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: FORM -->
+    <div>
+
+      <!-- STEP 1: CLIENTE -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-num">1</div>
+          <div>
+            <div class="card-head-title">Cliente <span class="required">Obligatorio</span></div>
+            <div class="card-head-sub">Busca por nombre, email o teléfono</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <input type="text" class="form-input with-icon" placeholder="Buscar cliente..." id="clienteSearch">
+
+          <div class="cliente-card" id="clienteCard">
+            <div class="cliente-avatar">DM</div>
+            <div class="cliente-info">
+              <div class="cliente-name">Daniel Martínez</div>
+              <div class="cliente-meta">📧 daniel@email.com · 📱 +52 477 123 4567 · <strong>3 meses activo</strong></div>
+            </div>
+            <button class="cliente-clear">×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: PAQUETE -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-num">2</div>
+          <div>
+            <div class="card-head-title">Paquete del catálogo <span class="required">Obligatorio</span></div>
+            <div class="card-head-sub">Solo paquetes activos. Los marcados ⚠ no permiten descuento.</div>
+          </div>
+        </div>
+
+        <div class="pkg-options" id="pkgOptions">
+          <div class="pkg-option" data-pkg="clase-suelta" data-price="200" data-allow-disc="true">
+            <div class="pkg-radio"></div>
+            <div class="pkg-option-info">
+              <div class="pkg-option-name">Clase suelta</div>
+              <div class="pkg-option-desc">1 clase a elegir · sin compromiso</div>
+              <div class="pkg-option-meta">1 CLASE · VIGENCIA 30 DÍAS</div>
+            </div>
+            <div class="pkg-option-price">$200<small>MXN</small></div>
+          </div>
+
+          <div class="pkg-option selected" data-pkg="pack-10" data-price="1500" data-allow-disc="true">
+            <div class="pkg-radio"></div>
+            <div class="pkg-option-info">
+              <div class="pkg-option-name">Pack 10 clases</div>
+              <div class="pkg-option-desc">10 clases · flexibilidad horaria</div>
+              <div class="pkg-option-meta">10 CLASES · VIGENCIA 60 DÍAS · ⭐ MÁS VENDIDO</div>
+            </div>
+            <div class="pkg-option-price">$1,500<small>MXN</small></div>
+          </div>
+
+          <div class="pkg-option" data-pkg="mensual" data-price="1800" data-allow-disc="true">
+            <div class="pkg-radio"></div>
+            <div class="pkg-option-info">
+              <div class="pkg-option-name">Mensualidad</div>
+              <div class="pkg-option-desc">Clases ilimitadas + Coach IA personal</div>
+              <div class="pkg-option-meta">ILIMITADO · 30 DÍAS</div>
+            </div>
+            <div class="pkg-option-price">$1,800<small>MXN</small></div>
+          </div>
+
+          <div class="pkg-option" data-pkg="trimestral" data-price="4800" data-allow-disc="true">
+            <div class="pkg-radio"></div>
+            <div class="pkg-option-info">
+              <div class="pkg-option-name">Trimestral</div>
+              <div class="pkg-option-desc">3 meses ilimitados · Coach IA Premium</div>
+              <div class="pkg-option-meta">ILIMITADO · 90 DÍAS</div>
+            </div>
+            <div class="pkg-option-price">$4,800<small>MXN</small></div>
+          </div>
+
+          <div class="pkg-option" data-pkg="inscripcion" data-price="500" data-allow-disc="false">
+            <div class="pkg-option-tag">SIN DESC</div>
+            <div class="pkg-radio"></div>
+            <div class="pkg-option-info">
+              <div class="pkg-option-name">Inscripción única</div>
+              <div class="pkg-option-desc">Pago único de membresía inicial</div>
+              <div class="pkg-option-meta">ÚNICO · PERMANENTE</div>
+            </div>
+            <div class="pkg-option-price">$500<small>MXN</small></div>
+          </div>
+
+          <div class="pkg-option locked" data-pkg="vip" data-price="5000">
+            <div class="pkg-option-tag" style="background: var(--text-3); color: var(--text);">INACTIVO</div>
+            <div class="pkg-radio"></div>
+            <div class="pkg-option-info">
+              <div class="pkg-option-name">Pack ejecutivo VIP</div>
+              <div class="pkg-option-desc">Paquete legacy desactivado</div>
+              <div class="pkg-option-meta">NO DISPONIBLE</div>
+            </div>
+            <div class="pkg-option-price">$5,000<small>MXN</small></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: PRECIO Y DESCUENTO -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-num">3</div>
+          <div>
+            <div class="card-head-title">Precio y descuento</div>
+            <div class="card-head-sub">Por default cobra el precio del catálogo. Activa descuento si hay razón.</div>
+          </div>
+        </div>
+
+        <div class="discount-toggle-row" id="discToggle">
+          <div class="discount-toggle-info">
+            <div class="discount-icon">
+              <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+            </div>
+            <div>
+              <div class="discount-toggle-label">Aplicar descuento</div>
+              <div class="discount-toggle-sub">Requiere motivo predefinido</div>
+            </div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+
+        <div class="discount-fields" id="discFields">
+          <div class="price-row-discount">
+            <div class="price-display">
+              <div class="price-display-label">Precio del paquete</div>
+              <div class="price-display-value list" id="listPriceDisp">$1,500</div>
+            </div>
+            <div>
+              <label class="form-label">Precio aplicado <span class="req-star">*</span></label>
+              <div class="discount-input-wrap">
+                <span class="currency-prefix">$</span>
+                <input type="number" class="form-input discount-amount-input" id="appliedPrice" value="1200" min="0" max="1500">
+                <span class="discount-pct" id="discPct">-20%</span>
+              </div>
+            </div>
+          </div>
+
+          <label class="form-label">Motivo del descuento <span class="req-star">*</span></label>
+          <div class="reasons-grid" id="reasonsGrid">
+            <button class="reason-btn" data-reason="efectivo">
+              <span class="reason-btn-icon">💵</span><span class="reason-btn-name">Efectivo</span>
+            </button>
+            <button class="reason-btn" data-reason="lealtad">
+              <span class="reason-btn-icon">⏳</span><span class="reason-btn-name">Lealtad</span>
+            </button>
+            <button class="reason-btn selected" data-reason="referido">
+              <span class="reason-btn-icon">🤝</span><span class="reason-btn-name">Referido</span>
+            </button>
+            <button class="reason-btn" data-reason="estudiante">
+              <span class="reason-btn-icon">🎓</span><span class="reason-btn-name">Estudiante</span>
+            </button>
+            <button class="reason-btn" data-reason="familiar">
+              <span class="reason-btn-icon">👨‍👩‍👦</span><span class="reason-btn-name">Familiar</span>
+            </button>
+            <button class="reason-btn" data-reason="empleado">
+              <span class="reason-btn-icon">🏢</span><span class="reason-btn-name">Empleado</span>
+            </button>
+            <button class="reason-btn" data-reason="cortesia">
+              <span class="reason-btn-icon">🎁</span><span class="reason-btn-name">Cortesía</span>
+            </button>
+            <button class="reason-btn" data-reason="temporal">
+              <span class="reason-btn-icon">⚡</span><span class="reason-btn-name">Promo temporal</span>
+            </button>
+            <button class="reason-btn" data-reason="otro">
+              <span class="reason-btn-icon">❓</span><span class="reason-btn-name">Otro</span>
+            </button>
+          </div>
+
+          <div class="reason-note-label">Nota interna (opcional)</div>
+          <textarea class="reason-note-textarea" placeholder="Ej: Trajo a Carlos González que compró trimestral el pasado lunes..."></textarea>
+        </div>
+      </div>
+
+      <!-- STEP 4: MÉTODO DE PAGO -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-num">4</div>
+          <div>
+            <div class="card-head-title">Método de pago <span class="required">Obligatorio</span></div>
+            <div class="card-head-sub">¿Cómo recibiste el cobro?</div>
+          </div>
+        </div>
+
+        <div class="method-grid" id="methodGrid">
+          <div class="method-btn selected" data-method="efectivo">
+            <div class="method-icon">
+              <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+            </div>
+            <div class="method-name">Efectivo</div>
+          </div>
+
+          <div class="method-btn" data-method="transferencia">
+            <div class="method-icon">
+              <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            </div>
+            <div class="method-name">Transferencia</div>
+          </div>
+
+          <div class="method-btn" data-method="tarjeta_admin">
+            <div class="method-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+            </div>
+            <div class="method-name">Tarjeta (terminal)</div>
+          </div>
+
+          <div class="method-btn" data-method="stripe">
+            <div class="method-icon">
+              <svg viewBox="0 0 24 24"><path d="M3 5h18v3H3zm0 5h18v3H3zm0 5h18v3H3z" transform="rotate(45 12 12)"/><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="method-name">Stripe (link)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RULES INFO -->
+      <div class="rules-box">
+        <div class="rules-label">// REGLAS DEL SISTEMA</div>
+        <ul class="rules-list">
+          <li><strong>Todo pago tiene paquete vinculado.</strong> Sin excepción.</li>
+          <li><strong>El precio aplicado nunca puede ser mayor</strong> al del paquete listado.</li>
+          <li><strong>Si hay descuento, hay motivo.</strong> No se permite descuento "porque sí".</li>
+          <li>Paquetes con "Sin desc" no aceptan descuento aunque actives el toggle.</li>
+          <li>Una vez registrado, el pago es <strong>inmutable</strong>. Si hay error, se procesa refund.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: SUMMARY -->
+    <div class="summary-sidebar">
+      <div class="summary-card">
+        <div class="summary-title">📋 Resumen del pago</div>
+
+        <div class="summary-row">
+          <span class="summary-key">Cliente</span>
+          <span class="summary-val" id="sumCliente">Daniel Martínez</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="summary-key">Paquete</span>
+          <span class="summary-val" id="sumPkg">Pack 10 clases</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="summary-key">Precio listado</span>
+          <span class="summary-val muted" id="sumList">$1,500</span>
+        </div>
+
+        <div class="summary-row" id="sumDescRow">
+          <span class="summary-key">Descuento aplicado</span>
+          <span class="summary-val discount-row" id="sumDesc">- $300 (referido)</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="summary-key">Método</span>
+          <span class="summary-val" id="sumMethod">Efectivo</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="summary-key">Fecha</span>
+          <span class="summary-val">Hoy, 9:41 AM</span>
+        </div>
+
+        <div class="summary-total">
+          <div class="summary-total-label">Total a registrar</div>
+          <div class="summary-total-amount" id="sumTotal">$1,200<small>MXN</small></div>
+        </div>
+
+        <div class="summary-warnings" id="sumWarnings">
+          <strong>⚠ Validar antes de registrar</strong>
+          Este pago tiene descuento del 20%. Asegúrate de confirmar el motivo con el cliente.
+        </div>
+
+        <button class="submit-btn">REGISTRAR PAGO →</button>
+        <button class="cancel-btn">CANCELAR</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Package selection
+let selectedPkg = { name: 'Pack 10 clases', price: 1500, allowDisc: true };
+let appliedPrice = 1200;
+let selectedReason = 'referido';
+let selectedMethod = 'efectivo';
+let discountOn = true;
+
+const reasonLabels = {
+  efectivo: 'Pago en efectivo',
+  lealtad: 'Cliente leal',
+  referido: 'Referido',
+  estudiante: 'Estudiante',
+  familiar: 'Familiar',
+  empleado: 'Empleado',
+  cortesia: 'Cortesía',
+  temporal: 'Promo temporal',
+  otro: 'Otro'
+};
+
+const methodLabels = {
+  efectivo: 'Efectivo',
+  transferencia: 'Transferencia',
+  tarjeta_admin: 'Tarjeta (terminal)',
+  stripe: 'Stripe link'
+};
+
+// Wire package options
+document.querySelectorAll('.pkg-option:not(.locked)').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.pkg-option').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    const name = opt.querySelector('.pkg-option-name').textContent;
+    const price = parseInt(opt.dataset.price);
+    const allowDisc = opt.dataset.allowDisc === 'true';
+    selectedPkg = { name, price, allowDisc };
+    if (!allowDisc) {
+      discountOn = false;
+      document.getElementById('discToggle').classList.remove('on');
+      document.getElementById('discFields').classList.remove('show');
+    }
+    appliedPrice = price;
+    document.getElementById('appliedPrice').value = price;
+    updateSummary();
+  });
+});
+
+// Wire discount toggle
+document.getElementById('discToggle').addEventListener('click', () => {
+  if (!selectedPkg.allowDisc) {
+    alert('Este paquete no permite descuento');
+    return;
+  }
+  discountOn = !discountOn;
+  document.getElementById('discToggle').classList.toggle('on', discountOn);
+  document.getElementById('discFields').classList.toggle('show', discountOn);
+  if (!discountOn) appliedPrice = selectedPkg.price;
+  else appliedPrice = Math.round(selectedPkg.price * 0.8);
+  document.getElementById('appliedPrice').value = appliedPrice;
+  updateSummary();
+});
+
+// Wire applied price input
+document.getElementById('appliedPrice').addEventListener('input', (e) => {
+  appliedPrice = parseInt(e.target.value) || 0;
+  if (appliedPrice > selectedPkg.price) {
+    appliedPrice = selectedPkg.price;
+    e.target.value = appliedPrice;
+  }
+  updateSummary();
+});
+
+// Wire reasons
+document.querySelectorAll('.reason-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedReason = btn.dataset.reason;
+    updateSummary();
+  });
+});
+
+// Wire methods
+document.querySelectorAll('.method-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMethod = btn.dataset.method;
+    updateSummary();
+  });
+});
+
+function updateSummary() {
+  document.getElementById('sumPkg').textContent = selectedPkg.name;
+  document.getElementById('sumList').textContent = '$' + selectedPkg.price.toLocaleString();
+  document.getElementById('sumMethod').textContent = methodLabels[selectedMethod];
+  document.getElementById('listPriceDisp').textContent = '$' + selectedPkg.price.toLocaleString();
+
+  const finalPrice = discountOn ? appliedPrice : selectedPkg.price;
+  document.getElementById('sumTotal').innerHTML = '$' + finalPrice.toLocaleString() + '<small>MXN</small>';
+
+  if (discountOn && appliedPrice < selectedPkg.price) {
+    const desc = selectedPkg.price - appliedPrice;
+    const pct = Math.round((desc / selectedPkg.price) * 100);
+    document.getElementById('sumDescRow').style.display = '';
+    document.getElementById('sumDesc').textContent = `- $${desc.toLocaleString()} (${reasonLabels[selectedReason]})`;
+    document.getElementById('discPct').textContent = `-${pct}%`;
+    document.getElementById('sumWarnings').classList.toggle('show', pct >= 20);
+  } else {
+    document.getElementById('sumDescRow').style.display = 'none';
+    document.getElementById('sumWarnings').classList.remove('show');
+  }
+}
+
+updateSummary();
+</script>
+
+</body>
+</html>
