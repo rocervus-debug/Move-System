@@ -5187,20 +5187,6 @@ body::before{
     </div>
     <div class="modal-body" style="padding-top:18px;">
 
-      <!-- Tipo de pago toggle -->
-      <div style="display:flex;gap:5px;margin-bottom:20px;background:var(--card2);border-radius:10px;padding:4px;border:1px solid var(--border);">
-        <button id="p-tipo-completo" onclick="setPagoTipo('completo')"
-          style="flex:1;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:var(--accent);color:#001828;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Pago Completo
-        </button>
-        <button id="p-tipo-abono" onclick="setPagoTipo('abono')"
-          style="flex:1;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text3);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Abono Parcial
-        </button>
-      </div>
-
       <!-- ─ Sección: Socio ─ -->
       <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -5220,50 +5206,67 @@ body::before{
         <span class="field-err" id="p-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
       </div>
 
-      <!-- ─ Sección: Plan & Monto ─ -->
+      <!-- ─ Sección: Paquete del catálogo ─ -->
       <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Plan & Monto
+        Paquete del catálogo
       </div>
+      <div class="field">
+        <label>Paquete <span style="color:var(--accent);">*</span></label>
+        <select id="p-package" onchange="onPackageSelectInModal()">
+          <option value="">— Cargando paquetes... —</option>
+        </select>
+        <div id="p-package-info" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,212,255,.05);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.5;"></div>
+        <div id="p-pasedia-warn" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);border-radius:8px;font-size:11px;color:#c4b5fd;line-height:1.5;">
+          Este paquete dura 1 día — considera <strong style="cursor:pointer;text-decoration:underline;" onclick="closeModal('pago');openModal('visita')">Registrar Visita</strong> en su lugar (no crea membresía ni número de socio).
+        </div>
+        <span class="field-err" id="p-package-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+      </div>
+
+      <!-- ─ Sección: Precio (list price + applied price) ─ -->
       <div class="field-grid" style="margin-bottom:0;">
         <div class="field">
-          <label>Plan / Membresía</label>
-          <select id="p-plan" onchange="onPlanChange('p-plan','p-monto','p-vence');_checkPaseDiaWarn('p-plan','p-pasedia-warn');_updatePagoSummary()">
-            <option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option value="Paquete de Clases">Paquete de Clases</option>
-          </select>
-          <div id="p-pasedia-warn" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);border-radius:8px;font-size:11px;color:#c4b5fd;line-height:1.5;">
-            Para pases de día usa <strong style="cursor:pointer;text-decoration:underline;" onclick="closeModal('pago');openModal('visita')">Registrar Visita</strong> — no crea membresía ni número de socio.
-          </div>
+          <label>Precio del paquete</label>
+          <div id="p-list-price-display"
+               style="padding:9px 12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text2);line-height:1.4;font-family:var(--fm);">— MXN</div>
+          <input type="hidden" id="p-list-price" value="0">
         </div>
         <div class="field">
-          <label id="p-monto-label">Monto (MXN) *</label>
-          <input id="p-monto" type="number" placeholder="1,200" min="0" oninput="recalcSaldo();_updatePagoSummary()"/>
+          <label id="p-monto-label">Precio aplicado (MXN) <span style="color:var(--accent);">*</span></label>
+          <input id="p-monto" type="number" placeholder="—" min="0" oninput="onAppliedPriceChange()"/>
           <span class="field-err" id="p-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
       </div>
 
-      <!-- Abono extra fields -->
-      <div id="p-abono-row" style="display:none;margin-top:10px;">
-        <div class="field-grid">
-          <div class="field">
-            <label>Monto total del plan</label>
-            <input id="p-monto-total" type="number" placeholder="2,400" min="0" oninput="recalcSaldo()"/>
+      <!-- Discount block (auto-shown si applied < list) -->
+      <div id="p-discount-block" style="margin-top:14px;display:none;">
+        <div style="padding:14px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.25);border-radius:10px;">
+          <div style="font-size:11px;color:var(--warn);margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Descuento de <span id="p-discount-pct">—</span> · Motivo obligatorio
           </div>
-          <div class="field">
-            <label>Saldo pendiente</label>
-            <div id="p-saldo-display"
-               style="padding:9px 12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);
-                      font-size:14px;font-weight:700;color:var(--warn);line-height:1.4;font-family:var(--fm);">—</div>
+          <div id="p-discount-reasons" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+            <button type="button" data-r="efectivo" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">💵 Efectivo</button>
+            <button type="button" data-r="lealtad" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">⏳ Lealtad</button>
+            <button type="button" data-r="referido" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">🤝 Referido</button>
+            <button type="button" data-r="estudiante" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">🎓 Estudiante</button>
+            <button type="button" data-r="familiar" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">👨‍👩‍👦 Familiar</button>
+            <button type="button" data-r="empleado" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">🏢 Empleado</button>
+            <button type="button" data-r="cortesia" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">🎁 Cortesía</button>
+            <button type="button" data-r="temporal" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">⚡ Temporal</button>
+            <button type="button" data-r="otro" onclick="selectDiscReason(this)" style="padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text);cursor:pointer;text-align:left;">❓ Otro</button>
           </div>
+          <input type="hidden" id="p-discount-type" value="">
+          <span class="field-err" id="p-discount-err" style="display:none;font-size:11px;color:var(--danger);margin-top:8px;"></span>
         </div>
       </div>
 
-      <!-- Clases row -->
+      <!-- Clases row (auto-shown si package.num_classes está definido) -->
       <div id="p-clases-row" style="display:none;margin-top:10px;">
         <div class="field-grid">
           <div class="field">
-            <label>Clases del paquete *</label>
-            <input id="p-clases-totales" type="number" min="1" max="999" placeholder="Ej: 10, 20, 50"/>
+            <label>Clases del paquete</label>
+            <input id="p-clases-totales" type="number" min="1" max="999" placeholder="" readonly style="opacity:.85;"/>
           </div>
           <div class="field">
             <label style="color:var(--text2);">Clases usadas al registrar</label>
@@ -8450,6 +8453,14 @@ function openModal(id){
     const hoy = new Date().toISOString().slice(0,10);
     const pf = document.getElementById('p-fecha');
     if(pf){ pf.value = hoy; pf.max = hoy; }
+    // V2: cargar paquetes desde catálogo + reset campos del schema v2
+    if(typeof loadPackagesForPagoModal === 'function') loadPackagesForPagoModal();
+    const pkgSel = document.getElementById('p-package');
+    if(pkgSel) pkgSel.value = '';
+    ['p-monto','p-list-price','p-discount-type','p-notas','p-vence'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    const ldEl = document.getElementById('p-list-price-display'); if(ldEl) ldEl.textContent='— MXN';
+    ['p-package-info','p-discount-block','p-clases-row','p-pasedia-warn'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.style.display='none'; });
+    _selectedPackage = null;
     _clearPagoErrors();
     _updatePagoSummary();
   }
@@ -15320,63 +15331,39 @@ async function saveEditLead(){
 // ═══════════════════════════════════════════════════════════════════
 // PAGOS CRUD
 // ═══════════════════════════════════════════════════════════════════
-// ── Abono / Pago parcial helpers ──
-let _pagoTipo = 'completo';
-function setPagoTipo(tipo){
-  _pagoTipo = tipo;
-  const btnC = document.getElementById('p-tipo-completo');
-  const btnA = document.getElementById('p-tipo-abono');
-  const row  = document.getElementById('p-abono-row');
-  const lbl  = document.getElementById('p-monto-label');
-  const saveBtn = document.getElementById('p-save-btn');
-  if(tipo==='completo'){
-    btnC.style.background='var(--accent)'; btnC.style.color='#fff'; btnC.style.fontWeight='700';
-    btnA.style.background='transparent'; btnA.style.color='var(--text3)'; btnA.style.fontWeight='600';
-    if(row) row.style.display='none';
-    if(lbl) lbl.textContent='Monto (MXN) *';
-    if(saveBtn) saveBtn.textContent='Registrar Pago';
-  } else {
-    btnA.style.background='var(--warn)'; btnA.style.color='#fff'; btnA.style.fontWeight='700';
-    btnC.style.background='transparent'; btnC.style.color='var(--text3)'; btnC.style.fontWeight='600';
-    if(row) row.style.display='block';
-    if(lbl) lbl.textContent='Monto abonado *';
-    if(saveBtn) saveBtn.textContent='Registrar Abono';
-  }
-  recalcSaldo();
-  _updatePagoSummary();
-}
-function recalcSaldo(){
-  if(_pagoTipo!=='abono') return;
-  const abonado = parseFloat(document.getElementById('p-monto').value)||0;
-  const total   = parseFloat(document.getElementById('p-monto-total').value)||0;
-  const saldo   = total - abonado;
-  const disp    = document.getElementById('p-saldo-display');
-  if(!disp) return;
-  if(total<=0){ disp.textContent='—'; disp.style.color='var(--text3)'; return; }
-  if(saldo<=0){ disp.textContent='Saldo cubierto'; disp.style.color='var(--ok)'; }
-  else { disp.textContent=`$${saldo.toLocaleString('es-MX')} pendiente`; disp.style.color='var(--warn)'; }
-}
+// ── Pago helpers V2 (sin abono parcial — schema v2) ──
+// Stubs de compatibilidad para llamados huérfanos en código viejo
+let _pagoTipo = 'completo'; // legacy var, ahora siempre 'completo'
+function setPagoTipo(_tipo){ /* no-op desde v2: no hay abono parcial */ }
+function recalcSaldo(){ /* no-op desde v2: no hay saldo parcial */ }
+
 function _updatePagoSummary(){
   const txt   = document.getElementById('p-resumen-txt');
   const mnto  = document.getElementById('p-resumen-monto');
   if(!txt||!mnto) return;
   const cliente = (document.getElementById('p-cliente')?.value||'').trim();
-  const monto   = parseFloat(document.getElementById('p-monto')?.value)||0;
-  const plan    = document.getElementById('p-plan')?.value||'';
+  const applied = parseFloat(document.getElementById('p-monto')?.value)||0;
+  const listP   = parseInt(document.getElementById('p-list-price')?.value||'0');
+  const pkgName = _selectedPackage ? _selectedPackage.name : '';
   const metodo  = document.getElementById('p-metodo')?.value||'';
   const fecha   = document.getElementById('p-fecha')?.value||'';
   const vence   = document.getElementById('p-vence')?.value||'';
-  if(!cliente||!monto){
-    txt.textContent = 'Completa los campos para ver el resumen.';
+  const discType = document.getElementById('p-discount-type')?.value||'';
+
+  if(!cliente || !applied || !pkgName){
+    txt.textContent = 'Completa cliente + paquete + precio para ver el resumen.';
     mnto.textContent = '—'; mnto.style.color='var(--text3)';
     return;
   }
+
   const fechaFmt = fecha ? new Date(fecha+'T00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
   const venceFmt = vence ? new Date(vence+'T00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : null;
-  const tipo = _pagoTipo==='abono' ? 'Abono' : 'Pago completo';
-  txt.innerHTML = `<strong style="color:var(--text1);">${esc(cliente)}</strong> · ${esc(plan)} · ${esc(metodo)}<br><span style="color:var(--text3);font-size:11px;">${tipo} · ${fechaFmt}${venceFmt?' → vence '+venceFmt:''}</span>`;
-  mnto.textContent = `$${monto.toLocaleString('es-MX')}`;
-  mnto.style.color = 'var(--ok)';
+  const discLine = (listP > 0 && applied < listP)
+    ? ` · <span style="color:var(--warn);">descuento $${(listP-applied).toLocaleString('es-MX')} (${discType||'sin motivo'})</span>`
+    : '';
+  txt.innerHTML = `<strong style="color:var(--text1);">${esc(cliente)}</strong> · ${esc(pkgName)} · ${esc(metodo)}<br><span style="color:var(--text3);font-size:11px;">${fechaFmt}${venceFmt?' → vence '+venceFmt:''}${discLine}</span>`;
+  mnto.textContent = `$${applied.toLocaleString('es-MX')}`;
+  mnto.style.color = applied < listP ? 'var(--warn)' : 'var(--ok)';
 }
 
 // Helper: muestra error inline bajo un campo del modal de pago
@@ -15387,66 +15374,254 @@ function _pagoFieldErr(id, msg){
   if(input){ input.style.borderColor = msg ? 'var(--danger)' : ''; }
 }
 function _clearPagoErrors(){
-  ['p-cliente','p-monto','p-fecha'].forEach(id=>_pagoFieldErr(id,''));
+  ['p-cliente','p-monto','p-fecha','p-package','p-discount'].forEach(id=>_pagoFieldErr(id,''));
 }
 
+// Helper escape simple para innerHTML
+function escapeHtml(s){
+  if(s==null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODAL PAGO V2 (schema con package_id + descuento + motivo)
+// ══════════════════════════════════════════════════════════════════
+let _packagesDB = [];              // cache de paquetes activos del gym
+let _selectedPackage = null;       // paquete seleccionado en el modal
+
+async function loadPackagesForPagoModal(){
+  try{
+    const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+    const { data, error } = await window.supabaseClient
+      .from('packages')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order')
+      .eq('gym_id', gymId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if(error){ console.error('loadPackages error:', error); return; }
+    _packagesDB = data || [];
+    const sel = document.getElementById('p-package');
+    if(!sel) return;
+    sel.innerHTML = '<option value="">— Selecciona un paquete —</option>' +
+      _packagesDB.map(p => `<option value="${p.id}">${escapeHtml(p.name)} · $${p.price_mxn.toLocaleString('es-MX')}</option>`).join('');
+  }catch(e){
+    console.error('loadPackages exception:', e);
+  }
+}
+
+function onPackageSelectInModal(){
+  const sel = document.getElementById('p-package');
+  const pkgId = parseInt(sel.value);
+  _selectedPackage = _packagesDB.find(p => p.id === pkgId) || null;
+
+  const info = document.getElementById('p-package-info');
+  const pasediaWarn = document.getElementById('p-pasedia-warn');
+  const monto = document.getElementById('p-monto');
+  const listDisplay = document.getElementById('p-list-price-display');
+  const listHidden = document.getElementById('p-list-price');
+  const venceInput = document.getElementById('p-vence');
+  const clasesRow = document.getElementById('p-clases-row');
+  const clasesTotales = document.getElementById('p-clases-totales');
+
+  if(!_selectedPackage){
+    if(info) info.style.display='none';
+    if(pasediaWarn) pasediaWarn.style.display='none';
+    if(listDisplay) listDisplay.textContent = '— MXN';
+    if(listHidden) listHidden.value = '0';
+    if(monto) monto.value = '';
+    if(clasesRow) clasesRow.style.display='none';
+    toggleDiscountBlock();
+    _updatePagoSummary();
+    return;
+  }
+
+  const p = _selectedPackage;
+  // Info card
+  if(info){
+    info.style.display = 'block';
+    const incluye = p.unlimited_classes ? 'Clases ilimitadas' : (p.num_classes ? `${p.num_classes} clases` : 'Sin clases fijas');
+    info.innerHTML = `<strong style="color:var(--accent);">${escapeHtml(p.name)}</strong> · Vigencia ${p.duration_days} día${p.duration_days===1?'':'s'} · ${incluye}${p.allow_discount===false?' · <span style="color:var(--warn);">Sin descuento permitido</span>':''}`;
+  }
+  // Pase-de-día warning
+  if(pasediaWarn) pasediaWarn.style.display = (p.duration_days === 1) ? 'block' : 'none';
+  // Auto-fill list y applied price
+  if(listDisplay) listDisplay.textContent = `$${p.price_mxn.toLocaleString('es-MX')} MXN`;
+  if(listHidden) listHidden.value = String(p.price_mxn);
+  if(monto) monto.value = p.price_mxn;
+  // Auto-calc fecha de vencimiento (fecha pago + duration_days)
+  const fechaPago = document.getElementById('p-fecha').value;
+  if(fechaPago && venceInput){
+    const d = new Date(fechaPago);
+    d.setDate(d.getDate() + (p.duration_days || 30));
+    venceInput.value = d.toISOString().slice(0,10);
+  }
+  // Mostrar clases row si aplica
+  if(clasesRow && clasesTotales){
+    if(p.num_classes && p.num_classes > 0){
+      clasesRow.style.display = 'block';
+      clasesTotales.value = p.num_classes;
+    } else {
+      clasesRow.style.display = 'none';
+      clasesTotales.value = '';
+    }
+  }
+  toggleDiscountBlock();
+  _updatePagoSummary();
+}
+
+function onAppliedPriceChange(){
+  toggleDiscountBlock();
+  _updatePagoSummary();
+}
+
+function toggleDiscountBlock(){
+  const listPrice = parseInt(document.getElementById('p-list-price').value || '0');
+  const applied = parseFloat(document.getElementById('p-monto').value || '0');
+  const block = document.getElementById('p-discount-block');
+  const pct = document.getElementById('p-discount-pct');
+  if(!block) return;
+  if(applied > 0 && listPrice > 0 && applied < listPrice){
+    block.style.display = 'block';
+    const discPct = Math.round(((listPrice - applied) / listPrice) * 100);
+    if(pct) pct.textContent = discPct + '%';
+  } else {
+    block.style.display = 'none';
+    // Reset reason si ya no hay descuento
+    document.getElementById('p-discount-type').value = '';
+    document.querySelectorAll('#p-discount-reasons button').forEach(b=>{
+      b.style.background='var(--card2)';
+      b.style.borderColor='var(--border)';
+      b.style.color='var(--text)';
+    });
+  }
+}
+
+function selectDiscReason(btn){
+  document.querySelectorAll('#p-discount-reasons button').forEach(b=>{
+    b.style.background='var(--card2)';
+    b.style.borderColor='var(--border)';
+    b.style.color='var(--text)';
+  });
+  btn.style.background='rgba(0,212,255,.15)';
+  btn.style.borderColor='var(--accent)';
+  btn.style.color='var(--accent)';
+  document.getElementById('p-discount-type').value = btn.dataset.r;
+  const errEl = document.getElementById('p-discount-err');
+  if(errEl){ errEl.style.display='none'; errEl.textContent=''; }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SAVE PAGO V2 (con package_id, list_price, applied_price, discount_type)
+// ══════════════════════════════════════════════════════════════════
 async function savePago(){
   _clearPagoErrors();
-  const cliente = document.getElementById('p-cliente').value.trim();
-  const monto   = parseFloat(document.getElementById('p-monto').value);
-  const fecha   = document.getElementById('p-fecha').value;
+  const cliente   = document.getElementById('p-cliente').value.trim();
+  const packageId = parseInt(document.getElementById('p-package').value || '0');
+  const listPrice = parseInt(document.getElementById('p-list-price').value || '0');
+  const applied   = parseFloat(document.getElementById('p-monto').value || '0');
+  const fecha     = document.getElementById('p-fecha').value;
+  const discType  = document.getElementById('p-discount-type').value || null;
   let hasError = false;
+
+  // Validaciones
   if(!cliente){ _pagoFieldErr('p-cliente','El nombre del cliente es obligatorio.'); hasError=true; }
-  if(!monto||monto<=0){ _pagoFieldErr('p-monto','Ingresa un monto válido.'); hasError=true; }
-  if(!fecha){ _pagoFieldErr('p-fecha','La fecha de pago es obligatoria.'); hasError=true; }
-  // Build notas: prepend abono info if applicable
-  let notasBase = document.getElementById('p-notas').value.trim();
-  let abonoPrefix = '';
-  if(_pagoTipo==='abono'){
-    const montoTotal = parseFloat(document.getElementById('p-monto-total').value)||0;
-    const saldo = montoTotal - monto;
-    abonoPrefix = `[ABONO ${monto.toLocaleString('es-MX')} / ${montoTotal.toLocaleString('es-MX')}${saldo>0?' · Saldo: $'+saldo.toLocaleString('es-MX'):''}] `;
+  if(!packageId || !_selectedPackage){
+    const e = document.getElementById('p-package-err');
+    if(e){ e.textContent='Selecciona un paquete del catálogo.'; e.style.display='block'; }
+    hasError=true;
   }
-  const planVal = document.getElementById('p-plan').value;
-  const esPaquete = planVal.includes('Paquete');
-  const clases_totales = esPaquete ? (parseInt(document.getElementById('p-clases-totales')?.value)||null) : null;
-  const clases_usadas  = esPaquete ? (parseInt(document.getElementById('p-clases-usadas-init')?.value)||0) : 0;
-  if(esPaquete && (!clases_totales || clases_totales < 1)){
-    toast('Ingresa el número de clases del paquete.','⚠️'); hasError=true;
+  if(!applied || applied <= 0){ _pagoFieldErr('p-monto','Ingresa un precio aplicado válido.'); hasError=true; }
+  if(applied > listPrice){
+    _pagoFieldErr('p-monto', `No puedes cobrar más del precio listado ($${listPrice.toLocaleString('es-MX')}).`);
+    hasError=true;
+  }
+  if(applied < listPrice && !discType){
+    const e = document.getElementById('p-discount-err');
+    if(e){ e.textContent='Si hay descuento, selecciona un motivo.'; e.style.display='block'; }
+    hasError=true;
+  }
+  if(!fecha){ _pagoFieldErr('p-fecha','La fecha de pago es obligatoria.'); hasError=true; }
+  // Validar max_discount_pct si aplica
+  if(_selectedPackage && applied < listPrice){
+    if(_selectedPackage.allow_discount === false){
+      _pagoFieldErr('p-monto', 'Este paquete no permite descuentos.');
+      hasError=true;
+    } else {
+      const discPct = ((listPrice - applied) / listPrice) * 100;
+      const maxPct = parseFloat(_selectedPackage.max_discount_pct || 100);
+      if(discPct > maxPct){
+        _pagoFieldErr('p-monto', `Descuento de ${discPct.toFixed(1)}% excede el máximo permitido de ${maxPct}%.`);
+        hasError=true;
+      }
+    }
   }
   if(hasError) return;
+
+  // Clases
+  const hasClases = _selectedPackage && _selectedPackage.num_classes && _selectedPackage.num_classes > 0;
+  const clases_totales = hasClases ? _selectedPackage.num_classes : null;
+  const clases_usadas  = hasClases ? (parseInt(document.getElementById('p-clases-usadas-init')?.value)||0) : 0;
+
   // Loading state
   const btn = document.getElementById('p-save-btn');
-  const btnOrigText = btn ? btn.textContent : '';
-  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+  const btnOrigHtml = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='Guardando…'; }
+
+  // Payload v2 (incluye legacy fields para no romper otras partes del admin)
   const payload = {
-    cliente, monto, fecha,
-    plan:      planVal,
-    metodo:    document.getElementById('p-metodo').value,
-    vence:     document.getElementById('p-vence').value||null,
-    notas:     abonoPrefix + notasBase,
-    ...(esPaquete ? { clases_totales, clases_usadas } : {}),
+    cliente,
+    package_id: packageId,
+    list_price_mxn: listPrice,
+    applied_price_mxn: Math.round(applied),
+    discount_type: discType,
+    source: 'admin',
+    is_legacy: false,
+    // Legacy columns que aún son NOT NULL
+    monto: Math.round(applied),
+    fecha,
+    plan: _selectedPackage.name,
+    metodo: document.getElementById('p-metodo').value,
+    vence: document.getElementById('p-vence').value || null,
+    notas: document.getElementById('p-notas').value.trim() || '',
+    ...(hasClases ? { clases_totales, clases_usadas } : {}),
   };
+
   const { error } = await window.supabaseClient.from('pagos').insert([withGymId(payload)]);
-  if(btn){ btn.disabled=false; btn.textContent=btnOrigText; }
-  if(error){ console.error('Error guardando pago:', error); toast('No se pudo guardar el pago. Intenta de nuevo.','❌'); return; }
-  // Show skeleton while reloading
+  if(btn){ btn.disabled=false; btn.innerHTML=btnOrigHtml; }
+  if(error){
+    console.error('Error guardando pago v2:', error);
+    const m = error.message || '';
+    if(m.includes('pago_requires_package')) toast('Falta seleccionar paquete del catálogo.','❌');
+    else if(m.includes('discount_requires_reason')) toast('Si hay descuento, selecciona un motivo.','❌');
+    else if(m.includes('applied_lte_list')) toast('El precio aplicado no puede ser mayor al listado.','❌');
+    else if(m.includes('no permite descuentos')) toast('Este paquete no permite descuentos.','❌');
+    else if(m.includes('excede el maximo permitido')) toast('Descuento excede el máximo permitido del paquete.','❌');
+    else toast('No se pudo guardar el pago: ' + m, '❌');
+    return;
+  }
+
+  // Reload + cleanup
   const plEl = document.getElementById('pagos-list');
   if(plEl) plEl.innerHTML = `<div style="padding:12px 0;">${[1,2,3,4,5].map(()=>`<div style="height:48px;margin-bottom:8px;border-radius:12px;background:linear-gradient(90deg,var(--card) 25%,rgba(255,255,255,.06) 50%,var(--card) 75%);background-size:600px 100%;animation:skshimmer 1.4s ease-in-out infinite;"></div>`).join('')}</div>`;
   await Promise.all([loadPagosFromSupabase(), loadClientesFromSupabase()]);
   closeModal('pago');
-  ['p-cliente','p-monto','p-notas'].forEach(id=>document.getElementById(id).value='');
+
+  // Reset modal
+  ['p-cliente','p-monto','p-notas','p-list-price','p-discount-type'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
   document.getElementById('p-fecha').value='';
   document.getElementById('p-vence').value='';
-  if(document.getElementById('p-monto-total')) document.getElementById('p-monto-total').value='';
+  document.getElementById('p-package').value='';
+  document.getElementById('p-list-price-display').textContent='— MXN';
+  document.getElementById('p-package-info').style.display='none';
+  document.getElementById('p-discount-block').style.display='none';
+  document.getElementById('p-clases-row').style.display='none';
+  _selectedPackage = null;
   _updatePagoSummary();
-  document.getElementById('p-plan').selectedIndex=0;
   document.getElementById('p-metodo').selectedIndex=0;
   _clearPagoErrors();
-  setPagoTipo('completo'); // reset toggle
-  const tipoLabel = _pagoTipo==='abono' ? 'Abono' : 'Pago';
-  auditLog('CREAR_PAGO', 'pagos', '', `${tipoLabel} $${monto} para ${cliente}`);
-  toast(`${tipoLabel} de $${monto.toLocaleString('es-MX')} registrado para ${cliente}.`,'💳');
+
+  auditLog('CREAR_PAGO', 'pagos', '', `Pago $${applied} (${payload.plan}) para ${cliente}${discType?' · descuento '+discType:''}`);
+  toast(`Pago de $${applied.toLocaleString('es-MX')} registrado para ${cliente}.`,'💳');
   renderPagos();
   renderMembresiasAlert();
   renderClientes();
