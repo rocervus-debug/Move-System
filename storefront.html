@@ -158,11 +158,14 @@ body {
 
 .hero h1 {
   font-family: 'Outfit', sans-serif;
-  font-size: 60px; font-weight: 800; letter-spacing: -0.035em;
-  line-height: 1.02; margin-bottom: 20px;
+  font-size: clamp(32px, 4.6vw, 56px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  margin-bottom: 20px;
 }
+.hero h1.long-title { font-size: clamp(28px, 3.6vw, 42px); }
 .hero h1 .accent { color: var(--cyan); }
-@media (max-width: 640px) { .hero h1 { font-size: 38px; } }
 
 .hero-sub { font-size: 18px; color: var(--text-2); line-height: 1.55; margin-bottom: 28px; max-width: 540px; }
 
@@ -1182,10 +1185,21 @@ function renderHero(gym){
   document.getElementById('brand-tag').textContent = gym.tagline || 'Powered by VELUM';
   document.getElementById('hero-tag').textContent = (gym.tagline || 'Reserva tu lugar').toUpperCase();
 
-  document.getElementById('hero-title').innerHTML = gym.description
-    ? `${escapeHtml(gym.description.split('.')[0])}`
+  // Title = primera oración. Sub = resto. Si hay solo 1 oración, usa tagline o default.
+  const desc = (gym.description || '').trim();
+  const sentences = desc.split(/(?<=\.)\s+/).map(s => s.replace(/\.$/, '').trim()).filter(Boolean);
+  const titleText = sentences[0] || `Bienvenido a ${gym.nombre}`;
+  const subText = sentences.length > 1
+    ? sentences.slice(1).join('. ') + '.'
+    : (gym.tagline || 'Reserva tu lugar y empieza hoy.');
+
+  const heroH1 = document.getElementById('hero-title');
+  heroH1.innerHTML = desc
+    ? escapeHtml(titleText)
     : `Bienvenido a <span class="accent">${escapeHtml(gym.nombre)}</span>`;
-  document.getElementById('hero-sub').textContent = gym.description || 'Reserva tu lugar y empieza hoy.';
+  // Auto-reduce tamaño si título es largo (>50 chars)
+  heroH1.classList.toggle('long-title', titleText.length > 50);
+  document.getElementById('hero-sub').textContent = subText;
 
   // Stats animados con counter (data-target para IntersectionObserver)
   const stats = [];
