@@ -547,6 +547,189 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
 .wa-fab:hover { transform: scale(1.08); }
 .wa-fab svg { width: 28px; height: 28px; fill: white; }
 
+/* ─── VIDEO HERO BG ─── */
+.hero-video-bg {
+  position: absolute; inset: 0; overflow: hidden; z-index: -1;
+  border-radius: 0; opacity: 0.18; pointer-events: none;
+}
+.hero-video-bg video { width: 100%; height: 100%; object-fit: cover; }
+
+/* ─── STATS ANIMATED ─── */
+.hero-stat .value { transition: opacity 320ms; }
+
+/* ─── LEAD MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4, 12, 20, 0.88);
+  backdrop-filter: blur(12px);
+  z-index: 300;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; animation: fade-in 220ms ease-out; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 22px;
+  width: 100%; max-width: 460px;
+  max-height: 90vh; overflow-y: auto;
+  position: relative;
+  animation: modal-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--glow-strong);
+}
+@keyframes modal-in { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-close-btn {
+  position: absolute; top: 14px; right: 14px;
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: var(--bg-elevated); color: var(--text-2);
+  cursor: pointer; font-size: 18px; z-index: 10;
+}
+.modal-close-btn:hover { background: var(--cyan-dim); color: var(--cyan); }
+.modal-header { padding: 26px 26px 16px; border-bottom: 1px solid var(--border-soft); }
+.modal-eyebrow { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: var(--cyan); margin-bottom: 8px; text-transform: uppercase; }
+.modal-title { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: var(--text-2); }
+.modal-body { padding: 20px 26px 26px; }
+.form-field { margin-bottom: 14px; }
+.form-label { display: block; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: var(--text-3); text-transform: uppercase; margin-bottom: 6px; }
+.form-input {
+  width: 100%; background: var(--bg-input);
+  border: 1px solid var(--border-soft); border-radius: 10px;
+  padding: 12px 14px; color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  transition: border 200ms;
+}
+.form-input:focus { outline: none; border-color: var(--cyan); }
+.form-input::placeholder { color: var(--text-3); }
+textarea.form-input { resize: vertical; min-height: 80px; }
+.modal-cta {
+  width: 100%; background: var(--cyan); color: #001828; border: none;
+  padding: 14px; border-radius: 12px;
+  font-family: 'Geist Mono', monospace; font-weight: 700; font-size: 12px;
+  letter-spacing: 1.8px; text-transform: uppercase; cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  transition: all 200ms; margin-top: 6px;
+}
+.modal-cta:hover:not(:disabled) { background: var(--cyan-light); box-shadow: var(--glow-strong); }
+.modal-cta:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal-success { text-align: center; padding: 30px 20px; }
+.modal-success-icon { font-size: 56px; margin-bottom: 16px; }
+.modal-success h3 { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--cyan); }
+.modal-success p { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+
+/* ─── LIGHTBOX ─── */
+.lightbox {
+  position: fixed; inset: 0;
+  background: rgba(4, 12, 20, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 400;
+  display: none;
+  align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+.lightbox.open { display: flex; animation: fade-in 200ms; }
+.lightbox img { max-width: 92vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+.lightbox-close { position: absolute; top: 20px; right: 24px; background: none; border: none; color: white; font-size: 36px; cursor: pointer; }
+.lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.15); border: 1px solid var(--cyan); color: var(--cyan); width: 48px; height: 48px; border-radius: 50%; cursor: pointer; font-size: 22px; }
+.lightbox-prev { left: 24px; }
+.lightbox-next { right: 24px; }
+.lightbox-counter { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--text-2); letter-spacing: 1.5px; }
+.gallery-item { cursor: zoom-in; }
+
+/* ─── TESTIMONIOS CAROUSEL MOBILE ─── */
+@media (max-width: 720px) {
+  .testimonials-grid {
+    grid-template-columns: 1fr;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    grid-auto-flow: column;
+    grid-auto-columns: 85%;
+    gap: 12px;
+    padding: 4px 8px 16px;
+    scrollbar-width: none;
+  }
+  .testimonials-grid::-webkit-scrollbar { display: none; }
+  .testimonial { scroll-snap-align: center; }
+}
+
+/* ─── SHARE FAB ─── */
+.share-fab {
+  position: fixed;
+  bottom: 22px;
+  left: 22px;
+  z-index: 199;
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  display: grid; place-items: center;
+  cursor: pointer;
+  box-shadow: var(--glow-soft);
+  transition: all 200ms;
+}
+.share-fab:hover { background: var(--cyan-dim); border-color: var(--cyan); transform: scale(1.08); }
+.share-fab svg { width: 20px; height: 20px; fill: var(--cyan); }
+
+@media (max-width: 720px) {
+  .share-fab { bottom: 84px; left: 16px; width: 44px; height: 44px; }
+  .share-fab svg { width: 18px; height: 18px; }
+}
+
+/* ─── NEWSLETTER FORM ─── */
+.newsletter-card {
+  max-width: 460px; margin: 24px auto 0;
+  background: var(--bg-card); border: 1px solid var(--border-soft);
+  border-radius: 16px; padding: 22px;
+}
+.newsletter-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.newsletter-sub { font-size: 12px; color: var(--text-3); margin-bottom: 14px; }
+.newsletter-row { display: flex; gap: 8px; }
+.newsletter-row input {
+  flex: 1; background: var(--bg-input); border: 1px solid var(--border-soft);
+  border-radius: 10px; padding: 11px 14px;
+  color: var(--text); font-size: 13px;
+}
+.newsletter-row input:focus { outline: none; border-color: var(--cyan); }
+.newsletter-row button {
+  background: var(--cyan); color: #001828; border: none;
+  padding: 0 18px; border-radius: 10px;
+  font-family: 'Geist Mono', monospace; font-weight: 700; font-size: 11px;
+  letter-spacing: 1px; cursor: pointer;
+}
+
+/* ─── SCROLL REVEAL ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 600ms ease-out, transform 600ms ease-out;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── TRIAL CTA BANNER ─── */
+.trial-banner {
+  max-width: 680px; margin: 0 auto 24px;
+  background: linear-gradient(135deg, var(--success), #08C078);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex; align-items: center; gap: 14px; justify-content: space-between;
+  flex-wrap: wrap;
+  color: #001818;
+}
+.trial-banner-text { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; }
+.trial-banner-text small { display: block; font-weight: 400; font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.trial-banner-cta {
+  background: #001828; color: white; border: none;
+  padding: 10px 18px; border-radius: 999px;
+  font-family: 'Geist Mono', monospace; font-weight: 700; font-size: 11px;
+  letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer;
+}
+.trial-banner-cta:hover { background: black; }
+
 /* ─── STICKY BOTTOM MOBILE ─── */
 .sticky-bottom-mobile {
   display: none;
@@ -608,7 +791,10 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
   </nav>
 
   <!-- HERO -->
-  <section class="hero">
+  <section class="hero" style="position:relative;">
+    <div class="hero-video-bg" id="hero-video-bg" style="display:none;">
+      <video id="hero-video" autoplay loop muted playsinline></video>
+    </div>
     <div class="hero-inner">
       <div>
         <div class="hero-eyebrow"><span class="pulse"></span><span id="hero-tag">FITNESS</span></div>
@@ -733,6 +919,14 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
     </div>
   </section>
 
+  <!-- TRIAL BANNER (si trial_class_enabled) -->
+  <div id="trial-banner-wrap" style="display:none;padding:20px 24px 0;">
+    <div class="trial-banner">
+      <div class="trial-banner-text">🎁 Tu primera clase es GRATIS<small>Sin tarjeta · Solo reserva tu lugar</small></div>
+      <button class="trial-banner-cta" onclick="openLeadModal('trial')">Reservar clase gratis →</button>
+    </div>
+  </div>
+
   <!-- PACKAGES -->
   <section id="paquetes">
     <div class="section-inner">
@@ -827,7 +1021,7 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
         <p>Reserva tu lugar en 60 segundos. Sin compromisos.</p>
         <div class="final-cta-actions">
           <button class="btn-primary-lg" onclick="scrollToId('paquetes')">Ver paquetes →</button>
-          <button class="btn-secondary-lg" onclick="iaToggle()">💬 Hablar con Coach IA</button>
+          <button class="btn-secondary-lg" onclick="openLeadModal('info')">📞 ¿Tienes dudas?</button>
         </div>
       </div>
     </div>
@@ -835,7 +1029,17 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
 
   <!-- FOOTER -->
   <footer>
-    <div class="footer-brand" id="footer-name">Gym</div>
+    <div class="newsletter-card">
+      <div class="newsletter-title">Mantente al tanto</div>
+      <div class="newsletter-sub">Promos exclusivas, nuevas clases y tips de entrenamiento. Sin spam.</div>
+      <form class="newsletter-row" onsubmit="event.preventDefault(); submitNewsletter();">
+        <input type="email" id="nl-email" placeholder="tu@email.com" required/>
+        <button type="submit" id="nl-btn">Suscribirme</button>
+      </form>
+      <div id="nl-msg" style="display:none;font-size:11px;color:var(--cyan);margin-top:8px;text-align:center;"></div>
+    </div>
+
+    <div class="footer-brand" id="footer-name" style="margin-top:36px;">Gym</div>
     <div class="footer-social" id="footer-social"></div>
     <div class="footer-meta">// Powered by <strong>VELUM</strong> · myvelum.app</div>
     <div class="footer-copy" id="footer-copy">© 2026 · Todos los derechos reservados</div>
@@ -877,6 +1081,61 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
   <!-- STICKY MOBILE BOTTOM -->
   <div class="sticky-bottom-mobile">
     <button class="btn-primary-lg" onclick="scrollToId('paquetes')">Reservar ahora →</button>
+  </div>
+
+  <!-- SHARE FAB -->
+  <button class="share-fab" onclick="shareStorefront()" title="Compartir esta página">
+    <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+  </button>
+
+  <!-- LEAD MODAL -->
+  <div class="modal-overlay" id="lead-modal">
+    <div class="modal">
+      <button class="modal-close-btn" onclick="closeLeadModal()">×</button>
+      <div class="modal-header">
+        <div class="modal-eyebrow" id="lead-eyebrow">RESERVA</div>
+        <div class="modal-title" id="lead-title">Clase de prueba GRATIS</div>
+        <div class="modal-sub" id="lead-sub">Solo déjanos tus datos y te confirmamos por WhatsApp.</div>
+      </div>
+      <div class="modal-body" id="lead-body">
+        <div class="form-field">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" id="lead-name" class="form-input" placeholder="Daniel Martínez">
+        </div>
+        <div class="form-field">
+          <label class="form-label">WhatsApp</label>
+          <input type="tel" id="lead-phone" class="form-input" placeholder="+52 477 123 4567">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Email (opcional)</label>
+          <input type="email" id="lead-email" class="form-input" placeholder="tu@email.com">
+        </div>
+        <div class="form-field" id="lead-day-field">
+          <label class="form-label">¿Qué día te queda mejor?</label>
+          <input type="text" id="lead-day" class="form-input" placeholder="Ej: Sábado por la mañana">
+        </div>
+        <div class="form-field" id="lead-message-field" style="display:none;">
+          <label class="form-label">Mensaje (opcional)</label>
+          <textarea id="lead-message" class="form-input" placeholder="Cuéntanos qué dudas tienes..."></textarea>
+        </div>
+        <button class="modal-cta" id="lead-submit" onclick="submitLead()">Enviar →</button>
+        <div id="lead-error" style="display:none;color:var(--warning);font-size:11px;margin-top:8px;text-align:center;"></div>
+      </div>
+      <div class="modal-success app-hidden" id="lead-success">
+        <div class="modal-success-icon">✓</div>
+        <h3>¡Listo!</h3>
+        <p>Te contactamos por WhatsApp en las próximas horas para confirmar.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox(event)">×</button>
+    <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1, event)">‹</button>
+    <img id="lightbox-img" src="" alt="">
+    <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1, event)">›</button>
+    <div class="lightbox-counter" id="lightbox-counter"></div>
   </div>
 
 </div>
@@ -928,17 +1187,33 @@ function renderHero(gym){
     : `Bienvenido a <span class="accent">${escapeHtml(gym.nombre)}</span>`;
   document.getElementById('hero-sub').textContent = gym.description || 'Reserva tu lugar y empieza hoy.';
 
-  // Stats
+  // Stats animados con counter (data-target para IntersectionObserver)
   const stats = [];
-  if (gym.google_rating) stats.push({label:'Rating', value: gym.google_rating + ' ★', cyan: true});
-  if (gym.active_athletes_count) stats.push({label:'Atletas', value: '+' + gym.active_athletes_count});
-  if (gym.years_open) stats.push({label:'Abierto', value: gym.years_open + ' año' + (gym.years_open === 1 ? '' : 's')});
-  if (gym.trial_class_enabled) stats.push({label:'Clase prueba', value: 'GRATIS', cyan: true});
-  const statsHtml = stats.map(s =>
-    `<div class="hero-stat"><div class="label">${escapeHtml(s.label)}</div><div class="value ${s.cyan?'cyan':''}">${escapeHtml(s.value)}</div></div>`
-  ).join('');
+  if (gym.google_rating) stats.push({label:'Rating', target: gym.google_rating, suffix:' ★', cyan: true});
+  if (gym.active_athletes_count) stats.push({label:'Atletas', target: gym.active_athletes_count, prefix:'+'});
+  if (gym.years_open) stats.push({label:'Abierto', target: gym.years_open, suffix:' año' + (gym.years_open === 1 ? '' : 's')});
+  if (gym.trial_class_enabled) stats.push({label:'Clase prueba', text:'GRATIS', cyan: true});
+  const statsHtml = stats.map(s => {
+    if (s.text) return `<div class="hero-stat"><div class="label">${escapeHtml(s.label)}</div><div class="value ${s.cyan?'cyan':''}">${escapeHtml(s.text)}</div></div>`;
+    return `<div class="hero-stat"><div class="label">${escapeHtml(s.label)}</div><div class="value ${s.cyan?'cyan':''}" data-target="${s.target}" data-suffix="${escapeHtml(s.suffix||'')}">${escapeHtml((s.prefix||'') + '0')}</div></div>`;
+  }).join('');
   document.getElementById('hero-stats').innerHTML = statsHtml || '';
   document.getElementById('hero-stats').style.display = stats.length ? '' : 'none';
+
+  // Video hero (si configurado)
+  if (gym.hero_video){
+    const wrap = document.getElementById('hero-video-bg');
+    const vid = document.getElementById('hero-video');
+    if (wrap && vid){
+      vid.src = gym.hero_video;
+      wrap.style.display = 'block';
+    }
+  }
+
+  // Trial banner
+  if (gym.trial_class_enabled){
+    document.getElementById('trial-banner-wrap').style.display = '';
+  }
 
   // Trust bar
   const trust = [
@@ -1117,8 +1392,11 @@ function renderGallery(urls){
     return;
   }
   document.getElementById('gallery-section').style.display = '';
-  document.getElementById('gallery-grid').innerHTML = urls.slice(0, 8).map(u => `
-    <div class="gallery-item"><img src="${escapeHtml(u)}" alt="" loading="lazy"></div>
+  const visibleUrls = urls.slice(0, 8);
+  document.getElementById('gallery-grid').innerHTML = visibleUrls.map((u, i) => `
+    <div class="gallery-item" onclick="openLightbox(${JSON.stringify(visibleUrls).replace(/"/g,'&quot;')}, ${i})">
+      <img src="${escapeHtml(u)}" alt="" loading="lazy">
+    </div>
   `).join('');
 }
 
@@ -1322,6 +1600,350 @@ function _iaHighlightPackage(listingId){
   });
 }
 
+// ════════════════════════════════════════════════════════════
+// SEO + SCHEMA.ORG (JSON-LD)
+// ════════════════════════════════════════════════════════════
+function injectSEO(data){
+  const g = data.gym || {};
+  const loc = data.location || {};
+
+  // Meta tags básicos
+  const title = `${g.nombre} · Reserva tu lugar`;
+  const desc = g.description || `Entrena en ${g.nombre} con Coach IA personal. Sin contratos forzados.`;
+  document.title = title;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', desc);
+  document.getElementById('og-title')?.setAttribute('content', title);
+  document.getElementById('og-description')?.setAttribute('content', desc);
+
+  // Schema.org JSON-LD: LocalBusiness + AggregateRating + Service + FAQPage
+  const ld = {
+    "@context": "https://schema.org",
+    "@graph": []
+  };
+
+  // LocalBusiness
+  const business = {
+    "@type": ["HealthAndBeautyBusiness", "SportsActivityLocation"],
+    "@id": location.href,
+    name: g.nombre,
+    description: g.description,
+    url: location.href,
+    image: g.hero_image || undefined,
+    telephone: g.social?.whatsapp || undefined,
+  };
+  if (loc.full_address){
+    business.address = {
+      "@type": "PostalAddress",
+      streetAddress: loc.address,
+      addressLocality: loc.city,
+      addressRegion: loc.state,
+      postalCode: loc.postal_code,
+      addressCountry: loc.country || 'MX',
+    };
+  }
+  if (loc.latitude && loc.longitude){
+    business.geo = { "@type": "GeoCoordinates", latitude: loc.latitude, longitude: loc.longitude };
+  }
+  if (g.google_rating && g.google_reviews){
+    business.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: g.google_rating,
+      reviewCount: g.google_reviews,
+      bestRating: 5,
+    };
+  }
+  ld["@graph"].push(business);
+
+  // Packages como Offers
+  (data.packages || []).forEach(p => {
+    ld["@graph"].push({
+      "@type": "Offer",
+      name: p.name,
+      description: p.description,
+      price: p.price_mxn,
+      priceCurrency: "MXN",
+      availability: "https://schema.org/InStock",
+    });
+  });
+
+  // FAQs
+  if (Array.isArray(data.faqs) && data.faqs.length){
+    ld["@graph"].push({
+      "@type": "FAQPage",
+      mainEntity: data.faqs.map(f => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: { "@type": "Answer", text: f.answer }
+      }))
+    });
+  }
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(ld);
+  document.head.appendChild(script);
+}
+
+// ════════════════════════════════════════════════════════════
+// META PIXEL + GOOGLE TAG (inyección condicional)
+// ════════════════════════════════════════════════════════════
+function injectTracking(meta_pixel_id, google_tag_id){
+  if (meta_pixel_id){
+    const s1 = document.createElement('script');
+    s1.innerHTML = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${meta_pixel_id}');fbq('track','PageView');`;
+    document.head.appendChild(s1);
+  }
+  if (google_tag_id){
+    const s2 = document.createElement('script');
+    s2.async = true;
+    s2.src = `https://www.googletagmanager.com/gtag/js?id=${google_tag_id}`;
+    document.head.appendChild(s2);
+    const s3 = document.createElement('script');
+    s3.innerHTML = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${google_tag_id}');`;
+    document.head.appendChild(s3);
+  }
+}
+
+function trackEvent(name, params){
+  try { if (window.fbq) fbq('track', name, params || {}); } catch(_){}
+  try { if (window.gtag) gtag('event', name, params || {}); } catch(_){}
+}
+
+// ════════════════════════════════════════════════════════════
+// STATS ANIMATED COUNTER (al entrar viewport)
+// ════════════════════════════════════════════════════════════
+function animateCounters(){
+  const els = document.querySelectorAll('.hero-stat .value[data-target]');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = parseFloat(el.dataset.target);
+      const isFloat = el.dataset.target.includes('.');
+      const suffix = el.dataset.suffix || '';
+      const duration = 1200;
+      const startTime = performance.now();
+      function step(now){
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const val = target * eased;
+        el.textContent = (isFloat ? val.toFixed(1) : Math.floor(val)) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = (isFloat ? target.toFixed(1) : target) + suffix;
+      }
+      requestAnimationFrame(step);
+      observer.unobserve(el);
+    });
+  }, { threshold: 0.4 });
+  els.forEach(el => observer.observe(el));
+}
+
+// ════════════════════════════════════════════════════════════
+// SCROLL REVEAL
+// ════════════════════════════════════════════════════════════
+function initScrollReveal(){
+  const els = document.querySelectorAll('section, .testimonial, .pkg-card, .why-card, .coach-card, .schedule-card, .highlight-card');
+  els.forEach(el => el.classList.add('reveal'));
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(el => observer.observe(el));
+}
+
+// ════════════════════════════════════════════════════════════
+// LIGHTBOX
+// ════════════════════════════════════════════════════════════
+let _lightboxImages = [];
+let _lightboxIdx = 0;
+
+function openLightbox(urls, idx){
+  _lightboxImages = urls;
+  _lightboxIdx = idx;
+  const el = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  const counter = document.getElementById('lightbox-counter');
+  if (!el || !img) return;
+  img.src = urls[idx];
+  counter.textContent = `${idx + 1} / ${urls.length}`;
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  trackEvent('view_gallery_image', { idx });
+}
+
+function closeLightbox(event){
+  if (event && event.target.tagName === 'IMG') return;
+  if (event && event.target.tagName === 'BUTTON' && !event.target.classList.contains('lightbox-close')) return;
+  document.getElementById('lightbox')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function lightboxNav(delta, event){
+  event?.stopPropagation();
+  _lightboxIdx = (_lightboxIdx + delta + _lightboxImages.length) % _lightboxImages.length;
+  document.getElementById('lightbox-img').src = _lightboxImages[_lightboxIdx];
+  document.getElementById('lightbox-counter').textContent = `${_lightboxIdx + 1} / ${_lightboxImages.length}`;
+}
+
+document.addEventListener('keydown', (e) => {
+  const lb = document.getElementById('lightbox');
+  if (!lb || !lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowRight') lightboxNav(1);
+  if (e.key === 'ArrowLeft') lightboxNav(-1);
+});
+
+// ════════════════════════════════════════════════════════════
+// LEAD MODAL (trial class / more_info / callback)
+// ════════════════════════════════════════════════════════════
+let _leadType = 'trial';
+let _leadGymData = null;
+
+function openLeadModal(type, prefillData){
+  _leadType = type;
+  const modal = document.getElementById('lead-modal');
+  if (!modal) return;
+  const dayField = document.getElementById('lead-day-field');
+  const msgField = document.getElementById('lead-message-field');
+  const eyebrow = document.getElementById('lead-eyebrow');
+  const title = document.getElementById('lead-title');
+  const sub = document.getElementById('lead-sub');
+
+  // Reset
+  ['lead-name','lead-phone','lead-email','lead-day','lead-message'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('lead-success').classList.add('app-hidden');
+  document.getElementById('lead-body').style.display = '';
+  document.getElementById('lead-error').style.display = 'none';
+
+  if (type === 'trial'){
+    eyebrow.textContent = '🎁 GRATIS';
+    title.textContent = 'Reserva tu clase de prueba';
+    sub.textContent = 'Sin tarjeta. Sin compromiso. Te confirmamos por WhatsApp en horas.';
+    dayField.style.display = '';
+    msgField.style.display = 'none';
+  } else if (type === 'info'){
+    eyebrow.textContent = 'INFORMACIÓN';
+    title.textContent = '¿Tienes dudas?';
+    sub.textContent = 'Déjanos tus datos y te contactamos para resolverte todo.';
+    dayField.style.display = 'none';
+    msgField.style.display = '';
+  }
+
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('lead-name')?.focus(), 200);
+  trackEvent('open_lead_modal', { type });
+}
+
+function closeLeadModal(){
+  document.getElementById('lead-modal')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function submitLead(){
+  const name = document.getElementById('lead-name').value.trim();
+  const phone = document.getElementById('lead-phone').value.trim();
+  const email = document.getElementById('lead-email').value.trim();
+  const day = document.getElementById('lead-day').value.trim();
+  const message = document.getElementById('lead-message').value.trim();
+  const errEl = document.getElementById('lead-error');
+  errEl.style.display = 'none';
+
+  if (!name){ errEl.textContent = 'Tu nombre es obligatorio.'; errEl.style.display = 'block'; return; }
+  if (!phone && !email){ errEl.textContent = 'Necesitamos al menos WhatsApp o email para contactarte.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('lead-submit');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const type = _leadType === 'trial' ? 'trial_class' : (_leadType === 'info' ? 'more_info' : 'callback');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-lead`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+      body: JSON.stringify({
+        slug: getSlug(), type, name, phone, email,
+        preferred_day: day, message, session_id: _iaSessionId
+      })
+    });
+    btn.disabled = false; btn.textContent = 'Enviar →';
+    if (!res.ok){
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.error || 'Hubo un problema. Intenta de nuevo.';
+      errEl.style.display = 'block';
+      return;
+    }
+    // Success
+    document.getElementById('lead-body').style.display = 'none';
+    document.getElementById('lead-success').classList.remove('app-hidden');
+    trackEvent('Lead', { type });
+  } catch(e){
+    btn.disabled = false; btn.textContent = 'Enviar →';
+    errEl.textContent = 'Sin conexión. Verifica tu internet.';
+    errEl.style.display = 'block';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// SHARE (Web Share API + fallback)
+// ════════════════════════════════════════════════════════════
+async function shareStorefront(){
+  const url = location.href;
+  const title = document.title;
+  const text = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  trackEvent('share_clicked');
+  if (navigator.share){
+    try { await navigator.share({ url, title, text }); } catch(_){}
+  } else {
+    // Fallback: copiar URL
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('Link copiado al portapapeles ✓');
+    } catch(_){
+      alert(url);
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// NEWSLETTER
+// ════════════════════════════════════════════════════════════
+async function submitNewsletter(){
+  const email = document.getElementById('nl-email').value.trim();
+  const btn = document.getElementById('nl-btn');
+  const msg = document.getElementById('nl-msg');
+  if (!email) return;
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-lead`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+      body: JSON.stringify({ slug: getSlug(), type: 'newsletter', email })
+    });
+    if (res.ok){
+      document.getElementById('nl-email').value = '';
+      msg.textContent = '✓ Listo, te avisamos cuando haya algo nuevo.';
+      msg.style.display = 'block';
+      trackEvent('subscribe');
+    } else {
+      msg.textContent = '⚠ Hubo un problema. Intenta de nuevo.';
+      msg.style.color = 'var(--warning)';
+      msg.style.display = 'block';
+    }
+  } catch(e){
+    msg.textContent = '⚠ Sin conexión.';
+    msg.style.color = 'var(--warning)';
+    msg.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Suscribirme';
+  }
+}
+
 // ─── LOAD ─────────────────────────────────────────────────────────
 async function load(){
   const slug = getSlug();
@@ -1344,7 +1966,16 @@ async function load(){
     renderFaqs(data.faqs || []);
     renderPromo(data.promo_banner);
     _iaInitSession(slug);
+
+    // V5: SEO + tracking + animaciones
+    injectSEO(data);
+    injectTracking(data.gym.meta_pixel_id, data.gym.google_tag_id);
     showApp();
+    // Activar después del showApp para que elementos existan
+    requestAnimationFrame(() => {
+      animateCounters();
+      initScrollReveal();
+    });
   } catch(e) {
     console.error('storefront load error:', e);
     showError('Sin conexión. Verifica tu internet y recarga.');
