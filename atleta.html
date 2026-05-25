@@ -3249,7 +3249,42 @@ const isDesktop = () => window.innerWidth >= 780;
 // ── Helpers ─────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
-const apiHeaders = () => ({'apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY,'Content-Type':'application/json'});
+// V2: JWT del atleta (custom claims: cliente_id, gym_id, role:'authenticated')
+// Si está presente, todas las queries van como `authenticated` y RLS aplica.
+let _authJWT = null;
+try { _authJWT = localStorage.getItem('velum_auth_jwt') || null; } catch(_) {}
+
+const apiHeaders = () => {
+  if (_authJWT) {
+    return {'apikey':ANON_KEY,'Authorization':'Bearer '+_authJWT,'Content-Type':'application/json'};
+  }
+  return {'apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY,'Content-Type':'application/json'};
+};
+
+// Llamar velum-atleta-auth para obtener JWT firmado (cliente_id + gym_id claims).
+// payload = {portal_token} o {gym_codigo, numero_cliente, password}
+async function _fetchAtletaAuthJWT(payload){
+  try {
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) { console.warn('velum-atleta-auth failed:', res.status); return null; }
+    const data = await res.json();
+    if (data && data.jwt) {
+      _authJWT = data.jwt;
+      try { localStorage.setItem('velum_auth_jwt', data.jwt); } catch(_) {}
+      return data.jwt;
+    }
+  } catch(e) { console.warn('velum-atleta-auth exception:', e); }
+  return null;
+}
+
+function _clearAtletaAuthJWT(){
+  _authJWT = null;
+  try { localStorage.removeItem('velum_auth_jwt'); } catch(_) {}
+}
 
 function greet(){
   const h=new Date().getHours();
@@ -3688,6 +3723,7 @@ function switchHistTab(tab){ /* replaced by new PROG tab */ }
 // ── Logout ───────────────────────────────────────────
 function doLogout(){
   try{ localStorage.removeItem('velum_session'); }catch(_){}
+  _clearAtletaAuthJWT(); // V2: limpiar JWT también
   clearProfilePhoto();
   portalData=null;
   closeSheet('profile-sheet');
@@ -6714,6 +6750,9 @@ async function doLogin(){
       errEl.textContent=m; errEl.style.display='block'; return;
     }
     try{ localStorage.setItem('velum_last_gym', gym); }catch(_){}
+    // V2: También obtener JWT autenticado (no bloquea showPortal si falla)
+    _fetchAtletaAuthJWT({gym_codigo: gym, numero_cliente: parseInt(numero,10), password: pwd})
+      .catch(()=>null);
     showPortal(data);
   }catch(e){ errEl.textContent='Error de conexión. Intenta de nuevo.'; errEl.style.display='block'; }
   finally{ btn.disabled=false; btn.textContent='Acceder al Portal'; }
@@ -6852,6 +6891,8 @@ async function init(){
     if(!res.ok) throw new Error('invalid');
     const data=await res.json();
     if(data.error) throw new Error(data.error);
+    // V2: También obtener JWT autenticado (no bloquea si falla, queda usando anon)
+    _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null);
     return data;
   }
 
