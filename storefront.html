@@ -813,7 +813,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
         <div class="hero-card-float hero-card-1">
           <div class="hero-card-label">// COACH IA</div>
           <div class="hero-card-title">Plan personalizado</div>
-          <div class="hero-card-desc">"Te recomendamos el Pack 10 clases para tu meta de hipertrofia."</div>
+          <div class="hero-card-desc">"Según tu meta y disponibilidad, te recomiendo el plan que mejor te encaja."</div>
         </div>
         <div class="hero-card-float hero-card-2">
           <div class="hero-card-label">// CHECK-IN QR</div>
@@ -871,7 +871,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
           <div class="ia-preview-msgs">
             <div class="ia-pm ia-pm-ai">¡Hola! ¿Qué buscas conseguir entrenando?</div>
             <div class="ia-pm ia-pm-user">Perder peso, oficinista, voy 3x semana</div>
-            <div class="ia-pm ia-pm-ai">Te recomiendo empezar con la Mensualidad. 3 clases/semana es ideal para tu meta. ¿Reservamos tu primera clase?</div>
+            <div class="ia-pm ia-pm-ai">Perfecto. Te recomiendo el plan mensual para que entrenes 3 veces por semana sin preocuparte de cupos. ¿Te late?</div>
           </div>
           <button class="ia-cta" onclick="iaToggle()">Probar Coach IA →</button>
         </div>
@@ -1183,7 +1183,9 @@ function renderHero(gym){
   document.getElementById('brand-mark').textContent = gym.nombre.charAt(0).toUpperCase();
   document.getElementById('brand-name').textContent = gym.nombre;
   document.getElementById('brand-tag').textContent = gym.tagline || 'Powered by VELUM';
-  document.getElementById('hero-tag').textContent = (gym.tagline || 'Reserva tu lugar').toUpperCase();
+  // Eyebrow: usa tagline si existe, sino una frase neutra. Nunca "FITNESS" hardcoded.
+  const eyebrow = gym.tagline || (gym.years_open ? `${gym.years_open} años transformando vidas` : 'Reserva tu lugar');
+  document.getElementById('hero-tag').textContent = eyebrow.toUpperCase();
 
   // Title = primera oración. Sub = resto. Si hay solo 1 oración, usa tagline o default.
   const desc = (gym.description || '').trim();
@@ -1510,6 +1512,7 @@ let _iaConversation = [];
 let _iaSessionId = null;
 let _iaSlug = null;
 let _iaBusy = false;
+let _iaClassTypes = []; // tipos únicos de clase del gym (poblado tras 1er response del IA)
 
 function _iaInitSession(slug){
   _iaSlug = slug;
@@ -1531,7 +1534,13 @@ function iaToggle(){
   panel.classList.toggle('open');
   if (panel.classList.contains('open') && _iaConversation.length === 0){
     _iaAddMessage('ai', '¡Hola! 👋 Soy Coach IA. Te ayudo a elegir el plan perfecto.\n\n¿Cuál es tu objetivo principal?');
-    _iaRenderSuggestions(['Perder peso', 'Ganar fuerza', 'Mejorar condición', 'Hacer CrossFit']);
+    // Suggestions enfocadas en objetivos (universales) no en tipos de clase específicos
+    const baseSuggestions = ['Perder peso', 'Ganar fuerza', 'Mejorar condición', 'Probar primera clase'];
+    // Si hay tipos de clase del gym, agregar una sugerencia "¿Qué clases tienes?"
+    if (Array.isArray(_iaClassTypes) && _iaClassTypes.length > 0){
+      baseSuggestions.push('¿Qué tipos de clase tienen?');
+    }
+    _iaRenderSuggestions(baseSuggestions);
     setTimeout(() => document.getElementById('iaInput')?.focus(), 250);
   }
 }
@@ -1594,6 +1603,7 @@ async function _iaSendMessage(text){
     const data = await res.json();
     if (data.error){ _iaAddMessage('ai', 'Error: ' + data.error); return; }
     _iaAddMessage('ai', data.reply || 'Sin respuesta.');
+    if (Array.isArray(data.class_types) && data.class_types.length) _iaClassTypes = data.class_types;
     if (data.recommended_listing_id) setTimeout(() => _iaHighlightPackage(data.recommended_listing_id), 600);
   } catch(e) {
     _iaHideTyping();
