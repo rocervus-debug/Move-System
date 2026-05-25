@@ -608,6 +608,278 @@ footer {
 }
 
 .app-hidden { display: none; }
+
+/* ============ IA WIDGET CHAT ============ */
+.ia-fab {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  z-index: 200;
+}
+
+.ia-bubble {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), #005A7A);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--glow-strong);
+  border: none;
+  animation: bubble-pulse 2.4s ease-in-out infinite;
+  transition: transform 220ms var(--ease-out);
+  position: relative;
+}
+
+.ia-bubble:hover { transform: scale(1.08); }
+
+@keyframes bubble-pulse {
+  0%, 100% { box-shadow: 0 0 32px rgba(0, 212, 255, 0.4); }
+  50% { box-shadow: 0 0 64px rgba(0, 212, 255, 0.7); }
+}
+
+.ia-bubble svg { width: 26px; height: 26px; fill: #001828; }
+
+.ia-bubble .badge-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #10E8A0;
+  border: 2px solid var(--bg);
+}
+
+.ia-panel {
+  position: absolute;
+  bottom: 78px;
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 30px);
+  height: 540px;
+  max-height: calc(100vh - 110px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 22px;
+  box-shadow: var(--glow-strong), 0 30px 80px rgba(0,0,0,0.6);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ia-panel.open { display: flex; animation: slide-up 320ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ia-head {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: linear-gradient(135deg, var(--cyan-dim), transparent);
+}
+
+.ia-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cyan);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ia-avatar svg { width: 20px; height: 20px; fill: #001828; }
+
+.ia-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.ia-status {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.ia-status .pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+.ia-close {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-elevated);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.ia-close:hover { background: var(--cyan-dim); color: var(--cyan); }
+
+.ia-msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+}
+
+.msg {
+  max-width: 84%;
+  padding: 10px 13px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  animation: msg-in 320ms ease-out both;
+  white-space: pre-line;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg.ai {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+  align-self: flex-start;
+}
+
+.msg.user {
+  background: var(--cyan);
+  color: #001828;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  align-self: flex-start;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.30s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.suggest-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 18px 10px;
+}
+
+.suggest-chip {
+  padding: 7px 11px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: 999px;
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.suggest-chip:hover {
+  background: var(--cyan-dim);
+  transform: translateY(-1px);
+}
+
+.ia-input-bar {
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  gap: 8px;
+  background: var(--bg-input);
+}
+
+.ia-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  padding: 6px;
+  outline: none;
+}
+
+.ia-input::placeholder { color: var(--text-3); }
+
+.ia-send {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cyan);
+  border: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 200ms;
+}
+
+.ia-send:hover { background: var(--cyan-light); }
+
+.ia-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ia-send svg { width: 14px; height: 14px; fill: #001828; }
+
+.pkg-card.recommended-by-ia {
+  outline: 2px solid var(--cyan);
+  outline-offset: 4px;
+  position: relative;
+  animation: pkg-pulse 1.4s ease-out;
+}
+
+@keyframes pkg-pulse {
+  0% { transform: scale(0.98); box-shadow: 0 0 0 rgba(0, 212, 255, 0); }
+  50% { transform: scale(1.02); box-shadow: 0 0 32px rgba(0, 212, 255, 0.5); }
+  100% { transform: scale(1); }
+}
 </style>
 </head>
 <body>
@@ -695,6 +967,34 @@ footer {
     <div class="footer-meta">// Powered by <strong>VELUM</strong> · myvelum.app</div>
     <div class="footer-copy" id="footer-copy">© 2026 · Todos los derechos reservados</div>
   </footer>
+
+  <!-- ============ IA WIDGET ============ -->
+  <div class="ia-fab">
+    <button class="ia-bubble" onclick="iaToggle()" title="Habla con Coach IA">
+      <span class="badge-dot"></span>
+      <svg viewBox="0 0 100 100"><polygon points="50,5 65,35 95,50 65,65 50,95 35,65 5,50 35,35"/></svg>
+    </button>
+    <div class="ia-panel" id="iaPanel">
+      <div class="ia-head">
+        <div class="ia-avatar">
+          <svg viewBox="0 0 100 100"><polygon points="50,5 65,35 95,50 65,65 50,95 35,65 5,50 35,35"/></svg>
+        </div>
+        <div style="flex:1;">
+          <div class="ia-name">Coach IA</div>
+          <div class="ia-status"><span class="pulse"></span> EN LÍNEA</div>
+        </div>
+        <button class="ia-close" onclick="iaToggle()" title="Cerrar">×</button>
+      </div>
+      <div class="ia-msgs" id="iaMsgs"></div>
+      <div class="suggest-row" id="iaSuggestions"></div>
+      <div class="ia-input-bar">
+        <input type="text" class="ia-input" id="iaInput" placeholder="Pregúntame lo que quieras..." onkeypress="if(event.key==='Enter') iaSend()">
+        <button class="ia-send" id="iaSend" onclick="iaSend()" title="Enviar">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -815,7 +1115,7 @@ function renderPackages(packages){
       </li>
     `).join('');
     return `
-      <div class="pkg-card ${featured}">
+      <div class="pkg-card ${featured}" data-listing-id="${p.listing_id}">
         ${badge}
         <div class="pkg-name">${escapeHtml(p.name)}</div>
         <div class="pkg-price-row">
@@ -837,6 +1137,169 @@ function scrollToPackages(){
 function onPackageClick(listingId){
   // FASE 10D: aquí abrirá el modal de checkout con Stripe
   alert('Próximamente: checkout con Stripe. Mientras tanto, contacta al gym directamente.');
+}
+
+// ════════════════════════════════════════════════════════════
+// IA WIDGET CHAT
+// ════════════════════════════════════════════════════════════
+let _iaConversation = []; // [{role:'user'|'assistant', content}]
+let _iaSessionId = null;
+let _iaSlug = null;
+let _iaBusy = false;
+
+function _iaInitSession(slug){
+  _iaSlug = slug;
+  try {
+    const stored = localStorage.getItem('velum_sf_session_' + slug);
+    if (stored) {
+      _iaSessionId = stored;
+    } else {
+      _iaSessionId = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('velum_sf_session_' + slug, _iaSessionId);
+    }
+  } catch(_) {
+    _iaSessionId = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+  }
+}
+
+function iaToggle(){
+  const panel = document.getElementById('iaPanel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    // Primer mensaje del IA al abrir si está vacío
+    if (_iaConversation.length === 0) {
+      _iaAddMessage('ai', `¡Hola! 👋 Soy Coach IA de este gym. Te ayudo a elegir el plan perfecto.\n\n¿Cuál es tu objetivo principal con el entrenamiento?`);
+      _iaRenderSuggestions([
+        'Perder peso',
+        'Ganar fuerza',
+        'Mejorar condición',
+        'Hacer CrossFit'
+      ]);
+    }
+    setTimeout(() => document.getElementById('iaInput')?.focus(), 250);
+  }
+}
+
+function _iaAddMessage(role, content, animate = true){
+  const msgs = document.getElementById('iaMsgs');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'ai' ? 'ai' : 'user');
+  div.textContent = content;
+  if (!animate) div.style.animation = 'none';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  // Persistir en conversation history (solo user + assistant del API)
+  if (role === 'ai') {
+    _iaConversation.push({ role: 'assistant', content });
+  } else {
+    _iaConversation.push({ role: 'user', content });
+  }
+}
+
+function _iaRenderSuggestions(items){
+  const row = document.getElementById('iaSuggestions');
+  if (!row) return;
+  if (!items || !items.length) {
+    row.innerHTML = '';
+    return;
+  }
+  row.innerHTML = items.map(t =>
+    `<button class="suggest-chip" onclick="iaSendSuggested('${t.replace(/'/g, "\\'")}')">${escapeHtml(t)}</button>`
+  ).join('');
+}
+
+function _iaShowTyping(){
+  const msgs = document.getElementById('iaMsgs');
+  if (!msgs) return;
+  const old = document.getElementById('ia-typing');
+  if (old) old.remove();
+  const div = document.createElement('div');
+  div.id = 'ia-typing';
+  div.className = 'typing-dots';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function _iaHideTyping(){
+  const el = document.getElementById('ia-typing');
+  if (el) el.remove();
+}
+
+async function iaSend(){
+  const inp = document.getElementById('iaInput');
+  if (!inp || _iaBusy) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  await _iaSendMessage(text);
+}
+
+async function iaSendSuggested(text){
+  if (_iaBusy) return;
+  _iaRenderSuggestions([]); // ocultar sugerencias después del primer click
+  await _iaSendMessage(text);
+}
+
+async function _iaSendMessage(text){
+  if (!_iaSlug || !_iaSessionId) {
+    _iaAddMessage('ai', 'Error: sesión no inicializada. Recarga la página.');
+    return;
+  }
+  _iaBusy = true;
+  document.getElementById('iaSend')?.setAttribute('disabled', 'true');
+  _iaAddMessage('user', text);
+  _iaShowTyping();
+
+  try {
+    const messagesForApi = [..._iaConversation]; // ya incluye el user que acabamos de agregar
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-ia-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+      body: JSON.stringify({
+        slug: _iaSlug,
+        session_id: _iaSessionId,
+        messages: messagesForApi
+      })
+    });
+    _iaHideTyping();
+    if (!res.ok) {
+      _iaAddMessage('ai', 'Hubo un problema al conectar. Intenta de nuevo en un momento.');
+      return;
+    }
+    const data = await res.json();
+    if (data.error) {
+      _iaAddMessage('ai', 'Error: ' + data.error);
+      return;
+    }
+    _iaAddMessage('ai', data.reply || 'Sin respuesta.');
+
+    // Si recomendó un paquete, hacer highlight + scroll
+    if (data.recommended_listing_id) {
+      setTimeout(() => _iaHighlightPackage(data.recommended_listing_id), 600);
+    }
+  } catch(e) {
+    _iaHideTyping();
+    console.error('IA error:', e);
+    _iaAddMessage('ai', 'Sin conexión. Revisa tu internet e intenta de nuevo.');
+  } finally {
+    _iaBusy = false;
+    document.getElementById('iaSend')?.removeAttribute('disabled');
+  }
+}
+
+function _iaHighlightPackage(listingId){
+  document.querySelectorAll('.pkg-card.recommended-by-ia').forEach(el => el.classList.remove('recommended-by-ia'));
+  // Find package by listing_id (set as data attr en renderPackages — necesito agregarlo)
+  const cards = document.querySelectorAll('.pkg-card');
+  cards.forEach(c => {
+    if (c.dataset.listingId == String(listingId)) {
+      c.classList.add('recommended-by-ia');
+      c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
 }
 
 async function load(){
@@ -865,6 +1328,7 @@ async function load(){
     applyColor(data.gym.primary_color);
     renderHero(data.gym);
     renderPackages(data.packages);
+    _iaInitSession(slug);  // V2: inicializar sesión IA chat con el slug del gym
     showApp();
   } catch(e) {
     console.error('storefront load error:', e);
