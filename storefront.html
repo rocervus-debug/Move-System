@@ -330,18 +330,71 @@ section { padding: 70px 24px; position: relative; }
 .pkg-card.recommended-by-ia { outline: 2px solid var(--cyan); outline-offset: 4px; animation: pkg-pulse 1.4s ease-out; }
 @keyframes pkg-pulse { 0% { transform: scale(0.98); } 50% { transform: scale(1.02); box-shadow: 0 0 32px rgba(0, 212, 255, 0.5); } 100% { transform: scale(1); } }
 
-/* ─── SCHEDULE ─── */
+/* ─── SCHEDULE WEEKLY ─── */
 .schedule-section { background: var(--bg-2); }
-.schedule-list { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.schedule-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; transition: all 200ms; }
+.schedule-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 auto 20px;
+  max-width: 720px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.schedule-tab {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-2);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 200ms;
+  display: flex; align-items: center; gap: 6px;
+}
+.schedule-tab:hover { border-color: var(--border-medium); color: var(--text); }
+.schedule-tab.active { background: var(--cyan); color: #001828; border-color: var(--cyan); box-shadow: 0 0 16px rgba(0, 212, 255, 0.3); }
+.schedule-tab .badge { background: var(--cyan-dim); color: var(--cyan); font-size: 9px; padding: 1px 6px; border-radius: 8px; }
+.schedule-tab.active .badge { background: rgba(0,24,40,0.2); color: #001828; }
+
+.schedule-day {
+  display: none;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.schedule-day.active { display: block; animation: fadeIn 320ms ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.schedule-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 200ms;
+}
 .schedule-card:hover { border-color: var(--border-medium); transform: translateX(2px); }
-.schedule-card.full { opacity: 0.6; }
-.sc-time { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; width: 70px; flex-shrink: 0; }
+.sc-time { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; width: 70px; flex-shrink: 0; }
 .sc-mid { flex: 1; min-width: 0; }
-.sc-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.sc-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; color: var(--cyan); }
 .sc-coach { font-size: 11px; color: var(--text-3); }
-.sc-spots { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--cyan); font-weight: 700; flex-shrink: 0; text-align: right; }
-.sc-spots small { display: block; font-size: 9px; color: var(--text-3); font-weight: 500; letter-spacing: 0.5px; margin-top: 2px; }
+.sc-cupo { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text-3); flex-shrink: 0; text-align: right; }
+.schedule-day-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-3);
+  font-size: 13px;
+}
 
 /* ─── COACHES ─── */
 .coaches-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; max-width: 1100px; margin: 0 auto; }
@@ -692,15 +745,16 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
     </div>
   </section>
 
-  <!-- SCHEDULE -->
+  <!-- SCHEDULE WEEKLY -->
   <section id="schedule-section" class="schedule-section" style="display:none;">
     <div class="section-inner">
       <div class="section-head">
-        <div class="section-eyebrow">HORARIO</div>
-        <h2 class="section-title">Próximas clases</h2>
-        <p class="section-sub">Cupos en tiempo real. Reserva al instante.</p>
+        <div class="section-eyebrow">HORARIO SEMANAL</div>
+        <h2 class="section-title">Clases que ofrecemos</h2>
+        <p class="section-sub">Mismo horario cada semana. Elige el día y la hora que te acomode.</p>
       </div>
-      <div class="schedule-list" id="schedule-list"></div>
+      <div class="schedule-tabs" id="schedule-tabs"></div>
+      <div id="schedule-days"></div>
     </div>
   </section>
 
@@ -958,29 +1012,61 @@ function renderPackages(packages){
   }).join('');
 }
 
-function renderSchedule(schedule){
-  if (!schedule || schedule.length === 0){
+function renderScheduleWeekly(weekly){
+  if (!weekly){
+    document.getElementById('schedule-section').style.display = 'none';
+    return;
+  }
+  const days = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const dayShort = {'Lunes':'LUN','Martes':'MAR','Miércoles':'MIÉ','Jueves':'JUE','Viernes':'VIE','Sábado':'SÁB','Domingo':'DOM'};
+  // Solo días con clases
+  const daysWithClasses = days.filter(d => Array.isArray(weekly[d]) && weekly[d].length > 0);
+  if (daysWithClasses.length === 0){
     document.getElementById('schedule-section').style.display = 'none';
     return;
   }
   document.getElementById('schedule-section').style.display = '';
-  const today = new Date().toISOString().slice(0,10);
-  const next7 = schedule.filter(s => s.fecha >= today).slice(0, 12);
-  document.getElementById('schedule-list').innerHTML = next7.map(s => {
-    const dateObj = new Date(s.fecha + 'T00:00');
-    const diaCorto = dateObj.toLocaleDateString('es-MX', {weekday:'short'}).toUpperCase();
-    const fechaCorta = dateObj.toLocaleDateString('es-MX', {day:'2-digit', month:'short'});
-    const full = s.cupo_disponible === 0;
-    return `
-      <div class="schedule-card ${full ? 'full' : ''}">
-        <div class="sc-time">${escapeHtml(s.hora || '—')}</div>
-        <div class="sc-mid">
-          <div class="sc-name">${escapeHtml(s.tipo || 'Clase')}</div>
-          <div class="sc-coach">${escapeHtml(diaCorto)} ${escapeHtml(fechaCorta)} · ${escapeHtml(s.coach || '—')}</div>
-        </div>
-        <div class="sc-spots">${full ? 'FULL' : s.cupo_disponible + '/' + s.cupo_total}<small>cupos</small></div>
-      </div>`;
-  }).join('');
+
+  // Día por default: hoy si tiene clases, sino el primer día con clases
+  const todayIdx = new Date().getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+  const todayName = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][todayIdx];
+  const defaultDay = daysWithClasses.includes(todayName) ? todayName : daysWithClasses[0];
+
+  // Tabs
+  document.getElementById('schedule-tabs').innerHTML = daysWithClasses.map(d => `
+    <button class="schedule-tab ${d === defaultDay ? 'active' : ''}" onclick="scheduleSelectDay('${d}')">
+      ${dayShort[d]}<span class="badge">${weekly[d].length}</span>
+    </button>
+  `).join('');
+
+  // Days content
+  document.getElementById('schedule-days').innerHTML = daysWithClasses.map(d => `
+    <div class="schedule-day ${d === defaultDay ? 'active' : ''}" id="schedule-day-${d.replace('é','e')}">
+      <div class="schedule-grid">
+        ${weekly[d].map(c => `
+          <div class="schedule-card">
+            <div class="sc-time">${escapeHtml(c.hora || '—')}</div>
+            <div class="sc-mid">
+              <div class="sc-name">${escapeHtml(c.tipo || 'Clase')}</div>
+              <div class="sc-coach">${escapeHtml(c.coach || 'Coach')}</div>
+            </div>
+            ${c.cupo_total ? `<div class="sc-cupo">${c.cupo_total} cupos</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function scheduleSelectDay(day){
+  document.querySelectorAll('.schedule-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.schedule-day').forEach(d => d.classList.remove('active'));
+  const tabs = document.querySelectorAll('.schedule-tab');
+  const days = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const dayShort = {'Lunes':'LUN','Martes':'MAR','Miércoles':'MIÉ','Jueves':'JUE','Viernes':'VIE','Sábado':'SÁB','Domingo':'DOM'};
+  const short = dayShort[day];
+  tabs.forEach(t => { if (t.textContent.includes(short)) t.classList.add('active'); });
+  document.getElementById('schedule-day-' + day.replace('é','e'))?.classList.add('active');
 }
 
 function renderCoaches(coaches){
@@ -1250,7 +1336,7 @@ async function load(){
     applyColor(data.gym.primary_color);
     renderHero(data.gym);
     renderPackages(data.packages);
-    renderSchedule(data.schedule || []);
+    renderScheduleWeekly(data.schedule_weekly);
     renderCoaches(data.coaches || []);
     renderTestimonials(data.testimonials || []);
     renderGallery(data.gallery || []);
