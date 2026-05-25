@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cargando…</title>
+<meta name="description" content="Reserva tu lugar — VELUM Storefront">
+<meta property="og:type" content="website">
+<meta property="og:title" id="og-title" content="VELUM">
+<meta property="og:description" id="og-description" content="Reserva tu lugar">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #040C14;
+  --bg-2: #06101A;
+  --bg-card: #08121E;
+  --bg-elevated: #0D1B2A;
+  --bg-input: #050E18;
+  --cyan: #00D4FF;
+  --cyan-light: #66E8FF;
+  --cyan-dim: rgba(0, 212, 255, 0.12);
+  --cyan-bright: rgba(0, 212, 255, 0.25);
+  --text: #E8EDF5;
+  --text-2: #7ABFCC;
+  --text-3: #3A5A6A;
+  --border-soft: rgba(0, 212, 255, 0.08);
+  --border-medium: rgba(0, 212, 255, 0.18);
+  --border-accent: rgba(0, 212, 255, 0.40);
+  --glow-soft: 0 0 24px rgba(0, 212, 255, 0.08);
+  --glow-medium: 0 0 48px rgba(0, 212, 255, 0.18);
+  --glow-strong: 0 0 96px rgba(0, 212, 255, 0.35);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(0, 212, 255, 0.12), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 95% 30%, rgba(0, 212, 255, 0.08), transparent 70%),
+    var(--bg);
+}
+
+/* ============ LOADING ============ */
+.boot {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.boot-spin {
+  width: 56px;
+  height: 56px;
+  border: 3px solid var(--bg-elevated);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin: 0 auto 18px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.boot-text {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+/* ============ ERROR ============ */
+.err {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 32px;
+}
+
+.err-card {
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 36px 28px;
+}
+
+.err-icon { font-size: 48px; margin-bottom: 14px; }
+.err-title { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.err-text { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+
+/* ============ NAV ============ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 16px 24px;
+  background: rgba(4, 12, 20, 0.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.nav-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--cyan), #005A7A);
+  display: grid;
+  place-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  color: #001828;
+  box-shadow: var(--glow-soft);
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.brand-tag {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 1.2px;
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+
+.btn-cta {
+  background: var(--cyan);
+  color: #001828;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+  transition: all 220ms var(--ease-out);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-cta:hover {
+  background: var(--cyan-light);
+  box-shadow: var(--glow-strong);
+}
+
+/* ============ HERO ============ */
+.hero {
+  padding: 130px 24px 60px;
+}
+
+.hero-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--border-medium);
+  border-radius: 999px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+.hero-eyebrow .pulse {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.6); }
+}
+
+.hero h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  margin-bottom: 18px;
+}
+
+.hero h1 .accent {
+  color: var(--cyan);
+}
+
+@media (max-width: 640px) { .hero h1 { font-size: 38px; } }
+
+.hero-sub {
+  font-size: 18px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin-bottom: 28px;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-stats {
+  display: inline-flex;
+  gap: 28px;
+  padding: 16px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hero-stat .label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.hero-stat .value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.hero-stat .value.cyan { color: var(--cyan); }
+
+/* ============ HIGHLIGHTS ============ */
+.highlights {
+  padding: 40px 24px;
+  background: var(--bg-2);
+}
+
+.highlights-grid {
+  max-width: 980px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.highlight-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.highlight-bullet {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--cyan-dim);
+  display: grid;
+  place-items: center;
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+
+.highlight-text {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* ============ PACKAGES ============ */
+section { padding: 60px 24px; position: relative; }
+
+.section-inner { max-width: 1280px; margin: 0 auto; }
+
+.section-head {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.section-eyebrow {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+.section-sub {
+  font-size: 16px;
+  color: var(--text-2);
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) { .section-title { font-size: 28px; } }
+
+.pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pkg-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 26px 22px;
+  position: relative;
+  transition: all 300ms var(--ease-out);
+  display: flex;
+  flex-direction: column;
+}
+
+.pkg-card:hover {
+  border-color: var(--border-medium);
+  transform: translateY(-3px);
+  box-shadow: var(--glow-soft);
+}
+
+.pkg-card.featured {
+  background: linear-gradient(180deg, var(--cyan-dim), var(--bg-card));
+  border-color: var(--cyan);
+  box-shadow: var(--glow-medium);
+}
+
+.pkg-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cyan);
+  color: #001828;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+}
+
+.pkg-name {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.pkg-card.featured .pkg-name { color: var(--cyan); }
+
+.pkg-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.pkg-currency {
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.pkg-price {
+  font-family: 'Outfit', sans-serif;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.pkg-meta {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 18px;
+}
+
+.pkg-features {
+  list-style: none;
+  margin-bottom: 22px;
+  flex: 1;
+}
+
+.pkg-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.pkg-feature-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cyan-dim);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pkg-card.featured .pkg-feature-check { background: var(--cyan); }
+
+.pkg-feature-check svg { width: 9px; height: 9px; fill: var(--cyan); }
+.pkg-card.featured .pkg-feature-check svg { fill: #001828; }
+
+.pkg-cta {
+  width: 100%;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border-medium);
+  padding: 13px;
+  border-radius: 12px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 220ms var(--ease-out);
+}
+
+.pkg-cta:hover {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.pkg-card.featured .pkg-cta {
+  background: var(--cyan);
+  color: #001828;
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+}
+
+.pkg-card.featured .pkg-cta:hover {
+  background: var(--cyan-light);
+  box-shadow: var(--glow-strong);
+}
+
+/* ============ DESCRIPCION ============ */
+.about-section { background: var(--bg-2); }
+
+.about-card {
+  max-width: 740px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.about-card p {
+  font-size: 16px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ============ CTA FINAL ============ */
+.final-cta-card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, var(--cyan-dim), var(--bg-card));
+  border: 1px solid var(--border-accent);
+  border-radius: 26px;
+  padding: 50px 32px;
+  text-align: center;
+  box-shadow: var(--glow-medium);
+}
+
+.final-cta-card h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin-bottom: 12px;
+}
+
+.final-cta-card p {
+  font-size: 16px;
+  color: var(--text-2);
+  margin-bottom: 26px;
+  line-height: 1.5;
+}
+
+.btn-primary-lg {
+  background: var(--cyan);
+  color: #001828;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 32px rgba(0, 212, 255, 0.3);
+  transition: all 220ms var(--ease-out);
+}
+
+.btn-primary-lg:hover {
+  background: var(--cyan-light);
+  box-shadow: var(--glow-strong);
+  transform: translateY(-1px);
+}
+
+/* ============ FOOTER ============ */
+footer {
+  padding: 36px 24px 24px;
+  border-top: 1px solid var(--border-soft);
+  text-align: center;
+}
+
+.footer-brand {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.footer-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.footer-meta strong { color: var(--cyan); font-weight: 700; }
+
+.footer-copy {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 14px;
+}
+
+.app-hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOADING ============ -->
+<div class="boot" id="boot">
+  <div>
+    <div class="boot-spin"></div>
+    <div class="boot-text">Cargando…</div>
+  </div>
+</div>
+
+<!-- ============ ERROR ============ -->
+<div class="err app-hidden" id="err">
+  <div class="err-card">
+    <div class="err-icon">🔍</div>
+    <div class="err-title">Storefront no encontrado</div>
+    <div class="err-text" id="err-msg">El link que intentas abrir no existe o el gym todavía no activó su página pública.</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="app-hidden">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-mark" id="brand-mark">G</div>
+        <div>
+          <div class="brand-name" id="brand-name">Gym</div>
+          <div class="brand-tag" id="brand-tag">Powered by VELUM</div>
+        </div>
+      </div>
+      <button class="btn-cta" onclick="scrollToPackages()">Ver paquetes</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow"><span class="pulse"></span><span id="hero-tag">FITNESS</span></div>
+      <h1 id="hero-title">Tu primer mes con <span class="accent">Coach IA personal</span></h1>
+      <p class="hero-sub" id="hero-sub">Descripción del gym</p>
+      <div class="hero-stats" id="hero-stats"></div>
+    </div>
+  </section>
+
+  <!-- HIGHLIGHTS -->
+  <section class="highlights" id="highlights-section">
+    <div class="highlights-grid" id="highlights-grid"></div>
+  </section>
+
+  <!-- PACKAGES -->
+  <section id="paquetes">
+    <div class="section-inner">
+      <div class="section-head">
+        <div class="section-eyebrow">PAQUETES</div>
+        <h2 class="section-title">Elige tu plan</h2>
+        <p class="section-sub">Sin contratos forzados. Cancela cuando quieras.</p>
+      </div>
+      <div class="pkg-grid" id="pkg-grid"></div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about-section" id="about-section">
+    <div class="about-card">
+      <p id="about-text"></p>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section>
+    <div class="final-cta-card">
+      <h2>Empieza hoy</h2>
+      <p>Reserva tu lugar en 60 segundos. Sin compromisos.</p>
+      <button class="btn-primary-lg" onclick="scrollToPackages()">Ver paquetes →</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand" id="footer-name">Gym</div>
+    <div class="footer-meta">// Powered by <strong>VELUM</strong> · myvelum.app</div>
+    <div class="footer-copy" id="footer-copy">© 2026 · Todos los derechos reservados</div>
+  </footer>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
+
+// ── Get slug from query string or URL path ──
+function getSlug(){
+  const u = new URL(location.href);
+  const fromQuery = u.searchParams.get('slug');
+  if (fromQuery) return fromQuery.toLowerCase().trim();
+  // /g/{slug} pattern
+  const m = u.pathname.match(/\/g\/([a-z0-9-]+)/i);
+  return m ? m[1].toLowerCase() : '';
+}
+
+function showError(msg){
+  document.getElementById('boot').classList.add('app-hidden');
+  document.getElementById('app').classList.add('app-hidden');
+  const err = document.getElementById('err');
+  err.classList.remove('app-hidden');
+  if (msg) document.getElementById('err-msg').textContent = msg;
+}
+
+function showApp(){
+  document.getElementById('boot').classList.add('app-hidden');
+  document.getElementById('err').classList.add('app-hidden');
+  document.getElementById('app').classList.remove('app-hidden');
+}
+
+function applyColor(color){
+  if (!color) return;
+  // Validate hex
+  if (!/^#[0-9A-Fa-f]{6}$/.test(color)) return;
+  document.documentElement.style.setProperty('--cyan', color);
+}
+
+function escapeHtml(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderHero(gym){
+  document.title = `${gym.nombre} · Reserva tu lugar`;
+  document.getElementById('og-title').setAttribute('content', `${gym.nombre} · VELUM`);
+  document.getElementById('og-description').setAttribute('content', gym.description || gym.tagline || '');
+
+  document.getElementById('brand-mark').textContent = gym.nombre.charAt(0).toUpperCase();
+  document.getElementById('brand-name').textContent = gym.nombre;
+  document.getElementById('brand-tag').textContent = gym.tagline || 'Powered by VELUM';
+
+  document.getElementById('hero-tag').textContent = (gym.tagline || 'Reserva tu lugar').toUpperCase();
+  document.getElementById('hero-title').innerHTML = gym.description
+    ? escapeHtml(gym.description.split('.')[0])
+    : `Bienvenido a <span class="accent">${escapeHtml(gym.nombre)}</span>`;
+  document.getElementById('hero-sub').textContent = gym.description || 'Reserva tu lugar y empieza hoy.';
+
+  // Stats
+  const stats = [];
+  if (gym.google_rating) stats.push({label:'Rating', value: gym.google_rating + ' ★', cyan: true});
+  if (gym.google_reviews > 0) stats.push({label:'Reseñas', value: gym.google_reviews});
+  if (gym.trial_class_enabled) stats.push({label:'Clase prueba', value: 'GRATIS', cyan: true});
+  if (gym.free_first_month) stats.push({label:'1er mes', value: 'GRATIS', cyan: true});
+
+  const statsHtml = stats.map(s =>
+    `<div class="hero-stat"><div class="label">${escapeHtml(s.label)}</div><div class="value ${s.cyan?'cyan':''}">${escapeHtml(s.value)}</div></div>`
+  ).join('');
+  document.getElementById('hero-stats').innerHTML = statsHtml || '';
+  document.getElementById('hero-stats').style.display = stats.length ? '' : 'none';
+
+  // Highlights
+  if (Array.isArray(gym.highlights) && gym.highlights.length > 0){
+    document.getElementById('highlights-section').style.display = '';
+    document.getElementById('highlights-grid').innerHTML = gym.highlights.map(h => `
+      <div class="highlight-card">
+        <div class="highlight-bullet">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <div class="highlight-text">${escapeHtml(h)}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('highlights-section').style.display = 'none';
+  }
+
+  // About
+  if (gym.about_html || gym.description){
+    document.getElementById('about-section').style.display = '';
+    document.getElementById('about-text').innerHTML = gym.about_html || escapeHtml(gym.description);
+  } else {
+    document.getElementById('about-section').style.display = 'none';
+  }
+
+  document.getElementById('footer-name').textContent = gym.nombre;
+  document.getElementById('footer-copy').textContent = `© ${new Date().getFullYear()} ${gym.nombre} · Todos los derechos reservados`;
+}
+
+function renderPackages(packages){
+  const grid = document.getElementById('pkg-grid');
+  if (!packages || packages.length === 0){
+    grid.innerHTML = `<div style="text-align:center;color:var(--text-3);font-size:13px;grid-column:1/-1;padding:40px 0;">Este gym todavía no publicó paquetes.</div>`;
+    return;
+  }
+  grid.innerHTML = packages.map(p => {
+    const featured = p.is_featured ? 'featured' : '';
+    const badge = p.badge ? `<span class="pkg-badge">${escapeHtml(p.badge)}</span>` : '';
+    const meta = p.unlimited
+      ? `Ilimitadas · ${p.duration_days} día${p.duration_days===1?'':'s'}`
+      : (p.num_classes
+        ? `${p.num_classes} clase${p.num_classes===1?'':'s'} · ${p.duration_days} día${p.duration_days===1?'':'s'}`
+        : `${p.duration_days} día${p.duration_days===1?'':'s'}`);
+    const featuresHtml = (p.features || []).map(f => `
+      <li class="pkg-feature">
+        <div class="pkg-feature-check">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        ${escapeHtml(f)}
+      </li>
+    `).join('');
+    return `
+      <div class="pkg-card ${featured}">
+        ${badge}
+        <div class="pkg-name">${escapeHtml(p.name)}</div>
+        <div class="pkg-price-row">
+          <span class="pkg-currency">$</span>
+          <span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span>
+        </div>
+        <div class="pkg-meta">${escapeHtml(meta)}</div>
+        <ul class="pkg-features">${featuresHtml}</ul>
+        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id})">Reservar</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function scrollToPackages(){
+  document.getElementById('paquetes')?.scrollIntoView({behavior:'smooth'});
+}
+
+function onPackageClick(listingId){
+  // FASE 10D: aquí abrirá el modal de checkout con Stripe
+  alert('Próximamente: checkout con Stripe. Mientras tanto, contacta al gym directamente.');
+}
+
+async function load(){
+  const slug = getSlug();
+  if (!slug){
+    showError('No se especificó un gym. Usa /g/nombre-del-gym');
+    return;
+  }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-config?slug=${encodeURIComponent(slug)}`, {
+      headers: {'apikey': ANON_KEY}
+    });
+    if (res.status === 404){
+      showError('Este gym todavía no activó su Storefront público o el link es incorrecto.');
+      return;
+    }
+    if (!res.ok){
+      showError('Error al cargar. Intenta de nuevo en un momento.');
+      return;
+    }
+    const data = await res.json();
+    if (!data.gym){
+      showError('Respuesta inválida del servidor.');
+      return;
+    }
+    applyColor(data.gym.primary_color);
+    renderHero(data.gym);
+    renderPackages(data.packages);
+    showApp();
+  } catch(e) {
+    console.error('storefront load error:', e);
+    showError('Sin conexión. Verifica tu internet y recarga.');
+  }
+}
+
+load();
+</script>
+
+</body>
+</html>
