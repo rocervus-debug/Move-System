@@ -4864,6 +4864,41 @@ body::before{
                 </div>
               </details>
 
+              <!-- ANALYTICS & TRACKING -->
+              <details class="sf-accordion">
+                <summary>📊 Analytics & Tracking</summary>
+                <div class="sf-acc-body">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:14px;">IDs de pixels para que tus campañas de Meta Ads / Google Ads tengan tracking real de conversión.</div>
+                  <div class="field"><label>Meta Pixel ID <span style="font-size:10px;color:var(--text3);">(Facebook Business Manager → Events Manager → Tu Pixel)</span></label>
+                    <input id="sf-meta-pixel" type="text" class="settings-input" placeholder="123456789012345" onblur="sfSaveField('meta_pixel_id', this.value)"/>
+                  </div>
+                  <div class="field"><label>Google Tag ID <span style="font-size:10px;color:var(--text3);">(GA4 / Google Ads — G-XXXXXXXX o AW-XXXXXXXXX)</span></label>
+                    <input id="sf-google-tag" type="text" class="settings-input" placeholder="G-XXXXXXXX" onblur="sfSaveField('google_tag_id', this.value)"/>
+                  </div>
+                  <div style="font-size:11px;color:var(--text3);padding:10px;background:rgba(0,212,255,.05);border-radius:8px;line-height:1.5;">
+                    💡 Eventos que se trackean automáticamente: <strong>PageView</strong>, <strong>Lead</strong> (cuando alguien envía form), <strong>subscribe</strong> (newsletter), <strong>share_clicked</strong>, <strong>view_gallery_image</strong>.
+                  </div>
+                </div>
+              </details>
+
+              <!-- LEADS CAPTURADOS -->
+              <details class="sf-accordion">
+                <summary>📥 Leads capturados <span id="sf-leads-count-badge" style="background:var(--accent);color:#001828;font-size:10px;padding:2px 8px;border-radius:999px;margin-left:8px;font-family:var(--fm);font-weight:700;letter-spacing:0;display:none;"></span></summary>
+                <div class="sf-acc-body">
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                    <button class="btn btn-sm sf-leads-filter-btn active" data-filter="all" onclick="sfFilterLeads('all')">Todos</button>
+                    <button class="btn btn-sm sf-leads-filter-btn" data-filter="new" onclick="sfFilterLeads('new')">Nuevos</button>
+                    <button class="btn btn-sm sf-leads-filter-btn" data-filter="contacted" onclick="sfFilterLeads('contacted')">Contactados</button>
+                    <button class="btn btn-sm sf-leads-filter-btn" data-filter="converted" onclick="sfFilterLeads('converted')">Convertidos</button>
+                    <button class="btn btn-sm sf-leads-filter-btn" data-filter="lost" onclick="sfFilterLeads('lost')">Perdidos</button>
+                    <button class="btn btn-sm btn-outline" onclick="sfReloadLeads()" style="margin-left:auto;" title="Refrescar">↻</button>
+                  </div>
+                  <div id="sf-leads-list" style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="font-size:12px;color:var(--text3);padding:8px 0;">Cargando leads…</div>
+                  </div>
+                </div>
+              </details>
+
               <!-- LISTINGS (paquetes públicos) -->
               <details class="sf-accordion" open>
                 <summary>🛍 Paquetes públicos</summary>
@@ -4895,6 +4930,27 @@ body::before{
         .sf-item-card-body { flex:1; min-width:0; }
         .sf-item-card-actions { display:flex; gap:6px; flex-shrink:0; }
         .sf-item-card .btn { padding:4px 8px; font-size:11px; }
+        .sf-leads-filter-btn { background:var(--card2); border:1px solid var(--border); color:var(--text2); padding:6px 12px; border-radius:999px; font-size:11px; cursor:pointer; }
+        .sf-leads-filter-btn:hover { border-color:var(--accent); color:var(--accent); }
+        .sf-leads-filter-btn.active { background:var(--accent); color:#001828; border-color:var(--accent); }
+        .sf-lead-card { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:14px; }
+        .sf-lead-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+        .sf-lead-type { font-family:var(--fm); font-size:9px; letter-spacing:1.2px; text-transform:uppercase; padding:3px 8px; border-radius:6px; font-weight:700; }
+        .sf-lead-type.trial_class { background:rgba(16,232,160,.15); color:var(--ok); }
+        .sf-lead-type.more_info { background:rgba(0,212,255,.15); color:var(--accent); }
+        .sf-lead-type.newsletter { background:rgba(167,139,250,.15); color:#c4b5fd; }
+        .sf-lead-type.callback { background:rgba(251,191,36,.15); color:var(--warn); }
+        .sf-lead-status { font-family:var(--fm); font-size:9px; letter-spacing:1px; text-transform:uppercase; padding:3px 8px; border-radius:6px; font-weight:600; }
+        .sf-lead-status.new { background:rgba(0,212,255,.15); color:var(--accent); }
+        .sf-lead-status.contacted { background:rgba(251,191,36,.15); color:var(--warn); }
+        .sf-lead-status.converted { background:rgba(16,232,160,.15); color:var(--ok); }
+        .sf-lead-status.lost { background:rgba(248,113,113,.15); color:var(--danger); }
+        .sf-lead-body { display:flex; flex-direction:column; gap:4px; font-size:13px; margin-bottom:10px; }
+        .sf-lead-row { display:flex; align-items:baseline; gap:6px; }
+        .sf-lead-row strong { color:var(--text); }
+        .sf-lead-row span { color:var(--text2); font-size:12px; }
+        .sf-lead-actions { display:flex; gap:6px; flex-wrap:wrap; }
+        .sf-lead-actions .btn { padding:5px 10px; font-size:10px; }
       </style>
 
       <!-- ══ PANEL: Portal de Atletas ══ -->
@@ -13009,6 +13065,10 @@ function _sfPopulateFormFields(){
   set('sf-promo-color',      promoColor);
   const pickerPromo = document.getElementById('sf-promo-color-picker');
   if(pickerPromo && /^#[0-9A-Fa-f]{6}$/.test(promoColor)) pickerPromo.value = promoColor;
+  set('sf-meta-pixel',       s.meta_pixel_id);
+  set('sf-google-tag',       s.google_tag_id);
+  // Load leads in background
+  if(typeof sfReloadLeads === 'function') sfReloadLeads();
   setCheck('sf-show-schedule',     s.show_schedule !== false);
   setCheck('sf-show-coaches',      s.show_coaches !== false);
   setCheck('sf-trial-class',       s.trial_class_enabled !== false);
@@ -13246,6 +13306,95 @@ async function sfRemoveGallery(idx){
   await window.supabaseClient.from('gym_storefront').update({ gallery_urls: arr }).eq('gym_id', _storefrontData.gym_id);
   _storefrontData.gallery_urls = arr;
   _sfRenderGallery();
+}
+
+// ─── LEADS DASHBOARD ───
+let _sfLeads = [];
+let _sfLeadsFilter = 'all';
+
+async function sfReloadLeads(){
+  const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+  const { data, error } = await window.supabaseClient
+    .from('storefront_leads')
+    .select('*')
+    .eq('gym_id', gymId)
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if(error){
+    console.error('sfReloadLeads error:', error);
+    const list = document.getElementById('sf-leads-list');
+    if(list) list.innerHTML = '<div style="color:var(--danger);font-size:12px;">Error al cargar leads: ' + (error.message||'') + '</div>';
+    return;
+  }
+  _sfLeads = data || [];
+  // Actualizar badge en summary (cantidad de nuevos)
+  const newCount = _sfLeads.filter(l => l.status === 'new').length;
+  const badge = document.getElementById('sf-leads-count-badge');
+  if(badge){
+    if(newCount > 0){ badge.textContent = newCount + ' nuevos'; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  }
+  _sfRenderLeads();
+}
+
+function sfFilterLeads(filter){
+  _sfLeadsFilter = filter;
+  document.querySelectorAll('.sf-leads-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  _sfRenderLeads();
+}
+
+function _sfRenderLeads(){
+  const list = document.getElementById('sf-leads-list');
+  if(!list) return;
+  const filtered = _sfLeadsFilter === 'all' ? _sfLeads : _sfLeads.filter(l => l.status === _sfLeadsFilter);
+  if(filtered.length === 0){
+    list.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:14px 0;text-align:center;">Sin leads ' + (_sfLeadsFilter === 'all' ? 'todavía' : ('con status: ' + _sfLeadsFilter)) + '.</div>';
+    return;
+  }
+  const typeLabels = { trial_class: '🎁 Clase prueba', more_info: '💬 Más info', newsletter: '📧 Newsletter', callback: '📞 Callback' };
+  const statusLabels = { new: 'Nuevo', contacted: 'Contactado', converted: 'Convertido', lost: 'Perdido' };
+  list.innerHTML = filtered.map(l => {
+    const fecha = new Date(l.created_at).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    const waLink = l.visitor_phone ? `https://wa.me/${l.visitor_phone.replace(/[^0-9]/g,'')}` : null;
+    return `
+      <div class="sf-lead-card">
+        <div class="sf-lead-head">
+          <span class="sf-lead-type ${l.type}">${typeLabels[l.type] || l.type}</span>
+          <span class="sf-lead-status ${l.status}">${statusLabels[l.status] || l.status}</span>
+          <span style="font-family:var(--fm);font-size:10px;color:var(--text3);margin-left:auto;">${fecha}</span>
+        </div>
+        <div class="sf-lead-body">
+          ${l.visitor_name ? `<div class="sf-lead-row"><strong>${esc(l.visitor_name)}</strong></div>` : ''}
+          ${l.visitor_phone ? `<div class="sf-lead-row">📱 <span>${esc(l.visitor_phone)}</span>${waLink ? ` <a href="${waLink}" target="_blank" style="color:#25D366;text-decoration:none;font-size:11px;">→ WhatsApp</a>` : ''}</div>` : ''}
+          ${l.visitor_email ? `<div class="sf-lead-row">📧 <span>${esc(l.visitor_email)}</span></div>` : ''}
+          ${l.preferred_day ? `<div class="sf-lead-row">📅 <span>${esc(l.preferred_day)}</span></div>` : ''}
+          ${l.message ? `<div class="sf-lead-row" style="margin-top:4px;"><span style="font-style:italic;">"${esc(l.message)}"</span></div>` : ''}
+        </div>
+        ${l.status !== 'converted' && l.status !== 'lost' ? `
+        <div class="sf-lead-actions">
+          ${l.status === 'new' ? `<button class="btn btn-sm btn-outline" onclick="sfUpdateLeadStatus('${l.id}', 'contacted')">✓ Marcar contactado</button>` : ''}
+          <button class="btn btn-sm" style="background:rgba(16,232,160,.15);color:var(--ok);border:1px solid rgba(16,232,160,.3);" onclick="sfUpdateLeadStatus('${l.id}', 'converted')">🎉 Convertido</button>
+          <button class="btn btn-sm" style="background:rgba(248,113,113,.10);color:var(--danger);border:1px solid rgba(248,113,113,.2);" onclick="sfUpdateLeadStatus('${l.id}', 'lost')">✕ Perdido</button>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function sfUpdateLeadStatus(leadId, newStatus){
+  const updates = { status: newStatus };
+  if(newStatus === 'contacted') updates.contacted_at = new Date().toISOString();
+  const { error } = await window.supabaseClient.from('storefront_leads').update(updates).eq('id', leadId);
+  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  // Update local + re-render
+  const lead = _sfLeads.find(l => l.id === leadId);
+  if(lead){ Object.assign(lead, updates); }
+  _sfRenderLeads();
+  const labels = { contacted: 'contactado', converted: 'convertido', lost: 'perdido' };
+  toast('Lead marcado como ' + labels[newStatus], newStatus === 'converted' ? '🎉' : '✓');
 }
 
 // Sincroniza el <select> de planes en otros modales (renovar membresía, editar pago)
