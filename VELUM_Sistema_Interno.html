@@ -4637,7 +4637,7 @@ body::before{
         </div>
       </div><!-- /cfg-panel-planes -->
 
-      <!-- ══ PANEL: Storefront público ══ -->
+      <!-- ══ PANEL: Storefront público (v3) ══ -->
       <div class="cfg-panel" id="cfg-panel-storefront">
         <div class="cfg-panel-header">
           <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
@@ -4645,12 +4645,12 @@ body::before{
         <div class="card">
           <div class="settings-section" style="margin-bottom:0;">
             <div class="settings-section-title">Storefront público</div>
-            <div style="font-size:12px;color:var(--text3);margin-bottom:18px;">URL pública donde cualquier persona puede ver tus paquetes y comprar online sin que tú intervengas.</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:18px;">Configura cómo se ve tu página pública en <code style="color:var(--accent);">myvelum.app/g/[slug]</code>. Cambios se guardan automáticamente al cambiar de campo.</div>
 
             <!-- Estado / URL card -->
-            <div id="sf-status-card" style="background:linear-gradient(135deg, rgba(0,212,255,.08), var(--card2));border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px;">
+            <div style="background:linear-gradient(135deg, rgba(0,212,255,.08), var(--card2));border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px;">
               <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;font-weight:600;">Tu URL pública</div>
-              <div id="sf-url-row" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
                 <div id="sf-url-display" style="flex:1;min-width:200px;font-family:var(--fm);font-size:14px;font-weight:700;color:var(--accent);background:var(--bg2);padding:10px 14px;border-radius:10px;border:1px solid rgba(0,212,255,.18);word-break:break-all;">myvelum.app/g/…</div>
                 <button class="btn btn-sm btn-outline" onclick="sfCopyUrl()" title="Copiar URL">📋 Copiar</button>
                 <button class="btn btn-sm btn-primary" onclick="sfOpenUrl()" title="Abrir en nueva pestaña">↗ Abrir</button>
@@ -4664,9 +4664,9 @@ body::before{
               </div>
             </div>
 
-            <!-- Slug editor -->
-            <div class="field" style="margin-bottom:18px;">
-              <label>Slug de tu URL <span style="font-size:10px;color:var(--text3);font-weight:400;">(solo lowercase, números y guiones)</span></label>
+            <!-- Slug -->
+            <div class="field" style="margin-bottom:8px;">
+              <label>Slug de tu URL <span style="font-size:10px;color:var(--text3);font-weight:400;">(lowercase, números, guiones)</span></label>
               <div style="display:flex;gap:8px;align-items:center;">
                 <span style="font-family:var(--fm);font-size:13px;color:var(--text3);">myvelum.app/g/</span>
                 <input id="sf-slug-input" type="text" class="settings-input" placeholder="mi-gym" style="flex:1;font-family:var(--fm);" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
@@ -4675,15 +4675,216 @@ body::before{
               <div id="sf-slug-err" style="display:none;font-size:11px;color:var(--danger);margin-top:6px;"></div>
             </div>
 
-            <!-- Listings -->
-            <div class="settings-section-title" style="margin-top:24px;">Paquetes públicos</div>
-            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">De tu Catálogo de Planes, elige cuáles mostrar en tu Storefront público.</div>
-            <div id="sf-listings-list" style="display:flex;flex-direction:column;gap:8px;">
-              <div style="font-size:12px;color:var(--text3);padding:8px 0;">Cargando paquetes…</div>
+            <!-- ════ SECCIONES COLAPSABLES ════ -->
+            <div id="sf-sections" style="margin-top:22px;">
+
+              <!-- BRANDING -->
+              <details class="sf-accordion" open>
+                <summary>🎨 Branding & Descripción</summary>
+                <div class="sf-acc-body">
+                  <div class="field"><label>Descripción del gym <span style="font-size:10px;color:var(--text3);">(aparece en el hero)</span></label>
+                    <textarea id="sf-description" class="settings-input" rows="3" placeholder="CrossFit box premium en León..." onblur="sfSaveField('description', this.value)"></textarea>
+                  </div>
+                  <div class="field-grid">
+                    <div class="field"><label>Color primario (hex)</label>
+                      <input id="sf-primary-color" type="text" class="settings-input" placeholder="#00D4FF" maxlength="7" onblur="sfSaveField('primary_color', this.value)"/>
+                    </div>
+                    <div class="field"><label>Tagline (frase corta)</label>
+                      <input id="sf-tagline-readonly" type="text" class="settings-input" disabled style="opacity:.5;" placeholder="(editable en Apariencia)"/>
+                    </div>
+                  </div>
+                  <div class="field"><label>URL de imagen hero (opcional)</label>
+                    <input id="sf-hero-image" type="url" class="settings-input" placeholder="https://..." onblur="sfSaveField('hero_image_url', this.value)"/>
+                  </div>
+                </div>
+              </details>
+
+              <!-- STATS -->
+              <details class="sf-accordion">
+                <summary>⭐ Stats & Reseñas</summary>
+                <div class="sf-acc-body">
+                  <div class="field-grid">
+                    <div class="field"><label>Años abierto</label>
+                      <input id="sf-years-open" type="number" class="settings-input" min="0" placeholder="5" onblur="sfSaveField('years_open', parseInt(this.value)||null)"/>
+                    </div>
+                    <div class="field"><label>Atletas activos</label>
+                      <input id="sf-athletes-count" type="number" class="settings-input" min="0" placeholder="200" onblur="sfSaveField('active_athletes_count', parseInt(this.value)||null)"/>
+                    </div>
+                  </div>
+                  <div class="field-grid">
+                    <div class="field"><label>Rating Google (1.0 - 5.0)</label>
+                      <input id="sf-google-rating" type="number" step="0.1" min="1" max="5" class="settings-input" placeholder="4.9" onblur="sfSaveField('google_rating', parseFloat(this.value)||null)"/>
+                    </div>
+                    <div class="field"><label># Reseñas Google</label>
+                      <input id="sf-google-reviews" type="number" min="0" class="settings-input" placeholder="87" onblur="sfSaveField('google_review_count', parseInt(this.value)||0)"/>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <!-- LOCATION -->
+              <details class="sf-accordion">
+                <summary>📍 Ubicación & Mapa</summary>
+                <div class="sf-acc-body">
+                  <div class="field"><label>Dirección (calle y número)</label>
+                    <input id="sf-address" type="text" class="settings-input" placeholder="Blvd. Aurora 451" onblur="sfSaveField('address', this.value)"/>
+                  </div>
+                  <div class="field-grid">
+                    <div class="field"><label>Ciudad</label>
+                      <input id="sf-city" type="text" class="settings-input" placeholder="León" onblur="sfSaveField('city', this.value)"/>
+                    </div>
+                    <div class="field"><label>Estado</label>
+                      <input id="sf-state" type="text" class="settings-input" placeholder="Guanajuato" onblur="sfSaveField('state', this.value)"/>
+                    </div>
+                    <div class="field"><label>CP</label>
+                      <input id="sf-postal-code" type="text" class="settings-input" placeholder="37000" onblur="sfSaveField('postal_code', this.value)"/>
+                    </div>
+                  </div>
+                  <div class="field"><label>Horario de atención (texto libre)</label>
+                    <input id="sf-hours-text" type="text" class="settings-input" placeholder="L-V 6am-10pm · Sáb 8am-2pm" onblur="sfSaveField('hours_text', this.value)"/>
+                  </div>
+                  <div class="field"><label>URL embed de Google Maps <span style="font-size:10px;color:var(--text3);">(Google Maps → Compartir → Insertar mapa → copia el src del iframe)</span></label>
+                    <input id="sf-maps-embed" type="url" class="settings-input" placeholder="https://www.google.com/maps/embed?pb=..." onblur="sfSaveField('maps_embed_url', this.value)"/>
+                  </div>
+                  <div style="font-size:11px;color:var(--text3);padding:10px;background:rgba(0,212,255,.05);border-radius:8px;line-height:1.5;">
+                    💡 Si no pones embed URL, el mapa se genera automático con la dirección. Para mejor precisión, pega el iframe src de Google Maps.
+                  </div>
+                </div>
+              </details>
+
+              <!-- SOCIAL -->
+              <details class="sf-accordion">
+                <summary>📱 Redes sociales</summary>
+                <div class="sf-acc-body">
+                  <div class="field"><label>Instagram (sin @)</label>
+                    <input id="sf-social-ig" type="text" class="settings-input" placeholder="miguim" onblur="sfSaveField('social_instagram', this.value.replace(/^@/,''))"/>
+                  </div>
+                  <div class="field"><label>Facebook (URL o username)</label>
+                    <input id="sf-social-fb" type="text" class="settings-input" placeholder="MiGym o https://facebook.com/MiGym" onblur="sfSaveField('social_facebook', this.value)"/>
+                  </div>
+                  <div class="field"><label>WhatsApp (número con código país)</label>
+                    <input id="sf-social-wa" type="tel" class="settings-input" placeholder="+524771234567" onblur="sfSaveField('social_whatsapp', this.value)"/>
+                  </div>
+                  <div class="field"><label>TikTok (sin @)</label>
+                    <input id="sf-social-tt" type="text" class="settings-input" placeholder="migym" onblur="sfSaveField('social_tiktok', this.value.replace(/^@/,''))"/>
+                  </div>
+                </div>
+              </details>
+
+              <!-- HIGHLIGHTS -->
+              <details class="sf-accordion">
+                <summary>✨ Highlights (qué incluye)</summary>
+                <div class="sf-acc-body">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Listado de beneficios que aparecen en la sección "Qué incluye".</div>
+                  <div id="sf-highlights-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+                  <div style="display:flex;gap:6px;">
+                    <input id="sf-highlight-new" type="text" class="settings-input" placeholder="Ej: Coach IA personal" onkeypress="if(event.key==='Enter') sfAddHighlight()" style="flex:1;"/>
+                    <button class="btn btn-sm btn-primary" onclick="sfAddHighlight()">+ Agregar</button>
+                  </div>
+                </div>
+              </details>
+
+              <!-- TESTIMONIALES -->
+              <details class="sf-accordion">
+                <summary>💬 Testimoniales</summary>
+                <div class="sf-acc-body">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Reseñas de atletas reales que aparecen en la sección "Opiniones".</div>
+                  <div id="sf-testimonials-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+                  <button class="btn btn-sm btn-outline" onclick="sfAddTestimonial()">+ Agregar testimonial</button>
+                </div>
+              </details>
+
+              <!-- FAQS -->
+              <details class="sf-accordion">
+                <summary>❓ FAQs (preguntas frecuentes)</summary>
+                <div class="sf-acc-body">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Resuelve objeciones antes de que las pregunten.</div>
+                  <div id="sf-faqs-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+                  <button class="btn btn-sm btn-outline" onclick="sfAddFaq()">+ Agregar FAQ</button>
+                </div>
+              </details>
+
+              <!-- GALLERY -->
+              <details class="sf-accordion">
+                <summary>🖼 Galería de fotos</summary>
+                <div class="sf-acc-body">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Pega URLs de fotos del gym (recomendado: 4-8 fotos en 4:3). Sube fotos a Imgur, Cloudinary, etc.</div>
+                  <div id="sf-gallery-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+                  <div style="display:flex;gap:6px;">
+                    <input id="sf-gallery-new" type="url" class="settings-input" placeholder="https://..." onkeypress="if(event.key==='Enter') sfAddGallery()" style="flex:1;"/>
+                    <button class="btn btn-sm btn-primary" onclick="sfAddGallery()">+ Agregar URL</button>
+                  </div>
+                </div>
+              </details>
+
+              <!-- PROMO BANNER -->
+              <details class="sf-accordion">
+                <summary>📢 Banner promocional (top)</summary>
+                <div class="sf-acc-body">
+                  <div class="field"><label>Texto del banner <span style="font-size:10px;color:var(--text3);">(vacío = sin banner)</span></label>
+                    <input id="sf-promo-text" type="text" class="settings-input" placeholder="Ej: Primer mes con 30% off · Solo abril" maxlength="120" onblur="sfSaveField('promo_banner_text', this.value)"/>
+                  </div>
+                  <div class="field"><label>Color de fondo (hex)</label>
+                    <input id="sf-promo-color" type="text" class="settings-input" placeholder="#10E8A0" maxlength="7" onblur="sfSaveField('promo_banner_color', this.value)"/>
+                  </div>
+                </div>
+              </details>
+
+              <!-- TOGGLES -->
+              <details class="sf-accordion">
+                <summary>⚙ Configuración de secciones</summary>
+                <div class="sf-acc-body">
+                  <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+                    <input type="checkbox" id="sf-show-schedule" onchange="sfSaveField('show_schedule', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
+                    <span style="font-size:13px;">Mostrar horario público de clases (próximos 7 días)</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+                    <input type="checkbox" id="sf-show-coaches" onchange="sfSaveField('show_coaches', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
+                    <span style="font-size:13px;">Mostrar sección del equipo de coaches</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+                    <input type="checkbox" id="sf-trial-class" onchange="sfSaveField('trial_class_enabled', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
+                    <span style="font-size:13px;">Ofrecer clase de prueba GRATIS</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+                    <input type="checkbox" id="sf-free-month" onchange="sfSaveField('free_first_month', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
+                    <span style="font-size:13px;">Primer mes GRATIS (para campañas)</span>
+                  </label>
+                </div>
+              </details>
+
+              <!-- LISTINGS (paquetes públicos) -->
+              <details class="sf-accordion" open>
+                <summary>🛍 Paquetes públicos</summary>
+                <div class="sf-acc-body">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">De tu Catálogo de Planes, elige cuáles mostrar en tu Storefront.</div>
+                  <div id="sf-listings-list" style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="font-size:12px;color:var(--text3);padding:8px 0;">Cargando paquetes…</div>
+                  </div>
+                </div>
+              </details>
+
             </div>
+
           </div>
         </div>
       </div><!-- /cfg-panel-storefront -->
+
+      <style>
+        .sf-accordion { background:var(--card2); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+        .sf-accordion summary { padding:14px 16px; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; list-style:none; user-select:none; display:flex; align-items:center; justify-content:space-between; transition:background 180ms; }
+        .sf-accordion summary::-webkit-details-marker { display:none; }
+        .sf-accordion summary:hover { background:rgba(0,212,255,.04); }
+        .sf-accordion summary::after { content:'›'; color:var(--accent); font-size:18px; transition:transform 200ms; }
+        .sf-accordion[open] summary::after { transform:rotate(90deg); }
+        .sf-acc-body { padding:12px 16px 18px; border-top:1px solid var(--border); }
+        .sf-acc-body .field { margin-bottom:12px; }
+        .sf-acc-body .field:last-child { margin-bottom:0; }
+        .sf-item-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; gap:10px; align-items:flex-start; }
+        .sf-item-card-body { flex:1; min-width:0; }
+        .sf-item-card-actions { display:flex; gap:6px; flex-shrink:0; }
+        .sf-item-card .btn { padding:4px 8px; font-size:11px; }
+      </style>
 
       <!-- ══ PANEL: Portal de Atletas ══ -->
       <div class="cfg-panel" id="cfg-panel-portal">
@@ -12565,7 +12766,6 @@ const STOREFRONT_PUBLIC_BASE = 'https://myvelum.app/g/';
 
 async function loadStorefrontPanel(){
   const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
-  // Load storefront row + listings + packages
   const [sfRes, listRes] = await Promise.all([
     window.supabaseClient.from('gym_storefront').select('*').eq('gym_id', gymId).maybeSingle(),
     window.supabaseClient.from('storefront_listings').select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes)').eq('gym_id', gymId).order('sort_order', {ascending: true})
@@ -12656,6 +12856,9 @@ function renderStorefrontPanel(){
     if(txt){ txt.textContent = 'Pausado · no visible'; txt.style.color = 'var(--text2)'; }
     if(btn){ btn.textContent = 'Activar'; btn.style.background = 'var(--accent)'; btn.style.color = '#001828'; btn.style.border = 'none'; }
   }
+
+  // V3: populate todos los inputs del form con la data actual
+  if(typeof _sfPopulateFormFields === 'function') _sfPopulateFormFields();
 
   // Listings
   const listEl = document.getElementById('sf-listings-list');
@@ -12750,7 +12953,6 @@ async function sfToggleListing(listingId, isPublic){
 }
 
 async function sfToggleFeatured(listingId, isFeatured){
-  // Si voy a marcar uno como featured, primero desmarcar los demás
   if(isFeatured){
     await window.supabaseClient.from('storefront_listings').update({is_featured: false, badge_text: null}).eq('gym_id', _storefrontData.gym_id);
     await window.supabaseClient.from('storefront_listings').update({is_featured: true, badge_text: 'Más elegido'}).eq('id', listingId);
@@ -12758,6 +12960,209 @@ async function sfToggleFeatured(listingId, isFeatured){
     await window.supabaseClient.from('storefront_listings').update({is_featured: false, badge_text: null}).eq('id', listingId);
   }
   loadStorefrontPanel();
+}
+
+// ════════════════════════════════════════════════════════════
+// STOREFRONT v3 · Editores completos (branding, location, social, etc)
+// ════════════════════════════════════════════════════════════
+
+// Renderiza TODOS los inputs del panel con la data actual
+function _sfPopulateFormFields(){
+  if(!_storefrontData) return;
+  const s = _storefrontData;
+  const set = (id, val) => { const e=document.getElementById(id); if(e) e.value = val ?? ''; };
+  const setCheck = (id, val) => { const e=document.getElementById(id); if(e) e.checked = !!val; };
+
+  set('sf-description',      s.description);
+  set('sf-primary-color',    s.primary_color || '#00D4FF');
+  set('sf-hero-image',       s.hero_image_url);
+  set('sf-years-open',       s.years_open);
+  set('sf-athletes-count',   s.active_athletes_count);
+  set('sf-google-rating',    s.google_rating);
+  set('sf-google-reviews',   s.google_review_count);
+  set('sf-address',          s.address);
+  set('sf-city',             s.city);
+  set('sf-state',            s.state);
+  set('sf-postal-code',      s.postal_code);
+  set('sf-hours-text',       s.hours_text);
+  set('sf-maps-embed',       s.maps_embed_url);
+  set('sf-social-ig',        s.social_instagram);
+  set('sf-social-fb',        s.social_facebook);
+  set('sf-social-wa',        s.social_whatsapp);
+  set('sf-social-tt',        s.social_tiktok);
+  set('sf-promo-text',       s.promo_banner_text);
+  set('sf-promo-color',      s.promo_banner_color || '#10E8A0');
+  setCheck('sf-show-schedule',     s.show_schedule !== false);
+  setCheck('sf-show-coaches',      s.show_coaches !== false);
+  setCheck('sf-trial-class',       s.trial_class_enabled !== false);
+  setCheck('sf-free-month',        s.free_first_month === true);
+
+  _sfRenderHighlights();
+  _sfRenderTestimonials();
+  _sfRenderFaqs();
+  _sfRenderGallery();
+}
+
+// Save genérico de cualquier campo del row
+async function sfSaveField(field, value){
+  if(!_storefrontData) return;
+  const oldVal = _storefrontData[field];
+  if(oldVal === value || (oldVal == null && value === '')) return;
+  // Normalize empty strings to null para campos opcionales
+  const finalVal = value === '' ? null : value;
+  const { error } = await window.supabaseClient
+    .from('gym_storefront')
+    .update({ [field]: finalVal })
+    .eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error guardando ' + field + ': ' + error.message, '❌'); return; }
+  _storefrontData[field] = finalVal;
+  // Si cambió primary_color, actualizar también el preview del URL card
+  if(field === 'primary_color') renderStorefrontPanel();
+}
+
+// ─── HIGHLIGHTS ───
+function _sfRenderHighlights(){
+  const list = document.getElementById('sf-highlights-list');
+  if(!list) return;
+  const arr = Array.isArray(_storefrontData.highlights) ? _storefrontData.highlights : [];
+  if(!arr.length){ list.innerHTML = '<div style="font-size:12px;color:var(--text3);">Sin highlights configurados.</div>'; return; }
+  list.innerHTML = arr.map((h, i) => `
+    <div class="sf-item-card">
+      <div class="sf-item-card-body" style="font-size:13px;">${esc(h)}</div>
+      <button class="btn btn-sm btn-outline" onclick="sfRemoveHighlight(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+async function sfAddHighlight(){
+  const inp = document.getElementById('sf-highlight-new');
+  const text = inp.value.trim();
+  if(!text) return;
+  const arr = [...(Array.isArray(_storefrontData.highlights) ? _storefrontData.highlights : []), text];
+  const { error } = await window.supabaseClient.from('gym_storefront').update({ highlights: arr }).eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  _storefrontData.highlights = arr;
+  inp.value = '';
+  _sfRenderHighlights();
+}
+
+async function sfRemoveHighlight(idx){
+  const arr = (Array.isArray(_storefrontData.highlights) ? _storefrontData.highlights : []).filter((_, i) => i !== idx);
+  const { error } = await window.supabaseClient.from('gym_storefront').update({ highlights: arr }).eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  _storefrontData.highlights = arr;
+  _sfRenderHighlights();
+}
+
+// ─── TESTIMONIALS ───
+function _sfRenderTestimonials(){
+  const list = document.getElementById('sf-testimonials-list');
+  if(!list) return;
+  const arr = Array.isArray(_storefrontData.testimonials) ? _storefrontData.testimonials : [];
+  if(!arr.length){ list.innerHTML = '<div style="font-size:12px;color:var(--text3);">Sin testimoniales.</div>'; return; }
+  list.innerHTML = arr.map((t, i) => `
+    <div class="sf-item-card" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;">
+        <strong style="font-size:13px;">${esc(t.name||'Sin nombre')} ${'★'.repeat(t.rating||5)}</strong>
+        <button class="btn btn-sm btn-outline" onclick="sfRemoveTestimonial(${i})">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2);font-style:italic;margin-bottom:6px;">"${esc(t.text||'')}"</div>
+      ${t.role ? `<div style="font-size:11px;color:var(--text3);">${esc(t.role)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+async function sfAddTestimonial(){
+  const name = prompt('Nombre del atleta:');
+  if(!name) return;
+  const text = prompt('Testimonio (qué dice del gym):');
+  if(!text) return;
+  const role = prompt('Rol / tiempo (opcional, ej: "Atleta · 6 meses"):') || '';
+  const rating = parseInt(prompt('Rating (1-5):', '5')) || 5;
+  const arr = [...(Array.isArray(_storefrontData.testimonials) ? _storefrontData.testimonials : []), {name, text, role, rating}];
+  const { error } = await window.supabaseClient.from('gym_storefront').update({ testimonials: arr }).eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  _storefrontData.testimonials = arr;
+  _sfRenderTestimonials();
+}
+
+async function sfRemoveTestimonial(idx){
+  if(!await confirmDialog('¿Borrar este testimonial?', {title:'Confirmar', danger:true, confirmText:'Sí, borrar', icon:'🗑'})) return;
+  const arr = (Array.isArray(_storefrontData.testimonials) ? _storefrontData.testimonials : []).filter((_, i) => i !== idx);
+  await window.supabaseClient.from('gym_storefront').update({ testimonials: arr }).eq('gym_id', _storefrontData.gym_id);
+  _storefrontData.testimonials = arr;
+  _sfRenderTestimonials();
+}
+
+// ─── FAQS ───
+function _sfRenderFaqs(){
+  const list = document.getElementById('sf-faqs-list');
+  if(!list) return;
+  const arr = Array.isArray(_storefrontData.faqs) ? _storefrontData.faqs : [];
+  if(!arr.length){ list.innerHTML = '<div style="font-size:12px;color:var(--text3);">Sin FAQs.</div>'; return; }
+  list.innerHTML = arr.map((f, i) => `
+    <div class="sf-item-card" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px;">
+        <strong style="font-size:13px;">${esc(f.question||'')}</strong>
+        <button class="btn btn-sm btn-outline" onclick="sfRemoveFaq(${i})">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5;">${esc(f.answer||'')}</div>
+    </div>
+  `).join('');
+}
+
+async function sfAddFaq(){
+  const question = prompt('Pregunta:');
+  if(!question) return;
+  const answer = prompt('Respuesta:');
+  if(!answer) return;
+  const arr = [...(Array.isArray(_storefrontData.faqs) ? _storefrontData.faqs : []), {question, answer}];
+  const { error } = await window.supabaseClient.from('gym_storefront').update({ faqs: arr }).eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  _storefrontData.faqs = arr;
+  _sfRenderFaqs();
+}
+
+async function sfRemoveFaq(idx){
+  if(!await confirmDialog('¿Borrar esta FAQ?', {title:'Confirmar', danger:true, confirmText:'Sí, borrar', icon:'🗑'})) return;
+  const arr = (Array.isArray(_storefrontData.faqs) ? _storefrontData.faqs : []).filter((_, i) => i !== idx);
+  await window.supabaseClient.from('gym_storefront').update({ faqs: arr }).eq('gym_id', _storefrontData.gym_id);
+  _storefrontData.faqs = arr;
+  _sfRenderFaqs();
+}
+
+// ─── GALLERY ───
+function _sfRenderGallery(){
+  const list = document.getElementById('sf-gallery-list');
+  if(!list) return;
+  const arr = Array.isArray(_storefrontData.gallery_urls) ? _storefrontData.gallery_urls : [];
+  if(!arr.length){ list.innerHTML = '<div style="font-size:12px;color:var(--text3);">Sin fotos en galería.</div>'; return; }
+  list.innerHTML = arr.map((u, i) => `
+    <div class="sf-item-card">
+      <img src="${esc(u)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+      <div class="sf-item-card-body" style="font-size:11px;font-family:var(--fm);color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(u)}</div>
+      <button class="btn btn-sm btn-outline" onclick="sfRemoveGallery(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+async function sfAddGallery(){
+  const inp = document.getElementById('sf-gallery-new');
+  const url = inp.value.trim();
+  if(!url) return;
+  if(!/^https?:\/\//.test(url)){ toast('La URL debe empezar con http:// o https://', '⚠️'); return; }
+  const arr = [...(Array.isArray(_storefrontData.gallery_urls) ? _storefrontData.gallery_urls : []), url];
+  await window.supabaseClient.from('gym_storefront').update({ gallery_urls: arr }).eq('gym_id', _storefrontData.gym_id);
+  _storefrontData.gallery_urls = arr;
+  inp.value = '';
+  _sfRenderGallery();
+}
+
+async function sfRemoveGallery(idx){
+  const arr = (Array.isArray(_storefrontData.gallery_urls) ? _storefrontData.gallery_urls : []).filter((_, i) => i !== idx);
+  await window.supabaseClient.from('gym_storefront').update({ gallery_urls: arr }).eq('gym_id', _storefrontData.gym_id);
+  _storefrontData.gallery_urls = arr;
+  _sfRenderGallery();
 }
 
 // Sincroniza el <select> de planes en otros modales (renovar membresía, editar pago)

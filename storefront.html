@@ -370,6 +370,23 @@ section { padding: 70px 24px; position: relative; }
 .gallery-item:hover { transform: scale(1.02); }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
 
+/* ─── LOCATION ─── */
+.location-section { background: var(--bg-2); }
+.location-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1100px; margin: 0 auto; }
+@media (max-width: 920px) { .location-grid { grid-template-columns: 1fr; } }
+.location-info { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 18px; padding: 26px; }
+.location-info-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px dashed var(--border-soft); }
+.location-info-item:last-child { border-bottom: none; }
+.location-info-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--cyan-dim); display: grid; place-items: center; color: var(--cyan); flex-shrink: 0; }
+.location-info-icon svg { width: 16px; height: 16px; fill: currentColor; }
+.location-info-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 1.2px; color: var(--text-3); text-transform: uppercase; margin-bottom: 3px; }
+.location-info-value { font-size: 14px; color: var(--text); line-height: 1.5; }
+.location-info-value a { color: var(--cyan); text-decoration: none; }
+.location-info-value a:hover { text-decoration: underline; }
+.location-map { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 18px; overflow: hidden; min-height: 320px; position: relative; }
+.location-map iframe { width: 100%; height: 100%; border: none; min-height: 320px; }
+.location-map.no-map { display: grid; place-items: center; color: var(--text-3); font-size: 13px; padding: 40px; text-align: center; }
+
 /* ─── FAQ ─── */
 .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
 .faq-item { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 14px; overflow: hidden; }
@@ -720,6 +737,23 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
     </div>
   </section>
 
+  <!-- LOCATION -->
+  <section id="location-section" class="location-section" style="display:none;">
+    <div class="section-inner">
+      <div class="section-head">
+        <div class="section-eyebrow">UBICACIÓN</div>
+        <h2 class="section-title">¿Dónde estamos?</h2>
+        <p class="section-sub" id="location-sub">Pasa cuando quieras conocer el espacio.</p>
+      </div>
+      <div class="location-grid">
+        <div class="location-info" id="location-info"></div>
+        <div class="location-map" id="location-map">
+          <div style="color:var(--text-3);">Mapa no configurado</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- FAQ -->
   <section id="faq-section" style="display:none;">
     <div class="section-inner">
@@ -1002,6 +1036,57 @@ function renderGallery(urls){
   `).join('');
 }
 
+function renderLocation(loc, gymName){
+  if (!loc || (!loc.full_address && !loc.maps_embed_url && !loc.hours_text)){
+    document.getElementById('location-section').style.display = 'none';
+    return;
+  }
+  document.getElementById('location-section').style.display = '';
+
+  const items = [];
+  if (loc.full_address){
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.full_address + ' ' + (gymName||''))}`;
+    items.push(`
+      <div class="location-info-item">
+        <div class="location-info-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg></div>
+        <div>
+          <div class="location-info-label">Dirección</div>
+          <div class="location-info-value">${escapeHtml(loc.full_address)}<br><a href="${mapsLink}" target="_blank" rel="noopener">Cómo llegar →</a></div>
+        </div>
+      </div>`);
+  }
+  if (loc.hours_text){
+    items.push(`
+      <div class="location-info-item">
+        <div class="location-info-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg></div>
+        <div>
+          <div class="location-info-label">Horario</div>
+          <div class="location-info-value">${escapeHtml(loc.hours_text)}</div>
+        </div>
+      </div>`);
+  }
+  document.getElementById('location-info').innerHTML = items.join('') || '<div style="color:var(--text-3);font-size:13px;">Ubicación no configurada.</div>';
+
+  const mapEl = document.getElementById('location-map');
+  if (loc.maps_embed_url){
+    mapEl.classList.remove('no-map');
+    mapEl.innerHTML = `<iframe src="${escapeHtml(loc.maps_embed_url)}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+  } else if (loc.latitude && loc.longitude){
+    // Fallback: usar Google Maps con lat/lng
+    const src = `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&z=15&output=embed`;
+    mapEl.classList.remove('no-map');
+    mapEl.innerHTML = `<iframe src="${src}" allowfullscreen loading="lazy"></iframe>`;
+  } else if (loc.full_address){
+    // Fallback: search por dirección
+    const src = `https://maps.google.com/maps?q=${encodeURIComponent(loc.full_address)}&output=embed`;
+    mapEl.classList.remove('no-map');
+    mapEl.innerHTML = `<iframe src="${src}" allowfullscreen loading="lazy"></iframe>`;
+  } else {
+    mapEl.classList.add('no-map');
+    mapEl.innerHTML = '<div>Mapa no configurado</div>';
+  }
+}
+
 function renderFaqs(faqs){
   if (!faqs || faqs.length === 0){
     document.getElementById('faq-section').style.display = 'none';
@@ -1169,6 +1254,7 @@ async function load(){
     renderCoaches(data.coaches || []);
     renderTestimonials(data.testimonials || []);
     renderGallery(data.gallery || []);
+    renderLocation(data.location || {}, data.gym.nombre);
     renderFaqs(data.faqs || []);
     renderPromo(data.promo_banner);
     _iaInitSession(slug);
