@@ -4686,8 +4686,12 @@ body::before{
                     <textarea id="sf-description" class="settings-input" rows="3" placeholder="CrossFit box premium en León..." onblur="sfSaveField('description', this.value)"></textarea>
                   </div>
                   <div class="field-grid">
-                    <div class="field"><label>Color primario (hex)</label>
-                      <input id="sf-primary-color" type="text" class="settings-input" placeholder="#00D4FF" maxlength="7" onblur="sfSaveField('primary_color', this.value)"/>
+                    <div class="field"><label>Color primario</label>
+                      <div style="display:flex;gap:8px;align-items:center;">
+                        <input id="sf-primary-color-picker" type="color" value="#00D4FF" oninput="sfColorPickerChange('primary')" style="width:48px;height:42px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:transparent;padding:2px;"/>
+                        <input id="sf-primary-color" type="text" class="settings-input" placeholder="#00D4FF" maxlength="7" oninput="sfColorTextChange('primary')" onblur="sfSaveColor('primary')" style="flex:1;font-family:var(--fm);text-transform:uppercase;"/>
+                      </div>
+                      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Click el cuadrito de color para abrir la rueda</div>
                     </div>
                     <div class="field"><label>Tagline (frase corta)</label>
                       <input id="sf-tagline-readonly" type="text" class="settings-input" disabled style="opacity:.5;" placeholder="(editable en Apariencia)"/>
@@ -4824,8 +4828,15 @@ body::before{
                   <div class="field"><label>Texto del banner <span style="font-size:10px;color:var(--text3);">(vacío = sin banner)</span></label>
                     <input id="sf-promo-text" type="text" class="settings-input" placeholder="Ej: Primer mes con 30% off · Solo abril" maxlength="120" onblur="sfSaveField('promo_banner_text', this.value)"/>
                   </div>
-                  <div class="field"><label>Color de fondo (hex)</label>
-                    <input id="sf-promo-color" type="text" class="settings-input" placeholder="#10E8A0" maxlength="7" onblur="sfSaveField('promo_banner_color', this.value)"/>
+                  <div class="field"><label>Color de fondo</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <input id="sf-promo-color-picker" type="color" value="#10E8A0" oninput="sfColorPickerChange('promo')" style="width:48px;height:42px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:transparent;padding:2px;"/>
+                      <input id="sf-promo-color" type="text" class="settings-input" placeholder="#10E8A0" maxlength="7" oninput="sfColorTextChange('promo')" onblur="sfSaveColor('promo')" style="flex:1;font-family:var(--fm);text-transform:uppercase;"/>
+                      <button class="btn btn-sm btn-outline" onclick="sfPickColorPreset('promo','#10E8A0')" title="Verde" style="background:#10E8A0;width:32px;height:32px;padding:0;border-radius:6px;"></button>
+                      <button class="btn btn-sm btn-outline" onclick="sfPickColorPreset('promo','#FBBF24')" title="Amarillo" style="background:#FBBF24;width:32px;height:32px;padding:0;border-radius:6px;"></button>
+                      <button class="btn btn-sm btn-outline" onclick="sfPickColorPreset('promo','#F87171')" title="Rojo" style="background:#F87171;width:32px;height:32px;padding:0;border-radius:6px;"></button>
+                    </div>
+                    <div style="font-size:10px;color:var(--text3);margin-top:4px;">Click la rueda o usa los preset</div>
                   </div>
                 </div>
               </details>
@@ -12974,7 +12985,10 @@ function _sfPopulateFormFields(){
   const setCheck = (id, val) => { const e=document.getElementById(id); if(e) e.checked = !!val; };
 
   set('sf-description',      s.description);
-  set('sf-primary-color',    s.primary_color || '#00D4FF');
+  const primaryColor = (s.primary_color || '#00D4FF').toUpperCase();
+  set('sf-primary-color',    primaryColor);
+  const pickerPrim = document.getElementById('sf-primary-color-picker');
+  if(pickerPrim && /^#[0-9A-Fa-f]{6}$/.test(primaryColor)) pickerPrim.value = primaryColor;
   set('sf-hero-image',       s.hero_image_url);
   set('sf-years-open',       s.years_open);
   set('sf-athletes-count',   s.active_athletes_count);
@@ -12991,7 +13005,10 @@ function _sfPopulateFormFields(){
   set('sf-social-wa',        s.social_whatsapp);
   set('sf-social-tt',        s.social_tiktok);
   set('sf-promo-text',       s.promo_banner_text);
-  set('sf-promo-color',      s.promo_banner_color || '#10E8A0');
+  const promoColor = (s.promo_banner_color || '#10E8A0').toUpperCase();
+  set('sf-promo-color',      promoColor);
+  const pickerPromo = document.getElementById('sf-promo-color-picker');
+  if(pickerPromo && /^#[0-9A-Fa-f]{6}$/.test(promoColor)) pickerPromo.value = promoColor;
   setCheck('sf-show-schedule',     s.show_schedule !== false);
   setCheck('sf-show-coaches',      s.show_coaches !== false);
   setCheck('sf-trial-class',       s.trial_class_enabled !== false);
@@ -13001,6 +13018,72 @@ function _sfPopulateFormFields(){
   _sfRenderTestimonials();
   _sfRenderFaqs();
   _sfRenderGallery();
+}
+
+// ─── Color picker helpers ───
+// Sincroniza picker → text + auto-save
+function sfColorPickerChange(which){
+  const pickerId = `sf-${which}-color-picker`;
+  const textId = `sf-${which}-color${which==='primary'?'':'_old'}`;
+  const txt = which === 'primary' ? 'sf-primary-color' : 'sf-promo-color';
+  const picker = document.getElementById(pickerId);
+  const textEl = document.getElementById(txt);
+  if(!picker || !textEl) return;
+  const hex = picker.value.toUpperCase();
+  textEl.value = hex;
+  // Update preview color en vivo
+  if(which === 'primary'){
+    document.documentElement.style.setProperty('--accent', hex);
+  }
+  // Auto-save inmediato al elegir color (no esperar a blur)
+  sfSaveColor(which);
+}
+
+// Sincroniza text → picker
+function sfColorTextChange(which){
+  const pickerId = `sf-${which}-color-picker`;
+  const textId = which === 'primary' ? 'sf-primary-color' : 'sf-promo-color';
+  const picker = document.getElementById(pickerId);
+  const textEl = document.getElementById(textId);
+  if(!picker || !textEl) return;
+  let v = textEl.value.trim().toUpperCase();
+  if(!v.startsWith('#')) v = '#' + v;
+  if(/^#[0-9A-F]{6}$/.test(v)){
+    picker.value = v;
+    if(which === 'primary'){
+      document.documentElement.style.setProperty('--accent', v);
+    }
+  }
+}
+
+// Guarda el color en DB
+async function sfSaveColor(which){
+  const textId = which === 'primary' ? 'sf-primary-color' : 'sf-promo-color';
+  const field = which === 'primary' ? 'primary_color' : 'promo_banner_color';
+  const textEl = document.getElementById(textId);
+  if(!textEl) return;
+  let v = textEl.value.trim().toUpperCase();
+  if(!v.startsWith('#')) v = '#' + v;
+  if(!/^#[0-9A-F]{6}$/.test(v)){
+    toast('Color hex inválido (ej: #00D4FF)', '⚠️');
+    return;
+  }
+  textEl.value = v;
+  await sfSaveField(field, v);
+}
+
+// Preset rápido de color
+function sfPickColorPreset(which, hex){
+  const pickerId = `sf-${which}-color-picker`;
+  const textId = which === 'primary' ? 'sf-primary-color' : 'sf-promo-color';
+  const picker = document.getElementById(pickerId);
+  const textEl = document.getElementById(textId);
+  if(picker) picker.value = hex;
+  if(textEl) textEl.value = hex.toUpperCase();
+  if(which === 'primary'){
+    document.documentElement.style.setProperty('--accent', hex);
+  }
+  sfSaveColor(which);
 }
 
 // Save genérico de cualquier campo del row
