@@ -1299,7 +1299,7 @@ function renderPackages(packages){
         <div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span></div>
         <div class="pkg-meta">${escapeHtml(meta)}</div>
         <ul class="pkg-features">${featuresHtml}</ul>
-        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id})">Reservar</button>
+        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${escapeHtml(p.name).replace(/'/g,"\\'")}')">Comprar ahora</button>
       </div>`;
   }).join('');
 }
@@ -1504,8 +1504,100 @@ function dismissPromo(){
   try { localStorage.setItem('velum_promo_dismissed_' + getSlug(), '1'); } catch(_) {}
 }
 
-function onPackageClick(listingId){
-  alert('Próximamente: checkout con Stripe. Mientras tanto, contacta al gym directamente.');
+function onPackageClick(listingId, packageId, priceMxn, pkgName){
+  // Abrir modal de checkout
+  closeCheckoutModal();
+  const modal = document.createElement('div');
+  modal.id = 'sf-checkout-modal';
+  modal.className = 'modal-overlay open';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:rgba(8,18,30,.96);border:1px solid rgba(0,212,255,.25);border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:inherit;color:#fff;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Comprar paquete</div>
+          <div style="font-size:18px;font-weight:700;line-height:1.3;">${pkgName}</div>
+          <div style="font-size:13px;color:var(--cyan, #00D4FF);margin-top:6px;font-weight:600;">$${priceMxn.toLocaleString('es-MX')} MXN</div>
+        </div>
+        <button onclick="closeCheckoutModal()" style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">×</button>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,.08);margin:6px 0 16px;"></div>
+      <p style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.5;">Llena tus datos para continuar al pago seguro con Stripe.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,.6);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Nombre completo *</label>
+          <input id="co-name" type="text" placeholder="Juan Pérez" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:14px;font-family:inherit;outline:none;"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,.6);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Email *</label>
+          <input id="co-email" type="email" placeholder="tu@email.com" autocomplete="email" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:14px;font-family:inherit;outline:none;"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,.6);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">WhatsApp (opcional)</label>
+          <input id="co-phone" type="tel" placeholder="+52 1 234 567 8900" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:14px;font-family:inherit;outline:none;"/>
+        </div>
+        <div id="co-error" style="color:#ff6b6b;font-size:12px;min-height:14px;"></div>
+        <button id="co-submit" onclick="submitCheckout(${packageId})" style="background:linear-gradient(135deg,#00D4FF,#0099CC);color:#001828;font-weight:700;padding:13px;border:none;border-radius:10px;cursor:pointer;font-size:14px;letter-spacing:.3px;font-family:inherit;margin-top:4px;">
+          Continuar al pago seguro →
+        </button>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;line-height:1.5;margin-top:4px;">
+          🔒 Pagos procesados por <strong style="color:rgba(255,255,255,.7);">Stripe</strong>. VELUM no almacena tu tarjeta.
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('co-name')?.focus(), 100);
+  // Track GA/Pixel
+  try {
+    if (window.fbq) window.fbq('track', 'InitiateCheckout', { content_ids: [packageId], value: priceMxn, currency: 'MXN' });
+    if (window.gtag) window.gtag('event', 'begin_checkout', { value: priceMxn, currency: 'MXN', items: [{ item_id: packageId, item_name: pkgName }] });
+  } catch(_){}
+}
+
+function closeCheckoutModal(){
+  const m = document.getElementById('sf-checkout-modal');
+  if (m) m.remove();
+}
+
+async function submitCheckout(packageId){
+  const name = document.getElementById('co-name')?.value?.trim() || '';
+  const email = document.getElementById('co-email')?.value?.trim() || '';
+  const phone = document.getElementById('co-phone')?.value?.trim() || '';
+  const errEl = document.getElementById('co-error');
+  const btn = document.getElementById('co-submit');
+  if (!name || !email) { errEl.textContent = 'Nombre y email son obligatorios.'; return; }
+  if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) { errEl.textContent = 'Email inválido.'; return; }
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Procesando…';
+
+  const slug = new URLSearchParams(location.search).get('slug') || _gymSlug || '';
+  const sessionId = (typeof _iaSessionId !== 'undefined') ? _iaSessionId : '';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout-create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+      body: JSON.stringify({
+        slug, package_id: packageId,
+        customer: { name, email, phone },
+        session_id: sessionId,
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.checkout_url) {
+      errEl.textContent = data.error || 'No se pudo iniciar el pago.';
+      btn.disabled = false; btn.textContent = 'Continuar al pago seguro →';
+      return;
+    }
+    // Redirigir a Stripe Checkout
+    window.location.href = data.checkout_url;
+  } catch (e) {
+    console.error('submitCheckout:', e);
+    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
+    btn.disabled = false; btn.textContent = 'Continuar al pago seguro →';
+  }
 }
 
 // ─── IA WIDGET ─────────────────────────────────────────────────────

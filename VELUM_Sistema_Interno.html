@@ -21151,94 +21151,147 @@ const SUPA_STRIPE_CHARGE   = 'https://savzjanpydyjtrgdkllx.supabase.co/functions
 const STRIPE_PLATFORM_CLIENT_ID = 'ca_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
 // ── Render Stripe settings block ──────────────────────────────────
-function renderStripeSettings(){
+async function renderStripeSettings(){
   const el = document.getElementById('stripe-connect-status');
   if(!el) return;
-  const acct = gymConfig?.stripe_account_id || null;
-  if(acct){
-    const connected_at = gymConfig?.stripe_account_connected_at
-      ? new Date(gymConfig.stripe_account_connected_at).toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric'})
+  el.innerHTML = `<div style="color:var(--text3);font-size:13px;">Cargando estado de Stripe...</div>`;
+
+  // Fetch estado actual del gym desde tabla gyms
+  let g = null;
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${currentUser.gym_id}&select=stripe_account_id,stripe_account_status,stripe_charges_enabled,stripe_payouts_enabled,stripe_details_submitted,stripe_onboarded_at`, {
+      headers: { 'apikey': window._ANON_KEY || '', 'Authorization': 'Bearer ' + (currentUser.jwt || '') }
+    });
+    const rows = await res.json();
+    g = (Array.isArray(rows) && rows[0]) || null;
+  } catch(e){ console.error('renderStripeSettings fetch:', e); }
+
+  const hasAccount = g?.stripe_account_id;
+  const enabled    = !!g?.stripe_charges_enabled;
+  const status     = g?.stripe_account_status || 'none';
+
+  if (enabled) {
+    const connectedDate = g?.stripe_onboarded_at
+      ? new Date(g.stripe_onboarded_at).toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric'})
       : '';
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
           <div style="width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0;"></div>
           <div>
-            <div style="font-size:13px;font-weight:700;color:#fff;">Stripe conectado</div>
-            <div style="font-size:11px;color:var(--text3);">${acct} · conectado ${connected_at}</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">Stripe Express conectado ✓</div>
+            <div style="font-size:11px;color:var(--text3);"><code style="font-family:var(--fm);font-size:10px;">${g.stripe_account_id}</code>${connectedDate ? ' · activado ' + connectedDate : ''}</div>
           </div>
         </div>
-        <button onclick="desconectarStripe()" class="btn btn-outline btn-sm" style="font-size:11px;border-color:var(--danger);color:var(--danger);">Desconectar</button>
+        <button onclick="refreshStripeStatus()" class="btn btn-outline btn-sm" style="font-size:11px;">Refrescar</button>
       </div>
-      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-        <div style="background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.15);border-radius:9px;padding:12px;text-align:center;">
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:rgba(0,255,128,.08);border:1px solid rgba(0,255,128,.2);border-radius:9px;padding:12px;text-align:center;">
           <div style="font-size:18px;margin-bottom:4px;">💳</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text2);">Links de pago</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Activo ✓</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Cobros</div>
+          <div style="font-size:10px;color:#00ff80;margin-top:2px;">Activos ✓</div>
         </div>
-        <div style="background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.15);border-radius:9px;padding:12px;text-align:center;">
-          <div style="font-size:18px;margin-bottom:4px;">🔄</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text2);">Cobro mensual</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Activo ✓</div>
-        </div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:12px;text-align:center;">
-          <div style="font-size:18px;margin-bottom:4px;">🖥</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text2);">Terminal / TPV</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Requiere hardware</div>
+        <div style="background:${g.stripe_payouts_enabled ? 'rgba(0,255,128,.08)' : 'rgba(251,191,36,.08)'};border:1px solid ${g.stripe_payouts_enabled ? 'rgba(0,255,128,.2)' : 'rgba(251,191,36,.2)'};border-radius:9px;padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">🏦</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">Payouts al banco</div>
+          <div style="font-size:10px;color:${g.stripe_payouts_enabled ? '#00ff80' : '#fbbf24'};margin-top:2px;">${g.stripe_payouts_enabled ? 'Activos ✓' : 'Pendiente'}</div>
         </div>
       </div>
-      <div style="margin-top:12px;font-size:11px;color:var(--text3);">
-        Para cobrar: ve a <strong style="color:var(--text2);">Pagos → 💳</strong> junto a cualquier cliente, o abre el perfil del atleta.
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7;">
+        🛒 Tu <strong>Storefront público</strong> (myvelum.app/g/{slug}) ya puede vender paquetes. Las ventas van directo a tu cuenta Stripe. VELUM cobra 2% como comisión de plataforma.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="https://dashboard.stripe.com/test/connect/accounts/${g.stripe_account_id}" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px;">Abrir dashboard Stripe →</a>
+        <button onclick="reonboardStripe()" class="btn btn-outline btn-sm" style="font-size:11px;">Actualizar datos de banco/identidad</button>
       </div>`;
+  } else if (hasAccount && status === 'pending') {
+    el.innerHTML = `
+      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">⏳</span>
+        <div style="flex:1;">
+          <strong style="color:#fbbf24;">Onboarding en proceso</strong>
+          <p style="font-size:12px;color:var(--text2);margin-top:4px;">Stripe está revisando tu información. Completa los pasos pendientes para activar cobros.</p>
+        </div>
+      </div>
+      <button onclick="reonboardStripe()" class="btn btn-primary" style="width:100%;">Continuar configuración en Stripe →</button>
+      <button onclick="refreshStripeStatus()" class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;font-size:11px;">Refrescar estado</button>`;
+  } else if (hasAccount && status === 'restricted') {
+    el.innerHTML = `
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+        <strong style="color:#ff8a80;">⚠ Acción requerida en Stripe</strong>
+        <p style="font-size:12px;color:var(--text2);margin-top:4px;">Stripe pausó los cobros porque falta información. Completa los requisitos para reactivar.</p>
+      </div>
+      <button onclick="reonboardStripe()" class="btn btn-primary" style="width:100%;">Completar requisitos →</button>`;
   } else {
     el.innerHTML = `
-      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">
-        Conecta tu cuenta Stripe para generar links de pago, cobros automáticos mensuales y gestionar pagos de atletas desde VELUM.<br>
-        <span style="font-size:11px;color:var(--text3);">El dinero va directo a tu cuenta Stripe. VELUM cobra 1.5% de comisión por transacción procesada.</span>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
+        <strong style="color:#fff;">Conecta Stripe para vender desde tu Storefront público.</strong><br>
+        Cualquier persona podrá comprar tus paquetes desde <code style="font-family:var(--fm);font-size:11px;color:var(--accent);">myvelum.app/g/${gymConfig?.slug || 'tu-gym'}</code> con tarjeta. El dinero va directo a tu cuenta de banco.
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button onclick="conectarStripe()" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Ya tengo Stripe → Conectar
-        </button>
-        <a href="https://stripe.com/mx" target="_blank" class="btn btn-outline" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Crear cuenta Stripe primero →
-        </a>
+      <div style="background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:10px;padding:12px 16px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent-light);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Cómo funciona</div>
+        <ol style="font-size:12px;color:var(--text2);padding-left:18px;margin:0;line-height:1.7;">
+          <li>Click <strong>"Conectar Stripe"</strong> abajo</li>
+          <li>Stripe te pide datos: identidad (INE/RFC), cuenta bancaria mexicana</li>
+          <li>Cuando termines vuelves a VELUM con cobros activos</li>
+          <li>Cliente paga $1,500 → $1,470 a ti, $30 a VELUM (comisión 2%)</li>
+        </ol>
       </div>
-      <div style="margin-top:12px;padding:10px 14px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7;">
-        <strong style="color:var(--accent-light);">¿No tienes cuenta Stripe?</strong> Créala gratis en <a href="https://stripe.com/mx" target="_blank" style="color:var(--accent);">stripe.com/mx</a> — toma ~10 minutos. Necesitas: <strong>RFC</strong> e <strong>IBAN de cuenta bancaria mexicana</strong>. Cuando la tengas, regresa aquí y haz clic en "Ya tengo Stripe → Conectar".
-      </div>
-      <div style="margin-top:10px;padding:10px 12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;font-size:11px;color:#fbbf24;">
-        ⚠️ Antes de conectar: asegúrate de que en tu Stripe Dashboard estén habilitados <strong>Connect</strong> (Settings → Connect) y que <strong>https://myvelum.app/stripe-callback</strong> esté en la lista de redirect URIs permitidas.
+      <button onclick="conectarStripe()" class="btn btn-primary" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Conectar Stripe
+      </button>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center;">
+        Powered by Stripe Express · KYC y payouts gestionados por Stripe
       </div>`;
+  }
+
+  // Detectar return URL después de onboarding
+  if (location.hash === '#stripe-onboarded' || location.hash === '#stripe-onboarding-refresh') {
+    history.replaceState(null, '', location.pathname);
+    refreshStripeStatus();
   }
 }
 
-function conectarStripe(){
-  const gymId = currentUser?.gym_id || MOVE_GYM_ID;
-  if(!gymId){ toast('No se pudo determinar el gym.','❌'); return; }
-  if(STRIPE_PLATFORM_CLIENT_ID.includes('XXXX')){
-    toast('Configura STRIPE_PLATFORM_CLIENT_ID en el código primero.','⚠️');
-    alert('Para conectar Stripe necesitas:\n\n1. Ir a dashboard.stripe.com → Settings → Connect → Get started\n2. Copiar tu Client ID (empieza con "ca_")\n3. Reemplazar STRIPE_PLATFORM_CLIENT_ID en VELUM_Sistema_Interno.html\n4. Agregar https://myvelum.app/stripe-callback como redirect_uri en Stripe');
-    return;
+async function conectarStripe(){
+  if(!currentUser?.jwt){ toast('Sesión no válida.','❌'); return; }
+  toast('Generando link de onboarding...', '⏳', 2000);
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/stripe-connect-onboard`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok || !data.onboarding_url) {
+      console.error('connect-onboard:', data);
+      alert(data.error || 'No se pudo iniciar el onboarding.');
+      return;
+    }
+    // Redirigir a Stripe
+    window.location.href = data.onboarding_url;
+  } catch (e) {
+    console.error(e);
+    alert('Error de conexión.');
   }
-  const redirectUri = encodeURIComponent('https://myvelum.app/stripe-callback');
-  const oauthUrl = `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${STRIPE_PLATFORM_CLIENT_ID}&scope=read_write&state=${gymId}&redirect_uri=${redirectUri}`;
-  window.location.href = oauthUrl;
+}
+
+// Alias para "Continuar configuración" cuando el gym está en pending
+function reonboardStripe(){ conectarStripe(); }
+
+async function refreshStripeStatus(){
+  // Re-fetch desde DB (el webhook actualiza account.updated)
+  // Para forzar update sin esperar webhook, llamamos al edge function que hace fetch a Stripe
+  toast('Refrescando estado...', '⏳', 1500);
+  try {
+    // Solo recargar UI con datos frescos de DB (webhook ya debe haber sincronizado)
+    await renderStripeSettings();
+  } catch(e){ console.error(e); }
 }
 
 async function desconectarStripe(){
-  if(!await confirmDialog('¿Desconectar Stripe? Ya no podrás generar links de pago ni cobros automáticos.', {title:'Desconectar Stripe', icon:'💳'})) return;
-  const gymId = currentUser?.gym_id || MOVE_GYM_ID;
-  const { error } = await window.supabaseClient.from('gym_config')
-    .update({ stripe_account_id: null, stripe_account_connected_at: null })
-    .eq('gym_id', gymId);
-  if(error){ toast('Error al desconectar.','❌'); return; }
-  if(gymConfig) gymConfig.stripe_account_id = null;
-  toast('Stripe desconectado.','🔌');
-  renderStripeSettings();
-  renderPagos();
+  // Stripe Express no se "desconecta" desde aquí — el gym debe hacerlo desde Stripe directamente.
+  alert('Para desconectar tu cuenta Stripe ve a dashboard.stripe.com → Settings → Connected accounts → desconectar VELUM.\n\nEsta acción es permanente para esa cuenta.');
 }
 
 // ── Open charge modal ─────────────────────────────────────────────
