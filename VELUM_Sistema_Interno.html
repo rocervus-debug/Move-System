@@ -4545,8 +4545,13 @@ body::before{
                 </div>
               </div>
               <div class="identity-field">
-                <label>URL del logo <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional — déjalo vacío para usar el nombre)</span></label>
-                <input id="cfg-gym-logo" type="text" placeholder="https://..." oninput="previewLogoUrl(this.value)"/>
+                <label>Logo del gym <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional — déjalo vacío para usar el nombre)</span></label>
+                <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-primary btn-sm" onclick="uploadLogo()" style="flex:0 0 auto;">📁 Subir logo</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('cfg-gym-logo').focus()" style="flex:0 0 auto;font-size:11px;">o pegar URL</button>
+                  <span id="cfg-logo-upload-status" style="font-size:11px;color:var(--text3);align-self:center;"></span>
+                </div>
+                <input id="cfg-gym-logo" type="text" placeholder="https://... (o usa Subir logo)" oninput="previewLogoUrl(this.value)"/>
                 <img id="cfg-logo-img" class="logo-preview-sm" src="" alt="Logo preview"
                   onerror="this.style.display='none'"/>
               </div>
@@ -4818,12 +4823,17 @@ body::before{
               <details class="sf-accordion">
                 <summary>🖼 Galería de fotos</summary>
                 <div class="sf-acc-body">
-                  <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Pega URLs de fotos del gym (recomendado: 4-8 fotos en 4:3). Sube fotos a Imgur, Cloudinary, etc.</div>
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Sube fotos desde tu computadora (recomendado: 4-8 fotos en formato 4:3, PNG/JPG/WebP hasta 5MB).</div>
                   <div id="sf-gallery-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
-                  <div style="display:flex;gap:6px;">
-                    <input id="sf-gallery-new" type="url" class="settings-input" placeholder="https://..." onkeypress="if(event.key==='Enter') sfAddGallery()" style="flex:1;"/>
-                    <button class="btn btn-sm btn-primary" onclick="sfAddGallery()">+ Agregar URL</button>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-primary" onclick="sfUploadGalleryImage()" style="flex:1;min-width:140px;">📁 Subir imagen</button>
+                    <button class="btn btn-sm btn-outline" onclick="sfToggleGalleryUrlInput()" id="sf-gallery-url-toggle" title="Pegar URL en lugar de subir" style="flex:0 0 auto;">URL</button>
                   </div>
+                  <div id="sf-gallery-url-row" style="display:none;gap:6px;margin-top:8px;">
+                    <input id="sf-gallery-new" type="url" class="settings-input" placeholder="https://..." onkeypress="if(event.key==='Enter') sfAddGallery()" style="flex:1;"/>
+                    <button class="btn btn-sm btn-primary" onclick="sfAddGallery()">+ Agregar</button>
+                  </div>
+                  <div id="sf-gallery-upload-status" style="font-size:11px;color:var(--text3);margin-top:8px;min-height:14px;"></div>
                 </div>
               </details>
 
@@ -5548,6 +5558,14 @@ body::before{
         <div class="field"><label>Rol</label><input id="c-rol" type="text" placeholder="Ej: Coach Principal"/></div>
       </div>
       <div class="field"><label>Clases que imparte</label><input id="c-clases" type="text" placeholder="Ej: Strength, Hyrox"/></div>
+      <div class="field"><label>Foto del coach <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);">(opcional · aparece en el Storefront público)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="uploadCoachFoto()">📁 Subir foto</button>
+          <img id="c-foto-preview" src="" style="display:none;width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(0,212,255,.25);"/>
+          <span id="c-foto-upload-status" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <input id="c-foto" type="text" placeholder="o pega URL: https://..."/>
+      </div>
       <div class="field"><label>Notas internas</label><textarea id="c-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -11102,18 +11120,20 @@ async function saveCoach(){
   if(!planCheck.ok){ toast(planCheck.msg,'🔒'); return; }
   const payload = {
     nombre,
-    tel:    document.getElementById('c-tel').value.trim(),
-    email:  document.getElementById('c-email').value.trim(),
-    rol:    document.getElementById('c-rol').value.trim(),
-    clases: document.getElementById('c-clases').value.trim(),
-    activo: true,
-    notas:  document.getElementById('c-notas').value.trim()
+    tel:      document.getElementById('c-tel').value.trim(),
+    email:    document.getElementById('c-email').value.trim(),
+    rol:      document.getElementById('c-rol').value.trim(),
+    clases:   document.getElementById('c-clases').value.trim(),
+    activo:   true,
+    notas:    document.getElementById('c-notas').value.trim(),
+    foto_url: (document.getElementById('c-foto')?.value || '').trim() || null
   };
   const { error } = await window.supabaseClient.from('coaches').insert([withGymId(payload)]);
   if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'); return; }
   await loadCoachesFromSupabase();
   closeModal('coach');
-  ['c-nombre','c-tel','c-email','c-rol','c-clases'].forEach(id=>document.getElementById(id).value='');
+  ['c-nombre','c-tel','c-email','c-rol','c-clases','c-foto'].forEach(id=>document.getElementById(id).value='');
+  const fp = document.getElementById('c-foto-preview'); if (fp) { fp.src=''; fp.style.display='none'; }
   auditLog('CREAR_COACH', 'coaches', '', `Nuevo coach: ${nombre}`);
   toast(`Coach "${nombre}" agregado.`,'✓');
   renderCoaches();
@@ -13713,6 +13733,108 @@ async function sfRemoveGallery(idx){
   await window.supabaseClient.from('gym_storefront').update({ gallery_urls: arr }).eq('gym_id', _storefrontData.gym_id);
   _storefrontData.gallery_urls = arr;
   _sfRenderGallery();
+}
+
+// ─── IMAGE UPLOAD HELPER (Supabase Storage · bucket "storefront-assets") ───
+// Path convention: gym_{id}/{type}/{timestamp}-{safeFilename}
+// Devuelve { ok, url, path, error }.
+async function uploadStorefrontImage(file, type){
+  if (!currentUser?.gym_id || !currentUser?.jwt) {
+    return { ok: false, error: 'Sesión no válida. Vuelve a iniciar sesión.' };
+  }
+  if (!file || !file.type || !file.type.startsWith('image/')) {
+    return { ok: false, error: 'El archivo debe ser una imagen (PNG, JPG, WebP).' };
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { ok: false, error: 'La imagen pesa más de 5 MB. Comprímela antes (tinypng.com o squoosh.app).' };
+  }
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+  const path = `gym_${currentUser.gym_id}/${type}/${Date.now()}-${safeName}`;
+  try {
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/storefront-assets/${path}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type,
+        'Authorization': 'Bearer ' + currentUser.jwt,
+        'apikey': window._ANON_KEY || '',
+        'x-upsert': 'false'
+      },
+      body: file
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      console.error('upload failed', res.status, t);
+      return { ok: false, error: `Error ${res.status}. ${t.slice(0,140)}` };
+    }
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/storefront-assets/${path}`;
+    return { ok: true, url: publicUrl, path };
+  } catch (e) {
+    console.error('upload exception', e);
+    return { ok: false, error: 'Error de conexión al subir.' };
+  }
+}
+
+// Abre file picker, sube, callback con la URL pública.
+function pickAndUploadImage(type, statusElId, onSuccess){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/png,image/jpeg,image/jpg,image/webp,image/gif';
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    inp.remove();
+    if (!file) return;
+    const status = statusElId ? document.getElementById(statusElId) : null;
+    if (status) status.textContent = `Subiendo "${file.name}"…`;
+    const r = await uploadStorefrontImage(file, type);
+    if (!r.ok) {
+      if (status) status.textContent = '';
+      alert(r.error || 'No se pudo subir.');
+      return;
+    }
+    if (status) status.textContent = '✓ Imagen subida.';
+    setTimeout(() => { if (status) status.textContent = ''; }, 2500);
+    if (typeof onSuccess === 'function') onSuccess(r.url, r.path);
+  });
+  inp.click();
+}
+
+// ── GALLERY: subir y agregar a gallery_urls ──
+function sfToggleGalleryUrlInput(){
+  const row = document.getElementById('sf-gallery-url-row');
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+}
+function sfUploadGalleryImage(){
+  pickAndUploadImage('gallery', 'sf-gallery-upload-status', async (url) => {
+    const arr = [...(Array.isArray(_storefrontData.gallery_urls) ? _storefrontData.gallery_urls : []), url];
+    await window.supabaseClient.from('gym_storefront').update({ gallery_urls: arr }).eq('gym_id', _storefrontData.gym_id);
+    _storefrontData.gallery_urls = arr;
+    _sfRenderGallery();
+  });
+}
+
+// ── LOGO: subir y poner URL en cfg-gym-logo ──
+function uploadLogo(){
+  pickAndUploadImage('logo', 'cfg-logo-upload-status', (url) => {
+    const inp = document.getElementById('cfg-gym-logo');
+    if (inp) {
+      inp.value = url;
+      if (typeof previewLogoUrl === 'function') previewLogoUrl(url);
+    }
+  });
+}
+
+// ── COACH FOTO: subir y poner en input #c-foto ──
+function uploadCoachFoto(){
+  pickAndUploadImage('coach', 'c-foto-upload-status', (url) => {
+    const inp = document.getElementById('c-foto');
+    if (inp) inp.value = url;
+    const preview = document.getElementById('c-foto-preview');
+    if (preview) { preview.src = url; preview.style.display = 'block'; }
+  });
 }
 
 // ─── LEADS DASHBOARD ───
