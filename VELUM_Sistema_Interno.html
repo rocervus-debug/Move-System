@@ -4449,10 +4449,16 @@ body::before{
 
         <div class="cfg-group-label">Mi Cuenta</div>
         <div class="cfg-menu-group" style="margin-bottom:32px;">
-          <div class="cfg-menu-item" onclick="openSettingsPanel('cuenta')" style="border-bottom:none;">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('cuenta')">
             <span class="cfg-item-icon" style="background:rgba(0,212,255,.13);color:var(--accent);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
             <span class="cfg-item-label">Perfil y Contraseña</span>
             <span class="cfg-item-desc">Edita tu perfil y cierra sesión</span>
+            <span class="cfg-chevron">›</span>
+          </div>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('seguridad')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(0,255,128,.13);color:#00ff80;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <span class="cfg-item-label">Seguridad (2FA)</span>
+            <span class="cfg-item-desc" id="seguridad-status-desc">Autenticación de dos factores</span>
             <span class="cfg-chevron">›</span>
           </div>
         </div>
@@ -5195,6 +5201,67 @@ body::before{
           </div>
         </div>
       </div><!-- /cfg-panel-cuenta -->
+
+      <!-- ══ PANEL: Seguridad (2FA) ══ -->
+      <div class="cfg-panel" id="cfg-panel-seguridad">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Autenticación de dos factores (2FA)</h2>
+              <p style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5;">
+                Protege tu cuenta con un código que cambia cada 30 segundos en tu app de autenticación.
+                Incluso si alguien tiene tu contraseña, no podrá entrar sin el código.
+              </p>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px;">
+            <div id="seg-state-loading" style="text-align:center;padding:20px;color:var(--text2);font-size:13px;">
+              Cargando estado…
+            </div>
+            <!-- Estado: 2FA INACTIVO -->
+            <div id="seg-state-inactive" style="display:none;">
+              <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:24px;">⚠</span>
+                <div style="flex:1;">
+                  <strong style="color:#ff8a80;">2FA está desactivado</strong>
+                  <p style="font-size:12px;color:var(--text2);margin-top:4px;">Tu cuenta depende solo de tu contraseña.</p>
+                </div>
+              </div>
+              <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">
+                Para activar 2FA necesitas una app de autenticación instalada en tu celular:
+                <strong>Google Authenticator</strong>, <strong>Authy</strong>, o <strong>1Password</strong>.
+              </p>
+              <button class="btn btn-primary" style="width:100%;" onclick="startVoluntary2FAEnrollment()">
+                Activar 2FA ahora
+              </button>
+            </div>
+            <!-- Estado: 2FA ACTIVO -->
+            <div id="seg-state-active" style="display:none;">
+              <div style="background:rgba(0,255,128,.08);border:1px solid rgba(0,255,128,.3);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:24px;">✓</span>
+                <div style="flex:1;">
+                  <strong style="color:#00ff80;">2FA está activado</strong>
+                  <p style="font-size:12px;color:var(--text2);margin-top:4px;" id="seg-enrolled-at">Activado el —</p>
+                </div>
+              </div>
+              <div style="display:grid;gap:10px;">
+                <button class="btn btn-secondary" style="width:100%;" onclick="regenerate2FACodes()">
+                  Regenerar códigos de recuperación
+                </button>
+                <button class="btn btn-secondary" style="width:100%;color:#ff8a80;border-color:rgba(239,68,68,.3);" onclick="disable2FA()">
+                  Desactivar 2FA
+                </button>
+              </div>
+              <p style="font-size:11px;color:var(--text3);margin-top:14px;line-height:1.5;">
+                Las dos acciones piden un código actual de tu app de autenticación.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-seguridad -->
 
     </div><!-- /#v-settings -->
 
@@ -7044,10 +7111,107 @@ function downloadRecoveryCodes(){
 function finishEnrollment(){
   close2FAModal();
   _twofa_recovery_cache = [];
-  toast('2FA configurado. Inicia sesión normalmente.', '✓', 3000);
-  // Reabrir login: limpiar password y refocus
-  const passEl = document.getElementById('login-pass');
-  if (passEl) { passEl.value = ''; passEl.focus(); }
+  toast('2FA configurado correctamente.', '✓', 3000);
+  // Si estamos dentro de Settings, refrescar estado. Si no, refocus login.
+  if (typeof loadSecurityState === 'function' && document.getElementById('cfg-panel-seguridad')?.classList.contains('cfg-panel-active')) {
+    loadSecurityState();
+  } else {
+    const passEl = document.getElementById('login-pass');
+    if (passEl) { passEl.value = ''; passEl.focus(); }
+  }
+}
+
+// ── Settings panel: estado de Seguridad / 2FA ──
+async function loadSecurityState(){
+  if (!currentUser?.id || !currentUser?.jwt) return;
+  const loading = document.getElementById('seg-state-loading');
+  const active = document.getElementById('seg-state-active');
+  const inactive = document.getElementById('seg-state-inactive');
+  if (loading) loading.style.display = 'block';
+  if (active) active.style.display = 'none';
+  if (inactive) inactive.style.display = 'none';
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/usuarios?id=eq.${currentUser.id}&select=totp_enabled,totp_enrolled_at`, {
+      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + currentUser.jwt }
+    });
+    const rows = await res.json();
+    const u = (Array.isArray(rows) && rows[0]) || {};
+    if (loading) loading.style.display = 'none';
+    const desc = document.getElementById('seguridad-status-desc');
+    if (u.totp_enabled) {
+      if (active) active.style.display = 'block';
+      const dEl = document.getElementById('seg-enrolled-at');
+      if (u.totp_enrolled_at && dEl) {
+        const d = new Date(u.totp_enrolled_at);
+        dEl.textContent = 'Activado el ' + d.toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric' });
+      }
+      if (desc) desc.innerHTML = '<span style="color:#00ff80;">Activo ✓</span>';
+    } else {
+      if (inactive) inactive.style.display = 'block';
+      if (desc) desc.textContent = 'Recomendado activar';
+    }
+  } catch(e){
+    console.error('loadSecurityState:', e);
+    if (loading) loading.textContent = 'Error al cargar estado.';
+  }
+}
+
+function startVoluntary2FAEnrollment(){
+  if (!currentUser?.jwt || !currentUser?.id) {
+    alert('Tu sesión no es válida. Vuelve a iniciar sesión.');
+    return;
+  }
+  open2FAEnrollment(currentUser.jwt, currentUser.id, currentUser.email);
+}
+
+async function regenerate2FACodes(){
+  const code = prompt('Ingresa tu código actual de 6 dígitos de la app de autenticación:');
+  if (!code) return;
+  try {
+    const res = await fetch(getTotpFnUrl(), {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({ action:'regenerate_recovery_codes', user_id: currentUser.id, code: code.trim() })
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error || 'Código inválido.'); return; }
+    _twofa_recovery_cache = data.recovery_codes || [];
+    close2FAModal();
+    const modal = document.createElement('div');
+    modal.id = 'twofa-modal';
+    modal.className = 'modal-backdrop show';
+    modal.innerHTML = `
+      <div class="modal-card" style="max-width:420px;">
+        <div class="modal-head"><h3>🔄 Códigos regenerados</h3></div>
+        <div style="padding:0 20px 20px;">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Estos 8 códigos reemplazan los anteriores. Guárdalos en un lugar seguro. Cada uno se usa <strong>UNA sola vez</strong>.</p>
+          <pre style="font-family:monospace;font-size:13px;background:rgba(0,0,0,.4);padding:14px;border-radius:8px;letter-spacing:1px;line-height:1.8;text-align:center;border:1px dashed rgba(0,212,255,.3);">${_twofa_recovery_cache.join('\n')}</pre>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn btn-secondary" style="flex:1;" onclick="copyRecoveryCodes()">📋 Copiar</button>
+            <button class="btn btn-secondary" style="flex:1;" onclick="downloadRecoveryCodes()">💾 Descargar</button>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="close2FAModal()">Listo</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  } catch(e){ console.error(e); alert('Error de conexión.'); }
+}
+
+async function disable2FA(){
+  if (!confirm('¿Seguro que quieres desactivar 2FA?\n\nTu cuenta quedará protegida solo por contraseña hasta que vuelvas a activarlo.')) return;
+  const code = prompt('Ingresa tu código actual de 6 dígitos para confirmar:');
+  if (!code) return;
+  try {
+    const res = await fetch(getTotpFnUrl(), {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({ action:'disable', user_id: currentUser.id, code: code.trim() })
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error || 'Código inválido.'); return; }
+    toast('2FA desactivado', '✓', 3000);
+    loadSecurityState();
+  } catch(e){ console.error(e); alert('Error de conexión.'); }
 }
 
 // ── Supabase Realtime — live check-in counter ──────────────────────
@@ -8911,6 +9075,7 @@ function openSettingsPanel(id){
     const ku = document.getElementById('cfg-kiosko-url'); if(ku) ku.value = getKioskoUrl();
     const kp = document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder = getKioscoPin() ? '●'.repeat(getKioscoPin().length) : '——';
   }
+  if(id === 'seguridad') loadSecurityState();
 }
 
 function closeSettingsPanel(){
