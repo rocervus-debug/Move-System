@@ -4708,8 +4708,13 @@ body::before{
                       <input id="sf-tagline-readonly" type="text" class="settings-input" disabled style="opacity:.5;" placeholder="(editable en Apariencia)"/>
                     </div>
                   </div>
-                  <div class="field"><label>URL de imagen hero (opcional)</label>
-                    <input id="sf-hero-image" type="url" class="settings-input" placeholder="https://..." onblur="sfSaveField('hero_image_url', this.value)"/>
+                  <div class="field"><label>Imagen hero <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);">(opcional · fondo del banner principal)</span></label>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+                      <button type="button" class="btn btn-primary btn-sm" onclick="uploadHeroImage()">📁 Subir imagen</button>
+                      <img id="sf-hero-preview" src="" style="display:none;width:64px;height:40px;border-radius:6px;object-fit:cover;border:1px solid rgba(0,212,255,.25);"/>
+                      <span id="sf-hero-upload-status" style="font-size:11px;color:var(--text3);"></span>
+                    </div>
+                    <input id="sf-hero-image" type="url" class="settings-input" placeholder="o pega URL: https://..." onblur="sfSaveField('hero_image_url', this.value); _sfHeroPreviewSync()"/>
                   </div>
                 </div>
               </details>
@@ -13473,6 +13478,7 @@ function _sfPopulateFormFields(){
   const pickerPrim = document.getElementById('sf-primary-color-picker');
   if(pickerPrim && /^#[0-9A-Fa-f]{6}$/.test(primaryColor)) pickerPrim.value = primaryColor;
   set('sf-hero-image',       s.hero_image_url);
+  if (typeof _sfHeroPreviewSync === 'function') _sfHeroPreviewSync();
   set('sf-years-open',       s.years_open);
   set('sf-athletes-count',   s.active_athletes_count);
   set('sf-google-rating',    s.google_rating);
@@ -13835,6 +13841,32 @@ function uploadCoachFoto(){
     const preview = document.getElementById('c-foto-preview');
     if (preview) { preview.src = url; preview.style.display = 'block'; }
   });
+}
+
+// ── HERO IMAGE: subir y guardar en gym_storefront.hero_image_url ──
+function uploadHeroImage(){
+  pickAndUploadImage('hero', 'sf-hero-upload-status', async (url) => {
+    const inp = document.getElementById('sf-hero-image');
+    if (inp) inp.value = url;
+    _sfHeroPreviewSync();
+    // Guardar en DB
+    if (typeof sfSaveField === 'function') {
+      await sfSaveField('hero_image_url', url);
+    }
+  });
+}
+
+function _sfHeroPreviewSync(){
+  const inp = document.getElementById('sf-hero-image');
+  const preview = document.getElementById('sf-hero-preview');
+  if (!inp || !preview) return;
+  const url = inp.value.trim();
+  if (url && /^https?:\/\//.test(url)) {
+    preview.src = url;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
 }
 
 // ─── LEADS DASHBOARD ───
