@@ -185,6 +185,7 @@ body{
 }
 .reset-hint{font-size:11px;color:rgba(255,255,255,.2);margin-top:8px;}
 </style>
+<script src="/cookie-banner.js" defer></script>
 </head>
 <body>
 <div class="container">
@@ -291,11 +292,19 @@ async function doCheckinByNumero(numero){
   hideNumErr();
   try{
     // 1. Look up qr_token (and portal_token as fallback) by numero_cliente
-    //    move-checkin searches by qr_token; portal_token is fallback
-    const gymFilter = kioscoGymId ? `&gym_id=eq.${kioscoGymId}` : '';
+    //    Uses SECURITY DEFINER RPC instead of direct SELECT — anon ya no tiene SELECT en clientes.
+    if(!kioscoGymId){
+      showNumErr('Kiosco sin gym_id configurado.');
+      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
+      return;
+    }
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/clientes?numero_cliente=eq.${encodeURIComponent(numero)}${gymFilter}&select=qr_token,portal_token,nombre&limit=1`,
-      { headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`} }
+      `${SUPABASE_URL}/rest/v1/rpc/kiosco_lookup`,
+      {
+        method:'POST',
+        headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'},
+        body: JSON.stringify({ p_gym_id: Number(kioscoGymId), p_numero: Number(numero) })
+      }
     );
     if(!res.ok){
       showNumErr('Error al consultar. Intenta de nuevo.');

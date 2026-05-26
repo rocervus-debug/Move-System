@@ -6765,7 +6765,7 @@ function getSession(){
 function setSession(u){ localStorage.setItem('move_session', JSON.stringify(u)); }
 function clearSession(){ localStorage.removeItem('move_session'); }
 
-async function doLogin(){
+async function doLogin(totpCode){
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
@@ -6775,13 +6775,26 @@ async function doLogin(){
   btn.textContent = 'Verificando…'; btn.disabled = true;
   try{
     const pw_hash = await hashPassword(pass);
-    // ── Call Edge Function: validates credentials, returns signed JWT ──
+    const reqBody = { email, pw_hash };
+    if (totpCode) reqBody.totp_code = totpCode;
+    // ── Call Edge Function: validates credentials, returns signed JWT (or 2FA challenge) ──
     const res = await fetch(EDGE_LOGIN_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email, pw_hash })
+      body: JSON.stringify(reqBody)
     });
     const result = await res.json();
+    // ── 2FA flow ──
+    if (result.requires_2fa) {
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      open2FAChallenge(email, result.error);
+      return;
+    }
+    if (result.requires_2fa_enrollment) {
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      open2FAEnrollment(result.enrollment_token, result.user_id, result.email);
+      return;
+    }
     if(!res.ok || !result.token){
       errEl.textContent = result.error || 'Correo o contraseña incorrectos.';
       errEl.classList.add('show');
@@ -6811,6 +6824,229 @@ async function doLogin(){
     initRealtimeSubscriptions();
   } catch(e){ errEl.textContent='Error de conexión.'; errEl.classList.add('show'); console.error(e); }
   btn.textContent = 'ENTRAR'; btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 2FA · TOTP UI helpers
+// ═══════════════════════════════════════════════════════════════════
+const TOTP_FN_URL = `${supabaseUrl}/functions/v1/velum-totp`;
+
+function close2FAModal(){ const m = document.getElementById('twofa-modal'); if(m) m.remove(); }
+
+function open2FAChallenge(email, errorMsg){
+  close2FAModal();
+  const modal = document.createElement('div');
+  modal.id = 'twofa-modal';
+  modal.className = 'modal-backdrop show';
+  modal.innerHTML = `
+    <div class="modal-card" style="max-width:380px;">
+      <div class="modal-head">
+        <h3>🔐 Código de verificación</h3>
+        <button class="modal-close" onclick="close2FAModal()" aria-label="Cerrar">×</button>
+      </div>
+      <div style="padding:0 20px 20px;">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5;">
+          Abre tu app de autenticación (Google Authenticator, Authy, 1Password) y escribe el código de 6 dígitos para <strong>${email}</strong>.
+        </p>
+        <input id="twofa-code" type="text" inputmode="numeric" autocomplete="one-time-code"
+          maxlength="11" pattern="[0-9A-Za-z\\-]*"
+          placeholder="000 000"
+          style="width:100%;font-size:22px;letter-spacing:6px;text-align:center;padding:14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.25);border-radius:10px;color:#fff;font-family:'JetBrains Mono',monospace;">
+        <div id="twofa-error" style="color:#ff5555;font-size:12px;margin-top:8px;min-height:16px;">${errorMsg || ''}</div>
+        <button id="twofa-submit-btn" class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="submit2FACode()">Verificar</button>
+        <button type="button" style="width:100%;margin-top:8px;background:transparent;border:none;color:var(--text2);font-size:12px;cursor:pointer;text-decoration:underline;" onclick="toggle2FARecovery()">¿No tienes el código? Usar código de recuperación</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(()=>{ const i = document.getElementById('twofa-code'); if(i) i.focus(); }, 100);
+  document.getElementById('twofa-code')?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') submit2FACode();
+  });
+}
+
+function toggle2FARecovery(){
+  const i = document.getElementById('twofa-code');
+  if (!i) return;
+  if (i.maxLength === 11) {
+    i.placeholder = 'XXXXX-XXXXX';
+    i.style.letterSpacing = '4px';
+    i.style.fontSize = '18px';
+  } else {
+    i.maxLength = 11;
+    i.placeholder = '000 000';
+    i.style.letterSpacing = '6px';
+    i.style.fontSize = '22px';
+  }
+  i.value = '';
+  i.focus();
+}
+
+async function submit2FACode(){
+  const i = document.getElementById('twofa-code');
+  const errEl = document.getElementById('twofa-error');
+  const btn = document.getElementById('twofa-submit-btn');
+  if (!i) return;
+  const code = i.value.trim();
+  if (!code) { errEl.textContent = 'Ingresa el código.'; return; }
+  errEl.textContent = '';
+  btn.textContent = 'Verificando…'; btn.disabled = true;
+  close2FAModal();
+  // Llamar de nuevo a doLogin con el código
+  await doLogin(code);
+}
+
+function open2FAEnrollment(enrollmentToken, userId, email){
+  close2FAModal();
+  const modal = document.createElement('div');
+  modal.id = 'twofa-modal';
+  modal.className = 'modal-backdrop show';
+  modal.innerHTML = `
+    <div class="modal-card" style="max-width:480px;">
+      <div class="modal-head">
+        <h3>🔐 Configura 2FA (obligatorio)</h3>
+      </div>
+      <div style="padding:0 20px 20px;">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5;">
+          Como administrador con acceso total, debes activar autenticación de dos factores antes de continuar.
+          Esto protege la cuenta incluso si tu contraseña se compromete.
+        </p>
+        <div id="twofa-enrollment-step1">
+          <ol style="font-size:13px;color:var(--text2);padding-left:20px;line-height:1.7;margin-bottom:14px;">
+            <li>Instala <strong>Google Authenticator</strong>, <strong>Authy</strong> o <strong>1Password</strong></li>
+            <li>Presiona "Generar código" abajo</li>
+            <li>Escanea el QR con tu app</li>
+            <li>Ingresa el código de 6 dígitos para confirmar</li>
+          </ol>
+          <button id="twofa-gen-btn" class="btn btn-primary" style="width:100%;" onclick="generate2FASecret('${enrollmentToken}', ${userId})">Generar código QR</button>
+        </div>
+        <div id="twofa-enrollment-step2" style="display:none;">
+          <div id="twofa-qr-container" style="background:#fff;padding:14px;border-radius:10px;display:flex;justify-content:center;margin-bottom:12px;"></div>
+          <details style="font-size:12px;color:var(--text2);margin-bottom:12px;">
+            <summary style="cursor:pointer;color:var(--accent-light);">¿No puedes escanear? Mostrar secret manual</summary>
+            <div id="twofa-secret-text" style="margin-top:8px;font-family:monospace;background:rgba(0,0,0,.3);padding:8px;border-radius:6px;word-break:break-all;font-size:11px;"></div>
+          </details>
+          <label style="font-size:12px;color:var(--text2);margin-bottom:6px;display:block;">Código de 6 dígitos de tu app:</label>
+          <input id="twofa-enroll-code" type="text" inputmode="numeric" maxlength="6"
+            placeholder="000 000"
+            style="width:100%;font-size:22px;letter-spacing:6px;text-align:center;padding:12px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.25);border-radius:10px;color:#fff;">
+          <div id="twofa-enroll-error" style="color:#ff5555;font-size:12px;margin-top:8px;min-height:16px;"></div>
+          <button id="twofa-confirm-btn" class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="confirm2FAEnrollment('${enrollmentToken}', ${userId})">Confirmar y activar</button>
+        </div>
+        <div id="twofa-enrollment-step3" style="display:none;">
+          <div style="background:rgba(0,255,128,.08);border:1px solid rgba(0,255,128,.3);padding:14px;border-radius:10px;margin-bottom:12px;">
+            <strong style="color:#00ff80;">✓ 2FA activado</strong>
+            <p style="font-size:12px;color:var(--text2);margin-top:6px;">Guarda estos 8 códigos de recuperación en un lugar seguro. Cada uno se usa una sola vez si pierdes acceso a tu app.</p>
+          </div>
+          <pre id="twofa-recovery-codes" style="font-family:monospace;font-size:13px;background:rgba(0,0,0,.4);padding:14px;border-radius:8px;letter-spacing:1px;line-height:1.8;text-align:center;border:1px dashed rgba(0,212,255,.3);"></pre>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn btn-secondary" style="flex:1;" onclick="copyRecoveryCodes()">📋 Copiar</button>
+            <button class="btn btn-secondary" style="flex:1;" onclick="downloadRecoveryCodes()">💾 Descargar</button>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="finishEnrollment()">Continuar al login</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+let _twofa_recovery_cache = [];
+
+async function generate2FASecret(token, userId){
+  const btn = document.getElementById('twofa-gen-btn');
+  btn.textContent = 'Generando…'; btn.disabled = true;
+  try {
+    const res = await fetch(TOTP_FN_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({ action:'enroll', user_id: userId })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      btn.textContent = 'Generar código QR'; btn.disabled = false;
+      alert(data.error || 'No se pudo generar.'); return;
+    }
+    _twofa_recovery_cache = data.recovery_codes || [];
+    document.getElementById('twofa-enrollment-step1').style.display = 'none';
+    document.getElementById('twofa-enrollment-step2').style.display = 'block';
+    document.getElementById('twofa-secret-text').textContent = data.secret;
+    // Renderizar QR usando qrcode.js (lo cargo dinámicamente)
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+    const qrEl = document.getElementById('twofa-qr-container');
+    qrEl.innerHTML = '';
+    new QRCode(qrEl, { text: data.otpauth_uri, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    setTimeout(()=>document.getElementById('twofa-enroll-code')?.focus(), 100);
+  } catch (e) {
+    console.error(e);
+    btn.textContent = 'Generar código QR'; btn.disabled = false;
+    alert('Error de conexión.');
+  }
+}
+
+function loadScriptOnce(url){
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${url}"]`)) return resolve();
+    const s = document.createElement('script');
+    s.src = url; s.onload = () => resolve(); s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function confirm2FAEnrollment(token, userId){
+  const codeEl = document.getElementById('twofa-enroll-code');
+  const errEl = document.getElementById('twofa-enroll-error');
+  const btn = document.getElementById('twofa-confirm-btn');
+  const code = (codeEl?.value || '').replace(/\D/g,'');
+  if (code.length !== 6) { errEl.textContent = 'Ingresa los 6 dígitos.'; return; }
+  errEl.textContent = '';
+  btn.textContent = 'Verificando…'; btn.disabled = true;
+  try {
+    const res = await fetch(TOTP_FN_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({ action:'verify_enrollment', user_id: userId, code })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      errEl.textContent = data.error || 'Código inválido.';
+      btn.textContent = 'Confirmar y activar'; btn.disabled = false;
+      return;
+    }
+    document.getElementById('twofa-enrollment-step2').style.display = 'none';
+    document.getElementById('twofa-enrollment-step3').style.display = 'block';
+    document.getElementById('twofa-recovery-codes').textContent = _twofa_recovery_cache.join('\n');
+  } catch (e) {
+    errEl.textContent = 'Error de conexión.';
+    btn.textContent = 'Confirmar y activar'; btn.disabled = false;
+  }
+}
+
+function copyRecoveryCodes(){
+  navigator.clipboard?.writeText(_twofa_recovery_cache.join('\n'));
+  toast('Códigos copiados al portapapeles', '📋', 2000);
+}
+
+function downloadRecoveryCodes(){
+  const txt = 'VELUM — Códigos de recuperación 2FA\n' +
+    'Guarda este archivo en un lugar seguro.\n' +
+    'Cada código se usa UNA SOLA VEZ.\n\n' +
+    _twofa_recovery_cache.join('\n') + '\n';
+  const blob = new Blob([txt], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'velum-recovery-codes.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function finishEnrollment(){
+  close2FAModal();
+  _twofa_recovery_cache = [];
+  toast('2FA configurado. Inicia sesión normalmente.', '✓', 3000);
+  // Reabrir login: limpiar password y refocus
+  const passEl = document.getElementById('login-pass');
+  if (passEl) { passEl.value = ''; passEl.focus(); }
 }
 
 // ── Supabase Realtime — live check-in counter ──────────────────────

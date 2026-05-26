@@ -1,7 +1,53 @@
 # VELUM Security Backlog
 
-**Última actualización:** 24 May 2026
-**Estado:** En progreso. Bloque crítico cerrado. Pendientes requieren auth refactor.
+**Última actualización:** 25 May 2026
+**Estado:** ✅ Aislamiento cross-gym validado end-to-end. **0 ERRORS · 6 WARNS** (todos acceptable risk documentado).
+
+---
+
+## ✅ FIXES APLICADOS EN PRODUCCIÓN (25 May 2026 · Ronda 3 — cierre auth refactor)
+
+Smoke tests cross-gym descubrieron que anon (sin JWT) podía leer datos de gym_id=1 en 18+ tablas (pagos, clientes, usuarios con pw_hash, gastos, etc.). Causa raíz + 3 fugas legacy adicionales.
+
+| Fix | Migración | Impacto |
+|---|---|---|
+| **🚨 `auth_gym_id()` ya NO hace fallback a 1** | `fix_auth_gym_id_no_fallback` | Cuando no hay JWT devuelve NULL → `gym_id = NULL` → false → anon bloqueado en TODAS las tablas con gym_isolation a la vez |
+| 17 `gym_isolation` policies migradas de role `public` → `authenticated` | `gym_isolation_public_to_authenticated` | Defense in depth: explícito que solo authenticated puede leer, aunque NULL fallback ya lo bloquea |
+| `clientes` RPC `kiosco_lookup(gym_id, numero)` + drop `Kiosco lookup by numero` | `tighten_clientes_rls_kiosco_rpc` | Anon ya no puede `SELECT * FROM clientes`. Kiosco usa SECURITY DEFINER RPC que devuelve 1 fila por (gym_id+numero) con campos mínimos |
+| `clientes` drop `Athletes can update own foto_url` + nueva policy authenticated por `cliente_id` | mismo | Anon ya no puede UPDATE cualquier cliente con `portal_token IS NOT NULL` |
+| Drop `horarios."Public read horarios"` | `drop_legacy_public_policies_*` | Cerraba leak de 41 filas a anon (horarios de TODOS los gyms) |
+| Drop `programas.allow_*` (4 policies SELECT/INSERT/UPDATE/DELETE TO public) | mismo | Cerraba leak de 87 filas + escritura anon de programas de cualquier gym |
+| Drop `leads_landing.service_select_leads_landing` | mismo | Cerraba SELECT público de leads_landing |
+| `checkin.html` actualizado para llamar `/rest/v1/rpc/kiosco_lookup` | (no migración) | Kiosco sigue funcionando con la API tightened |
+
+### Validación cross-gym (16 tests)
+
+```
+Anon sin JWT intenta leer:
+  pagos: 0 ✅            clientes: 0 ✅       usuarios: 0 ✅
+  gastos: 0 ✅           leads: 0 ✅          audit_log: 0 ✅
+  asistencias: 0 ✅      medidas: 0 ✅        reservas: 0 ✅
+  bitacora_atleta: 0 ✅  cliente_notas: 0 ✅  evaluaciones: 0 ✅
+  coaches: 0 ✅          campanas: 0 ✅       horarios: 0 ✅
+  programas: 0 ✅        leads_landing: 0 ✅  gyms: 0 ✅
+  gym_config: 22 ✅ (solo claves de branding públicas: gym_color, gym_logo_url, gym_nombre, gym_tagline, gym_theme, portal_codigo. portal_password sigue bloqueada)
+
+RPC kiosco_lookup(1, 1) anon: devuelve 1 fila con campos mínimos ✅
+```
+
+### Advisor final
+
+| Antes (Ronda 1) | Después Ronda 2 | Después Ronda 3 |
+|---|---|---|
+| 3 ERRORS + 17 WARNS | 0 ERRORS + 11 WARNS | **0 ERRORS + 6 WARNS** |
+
+Los 6 WARNs restantes son todos **acceptable risk**:
+- `login_attempts` RLS sin policy — correcto (solo service_role)
+- `pg_net` extension en `public` — cosmético, requiere coordinación
+- `error_logs.error_logs_insert WITH CHECK true` — necesario para client-side error tracking
+- `leads_landing.anon_insert_leads_landing WITH CHECK true` — necesario para captura de leads landing
+- `kiosco_lookup` SECURITY DEFINER ejecutable por anon — intencional (es el propósito del RPC)
+- `kiosco_lookup` SECURITY DEFINER ejecutable por authenticated — intencional
 
 ---
 
@@ -194,3 +240,81 @@ Después de implementar todo lo anterior:
 
 **Owner:** Roy Cervus
 **Próxima revisión:** Después de implementar Fase 1 del auth refactor
+
+---
+
+## 🛡 ROADMAP DE HARDENING INCREMENTAL (post-25 May 2026)
+
+Nivel actual: "buen SaaS B2B early-stage". Suficiente para gimnasios independientes LATAM. Este roadmap lleva el sistema a "ready para clientes premium / cadenas / industrias semi-reguladas".
+
+### Fase A — Quick Wins (1-2 días · hacer en las próximas 2 semanas)
+
+Objetivo: cerrar los 3 huecos visibles que un atacante semi-técnico podría explotar.
+
+| # | Acción | Esfuerzo | Por qué importa |
+|---|---|---|---|
+| A1 | Rate limit en `kiosco_lookup` RPC | 2h | Hoy alguien con la anon key puede iterar `(gym_id, numero)` hasta encontrar tokens. Wrap en edge function con rate limit por IP (10 req/min) y log de intentos |
+| A2 | Rate limit en `storefront-lead` edge function | 1h | Mismo problema con captura de leads — spammeable. Ya existe deduplicación 1h pero falta rate limit por IP |
+| A3 | Rate limit en `velum-atleta-auth` | 1h | Login del atleta es bruteforce-able. Agregar tabla `login_attempts` lookup (ya existe) + bloqueo después de 5 fallos en 15 min |
+| A4 | 2FA opcional para admin (login Sistema_Interno) | 4h | Si la cuenta de Roy se compromete, atacante controla todo. TOTP via Google Authenticator usando librería `otpauth` |
+| A5 | Cookie banner + política de retención visible en /privacidad | 3h | Requerido para LFPDPPP (México) y LGPD (Brasil) cuando captures email/teléfono. Ya existe /privacidad.html, solo falta banner + política de retención escrita |
+| A6 | Headers de seguridad en vercel.json | 30min | CSP, HSTS, X-Frame-Options, Referrer-Policy. Bloquea XSS, clickjacking, MITM |
+
+**Resultado esperado:** un atacante necesita 100x más esfuerzo para extraer datos. Cumples mínimos legales LATAM.
+
+### Fase B — Antes de cliente grande / ~50 gyms (1 semana de trabajo distribuida)
+
+Objetivo: poder responder "sí" a security questionnaires de marcas premium.
+
+| # | Acción | Esfuerzo | Por qué importa |
+|---|---|---|---|
+| B1 | Audit logging de SELECT en datos sensibles | 1 día | Hoy solo logueas cambios. Agregar trigger o función wrapper para logear quién leyó qué (clientes, pagos) — requerido por LGPD/CCPA si te lo piden |
+| B2 | Rotación periódica de `portal_token` | 4h | Tokens de atletas nunca expiran. Agregar rotación cada 90 días + endpoint para regenerar |
+| B3 | Encrypted backups custom + restore test | 1 día | Hacer 1 restore de prueba al mes desde backup PITR de Supabase, documentar el proceso |
+| B4 | Política de passwords (longitud mínima, no reutilización) | 4h | Hoy admite cualquier password. Agregar validación + zxcvbn score >= 3 |
+| B5 | Monitoring y alertas (Supabase logs → Slack/email) | 1 día | Alertas en: logins fallidos masivos, errores 500 spike, queries lentas, advisor degradation |
+| B6 | Documentación de arquitectura de seguridad (1 pager) | 4h | Para enviar a prospects que pregunten: "¿cómo manejan datos de mis clientes?" |
+| B7 | Términos de servicio + DPA (Data Processing Agreement) | 1 día (con abogado) | Necesario para B2B. Cliente firma DPA al onboarding |
+
+**Resultado esperado:** puedes cerrar un cliente que pregunta "¿son seguros?" con evidencia, no con discurso.
+
+### Fase C — Compliance formal (cuando lo pida un cliente · 2-4 semanas)
+
+Objetivo: certificaciones que abren mercados regulados.
+
+| # | Acción | Esfuerzo | Cuándo |
+|---|---|---|---|
+| C1 | Pentest externo (one-shot) por boutique mexicana | 1 semana + $1.5k-3k USD | Cuando llegues a 50 gyms o $10k MRR |
+| C2 | SOC 2 Type 1 (proceso con Vanta o Drata) | 2-3 meses + $10k-20k USD/año | Si tu cliente target lo exige (cadenas grandes, healthcare-adjacent) |
+| C3 | ISO 27001 | 6-12 meses + $20k+ USD | Si vas a Europa o Asia, o cliente enterprise |
+| C4 | Bug bounty program (HackerOne o Bugcrowd) | Continuo + payouts variables | Cuando tengas equipo de eng para responder reports |
+| C5 | LGPD/GDPR compliance completo (DPO designado, RoPA, etc.) | 1 mes + asesoría legal | Si operas activamente en Brasil/Europa |
+
+### Tabla de prioridad sugerida
+
+| Cuándo | Hacer |
+|---|---|
+| Esta semana | A1, A2, A3 (los 3 rate limits — bloquean explotación trivial) |
+| Próximas 2 semanas | A4, A5, A6 |
+| Antes de superar 30 gyms | B1, B6 |
+| Antes de superar 50 gyms o vender a cadena | B2, B3, B4, B5, B7, C1 |
+| Bajo demanda específica | C2, C3, C4, C5 |
+
+### Costo total estimado
+
+| Fase | Tiempo dev | $ externo |
+|---|---|---|
+| A (quick wins) | 1-2 días | $0 |
+| B (pre-cliente grande) | 5-7 días | $500-1000 (abogado para DPA) |
+| C (compliance) | Variable | $1.5k-30k+ USD según cuál |
+
+### Decisión hoy
+
+Ninguna de Fase B o C es bloqueante para los próximos 80-120 gyms. **La Fase A sí debería ejecutarse antes de campañas de paid traffic masivas** porque cualquier crecimiento de tráfico aumenta exposición a abuso (spam leads, brute force atleta).
+
+**Recomendación:** ejecutar A1+A2+A3 en una sesión cuando arranque captación con anuncios Meta. A4-A6 cuando haya tiempo. B y C bajo demanda real.
+
+---
+
+**Owner:** Roy Cervus
+**Próxima revisión:** Cuando se ejecute Fase A o llegues a 30 gyms activos
