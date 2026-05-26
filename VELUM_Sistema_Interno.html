@@ -6829,7 +6829,8 @@ async function doLogin(totpCode){
 // ═══════════════════════════════════════════════════════════════════
 // 2FA · TOTP UI helpers
 // ═══════════════════════════════════════════════════════════════════
-const TOTP_FN_URL = `${supabaseUrl}/functions/v1/velum-totp`;
+// Lazy: supabaseUrl se declara más abajo en el archivo, no podemos usarlo aquí en top-level.
+function getTotpFnUrl(){ return `${supabaseUrl}/functions/v1/velum-totp`; }
 
 function close2FAModal(){ const m = document.getElementById('twofa-modal'); if(m) m.remove(); }
 
@@ -6957,7 +6958,7 @@ async function generate2FASecret(token, userId){
   const btn = document.getElementById('twofa-gen-btn');
   btn.textContent = 'Generando…'; btn.disabled = true;
   try {
-    const res = await fetch(TOTP_FN_URL, {
+    const res = await fetch(getTotpFnUrl(), {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body: JSON.stringify({ action:'enroll', user_id: userId })
@@ -7002,7 +7003,7 @@ async function confirm2FAEnrollment(token, userId){
   errEl.textContent = '';
   btn.textContent = 'Verificando…'; btn.disabled = true;
   try {
-    const res = await fetch(TOTP_FN_URL, {
+    const res = await fetch(getTotpFnUrl(), {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body: JSON.stringify({ action:'verify_enrollment', user_id: userId, code })
