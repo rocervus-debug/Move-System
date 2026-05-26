@@ -7132,8 +7132,13 @@ async function loadSecurityState(){
   if (inactive) inactive.style.display = 'none';
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/usuarios?id=eq.${currentUser.id}&select=totp_enabled,totp_enrolled_at`, {
-      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + currentUser.jwt }
+      headers: { 'apikey': window._ANON_KEY || '', 'Authorization': 'Bearer ' + (currentUser.jwt || window._ANON_KEY || '') }
     });
+    if (!res.ok) {
+      console.error('loadSecurityState fetch failed', res.status, await res.text());
+      if (loading) loading.textContent = `Error ${res.status} al cargar.`;
+      return;
+    }
     const rows = await res.json();
     const u = (Array.isArray(rows) && rows[0]) || {};
     if (loading) loading.style.display = 'none';
