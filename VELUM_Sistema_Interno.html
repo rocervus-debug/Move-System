@@ -21246,10 +21246,10 @@ async function renderStripeSettings(){
       </div>`;
   }
 
-  // Detectar return URL después de onboarding
+  // Detectar return URL después de onboarding y forzar sync con Stripe
   if (location.hash === '#stripe-onboarded' || location.hash === '#stripe-onboarding-refresh') {
     history.replaceState(null, '', location.pathname);
-    refreshStripeStatus();
+    setTimeout(() => refreshStripeStatus(), 600);
   }
 }
 
@@ -21280,13 +21280,17 @@ async function conectarStripe(){
 function reonboardStripe(){ conectarStripe(); }
 
 async function refreshStripeStatus(){
-  // Re-fetch desde DB (el webhook actualiza account.updated)
-  // Para forzar update sin esperar webhook, llamamos al edge function que hace fetch a Stripe
-  toast('Refrescando estado...', '⏳', 1500);
+  toast('Sincronizando con Stripe...', '⏳', 2000);
   try {
-    // Solo recargar UI con datos frescos de DB (webhook ya debe haber sincronizado)
+    // 1. Llamar edge function que hace fetch a Stripe y actualiza DB
+    await fetch(`${supabaseUrl}/functions/v1/stripe-account-sync`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({})
+    });
+    // 2. Re-render con datos frescos
     await renderStripeSettings();
-  } catch(e){ console.error(e); }
+  } catch(e){ console.error('refreshStripeStatus:', e); toast('Error al sincronizar.','❌'); }
 }
 
 async function desconectarStripe(){
