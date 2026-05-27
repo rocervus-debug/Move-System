@@ -1572,8 +1572,13 @@ async function submitCheckout(packageId){
   btn.disabled = true;
   btn.textContent = 'Procesando…';
 
-  const slug = new URLSearchParams(location.search).get('slug') || _gymSlug || '';
-  const sessionId = (typeof _iaSessionId !== 'undefined') ? _iaSessionId : '';
+  // Slug puede venir como ?slug=X (query string) o del pathname /g/X
+  let slug = new URLSearchParams(location.search).get('slug') || '';
+  if (!slug) {
+    const m = location.pathname.match(/\/g\/([a-z0-9-]+)/i);
+    if (m) slug = m[1];
+  }
+  const sessionId = (typeof _iaSessionId !== 'undefined' && _iaSessionId) ? _iaSessionId : '';
 
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout-create`, {
