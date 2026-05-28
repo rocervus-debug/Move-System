@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>¡Compra exitosa! — VELUM</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --accent:#00D4FF;--accent-light:#66E8FF;--ok:#00ff80;
+  --bg:#040C14;--card:#08121E;--border:rgba(0,212,255,.15);
+  --text:#e8edf5;--text2:#7ABFCC;--text3:#2A4A5A;
+  --font:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,255,128,.06),transparent);pointer-events:none;z-index:0;}
+.card{position:relative;z-index:1;max-width:560px;width:100%;background:rgba(8,18,30,.85);backdrop-filter:blur(24px);border:1px solid rgba(0,212,255,.18);border-radius:20px;padding:40px 36px;box-shadow:0 32px 80px rgba(0,0,0,.5);}
+.icon-wrap{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(0,255,128,.18),rgba(0,212,255,.12));margin:0 auto 22px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,255,128,.3);}
+.icon-wrap svg{width:40px;height:40px;stroke:var(--ok);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+h1{font-size:26px;font-weight:800;text-align:center;margin-bottom:10px;letter-spacing:-.4px;}
+.sub{font-size:14px;color:var(--text2);text-align:center;margin-bottom:28px;line-height:1.6;}
+.detail-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(0,212,255,.08);font-size:13px;}
+.detail-row:last-of-type{border-bottom:none;}
+.detail-label{color:var(--text3);}
+.detail-value{color:var(--text);font-weight:600;text-align:right;max-width:60%;word-break:break-word;}
+.detail-value.amount{color:var(--ok);font-size:15px;}
+.callout{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:16px;margin:24px 0 20px;}
+.callout-title{font-size:11px;color:var(--accent-light);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.callout-list{padding-left:18px;font-size:13px;color:var(--text2);line-height:1.7;}
+.callout-list li{margin-bottom:4px;}
+.callout-list strong{color:var(--text);}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:none;border-radius:12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;letter-spacing:.2px;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0099CC);color:#001828;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,212,255,.35);}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid rgba(255,255,255,.12);margin-top:10px;}
+.btn-secondary:hover{background:rgba(255,255,255,.1);}
+.foot{margin-top:24px;text-align:center;font-size:11px;color:var(--text3);line-height:1.6;}
+.foot strong{color:var(--accent-light);}
+.loading{text-align:center;color:var(--text3);padding:30px 0;font-size:13px;}
+.error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px;color:#ff8a80;font-size:13px;margin-bottom:18px;}
+.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.03) 0%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 100%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;height:14px;display:inline-block;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+@media(max-width:540px){
+  .card{padding:32px 24px;}
+  h1{font-size:22px;}
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon-wrap">
+    <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  </div>
+  <h1 id="page-title">¡Pago exitoso!</h1>
+  <p class="sub" id="page-sub">Procesando los detalles de tu compra…</p>
+
+  <div id="content"><div class="loading">Cargando información de tu compra…</div></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+async function loadOrder(){
+  const url = new URL(location.href);
+  const sessionId = url.searchParams.get('session_id') || '';
+  const content = document.getElementById('content');
+  const title = document.getElementById('page-title');
+  const sub = document.getElementById('page-sub');
+
+  if (!sessionId){
+    title.textContent = 'Pago confirmado';
+    sub.textContent = 'No tenemos detalles adicionales para mostrar.';
+    content.innerHTML = `<a href="https://myvelum.app" class="btn btn-secondary">Volver a VELUM</a>`;
+    return;
+  }
+
+  // El webhook puede tardar 1-3s en procesar. Reintentamos hasta 5 veces con 1.5s entre intentos.
+  let order = null;
+  for (let i = 0; i < 5; i++){
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-order-status?session_id=${encodeURIComponent(sessionId)}`, {
+        headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
+      });
+      const data = await res.json();
+      if (res.ok && data.paid && data.cliente) { order = data; break; }
+      if (res.ok && data.paid && !data.cliente && i >= 2) { order = data; break; }
+    } catch(e){ console.error('fetch order:', e); }
+    if (i < 4) await new Promise(r => setTimeout(r, 1500));
+  }
+
+  if (!order){
+    title.textContent = 'Confirmando tu pago…';
+    sub.textContent = 'Tu pago se está procesando. Recibirás un correo en unos minutos.';
+    content.innerHTML = `<button onclick="location.reload()" class="btn btn-secondary">Refrescar</button>`;
+    return;
+  }
+
+  const gymName = order.gym?.nombre || 'tu gym';
+  title.textContent = `¡Bienvenido a ${esc(gymName)}!`;
+  sub.textContent = `Tu compra fue procesada. Aquí están tus accesos.`;
+
+  const pkgMeta = order.package?.unlimited_classes
+    ? `Ilimitadas · ${order.package.duration_days} días`
+    : (order.package?.num_classes
+        ? `${order.package.num_classes} clases · ${order.package.duration_days} días`
+        : `${order.package?.duration_days || 30} días`);
+
+  let portalSection = '';
+  if (order.cliente?.portal_link){
+    portalSection = `
+      <a href="${esc(order.cliente.portal_link)}" class="btn btn-primary">
+        🔑 Abrir mi portal de atleta
+      </a>
+      <a href="https://myvelum.app/g/${esc(order.gym?.slug || '')}" class="btn btn-secondary">Volver al storefront</a>
+    `;
+  } else {
+    portalSection = `
+      <div class="error">Tu acceso se está generando. Refrescaremos en unos segundos…</div>
+      <button onclick="location.reload()" class="btn btn-primary">Refrescar ahora</button>
+    `;
+  }
+
+  content.innerHTML = `
+    <div class="detail-row">
+      <span class="detail-label">Paquete</span>
+      <span class="detail-value">${esc(order.package?.name || '—')}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Incluye</span>
+      <span class="detail-value">${esc(pkgMeta)}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Total pagado</span>
+      <span class="detail-value amount">$${Number(order.amount_mxn).toLocaleString('es-MX')} MXN</span>
+    </div>
+    ${order.cliente?.numero_cliente ? `
+    <div class="detail-row">
+      <span class="detail-label">Número de cliente</span>
+      <span class="detail-value">#${order.cliente.numero_cliente}</span>
+    </div>` : ''}
+    <div class="detail-row">
+      <span class="detail-label">Email</span>
+      <span class="detail-value">${esc(order.customer?.email || order.cliente?.email || '')}</span>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">📋 Próximos pasos</div>
+      <ol class="callout-list">
+        <li>Abre tu <strong>portal de atleta</strong> con el botón abajo (guárdalo en favoritos)</li>
+        <li>Desde ahí podrás <strong>reservar clases</strong> según el horario de ${esc(gymName)}</li>
+        <li>Cuando llegues al gym, escanea tu <strong>QR de check-in</strong> en la entrada</li>
+      </ol>
+    </div>
+
+    ${portalSection}
+
+    <div class="foot">
+      Recibirás un correo de confirmación en <strong>${esc(order.customer?.email || order.cliente?.email || 'tu email')}</strong>.
+      <br>¿Problemas? Escríbenos a <strong>soporte@myvelum.app</strong>.
+    </div>
+  `;
+
+  // Track conversión en analytics si están cargados
+  try {
+    if (window.fbq) window.fbq('track', 'Purchase', { value: order.amount_mxn, currency: 'MXN' });
+    if (window.gtag) window.gtag('event', 'purchase', { transaction_id: sessionId, value: order.amount_mxn, currency: 'MXN' });
+  } catch(_){}
+}
+
+loadOrder();
+</script>
+</body>
+</html>
