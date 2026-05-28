@@ -3729,6 +3729,7 @@ function renderYoView(){
   if(!portalData) return;
   const c=portalData.cliente;
   const gym=portalData.gym;
+  const pq=portalData.paquete; // viene del edge function: {plan, clasesTotal, clasesUsadas, clasesRestantes}
   const heroWrap=$('yo-memb-hero'); if(!heroWrap) return;
 
   const ok=c.membresiaOk;
@@ -3736,13 +3737,25 @@ function renderYoView(){
   const statusClass=ok?'':'inactive';
   const statusTxt=ok?'ACTIVO':'VENCIDO';
   const planLabel=c.plan||'Sin plan';
+  // Formatear fecha vence en español si existe
+  let venceFmt = '—';
+  if (c.vence) {
+    try {
+      const d = new Date(c.vence + 'T12:00:00');
+      const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      venceFmt = `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+    } catch(_) {}
+  }
   const venceRow=dias!==null
-    ? `<div class="plan-detail-row"><span class="plan-detail-label">Vence</span><span class="plan-detail-value">${c.fechaVencimiento||'—'}</span></div>`
+    ? `<div class="plan-detail-row"><span class="plan-detail-label">Vence</span><span class="plan-detail-value">${venceFmt}</span></div>`
     : '';
   const diasRow=dias!==null
     ? `<div class="plan-detail-row"><span class="plan-detail-label">Días restantes</span><span class="plan-detail-value">${dias}</span></div>`
     : '';
-  const clasesTxt=c.clasesTotal?`${c.clasesUsadas||0} / ${c.clasesTotal} clases`:'Ilimitadas';
+  // Lee del objeto paquete (no del cliente). Si no hay paquete con num_classes → Ilimitadas.
+  const clasesTotal = pq?.clasesTotal || null;
+  const clasesUsadas = pq?.clasesUsadas ?? 0;
+  const clasesTxt = clasesTotal ? `${clasesUsadas} / ${clasesTotal} clases` : 'Ilimitadas';
 
   heroWrap.innerHTML=`
     <div class="membership-hero" style="margin:0 16px 0;">
