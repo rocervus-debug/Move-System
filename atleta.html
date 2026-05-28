@@ -6093,6 +6093,11 @@ let clasesActiveDia  = null; // currently selected day name (e.g. 'Lunes')
 let clasesLoading    = false;
 
 function _sbHeaders(){
+  // Si hay JWT atleta autenticado, usarlo para pasar RLS (post-hardening).
+  // Las policies de horarios/pagos/etc. ahora exigen authenticated con gym_id en el JWT.
+  if (typeof _authJWT !== 'undefined' && _authJWT){
+    return {'apikey':ANON_KEY,'Authorization':'Bearer '+_authJWT,'Content-Type':'application/json'};
+  }
   return {'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'};
 }
 
