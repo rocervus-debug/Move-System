@@ -1631,9 +1631,14 @@ body::before{
 }
 
 /* ══════════════════════════════════════
-   DESKTOP LAYOUT (≥ 780px)
+   DESKTOP LAYOUT (≥ 780px) — DESACTIVADO
+   Por decisión de producto, el portal del atleta usa el mismo
+   layout móvil siempre (consistencia con la app nativa).
+   El bloque desktop original se mantiene como referencia
+   con un media query imposible. El wrapper centrado
+   está definido más abajo.
 ══════════════════════════════════════ */
-@media(min-width:780px){
+@media(min-width:99999px){
   body{overflow:hidden;}
   #app{flex-direction:row;padding:0;min-height:100vh;height:100vh;}
 
@@ -1792,6 +1797,57 @@ body::before{
   /* Historial desktop: 2-col */
   .ci-timeline{display:block;}
   .ci-items{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+}
+
+/* ══════════════════════════════════════
+   DESKTOP "MOBILE-FIRST" WRAPPER (≥ 780px)
+   En pantallas grandes mostramos el mismo layout móvil
+   contenido en una columna estrecha al centro (estilo
+   app nativa simulada en desktop).
+══════════════════════════════════════ */
+@media(min-width:780px){
+  body{
+    overflow-y:auto;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0,212,255,.06), transparent 70%),
+      var(--bg);
+  }
+  .sidebar{display:none !important;}
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:0;
+    position:relative;
+    background:rgba(7,18,13,.4);
+    border-left:1px solid rgba(255,255,255,.04);
+    border-right:1px solid rgba(255,255,255,.04);
+    box-shadow:0 0 60px rgba(0,212,255,.05);
+  }
+  .topbar{display:flex !important;}
+  .bottom-nav{
+    display:flex !important;
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:0;
+    width:100%;
+    max-width:480px;
+    z-index:100;
+  }
+  .main-scroll{
+    height:auto !important;
+    overflow:visible !important;
+    padding:16px 18px 100px !important;
+    flex:1;
+  }
+  /* Si el HTML inserta vistas con grids desktop, fuerza columna */
+  .home-desktop-grid{display:flex !important;flex-direction:column !important;gap:16px !important;}
+  .home-left,.home-right{display:flex !important;flex-direction:column !important;gap:16px !important;}
+  .prog-desktop-grid{display:none !important;}
+  .ci-items{display:flex !important;flex-direction:column !important;gap:8px !important;}
 }
 
 /* ══════════════════════════════════════
