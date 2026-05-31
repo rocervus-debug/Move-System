@@ -5329,6 +5329,28 @@ body::before{
         </div>
       </div>
 
+      <!-- ── Comisiones VELUM (Storefront 2%) ── -->
+      <div class="card" style="margin-top:16px;border:1px solid rgba(0,255,128,.18);">
+        <div class="card-header">
+          <div class="card-title" style="display:inline-flex;align-items:center;gap:5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Comisiones VELUM · Storefront 2%
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select id="sa-comm-period" onchange="renderCommissionsReport()" style="font-size:11px;padding:4px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+              <option value="all">Todo el tiempo</option>
+              <option value="30">Últimos 30 días</option>
+              <option value="7">Últimos 7 días</option>
+              <option value="month">Este mes</option>
+            </select>
+            <button class="btn btn-sm btn-outline" onclick="renderCommissionsReport()" style="font-size:10px;padding:3px 10px;">↺ Refrescar</button>
+          </div>
+        </div>
+        <div id="sa-commissions" style="min-height:80px;">
+          <div style="color:var(--text3);font-size:12px;padding:8px 0;">Cargando comisiones…</div>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:16px;">
         <div class="card-header">
           <div class="card-title">Audit Log</div>
@@ -15233,6 +15255,7 @@ async function renderSuperAdmin(){
   // Load audit log
   renderSaAuditLog();
   renderErrorMonitor();
+  renderCommissionsReport();
 
   document.getElementById('sa-metrics').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
@@ -15511,6 +15534,126 @@ function toggleSaCtxDropdown(){
 function closeSaCtxDropdown(){
   const dd = document.getElementById('sa-ctx-dropdown');
   if(dd) dd.style.display='none';
+}
+
+// ── Comisiones VELUM (Storefront 2%) ───────────────────────────────
+async function renderCommissionsReport(){
+  const el = document.getElementById('sa-commissions');
+  if(!el) return;
+  if(!currentUser || currentUser.rol !== 'superadmin'){
+    el.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0;">Solo superadmin puede ver comisiones.</div>`;
+    return;
+  }
+  el.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0;">Cargando comisiones…</div>`;
+
+  // Periodo
+  const period = document.getElementById('sa-comm-period')?.value || 'all';
+  let sinceISO = null;
+  const now = new Date();
+  if(period === '7'){ const d=new Date(now); d.setDate(d.getDate()-7); sinceISO = d.toISOString(); }
+  else if(period === '30'){ const d=new Date(now); d.setDate(d.getDate()-30); sinceISO = d.toISOString(); }
+  else if(period === 'month'){ sinceISO = new Date(now.getFullYear(), now.getMonth(), 1).toISOString(); }
+
+  try {
+    const hdrs = { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') };
+    // Órdenes pagadas (GMV + comisión)
+    let url = `${supabaseUrl}/rest/v1/storefront_orders?status=eq.paid&select=gym_id,amount_cents,application_fee_cents,paid_at,customer_name,customer_email&order=paid_at.desc`;
+    if(sinceISO) url += `&paid_at=gte.${encodeURIComponent(sinceISO)}`;
+    const res = await fetch(url, { headers: hdrs });
+    if(!res.ok){ el.innerHTML = `<div style="color:#ff8a80;font-size:12px;">Error ${res.status} al cargar.</div>`; return; }
+    const orders = await res.json();
+
+    if(!Array.isArray(orders) || !orders.length){
+      el.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--text3);"><div style="font-size:28px;margin-bottom:8px;">💸</div><div style="font-size:13px;">Aún no hay ventas en el Storefront en este periodo.</div></div>`;
+      return;
+    }
+
+    // Agregados
+    let totalGMV = 0, totalComm = 0;
+    const byGym = {};
+    orders.forEach(o => {
+      const gmv = (o.amount_cents||0)/100;
+      const comm = (o.application_fee_cents||0)/100;
+      totalGMV += gmv; totalComm += comm;
+      if(!byGym[o.gym_id]) byGym[o.gym_id] = { gmv:0, comm:0, count:0 };
+      byGym[o.gym_id].gmv += gmv; byGym[o.gym_id].comm += comm; byGym[o.gym_id].count++;
+    });
+
+    // Resolver nombres de gym
+    const gymIds = Object.keys(byGym);
+    let gymNames = {};
+    try {
+      const gRes = await fetch(`${supabaseUrl}/rest/v1/gyms?id=in.(${gymIds.join(',')})&select=id,nombre`, { headers: hdrs });
+      if(gRes.ok){ (await gRes.json()).forEach(g => gymNames[g.id] = g.nombre); }
+    } catch(_){}
+
+    const fmt = n => '$' + Number(n).toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:0});
+
+    // KPIs
+    let html = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px;">
+        <div style="background:rgba(0,255,128,.08);border:1px solid rgba(0,255,128,.2);border-radius:10px;padding:14px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Comisión VELUM</div>
+          <div style="font-size:24px;font-weight:800;color:#00ff80;font-family:var(--fd);">${fmt(totalComm)}</div>
+          <div style="font-size:10px;color:var(--text4);margin-top:2px;">2% de las ventas</div>
+        </div>
+        <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:10px;padding:14px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Volumen total (GMV)</div>
+          <div style="font-size:24px;font-weight:800;color:var(--accent);font-family:var(--fd);">${fmt(totalGMV)}</div>
+          <div style="font-size:10px;color:var(--text4);margin-top:2px;">procesado vía Storefront</div>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Ventas</div>
+          <div style="font-size:24px;font-weight:800;color:#fff;font-family:var(--fd);">${orders.length}</div>
+          <div style="font-size:10px;color:var(--text4);margin-top:2px;">${gymIds.length} gym${gymIds.length===1?'':'s'}</div>
+        </div>
+      </div>`;
+
+    // Por gym
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 8px;">Por gym</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">`;
+    Object.entries(byGym).sort((a,b)=>b[1].comm-a[1].comm).forEach(([gid, d]) => {
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:9px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:13px;font-weight:700;color:#fff;">${esc(gymNames[gid]||('Gym '+gid))}</div>
+            <span style="font-size:10px;color:var(--text4);">${d.count} venta${d.count===1?'':'s'}</span>
+          </div>
+          <div style="display:flex;gap:18px;align-items:center;">
+            <div style="text-align:right;"><div style="font-size:10px;color:var(--text4);">GMV</div><div style="font-size:13px;font-weight:700;color:var(--accent);">${fmt(d.gmv)}</div></div>
+            <div style="text-align:right;"><div style="font-size:10px;color:var(--text4);">Comisión</div><div style="font-size:13px;font-weight:800;color:#00ff80;">${fmt(d.comm)}</div></div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+
+    // Transacciones recientes (últimas 10)
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 8px;">Transacciones recientes</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:4px;">`;
+    const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    orders.slice(0,10).forEach(o => {
+      const d = o.paid_at ? new Date(o.paid_at) : null;
+      const fecha = d ? `${d.getDate()} ${meses[d.getMonth()]}` : '—';
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;">
+          <div style="display:flex;gap:10px;align-items:center;min-width:0;">
+            <span style="color:var(--text4);font-size:11px;width:48px;flex-shrink:0;">${fecha}</span>
+            <span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(o.customer_name||o.customer_email||'—')}</span>
+            <span style="color:var(--text4);font-size:10px;">${esc(gymNames[o.gym_id]||('Gym '+o.gym_id))}</span>
+          </div>
+          <div style="display:flex;gap:14px;flex-shrink:0;">
+            <span style="color:var(--text2);">${fmt((o.amount_cents||0)/100)}</span>
+            <span style="color:#00ff80;font-weight:700;width:48px;text-align:right;">+${fmt((o.application_fee_cents||0)/100)}</span>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+
+    el.innerHTML = html;
+  } catch(e){
+    console.error('renderCommissionsReport:', e);
+    el.innerHTML = `<div style="color:#ff8a80;font-size:12px;">Error al cargar comisiones.</div>`;
+  }
 }
 
 // ── Audit Log UI ───────────────────────────────────────────────────

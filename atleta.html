@@ -6828,11 +6828,15 @@ async function doLogin(){
       errEl.textContent=m; errEl.style.display='block'; return;
     }
     try{ localStorage.setItem('velum_last_gym', gym); }catch(_){}
-    // V2: También obtener JWT autenticado (no bloquea showPortal si falla)
-    _fetchAtletaAuthJWT({gym_codigo: gym, numero_cliente: parseInt(numero,10), password: pwd})
+    // V3: obtener JWT autenticado ANTES de showPortal (queries requieren JWT post-hardening).
+    await _fetchAtletaAuthJWT({gym_codigo: gym, numero_cliente: parseInt(numero,10), password: pwd})
       .catch(()=>null);
     showPortal(data);
-  }catch(e){ errEl.textContent='Error de conexión. Intenta de nuevo.'; errEl.style.display='block'; }
+  }catch(e){
+    console.error('doLogin error:', e);
+    errEl.textContent='No se pudo conectar. Revisa tu internet e intenta de nuevo.';
+    errEl.style.display='block';
+  }
   finally{ btn.disabled=false; btn.textContent='Acceder al Portal'; }
 }
 
@@ -6969,8 +6973,9 @@ async function init(){
     if(!res.ok) throw new Error('invalid');
     const data=await res.json();
     if(data.error) throw new Error(data.error);
-    // V2: También obtener JWT autenticado (no bloquea si falla, queda usando anon)
-    _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null);
+    // V2: obtener JWT autenticado ANTES de seguir, para que las queries (clases, pagos)
+    // pasen RLS post-hardening. Si falla, degrada a anon.
+    await _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null);
     return data;
   }
 
