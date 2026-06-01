@@ -13295,6 +13295,29 @@ async function loadStorefrontPanel(){
   _storefrontData = sfRes.data;
   _storefrontListings = listRes.data || [];
 
+  // Sync: crear listings faltantes para paquetes activos nuevos (ej. creados después del seed inicial).
+  // Esto hace que cualquier paquete nuevo aparezca en el panel del Storefront listo para publicar.
+  if(_storefrontData){
+    try {
+      const { data: activePkgs } = await window.supabaseClient
+        .from('packages').select('id, sort_order')
+        .eq('gym_id', gymId).eq('is_active', true).eq('internal_only', false);
+      const listedIds = new Set((_storefrontListings||[]).map(l => l.package_id));
+      const missing = (activePkgs||[]).filter(p => !listedIds.has(p.id));
+      if(missing.length){
+        await window.supabaseClient.from('storefront_listings').insert(
+          missing.map(p => ({ gym_id: gymId, package_id: p.id, is_public: false, sort_order: p.sort_order || 0 }))
+        );
+        // Recargar listings con los nuevos
+        const rr = await window.supabaseClient
+          .from('storefront_listings')
+          .select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes)')
+          .eq('gym_id', gymId).order('sort_order', {ascending: true});
+        _storefrontListings = rr.data || _storefrontListings;
+      }
+    } catch(e){ console.warn('sync listings faltantes:', e); }
+  }
+
   // Si no existe storefront row, crear uno default (deshabilitado)
   if(!_storefrontData){
     const defaultSlug = await _sfGenerateSlugFromGym(gymId);
