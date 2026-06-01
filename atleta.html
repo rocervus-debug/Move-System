@@ -3346,6 +3346,27 @@ function _clearAtletaAuthJWT(){
   try { localStorage.removeItem('velum_auth_jwt'); } catch(_) {}
 }
 
+// V3: cargar paquetes públicos del gym desde storefront-config (mismo origen que el Storefront).
+// Pone data.gym.slug + data.paquetes para que renderPlanes muestre opciones de renovación con Connect.
+// (helper de paquetes del gym)
+async function _loadGymPaquetes(data){
+  try {
+    const slug = data?.gym?.slug;
+    if (!slug) return; // gym sin storefront/slug → no hay paquetes en línea
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-config?slug=${encodeURIComponent(slug)}`, {
+      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
+    });
+    if (!res.ok) return;
+    const cfg = await res.json();
+    if (Array.isArray(cfg.packages)) {
+      data.paquetes = cfg.packages.map(p => ({
+        package_id: p.package_id, name: p.name, price_mxn: p.price_mxn,
+        num_classes: p.num_classes, unlimited: p.unlimited, duration_days: p.duration_days,
+      }));
+    }
+  } catch(e) { console.warn('_loadGymPaquetes:', e); }
+}
+
 function greet(){
   const h=new Date().getHours();
   return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';
@@ -5523,70 +5544,78 @@ window.openProgDetail=function(idx){
 // ── Planes (buy plan) ────────────────────────────────
 function renderPlanes(){
   if(!portalData) return;
-  const planes=portalData.planes||[];
-  const stripeOk=portalData.gym.stripeHabilitado;
+  // V3: usar paquetes públicos del Storefront (sistema Connect). Fallback a planes viejos si no hay.
+  const paquetes = Array.isArray(portalData.paquetes) ? portalData.paquetes : [];
   const cont=$('planes-content'); if(!cont) return;
 
-  if(!planes.length||!stripeOk){
+  if(!paquetes.length){
     const gymName=portalData?.gym?.nombre||'el gym';
-    const gymPhone=portalData?.gym?.telefono||'';
+    const gymPhone=portalData?.gym?.telefono||portalData?.gym?.whatsapp||'';
     const waLink=gymPhone?`https://wa.me/${gymPhone.replace(/\D/g,'')}`:null;
     cont.innerHTML=`<div class="planes-empty">
       <div class="planes-empty-ico">💳</div>
       <div class="planes-empty-title">Pago en recepción</div>
-      <div class="planes-empty-sub">${gymName} aún no tiene pagos en línea activos. Pasa por recepción o contáctanos para renovar.</div>
+      <div class="planes-empty-sub">${gymName} aún no tiene paquetes en línea activos. Pasa por recepción o contáctanos para renovar.</div>
       ${waLink?`<a href="${waLink}" target="_blank" rel="noopener" class="planes-wa-btn">💬 WhatsApp ${gymName}</a>`:''}
     </div>`; return;
   }
 
   const fmtMXN=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n);
-  let html=`<div class="plan-grid">`;
-  planes.forEach(plan=>{
-    const tipo=plan.tipo||'membresia';
-    const badge=tipo==='paquete'?'Paquete de Clases':'Membresía';
-    const ico=tipo==='paquete'?'📦':'🎟️';
-    const detail=tipo==='paquete'?`${plan.clases||0} clases incluidas`:`${plan.dias||0} días de acceso`;
-    const priceInt=Math.floor(plan.precio);
-    const priceDec=Math.round((plan.precio-priceInt)*100);
-    html+=`<div class="plan-card ${tipo}">
+  let html=`<div style="padding:0 16px 8px;font-size:12px;color:var(--text3,#7ABFCC);">Renueva o cambia tu plan. El pago es seguro vía Stripe.</div>`;
+  html+=`<div class="plan-grid">`;
+  paquetes.forEach(plan=>{
+    const esPaquete = !plan.unlimited && plan.num_classes;
+    const badge = esPaquete ? 'Paquete de Clases' : (plan.unlimited ? 'Ilimitado' : 'Membresía');
+    const ico = esPaquete ? '📦' : '🎟️';
+    const detail = plan.unlimited
+      ? `Clases ilimitadas · ${plan.duration_days||30} días`
+      : (plan.num_classes ? `${plan.num_classes} clases · ${plan.duration_days||30} días` : `${plan.duration_days||30} días de acceso`);
+    html+=`<div class="plan-card ${esPaquete?'paquete':'membresia'}">
       <div class="plan-top">
         <div class="plan-ico">${ico}</div>
-        <span class="plan-badge ${tipo}">${badge}</span>
+        <span class="plan-badge ${esPaquete?'paquete':'membresia'}">${esc(badge)}</span>
       </div>
-      <div class="plan-nombre">${plan.nombre||'Plan'}</div>
-      <div class="plan-desc">${detail}</div>
+      <div class="plan-nombre">${esc(plan.name||'Plan')}</div>
+      <div class="plan-desc">${esc(detail)}</div>
       <div class="plan-precio">
-        <span class="plan-precio-num">${fmtMXN(plan.precio)}</span>
+        <span class="plan-precio-num">${fmtMXN(plan.price_mxn)}</span>
         <span class="plan-precio-cur">MXN</span>
       </div>
-      <button class="plan-btn ${tipo}" onclick="doCheckout('${plan.id}')">Comprar ahora →</button>
+      <button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="doCheckout(${plan.package_id})">Renovar / Comprar →</button>
     </div>`;
   });
   html+=`</div>`;
   cont.innerHTML=html;
 }
 
-async function doCheckout(planId){
+async function doCheckout(packageId){
   if(!portalData) return;
-  const token=portalData.cliente.portal_token;
-  // Disable all plan buttons to prevent double-click
+  const slug = portalData.gym?.slug;
+  const c = portalData.cliente;
+  if(!slug){ showToast('Este gym aún no tiene tienda en línea activa.','❌',5000); return; }
   document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=true; b.textContent='Redirigiendo…'; });
   try{
-    const res=await fetch(`${EDGE_BASE}/velum-atleta-checkout`,{
+    const res=await fetch(`${EDGE_BASE}/stripe-checkout-create`,{
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':ANON_KEY},
-      body:JSON.stringify({portal_token:token,plan_id:planId})
+      headers:{'Content-Type':'application/json','apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY},
+      body:JSON.stringify({
+        slug,
+        package_id: packageId,
+        customer: { name: c.nombre, email: c.email, phone: c.tel||c.telefono||'' },
+        return_to: `${location.origin}/atleta?token=${encodeURIComponent(c.portal_token)}&payment=success`
+      })
     });
     const d=await res.json();
-    if(!res.ok||d.error){
+    if(!res.ok||d.error||!d.checkout_url){
       showToast(d.error||'Error al iniciar el pago. Intenta de nuevo.','❌',6000);
-      document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Comprar ahora →'; });
+      document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Renovar / Comprar →'; });
       return;
     }
-    if(d.url) window.location.href=d.url;
+    window.location.href=d.checkout_url;
   }catch(e){
+    console.error('doCheckout:', e);
     showToast('Error de conexión. Intenta de nuevo.','❌',5000);
-    document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Comprar ahora →'; });
+    document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Renovar / Comprar →'; });
   }
 }
 
@@ -6980,6 +7009,8 @@ async function init(){
     // V2: obtener JWT autenticado ANTES de seguir, para que las queries (clases, pagos)
     // pasen RLS post-hardening. Si falla, degrada a anon.
     await _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null);
+    // V3: cargar paquetes públicos + slug del Storefront para renovación con Connect
+    await _loadGymPaquetes(data).catch(()=>null);
     return data;
   }
 
