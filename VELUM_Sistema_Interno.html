@@ -4455,10 +4455,16 @@ body::before{
             <span class="cfg-item-desc">Edita tu perfil y cierra sesión</span>
             <span class="cfg-chevron">›</span>
           </div>
-          <div class="cfg-menu-item" onclick="openSettingsPanel('seguridad')" style="border-bottom:none;">
+          <div class="cfg-menu-item" onclick="openSettingsPanel('seguridad')">
             <span class="cfg-item-icon" style="background:rgba(0,255,128,.13);color:#00ff80;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <span class="cfg-item-label">Seguridad (2FA)</span>
             <span class="cfg-item-desc" id="seguridad-status-desc">Autenticación de dos factores</span>
+            <span class="cfg-chevron">›</span>
+          </div>
+          <div class="cfg-menu-item" onclick="openSettingsPanel('suscripcion')" style="border-bottom:none;">
+            <span class="cfg-item-icon" style="background:rgba(251,191,36,.13);color:#fbbf24;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+            <span class="cfg-item-label">Mi Suscripción</span>
+            <span class="cfg-item-desc" id="suscripcion-status-desc">Plan, facturación y pagos</span>
             <span class="cfg-chevron">›</span>
           </div>
         </div>
@@ -5277,6 +5283,28 @@ body::before{
           </div>
         </div>
       </div><!-- /cfg-panel-seguridad -->
+
+      <!-- ══ PANEL: Mi Suscripción ══ -->
+      <div class="cfg-panel" id="cfg-panel-suscripcion">
+        <div class="cfg-panel-header">
+          <button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Mi Suscripción VELUM</h2>
+              <p style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5;">
+                Tu plan, método de pago e historial de facturación.
+              </p>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px;">
+            <div id="suscripcion-content">
+              <div style="color:var(--text3);font-size:13px;padding:8px 0;">Cargando suscripción…</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /cfg-panel-suscripcion -->
 
     </div><!-- /#v-settings -->
 
@@ -7214,6 +7242,93 @@ function startVoluntary2FAEnrollment(){
   open2FAEnrollment(currentUser.jwt, currentUser.id, currentUser.email);
 }
 
+// ── Mi Suscripción VELUM (Stripe Billing) ──
+async function renderSuscripcion(){
+  const el = document.getElementById('suscripcion-content');
+  if(!el) return;
+  el.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:8px 0;">Cargando suscripción…</div>`;
+  let g = null;
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${currentUser.gym_id}&select=nombre,subscription_plan,subscription_status,subscription_current_period_end,stripe_customer_id`, {
+      headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
+    });
+    const rows = await res.json();
+    g = (Array.isArray(rows) && rows[0]) || null;
+  } catch(e){ console.error('renderSuscripcion:', e); }
+  if(!g){ el.innerHTML = `<div style="color:#ff8a80;font-size:13px;">No se pudo cargar tu suscripción.</div>`; return; }
+
+  const plan = (g.subscription_plan || 'max').toLowerCase();
+  const status = (g.subscription_status || '').toLowerCase();
+  const isOwner = plan === 'owner' || status === 'owner';
+  const planInfo = { max: { nombre:'VELUM Max', precio:'$999 MXN/mes', color:'#00D4FF' }, pro: { nombre:'VELUM Pro', precio:'$599 MXN/mes', color:'#fbbf24' }, owner: { nombre:'Cortesía VELUM', precio:'Sin costo', color:'#00ff80' } };
+  const info = isOwner ? planInfo.owner : (planInfo[plan] || planInfo.max);
+
+  // Estado visual
+  const statusBadge = isOwner
+    ? `<span style="background:rgba(0,255,128,.12);color:#00ff80;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;">CORTESÍA</span>`
+    : status === 'active'
+      ? `<span style="background:rgba(0,255,128,.12);color:#00ff80;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;">ACTIVA</span>`
+      : status === 'past_due'
+        ? `<span style="background:rgba(251,191,36,.12);color:#fbbf24;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;">PAGO PENDIENTE</span>`
+        : status === 'canceled'
+          ? `<span style="background:rgba(239,68,68,.12);color:#ff8a80;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;">CANCELADA</span>`
+          : `<span style="background:rgba(255,255,255,.08);color:var(--text3);font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;">${esc((status||'—').toUpperCase())}</span>`;
+
+  const periodEnd = g.subscription_current_period_end
+    ? new Date(g.subscription_current_period_end).toLocaleDateString('es-MX', {day:'numeric',month:'long',year:'numeric'})
+    : null;
+
+  let html = `
+    <div style="background:rgba(0,212,255,.05);border:1px solid ${info.color}33;border-radius:12px;padding:18px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Plan actual</div>
+          <div style="font-size:22px;font-weight:800;color:${info.color};">${info.nombre}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:2px;">${info.precio}</div>
+        </div>
+        ${statusBadge}
+      </div>
+      ${periodEnd && !isOwner ? `<div style="margin-top:12px;font-size:12px;color:var(--text2);">${status==='canceled'?'Acceso hasta':'Próximo cobro'}: <strong>${periodEnd}</strong></div>` : ''}
+    </div>`;
+
+  if (isOwner) {
+    html += `<div style="font-size:12px;color:var(--text2);line-height:1.6;padding:10px 14px;background:rgba(0,255,128,.05);border:1px solid rgba(0,255,128,.15);border-radius:10px;">
+      ✦ Tu cuenta es de cortesía VELUM con acceso completo sin costo. No tienes facturación activa.
+    </div>`;
+  } else if (g.stripe_customer_id) {
+    html += `
+      <button class="btn btn-primary" style="width:100%;" onclick="openBillingPortal()">Gestionar suscripción y facturación →</button>
+      <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5;">
+        Desde el portal de Stripe puedes actualizar tu tarjeta, ver/descargar tus facturas, o cancelar tu suscripción.
+      </p>`;
+    if (status === 'past_due') {
+      html = `<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px;color:#fbbf24;">⚠ Tu último pago falló. Actualiza tu método de pago para no perder acceso.</div>` + html;
+    }
+  } else {
+    html += `<div style="font-size:13px;color:var(--text2);">No hay información de facturación. Si crees que es un error, contacta a soporte@myvelum.app</div>`;
+  }
+
+  el.innerHTML = html;
+
+  // Actualizar el desc del menú
+  const desc = document.getElementById('suscripcion-status-desc');
+  if (desc) desc.textContent = isOwner ? 'Cortesía · acceso completo' : `${info.nombre} · ${status||'—'}`;
+}
+
+async function openBillingPortal(){
+  toast('Abriendo portal de facturación...', '⏳', 2000);
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/velum-saas-portal`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) { alert(data.error || 'No se pudo abrir el portal.'); return; }
+    window.location.href = data.url;
+  } catch(e){ console.error(e); alert('Error de conexión.'); }
+}
+
 async function regenerate2FACodes(){
   const code = prompt('Ingresa tu código actual de 6 dígitos de la app de autenticación:');
   if (!code) return;
@@ -8018,10 +8133,10 @@ async function loadConfigFromSupabase(){
         }
       });
   }
-  // Load gym plan from gyms table for PLAN_LIMITS
+  // Load gym plan from gyms table for PLAN_LIMITS (prioriza subscription_plan)
   if(MOVE_GYM_ID && !gymConfig.gym_plan){
-    window.supabaseClient.from('gyms').select('plan,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
-      if(g){ gymConfig.gym_plan = g.plan || 'basic'; }
+    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
+      if(g){ gymConfig.gym_plan = g.subscription_plan || g.plan || 'max'; gymConfig.subscription_status = g.subscription_status || null; }
     });
   }
   applyGymConfig();
@@ -9126,6 +9241,7 @@ function openSettingsPanel(id){
     const kp = document.getElementById('cfg-kiosco-pin'); if(kp) kp.placeholder = getKioscoPin() ? '●'.repeat(getKioscoPin().length) : '——';
   }
   if(id === 'seguridad') loadSecurityState();
+  if(id === 'suscripcion') renderSuscripcion();
 }
 
 function closeSettingsPanel(){
@@ -10945,7 +11061,9 @@ const PLAN_LIMITS = {
 };
 
 function getPlan(){
-  const p = (gymConfig.plan || gymConfig.gym_plan || 'max').toLowerCase();
+  const p = (gymConfig.subscription_plan || gymConfig.plan || gymConfig.gym_plan || 'max').toLowerCase();
+  // owner = cuenta de cortesía VELUM → acceso completo (sin límites)
+  if (p === 'owner') return 'max';
   return p === 'basic' ? 'pro' : p === 'free' ? 'pro' : p;
 }
 
