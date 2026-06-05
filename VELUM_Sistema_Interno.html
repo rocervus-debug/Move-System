@@ -4699,6 +4699,41 @@ body::before{
               <details class="sf-accordion" open>
                 <summary>🎨 Branding & Descripción</summary>
                 <div class="sf-acc-body">
+                  <div class="field">
+                    <label>Estilo visual del Storefront</label>
+                    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Elige la estética que va con tu estudio. Cambia colores, tipografía y personalidad de tu página pública.</div>
+                    <div id="sf-theme-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                      <div class="sf-theme-card" data-theme="pulse" onclick="sfSetTheme('pulse')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                        <div style="height:54px;background:#050D14;position:relative;display:flex;align-items:center;justify-content:center;">
+                          <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 50% 0%,rgba(0,212,255,.25),transparent);"></div>
+                          <div style="width:20px;height:20px;border-radius:5px;background:#00D4FF;"></div>
+                        </div>
+                        <div style="padding:7px 8px;background:var(--card2);">
+                          <div style="font-size:11px;font-weight:700;color:var(--text);">Pulse</div>
+                          <div style="font-size:9px;color:var(--text3);">Box · Funcional · CrossFit</div>
+                        </div>
+                      </div>
+                      <div class="sf-theme-card" data-theme="atelier" onclick="sfSetTheme('atelier')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                        <div style="height:54px;background:#EDE6DC;display:flex;align-items:center;justify-content:center;">
+                          <div style="width:22px;height:22px;border-radius:50%;background:#6B2737;display:flex;align-items:center;justify-content:center;color:#F6F2EC;font-family:Georgia,serif;font-style:italic;font-size:11px;">a</div>
+                        </div>
+                        <div style="padding:7px 8px;background:var(--card2);">
+                          <div style="font-size:11px;font-weight:700;color:var(--text);">Atelier</div>
+                          <div style="font-size:9px;color:var(--text3);">Pilates · Barre · Reformer</div>
+                        </div>
+                      </div>
+                      <div class="sf-theme-card" data-theme="lumen" onclick="sfSetTheme('lumen')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                        <div style="height:54px;background:#E6DAC6;display:flex;align-items:center;justify-content:center;">
+                          <div style="width:24px;height:24px;border-radius:50%;background:#7A8B6F;"></div>
+                        </div>
+                        <div style="padding:7px 8px;background:var(--card2);">
+                          <div style="font-size:11px;font-weight:700;color:var(--text);">Lumen</div>
+                          <div style="font-size:9px;color:var(--text3);">Yoga · Wellness · Holístico</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="font-size:10px;color:var(--text3);margin-top:6px;">El color primario (abajo) solo aplica al tema Pulse. Atelier y Lumen tienen su propia paleta.</div>
+                  </div>
                   <div class="field"><label>Descripción del gym <span style="font-size:10px;color:var(--text3);">(aparece en el hero)</span></label>
                     <textarea id="sf-description" class="settings-input" rows="3" placeholder="CrossFit box premium en León..." onblur="sfSaveField('description', this.value)"></textarea>
                   </div>
@@ -13522,6 +13557,9 @@ function renderStorefrontPanel(){
   // V3: populate todos los inputs del form con la data actual
   if(typeof _sfPopulateFormFields === 'function') _sfPopulateFormFields();
 
+  // Estética: resaltar el theme actual
+  if(typeof _sfHighlightTheme === 'function') _sfHighlightTheme(sf.theme || 'pulse');
+
   // Listings
   const listEl = document.getElementById('sf-listings-list');
   if(!listEl) return;
@@ -13757,6 +13795,32 @@ async function sfSaveField(field, value){
   _storefrontData[field] = finalVal;
   // Si cambió primary_color, actualizar también el preview del URL card
   if(field === 'primary_color') renderStorefrontPanel();
+}
+
+// ─── THEME / ESTÉTICA ───
+async function sfSetTheme(theme){
+  if(!_storefrontData) return;
+  const valid = ['pulse','atelier','lumen'];
+  if(!valid.includes(theme)) return;
+  if(_storefrontData.theme === theme){ _sfHighlightTheme(theme); return; }
+  const { error } = await window.supabaseClient
+    .from('gym_storefront')
+    .update({ theme })
+    .eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error guardando estética: ' + error.message, '❌'); return; }
+  _storefrontData.theme = theme;
+  _sfHighlightTheme(theme);
+  const names = { pulse:'Pulse', atelier:'Atelier', lumen:'Lumen' };
+  toast('Estética ' + (names[theme]||theme) + ' aplicada ✓', '🎨');
+}
+
+function _sfHighlightTheme(theme){
+  const cards = document.querySelectorAll('#sf-theme-grid .sf-theme-card');
+  cards.forEach(c => {
+    const sel = c.getAttribute('data-theme') === theme;
+    c.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
+    c.style.boxShadow = sel ? '0 0 0 1px var(--accent)' : 'none';
+  });
 }
 
 // ─── HIGHLIGHTS ───
