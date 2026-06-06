@@ -4732,22 +4732,14 @@ body::before{
                         </div>
                       </div>
                     </div>
-                    <div style="font-size:10px;color:var(--text3);margin-top:6px;">El color primario (abajo) solo aplica al tema Pulse. Atelier y Lumen tienen su propia paleta.</div>
+                    <div style="font-size:10px;color:var(--text3);margin-top:6px;">El tema define la estructura (tipografía, layout, claro/oscuro). El color de acento (abajo) le da el toque de tu marca dentro del tema.</div>
                   </div>
                   <div class="field"><label>Descripción del gym <span style="font-size:10px;color:var(--text3);">(aparece en el hero)</span></label>
                     <textarea id="sf-description" class="settings-input" rows="3" placeholder="CrossFit box premium en León..." onblur="sfSaveField('description', this.value)"></textarea>
                   </div>
-                  <div class="field-grid">
-                    <div class="field"><label>Color primario</label>
-                      <div style="display:flex;gap:8px;align-items:center;">
-                        <input id="sf-primary-color-picker" type="color" value="#00D4FF" oninput="sfColorPickerChange('primary')" style="width:48px;height:42px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:transparent;padding:2px;"/>
-                        <input id="sf-primary-color" type="text" class="settings-input" placeholder="#00D4FF" maxlength="7" oninput="sfColorTextChange('primary')" onblur="sfSaveColor('primary')" style="flex:1;font-family:var(--fm);text-transform:uppercase;"/>
-                      </div>
-                      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Click el cuadrito de color para abrir la rueda</div>
-                    </div>
-                    <div class="field"><label>Tagline (frase corta)</label>
-                      <input id="sf-tagline-readonly" type="text" class="settings-input" disabled style="opacity:.5;" placeholder="(editable en Apariencia)"/>
-                    </div>
+                  <div class="field"><label>Color de acento <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;">(swatches que combinan con tu tema)</span></label>
+                    <div id="sf-accent-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;"></div>
+                    <input id="sf-primary-color" type="hidden"/>
                   </div>
                   <div class="field"><label>Imagen hero <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);">(opcional · fondo del banner principal)</span></label>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
@@ -13674,10 +13666,7 @@ function _sfPopulateFormFields(){
   const setCheck = (id, val) => { const e=document.getElementById(id); if(e) e.checked = !!val; };
 
   set('sf-description',      s.description);
-  const primaryColor = (s.primary_color || '#00D4FF').toUpperCase();
-  set('sf-primary-color',    primaryColor);
-  const pickerPrim = document.getElementById('sf-primary-color-picker');
-  if(pickerPrim && /^#[0-9A-Fa-f]{6}$/.test(primaryColor)) pickerPrim.value = primaryColor;
+  if(typeof _sfRenderAccentSwatches === 'function') _sfRenderAccentSwatches();
   set('sf-hero-image',       s.hero_image_url);
   if (typeof _sfHeroPreviewSync === 'function') _sfHeroPreviewSync();
   set('sf-years-open',       s.years_open);
@@ -13810,6 +13799,14 @@ async function sfSetTheme(theme){
   if(error){ toast('Error guardando estética: ' + error.message, '❌'); return; }
   _storefrontData.theme = theme;
   _sfHighlightTheme(theme);
+  // Si el acento actual no pertenece a la paleta del nuevo tema, default al primero del tema
+  const palette = (SF_ACCENTS[theme] || []).map(s => s.hex.toUpperCase());
+  const cur = (_storefrontData.primary_color || '').toUpperCase();
+  if(!palette.includes(cur) && palette.length){
+    await sfSetAccent(palette[0]);
+  } else if(typeof _sfRenderAccentSwatches === 'function'){
+    _sfRenderAccentSwatches();
+  }
   const names = { pulse:'Pulse', atelier:'Atelier', lumen:'Lumen' };
   toast('Estética ' + (names[theme]||theme) + ' aplicada ✓', '🎨');
 }
@@ -13821,6 +13818,67 @@ function _sfHighlightTheme(theme){
     c.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
     c.style.boxShadow = sel ? '0 0 0 1px var(--accent)' : 'none';
   });
+}
+
+// ─── SWATCHES DE ACENTO POR TEMA ───
+// Cada tema ofrece colores curados que combinan con su estética. El primero es el default.
+const SF_ACCENTS = {
+  pulse: [
+    {name:'Cyan',     hex:'#00D4FF'},
+    {name:'Lava',     hex:'#FF5A3C'},
+    {name:'Lima',     hex:'#B6FF3C'},
+    {name:'Violeta',  hex:'#9B6CFF'},
+    {name:'Ámbar',    hex:'#FFB020'},
+    {name:'Hielo',    hex:'#E8F4FF'},
+  ],
+  atelier: [
+    {name:'Vino',     hex:'#6B2737'},
+    {name:'Navy',     hex:'#243B53'},
+    {name:'Terracota',hex:'#B5573A'},
+    {name:'Oliva',    hex:'#5E6B3F'},
+    {name:'Oro viejo',hex:'#9A7B4F'},
+    {name:'Carbón',   hex:'#2A2521'},
+  ],
+  lumen: [
+    {name:'Salvia',   hex:'#7A8B6F'},
+    {name:'Arena',    hex:'#C4A582'},
+    {name:'Durazno',  hex:'#E0A47C'},
+    {name:'Barro',    hex:'#A86B52'},
+    {name:'Eucalipto',hex:'#6B9080'},
+    {name:'Lavanda',  hex:'#9888B0'},
+  ],
+};
+
+function _sfCurrentTheme(){ return (_storefrontData && _storefrontData.theme) || 'pulse'; }
+
+function _sfRenderAccentSwatches(){
+  const wrap = document.getElementById('sf-accent-swatches');
+  if(!wrap || !_storefrontData) return;
+  const theme = _sfCurrentTheme();
+  const swatches = SF_ACCENTS[theme] || SF_ACCENTS.pulse;
+  const current = (_storefrontData.primary_color || swatches[0].hex).toUpperCase();
+  wrap.innerHTML = swatches.map(sw => {
+    const sel = sw.hex.toUpperCase() === current;
+    return `<button type="button" title="${sw.name}" onclick="sfSetAccent('${sw.hex}')"
+      style="width:38px;height:38px;border-radius:50%;cursor:pointer;background:${sw.hex};
+      border:2px solid ${sel ? 'var(--text)' : 'var(--border)'};
+      box-shadow:${sel ? '0 0 0 2px var(--card),0 0 0 4px var(--text)' : 'none'};
+      transition:transform .1s;outline:none;"
+      onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'"></button>`;
+  }).join('');
+}
+
+async function sfSetAccent(hex){
+  if(!_storefrontData) return;
+  hex = String(hex).toUpperCase();
+  if(!/^#[0-9A-F]{6}$/.test(hex)) return;
+  const hidden = document.getElementById('sf-primary-color');
+  if(hidden) hidden.value = hex;
+  const { error } = await window.supabaseClient
+    .from('gym_storefront').update({ primary_color: hex }).eq('gym_id', _storefrontData.gym_id);
+  if(error){ toast('Error guardando acento: ' + error.message, '❌'); return; }
+  _storefrontData.primary_color = hex;
+  _sfRenderAccentSwatches();
 }
 
 // ─── HIGHLIGHTS ───

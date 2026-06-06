@@ -1231,6 +1231,31 @@ const STOREFRONT_THEMES = {
   },
 };
 
+// ── Derivación de acento desde un hex (para swatches por tema) ──
+function _hexToRgb(hex){ const h=String(hex).replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function _rgbaStr(rgb,a){ return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; }
+function _lightenRgb(rgb,amt){ return `rgb(${rgb.map(c=>Math.round(c+(255-c)*amt)).join(',')})`; }
+function _luminance(rgb){ const v=rgb.map(c=>{c/=255; return c<=0.03928? c/12.92 : Math.pow((c+0.055)/1.055,2.4);}); return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2]; }
+function applyAccent(hex){
+  if(!/^#[0-9A-Fa-f]{6}$/.test(hex||'')) return;
+  const rgb = _hexToRgb(hex);
+  const root = document.documentElement.style;
+  const light = _lightenRgb(rgb, 0.35);
+  const dim = _rgbaStr(rgb, 0.12);
+  const bright = _rgbaStr(rgb, 0.24);
+  const ink = _luminance(rgb) > 0.5 ? '#13202b' : '#ffffff'; // texto sobre el acento
+  root.setProperty('--accent', hex);
+  root.setProperty('--accent-light', light);
+  root.setProperty('--accent-dim', dim);
+  root.setProperty('--accent-bright', bright);
+  root.setProperty('--accent-ink', ink);
+  // Compat con CSS viejo (--cyan*)
+  root.setProperty('--cyan', hex);
+  root.setProperty('--cyan-light', light);
+  root.setProperty('--cyan-dim', dim);
+  root.setProperty('--cyan-bright', bright);
+}
+
 function applyTheme(gym){
   const themeName = (gym && gym.theme && STOREFRONT_THEMES[gym.theme]) ? gym.theme : 'pulse';
   const t = STOREFRONT_THEMES[themeName];
@@ -1245,10 +1270,9 @@ function applyTheme(gym){
   root.setProperty('--cyan-light', t['--accent-light']);
   root.setProperty('--cyan-dim', t['--accent-dim']);
   root.setProperty('--cyan-bright', t['--accent-bright']);
-  // Override del acento con el color del gym (solo en pulse, donde el acento es libre)
-  if (themeName === 'pulse' && gym.primary_color && /^#[0-9A-Fa-f]{6}$/.test(gym.primary_color)) {
-    root.setProperty('--cyan', gym.primary_color);
-    root.setProperty('--accent', gym.primary_color);
+  // Override del acento con el swatch elegido por el gym (aplica en LOS 3 temas)
+  if (gym && gym.primary_color && /^#[0-9A-Fa-f]{6}$/.test(gym.primary_color)) {
+    applyAccent(gym.primary_color);
   }
   // Fondo del body + clase de tema para ajustes de fuente
   document.body.style.background = t.bodyBg;
