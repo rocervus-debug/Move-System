@@ -3345,6 +3345,9 @@ body::before{
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
 
+      <!-- ══ ONBOARDING — guía de configuración inicial (se auto-oculta al completar) ══ -->
+      <div id="onboarding-card" style="display:none;"></div>
+
       <!-- ══ MOBILE HOME WIDGET — solo visible en móvil ══ -->
       <div id="mob-home-widget">
         <div class="mhw-greeting">
@@ -9367,6 +9370,60 @@ function closeSettingsPanel(){
   if(landing) landing.style.display = '';
   const view = document.getElementById('v-settings');
   if(view) view.scrollTop = 0;
+}
+
+// ── Onboarding guiado: checklist de configuración inicial (auto-detecta estado, se oculta al completar) ──
+function _onbGo(panel){ try{ if(typeof go==='function') go('settings'); if(typeof openSettingsPanel==='function') openSettingsPanel(panel); }catch(e){ console.warn('_onbGo', e); } }
+function dismissOnboarding(){ try{ localStorage.setItem('velum_onboarding_done','1'); }catch(_){}; const c=document.getElementById('onboarding-card'); if(c) c.style.display='none'; }
+async function renderOnboardingCard(){
+  const card = document.getElementById('onboarding-card');
+  if(!card) return;
+  try { if(localStorage.getItem('velum_onboarding_done')==='1'){ card.style.display='none'; return; } }catch(_){}
+  // Solo para administradores del gym
+  if(currentUser && currentUser.rol && !['admin','superadmin'].includes(currentUser.rol)){ card.style.display='none'; return; }
+  const gymId = (currentUser && currentUser.gym_id) || (typeof MOVE_GYM_ID!=='undefined' && MOVE_GYM_ID) || null;
+  if(!gymId || !window.supabaseClient){ card.style.display='none'; return; }
+  try {
+    const sb = window.supabaseClient;
+    const [cfgRes, pkgRes, gymRes, sfRes] = await Promise.all([
+      sb.from('gym_config').select('key,value').eq('gym_id', gymId).in('key', ['gym_logo','gym_logo_url']),
+      sb.from('packages').select('id', { count:'exact', head:true }).eq('gym_id', gymId).eq('is_active', true),
+      sb.from('gyms').select('stripe_charges_enabled, rfc').eq('id', gymId).maybeSingle(),
+      sb.from('gym_storefront').select('is_enabled').eq('gym_id', gymId).maybeSingle(),
+    ]);
+    const cfg = {}; (cfgRes.data||[]).forEach(r=>cfg[r.key]=r.value);
+    const g = gymRes.data || {}; const sf = sfRes.data || {};
+    const steps = [
+      { ok: !!(cfg.gym_logo || cfg.gym_logo_url),  label:'Sube el logo de tu gym',               panel:'personalizacion' },
+      { ok: (pkgRes.count||0) > 0,                 label:'Crea tu primer paquete o plan',          panel:'planes' },
+      { ok: !!g.stripe_charges_enabled,            label:'Conecta Stripe para cobrar en línea',    panel:'stripe' },
+      { ok: !!sf.is_enabled,                       label:'Activa tu página pública (storefront)',  panel:'storefront' },
+      { ok: !!g.rfc,                               label:'Agrega tus datos de facturación',        panel:'suscripcion' },
+    ];
+    const done = steps.filter(s=>s.ok).length;
+    if(done === steps.length){ card.style.display='none'; try{localStorage.setItem('velum_onboarding_done','1');}catch(_){}; return; }
+    const pct = Math.round(done/steps.length*100);
+    card.style.display='';
+    card.innerHTML = `
+      <div style="background:rgba(0,212,255,.05);border:1px solid var(--border,rgba(0,212,255,.18));border-radius:14px;padding:18px 20px;margin:0 0 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--text);">Configura tu gym · ${done}/${steps.length}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;">Completa estos pasos para empezar a recibir clientes.</div>
+          </div>
+          <button onclick="dismissOnboarding()" title="Ocultar" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-bottom:14px;"><div style="height:100%;width:${pct}%;background:var(--accent,#00D4FF);transition:width .3s;"></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${steps.map(s=>`
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:20px;height:20px;flex-shrink:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;${s.ok?'background:var(--ok,#00ff80);color:#001828;font-weight:700;':'background:rgba(255,255,255,.08);color:var(--text3);'}">${s.ok?'✓':''}</span>
+              <span style="flex:1;font-size:13px;color:${s.ok?'var(--text3)':'var(--text)'};${s.ok?'text-decoration:line-through;':''}">${s.label}</span>
+              ${s.ok?'':`<button onclick="_onbGo('${s.panel}')" class="btn btn-sm btn-outline" style="padding:4px 12px;font-size:12px;flex-shrink:0;">Configurar →</button>`}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } catch(e){ console.warn('renderOnboardingCard:', e); card.style.display='none'; }
 }
 
 function go(id, el){
@@ -19860,7 +19917,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   try { initDashboardCustomize(); } catch(e){ console.warn('dash init:', e); }
 
   // ── STEP 3: Show app ──
-  if(currentUser) showApp();
+  if(currentUser){ showApp(); try{ setTimeout(()=>{ if(typeof renderOnboardingCard==='function') renderOnboardingCard(); }, 600); }catch(_){} }
   // else: login screen remains visible (it's shown by default in CSS)
 
   document.addEventListener('click',e=>{
