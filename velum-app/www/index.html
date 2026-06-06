@@ -1606,9 +1606,45 @@ body::before{
 .au4{animation-delay:.19s;}.au5{animation-delay:.24s;}.au6{animation-delay:.29s;}
 
 /* ══════════════════════════════════════
-   DESKTOP LAYOUT (≥ 780px)
+   SKELETON LOADERS
 ══════════════════════════════════════ */
-@media(min-width:780px){
+@keyframes skshimmer{
+  0%{background-position:-400px 0}
+  100%{background-position:400px 0}
+}
+.sk{
+  background:linear-gradient(90deg,var(--card) 25%,rgba(255,255,255,.06) 50%,var(--card) 75%);
+  background-size:800px 100%;
+  animation:skshimmer 1.4s ease-in-out infinite;
+  border-radius:10px;
+}
+.sk-ring-wrap{
+  padding:20px 16px 12px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.sk-ring-card{
+  height:140px;border-radius:20px;
+}
+.sk-next-card{
+  height:96px;border-radius:18px;
+  margin:0 0 12px;
+}
+.sk-mini-stats{
+  display:flex;gap:10px;padding:0 0 4px;
+}
+.sk-stat{
+  flex:1;height:72px;border-radius:16px;
+}
+
+/* ══════════════════════════════════════
+   DESKTOP LAYOUT (≥ 780px) — DESACTIVADO
+   Por decisión de producto, el portal del atleta usa el mismo
+   layout móvil siempre (consistencia con la app nativa).
+   El bloque desktop original se mantiene como referencia
+   con un media query imposible. El wrapper centrado
+   está definido más abajo.
+══════════════════════════════════════ */
+@media(min-width:99999px){
   body{overflow:hidden;}
   #app{flex-direction:row;padding:0;min-height:100vh;height:100vh;}
 
@@ -1767,6 +1803,57 @@ body::before{
   /* Historial desktop: 2-col */
   .ci-timeline{display:block;}
   .ci-items{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+}
+
+/* ══════════════════════════════════════
+   DESKTOP "MOBILE-FIRST" WRAPPER (≥ 780px)
+   En pantallas grandes mostramos el mismo layout móvil
+   contenido en una columna estrecha al centro (estilo
+   app nativa simulada en desktop).
+══════════════════════════════════════ */
+@media(min-width:780px){
+  body{
+    overflow-y:auto;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0,212,255,.06), transparent 70%),
+      var(--bg);
+  }
+  .sidebar{display:none !important;}
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:0;
+    position:relative;
+    background:rgba(7,18,13,.4);
+    border-left:1px solid rgba(255,255,255,.04);
+    border-right:1px solid rgba(255,255,255,.04);
+    box-shadow:0 0 60px rgba(0,212,255,.05);
+  }
+  .topbar{display:flex !important;}
+  .bottom-nav{
+    display:flex !important;
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:0;
+    width:100%;
+    max-width:480px;
+    z-index:100;
+  }
+  .main-scroll{
+    height:auto !important;
+    overflow:visible !important;
+    padding:16px 18px 100px !important;
+    flex:1;
+  }
+  /* Si el HTML inserta vistas con grids desktop, fuerza columna */
+  .home-desktop-grid{display:flex !important;flex-direction:column !important;gap:16px !important;}
+  .home-left,.home-right{display:flex !important;flex-direction:column !important;gap:16px !important;}
+  .prog-desktop-grid{display:none !important;}
+  .ci-items{display:flex !important;flex-direction:column !important;gap:8px !important;}
 }
 
 /* ══════════════════════════════════════
@@ -2274,10 +2361,11 @@ body::before{
 .yo-payment-section{padding:0 16px 20px;}
 .yo-payment-label{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);margin:0 0 10px;text-transform:uppercase;}
 </style>
+<script src="/cookie-banner.js" defer></script>
 
   <!-- VELUM Brand config — inyectado por build.js -->
   <script>
-    window.VELUM_BRAND = {"appId":"app.myvelum.move","appName":"MOVE","gymCode":"MOVE","version":"1.0.0"};
+    window.VELUM_BRAND = {"appId":"app.myvelum.platform","appName":"VELUM","gymCode":null,"version":"1.0.0"};
     // Si hay gymCode fijo (white-label), pre-rellenar el campo al cargar
     if (window.VELUM_BRAND.gymCode) {
       document.addEventListener('DOMContentLoaded', function() {
@@ -2458,11 +2546,22 @@ body::before{
           <div class="greeting-name" id="atleta-nombre">—</div>
         </div>
         <div class="screen-date-line au au1" id="screen-date-line">—</div>
+        <!-- Push permission prompt — shown only when not granted -->
+        <div id="push-prompt-banner" style="display:none;margin:0 16px 12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="requestPushPermission()">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,212,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--text1);">Activa las notificaciones</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px;">Recibe avisos de clases y tu membresía</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
         <!-- Membership expiry banner — shown by renderMembExpiryBanner() when expiring -->
         <div id="memb-expiry-banner-mobile" class="memb-expiry-banner" style="margin:0 16px 10px;"></div>
-        <div id="home-ring-wrap" class="au au2"></div>
-        <div id="next-class-wrap-mobile" class="au au3"></div>
-        <div class="home-mini-stats au au3" id="home-mini-stats-mobile"></div>
+        <div id="home-ring-wrap" class="au au2"><div class="sk-ring-wrap"><div class="sk sk-ring-card"></div></div></div>
+        <div id="next-class-wrap-mobile" class="au au3"><div class="sk sk-next-card" style="margin:0 16px 12px;"></div></div>
+        <div class="home-mini-stats au au3" id="home-mini-stats-mobile"><div class="sk-mini-stats" style="padding:0 16px;"><div class="sk sk-stat"></div><div class="sk sk-stat"></div><div class="sk sk-stat"></div></div></div>
         <!-- hidden legacy containers (keep IDs for JS compat) -->
         <div id="membership-card-wrap" style="display:none;"></div>
         <div id="paquete-section" style="display:none;"></div>
@@ -2983,7 +3082,6 @@ body::before{
     <div id="class-detail-content">
       <!-- Injected by openClassDetail() -->
     </div>
-    <div class="sheet-close" onclick="closeSheet('class-detail-sheet')">Cerrar</div>
   </div>
 </div>
 
@@ -3221,6 +3319,7 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
+const VAPID_PUBLIC_KEY = 'BNQQblmWqQGybB5G7l4V_2aKhT_6z6gSd8jB30hk3ie7Fv1XXt8IBJof4D_3qDFvJlCevlMa9__x2SONOm016YI';
 const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const DIAS_L = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -3235,12 +3334,71 @@ let activeView = 'home';
 let progWeekOffset = 0;
 let progActiveDisc = '';
 let progItems = [];
-const isDesktop = () => window.innerWidth >= 780;
+// Portal del atleta: forzamos siempre el layout móvil para que el experience sea
+// idéntico entre web responsive, PWA y app nativa (Capacitor).
+// La función queda para compat; cualquier llamado retornará false.
+const isDesktop = () => false;
 
 // ── Helpers ─────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
-const apiHeaders = () => ({'apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY,'Content-Type':'application/json'});
+// V2: JWT del atleta (custom claims: cliente_id, gym_id, role:'authenticated')
+// Si está presente, todas las queries van como `authenticated` y RLS aplica.
+let _authJWT = null;
+try { _authJWT = localStorage.getItem('velum_auth_jwt') || null; } catch(_) {}
+
+const apiHeaders = () => {
+  if (_authJWT) {
+    return {'apikey':ANON_KEY,'Authorization':'Bearer '+_authJWT,'Content-Type':'application/json'};
+  }
+  return {'apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY,'Content-Type':'application/json'};
+};
+
+// Llamar velum-atleta-auth para obtener JWT firmado (cliente_id + gym_id claims).
+// payload = {portal_token} o {gym_codigo, numero_cliente, password}
+async function _fetchAtletaAuthJWT(payload){
+  try {
+    const res = await fetch(`${EDGE_BASE}/velum-atleta-auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) { console.warn('velum-atleta-auth failed:', res.status); return null; }
+    const data = await res.json();
+    if (data && data.jwt) {
+      _authJWT = data.jwt;
+      try { localStorage.setItem('velum_auth_jwt', data.jwt); } catch(_) {}
+      return data.jwt;
+    }
+  } catch(e) { console.warn('velum-atleta-auth exception:', e); }
+  return null;
+}
+
+function _clearAtletaAuthJWT(){
+  _authJWT = null;
+  try { localStorage.removeItem('velum_auth_jwt'); } catch(_) {}
+}
+
+// V3: cargar paquetes públicos del gym desde storefront-config (mismo origen que el Storefront).
+// Pone data.gym.slug + data.paquetes para que renderPlanes muestre opciones de renovación con Connect.
+// (helper de paquetes del gym)
+async function _loadGymPaquetes(data){
+  try {
+    const slug = data?.gym?.slug;
+    if (!slug) return; // gym sin storefront/slug → no hay paquetes en línea
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-config?slug=${encodeURIComponent(slug)}`, {
+      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
+    });
+    if (!res.ok) return;
+    const cfg = await res.json();
+    if (Array.isArray(cfg.packages)) {
+      data.paquetes = cfg.packages.map(p => ({
+        package_id: p.package_id, name: p.name, price_mxn: p.price_mxn,
+        num_classes: p.num_classes, unlimited: p.unlimited, duration_days: p.duration_days,
+      }));
+    }
+  } catch(e) { console.warn('_loadGymPaquetes:', e); }
+}
 
 function greet(){
   const h=new Date().getHours();
@@ -3625,6 +3783,7 @@ function renderYoView(){
   if(!portalData) return;
   const c=portalData.cliente;
   const gym=portalData.gym;
+  const pq=portalData.paquete; // viene del edge function: {plan, clasesTotal, clasesUsadas, clasesRestantes}
   const heroWrap=$('yo-memb-hero'); if(!heroWrap) return;
 
   const ok=c.membresiaOk;
@@ -3632,13 +3791,25 @@ function renderYoView(){
   const statusClass=ok?'':'inactive';
   const statusTxt=ok?'ACTIVO':'VENCIDO';
   const planLabel=c.plan||'Sin plan';
+  // Formatear fecha vence en español si existe
+  let venceFmt = '—';
+  if (c.vence) {
+    try {
+      const d = new Date(c.vence + 'T12:00:00');
+      const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      venceFmt = `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+    } catch(_) {}
+  }
   const venceRow=dias!==null
-    ? `<div class="plan-detail-row"><span class="plan-detail-label">Vence</span><span class="plan-detail-value">${c.fechaVencimiento||'—'}</span></div>`
+    ? `<div class="plan-detail-row"><span class="plan-detail-label">Vence</span><span class="plan-detail-value">${venceFmt}</span></div>`
     : '';
   const diasRow=dias!==null
     ? `<div class="plan-detail-row"><span class="plan-detail-label">Días restantes</span><span class="plan-detail-value">${dias}</span></div>`
     : '';
-  const clasesTxt=c.clasesTotal?`${c.clasesUsadas||0} / ${c.clasesTotal} clases`:'Ilimitadas';
+  // Lee del objeto paquete (no del cliente). Si no hay paquete con num_classes → Ilimitadas.
+  const clasesTotal = pq?.clasesTotal || null;
+  const clasesUsadas = pq?.clasesUsadas ?? 0;
+  const clasesTxt = clasesTotal ? `${clasesUsadas} / ${clasesTotal} clases` : 'Ilimitadas';
 
   heroWrap.innerHTML=`
     <div class="membership-hero" style="margin:0 16px 0;">
@@ -3647,6 +3818,10 @@ function renderYoView(){
       ${venceRow}${diasRow}
       <div class="plan-detail-row"><span class="plan-detail-label">Clases</span><span class="plan-detail-value">${clasesTxt}</span></div>
       <div class="plan-detail-row"><span class="plan-detail-label">Gym</span><span class="plan-detail-value">${gym.nombre||'—'}</span></div>
+      ${c.numero_cliente!=null?`<div class="plan-detail-row"><span class="plan-detail-label">Número de socio</span><span class="plan-detail-value" style="font-family:var(--fm,monospace);">#${String(c.numero_cliente).padStart(3,'0')}</span></div>`:''}
+    </div>
+    <div style="margin:10px 16px 0;padding:10px 14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:10px;font-size:11px;color:var(--text2,#7ABFCC);line-height:1.5;">
+      💡 Para volver a entrar si cierras sesión: código <strong>${esc((gym.codigo||gym.nombre||'').toString().toUpperCase())}</strong> · socio <strong>#${c.numero_cliente!=null?String(c.numero_cliente).padStart(3,'0'):'—'}</strong> · tu contraseña del gym.
     </div>
   `;
 
@@ -3679,6 +3854,7 @@ function switchHistTab(tab){ /* replaced by new PROG tab */ }
 // ── Logout ───────────────────────────────────────────
 function doLogout(){
   try{ localStorage.removeItem('velum_session'); }catch(_){}
+  _clearAtletaAuthJWT(); // V2: limpiar JWT también
   clearProfilePhoto();
   portalData=null;
   closeSheet('profile-sheet');
@@ -3930,8 +4106,6 @@ function applyGymAccent(hex){
 // ── Show portal ──────────────────────────────────────
 function showPortal(data){
   portalData=data;
-  // 1.0 — Cargar paquetes públicos del Storefront (flujo Connect) y refrescar Planes cuando lleguen
-  _loadGymPaquetes(data).then(()=>{ try{ if(typeof renderPlanes==='function') renderPlanes(); }catch(_){} });
   // 1.1 — Apply gym brand color (async, non-blocking). Prefiere el swatch del Storefront vía slug.
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'MOVE'}`;
@@ -3997,6 +4171,14 @@ function showPortal(data){
     window.registerPush(data.cliente.portal_token, SUPABASE_URL, ANON_KEY).catch(()=>{});
   }
 
+  // Web Push VAPID (PWA/browser) — registro async, no bloquea
+  if(data.cliente?.portal_token){
+    registerWebPush(data.cliente.portal_token).catch(()=>{});
+  }
+
+  // Guardar snapshot para uso offline
+  _cachePortalData(data);
+
   // Fix #1 — cargar reservas en background; luego re-render tarjetas que dependen de clasesReservas
   loadClasesData().then(()=>{ renderProximaClase(); renderNextClassCard(); }).catch(()=>{});
 
@@ -4023,6 +4205,165 @@ function showPortal(data){
       .catch(()=>{ portalData.ausentes=[]; });
   }
 }
+
+/* ─── Offline data cache ─────────────────────────────────────────
+   Guarda un snapshot mínimo del portalData en localStorage.
+   Si Supabase no responde al iniciar, cargamos desde caché
+   y mostramos un banner de "datos del [fecha]".
+──────────────────────────────────────────────────────────────── */
+function _cachePortalData(data){
+  try{
+    const snap={
+      _cachedAt: Date.now(),
+      token: data.cliente?.portal_token || '',
+      cliente: {
+        nombre:        data.cliente?.nombre,
+        membresiaOk:   data.cliente?.membresiaOk,
+        vencimiento:   data.cliente?.vencimiento,
+        streakActual:  data.cliente?.streakActual || data.cliente?.racha || 0,
+        meta_semanal:  data.cliente?.meta_semanal || 4,
+        objetivo:      data.cliente?.objetivo,
+        numero_cliente:data.cliente?.numero_cliente,
+        portal_token:  data.cliente?.portal_token,
+      },
+      gym:           { id: data.gym?.id, nombre: data.gym?.nombre, logo: data.gym?.logo },
+      checkins:      (data.checkins   || []).slice(0, 60),
+      programasHoy:  (data.programasHoy   || []).slice(0, 5),
+      programasSemana:(data.programasSemana|| []).slice(0, 14),
+    };
+    localStorage.setItem('velum_cached_portal', JSON.stringify(snap));
+  }catch(_){}
+}
+
+function _loadCachedPortalData(token){
+  try{
+    const raw = localStorage.getItem('velum_cached_portal');
+    if(!raw) return null;
+    const snap = JSON.parse(raw);
+    // Solo usar caché del mismo token (mismo atleta)
+    if(snap.token && token && snap.token !== token) return null;
+    // Caché válida máximo 7 días
+    if(Date.now() - snap._cachedAt > 7 * 24 * 60 * 60 * 1000) return null;
+    return snap;
+  }catch(_){ return null; }
+}
+
+function _showOfflineBanner(cachedAt){
+  // Banner temporal en la pantalla de home
+  const existing = document.getElementById('velum-offline-banner');
+  if(existing) return;
+  const ago   = cachedAt ? new Date(cachedAt) : null;
+  const label = ago ? ago.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) : 'antes';
+  const banner = document.createElement('div');
+  banner.id = 'velum-offline-banner';
+  banner.style.cssText = [
+    'position:fixed;top:0;left:0;right:0;z-index:8000',
+    'background:rgba(239,68,68,.92);color:#fff',
+    'font-size:11px;font-weight:700;text-align:center',
+    'padding:10px 16px;letter-spacing:.3px',
+    'padding-top:calc(env(safe-area-inset-top,0px) + 10px)',
+  ].join(';');
+  banner.innerHTML = `Sin conexión — mostrando datos del ${label} <span style="opacity:.7;margin-left:6px;cursor:pointer;" onclick="document.getElementById('velum-offline-banner').remove()">✕</span>`;
+  document.body.appendChild(banner);
+  // Auto-ocultar al recuperar red y recargar
+  window.addEventListener('online', () => {
+    banner.textContent = 'Conexión restaurada, actualizando…';
+    banner.style.background = 'rgba(34,197,94,.92)';
+    setTimeout(() => window.location.reload(), 1200);
+  }, { once: true });
+}
+
+/* ─── Web Push VAPID registration ────────────────────────────────
+   Se llama después del login. Registra la suscripción push del
+   browser en Supabase para que la Edge Function pueda enviarla.
+──────────────────────────────────────────────────────────────── */
+async function registerWebPush(portalToken){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(!portalToken || !VAPID_PUBLIC_KEY) return;
+
+  // Mostrar/ocultar banner de permiso según estado actual
+  _updatePushPromptBanner();
+
+  // Solo registrar automáticamente si el permiso ya fue otorgado previamente
+  if(Notification.permission !== 'granted') return;
+
+  try{
+    await _subscribePush(portalToken);
+  }catch(e){
+    console.warn('[PWA] Web Push registration error:', e);
+  }
+}
+
+/* Llamada desde el tap del banner — el user gesture permite que iOS muestre el diálogo */
+async function requestPushPermission(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  const token = portalData?.cliente?.portal_token;
+  if(!token) return;
+
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){
+      _updatePushPromptBanner(); // puede haber cambiado a 'denied'
+      return;
+    }
+    _updatePushPromptBanner(); // ocultar banner
+    await _subscribePush(token);
+    toast('Notificaciones activadas ✓','🔔',2500);
+  }catch(e){
+    console.error('[PWA] requestPushPermission error:', e);
+    toast('Error al activar notificaciones: '+(e.message||e),'✕',4000);
+  }
+}
+
+/* Suscribir y guardar en Supabase */
+async function _subscribePush(portalToken){
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+  }
+  const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`,{
+    method: 'PATCH',
+    headers:{
+      'Content-Type':'application/json',
+      'apikey': ANON_KEY,
+      'Authorization': 'Bearer ' + ANON_KEY,
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify({ web_push_subscription: sub.toJSON() }),
+  });
+  if(!patchRes.ok){
+    const errText = await patchRes.text();
+    console.error('[PWA] Web Push PATCH failed:', patchRes.status, errText);
+    throw new Error(`PATCH ${patchRes.status}: ${errText}`);
+  }
+  console.log('[PWA] Web Push suscripción registrada ✓', sub.endpoint.slice(-20));
+}
+
+/* Mostrar banner solo si el permiso aún no ha sido decidido */
+function _updatePushPromptBanner(){
+  const banner = document.getElementById('push-prompt-banner');
+  if(!banner) return;
+  const supported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+  banner.style.display = (supported && Notification.permission === 'default') ? 'flex' : 'none';
+}
+
+function _urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+// Escuchar mensajes del SW para navegación desde notificaciones
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  if(event.data?.type === 'velum:navigate' && event.data.view){
+    if(typeof window.switchView === 'function') window.switchView(event.data.view);
+  }
+});
 
 function handleDesktopLayout(){
   const desk=isDesktop();
@@ -4465,10 +4806,23 @@ function renderNextClassCard(){
     countdownTxt=diff===1?'MAÑANA':diasLbl[fechaDate.getDay()].toUpperCase();
   }
 
-  const isToday=diff===0;
-  const btnLabel=isToday?'CHECK-IN':'VER →';
+  const isToday = diff===0;
+  const portalToken = portalData?.cliente?.portal_token || '';
 
-  wrap.innerHTML=`<div class="next-class-card" onclick="switchView('clases')">
+  // Check if already checked in today (cached in portalData)
+  const yaCheckIn = isToday && portalData?._checkedInToday === true;
+
+  const btnHtml = isToday
+    ? yaCheckIn
+      ? `<button class="ncc-btn" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);cursor:default;pointer-events:none;" disabled>
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>LISTO
+         </button>`
+      : `<button class="ncc-btn" id="ncc-checkin-btn" onclick="event.stopPropagation();doAtletaCheckIn('${portalToken}')">
+           CHECK-IN
+         </button>`
+    : `<button class="ncc-btn reservar" onclick="event.stopPropagation();switchView('clases')">VER →</button>`;
+
+  wrap.innerHTML=`<div class="next-class-card" onclick="${isToday?'':'switchView(\'clases\')'}">
     <span class="h-badge">SIGUIENTE CLASE</span>
     <div class="ncc-title">${tipo}</div>
     ${subtitleTxt?`<div class="ncc-coach">${subtitleTxt}</div>`:''}
@@ -4477,9 +4831,57 @@ function renderNextClassCard(){
         <div class="ncc-time">${rawHora||'—'}</div>
         <div class="ncc-countdown">${countdownTxt}</div>
       </div>
-      <button class="ncc-btn${isToday?'':' reservar'}" onclick="event.stopPropagation();switchView('clases')">${btnLabel}</button>
+      ${btnHtml}
     </div>
   </div>`;
+}
+
+// ── Check-in desde app del atleta ────────────────────
+async function doAtletaCheckIn(portalToken){
+  if(!portalToken){ toast('Error: token no disponible','✕'); return; }
+
+  const btn = document.getElementById('ncc-checkin-btn');
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
+
+  try{
+    // AbortController para timeout de 10s
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 10000);
+
+    const resp = await fetch(`${EDGE_BASE}/move-checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: portalToken }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+
+    let d = {};
+    try{ d = await resp.json(); }catch(_){}
+
+    if(!resp.ok || d.error){
+      toast(d.error || `Error ${resp.status} al hacer check-in`,'✕',3500);
+      if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
+      return;
+    }
+
+    if(d.already_checked_in){
+      toast('Ya registraste tu entrada hoy ✓','🟢',2500);
+    } else {
+      toast('¡Check-in registrado! Que buena sesión 💪','✅',3000);
+      if(window.haptic) window.haptic('success');
+    }
+
+    // Marcar en caché y re-renderizar botón como "LISTO"
+    if(portalData) portalData._checkedInToday = true;
+    renderNextClassCard();
+
+  }catch(e){
+    console.error('[checkin]', e.name, e.message);
+    const msg = e.name==='AbortError' ? 'Tiempo de espera agotado. Intenta de nuevo' : 'Sin conexión. Intenta de nuevo';
+    toast(msg,'✕',3000);
+    if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
+  }
 }
 
 // ── Streak motivational banner (1.4) ─────────────────
@@ -5198,27 +5600,9 @@ window.openProgDetail=function(idx){
 };
 
 // ── Planes (buy plan) ────────────────────────────────
-// Carga paquetes públicos del Storefront (flujo Connect nuevo, igual que la PWA atleta.html)
-async function _loadGymPaquetes(data){
-  try {
-    const slug = data?.gym?.slug;
-    if (!slug) return;
-    const res = await fetch(`${EDGE_BASE}/storefront-config?slug=${encodeURIComponent(slug)}`, {
-      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
-    });
-    if (!res.ok) return;
-    const cfg = await res.json();
-    if (Array.isArray(cfg.packages)) {
-      data.paquetes = cfg.packages.map(p => ({
-        package_id: p.package_id, name: p.name, price_mxn: p.price_mxn,
-        num_classes: p.num_classes, unlimited: p.unlimited, duration_days: p.duration_days,
-      }));
-    }
-  } catch(e) { console.warn('_loadGymPaquetes:', e); }
-}
-
 function renderPlanes(){
   if(!portalData) return;
+  // V3: usar paquetes públicos del Storefront (sistema Connect). Fallback a planes viejos si no hay.
   const paquetes = Array.isArray(portalData.paquetes) ? portalData.paquetes : [];
   const cont=$('planes-content'); if(!cont) return;
 
@@ -5276,8 +5660,7 @@ async function doCheckout(packageId){
         slug,
         package_id: packageId,
         customer: { name: c.nombre, email: c.email, phone: c.tel||c.telefono||'' },
-        // En la app nativa location.origin no es myvelum.app, así que fijamos el destino válido.
-        return_to: `https://myvelum.app/atleta?token=${encodeURIComponent(c.portal_token)}&payment=success`
+        return_to: `${location.origin}/atleta?token=${encodeURIComponent(c.portal_token)}&payment=success`
       })
     });
     const d=await res.json();
@@ -5814,6 +6197,11 @@ let clasesActiveDia  = null; // currently selected day name (e.g. 'Lunes')
 let clasesLoading    = false;
 
 function _sbHeaders(){
+  // Si hay JWT atleta autenticado, usarlo para pasar RLS (post-hardening).
+  // Las policies de horarios/pagos/etc. ahora exigen authenticated con gym_id en el JWT.
+  if (typeof _authJWT !== 'undefined' && _authJWT){
+    return {'apikey':ANON_KEY,'Authorization':'Bearer '+_authJWT,'Content-Type':'application/json'};
+  }
   return {'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'};
 }
 
@@ -6531,8 +6919,15 @@ async function doLogin(){
       errEl.textContent=m; errEl.style.display='block'; return;
     }
     try{ localStorage.setItem('velum_last_gym', gym); }catch(_){}
+    // V3: obtener JWT autenticado ANTES de showPortal (queries requieren JWT post-hardening).
+    await _fetchAtletaAuthJWT({gym_codigo: gym, numero_cliente: parseInt(numero,10), password: pwd})
+      .catch(()=>null);
     showPortal(data);
-  }catch(e){ errEl.textContent='Error de conexión. Intenta de nuevo.'; errEl.style.display='block'; }
+  }catch(e){
+    console.error('doLogin error:', e);
+    errEl.textContent='No se pudo conectar. Revisa tu internet e intenta de nuevo.';
+    errEl.style.display='block';
+  }
   finally{ btn.disabled=false; btn.textContent='Acceder al Portal'; }
 }
 
@@ -6669,6 +7064,11 @@ async function init(){
     if(!res.ok) throw new Error('invalid');
     const data=await res.json();
     if(data.error) throw new Error(data.error);
+    // V2: obtener JWT autenticado ANTES de seguir, para que las queries (clases, pagos)
+    // pasen RLS post-hardening. Si falla, degrada a anon.
+    await _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null);
+    // V3: cargar paquetes públicos + slug del Storefront para renovación con Connect
+    await _loadGymPaquetes(data).catch(()=>null);
     return data;
   }
 
@@ -6702,7 +7102,24 @@ async function init(){
 
   let stored=null;
   try{ stored=JSON.parse(localStorage.getItem('velum_session')||'null'); }catch(_){}
-  if(stored?.token){ try{ showPortal(await tryToken(stored.token)); return; }catch(_){ try{ localStorage.removeItem('velum_session'); }catch(_){} } }
+  if(stored?.token){
+    try{
+      showPortal(await tryToken(stored.token));
+      return;
+    }catch(err){
+      // Si es error de red (no de auth), intentar datos cacheados
+      const isNetworkError = !navigator.onLine || (err instanceof TypeError);
+      if(isNetworkError){
+        const cached = _loadCachedPortalData(stored.token);
+        if(cached){
+          showPortal(cached);
+          _showOfflineBanner(cached._cachedAt);
+          return;
+        }
+      }
+      try{ localStorage.removeItem('velum_session'); }catch(_){}
+    }
+  }
 
   $('loading-screen').classList.add('hidden');
 
