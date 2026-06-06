@@ -47,18 +47,14 @@ html, body {
   scroll-behavior: smooth;
 }
 
-body {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(0, 212, 255, 0.12), transparent 60%),
-    radial-gradient(ellipse 50% 40% at 95% 30%, rgba(0, 212, 255, 0.08), transparent 70%),
-    var(--bg);
-}
+/* El fondo temático lo pone applyTheme(); aquí solo un base neutro para el primer paint (sin glow cyan). */
+body { background: var(--bg); }
 
-/* ─── Loading / Error ─── */
+/* ─── Loading / Error ─── (neutro para no chocar con ningún tema antes de cargar) */
 .boot { min-height: 100vh; display: grid; place-items: center; text-align: center; }
-.boot-spin { width: 56px; height: 56px; border: 3px solid var(--bg-elevated); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 18px; }
+.boot-spin { width: 48px; height: 48px; border: 3px solid rgba(128,128,128,.22); border-top-color: #9aa0a6; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 18px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.boot-text { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--cyan); text-transform: uppercase; }
+.boot-text { font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 1px; color: #9aa0a6; }
 .err { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 32px; }
 .err-card { max-width: 420px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 22px; padding: 36px 28px; }
 .err-icon { font-size: 48px; margin-bottom: 14px; }
@@ -784,6 +780,25 @@ body.theme-atelier .btn-primary-lg:hover, body.theme-lumen .btn-primary-lg:hover
 <script src="/cookie-banner.js" defer></script>
 </head>
 <body>
+
+<script>
+/* Pre-paint: en visitas repetidas, pinta el fondo del tema cacheado ANTES del fetch para que el
+   loader no muestre el tema equivocado (evita el flash claro↔oscuro). */
+(function(){
+  try{
+    var u=new URL(location.href);
+    var slug=(u.searchParams.get('slug')||(u.pathname.match(/\/g\/([a-z0-9-]+)/i)||[])[1]||'').toLowerCase();
+    if(!slug) return;
+    var c=JSON.parse(localStorage.getItem('velum_sf_theme_'+slug)||'null');
+    if(!c) return;
+    var r=document.documentElement.style;
+    if(c.bg) r.setProperty('--bg', c.bg);
+    if(c.elevated) r.setProperty('--bg-elevated', c.elevated);
+    if(c.text) r.setProperty('--text', c.text);
+    if(c.bodyBg){ document.documentElement.style.background=c.bodyBg; document.body.style.background=c.bodyBg; }
+  }catch(e){}
+})();
+</script>
 
 <div class="boot" id="boot">
   <div>
@@ -2218,6 +2233,15 @@ async function load(){
     if (!data.gym){ showError('Respuesta inválida del servidor.'); return; }
 
     applyTheme(data.gym);
+    // Cache del tema por slug → pre-paint sin flash en la próxima visita
+    try {
+      const _tn = (data.gym.theme && STOREFRONT_THEMES[data.gym.theme]) ? data.gym.theme : 'pulse';
+      const _t = STOREFRONT_THEMES[_tn];
+      localStorage.setItem('velum_sf_theme_' + getSlug(), JSON.stringify({
+        bg: _t['--bg'], elevated: _t['--bg-elevated'], text: _t['--text'], bodyBg: _t.bodyBg,
+        light: (_tn === 'atelier' || _tn === 'lumen')
+      }));
+    } catch(_){}
     renderHero(data.gym);
     renderPackages(data.packages);
     renderHeroPriceAnchor(data.packages);

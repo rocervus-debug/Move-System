@@ -107,7 +107,7 @@ body::before{
 }
 #loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
 .ls-logo{font-family:var(--fm);font-size:16px;font-weight:700;letter-spacing:6px;color:rgba(255,255,255,.7);}
-.ls-bar{width:44px;height:2px;background:rgba(0,212,255,.12);border-radius:99px;overflow:hidden;}
+.ls-bar{width:44px;height:2px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;}
 .ls-fill{height:100%;width:0;background:var(--accent);animation:lf 1.4s ease-in-out infinite;}
 @keyframes lf{0%{width:0;margin-left:0}55%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
 
@@ -2300,7 +2300,7 @@ body::before{
   <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
 </svg>
   <div class="ls-logo" id="ls-gym-name">MOVE</div>
-  <script>try{var _lb=JSON.parse(localStorage.getItem('velum_pwa_brand')||'null');if(_lb&&_lb.name){document.getElementById('ls-gym-name').textContent=_lb.name;}}catch(_){}</script>
+  <script>try{var _lb=JSON.parse(localStorage.getItem('velum_pwa_brand')||'null');if(_lb&&_lb.name){document.getElementById('ls-gym-name').textContent=_lb.name;}var _la=localStorage.getItem('velum_pwa_accent');if(_la&&/^#[0-9a-fA-F]{6}$/.test(_la)){var _rs=document.documentElement.style;_rs.setProperty('--accent',_la);_rs.setProperty('--cyan',_la);}}catch(_){}</script>
   <div class="ls-bar"><div class="ls-fill"></div></div>
 </div>
 
@@ -3913,6 +3913,7 @@ function applyGymAccent(hex){
   s.setProperty('--cyan',adj); s.setProperty('--cyan-light',light); s.setProperty('--cyan-dim',rgba('.14')); s.setProperty('--cyan-bright',rgba('.26'));
   s.setProperty('--border-soft',rgba('.10')); s.setProperty('--border-medium',rgba('.20')); s.setProperty('--border-strong',rgba('.22')); s.setProperty('--border-accent',rgba('.40'));
   s.setProperty('--glow-soft',`0 0 24px ${rgba('.10')}`); s.setProperty('--glow-medium',`0 0 48px ${rgba('.18')}`); s.setProperty('--glow-strong',`0 0 96px ${rgba('.32')}`);
+  try{ localStorage.setItem('velum_pwa_accent', adj); }catch(_){} // para que el loader use el acento del gym en la próxima carga
   applyPWABranding(_pwaGymName, hex); // El chrome del PWA (barra, manifest) usa el color de marca original
 }
 
