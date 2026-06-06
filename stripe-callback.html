@@ -3,98 +3,16 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>VELUM — Conectando Stripe...</title>
 <meta name="robots" content="noindex"/>
+<title>VELUM</title>
+<meta http-equiv="refresh" content="0; url=/app"/>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:#040C14;color:#e8edf5;
-  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
-  background-image:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,212,255,.13),transparent);}
-.card{background:rgba(12,30,24,.95);border:1px solid rgba(0,212,255,.2);border-radius:20px;
-  padding:48px 40px;max-width:440px;width:100%;text-align:center;}
-.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;}
-.logo-word{font-size:20px;font-weight:800;letter-spacing:5px;color:#fff;}
-.spinner{width:48px;height:48px;border:3px solid rgba(0,212,255,.2);border-top-color:#00D4FF;
-  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-h2{font-size:20px;font-weight:700;margin-bottom:8px;}
-p{font-size:13px;color:#9DC8BB;line-height:1.6;}
-.icon{font-size:56px;margin-bottom:16px;}
-.btn{display:inline-block;margin-top:24px;background:#00D4FF;color:#fff;text-decoration:none;
-  border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;}
-.err{color:#f87171;font-size:13px;margin-top:12px;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:#040C14;color:#9DC8BB;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;font-size:14px;}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">
-    <svg width="18" height="18" viewBox="0 0 100 100">
-  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
-</svg>
-    <div class="logo-word">VELUM</div>
-  </div>
-  <div id="state-loading">
-    <div class="spinner"></div>
-    <h2>Conectando tu cuenta Stripe...</h2>
-    <p>Espera un momento mientras procesamos la autorización.</p>
-  </div>
-  <div id="state-ok" style="display:none;">
-    <div class="icon">🎉</div>
-    <h2>¡Stripe conectado!</h2>
-    <p>Tu cuenta de Stripe está lista. Ahora puedes generar links de pago y cobros automáticos desde VELUM.</p>
-    <a href="/app" class="btn">Volver al sistema →</a>
-  </div>
-  <div id="state-err" style="display:none;">
-    <div class="icon">❌</div>
-    <h2>No se pudo conectar</h2>
-    <p id="err-msg"></p>
-    <a href="/app" class="btn">Volver e intentar de nuevo</a>
-  </div>
-</div>
-
-<script>
-const SUPA_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
-
-function showState(id){ ['loading','ok','err'].forEach(s=>document.getElementById('state-'+s).style.display=s===id?'block':'none'); }
-
-(async function(){
-  const params = new URLSearchParams(window.location.search);
-  const code  = params.get('code');
-  const state = params.get('state'); // gym_id
-  const error = params.get('error');
-
-  if(error){
-    document.getElementById('err-msg').textContent = params.get('error_description') || 'Acceso denegado.';
-    showState('err'); return;
-  }
-  if(!code || !state){
-    document.getElementById('err-msg').textContent = 'Parámetros inválidos en la URL.';
-    showState('err'); return;
-  }
-
-  // Get stored JWT from localStorage (set by VELUM app)
-  const jwt = localStorage.getItem('velum_jwt') || localStorage.getItem('velum_auth_token') || '';
-
-  try{
-    const res = await fetch(`${SUPA_URL}/functions/v1/velum-stripe-callback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
-      body: JSON.stringify({ code, gym_id: state }),
-    });
-    const data = await res.json();
-    if(!res.ok || !data.ok){
-      document.getElementById('err-msg').textContent = data.error || 'Error desconocido.';
-      showState('err');
-    } else {
-      // Store connected flag for UI to reflect immediately
-      localStorage.setItem('velum_stripe_connected_'+state, data.stripe_account_id);
-      showState('ok');
-    }
-  }catch(e){
-    document.getElementById('err-msg').textContent = 'Error de conexión. Verifica tu internet.';
-    showState('err');
-  }
-})();
-</script>
+  <div>Redirigiendo… <a href="/app" style="color:#00D4FF;">Ir al sistema</a></div>
+  <script>location.replace('/app');</script>
 </body>
 </html>

@@ -3726,6 +3726,7 @@ body::before{
         <button class="btn btn-sm btn-icon" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.28);" onclick="abrirRenovacionMasiva()">🔄 Renovación Masiva</button>
         <button class="btn btn-sm btn-icon" style="background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.22);" onclick="launchKiosco()">🖥️ Kiosco</button>
         <button class="btn btn-sm btn-icon" id="btn-bulk-portales" style="background:rgba(138,43,226,.12);color:#c084fc;border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()">🔗 Portales pendientes</button>
+        <button class="btn btn-sm btn-icon" style="background:rgba(16,232,160,.1);color:#10E8A0;border:1px solid rgba(16,232,160,.28);" onclick="importarClientesCSV()" title="Importar clientes desde un archivo CSV/Excel">⬆ Importar CSV</button>
         <button class="btn btn-sm btn-primary btn-icon" onclick="openModal('solo-cliente')">+ Cliente</button>
       </div>
 
@@ -12862,6 +12863,72 @@ function calcVencimiento(fecha, plan){
   else if(planL.includes('pase') || planL.includes('día') || planL.includes('dia')) d.setDate(d.getDate()+1);
   else d.setMonth(d.getMonth()+1); // default mensual
   return d.toISOString().slice(0,10);
+}
+
+// ─── Importar clientes desde CSV ───────────────────────────────────
+// Detecta encabezados (nombre/email/telefono) o asume orden. Omite duplicados por email.
+// El trigger de DB respeta el límite del plan; si se alcanza, importa hasta donde cabe y avisa.
+function importarClientesCSV(){
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.csv,text/csv';
+  input.onchange = async () => {
+    const file = input.files && input.files[0];
+    if(!file) return;
+    let text;
+    try { text = await file.text(); } catch(_) { toast('No se pudo leer el archivo.','❌'); return; }
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(!lines.length){ toast('El archivo está vacío.','❌'); return; }
+    const delim = ((lines[0].match(/;/g)||[]).length > (lines[0].match(/,/g)||[]).length) ? ';' : ',';
+    const split = (l)=> l.split(delim).map(c=>c.trim().replace(/^"|"$/g,''));
+    let idxNombre=-1, idxEmail=-1, idxTel=-1, startRow=0;
+    const header = split(lines[0]).map(h=>h.toLowerCase());
+    if(header.some(h=>/nombre|name|correo|email|tel|phone|cel/.test(h))){
+      startRow=1;
+      header.forEach((h,i)=>{
+        if(/nombre|name/.test(h) && idxNombre<0) idxNombre=i;
+        if(/correo|email/.test(h) && idxEmail<0) idxEmail=i;
+        if(/tel|phone|cel/.test(h) && idxTel<0) idxTel=i;
+      });
+    }
+    if(idxNombre<0) idxNombre=0;
+    if(idxEmail<0) idxEmail=1;
+    if(idxTel<0) idxTel=2;
+    const existing = new Set((Array.isArray(clientesDB)?clientesDB:[]).map(c=>(c.email||'').toLowerCase()).filter(Boolean));
+    const toInsert=[]; let skippedDup=0, skippedEmpty=0;
+    for(let i=startRow;i<lines.length;i++){
+      const cols = split(lines[i]);
+      const nombre = (cols[idxNombre]||'').trim();
+      const email = (cols[idxEmail]||'').trim().toLowerCase();
+      const tel = (cols[idxTel]||'').trim();
+      if(!nombre){ skippedEmpty++; continue; }
+      if(email && existing.has(email)){ skippedDup++; continue; }
+      if(email) existing.add(email);
+      toInsert.push({ nombre, email: email||null, telefono: tel||null });
+    }
+    if(!toInsert.length){ toast(`Nada que importar (vacíos: ${skippedEmpty}, duplicados: ${skippedDup}).`,'⚠️',6000); return; }
+    if(!confirm(`Se importarán ${toInsert.length} clientes${skippedDup?` (${skippedDup} duplicados omitidos)`:''}. ¿Continuar?`)) return;
+    toast(`Importando ${toInsert.length} clientes…`,'⏳',60000);
+    let ok=0, fail=0, limitHit=false;
+    try {
+      const { error: batchErr } = await window.supabaseClient.from('clientes').insert(toInsert.map(r=>withGymId(r)));
+      if(!batchErr){ ok = toInsert.length; }
+      else if(/PLAN_LIMIT/i.test(batchErr.message||'')){
+        // Plan con límite: importar uno por uno hasta llenar el cupo
+        for(const row of toInsert){
+          const { error } = await window.supabaseClient.from('clientes').insert([withGymId(row)]);
+          if(error){ if(/PLAN_LIMIT/i.test(error.message||'')){ limitHit=true; break; } fail++; }
+          else ok++;
+        }
+      } else { toast('Error al importar: ' + batchErr.message,'❌',7000); return; }
+    } catch(e){ toast('Error: ' + (e.message||e),'❌',7000); return; }
+    let msg = `✓ ${ok} importados`;
+    if(skippedDup) msg += ` · ${skippedDup} dup omitidos`;
+    if(fail) msg += ` · ${fail} con error`;
+    if(limitHit) msg += ` · se alcanzó el límite de tu plan (sube a Max)`;
+    toast(msg, limitHit?'⚠️':'✅', 9000);
+    try { if(typeof loadClientesFromSupabase==='function'){ await loadClientesFromSupabase(); if(typeof renderClientes==='function') renderClientes(); } } catch(_){}
+  };
+  input.click();
 }
 
 // ─── Exportar CSV de clientes ──────────────────────────────────────
