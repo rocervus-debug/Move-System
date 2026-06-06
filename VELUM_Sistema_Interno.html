@@ -8169,8 +8169,13 @@ async function loadConfigFromSupabase(){
   }
   // Load gym plan from gyms table for PLAN_LIMITS (prioriza subscription_plan)
   if(MOVE_GYM_ID && !gymConfig.gym_plan){
-    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
-      if(g){ gymConfig.gym_plan = g.subscription_plan || g.plan || 'max'; gymConfig.subscription_status = g.subscription_status || null; }
+    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,subscription_current_period_end,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
+      if(g){
+        gymConfig.gym_plan = g.subscription_plan || g.plan || 'max';
+        gymConfig.subscription_status = g.subscription_status || null;
+        gymConfig.subscription_current_period_end = g.subscription_current_period_end || null;
+        if(typeof checkSubscriptionBlock === 'function') checkSubscriptionBlock();
+      }
     });
   }
   applyGymConfig();
@@ -11201,6 +11206,42 @@ function applyPlanGates(){
   } else if(isMax && existing){
     existing.remove();
   }
+}
+
+// ── Bloqueo de panel por suscripción vencida (gracia 3 días) ─────────
+// El storefront y la app del atleta NO se tocan: siguen vivos para no cortar
+// el dinero del gym ni afectar a sus clientes. Solo se bloquea el panel admin.
+function checkSubscriptionBlock(){
+  const plan = getPlan();
+  const status = (gymConfig.subscription_status || '').toLowerCase();
+  if (status === 'owner' || plan === 'owner') { removeSubBlock(); return; }
+  if (!['past_due','canceled','cancelled','unpaid'].includes(status)) { removeSubBlock(); return; }
+  const GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+  const periodEnd = gymConfig.subscription_current_period_end ? new Date(gymConfig.subscription_current_period_end).getTime() : 0;
+  const grace = status === 'past_due' ? GRACE_MS : 0;
+  const deadline = periodEnd ? periodEnd + grace : (Date.now() - 1); // sin fecha → tratar como vencido
+  if (Date.now() <= deadline) { removeSubBlock(); return; } // aún dentro de la gracia
+  showSubBlock(status);
+}
+function removeSubBlock(){ document.getElementById('sub-block-overlay')?.remove(); }
+function showSubBlock(status){
+  if (document.getElementById('sub-block-overlay')) return;
+  const msg = status === 'past_due'
+    ? 'Tu último pago de la suscripción VELUM falló y el periodo de gracia (3 días) terminó.'
+    : 'Tu suscripción VELUM está cancelada o vencida.';
+  const ov = document.createElement('div');
+  ov.id = 'sub-block-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(4,12,20,.93);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML = `<div style="max-width:440px;width:100%;background:var(--card,#0D1B2A);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:32px 28px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.5);">
+    <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text,#E8EDF5);margin-bottom:10px;">Suscripción vencida</div>
+    <div style="font-size:14px;color:var(--text2,#9fb3c8);line-height:1.6;margin-bottom:8px;">${msg}</div>
+    <div style="font-size:13px;color:var(--text2,#9fb3c8);line-height:1.6;margin-bottom:22px;">Tu tienda en línea y la app de tus atletas siguen funcionando. Reactiva tu pago para volver a usar el panel.</div>
+    <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="openBillingPortal()">Actualizar pago / reactivar →</button>
+    <button class="btn btn-outline" style="width:100%;" onclick="doLogout()">Cerrar sesión</button>
+    <div style="font-size:11px;color:var(--text3,#5a6b7a);margin-top:14px;">¿Crees que es un error? Escribe a soporte@myvelum.app</div>
+  </div>`;
+  document.body.appendChild(ov);
 }
 
 // ═══════════════════════════════════════════════════════════════════
