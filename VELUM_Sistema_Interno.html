@@ -5338,6 +5338,49 @@ body::before{
             </div>
           </div>
         </div>
+
+        <!-- Datos de facturación (CFDI) -->
+        <div class="card" style="margin-top:16px;">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Datos de facturación (CFDI)</h2>
+              <p style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5;">
+                Para que VELUM emita la factura de tu suscripción. Guárdalos una vez; el timbrado automático llega pronto.
+              </p>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px;">
+            <div class="field"><label>RFC</label><input id="fis-rfc" class="settings-input" maxlength="13" placeholder="XAXX010101000" style="text-transform:uppercase;"/></div>
+            <div class="field"><label>Razón social / Nombre</label><input id="fis-razon" class="settings-input" placeholder="Como aparece en tu Constancia de Situación Fiscal"/></div>
+            <div class="field-grid">
+              <div class="field"><label>Régimen fiscal</label>
+                <select id="fis-regimen" class="settings-input">
+                  <option value="">Selecciona…</option>
+                  <option value="626">626 · RESICO (Simplificado de Confianza)</option>
+                  <option value="612">612 · Persona Física c/ Actividad Empresarial</option>
+                  <option value="601">601 · General de Ley Personas Morales</option>
+                  <option value="603">603 · Personas Morales sin Fines de Lucro</option>
+                  <option value="621">621 · Incorporación Fiscal</option>
+                  <option value="605">605 · Sueldos y Salarios</option>
+                </select>
+              </div>
+              <div class="field"><label>Uso de CFDI</label>
+                <select id="fis-uso" class="settings-input">
+                  <option value="G03">G03 · Gastos en general</option>
+                  <option value="G01">G01 · Adquisición de mercancías</option>
+                  <option value="S01">S01 · Sin efectos fiscales</option>
+                  <option value="CP01">CP01 · Pagos</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-grid">
+              <div class="field"><label>Código postal fiscal</label><input id="fis-cp" class="settings-input" maxlength="5" placeholder="37000"/></div>
+              <div class="field"><label>Email para facturas</label><input id="fis-email" type="email" class="settings-input" placeholder="facturas@tugym.com"/></div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveFiscalData()">Guardar datos fiscales</button>
+            <div id="fis-msg" style="font-size:12px;margin-top:10px;display:none;"></div>
+          </div>
+        </div>
       </div><!-- /cfg-panel-suscripcion -->
 
     </div><!-- /#v-settings -->
@@ -7347,6 +7390,41 @@ async function renderSuscripcion(){
   // Actualizar el desc del menú
   const desc = document.getElementById('suscripcion-status-desc');
   if (desc) desc.textContent = isOwner ? 'Cortesía · acceso completo' : `${info.nombre} · ${status||'—'}`;
+
+  // Cargar datos fiscales (CFDI) del gym
+  if (typeof renderFiscalData === 'function') renderFiscalData();
+}
+
+// ── Datos fiscales (CFDI) — recolectar ahora, timbrar después ──
+async function renderFiscalData(){
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${currentUser.gym_id}&select=rfc,razon_social,regimen_fiscal,uso_cfdi,cp_fiscal,email_fiscal`, {
+      headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
+    });
+    const rows = await res.json();
+    const g = (Array.isArray(rows) && rows[0]) || {};
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+    set('fis-rfc', g.rfc); set('fis-razon', g.razon_social); set('fis-cp', g.cp_fiscal); set('fis-email', g.email_fiscal);
+    const reg = document.getElementById('fis-regimen'); if (reg && g.regimen_fiscal) reg.value = g.regimen_fiscal;
+    const uso = document.getElementById('fis-uso'); if (uso && g.uso_cfdi) uso.value = g.uso_cfdi;
+  } catch(e){ console.warn('renderFiscalData:', e); }
+}
+
+async function saveFiscalData(){
+  const msg = document.getElementById('fis-msg');
+  const show = (txt, color) => { if(msg){ msg.style.display='block'; msg.style.color=color; msg.textContent=txt; } };
+  const rfc = (document.getElementById('fis-rfc').value||'').trim().toUpperCase();
+  if (rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc)) { show('El RFC no parece válido. Revísalo.', 'var(--warn,#fbbf24)'); return; }
+  const { error } = await window.supabaseClient.rpc('update_gym_fiscal_data', {
+    p_rfc: rfc,
+    p_razon: (document.getElementById('fis-razon').value||'').trim(),
+    p_regimen: document.getElementById('fis-regimen').value || '',
+    p_uso: document.getElementById('fis-uso').value || '',
+    p_cp: (document.getElementById('fis-cp').value||'').trim(),
+    p_email: (document.getElementById('fis-email').value||'').trim(),
+  });
+  if (error) { show('Error al guardar: ' + error.message, '#ff8a80'); return; }
+  show('✓ Datos fiscales guardados.', 'var(--ok,#00ff80)');
 }
 
 async function openBillingPortal(){
