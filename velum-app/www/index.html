@@ -1164,6 +1164,12 @@ body::before{
 .sess-type-icon.t-yoga svg,.sess-type-icon.t-mobility svg{stroke:#8BAF52;}
 .sess-type-icon.t-hiit{background:rgba(255,204,0,.1);}
 .sess-type-icon.t-hiit svg{stroke:#FFCC00;}
+/* Íconos SVG limpios (reemplazan emojis sueltos en programa y paquetes) */
+.wk-emoji svg{width:26px;height:26px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wk-es-ico svg{width:30px;height:30px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.prog-desktop-session-emoji svg{width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.prog-empty-ico svg{width:42px;height:42px;stroke:var(--text3);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.plan-ico svg,.pkg-hdr-ico svg{width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 
 /* ── Exercise cards in prog-sheet ── */
 .ex-card{
@@ -2507,7 +2513,7 @@ body::before{
                 <div class="sec-title">Entrenamiento de hoy</div>
                 <div class="sec-link" onclick="switchView('programa')">Ver semana →</div>
               </div>
-              <div id="today-wk-desk"><div class="wk-empty-state"><div class="wk-es-ico">🏋️</div><div class="wk-es-msg">Sin programa para hoy</div><div class="wk-es-cta" onclick="switchView('clases')">Ver clases disponibles →</div></div></div>
+              <div id="today-wk-desk"><div class="wk-empty-state"><div class="wk-es-ico"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1M9 11h6M9 15h4"/></svg></div><div class="wk-es-msg">Sin programa para hoy</div><div class="wk-es-cta" onclick="switchView('clases')">Ver clases disponibles →</div></div></div>
             </div>
           </div>
         </div>
@@ -3219,6 +3225,10 @@ const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const DIAS_L = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const EMOJIS = {Strength:'💪',Hyrox:'🏁',Endurance:'🏃',CrossFit:'⚡',HIIT:'💥',Box:'🥊',MuayThai:'🦵',JiuJitsu:'🥋',Yoga:'🧘',Pilates:'🌀',Funcional:'🏗',Kettlebell:'🔔',Hipertrofia:'🔥',Calistenia:'🤸',Powerlifting:'🏋️',Halterofilia:'🎽',Spinning:'🚴',Triatlon:'🏊',MMA:'🛡',Kickboxing:'🦶',Movilidad:'🦾',Futbol:'⚽',Basquetbol:'🏀',PrepAtletica:'🏆'};
+// Íconos SVG limpios (line-icons) — reemplazan emojis en paquetes/programa para una estética premium consistente en cualquier estudio
+const SVG_PKG=`<svg viewBox="0 0 24 24"><path d="M12 3l8 4-8 4-8-4 8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16l8 4 8-4"/></svg>`;
+const SVG_PASS=`<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>`;
+const SVG_CLIPBOARD=`<svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1M9 11h6M9 15h4"/></svg>`;
 
 let portalData = null;
 let activeView = 'home';
@@ -4112,7 +4122,7 @@ function pkgCardHTML(paquete){
   const lowColor=paquete.clasesRestantes<=2?'style="color:var(--danger)"':'style="color:var(--ok)"';
   return `<div class="pkg-card">
     <div class="pkg-hdr">
-      <div style="font-size:22px;">📦</div>
+      <div class="pkg-hdr-ico">${SVG_PKG}</div>
       <div>
         <div class="pkg-title">${paquete.plan||'Paquete de Clases'}</div>
         <div class="pkg-sub">${paquete.clasesRestantes} clases disponibles</div>
@@ -4222,7 +4232,7 @@ function renderHomeData(data){
   if(paquete){
     const pkgHTML=pkgCardHTML(paquete);
     const ps=$('paquete-section'); if(ps){ ps.style.display=''; ps.querySelector('#pkg-card-container').innerHTML=pkgHTML; }
-    const pd=$('paquete-desk'); if(pd){ pd.style.display='block'; pd.innerHTML=`<div class="section"><div class="sec-hdr"><div class="sec-title">📦 Paquete activo</div></div>${pkgHTML}</div>`; }
+    const pd=$('paquete-desk'); if(pd){ pd.style.display='block'; pd.innerHTML=`<div class="section"><div class="sec-hdr"><div class="sec-title">Paquete activo</div></div>${pkgHTML}</div>`; }
   }
 
   renderTodayWorkout(data.programasHoy);
@@ -4687,15 +4697,15 @@ function renderTodayWorkout(programasHoy){
   ['today-wk-container','today-wk-desk'].forEach(containerId=>{
     const container=$(containerId); if(!container) return;
     if(!programasHoy||!programasHoy.length){
-      container.innerHTML='<div class="wk-empty-state"><div class="wk-es-ico">💪</div><div class="wk-es-msg">El profe aún no cargó el programa de hoy</div><div class="wk-es-cta" onclick="switchView(\'clases\')">Reservar una clase →</div></div>'; return;
+      container.innerHTML='<div class="wk-empty-state"><div class="wk-es-ico">'+SVG_CLIPBOARD+'</div><div class="wk-es-msg">El profe aún no cargó el programa de hoy</div><div class="wk-es-cta" onclick="switchView(\'clases\')">Reservar una clase →</div></div>'; return;
     }
     let activeDisc=programasHoy[0].tipo;
     function build(){
-      const emoji=EMOJIS[activeDisc]||'🏋️';
+      const emoji=getSessTypeIcon(getSessTypeKey(activeDisc));
       const prog=programasHoy.find(p=>p.tipo===activeDisc)||programasHoy[0];
       let tabs='';
       if(programasHoy.length>1){
-        tabs=`<div class="wk-tabs">${programasHoy.map(p=>`<div class="wk-tab${p.tipo===activeDisc?' active':''}" onclick="todayTab('${containerId}','${p.tipo}')">${EMOJIS[p.tipo]||'🏋️'} ${p.tipo}</div>`).join('')}</div>`;
+        tabs=`<div class="wk-tabs">${programasHoy.map(p=>`<div class="wk-tab${p.tipo===activeDisc?' active':''}" onclick="todayTab('${containerId}','${p.tipo}')">${p.tipo}</div>`).join('')}</div>`;
       }
       container.innerHTML=`<div class="wk-card">
         ${tabs}
@@ -4996,7 +5006,7 @@ function buildProgContent(dates,progMap,today){
   if(totalProgs===0){
     cont.innerHTML=`
       <div style="text-align:center;padding:52px 24px 32px;">
-        <div style="font-size:52px;margin-bottom:16px;line-height:1;">🏋️</div>
+        <div class="prog-empty-ico" style="margin-bottom:16px;">${SVG_CLIPBOARD}</div>
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Sin programa esta semana</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:280px;margin:0 auto 20px;">
           Tu coach aún no ha publicado el entrenamiento. Revisa mañana o reserva una clase.
@@ -5021,7 +5031,7 @@ function buildProgContent(dates,progMap,today){
         dayProgs.forEach(prog=>{
           const idx=progItems.length; progItems.push({tipo:prog.tipo,fecha:dateStr,contenido:prog.contenido});
           html+=`<div class="prog-desktop-session" onclick="openProgDetail(${idx})">
-            <div class="prog-desktop-session-emoji">${EMOJIS[prog.tipo]||'🏋️'}</div>
+            <div class="prog-desktop-session-emoji">${getSessTypeIcon(getSessTypeKey(prog.tipo))}</div>
             <div class="prog-desktop-session-tipo">${prog.tipo}</div>
           </div>`;
         });
@@ -5209,7 +5219,7 @@ function renderPlanes(){
   planes.forEach(plan=>{
     const tipo=plan.tipo||'membresia';
     const badge=tipo==='paquete'?'Paquete de Clases':'Membresía';
-    const ico=tipo==='paquete'?'📦':'🎟️';
+    const ico=tipo==='paquete'?SVG_PKG:SVG_PASS;
     const detail=tipo==='paquete'?`${plan.clases||0} clases incluidas`:`${plan.dias||0} días de acceso`;
     const priceInt=Math.floor(plan.precio);
     const priceDec=Math.round((plan.precio-priceInt)*100);
