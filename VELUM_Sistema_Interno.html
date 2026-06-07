@@ -9450,20 +9450,23 @@ function renderGymAnalytics(){
     const monthIdx = {}; months.forEach((m,i)=>monthIdx[m.key]=i);
     const cutoff30 = new Date(now); cutoff30.setDate(cutoff30.getDate()-30);
     const cutoffStr = `${cutoff30.getFullYear()}-${String(cutoff30.getMonth()+1).padStart(2,'0')}-${String(cutoff30.getDate()).padStart(2,'0')}`;
-    let rev30=0, totAll=0, cntAll=0;
+    // Pase de día / visita ocasional: se excluye del ticket promedio (no del ingreso).
+    // Filtro preciso para no confundir planes tipo "Mensual 4 dias x semana".
+    const esPase = (pl) => /\bpase\b|visita|drop.?in|clase suelta|clase individual|sesi[oó]n suelta/i.test(pl||'');
+    let rev30=0, ticketTot=0, ticketCnt=0;
     const planMap = {};
     list.forEach(p => {
       const m = Number(p.monto);
       const key = String(p.fecha).slice(0,7);
       if(key in monthIdx) months[monthIdx[key]].rev += m;
       if(String(p.fecha).slice(0,10) >= cutoffStr){ rev30 += m; }
-      totAll += m; cntAll++;
+      if(!esPase(p.plan)){ ticketTot += m; ticketCnt++; }
       const plan = p.plan || 'Otro';
       if(!planMap[plan]) planMap[plan] = { count:0, rev:0 };
       planMap[plan].count++; planMap[plan].rev += m;
     });
     const maxRev = Math.max(...months.map(m=>m.rev), 1);
-    const avgTicket = cntAll ? totAll/cntAll : 0;
+    const avgTicket = ticketCnt ? ticketTot/ticketCnt : 0;
     const topPlans = Object.entries(planMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,4);
     // Retención: vencimiento más reciente por cliente
     const today = new Date(); today.setHours(0,0,0,0);
@@ -16800,6 +16803,7 @@ const VELUM_NAV_CATALOG = [
   { id:'asistencia',     label:'Asistencia',              emoji:'✅' },
   { id:'gastos',         label:'Gastos & Balance',        emoji:'💰' },
   { id:'settings',       label:'Configuración',           emoji:'⚙️', alwaysVisible:true },
+  { id:'ayuda',          label:'Centro de ayuda',         emoji:'❓', alwaysVisible:true },
 ];
 
 // Keep original nav items' outerHTML for rebuilding
@@ -16814,11 +16818,19 @@ function _initOrigNavItems(){
 }
 
 function getSidebarOrder(){
+  let order = null;
   try{
     const raw = gymConfig.sidebar_order;
-    if(raw) return JSON.parse(raw);
+    if(raw) order = JSON.parse(raw);
   }catch(_){}
-  return VELUM_NAV_CATALOG.map(n=>({ id:n.id, visible:true }));
+  if(!Array.isArray(order)) return VELUM_NAV_CATALOG.map(n=>({ id:n.id, visible:true }));
+  // Fusiona: respeta el orden guardado (ids válidos) y agrega al final los items
+  // del catálogo que aún no están (ej. nuevas secciones como "ayuda").
+  const existing = new Set(order.map(o=>o.id));
+  return [
+    ...order.filter(o=>VELUM_NAV_CATALOG.find(n=>n.id===o.id)),
+    ...VELUM_NAV_CATALOG.filter(n=>!existing.has(n.id)).map(n=>({ id:n.id, visible:true }))
+  ];
 }
 
 function applySidebarOrder(order){
