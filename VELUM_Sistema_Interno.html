@@ -9448,19 +9448,22 @@ function renderGymAnalytics(){
     const months = [];
     for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push({ key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, label:MES[d.getMonth()], rev:0 }); }
     const monthIdx = {}; months.forEach((m,i)=>monthIdx[m.key]=i);
-    const thisKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    let thisMonthRev=0, thisMonthCount=0;
+    const cutoff30 = new Date(now); cutoff30.setDate(cutoff30.getDate()-30);
+    const cutoffStr = `${cutoff30.getFullYear()}-${String(cutoff30.getMonth()+1).padStart(2,'0')}-${String(cutoff30.getDate()).padStart(2,'0')}`;
+    let rev30=0, totAll=0, cntAll=0;
     const planMap = {};
     list.forEach(p => {
+      const m = Number(p.monto);
       const key = String(p.fecha).slice(0,7);
-      if(key in monthIdx) months[monthIdx[key]].rev += Number(p.monto);
-      if(key === thisKey){ thisMonthRev += Number(p.monto); thisMonthCount++; }
+      if(key in monthIdx) months[monthIdx[key]].rev += m;
+      if(String(p.fecha).slice(0,10) >= cutoffStr){ rev30 += m; }
+      totAll += m; cntAll++;
       const plan = p.plan || 'Otro';
       if(!planMap[plan]) planMap[plan] = { count:0, rev:0 };
-      planMap[plan].count++; planMap[plan].rev += Number(p.monto);
+      planMap[plan].count++; planMap[plan].rev += m;
     });
     const maxRev = Math.max(...months.map(m=>m.rev), 1);
-    const avgTicket = thisMonthCount ? thisMonthRev/thisMonthCount : 0;
+    const avgTicket = cntAll ? totAll/cntAll : 0;
     const topPlans = Object.entries(planMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,4);
     // Retención: vencimiento más reciente por cliente
     const today = new Date(); today.setHours(0,0,0,0);
@@ -9478,8 +9481,8 @@ function renderGymAnalytics(){
         <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Ingresos, retención y planes — datos reales de tu gym.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">
           <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:12px;">
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Ingresos del mes</div>
-            <div style="font-size:19px;font-weight:800;color:var(--ok,#10E8A0);margin-top:2px;">${fmt(thisMonthRev)}</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Ingresos · 30 días</div>
+            <div style="font-size:19px;font-weight:800;color:var(--ok,#10E8A0);margin-top:2px;">${fmt(rev30)}</div>
           </div>
           <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:12px;">
             <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Ticket promedio</div>
