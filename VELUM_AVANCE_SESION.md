@@ -78,6 +78,17 @@
 - Cubre: configurar el gym, alta de clientes + import CSV, registrar pagos/renovaciones, cobrar en línea con Stripe, página pública, paquetes, Aura, check-in/QR, horario, la app del atleta, datos fiscales, límites de plan y la lógica de bloqueo por falta de pago.
 - Acordeón colapsable + buscador + contacto de soporte por WhatsApp. Reduce tu soporte 1:1 cuando entren gyms.
 
+## 17. Fix: borrar planes del catálogo (RLS)
+- **Síntoma:** "error al borrar un plan" en el catálogo de planes (cualquier gym).
+- **Causa raíz:** el borrado es un *soft delete* (`is_active=false`), pero la política de SELECT de `packages` exigía `is_active=true`. Postgres evaluaba esa condición sobre la fila resultante del UPDATE → la fila "desaparecía" → rechazaba con "new row violates row-level security policy". No era el cruce de gym ni el rol.
+- **Fix (solo base de datos, ya en vivo):** nueva política de SELECT `packages_auth_select_own_gym` que deja al personal autenticado ver los paquetes de **su** gym (activos o archivados). El storefront/anon sigue viendo solo los activos. Verificado en MOVE y Krajo. No requiere push.
+- **Auditoría del mismo patrón en toda la base:** barrí todas las políticas de SELECT con banderas (`is_active/is_enabled/is_public/estado/...`). Solo `packages` era vulnerable. `gym_storefront` (apagar storefront) y `storefront_listings` (ocultar paquete) están a salvo porque tienen una política `ALL` por gym que no depende de la bandera (verificado apagando ambas sin error). No quedan cabos sueltos de este tipo.
+
+## 18. Modo claro retirado
+- El modo claro estaba a medias: redefinía solo unas variables, pero los miles de estilos en línea con colores fijos (pensados para fondo oscuro) no reaccionaban → botones invisibles y UI rota.
+- Decisión: **quitarlo** (el panel es dark-first, igual que storefront y app). Arreglarlo bien implicaba reescribir miles de estilos.
+- Hecho: quitados los 3 botones (sidebar, barra superior, Configuración), `toggleColorMode` es no-op, y al cargar se fuerza oscuro + se limpia la preferencia guardada. El CSS de `light-mode` queda inerte (sin uso). Reversible.
+
 ---
 
 ## ⚠️ Pendiente DE TU LADO
