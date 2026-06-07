@@ -8396,11 +8396,13 @@ function applyGymConfig(){
   const gymIdEl = el('cfg-gym-id-display');
   if(gymIdEl) gymIdEl.textContent = MOVE_GYM_ID || gymConfig.gym_id || 'Cargando...';
 
-  // Apply custom sidebar order (if configured)
+  // Apply custom sidebar order (if configured).
+  // Ruteamos por getSidebarOrder() para que los items nuevos del catálogo
+  // (ej. "Centro de ayuda") se fusionen aunque el gym tenga un orden guardado.
   if(gymConfig.sidebar_order){
     try{
-      const order = JSON.parse(gymConfig.sidebar_order);
-      if(Array.isArray(order) && order.length) applySidebarOrder(order);
+      const saved = JSON.parse(gymConfig.sidebar_order);
+      if(Array.isArray(saved) && saved.length) applySidebarOrder(getSidebarOrder());
     }catch(_){}
   }
 }
