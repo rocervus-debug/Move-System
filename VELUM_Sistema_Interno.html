@@ -3348,6 +3348,9 @@ body::before{
       <!-- ══ ONBOARDING — guía de configuración inicial (se auto-oculta al completar) ══ -->
       <div id="onboarding-card" style="display:none;"></div>
 
+      <!-- ══ ANALÍTICA DEL GYM — ingresos, retención, planes ══ -->
+      <div id="gym-analytics" style="display:none;"></div>
+
       <!-- ══ MOBILE HOME WIDGET — solo visible en móvil ══ -->
       <div id="mob-home-widget">
         <div class="mhw-greeting">
@@ -8686,6 +8689,7 @@ async function loadPagosFromSupabase(){
     clases_totales: p.clases_totales ?? null,
     clases_usadas:  p.clases_usadas  ?? 0,
   }));
+  try{ if(typeof renderGymAnalytics==='function') renderGymAnalytics(); }catch(_){}
 }
 
 async function loadClientesFromSupabase(){
@@ -9425,6 +9429,85 @@ async function renderOnboardingCard(){
         </div>
       </div>`;
   } catch(e){ console.warn('renderOnboardingCard:', e); card.style.display='none'; }
+}
+
+// ── Analítica del gym: ingresos por mes, retención, planes (desde el global `pagos`) ──
+function renderGymAnalytics(){
+  const card = document.getElementById('gym-analytics');
+  if(!card) return;
+  try {
+    const all = Array.isArray(pagos) ? pagos : [];
+    const list = all.filter(p => p && p.fecha && Number(p.monto) > 0);
+    if(list.length < 1){ card.style.display='none'; return; }
+    const fmt = n => '$' + Math.round(n).toLocaleString('es-MX');
+    const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const now = new Date();
+    const months = [];
+    for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push({ key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, label:MES[d.getMonth()], rev:0 }); }
+    const monthIdx = {}; months.forEach((m,i)=>monthIdx[m.key]=i);
+    const thisKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    let thisMonthRev=0, thisMonthCount=0;
+    const planMap = {};
+    list.forEach(p => {
+      const key = String(p.fecha).slice(0,7);
+      if(key in monthIdx) months[monthIdx[key]].rev += Number(p.monto);
+      if(key === thisKey){ thisMonthRev += Number(p.monto); thisMonthCount++; }
+      const plan = p.plan || 'Otro';
+      if(!planMap[plan]) planMap[plan] = { count:0, rev:0 };
+      planMap[plan].count++; planMap[plan].rev += Number(p.monto);
+    });
+    const maxRev = Math.max(...months.map(m=>m.rev), 1);
+    const avgTicket = thisMonthCount ? thisMonthRev/thisMonthCount : 0;
+    const topPlans = Object.entries(planMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,4);
+    // Retención: vencimiento más reciente por cliente
+    const today = new Date(); today.setHours(0,0,0,0);
+    const venceByCli = {};
+    all.forEach(p => { if(p && p.cliente && p.vence && /^\d{4}-\d{2}/.test(String(p.vence))){ if(!venceByCli[p.cliente] || String(p.vence) > String(venceByCli[p.cliente])) venceByCli[p.cliente] = p.vence; } });
+    let activos=0, vencidos=0;
+    Object.values(venceByCli).forEach(v => { const vd=new Date(String(v).slice(0,10)+'T12:00:00'); if(vd>=today) activos++; else vencidos++; });
+    const totalCli = activos+vencidos;
+    const retencion = totalCli ? Math.round(activos/totalCli*100) : 0;
+
+    card.style.display='';
+    card.innerHTML = `
+      <div style="background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:0 0 18px;">
+        <div style="font-size:15px;font-weight:800;color:var(--text);">Analítica de tu negocio</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Ingresos, retención y planes — datos reales de tu gym.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">
+          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Ingresos del mes</div>
+            <div style="font-size:19px;font-weight:800;color:var(--ok,#10E8A0);margin-top:2px;">${fmt(thisMonthRev)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Ticket promedio</div>
+            <div style="font-size:19px;font-weight:800;color:var(--text);margin-top:2px;">${fmt(avgTicket)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Retención</div>
+            <div style="font-size:19px;font-weight:800;color:var(--accent);margin-top:2px;">${retencion}%</div>
+            <div style="font-size:10px;color:var(--text3);">${activos} activos · ${vencidos} vencidos</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ingresos · últimos 6 meses</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:92px;margin-bottom:18px;">
+          ${months.map(m=>`
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+              <div style="font-size:9px;color:var(--text3);margin-bottom:4px;">${m.rev>0?fmt(m.rev).replace('$',''):''}</div>
+              <div style="width:100%;background:var(--accent);opacity:${m.rev>0?'.85':'.14'};border-radius:5px 5px 0 0;height:${Math.max(4, Math.round(m.rev/maxRev*64))}px;"></div>
+              <div style="font-size:10px;color:var(--text2);margin-top:5px;">${m.label}</div>
+            </div>`).join('')}
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Planes más vendidos</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${topPlans.map(([name,d])=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">
+              <span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</span>
+              <span style="color:var(--text3);font-size:12px;">${d.count} vendidos</span>
+              <span style="color:var(--ok,#10E8A0);font-weight:700;min-width:70px;text-align:right;">${fmt(d.rev)}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } catch(e){ console.warn('renderGymAnalytics:', e); card.style.display='none'; }
 }
 
 function go(id, el){
@@ -19984,7 +20067,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   try { initDashboardCustomize(); } catch(e){ console.warn('dash init:', e); }
 
   // ── STEP 3: Show app ──
-  if(currentUser){ showApp(); try{ setTimeout(()=>{ if(typeof renderOnboardingCard==='function') renderOnboardingCard(); }, 600); }catch(_){} }
+  if(currentUser){ showApp(); try{ setTimeout(()=>{ if(typeof renderOnboardingCard==='function') renderOnboardingCard(); if(typeof renderGymAnalytics==='function') renderGymAnalytics(); }, 600); }catch(_){} }
   // else: login screen remains visible (it's shown by default in CSS)
 
   document.addEventListener('click',e=>{

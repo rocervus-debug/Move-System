@@ -68,6 +68,11 @@
 - Capturas tomadas (con tu perfil de MOVE), ficha de tienda lista, login de revisor: código `MOVE` · socio `#085` · contraseña del portal.
 - Docs creados: `VELUM_APP_DEPLOY.md` (runbook), `VELUM_APP_FICHA_TIENDA.md` (ficha).
 
+## 15. Analítica para el gym (nuevo)
+- Tarjeta **"Analítica de tu negocio"** en el dashboard del dueño, calculada en memoria desde los pagos reales (sin queries nuevas).
+- Muestra: ingresos del mes, ticket promedio, **retención** (activos vs vencidos), **ingresos de los últimos 6 meses** (mini-gráfica de barras) y **planes más vendidos**.
+- Defensiva: si no hay datos o algo falla, se oculta sola. Se refresca al cargar pagos.
+
 ---
 
 ## ⚠️ Pendiente DE TU LADO
