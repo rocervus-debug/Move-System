@@ -89,6 +89,21 @@
 - Decisión: **quitarlo** (el panel es dark-first, igual que storefront y app). Arreglarlo bien implicaba reescribir miles de estilos.
 - Hecho: quitados los 3 botones (sidebar, barra superior, Configuración), `toggleColorMode` es no-op, y al cargar se fuerza oscuro + se limpia la preferencia guardada. El CSS de `light-mode` queda inerte (sin uso). Reversible.
 
+## 19. Barrido de calidad multi-gym (RLS)
+- Audité todas las tablas con RLS y probé CRUD con claims de un **admin real de Krajo** (no superadmin) contra los 4 gyms, en transacciones revertidas.
+- Resultado: aislamiento correcto en todas las tablas centrales (clientes, pagos, coaches, evaluaciones, gastos, horarios, gym_config, gyms): escribe en su gym, **bloqueado** en otros. Sin fugas ni bloqueos. El único bug del patrón packages ya estaba arreglado.
+
+## 20. Métricas SaaS en el panel Super Admin
+- Tarjeta nueva **"Métricas del Negocio (VELUM SaaS)"** en Super Admin: MRR, ARR, ARPU, gyms de paga vs cortesía, churn, nuevos del mes y desglose por plan.
+- Lee la edge `velum-saas-metrics` con tu JWT de superadmin; el churn se calcula en el cliente. Hoy MRR $0 (gyms de cortesía), listo para cuando entre el primero.
+
+## 21. SEO del storefront
+- **Meta tags dinámicos por gym**: title, description, theme-color, canonical y favicon (logo del gym).
+- **Open Graph + Twitter Card**: og:image (logo/hero), título y descripción → se ve bien al compartir el link en WhatsApp/Instagram.
+- **Datos estructurados (Schema.org HealthClub)**: nombre, dirección, geo, redes y rating → Google puede mostrar rich results.
+- **Sitemap dinámico** (`/sitemap.xml` → edge `storefront-sitemap`): lista todos los storefronts activos + páginas estáticas, se actualiza solo.
+- **robots.txt**: permite indexar lo público, bloquea /app /portal /checkin etc., y declara el sitemap.
+
 ---
 
 ## ⚠️ Pendiente DE TU LADO
