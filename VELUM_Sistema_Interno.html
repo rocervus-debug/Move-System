@@ -3190,6 +3190,9 @@ body::before{
       <div class="nav-item mob-hidden" id="nav-settings" onclick="go('settings',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label-text"> Configuración</span>
       </div>
+      <div class="nav-item mob-hidden" id="nav-ayuda" onclick="openHelpCenter()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span class="nav-label-text"> Centro de ayuda</span>
+      </div>
     </div>
 
     <!-- ── "Más" item — visible mobile only ── -->
@@ -9508,6 +9511,89 @@ function renderGymAnalytics(){
         </div>
       </div>`;
   } catch(e){ console.warn('renderGymAnalytics:', e); card.style.display='none'; }
+}
+
+// ── Centro de ayuda — guías para el dueño del gym ──
+const _HELP_DATA = [
+  { cat:'Primeros pasos', q:'¿Por dónde empiezo a configurar mi gym?', a:'En el Dashboard verás la tarjeta "Configura tu gym" con 5 pasos: sube tu logo, crea tu primer paquete, conecta Stripe, activa tu página pública y agrega tus datos de facturación. Complétalos en orden y estarás listo para recibir clientes. La tarjeta desaparece sola cuando terminas.' },
+  { cat:'Primeros pasos', q:'¿Cómo cambio el logo y los colores de mi gym?', a:'Ve a Configuración → Identidad. Ahí subes tu logo y eliges el color de acento. Ese color se aplica a tu panel, a tu página pública y a la app de tus atletas para que todo se vea con tu marca.' },
+  { cat:'Clientes y cobros', q:'¿Cómo doy de alta un cliente?', a:'Ve a Clientes → botón "+ Cliente" (o el botón "+ Cliente" del dashboard). Llena nombre, email y teléfono. Si ya tienes una lista en Excel, usa "⬆ Importar CSV" para subirlos todos de una vez (omite los repetidos automáticamente).' },
+  { cat:'Clientes y cobros', q:'¿Cómo registro un pago o una renovación?', a:'Desde el dashboard usa "+ Pago", o entra a Pagos & Renovaciones. Elige el cliente, el paquete y el método. La fecha de vencimiento se calcula sola y, si el cliente aún tenía días, se le suman (no se pierden).' },
+  { cat:'Clientes y cobros', q:'¿Cómo cobro en línea con tarjeta?', a:'Primero conecta Stripe en Configuración → Pagos (un solo clic, Stripe te guía). Después puedes: (1) dejar que el cliente pague desde tu página pública o la app, o (2) generar un "link de pago" y enviárselo por WhatsApp. El dinero llega a tu cuenta de Stripe; VELUM solo cobra una pequeña comisión según tu plan.' },
+  { cat:'Clientes y cobros', q:'¿Qué pasa cuando una membresía está por vencer?', a:'VELUM avisa solo: el atleta recibe una notificación (y email, si está activado) 3 días antes de vencer. En tu dashboard verás la franja de "membresías vencidas / por vencer" para darles seguimiento. Entra a "Ver ahora" para la lista.' },
+  { cat:'Tu marca', q:'¿Qué es la página pública (storefront) y cómo la activo?', a:'Es tu mini-sitio web donde la gente conoce tu gym, ve tus paquetes y compra en línea. Actívala en Configuración → Página pública: elige un tema (Pulse, Atelier o Lumen), tu color, y listo. Tu liga queda como tugym en la plataforma; compártela en tu Instagram.' },
+  { cat:'Tu marca', q:'¿Cómo creo paquetes y planes?', a:'Ve a Configuración → Paquetes. Crea cada plan con nombre, precio, vigencia (ej. 1 mes) y número de clases si aplica. Esos paquetes aparecen tanto en tu página pública como al registrar pagos.' },
+  { cat:'Tu marca', q:'¿Quién es Aura?', a:'Aura es el asistente que tus clientes ven en tu página pública y en la app. Responde dudas frecuentes (horarios, precios, cómo llegar) las 24 horas con la información de tu gym. Puedes hacerlo más o menos visible en la configuración de tu página pública.' },
+  { cat:'Operación', q:'¿Cómo funciona el check-in y el código QR?', a:'En Asistencia registras la entrada de cada atleta. Tus clientes también pueden mostrar su QR desde la app para hacer check-in rápido sin filas. Cada check-in cuenta para sus rachas y su historial.' },
+  { cat:'Operación', q:'¿Cómo armo el horario de clases?', a:'Ve a Horario Semanal. Crea cada clase con día, hora, coach y cupo. Esas clases aparecen en la app del atleta para que reserven su lugar, y en tu calendario.' },
+  { cat:'Operación', q:'¿Qué ven mis clientes en la app?', a:'La app del atleta muestra su clase de hoy, el horario para reservar, su plan de entrenamiento, su progreso (asistencia y rachas), el chat con Aura y la opción de renovar su membresía. Se ve con el logo y color de tu gym.' },
+  { cat:'Cuenta y facturación', q:'¿Cómo agrego mis datos de facturación (CFDI)?', a:'Ve a Mi Suscripción → Datos fiscales y captura tu RFC, razón social, régimen, uso de CFDI y código postal. Esto prepara tu cuenta para emitir facturas (el timbrado automático se activa más adelante).' },
+  { cat:'Cuenta y facturación', q:'¿Cuántos clientes puedo tener según mi plan?', a:'El plan Pro permite hasta 60 atletas y 3 coaches; el plan Max amplía esos límites y baja la comisión de cobro en línea a 0%. Si llegas al tope, el sistema te avisa al intentar dar de alta a alguien más.' },
+  { cat:'Cuenta y facturación', q:'¿Qué pasa si no pago mi suscripción de VELUM?', a:'Tienes 3 días de gracia tras el vencimiento. Después, tu panel de administración se bloquea hasta regularizar el pago — pero tu página pública y la app de tus clientes siguen funcionando, así no afecta a tus atletas.' },
+];
+
+function openHelpCenter(){
+  let ov = document.getElementById('help-center-overlay');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'help-center-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;';
+    ov.onclick = (e)=>{ if(e.target===ov) closeHelpCenter(); };
+    ov.innerHTML = `
+      <div style="width:100%;max-width:680px;background:var(--bg2,#0a1622);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+        <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div>
+              <div style="font-size:17px;font-weight:800;color:var(--text);">Centro de ayuda</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px;">Guías rápidas para sacarle todo a VELUM.</div>
+            </div>
+            <button onclick="closeHelpCenter()" style="background:transparent;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1;padding:4px;">×</button>
+          </div>
+          <input id="help-search" type="text" placeholder="Busca: pago, clientes, página pública…" oninput="renderHelpList(this.value)"
+            style="width:100%;margin-top:14px;padding:10px 14px;background:var(--card,rgba(255,255,255,.04));border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box;">
+        </div>
+        <div id="help-list" style="max-height:60vh;overflow-y:auto;padding:8px 14px 14px;"></div>
+        <div style="padding:14px 22px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>¿No encuentras lo que buscas?</span>
+          <a href="https://wa.me/524613642990" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none;">Escríbenos por WhatsApp →</a>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderHelpList('');
+  setTimeout(()=>{ const s=document.getElementById('help-search'); if(s) s.focus(); }, 50);
+}
+
+function closeHelpCenter(){
+  const ov = document.getElementById('help-center-overlay');
+  if(ov) ov.style.display='none';
+  document.body.style.overflow='';
+}
+
+function renderHelpList(query){
+  const box = document.getElementById('help-list');
+  if(!box) return;
+  const q = (query||'').toLowerCase().trim();
+  const items = _HELP_DATA.filter(it => !q || (it.q+' '+it.a+' '+it.cat).toLowerCase().includes(q));
+  if(!items.length){ box.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">Sin resultados. Prueba otra palabra o escríbenos por WhatsApp.</div>`; return; }
+  const cats = [];
+  items.forEach(it => { if(!cats.includes(it.cat)) cats.push(it.cat); });
+  box.innerHTML = cats.map(cat => `
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:14px 6px 6px;">${esc(cat)}</div>
+    ${items.filter(it=>it.cat===cat).map((it)=>{
+      const id = 'help-'+_HELP_DATA.indexOf(it);
+      return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:7px;overflow:hidden;">
+        <button onclick="(function(b){var p=document.getElementById('${id}');var open=p.style.display!=='none';p.style.display=open?'none':'block';b.querySelector('.help-chev').style.transform=open?'rotate(0deg)':'rotate(90deg)';})(this)"
+          style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;background:transparent;border:none;cursor:pointer;text-align:left;color:var(--text);font-size:13.5px;font-weight:600;font-family:var(--font);">
+          <span class="help-chev" style="color:var(--accent);transition:transform .15s;flex-shrink:0;">›</span>
+          <span style="flex:1;">${esc(it.q)}</span>
+        </button>
+        <div id="${id}" style="display:none;padding:0 14px 14px 38px;font-size:13px;line-height:1.55;color:var(--text2);">${esc(it.a)}</div>
+      </div>`;
+    }).join('')}
+  `).join('');
 }
 
 function go(id, el){

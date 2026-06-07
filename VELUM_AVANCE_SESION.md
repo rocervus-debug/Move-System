@@ -73,6 +73,11 @@
 - Muestra: ingresos del mes, ticket promedio, **retención** (activos vs vencidos), **ingresos de los últimos 6 meses** (mini-gráfica de barras) y **planes más vendidos**.
 - Defensiva: si no hay datos o algo falla, se oculta sola. Se refresca al cargar pagos.
 
+## 16. Centro de ayuda para dueños (nuevo)
+- Item **"Centro de ayuda"** en el sidebar → abre un modal buscable con **15 guías** agrupadas (Primeros pasos, Clientes y cobros, Tu marca, Operación, Cuenta y facturación).
+- Cubre: configurar el gym, alta de clientes + import CSV, registrar pagos/renovaciones, cobrar en línea con Stripe, página pública, paquetes, Aura, check-in/QR, horario, la app del atleta, datos fiscales, límites de plan y la lógica de bloqueo por falta de pago.
+- Acordeón colapsable + buscador + contacto de soporte por WhatsApp. Reduce tu soporte 1:1 cuando entren gyms.
+
 ---
 
 ## ⚠️ Pendiente DE TU LADO
