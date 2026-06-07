@@ -5381,6 +5381,14 @@ body::before{
         </div>
       </div>
       <div id="sa-kpis" class="kpi-grid"></div>
+      <!-- ══ MÉTRICAS DEL NEGOCIO VELUM (SaaS) ══ -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Métricas del Negocio (VELUM SaaS)</div>
+          <span class="card-sub" id="sa-saas-ctx">Ingreso recurrente de la plataforma</span>
+        </div>
+        <div id="sa-saas-metrics"></div>
+      </div>
       <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
           <div class="card-title" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg> Gyms Registrados</div>
@@ -15683,12 +15691,49 @@ function setGastoFilter(key, val){
 // ═══════════════════════════════════════════════════════════════════
 // SUPER ADMIN PANEL — Multi-tenant Gym Management (#34)
 // ═══════════════════════════════════════════════════════════════════
+// Métricas de negocio VELUM (MRR/ARR/ARPU/churn) vía edge function (solo superadmin)
+async function renderSaasMetrics(){
+  const box = document.getElementById('sa-saas-metrics');
+  if(!box) return;
+  box.innerHTML = '<div style="padding:14px;color:var(--text3);font-size:12px;">Cargando métricas…</div>';
+  try{
+    const base = (window._SUPABASE_URL || (window.supabaseClient && window.supabaseClient.supabaseUrl) || '').replace(/\/$/,'');
+    const res = await fetch(`${base}/functions/v1/velum-saas-metrics`, {
+      headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
+    });
+    const m = await res.json();
+    if(!res.ok || !m.ok){ box.innerHTML = `<div style="padding:14px;color:var(--text3);font-size:12px;">No se pudieron cargar las métricas${m && m.error ? ': '+esc(m.error) : ''}.</div>`; return; }
+    const mx = n => '$' + Math.round(n||0).toLocaleString('es-MX');
+    const churn = (m.paying_gyms + m.canceled) > 0 ? +(m.canceled/(m.paying_gyms + m.canceled)*100).toFixed(1) : 0;
+    const tile = (label,val,color,sub) => `
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;">${label}</div>
+        <div style="font-size:22px;font-weight:800;color:${color};margin-top:3px;">${val}</div>
+        ${sub?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${sub}</div>`:''}
+      </div>`;
+    const planChips = Object.entries(m.by_plan||{}).map(([p,c])=>`<span style="font-size:11px;background:rgba(0,212,255,.1);color:var(--accent);padding:3px 9px;border-radius:6px;margin-right:6px;">${esc(p)}: ${c}</span>`).join('') || '<span style="font-size:11px;color:var(--text3);">Sin gyms de paga aún</span>';
+    box.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">
+        ${tile('MRR', mx(m.mrr_mxn), 'var(--ok,#10E8A0)', 'Ingreso recurrente mensual')}
+        ${tile('ARR', mx(m.arr_mxn), 'var(--text)', 'Proyección anual')}
+        ${tile('ARPU', mx(m.arpu_mxn), 'var(--text)', 'Promedio por gym de paga')}
+        ${tile('Gyms de paga', String(m.paying_gyms), 'var(--accent)', `${m.owner_gyms} cortesía · ${m.total_gyms} total`)}
+        ${tile('Churn', churn+'%', churn>5?'var(--danger)':'var(--text)', `${m.canceled} cancelados`)}
+        ${tile('Nuevos este mes', String(m.new_this_month), 'var(--ok,#10E8A0)', m.past_due?`${m.past_due} en mora`:'al corriente')}
+      </div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+        <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-right:6px;">Por plan:</span>${planChips}
+      </div>`;
+  }catch(e){ console.warn('renderSaasMetrics:', e); box.innerHTML = '<div style="padding:14px;color:var(--text3);font-size:12px;">No se pudieron cargar las métricas.</div>'; }
+}
+
 async function renderSuperAdmin(){
   // Security guard
   if(!currentUser || currentUser.rol !== 'superadmin'){
     document.getElementById('sa-kpis').innerHTML='<div style="color:var(--danger);padding:16px;">🚫 Acceso denegado.</div>';
     return;
   }
+  renderSaasMetrics();
 
   // ── Fetch all gyms (no gym_id filter — superadmin sees all) ──
   const { data: gymsData, error: gymsErr } = await window.supabaseClient
