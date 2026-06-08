@@ -5367,6 +5367,22 @@ body::before{
             <div id="fis-msg" style="font-size:12px;margin-top:10px;display:none;"></div>
           </div>
         </div>
+
+        <!-- Cancelar suscripción -->
+        <div class="card" style="margin-top:16px;border-color:rgba(239,68,68,.18);">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title" style="color:var(--danger);">Cancelar suscripción</h2>
+              <p style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5;">
+                Tu plan se cancela al final del periodo ya pagado — conservas el acceso hasta entonces y no se te vuelve a cobrar. Puedes reactivar antes de esa fecha desde Stripe.
+              </p>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px;">
+            <button class="btn btn-outline" style="width:100%;color:var(--danger);border-color:rgba(239,68,68,.35);" onclick="cancelarSuscripcion(this)">Cancelar mi suscripción</button>
+            <div id="cancel-msg" style="font-size:12px;margin-top:10px;display:none;"></div>
+          </div>
+        </div>
       </div><!-- /cfg-panel-suscripcion -->
 
     </div><!-- /#v-settings -->
@@ -7387,6 +7403,30 @@ async function renderSuscripcion(){
 
   // Cargar datos fiscales (CFDI) del gym
   if (typeof renderFiscalData === 'function') renderFiscalData();
+}
+
+// ── Cancelar suscripción (self-service, al final del periodo) ──
+async function cancelarSuscripcion(btn){
+  const ok = await confirmDialog('¿Cancelar tu suscripción de VELUM? Conservarás el acceso hasta el final del periodo ya pagado y no se te volverá a cobrar.',
+    { title:'Cancelar suscripción', danger:true, confirmText:'Sí, cancelar', icon:'⚠️' });
+  if(!ok) return;
+  const msg = document.getElementById('cancel-msg');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Cancelando…';
+  try{
+    const res = await fetch(`${supabaseUrl}/functions/v1/velum-cancel-subscription`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
+    });
+    const data = await res.json();
+    if(!res.ok || !data.ok) throw new Error(data.error || 'No se pudo cancelar.');
+    const fecha = data.period_end ? new Date(data.period_end).toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : null;
+    if(msg){ msg.style.display='block'; msg.style.color='var(--ok)'; msg.textContent = fecha ? `Listo. Tu suscripción se cancelará el ${fecha}; conservas el acceso hasta entonces.` : 'Listo. Tu suscripción quedó programada para cancelarse al final del periodo.'; }
+    btn.textContent = 'Cancelación programada ✓';
+    toast('Suscripción cancelada al final del periodo','✅');
+  }catch(e){
+    if(msg){ msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent = 'Error: ' + (e.message||e); }
+    btn.disabled=false; btn.textContent = orig;
+  }
 }
 
 // ── Datos fiscales (CFDI) — recolectar ahora, timbrar después ──

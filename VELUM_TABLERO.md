@@ -5,7 +5,7 @@
 > Fuente de prioridades: `VELUM_AUDITORIA_MAESTRA.md`. Marca `[x]` lo hecho, `[~]` lo que está en curso.
 
 ## 🔴 Por hacer — P0 (bloquea empezar a vender)
-- [~] **Funnel self-serve de gyms**: ✅ CONSTRUIDO end-to-end (registro.html → velum-payment → Checkout suscripción → stripe-webhook crea gym+admin+config+activa). Pendiente: smoke test con tarjeta + verificar que Stripe tenga suscritos los eventos del webhook (checkout.session.completed, invoice.*, customer.subscription.*) y que price IDs y secret key estén en el MISMO modo (live/test). · IMPULSO + FORJA
+- [x] **Funnel self-serve de gyms** ✅ VERIFICADO EN VIVO (7 jun): registro → trial 7d → pago Live → gym creado → login aislado y limpio. Stripe Live, price IDs y eventos del webhook confirmados. Aislamiento multi-gym probado (gym nuevo ve 0 datos de otros). VELUM puede vender solo. · IMPULSO + FORJA
 - [ ] **Activar emails (Resend)**: crear cuenta, verificar dominio, poner secrets `RESEND_API_KEY` + `EMAIL_FROM` · área: Producto · agente: FORJA (acción de Roy)
 - [x] **Pricing público + CTA de registro en el landing** ✅ HECHO (index.html: sección #pricing, tabla comparativa, CTAs a registro.html?plan=pro/max) · VITRINA + IMPULSO
 - [ ] **Publicar la app**: iOS (esperando que Apple procese la membresía) y Android (esperando D-U-N-S) · área: App · agente: SEÑAL
