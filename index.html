@@ -362,6 +362,62 @@ footer a:hover{color:var(--accent-light);}
   .bui{height:auto;flex-direction:column;}
   .proof-bar{gap:36px;}
 }
+
+/* ── 10K POLISH ── */
+html{scroll-behavior:smooth;}
+section{scroll-margin-top:80px;}
+::selection{background:rgba(0,212,255,.3);color:#fff;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;}
+nav{transition:background .3s,box-shadow .3s;}
+nav.scrolled{background:rgba(4,12,20,.97);box-shadow:0 1px 0 rgba(0,212,255,.18),0 12px 32px rgba(0,0,0,.45);}
+.hero{position:relative;}
+.hero::after{
+  content:'';position:absolute;left:50%;top:-20px;transform:translateX(-50%);
+  width:min(1100px,95vw);height:540px;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(rgba(0,212,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.05) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse 62% 55% at 50% 30%,#000 25%,transparent 75%);
+  mask-image:radial-gradient(ellipse 62% 55% at 50% 30%,#000 25%,transparent 75%);
+}
+.hero-badge{position:relative;overflow:hidden;}
+.hero-badge::after{content:'';position:absolute;top:0;left:-80%;width:60%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);animation:badgeSheen 4.5s ease-in-out infinite;}
+@keyframes badgeSheen{0%,70%{left:-80%;}100%{left:130%;}}
+.btn-primary{position:relative;overflow:hidden;}
+.btn-primary::after{content:'';position:absolute;top:0;left:-90%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transition:left .55s ease;}
+.btn-primary:hover::after{left:135%;}
+.btn-primary:active{transform:scale(.98);}
+.nav-cta:hover{box-shadow:0 0 22px rgba(0,212,255,.4);}
+.rv{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1);}
+.rv.in{opacity:1;transform:none;}
+.rv-d1{transition-delay:.05s;}.rv-d2{transition-delay:.12s;}.rv-d3{transition-delay:.19s;}
+.bcell::before{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.1),transparent 70%);opacity:0;transition:opacity .35s;pointer-events:none;}
+.bcell:hover::before{opacity:1;}
+.bcell:hover{box-shadow:0 18px 44px rgba(0,0,0,.45),0 0 0 1px rgba(0,212,255,.08) inset;}
+.bui-bar{transform:scaleY(0);transform-origin:bottom;transition:transform .8s cubic-bezier(.22,1,.36,1);}
+.bnt.in .bui-bar{transform:scaleY(1);}
+.bnt.in .bui-bar:nth-child(2){transition-delay:.07s;}
+.bnt.in .bui-bar:nth-child(3){transition-delay:.14s;}
+.bnt.in .bui-bar:nth-child(4){transition-delay:.21s;}
+.bnt.in .bui-bar:nth-child(5){transition-delay:.28s;}
+.bnt.in .bui-bar:nth-child(6){transition-delay:.35s;}
+.bnt.in .bui-bar:nth-child(7){transition-delay:.42s;}
+.blive{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:8.5px;letter-spacing:1.4px;color:var(--ok);font-weight:700;}
+.blive i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:liveBlink 1.8s ease-in-out infinite;}
+@keyframes liveBlink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.divider{margin:0 auto;max-width:1100px;}
+.plan-card{border-radius:24px;}
+.plan-card.featured{box-shadow:0 0 64px rgba(0,212,255,.16),0 24px 60px rgba(0,0,0,.4);}
+.plan-card.featured:hover{transform:translateY(-5px);}
+.lead-capture-inner input{font-size:16px;}
+footer{font-family:var(--fm);font-size:10px;letter-spacing:1px;}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  .rv{opacity:1;transform:none;transition:none;}
+  .hero-badge::after{animation:none;}
+  .btn-primary::after{transition:none;}
+  .blive i{animation:none;}
+  .bui-bar{transform:none;transition:none;}
+}
 </style>
 
 <!-- Hero -->
@@ -717,8 +773,11 @@ footer a:hover{color:var(--accent-light);}
       <div class="b-sub">Ingresos, asistencia y vencimientos — el pulso de tu gym al abrir la laptop.</div>
       <div class="bui">
         <div style="flex:1.2;">
-          <div class="bui-lbl">Ingresos · este mes</div>
-          <div class="bui-num" style="margin-top:9px;">$84,200</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div class="bui-lbl">Ingresos · este mes</div>
+            <span class="blive"><i></i>EN VIVO</span>
+          </div>
+          <div class="bui-num" id="bnt-ingresos" style="margin-top:9px;">$84,200</div>
           <div class="bui-trend">▲ +18% vs mes anterior</div>
           <div class="bui-bars">
             <div class="bui-bar" style="height:36%;"></div><div class="bui-bar" style="height:58%;"></div>
@@ -1696,6 +1755,49 @@ async function lcSubmit(){
     msg.textContent='Error al guardar. Intenta de nuevo o escríbenos por WhatsApp.';
   }
 }
+</script>
+
+<script>
+/* ── 10K polish: nav scrolled + reveal on scroll + count-up ── */
+(function(){
+  var nav=document.querySelector('nav');
+  addEventListener('scroll',function(){ if(nav) nav.classList.toggle('scrolled',scrollY>10); },{passive:true});
+
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var targets=document.querySelectorAll('.bcell,.plan-card,.pain-card,.steps-grid>*,.proof-item,.bchip,.section-title,.section-sub');
+  targets.forEach(function(el,idx){ el.classList.add('rv','rv-d'+((idx%3)+1)); });
+
+  var bnt=document.querySelector('.bnt');
+  var counted=false;
+  function countUp(){
+    if(counted||reduce) return; counted=true;
+    var el=document.getElementById('bnt-ingresos'); if(!el) return;
+    var target=84200,t0=null;
+    function step(ts){
+      if(!t0) t0=ts;
+      var p=Math.min(1,(ts-t0)/900);
+      el.textContent='$'+Math.round(target*(1-Math.pow(1-p,3))).toLocaleString('en-US');
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  if(reduce||!('IntersectionObserver' in window)){
+    targets.forEach(function(el){ el.classList.add('in'); });
+    if(bnt) bnt.classList.add('in');
+    return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if(e.target===bnt) countUp();
+      io.unobserve(e.target);
+    });
+  },{threshold:.15,rootMargin:'0px 0px -40px 0px'});
+  targets.forEach(function(el){ io.observe(el); });
+  if(bnt) io.observe(bnt);
+})();
 </script>
 </body>
 </html>
