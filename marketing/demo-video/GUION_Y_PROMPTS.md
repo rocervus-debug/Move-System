@@ -24,7 +24,7 @@
 Abriste tu gym para entrenar gente… no para perseguir pagos por WhatsApp.
 VELUM administra tu gimnasio… para que tú vuelvas al piso.
 Los pagos se domicilian: cada mes caen solos, a tiempo, sin cobrar de puerta en puerta.
-Tus clientes descargan TU app —con tu marca y tu logo, en App Store y Google Play— y entran con un código QR.
+Tus clientes descargan la app desde App Store o Google Play… y al entrar, todo es tu gym: tu logo, tu marca, tus colores. Y hacen check-in con un código QR.
 Tu página pública vende membresías sola… hasta cuando duermes.
 Y Aura, tu inteligencia artificial, responde dudas a las tres de la mañana… y arma el entrenamiento de cada cliente.
 ¿Tú? Solo ves el panel: quién pagó, quién vence, cuánto creciste.
@@ -34,7 +34,7 @@ Pruébalo gratis siete días en myvelum punto app. Tu gym, en piloto automático
 
 ### Variante 22s (reel / anuncio)
 ```
-¿Sigues cobrando tu gym por WhatsApp? Con VELUM los pagos se domicilian solos… tus clientes tienen TU propia app, con tu marca, en App Store… y una inteligencia artificial atiende dudas y arma sus entrenamientos, 24/7. Cuesta lo que te paga una membresía. Siete días gratis: myvelum punto app.
+¿Sigues cobrando tu gym por WhatsApp? Con VELUM los pagos se domicilian solos… tus clientes tienen una app que por dentro es tu gym —tu marca, tu logo— con check-in QR… y una inteligencia artificial atiende dudas y arma sus entrenamientos, 24/7. Cuesta lo que te paga una membresía. Siete días gratis: myvelum punto app.
 ```
 > **Corrección clave de Fable:** el CTA es **"myvelum punto app"** (no "VELUM punto app") — el dominio es myvelum.app.
 
@@ -66,8 +66,9 @@ Pruébalo gratis siete días en myvelum punto app. Tu gym, en piloto automático
 - **3B CAPTURA REAL:** notificación "Pago recibido" entrando (pop + sonido cha-ching suave).
 - **3C IA:** `Cinematic shot of a relaxed Mexican gym owner having morning coffee inside his gym, dawn light + cyan glow, his phone face-down on the counter, at ease` · vid: `Push-in, steam rising through cyan light, calm sip, quiet pride, 2s`
 
-### BEAT 4 [15–23s] "Tu app —tu marca, en App Store— y entran con QR"
-- **4A CAPTURA REAL:** ficha de la app en App Store/Play (con la marca DEL GYM demo, white-label), dedo tocando "Obtener".
+### BEAT 4 [15–23s] "Descargan la app… al entrar todo es tu gym; check-in con QR"
+> Realidad: es UNA sola app **VELUM** en las tiendas; la personalización (marca/logo/colores del gym) ocurre **al iniciar sesión**, no en la ficha.
+- **4A CAPTURA REAL:** ficha de la app **VELUM** en App Store/Play (marca VELUM, así es), dedo tocando "Obtener". *(El branding del gym va al ABRIR la app — plano 4B, no aquí.)*
 - **4B CAPTURA REAL:** la app (`atleta.html`) en un teléfono real, home con logo del gym demo, luz cian detrás, leve tilt.
 - **4C CAPTURA REAL:** check-in QR (`checkin.html`) acercándose al lector + el "check" de confirmación.
 - **B-roll IA de respaldo:** `Cinematic close-up of a hand holding a smartphone up to a sleek check-in scanner at a dark gym entrance, cyan LED line reflecting, screen blurred/unreadable` · vid: `Macro slow-mo, phone tilts to scanner, cyan light sweep on scan, rack focus, 2s`

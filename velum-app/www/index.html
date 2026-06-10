@@ -2889,8 +2889,8 @@ body::before{
       </div>
       <div class="bn-lbl">CLASES</div>
     </div>
-    <button class="bn-fab" onclick="haptic('medium');openQRSheet()" aria-label="Check-in con código QR">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4M14 21h.01"/></svg>
+    <button class="bn-fab" onclick="haptic('medium');openFabSheet()" aria-label="Acciones rápidas">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
     </button>
     <div class="bn-item" id="bn-plan" onclick="switchView('programa')">
       <div class="bn-icon">
@@ -2921,6 +2921,28 @@ body::before{
 </div><!-- /app -->
 
 <!-- ══ SHEETS ══ -->
+<!-- FAB — acciones rápidas -->
+<div class="sheet-backdrop" id="fab-sheet" onclick="closeSheet('fab-sheet',event)">
+  <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;padding-bottom:env(safe-area-inset-bottom,16px);">
+    <div class="sheet-handle"></div>
+    <div style="padding:4px 0 10px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;">Acciones rápidas</div>
+    <div class="mas-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="mas-item" onclick="closeFabSheet();switchView('clases')">
+        <div class="mas-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg></div><div class="mas-lbl">Reservar clase</div>
+      </div>
+      <div class="mas-item" onclick="closeFabSheet();switchView('bitacora');setTimeout(()=>openBitacoraSheet(),120)">
+        <div class="mas-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><div class="mas-lbl">Registrar entreno</div>
+      </div>
+      <div class="mas-item" onclick="closeFabSheet();openQRSheet()">
+        <div class="mas-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4"/></svg></div><div class="mas-lbl">Check-in QR</div>
+      </div>
+      <div class="mas-item" onclick="closeFabSheet();switchView('historial');setTimeout(()=>switchHistTab('progreso'),80)">
+        <div class="mas-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M6 8v8M10 10v4M14 10v4M18 8v8"/></svg></div><div class="mas-lbl">Mis medidas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Task #65 — "Más" sheet -->
 <div class="sheet-backdrop" id="mas-sheet" onclick="closeSheet('mas-sheet',event)">
   <div class="sheet" style="max-width:520px;margin:0 auto;width:100%;padding-bottom:env(safe-area-inset-bottom,16px);">
@@ -3509,6 +3531,8 @@ function openQRSheet(){ renderQR(); openSheet('qr-sheet'); }
 function openProfileSheet(){ openSheet('profile-sheet'); }
 function openMasSheet(){ openSheet('mas-sheet'); }
 function closeMasSheet(){ closeSheet('mas-sheet',null); document.body.style.overflow=''; }
+function openFabSheet(){ openSheet('fab-sheet'); }
+function closeFabSheet(){ closeSheet('fab-sheet',null); document.body.style.overflow=''; }
 
 // ── View switching ───────────────────────────────────
 function switchView(name){
