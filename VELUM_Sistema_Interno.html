@@ -396,6 +396,25 @@ body{
 .btn-xlsx:hover{background:rgba(16,185,129,.18);border-color:rgba(16,185,129,.45);transform:translateY(-1px);}
 .btn-icon{display:inline-flex;align-items:center;gap:6px;}
 
+/* ── Estados universales del sistema de botones ──
+   Todo .btn responde igual: focus visible (teclado), disabled y loading. */
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.btn:disabled,.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none !important;}
+.btn-loading{position:relative;pointer-events:none;color:transparent !important;}
+.btn-loading > *{visibility:hidden;}
+.btn-loading::after{
+  content:'';position:absolute;left:50%;top:50%;width:14px;height:14px;
+  margin:-7px 0 0 -7px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);border-top-color:#fff;
+  animation:spin .7s linear infinite;
+}
+.btn-primary.btn-loading::after{border-color:rgba(0,0,0,.3);border-top-color:#000;}
+/* Áreas táctiles cómodas en pantallas touch */
+@media (pointer:coarse){
+  .btn{min-height:44px;}
+  .btn-sm{min-height:40px;}
+}
+
 .notif-btn{
   width:36px;height:36px;background:rgba(255,255,255,.05);border:1px solid var(--border);
   border-radius:8px;display:flex;align-items:center;justify-content:center;
@@ -1167,6 +1186,33 @@ body{
 .modal-close:hover{background:rgba(0,212,255,.15);color:var(--accent);transform:scale(1.05);}
 .modal-body{padding:22px 24px;}
 .modal-footer{padding:16px 24px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:rgba(11,20,16,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+
+/* ── Wizard de pago — asistente paso a paso ── */
+#pwiz-progress-wrap{padding:14px 24px 0;}
+#pwiz-steplabel{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.4px;}
+#pwiz-steplabel strong{color:var(--accent);}
+#pwiz-progress{display:flex;gap:6px;margin-top:8px;}
+.pwiz-seg{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.08);transition:background .3s,box-shadow .3s;}
+.pwiz-seg.done{background:rgba(0,212,255,.45);}
+.pwiz-seg.active{background:var(--accent);box-shadow:0 0 10px rgba(0,212,255,.45);}
+.pwiz-step{display:none;}
+.pwiz-step.active{display:block;animation:pwiz-in .22s ease;}
+@keyframes pwiz-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+.pwiz-q{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:.2px;}
+.pwiz-hint{font-size:12.5px;color:var(--text3);margin:4px 0 16px;line-height:1.6;}
+.pwiz-pkg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px;}
+.pwiz-pkg-card{position:relative;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color .18s,transform .18s,box-shadow .18s,background .18s;}
+.pwiz-pkg-card:hover{border-color:rgba(0,212,255,.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.35);}
+.pwiz-pkg-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.pwiz-pkg-card.sel{border-color:var(--accent);background:rgba(0,212,255,.08);box-shadow:0 0 0 1px var(--accent) inset,var(--glow-soft);}
+.pwiz-pkg-pop{position:absolute;top:-8px;right:10px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#000;background:var(--accent);border-radius:99px;padding:2px 8px;box-shadow:0 0 12px rgba(0,212,255,.4);}
+.pwiz-pkg-name{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.pwiz-pkg-price{font-family:var(--fm);font-size:19px;font-weight:700;color:var(--text);}
+.pwiz-pkg-meta{font-size:10.5px;color:var(--text3);margin-top:5px;line-height:1.5;}
+.pwiz-crow{display:flex;justify-content:space-between;gap:16px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
+.pwiz-crow:last-child{border-bottom:none;}
+.pwiz-ck{color:var(--text3);flex-shrink:0;}
+.pwiz-cv{color:var(--text);text-align:right;}
 
 /* ── Form fields — glass system ── */
 .field{margin-bottom:16px;}
@@ -5742,9 +5788,9 @@ body::before{
   </div>
 </div>
 
-<!-- Modal: Registrar Pago -->
+<!-- Modal: Registrar Pago — Asistente guiado en 4 pasos -->
 <div class="modal-overlay" id="modal-pago">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal" style="max-width:600px;">
     <div class="modal-head" style="border-bottom:1px solid var(--border);padding-bottom:14px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -5752,18 +5798,29 @@ body::before{
         </div>
         <div>
           <div class="modal-title" style="margin:0;font-size:15px;">Registrar Pago</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:1px;font-weight:400;">Transacción financiera · MOVE Sistema</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;font-weight:400;">Te llevamos paso a paso — nada se guarda hasta el final</div>
         </div>
       </div>
       <button class="modal-close" onclick="closeModal('pago')">✕</button>
     </div>
+
+    <!-- Progreso del asistente -->
+    <div id="pwiz-progress-wrap">
+      <div id="pwiz-steplabel">Paso <strong>1</strong> de 4 · ¿Quién paga?</div>
+      <div id="pwiz-progress">
+        <div class="pwiz-seg active"></div>
+        <div class="pwiz-seg"></div>
+        <div class="pwiz-seg"></div>
+        <div class="pwiz-seg"></div>
+      </div>
+    </div>
+
     <div class="modal-body" style="padding-top:18px;">
 
-      <!-- ─ Sección: Socio ─ -->
-      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Socio
-      </div>
+      <!-- ══ PASO 1 — ¿Quién paga? ══ -->
+      <div class="pwiz-step active" id="pwiz-step-1">
+      <div class="pwiz-q">¿Quién está pagando?</div>
+      <div class="pwiz-hint">Busca al cliente por nombre. ¿Es alguien nuevo? Solo escribe su nombre completo y lo registramos con este pago.</div>
       <div class="field" style="position:relative;margin-bottom:16px;">
         <label>Cliente *</label>
         <input id="p-cliente" type="text" placeholder="Buscar por nombre..." autocomplete="off"
@@ -5777,23 +5834,37 @@ body::before{
         </div>
         <span class="field-err" id="p-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
       </div>
-
-      <!-- ─ Sección: Paquete del catálogo ─ -->
-      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.9px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Paquete del catálogo
+      <!-- Pista: el nombre escrito no existe → será cliente nuevo -->
+      <div id="p-cliente-nuevo-hint" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:rgba(16,232,160,.07);border:1px solid rgba(16,232,160,.2);border-radius:10px;font-size:12px;color:var(--text2);line-height:1.5;">
+        <span style="font-size:15px;">✨</span>
+        <span><strong id="p-cliente-nuevo-nombre" style="color:var(--ok);"></strong> se registrará como cliente nuevo con este pago.</span>
       </div>
+      </div><!-- /pwiz-step-1 -->
+
+      <!-- ══ PASO 2 — ¿Qué paquete? ══ -->
+      <div class="pwiz-step" id="pwiz-step-2">
+      <div class="pwiz-q">¿Qué paquete lleva?</div>
+      <div class="pwiz-hint">Toca uno para elegirlo — el precio y el vencimiento se llenan solos.</div>
       <div class="field">
-        <label>Paquete <span style="color:var(--accent);">*</span></label>
-        <select id="p-package" onchange="onPackageSelectInModal()">
+        <!-- El select original queda oculto: las cards lo controlan y toda la lógica existente sigue intacta -->
+        <select id="p-package" onchange="onPackageSelectInModal()" style="display:none;">
           <option value="">— Cargando paquetes... —</option>
         </select>
+        <div id="pwiz-pkg-grid" class="pwiz-pkg-grid">
+          <div class="pwiz-hint" style="grid-column:1/-1;margin:0;">Cargando tus paquetes…</div>
+        </div>
         <div id="p-package-info" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,212,255,.05);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.5;"></div>
         <div id="p-pasedia-warn" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);border-radius:8px;font-size:11px;color:#c4b5fd;line-height:1.5;">
           Este paquete dura 1 día — considera <strong style="cursor:pointer;text-decoration:underline;" onclick="closeModal('pago');openModal('visita')">Registrar Visita</strong> en su lugar (no crea membresía ni número de socio).
         </div>
         <span class="field-err" id="p-package-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
       </div>
+      </div><!-- /pwiz-step-2 -->
+
+      <!-- ══ PASO 3 — ¿Cómo paga? ══ -->
+      <div class="pwiz-step" id="pwiz-step-3">
+      <div class="pwiz-q">¿Cómo paga?</div>
+      <div class="pwiz-hint">Ya llenamos el precio y las fechas por ti — revisa y ajusta solo si hace falta.</div>
 
       <!-- ─ Sección: Precio (list price + applied price) ─ -->
       <div class="field-grid" style="margin-bottom:0;">
@@ -5884,21 +5955,32 @@ body::before{
         <input id="p-notas" type="text" placeholder="Ej: Promo referido, pago con factura, efectivo corto…"/>
       </div>
 
+      </div><!-- /pwiz-step-3 -->
+
+      <!-- ══ PASO 4 — Confirma y listo ══ -->
+      <div class="pwiz-step" id="pwiz-step-4">
+      <div class="pwiz-q">Confirma el pago</div>
+      <div class="pwiz-hint">Revisa que todo esté en orden. Puedes regresar a corregir lo que sea.</div>
+      <div id="pwiz-confirm" style="margin-bottom:14px;"></div>
+
       <!-- ─ Resumen de transacción ─ -->
-      <div id="p-resumen-card" style="margin-top:16px;padding:12px 14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:12px;display:flex;align-items:center;gap:12px;">
+      <div id="p-resumen-card" style="padding:14px 16px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:12px;display:flex;align-items:center;gap:12px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.7;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <div style="flex:1;min-width:0;">
           <div id="p-resumen-txt" style="font-size:12px;color:var(--text2);line-height:1.6;">Completa los campos para ver el resumen.</div>
         </div>
         <div id="p-resumen-monto" style="font-family:var(--fm);font-size:18px;font-weight:700;color:var(--ok);flex-shrink:0;">—</div>
       </div>
+      </div><!-- /pwiz-step-4 -->
 
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('pago')">Cancelar</button>
-      <button class="btn btn-primary" id="p-save-btn" onclick="savePago()" style="gap:8px;display:flex;align-items:center;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Registrar Pago
+      <button class="btn btn-ghost" onclick="closeModal('pago')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline" id="pwiz-back" onclick="_pagoWizBack()" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary" id="pwiz-next" onclick="_pagoWizNext()">Siguiente →</button>
+      <button class="btn btn-primary" id="p-save-btn" onclick="savePago()" style="display:none;gap:8px;align-items:center;font-size:14px;padding:10px 24px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Registrar pago
       </button>
     </div>
   </div>
@@ -7774,7 +7856,7 @@ function _renderCoachHorarioGrid(){
 
   const allHoras = [...new Set(horario.map(h=>h.hora))].sort(horaSort);
   if(!allHoras.length){
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/></svg></div><div class="empty-title">Sin horario definido</div></div>`;
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/></svg></div><div class="empty-title">Aún no tienes horario definido</div><div class="empty-sub">Crea las clases de tu semana y aquí podrás asignar coach a cada una.</div><button class="btn btn-primary" style="margin-top:16px;" onclick="go('horario', document.getElementById('nav-horario'))">Ir al horario →</button></div>`;
     return;
   }
 
@@ -9702,6 +9784,20 @@ function toast(msg, icon='✓', duration=2800){
 // Convierte los 49+ alert() del codebase en toasts sin tocar cada uno.
 window.alert = (msg) => toast(String(msg), '⚠️', 3500);
 
+// ── Loading state universal de botones ─────────────────────────────
+// setBtnLoading(btn, true)  → spinner + deshabilitado (el texto se oculta, no se pierde)
+// setBtnLoading(btn, false) → restaura el botón tal cual estaba
+function setBtnLoading(btn, loading){
+  if(!btn) return;
+  if(loading){
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+  } else {
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+  }
+}
+
 // ── JWT helpers ────────────────────────────────────────────────────
 function isJwtExpired(jwt){
   try{
@@ -9761,6 +9857,9 @@ function openModal(id){
     _selectedPackage = null;
     _clearPagoErrors();
     _updatePagoSummary();
+    // Wizard: siempre arranca en el paso 1 con la pista de cliente nuevo oculta
+    if(typeof _pcNuevoHint === 'function') _pcNuevoHint('');
+    if(typeof _pagoWizGoto === 'function') _pagoWizGoto(1);
   }
   if(id==='visita'){
     const hoy = new Date().toISOString().slice(0,10);
@@ -9798,7 +9897,13 @@ function _pcAutoInput(inp){
     ? nombres.slice(0, 20)                                       // sin texto: mostrar todos (máx 20)
     : nombres.filter(n=>n.toLowerCase().includes(q)).slice(0,15); // con texto: filtrar
 
-  if(matches.length === 0){ dd.style.display='none'; return; }
+  if(matches.length === 0){
+    dd.style.display='none';
+    // Sin coincidencias y hay texto → será cliente nuevo (pista amigable)
+    if(typeof _pcNuevoHint === 'function') _pcNuevoHint(q ? inp.value.trim() : '');
+    return;
+  }
+  if(typeof _pcNuevoHint === 'function') _pcNuevoHint('');
 
   dd.innerHTML = matches.map(n=>`
     <div onmousedown="_pcSelect('${n.replace(/'/g,"\\'")}',event)"
@@ -9819,6 +9924,7 @@ function _pcSelect(nombre, e){
   const dd  = document.getElementById('p-cliente-dropdown');
   if(inp){ inp.value = nombre; _pagoFieldErr('p-cliente',''); }
   if(dd) dd.style.display = 'none';
+  if(typeof _pcNuevoHint === 'function') _pcNuevoHint('');
   if(_pcBlurTimer){ clearTimeout(_pcBlurTimer); _pcBlurTimer=null; }
   _updatePagoSummary();
 }
@@ -11845,7 +11951,7 @@ const EVAL_CRITERIOS_LABELS = {
 function renderEvalHistory(){
   const el = document.getElementById('eval-history');
   if(!evals.length){
-    el.innerHTML = `<div class="empty-state" style="padding:30px;"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div><div class="empty-title">Sin evaluaciones aún</div></div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:30px;"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div><div class="empty-title">Sin evaluaciones aún</div><div class="empty-sub">Evalúa a tus coaches cada mes para ver su evolución aquí.</div><button class="btn btn-outline btn-sm" style="margin-top:14px;" onclick="openModal('eval')">+ Primera evaluación</button></div>`;
     return;
   }
   const sorted = [...evals].sort((a,b)=>(b.created_at||b.fecha||'').localeCompare(a.created_at||a.fecha||''));
@@ -17847,6 +17953,168 @@ function _clearPagoErrors(){
   ['p-cliente','p-monto','p-fecha','p-package','p-discount'].forEach(id=>_pagoFieldErr(id,''));
 }
 
+// ══════════════════════════════════════════════════════════════════
+// WIZARD DE PAGO — asistente guiado en 4 pasos
+// Solo presentación: toda la lógica de datos (savePago, paquetes,
+// descuentos) sigue siendo la misma. Los pasos validan antes de avanzar.
+// ══════════════════════════════════════════════════════════════════
+let _pwizStep = 1;
+const _PWIZ_LABELS = {1:'¿Quién paga?', 2:'Elige el paquete', 3:'Detalles del pago', 4:'Confirma y listo'};
+
+function _pagoWizGoto(n){
+  _pwizStep = n;
+  document.querySelectorAll('#modal-pago .pwiz-step').forEach(s=>{
+    s.classList.toggle('active', s.id === 'pwiz-step-'+n);
+  });
+  document.querySelectorAll('#pwiz-progress .pwiz-seg').forEach((seg,i)=>{
+    seg.classList.toggle('done',   i+1 < n);
+    seg.classList.toggle('active', i+1 === n);
+  });
+  const lbl = document.getElementById('pwiz-steplabel');
+  if(lbl) lbl.innerHTML = `Paso <strong>${n}</strong> de 4 · ${_PWIZ_LABELS[n]}`;
+  const back = document.getElementById('pwiz-back');
+  const next = document.getElementById('pwiz-next');
+  const save = document.getElementById('p-save-btn');
+  if(back) back.style.display = n > 1 ? 'inline-flex' : 'none';
+  if(next) next.style.display = n < 4 ? 'inline-flex' : 'none';
+  if(save) save.style.display = n === 4 ? 'inline-flex' : 'none';
+  if(n === 1) setTimeout(()=>document.getElementById('p-cliente')?.focus(), 80);
+  if(n === 4){ _renderPagoConfirm(); _updatePagoSummary(); }
+}
+
+function _pagoWizNext(){
+  if(_pwizStep >= 4) return;
+  if(!_pagoWizValidate(_pwizStep)) return;
+  _pagoWizGoto(_pwizStep + 1);
+}
+function _pagoWizBack(){ if(_pwizStep > 1) _pagoWizGoto(_pwizStep - 1); }
+
+// Valida solo lo del paso actual; savePago re-valida todo al final como red de seguridad
+function _pagoWizValidate(n){
+  if(n === 1){
+    const cliente = (document.getElementById('p-cliente')?.value||'').trim();
+    if(!cliente){ _pagoFieldErr('p-cliente','Escribe o elige el nombre del cliente para continuar.'); return false; }
+    _pagoFieldErr('p-cliente','');
+    return true;
+  }
+  if(n === 2){
+    const e = document.getElementById('p-package-err');
+    if(!_selectedPackage){
+      if(e){ e.textContent = 'Elige un paquete para continuar.'; e.style.display = 'block'; }
+      return false;
+    }
+    if(e) e.style.display = 'none';
+    return true;
+  }
+  if(n === 3){
+    let ok = true;
+    const listPrice = parseInt(document.getElementById('p-list-price')?.value||'0');
+    const applied   = parseFloat(document.getElementById('p-monto')?.value||'0');
+    const fecha     = document.getElementById('p-fecha')?.value;
+    const discType  = document.getElementById('p-discount-type')?.value||'';
+    if(!applied || applied <= 0){ _pagoFieldErr('p-monto','Ingresa el precio que pagará el cliente.'); ok = false; }
+    else if(applied > listPrice){ _pagoFieldErr('p-monto',`No puedes cobrar más del precio de lista ($${listPrice.toLocaleString('es-MX')}).`); ok = false; }
+    else _pagoFieldErr('p-monto','');
+    if(_selectedPackage && applied > 0 && applied < listPrice){
+      if(_selectedPackage.allow_discount === false){
+        _pagoFieldErr('p-monto','Este paquete no permite descuentos.'); ok = false;
+      } else {
+        const discPct = ((listPrice - applied) / listPrice) * 100;
+        const maxPct  = parseFloat(_selectedPackage.max_discount_pct || 100);
+        if(discPct > maxPct){ _pagoFieldErr('p-monto',`Descuento de ${discPct.toFixed(0)}% excede el máximo permitido (${maxPct}%).`); ok = false; }
+      }
+      if(!discType){
+        const e = document.getElementById('p-discount-err');
+        if(e){ e.textContent = 'Elige el motivo del descuento para continuar.'; e.style.display = 'block'; }
+        ok = false;
+      }
+    }
+    if(!fecha){ _pagoFieldErr('p-fecha','La fecha de pago es obligatoria.'); ok = false; }
+    else _pagoFieldErr('p-fecha','');
+    return ok;
+  }
+  return true;
+}
+
+// Cards visuales de paquetes (paso 2) — controlan el <select> oculto #p-package
+function _renderPagoPkgCards(){
+  const grid = document.getElementById('pwiz-pkg-grid');
+  if(!grid) return;
+  if(!_packagesDB.length){
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:18px;background:var(--card2);border:1px dashed var(--border2);border-radius:12px;font-size:12.5px;color:var(--text3);line-height:1.6;text-align:center;">
+      Aún no tienes paquetes en tu catálogo.<br>Créalos en <strong style="color:var(--text2);">Configuración → Paquetes</strong> y aparecerán aquí.</div>`;
+    return;
+  }
+  // "Más elegido" = el paquete con más pagos registrados en este gym
+  let popId = null, popMax = 0;
+  const _pagosArr = (typeof pagos !== 'undefined' && Array.isArray(pagos)) ? pagos : [];
+  _packagesDB.forEach(pk=>{
+    const c = _pagosArr.filter(p => p.package_id === pk.id || (p.plan && p.plan === pk.name)).length;
+    if(c > popMax){ popMax = c; popId = pk.id; }
+  });
+  grid.innerHTML = _packagesDB.map(pk=>{
+    const incluye = pk.unlimited_classes ? 'Clases ilimitadas' : (pk.num_classes ? `${pk.num_classes} clases` : 'Acceso general');
+    const vig = pk.duration_days === 1 ? '1 día' : pk.duration_days === 30 ? '1 mes' : `${pk.duration_days} días`;
+    const sel = _selectedPackage && _selectedPackage.id === pk.id;
+    return `<div class="pwiz-pkg-card${sel ? ' sel' : ''}" role="button" tabindex="0"
+      onclick="_pagoWizPickPkg(${pk.id})"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pagoWizPickPkg(${pk.id});}">
+      ${pk.id === popId && popMax > 0 ? '<div class="pwiz-pkg-pop">★ Más elegido</div>' : ''}
+      <div class="pwiz-pkg-name">${escapeHtml(pk.name)}</div>
+      <div class="pwiz-pkg-price">$${pk.price_mxn.toLocaleString('es-MX')}</div>
+      <div class="pwiz-pkg-meta">${vig} · ${incluye}</div>
+    </div>`;
+  }).join('');
+}
+
+function _pagoWizPickPkg(id){
+  const sel = document.getElementById('p-package');
+  if(sel) sel.value = String(id);
+  onPackageSelectInModal();          // autocompleta precio, vencimiento y clases (lógica existente)
+  _renderPagoPkgCards();             // re-pinta para marcar la card elegida
+  const e = document.getElementById('p-package-err');
+  if(e) e.style.display = 'none';
+}
+
+// Resumen detallado del paso 4
+function _renderPagoConfirm(){
+  const box = document.getElementById('pwiz-confirm');
+  if(!box) return;
+  const cliente  = (document.getElementById('p-cliente')?.value||'').trim();
+  const listP    = parseInt(document.getElementById('p-list-price')?.value||'0');
+  const applied  = parseFloat(document.getElementById('p-monto')?.value)||0;
+  const metodo   = document.getElementById('p-metodo')?.value||'';
+  const fecha    = document.getElementById('p-fecha')?.value||'';
+  const vence    = document.getElementById('p-vence')?.value||'';
+  const notas    = (document.getElementById('p-notas')?.value||'').trim();
+  const discType = document.getElementById('p-discount-type')?.value||'';
+  const pk = _selectedPackage;
+  const fmt = d => d ? new Date(d+'T00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const esCliNuevo = (typeof clientesDB !== 'undefined') && !clientesDB.some(c=>(c.nombre||'').toLowerCase() === cliente.toLowerCase());
+  const rows = [
+    ['Cliente', `${escapeHtml(cliente)}${esCliNuevo ? ' <span style="font-size:10px;font-weight:700;color:var(--ok);background:var(--ok-bg);border-radius:99px;padding:2px 8px;margin-left:4px;">NUEVO</span>' : ''}`],
+    ['Paquete', pk ? escapeHtml(pk.name) : '—'],
+    ['Precio', (listP > 0 && applied < listP)
+      ? `<s style="color:var(--text3);">$${listP.toLocaleString('es-MX')}</s> <strong style="color:var(--ok);">$${applied.toLocaleString('es-MX')}</strong> <span style="color:var(--warn);font-size:11px;">desc. ${escapeHtml(discType||'')}</span>`
+      : `<strong>$${applied.toLocaleString('es-MX')}</strong>`],
+    ['Método', escapeHtml(metodo)],
+    ['Fecha de pago', fmt(fecha)],
+    ['Vence', vence ? fmt(vence) : 'Sin vencimiento'],
+  ];
+  if(pk && pk.num_classes > 0) rows.push(['Clases', `${pk.num_classes} incluidas`]);
+  if(notas) rows.push(['Notas', escapeHtml(notas)]);
+  box.innerHTML = rows.map(([k,v])=>`<div class="pwiz-crow"><span class="pwiz-ck">${k}</span><span class="pwiz-cv">${v}</span></div>`).join('');
+}
+
+// Pista de "cliente nuevo" en el paso 1
+function _pcNuevoHint(name){
+  const h = document.getElementById('p-cliente-nuevo-hint');
+  const n = document.getElementById('p-cliente-nuevo-nombre');
+  if(!h) return;
+  if(name){ if(n) n.textContent = name; h.style.display = 'flex'; }
+  else h.style.display = 'none';
+}
+
 // Helper escape simple para innerHTML
 function escapeHtml(s){
   if(s==null) return '';
@@ -17874,6 +18142,8 @@ async function loadPackagesForPagoModal(){
     if(!sel) return;
     sel.innerHTML = '<option value="">— Selecciona un paquete —</option>' +
       _packagesDB.map(p => `<option value="${p.id}">${escapeHtml(p.name)} · $${p.price_mxn.toLocaleString('es-MX')}</option>`).join('');
+    // Wizard: pintar las cards visuales del paso 2
+    if(typeof _renderPagoPkgCards === 'function') _renderPagoPkgCards();
   }catch(e){
     console.error('loadPackages exception:', e);
   }
@@ -18025,7 +18295,15 @@ async function savePago(){
       }
     }
   }
-  if(hasError) return;
+  if(hasError){
+    // Wizard: regresa al paso donde está el primer error para que el usuario lo vea
+    if(typeof _pagoWizGoto === 'function'){
+      if(document.getElementById('p-cliente-err')?.style.display === 'block') _pagoWizGoto(1);
+      else if(document.getElementById('p-package-err')?.style.display === 'block') _pagoWizGoto(2);
+      else _pagoWizGoto(3);
+    }
+    return;
+  }
 
   // Clases
   const hasClases = _selectedPackage && _selectedPackage.num_classes && _selectedPackage.num_classes > 0;
@@ -18034,8 +18312,7 @@ async function savePago(){
 
   // Loading state
   const btn = document.getElementById('p-save-btn');
-  const btnOrigHtml = btn ? btn.innerHTML : '';
-  if(btn){ btn.disabled=true; btn.innerHTML='Guardando…'; }
+  setBtnLoading(btn, true);
 
   // Payload v2 (incluye legacy fields para no romper otras partes del admin)
   const payload = {
@@ -18057,7 +18334,7 @@ async function savePago(){
   };
 
   const { error } = await window.supabaseClient.from('pagos').insert([withGymId(payload)]);
-  if(btn){ btn.disabled=false; btn.innerHTML=btnOrigHtml; }
+  setBtnLoading(btn, false);
   if(error){
     console.error('Error guardando pago v2:', error);
     const m = error.message || '';
