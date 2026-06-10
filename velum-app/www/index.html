@@ -48,7 +48,8 @@
   --text:#E8EDF5;
   --text1:#E8EDF5;
   --text2:#7ABFCC;
-  --text3:#2A4A5A;
+  --text3:#527F95;
+  --text4:#527F95;
   /* Borders */
   --border:rgba(0,212,255,.08);
   --border-soft:rgba(0,212,255,.08);
@@ -164,7 +165,7 @@ body::before{
 .lf-input{
   width:100%;background:rgba(255,255,255,.05);
   border:1px solid rgba(255,255,255,.09);border-radius:12px;
-  padding:13px 15px;font-size:15px;color:#fff;font-family:var(--font);
+  padding:13px 15px;font-size:16px;color:#fff;font-family:var(--font);
   outline:none;transition:border-color .2s,background .2s,box-shadow .2s;
 }
 .lf-input:focus{border-color:var(--accent);background:rgba(255,255,255,.07);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
@@ -239,7 +240,7 @@ body::before{
 /* Legacy bn-item aliases → nav-btn style */
 .bn-item{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;padding:6px 10px;cursor:pointer;
+  gap:3px;padding:9px 8px;min-height:48px;cursor:pointer;
   color:var(--text3);
   border-radius:999px;
   transition:all 200ms var(--ease-out);
@@ -250,13 +251,28 @@ body::before{
   background:var(--cyan-dim);
 }
 .bn-icon{
-  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  width:20px;height:20px;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;line-height:1;
 }
-.bn-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s;}
-.bn-lbl{font-family:var(--fm);font-size:8px;font-weight:500;color:inherit;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;}
+.bn-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s;}
+.bn-lbl{font-family:var(--fm);font-size:9px;font-weight:500;color:inherit;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;white-space:nowrap;}
 .bn-item.active .bn-lbl{color:var(--cyan-light);}
 .bn-item.active .bn-icon svg{stroke:var(--cyan);filter:drop-shadow(0 0 4px rgba(0,212,255,.6));}
+/* ── Central QR FAB — check-in elevado ── */
+.bn-fab{
+  width:56px;height:56px;flex:0 0 56px;margin:-26px 6px 0;
+  border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(160deg,var(--cyan-light) 0%,var(--cyan) 45%,#0091B8 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 24px rgba(0,212,255,.45),0 2px 0 rgba(255,255,255,.25) inset,0 -3px 8px rgba(0,0,0,.25) inset;
+  transition:transform 200ms var(--ease-spring),box-shadow 200ms var(--ease-out);
+  position:relative;z-index:1;-webkit-tap-highlight-color:transparent;
+}
+.bn-fab svg{width:24px;height:24px;stroke:#001828;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.bn-fab:active{transform:scale(.92);box-shadow:0 4px 14px rgba(0,212,255,.4),0 2px 0 rgba(255,255,255,.2) inset;}
+@media(prefers-reduced-motion:reduce){
+  .bn-fab{transition:none;}
+}
 
 /* ══════════════════════════════════════
    VIEWS
@@ -269,14 +285,17 @@ body::before{
 ══════════════════════════════════════ */
 .greeting{padding:8px 20px 14px;}
 .greeting-hi{font-size:12px;color:var(--cyan-light);font-weight:600;letter-spacing:.3px;margin-bottom:3px;}
-.greeting-name{font-family:var(--fd);font-size:30px;font-weight:800;color:#fff;letter-spacing:-.01em;}
+.greeting-name{font-family:var(--fd);font-size:38px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.05;}
 .screen-date-line{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;padding:0 20px 16px;}
 
 /* ── Ring Card — Weekly Goal ── */
 .ring-card-v{
-  background:var(--bg-card);border:1px solid var(--border-soft);border-radius:24px;
-  padding:20px;display:flex;align-items:center;gap:16px;
+  background:rgba(13,27,42,.55);border:1px solid var(--border-soft);
+  border-top:1px solid rgba(255,255,255,.10);border-radius:24px;
+  backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
+  padding:22px 20px;display:flex;align-items:center;gap:18px;
   margin:0 16px 12px;position:relative;overflow:hidden;
+  box-shadow:0 12px 32px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.04) inset;
 }
 .ring-card-v::before{
   content:'';position:absolute;top:-40px;left:-40px;
@@ -284,13 +303,13 @@ body::before{
   background:radial-gradient(circle,var(--cyan-dim) 0%,transparent 70%);
   border-radius:50%;pointer-events:none;
 }
-.rcv-ring{position:relative;width:80px;height:80px;flex-shrink:0;}
+.rcv-ring{position:relative;width:96px;height:96px;flex-shrink:0;}
 .rcv-ring svg{transform:rotate(-90deg);}
-.rcv-ring-bg{fill:none;stroke:var(--bg-elevated);stroke-width:7;}
-.rcv-ring-prog{fill:none;stroke:var(--cyan);stroke-width:7;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(0,212,255,.6));transition:stroke-dashoffset 1.2s var(--ease-out);}
+.rcv-ring-bg{fill:none;stroke:var(--bg-elevated);stroke-width:8;}
+.rcv-ring-prog{fill:none;stroke:var(--cyan);stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(0,212,255,.6));transition:stroke-dashoffset 1.2s var(--ease-out);}
 .rcv-pct{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  font-family:var(--fd);font-size:18px;font-weight:700;color:#fff;
+  font-family:var(--fd);font-size:23px;font-weight:800;color:#fff;letter-spacing:-.02em;
 }
 /* Ring — meta cumplida */
 @keyframes ring-pulse{
@@ -313,7 +332,7 @@ body::before{
 }
 .rcv-info{flex:1;}
 .rcv-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
-.rcv-value{font-family:var(--fd);font-size:22px;font-weight:700;color:#fff;line-height:1.1;}
+.rcv-value{font-family:var(--fd);font-size:26px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.02em;}
 .rcv-meta{font-size:11px;color:var(--text2);margin-top:4px;}
 
 /* ── Home badge ── */
@@ -321,8 +340,10 @@ body::before{
 
 /* ── Next Class card (new style) ── */
 .next-class-card{
-  background:var(--bg-card);border:1px solid var(--border-accent);border-radius:24px;
-  padding:20px;box-shadow:var(--glow-soft);margin:0 16px 12px;
+  background:rgba(13,27,42,.55);border:1px solid var(--border-accent);
+  border-top:1px solid rgba(255,255,255,.12);border-radius:24px;
+  backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
+  padding:20px;box-shadow:var(--glow-soft),0 12px 32px rgba(0,0,0,.35);margin:0 16px 12px;
   position:relative;overflow:hidden;cursor:pointer;
 }
 .next-class-card::before{
@@ -333,18 +354,22 @@ body::before{
 .ncc-title{font-family:var(--fd);font-size:19px;font-weight:700;margin-bottom:2px;position:relative;}
 .ncc-coach{font-size:12px;color:var(--text2);margin-bottom:14px;position:relative;}
 .ncc-time-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-input);border-radius:14px;position:relative;}
-.ncc-time{font-family:var(--fd);font-size:22px;font-weight:700;}
+.ncc-time{font-family:var(--fd);font-size:24px;font-weight:800;letter-spacing:-.02em;}
 .ncc-countdown{font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--text3);}
-.ncc-btn{background:var(--cyan);color:#001828;border:none;border-radius:12px;padding:10px 18px;font-family:var(--fm);font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 200ms var(--ease-out);box-shadow:0 0 16px rgba(0,212,255,.3);white-space:nowrap;flex-shrink:0;}
+.ncc-btn{background:var(--cyan);color:#001828;border:none;border-radius:12px;padding:13px 20px;min-height:44px;font-family:var(--fm);font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 200ms var(--ease-out);box-shadow:0 0 16px rgba(0,212,255,.3);white-space:nowrap;flex-shrink:0;}
 .ncc-btn:hover{background:var(--cyan-light);box-shadow:var(--glow-strong);transform:scale(1.02);}
 .ncc-btn.reservar{background:var(--bg-elevated);color:var(--cyan);border:1px solid var(--border-accent);}
 .ncc-btn.reservar:hover{background:var(--cyan-dim);}
 
 /* ── Home Mini Stats ── */
 .home-mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 16px;}
-.hms-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:16px;padding:16px;}
+.hms-card{
+  background:rgba(13,27,42,.45);border:1px solid var(--border-soft);
+  border-top:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
 .hms-label{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
-.hms-value{font-family:var(--fd);font-size:24px;font-weight:700;color:#fff;line-height:1;}
+.hms-value{font-family:var(--fd);font-size:28px;font-weight:800;color:#fff;line-height:1;letter-spacing:-.02em;}
 .hms-unit{font-size:11px;color:var(--text3);font-family:var(--fm);margin-left:3px;}
 .hms-trend{font-family:var(--fm);font-size:10px;color:var(--ok);margin-top:4px;}
 .hms-trend.warn{color:var(--warn);}
@@ -847,8 +872,8 @@ body::before{
 .csp-lbl{font-size:10px;letter-spacing:1px;color:var(--text3);opacity:.5;}
 /* Direct action buttons on card */
 .cls-reserve-btn{
-  background:var(--cyan);color:#001828;border:none;border-radius:10px;
-  padding:9px 13px;font-family:var(--fm);font-weight:800;font-size:10px;
+  background:var(--cyan);color:#001828;border:none;border-radius:12px;
+  padding:13px 16px;min-height:44px;font-family:var(--fm);font-weight:800;font-size:11px;
   letter-spacing:1.2px;cursor:pointer;flex-shrink:0;white-space:nowrap;
   transition:all 200ms var(--ease-out);box-shadow:0 0 14px rgba(0,212,255,.25);
 }
@@ -887,8 +912,8 @@ body::before{
 .cls-coach span{color:var(--text2);}
 /* Reserve button */
 .cls-btn{
-  flex-shrink:0;padding:9px 18px;border-radius:99px;
-  font-size:11px;font-weight:800;letter-spacing:.3px;
+  flex-shrink:0;padding:12px 20px;min-height:44px;border-radius:99px;
+  font-size:12px;font-weight:800;letter-spacing:.3px;
   border:none;cursor:pointer;transition:all .15s;
   font-family:var(--font);white-space:nowrap;
 }
@@ -1253,7 +1278,7 @@ body::before{
 }
 .plan-chat-msgs{
   min-height:260px;max-height:calc(100dvh - 320px);
-  overflow-y:auto;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;gap:10px;
   padding:4px 0 12px;
   scrollbar-width:none;
@@ -1437,7 +1462,13 @@ body::before{
   background:rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   align-items:flex-end;
 }
-.sheet-backdrop.open{display:flex;}
+.sheet-backdrop.open{display:flex;animation:backdrop-in .25s ease both;}
+@keyframes backdrop-in{from{opacity:0;}to{opacity:1;}}
+@keyframes sheet-up{from{transform:translateY(48px);opacity:.4;}to{transform:translateY(0);opacity:1;}}
+.sheet-backdrop.open .sheet{animation:sheet-up .38s var(--ease-out) both;}
+@media(prefers-reduced-motion:reduce){
+  .sheet-backdrop.open,.sheet-backdrop.open .sheet{animation:none;}
+}
 .sheet{
   width:100%;background:var(--bg3);
   border-radius:28px 28px 0 0;border-top:1px solid rgba(0,212,255,.18);
@@ -1768,7 +1799,7 @@ body::before{
   .quick-actions{padding:0;margin-bottom:0;}
   .section{padding:0;margin-bottom:0;}
   .greeting{padding:0 0 24px;}
-  .greeting-name{font-size:34px;}
+  .greeting-name{font-size:42px;}
 
   /* Programa desktop: 7-column grid */
   .prog-desktop-grid{
@@ -1861,7 +1892,7 @@ body::before{
 ══════════════════════════════════════ */
 @media(max-width:390px){
   .card-days-num{font-size:44px;}
-  .greeting-name{font-size:26px;}
+  .greeting-name{font-size:32px;}
   .stat-num{font-size:24px;}
 }
 
@@ -2032,6 +2063,7 @@ body::before{
   display:grid;place-items:center;flex-shrink:0;font-size:18px;
   transition:background 200ms,transform 200ms;
 }
+.goal-icon svg{width:18px;height:18px;stroke:var(--cyan);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .goal-card.selected .goal-icon{background:var(--accent-dim);transform:scale(1.1);}
 .goal-name{font-family:var(--fd);font-size:13px;font-weight:700;margin-bottom:2px;line-height:1.2;}
 .goal-desc{font-size:10px;color:var(--text2);line-height:1.3;}
@@ -2802,7 +2834,7 @@ body::before{
     <div class="view" id="view-bitacora">
       <div class="bit-header">
         <div class="bit-title">Bitácora</div>
-        <button class="bit-add-btn" onclick="openBitacoraSheet()" title="Agregar sesión">+</button>
+        <button class="bit-add-btn" onclick="openBitacoraSheet()" title="Agregar sesión" aria-label="Agregar sesión a la bitácora">+</button>
       </div>
       <div class="bit-search-wrap">
         <input type="text" id="bit-search" class="bit-search-input" placeholder="Buscar ejercicio…" oninput="renderBitacora(this.value)"/>
@@ -2857,6 +2889,9 @@ body::before{
       </div>
       <div class="bn-lbl">CLASES</div>
     </div>
+    <button class="bn-fab" onclick="haptic('medium');openQRSheet()" aria-label="Check-in con código QR">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4M14 21h.01"/></svg>
+    </button>
     <div class="bn-item" id="bn-plan" onclick="switchView('programa')">
       <div class="bn-icon">
         <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;">
@@ -2879,7 +2914,7 @@ body::before{
           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
         </svg>
       </div>
-      <div class="bn-lbl">MI CUENTA</div>
+      <div class="bn-lbl">CUENTA</div>
     </div>
   </div>
 
@@ -3051,7 +3086,7 @@ body::before{
           <div class="chat-name">Aura</div>
           <div class="chat-status"><span class="pulse-dot"></span> EN LÍNEA · APRENDIENDO</div>
         </div>
-        <div onclick="closeSheet('coach-ia-sheet')" style="color:var(--text3);font-size:20px;cursor:pointer;padding:4px 8px;">✕</div>
+        <button onclick="closeSheet('coach-ia-sheet')" aria-label="Cerrar chat del coach" style="color:var(--text3);font-size:20px;cursor:pointer;padding:4px 8px;background:none;border:none;">✕</button>
       </div>
 
       <div class="chat-messages" id="coach-ia-messages">
@@ -3102,22 +3137,22 @@ body::before{
       <div class="onb-step-label">01 · ¿CUÁL ES TU META?</div>
       <div id="goal-cards-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div class="goal-card" data-goal="fat_loss" data-label="Quemar grasa" data-emoji="🔥" onclick="selectGoal(this)">
-          <div class="goal-icon">🔥</div>
+          <div class="goal-icon"><svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div>
           <div style="flex:1;"><div class="goal-name">Quemar grasa</div><div class="goal-desc">Déficit + cardio</div></div>
           <div class="goal-check"></div>
         </div>
         <div class="goal-card" data-goal="muscle" data-label="Ganar músculo" data-emoji="💪" onclick="selectGoal(this)">
-          <div class="goal-icon">💪</div>
+          <div class="goal-icon"><svg viewBox="0 0 24 24"><path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/></svg></div>
           <div style="flex:1;"><div class="goal-name">Ganar músculo</div><div class="goal-desc">Fuerza + volumen</div></div>
           <div class="goal-check"></div>
         </div>
         <div class="goal-card" data-goal="fitness" data-label="Condición física" data-emoji="⚡" onclick="selectGoal(this)">
-          <div class="goal-icon">⚡</div>
+          <div class="goal-icon"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
           <div style="flex:1;"><div class="goal-name">Condición física</div><div class="goal-desc">Energía + resistencia</div></div>
           <div class="goal-check"></div>
         </div>
         <div class="goal-card" data-goal="wellness" data-label="Salud y bienestar" data-emoji="🧘" onclick="selectGoal(this)">
-          <div class="goal-icon">🧘</div>
+          <div class="goal-icon"><svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg></div>
           <div style="flex:1;"><div class="goal-name">Salud y bienestar</div><div class="goal-desc">Moverse y sentirme bien</div></div>
           <div class="goal-check"></div>
         </div>
@@ -3142,8 +3177,8 @@ body::before{
           <div class="weekly-ring-num" id="meta-ring-num">4<small>CLASES</small></div>
         </div>
         <div class="stepper">
-          <button class="stepper-btn" onclick="adjustMeta(-1)">−</button>
-          <button class="stepper-btn" onclick="adjustMeta(1)">+</button>
+          <button class="stepper-btn" onclick="adjustMeta(-1)" aria-label="Reducir meta semanal">−</button>
+          <button class="stepper-btn" onclick="adjustMeta(1)" aria-label="Aumentar meta semanal">+</button>
         </div>
       </div>
 
@@ -3451,7 +3486,10 @@ function showToast(msg, icon='ℹ️', duration=3500){
     t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;background:rgba(10,26,20,.95);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;backdrop-filter:blur(16px);transition:opacity .25s,transform .25s;opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 40px);';
     document.body.appendChild(t);
   }
-  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  t.innerHTML = '';
+  const _i=document.createElement('span'); _i.textContent=icon;
+  const _m=document.createElement('span'); _m.textContent=msg;
+  t.append(_i,_m);
   t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
   clearTimeout(t._tid);
   t._tid = setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(10px)'; }, duration);
@@ -4269,7 +4307,12 @@ function _showOfflineBanner(cachedAt){
   window.addEventListener('online', () => {
     banner.textContent = 'Conexión restaurada, actualizando…';
     banner.style.background = 'rgba(34,197,94,.92)';
-    setTimeout(() => window.location.reload(), 1200);
+    setTimeout(async () => {
+      try{
+        if(typeof loadPortalData === 'function'){ await loadPortalData(); banner.remove(); }
+        else { window.location.reload(); }
+      }catch(_){ window.location.reload(); }
+    }, 900);
   }, { once: true });
 }
 
@@ -4625,7 +4668,7 @@ function renderHomeRing(data){
   const weekCheckins=checkins.filter(c=>(c.fecha||'')>=mondayStr&&(c.fecha||'')<=todayStr).length;
 
   const pct=Math.min(100,Math.round((weekCheckins/meta)*100));
-  const circ=2*Math.PI*36; // r=36 → circumference ≈ 226
+  const circ=2*Math.PI*43; // r=43 → circumference ≈ 270
   const offset=circ*(1-pct/100);
   const remaining=Math.max(0,meta-weekCheckins);
   const metaMsg=remaining===0?'¡Meta semanal cumplida! 🎉'
@@ -4640,9 +4683,15 @@ function renderHomeRing(data){
 
   el.innerHTML=`<div class="ring-card-v" onclick="openMetaPicker()" style="cursor:pointer;">
     <div class="rcv-ring">
-      <svg width="80" height="80" viewBox="0 0 80 80">
-        <circle class="rcv-ring-bg" cx="40" cy="40" r="36"/>
-        <circle class="${progClass}" cx="40" cy="40" r="36"
+      <svg width="96" height="96" viewBox="0 0 96 96">
+        <defs>
+          <linearGradient id="rcvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#66E8FF"/>
+            <stop offset="100%" stop-color="#00D4FF"/>
+          </linearGradient>
+        </defs>
+        <circle class="rcv-ring-bg" cx="48" cy="48" r="43"/>
+        <circle class="${progClass}" cx="48" cy="48" r="43" style="stroke:url(#rcvGrad);"
           stroke-dasharray="${circ.toFixed(1)}"
           stroke-dashoffset="${isComplete?'0':offset.toFixed(1)}"/>
       </svg>
@@ -4654,7 +4703,7 @@ function renderHomeRing(data){
       <div class="rcv-meta">${metaMsg}</div>
       ${(()=>{
         const obj=data.cliente?.objetivo;
-        const GOAL_MAP={fat_loss:'🔥 Quemar grasa',muscle:'💪 Ganar músculo',fitness:'⚡ Condición física',wellness:'🧘 Salud y bienestar'};
+        const GOAL_MAP={fat_loss:'Quemar grasa',muscle:'Ganar músculo',fitness:'Condición física',wellness:'Salud y bienestar'};
         return obj&&GOAL_MAP[obj]?`<div style="display:inline-block;margin-top:7px;font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);border-radius:99px;padding:3px 10px;">${GOAL_MAP[obj]}</div>`:'';
       })()}
     </div>
@@ -7128,8 +7177,12 @@ async function init(){
   if(!hasKnownGym){
     const gs = $('gym-select-screen');
     if(gs){ gs.style.display='flex'; }
-    const gi = $('gymsel-code'); if(gi) gi.addEventListener('keydown',ev=>{ if(ev.key==='Enter') confirmGymSelect(); });
-    const gi2 = $('gymsel-code'); if(gi2) gi2.addEventListener('input', gymselOnInput);
+    const gi = $('gymsel-code');
+    if(gi && !gi.dataset.bound){
+      gi.dataset.bound='1';
+      gi.addEventListener('keydown',ev=>{ if(ev.key==='Enter') confirmGymSelect(); });
+      gi.addEventListener('input', gymselOnInput);
+    }
     return;
   }
 
