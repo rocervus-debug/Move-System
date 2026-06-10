@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VELUM Landing E — Spotlight (dark cinemático)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#070605;--bg2:#100C08;--panel:#181009;
+  --line:rgba(255,200,150,.1);--line-s:rgba(255,200,150,.24);
+  --sun:#F97316;--sun-l:#FFAE5C;--sun-pale:#FFD9A8;
+  --txt:#FAF4EC;--soft:rgba(240,225,205,.6);--dim:rgba(240,225,205,.32);
+  --font:'Inter',system-ui,sans-serif;--fd:'Outfit',system-ui,sans-serif;--fm:'Geist Mono',monospace;
+}
+body{font-family:var(--font);color:var(--txt);background:var(--bg);min-height:100vh;}
+.mono{font-family:var(--fm);font-size:10px;letter-spacing:2.2px;text-transform:uppercase;font-weight:700;color:var(--dim);}
+.btn-sun{display:inline-block;background:linear-gradient(165deg,#FFC68A,#F4610E);color:#190B01;border:none;border-radius:999px;padding:19px 40px;font-family:var(--fd);font-weight:800;font-size:16px;cursor:pointer;text-decoration:none;box-shadow:0 16px 44px rgba(244,97,14,.4),0 1px 0 rgba(255,255,255,.4) inset;transition:transform .2s;}
+.btn-sun:hover{transform:translateY(-2px);}
+.btn-ghost{display:inline-block;color:var(--sun-pale);border:1px solid var(--line-s);border-radius:999px;padding:19px 36px;font-family:var(--fd);font-weight:800;font-size:16px;cursor:pointer;text-decoration:none;transition:background .2s;}
+.btn-ghost:hover{background:rgba(249,115,22,.08);}
+
+/* NAV flotante centrado */
+.nav{position:sticky;top:18px;z-index:100;display:flex;justify-content:center;padding:0 24px;}
+.nav-inner{
+  display:flex;align-items:center;gap:34px;
+  background:rgba(24,16,9,.8);border:1px solid var(--line);border-radius:999px;
+  padding:13px 14px 13px 28px;backdrop-filter:blur(22px);
+  box-shadow:0 14px 40px rgba(0,0,0,.5);
+}
+.logo{font-family:var(--fm);font-weight:700;font-size:13px;letter-spacing:6px;display:flex;gap:9px;align-items:center;}
+.logo svg{width:15px;height:15px;fill:var(--sun);}
+.nav-links{display:flex;gap:26px;font-size:13px;font-weight:600;color:var(--soft);}
+.nav-cta{background:var(--sun);color:#190B01;border:none;border-radius:999px;padding:10px 22px;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--fd);}
+
+/* HERO spotlight */
+.hero{
+  text-align:center;padding:130px 24px 0;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-280px;left:50%;transform:translateX(-50%);
+  width:1100px;height:780px;border-radius:50%;
+  background:radial-gradient(circle,rgba(249,115,22,.22) 0%,rgba(249,115,22,.07) 45%,transparent 70%);
+  pointer-events:none;
+}
+.hero h1{
+  font-family:var(--fd);font-size:clamp(48px,7.4vw,96px);font-weight:900;
+  letter-spacing:-.035em;line-height:1;margin:30px auto 26px;max-width:900px;position:relative;
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(100deg,#FFD9A8 5%,#FFAE5C 45%,#F97316 95%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero-sub{font-size:19px;color:var(--soft);max-width:560px;margin:0 auto 40px;line-height:1.65;font-weight:500;position:relative;}
+.hero-sub b{color:var(--txt);}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;margin-bottom:18px;}
+
+/* Pantalla héroe gigante */
+.screen-stage{max-width:1080px;margin:80px auto 0;padding:0 24px;position:relative;}
+.screen{
+  border-radius:26px 26px 0 0;border:1px solid var(--line-s);border-bottom:none;
+  background:linear-gradient(175deg,var(--panel),var(--bg2));
+  padding:26px 26px 0;position:relative;overflow:hidden;
+  box-shadow:0 -2px 80px rgba(249,115,22,.12),0 40px 120px rgba(0,0,0,.6);
+}
+.screen::after{content:'';position:absolute;inset:auto 0 0 0;height:140px;background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none;}
+.sc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.sc-title{font-family:var(--fd);font-size:17px;font-weight:800;}
+.live{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:9px;letter-spacing:1.4px;color:#8AE08A;font-weight:700;}
+.live i{width:7px;height:7px;border-radius:50%;background:#8AE08A;box-shadow:0 0 10px #8AE08A;}
+.sc-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px;padding-bottom:60px;}
+.sc-cell{background:rgba(249,115,22,.05);border:1px solid var(--line);border-radius:16px;padding:20px;text-align:left;}
+.sc-num{font-family:var(--fd);font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-top:10px;}
+.sc-num.g{background:linear-gradient(120deg,#FFD9A8,#F97316);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.sc-sub{font-size:12px;color:var(--soft);font-weight:600;margin-top:8px;}
+.sc-bars{display:flex;align-items:flex-end;gap:7px;height:58px;margin-top:16px;}
+.sc-bar{flex:1;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#FFAE5C,#D94E06);}
+
+/* BANDAS alternadas full-bleed */
+.band{padding:130px 24px;text-align:center;position:relative;overflow:hidden;}
+.band.alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.band-inner{max-width:880px;margin:0 auto;}
+.band h2{font-family:var(--fd);font-size:clamp(34px,5vw,62px);font-weight:900;letter-spacing:-.035em;line-height:1.02;margin:18px 0 18px;}
+.band h2 em{font-style:normal;background:linear-gradient(100deg,#FFD9A8,#F97316);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.band p{font-size:17px;color:var(--soft);line-height:1.7;font-weight:500;max-width:560px;margin:0 auto;}
+.band p b{color:var(--txt);}
+.band-visual{max-width:620px;margin:48px auto 0;}
+.vcard{background:var(--panel);border:1px solid var(--line-s);border-radius:22px;padding:22px;text-align:left;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 60px rgba(249,115,22,.07);}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px dashed var(--line);font-size:13.5px;}
+.vrow:last-child{border:none;}
+.vrow b{font-weight:700;}
+.vrow span{font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.6px;}
+.vst{font-family:var(--fm);font-size:8.5px;letter-spacing:.9px;font-weight:700;padding:4px 11px;border-radius:99px;}
+.vst.auto{background:rgba(249,115,22,.18);color:var(--sun-l);}
+.vst.ok{background:rgba(120,200,120,.14);color:#8AE08A;}
+.imsg{border-radius:13px 13px 13px 3px;background:rgba(249,115,22,.1);border:1px solid var(--line);padding:13px 16px;font-size:13.5px;line-height:1.6;color:var(--sun-pale);margin-bottom:10px;text-align:left;}
+.imsg.u{border-radius:13px 13px 3px 13px;background:rgba(255,255,255,.05);color:var(--txt);margin-left:40px;}
+
+/* número stats gigantes */
+.bignums{display:flex;justify-content:center;gap:80px;flex-wrap:wrap;padding:120px 24px;}
+.bn{text-align:center;}
+.bn-n{font-family:var(--fd);font-size:clamp(56px,7vw,104px);font-weight:900;letter-spacing:-.045em;line-height:1;background:linear-gradient(160deg,#FFF3E0,#FFAE5C);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.bn-l{margin-top:14px;}
+
+/* PRICING centrado teatral */
+.price-wrap{max-width:920px;margin:0 auto;padding:0 24px 40px;display:grid;grid-template-columns:1fr 1.15fr;gap:18px;align-items:center;}
+.price{border:1px solid var(--line);border-radius:26px;padding:38px 34px;background:var(--bg2);text-align:left;}
+.price.max{
+  border-color:var(--line-s);padding:48px 40px;
+  background:linear-gradient(170deg,#21130A,var(--bg2));
+  box-shadow:0 40px 100px rgba(244,97,14,.18);position:relative;
+}
+.p-name{font-family:var(--fd);font-size:20px;font-weight:800;}
+.p-badge{position:absolute;top:-14px;left:40px;font-family:var(--fm);font-size:9px;letter-spacing:1.2px;background:var(--sun);color:#190B01;border-radius:99px;padding:6px 14px;font-weight:700;box-shadow:0 6px 18px rgba(244,97,14,.5);}
+.p-amount{font-family:var(--fd);font-size:58px;font-weight:900;letter-spacing:-.04em;margin:18px 0 2px;color:var(--sun-pale);}
+.price ul{list-style:none;margin:24px 0 30px;display:flex;flex-direction:column;gap:12px;}
+.price li{font-size:14px;font-weight:600;color:var(--soft);display:flex;gap:11px;align-items:center;}
+.price li svg{width:15px;height:15px;stroke:var(--sun-l);stroke-width:2.8;fill:none;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;}
+
+.final{text-align:center;padding:140px 24px 110px;position:relative;overflow:hidden;}
+.final::before{content:'';position:absolute;bottom:-340px;left:50%;transform:translateX(-50%);width:980px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(249,115,22,.3),transparent 65%);pointer-events:none;}
+.final h2{font-family:var(--fd);font-size:clamp(40px,6vw,76px);font-weight:900;letter-spacing:-.04em;line-height:1;margin-bottom:18px;position:relative;}
+.final h2 em{font-style:normal;background:linear-gradient(100deg,#FFD9A8,#F97316);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.final p{color:var(--soft);font-size:16px;margin-bottom:40px;position:relative;}
+.footer{border-top:1px solid var(--line);padding:28px 40px;display:flex;justify-content:space-between;max-width:1180px;margin:0 auto;font-size:12px;color:var(--dim);font-weight:600;}
+@media(max-width:980px){.sc-grid{grid-template-columns:1fr;}.price-wrap{grid-template-columns:1fr;}.nav-links{display:none;}.bignums{gap:44px;}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-inner">
+  <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 0l2.8 9.2L24 12l-9.2 2.8L12 24l-2.8-9.2L0 12l9.2-2.8z"/></svg>VELUM</div>
+  <div class="nav-links"><span>Producto</span><span>IA</span><span>Precios</span></div>
+  <button class="nav-cta">Prueba gratis</button>
+</div></nav>
+
+<header class="hero">
+  <span class="mono" style="color:var(--sun-l);letter-spacing:3px;">✦ EL SISTEMA OPERATIVO DE TU GYM</span>
+  <h1>Todo tu gym.<br><em>Una sola luz encendida.</em></h1>
+  <p class="hero-sub">Cobros, reservas, check-in, retención y una IA con tus datos. <b>Tú diriges; VELUM opera.</b></p>
+  <div class="hero-btns">
+    <a class="btn-sun">Crear mi gym gratis →</a>
+    <a class="btn-ghost">Ver demo de 2 min</a>
+  </div>
+  <span class="mono">7 días gratis · sin tarjeta · listo en 10 minutos</span>
+
+  <div class="screen-stage">
+    <div class="screen">
+      <div class="sc-top">
+        <div class="sc-title">MOVE Studio — Dashboard</div>
+        <span class="live"><i></i>EN VIVO</span>
+      </div>
+      <div class="sc-grid">
+        <div class="sc-cell">
+          <span class="mono">Ingresos · Junio</span>
+          <div class="sc-num g">$84,200</div>
+          <div class="sc-sub">▲ +18% vs mayo · 89% de la meta</div>
+          <div class="sc-bars">
+            <div class="sc-bar" style="height:36%;"></div><div class="sc-bar" style="height:58%;"></div>
+            <div class="sc-bar" style="height:46%;"></div><div class="sc-bar" style="height:72%;"></div>
+            <div class="sc-bar" style="height:60%;"></div><div class="sc-bar" style="height:88%;"></div>
+            <div class="sc-bar" style="height:100%;"></div>
+          </div>
+        </div>
+        <div class="sc-cell"><span class="mono">Miembros activos</span><div class="sc-num">217</div><div class="sc-sub">+12 esta semana</div></div>
+        <div class="sc-cell"><span class="mono">Check-ins hoy</span><div class="sc-num">96</div><div class="sc-sub">Pico 7:00 PM</div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="band alt">
+  <div class="band-inner">
+    <span class="mono" style="color:var(--sun-l);">ACTO I — COBRANZA</span>
+    <h2>El día 1 del mes,<br><em>ya cobraste.</em></h2>
+    <p>Domiciliación con Stripe: cada membresía se cobra sola, a tiempo. <b>Sin perseguir a nadie por WhatsApp.</b></p>
+    <div class="band-visual"><div class="vcard">
+      <div class="vrow"><div><b>Karla M.</b><br><span>MEMBRESÍA MENSUAL · STRIPE</span></div><div><b>$1,299</b> <span class="vst auto">AUTO</span></div></div>
+      <div class="vrow"><div><b>Sofía T.</b><br><span>MEMBRESÍA MENSUAL · STRIPE</span></div><div><b>$1,299</b> <span class="vst auto">AUTO</span></div></div>
+      <div class="vrow"><div><b>Diego R.</b><br><span>PAQUETE 10 CLASES · EFECTIVO</span></div><div><b>$950</b> <span class="vst ok">PAGADO</span></div></div>
+    </div></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="band-inner">
+    <span class="mono" style="color:var(--sun-l);">ACTO II — RETENCIÓN</span>
+    <h2>Nadie se va<br><em>sin que lo veas venir.</em></h2>
+    <p>El radar detecta quién dejó de venir y te pone la acción a un click — <b>antes de que cancele, no después.</b></p>
+    <div class="band-visual"><div class="vcard">
+      <div class="vrow"><div><b>Ana P.</b><br><span>16 DÍAS SIN VENIR · VENCE JUEVES</span></div><span class="vst auto">REACTIVAR →</span></div>
+      <div class="vrow"><div><b>Luis R.</b><br><span>ASISTENCIA −60% ESTE MES</span></div><span class="vst auto">LLAMAR →</span></div>
+      <div class="vrow"><div><b>9 membresías</b><br><span>VENCEN ESTA SEMANA</span></div><span class="vst auto">COBRAR EN 1 CLICK →</span></div>
+    </div></div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="band-inner">
+    <span class="mono" style="color:var(--sun-l);">ACTO III — INTELIGENCIA</span>
+    <h2>Pregúntale a tu gym.<br><em>Te contesta con datos.</em></h2>
+    <p>VELUM IA vive dentro de tu operación: ingresos, riesgo de churn, programación de clases. <b>Tus números, no generalidades.</b></p>
+    <div class="band-visual"><div class="vcard">
+      <div class="imsg u">¿Cómo cerramos junio vs mayo?</div>
+      <div class="imsg">Junio va <b>+18%</b> ($84,200). Si cierras las 9 renovaciones de esta semana, superas la meta por $3,400. ✦</div>
+      <div class="imsg u">Genera la clase HYROX de mañana</div>
+      <div class="imsg">Listo ✦ 8 estaciones · 45 min · escalada para los 14 reservados según su historial.</div>
+    </div></div>
+  </div>
+</section>
+
+<div class="bignums">
+  <div class="bn"><div class="bn-n">12h</div><div class="bn-l mono">Admin ahorradas / semana</div></div>
+  <div class="bn"><div class="bn-n">98%</div><div class="bn-l mono">Cobranza puntual</div></div>
+  <div class="bn"><div class="bn-n">+31%</div><div class="bn-l mono">Retención</div></div>
+</div>
+
+<div class="price-wrap">
+  <div class="price">
+    <div class="p-name">Pro</div>
+    <div class="p-amount">$599</div>
+    <span class="mono">MXN / mes · por gym</span>
+    <ul>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Clientes ilimitados</li>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Check-in QR + app del atleta</li>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pagos domiciliados</li>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Horarios y reservas</li>
+    </ul>
+    <a class="btn-ghost" style="width:100%;text-align:center;font-size:14px;padding:15px;">Empezar con Pro</a>
+  </div>
+  <div class="price max">
+    <span class="p-badge">RECOMENDADO</span>
+    <div class="p-name">Max</div>
+    <div class="p-amount">$999</div>
+    <span class="mono">MXN / mes · todo incluido</span>
+    <ul>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Todo lo de Pro</li>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>VELUM IA — Assistant + Coach</li>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Radar de retención + cohorts</li>
+      <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>CRM, campañas y marketing</li>
+    </ul>
+    <a class="btn-sun" style="width:100%;text-align:center;">Empieza con Max →</a>
+  </div>
+</div>
+
+<section class="final">
+  <h2>Enciende tu gym.<br><em>VELUM hace el resto.</em></h2>
+  <p>7 días gratis · Configurado en 10 minutos</p>
+  <a class="btn-sun" style="font-size:18px;padding:22px 48px;">Crear mi gym en VELUM →</a>
+</section>
+
+<div class="footer">
+  <div class="logo" style="font-size:11px;letter-spacing:4px;">✦ VELUM</div>
+  <div>Hecho para LATAM. No adaptado. · © 2026</div>
+</div>
+
+</body>
+</html>

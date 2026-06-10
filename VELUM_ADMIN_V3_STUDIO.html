@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VELUM Admin V3 — Studio (espacioso, calmado)</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0C0A12;--bg2:#120F1A;
+  --vio:#A78BFA;--vio-l:#C4B5FD;--sun:#FFAE5C;
+  --line:rgba(196,181,253,.1);--line-s:rgba(196,181,253,.26);
+  --txt:#F2EFFA;--soft:rgba(214,205,235,.6);--dim:rgba(214,205,235,.32);
+  --ok:#6EE7B7;--bad:#FCA5A5;
+  --font:'Inter',system-ui,sans-serif;--fd:'Outfit',system-ui,sans-serif;--fm:'Geist Mono',monospace;
+}
+body{font-family:var(--font);color:var(--txt);background:#131217;padding:40px 28px 60px;}
+.canvas-title{text-align:center;margin-bottom:6px;font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:5px;color:#67626E;}
+.canvas-sub{text-align:center;font-size:12.5px;color:#7E7888;margin-bottom:30px;}
+.frame{
+  max-width:1500px;margin:0 auto;border-radius:24px;overflow:hidden;position:relative;
+  background:
+    radial-gradient(ellipse 50% 40% at 80% -5%,rgba(167,139,250,.14),transparent 65%),
+    radial-gradient(ellipse 40% 30% at 5% 100%,rgba(255,174,92,.07),transparent 70%),
+    var(--bg);
+  border:1px solid rgba(255,255,255,.07);box-shadow:0 40px 100px rgba(0,0,0,.55);
+  display:flex;min-height:920px;padding:20px;gap:20px;
+}
+
+/* sidebar flotante glass */
+.side{
+  width:230px;flex-shrink:0;border-radius:20px;
+  background:rgba(255,255,255,.035);border:1px solid var(--line);
+  backdrop-filter:blur(20px);padding:20px 14px;
+  display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.3);
+}
+.logo{display:flex;align-items:center;gap:9px;font-family:var(--fm);font-weight:700;font-size:12px;letter-spacing:5px;padding:4px 10px 18px;}
+.logo svg{width:15px;height:15px;fill:var(--vio);}
+.gym{display:flex;align-items:center;gap:10px;background:rgba(167,139,250,.08);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:20px;}
+.gym-logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--vio),#7C5CE0);display:grid;place-items:center;font-family:var(--fd);font-weight:900;font-size:13px;color:#fff;}
+.gym-n{font-size:12.5px;font-weight:800;}
+.gym-p{font-family:var(--fm);font-size:8px;letter-spacing:1.2px;color:var(--vio-l);font-weight:700;}
+.sec{font-family:var(--fm);font-size:8px;letter-spacing:2px;color:var(--dim);font-weight:700;text-transform:uppercase;padding:14px 10px 6px;}
+.it{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--soft);cursor:pointer;transition:all .18s;}
+.it:hover{color:var(--txt);background:rgba(255,255,255,.04);}
+.it.on{color:#fff;background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(167,139,250,.1));border:1px solid var(--line-s);box-shadow:0 4px 16px rgba(124,92,224,.2);}
+.it svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.it .bd{margin-left:auto;font-family:var(--fm);font-size:8.5px;font-weight:700;background:rgba(252,165,165,.15);color:var(--bad);border-radius:99px;padding:2px 8px;}
+
+/* main espacioso */
+.main{flex:1;padding:18px 14px;display:flex;flex-direction:column;}
+.top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:38px;}
+.hello{font-family:var(--fd);font-size:36px;font-weight:800;letter-spacing:-.025em;}
+.hello-sub{font-size:14px;color:var(--soft);font-weight:500;margin-top:6px;}
+.top-right{display:flex;gap:12px;align-items:center;}
+.btn{background:linear-gradient(135deg,var(--vio),#7C5CE0);color:#fff;border:none;border-radius:999px;padding:13px 24px;font-family:var(--fd);font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 10px 26px rgba(124,92,224,.35);}
+.btn-g{background:rgba(255,255,255,.05);color:var(--txt);border:1px solid var(--line);border-radius:999px;padding:13px 22px;font-family:var(--fd);font-weight:700;font-size:13.5px;cursor:pointer;}
+
+/* hero focus: UN número */
+.focus{
+  border-radius:26px;padding:44px 48px;margin-bottom:20px;position:relative;overflow:hidden;
+  background:linear-gradient(150deg,rgba(167,139,250,.14),rgba(255,255,255,.02) 55%);
+  border:1px solid var(--line-s);
+}
+.focus::after{content:'';position:absolute;top:-120px;right:-80px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,.2),transparent 65%);pointer-events:none;}
+.f-label{font-family:var(--fm);font-size:10px;letter-spacing:2.2px;color:var(--vio-l);text-transform:uppercase;font-weight:700;}
+.f-row{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;}
+.f-num{font-family:var(--fd);font-size:110px;font-weight:800;letter-spacing:-.05em;line-height:.95;margin-top:18px;}
+.f-num small{font-size:34px;color:var(--soft);font-weight:700;}
+.f-sub{font-size:15px;color:var(--soft);font-weight:500;margin-top:16px;}
+.f-sub b{color:var(--ok);}
+.f-ring{position:relative;width:148px;height:148px;flex-shrink:0;}
+.f-ring svg{transform:rotate(-90deg);}
+.fr-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:11;}
+.fr-p{fill:none;stroke:url(#g1);stroke-width:11;stroke-linecap:round;filter:drop-shadow(0 0 12px rgba(167,139,250,.5));}
+.fr-c{position:absolute;inset:0;display:grid;place-items:center;text-align:center;}
+.fr-n{font-family:var(--fd);font-size:34px;font-weight:800;letter-spacing:-.03em;}
+.fr-l{font-family:var(--fm);font-size:7.5px;letter-spacing:1.6px;color:var(--dim);font-weight:700;margin-top:2px;}
+
+/* fila de 3 tarjetas XL aireadas */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;}
+.card{border-radius:24px;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:28px;display:flex;flex-direction:column;backdrop-filter:blur(12px);}
+.c-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.c-title{font-family:var(--fd);font-size:16px;font-weight:800;}
+.c-link{font-family:var(--fm);font-size:8.5px;letter-spacing:1.2px;color:var(--vio-l);font-weight:700;cursor:pointer;text-transform:uppercase;}
+.c-big{font-family:var(--fd);font-size:58px;font-weight:800;letter-spacing:-.04em;line-height:1;}
+.c-big em{font-style:normal;color:var(--vio-l);}
+.c-sub{font-size:13px;color:var(--soft);font-weight:500;margin-top:10px;line-height:1.55;}
+.c-sub b{color:var(--txt);}
+.c-list{margin-top:auto;padding-top:20px;display:flex;flex-direction:column;gap:12px;}
+.li{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;color:var(--soft);}
+.li b{color:var(--txt);}
+.li .tail{margin-left:auto;font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.5px;}
+.li .act{margin-left:auto;font-family:var(--fm);font-size:8.5px;letter-spacing:1px;color:var(--vio-l);font-weight:700;cursor:pointer;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:800;flex-shrink:0;background:rgba(167,139,250,.14);color:var(--vio-l);border:1px solid var(--line);}
+.minibars{display:flex;align-items:flex-end;gap:8px;height:64px;margin-top:22px;}
+.mb{flex:1;border-radius:6px;background:linear-gradient(180deg,var(--vio),#6D4FD4);opacity:.85;}
+.mb.warm{background:linear-gradient(180deg,var(--sun),#E0813B);}
+</style>
+</head>
+<body>
+
+<div class="canvas-title">SISTEMA INTERNO · V3 — STUDIO</div>
+<div class="canvas-sub">Espacioso y calmado: sidebar flotante de vidrio, UN foco por pantalla, tarjetas XL — dark violeta/ámbar (tercera vía de color)</div>
+
+<div class="frame">
+  <svg width="0" height="0"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C4B5FD"/><stop offset="1" stop-color="#7C5CE0"/></linearGradient></defs></svg>
+
+  <aside class="side">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 0l2.8 9.2L24 12l-9.2 2.8L12 24l-2.8-9.2L0 12l9.2-2.8z"/></svg>VELUM</div>
+    <div class="gym"><div class="gym-logo">M</div><div><div class="gym-n">MOVE Studio</div><div class="gym-p">PLAN MAX</div></div></div>
+    <div class="sec">General</div>
+    <div class="it on"><svg viewBox="0 0 24 24"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg>Inicio</div>
+    <div class="sec">Ventas</div>
+    <div class="it"><svg viewBox="0 0 24 24"><path d="M22 12 18 12 15 21 9 3 6 12 2 12"/></svg>CRM<span class="bd">5</span></div>
+    <div class="it"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Pagos</div>
+    <div class="it"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Clientes</div>
+    <div class="it"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Retención<span class="bd">7</span></div>
+    <div class="sec">Operación</div>
+    <div class="it"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Horario</div>
+    <div class="it"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Coaches</div>
+    <div class="it"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4"/></svg>Asistencia</div>
+    <div class="sec">Finanzas</div>
+    <div class="it"><svg viewBox="0 0 24 24"><path d="M5 20v-8M10 20V4M15 20v-6M20 20V9"/></svg>Revenue</div>
+    <div class="it"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8 7 17M17 7l2.8-2.8"/></svg>Configuración</div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div>
+        <div class="hello">Buenos días, Roy</div>
+        <div class="hello-sub">Miércoles 10 de junio · 11 clases hoy · todo en orden</div>
+      </div>
+      <div class="top-right">
+        <button class="btn-g">✦ Preguntar a la IA</button>
+        <button class="btn">+ Registrar pago</button>
+      </div>
+    </div>
+
+    <div class="focus">
+      <div class="f-row">
+        <div>
+          <div class="f-label">Ingresos · Junio</div>
+          <div class="f-num">$84,200<small> MXN</small></div>
+          <div class="f-sub"><b>▲ +18% vs mayo</b> · Si cierras las 9 renovaciones de esta semana, superas la meta por $3,400 ✦</div>
+        </div>
+        <div class="f-ring">
+          <svg width="148" height="148" viewBox="0 0 148 148">
+            <circle class="fr-bg" cx="74" cy="74" r="64"/>
+            <circle class="fr-p" cx="74" cy="74" r="64" stroke-dasharray="402" stroke-dashoffset="44"/>
+          </svg>
+          <div class="fr-c"><div><div class="fr-n">89%</div><div class="fr-l">DE LA META</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="c-head"><div class="c-title">Hoy en el gym</div><div class="c-link">Horario →</div></div>
+        <div class="c-big">96<em style="font-size:26px;"> check-ins</em></div>
+        <div class="c-sub">11 clases · pico a las <b>7:00 PM</b> · Box 18:00 está lleno con 4 en espera.</div>
+        <div class="minibars">
+          <div class="mb" style="height:30%;"></div><div class="mb" style="height:55%;"></div><div class="mb" style="height:42%;"></div>
+          <div class="mb" style="height:70%;"></div><div class="mb warm" style="height:100%;"></div><div class="mb" style="height:62%;"></div><div class="mb" style="height:38%;"></div>
+        </div>
+        <div class="c-list">
+          <div class="li"><b>19:00 HYROX Training</b><span class="tail">14/16 · VALERIA</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="c-head"><div class="c-title">Necesitan tu atención</div><div class="c-link">Retención →</div></div>
+        <div class="c-big" style="color:var(--bad);">7</div>
+        <div class="c-sub">clientes en riesgo de irse este mes. La IA ya preparó las campañas.</div>
+        <div class="c-list">
+          <div class="li"><span class="av">AP</span><div><b>Ana Paredes</b><br><span style="font-size:11px;color:var(--dim);">16 días sin venir · vence jueves</span></div><span class="act">REACTIVAR</span></div>
+          <div class="li"><span class="av">LR</span><div><b>Luis Rentería</b><br><span style="font-size:11px;color:var(--dim);">Asistencia −60% este mes</span></div><span class="act">LLAMAR</span></div>
+          <div class="li"><span class="dot" style="background:var(--sun);box-shadow:0 0 8px rgba(255,174,92,.6);"></span><b>9 membresías</b> vencen esta semana<span class="act">COBRAR</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="c-head"><div class="c-title">Ventas del mes</div><div class="c-link">CRM →</div></div>
+        <div class="c-big">14<em style="font-size:26px;"> cierres</em></div>
+        <div class="c-sub">18 leads nuevos · conversión del <b>42%</b> de prueba a cliente.</div>
+        <div class="c-list">
+          <div class="li"><span class="dot" style="background:var(--ok);box-shadow:0 0 8px rgba(110,231,183,.5);"></span><b>5 leads</b> sin contactar<span class="act">ABRIR CRM</span></div>
+          <div class="li"><span class="dot" style="background:var(--vio);box-shadow:0 0 8px rgba(167,139,250,.5);"></span>Campaña "Verano" — <b>32 registros</b><span class="act">VER</span></div>
+          <div class="li"><span class="dot" style="background:var(--vio);box-shadow:0 0 8px rgba(167,139,250,.5);"></span>Último cobro: <b>Karla M. $1,299</b><span class="tail">AUTO · STRIPE</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

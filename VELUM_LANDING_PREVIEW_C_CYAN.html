@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VELUM Landing C — Pulse (dark + cyan marca actual)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#040C14;--bg2:#08121E;--panel:#0D1B2A;
+  --cyan:#00D4FF;--cyan-l:#66E8FF;
+  --line:rgba(0,212,255,.12);--line-s:rgba(0,212,255,.28);
+  --txt:#E8EDF5;--soft:rgba(168,205,220,.62);--dim:rgba(168,205,220,.35);
+  --font:'Inter',system-ui,sans-serif;--fd:'Outfit',system-ui,sans-serif;--fm:'Geist Mono',monospace;
+}
+body{
+  font-family:var(--font);color:var(--txt);background:var(--bg);min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 55% 36% at 50% -4%,rgba(0,212,255,.14),transparent 65%),
+    radial-gradient(ellipse 38% 26% at 92% 38%,rgba(0,212,255,.05),transparent 70%);
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px;}
+.tag{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-s);border-radius:999px;padding:8px 18px;font-family:var(--fm);font-size:10px;letter-spacing:2px;color:var(--cyan-l);text-transform:uppercase;font-weight:700;background:rgba(0,212,255,.05);}
+.btn-cyan{display:inline-block;background:var(--cyan);color:#001828;border:none;border-radius:14px;padding:18px 34px;font-family:var(--fd);font-weight:800;font-size:16px;cursor:pointer;text-decoration:none;box-shadow:0 12px 36px rgba(0,212,255,.35),0 1px 0 rgba(255,255,255,.3) inset;transition:transform .2s,box-shadow .2s;}
+.btn-cyan:hover{transform:translateY(-2px);box-shadow:0 16px 44px rgba(0,212,255,.45);}
+.btn-line{display:inline-block;background:transparent;color:var(--txt);border:1px solid var(--line-s);border-radius:14px;padding:18px 30px;font-family:var(--fd);font-weight:800;font-size:16px;cursor:pointer;text-decoration:none;transition:background .2s;}
+.btn-line:hover{background:rgba(0,212,255,.07);}
+
+.nav{position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);background:rgba(4,12,20,.8);border-bottom:1px solid var(--line);}
+.nav-inner{max-width:1180px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--fm);font-weight:700;font-size:15px;letter-spacing:6px;}
+.logo svg{width:18px;height:18px;fill:var(--cyan);}
+.nav-links{display:flex;gap:30px;font-size:13.5px;font-weight:600;color:var(--soft);}
+.nav-cta{background:var(--cyan);color:#001828;border:none;border-radius:999px;padding:11px 22px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:var(--fd);}
+
+/* HERO con dashboard inclinado */
+.hero{padding:96px 0 30px;text-align:center;position:relative;}
+.hero h1{font-family:var(--fd);font-size:clamp(46px,7vw,88px);font-weight:900;letter-spacing:-.035em;line-height:1;margin:28px 0 24px;}
+.hero h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 60px rgba(0,212,255,.5);}
+.hero-sub{font-size:19px;color:var(--soft);max-width:580px;margin:0 auto 38px;line-height:1.65;font-weight:500;}
+.hero-sub b{color:var(--txt);}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;}
+.hero-note{font-family:var(--fm);font-size:10px;letter-spacing:1.6px;color:var(--dim);text-transform:uppercase;font-weight:700;}
+
+.stage{perspective:1400px;margin:70px auto 0;max-width:980px;position:relative;}
+.stage::after{content:'';position:absolute;left:10%;right:10%;bottom:-50px;height:120px;background:radial-gradient(ellipse,rgba(0,212,255,.25),transparent 70%);filter:blur(30px);pointer-events:none;}
+.dash{
+  transform:rotateX(14deg);transform-origin:center top;border-radius:22px;
+  background:linear-gradient(170deg,var(--panel),var(--bg2));
+  border:1px solid var(--line-s);padding:24px;
+  box-shadow:0 60px 120px rgba(0,0,0,.6),0 0 0 1px rgba(0,212,255,.06) inset,0 -30px 80px rgba(0,212,255,.06) inset;
+}
+.dash-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.dash-title{font-family:var(--fd);font-size:16px;font-weight:800;}
+.live{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:#10E8A0;font-weight:700;}
+.live i{width:7px;height:7px;border-radius:50%;background:#10E8A0;box-shadow:0 0 10px #10E8A0;animation:blink 1.8s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.35;}}
+.dash-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;}
+.dcell{background:rgba(0,212,255,.04);border:1px solid var(--line);border-radius:15px;padding:18px;text-align:left;}
+.dlabel{font-family:var(--fm);font-size:8.5px;letter-spacing:1.6px;color:var(--dim);text-transform:uppercase;font-weight:700;}
+.dnum{font-family:var(--fd);font-size:42px;font-weight:800;letter-spacing:-.03em;margin-top:10px;line-height:1;}
+.dnum.cy{color:var(--cyan);text-shadow:0 0 30px rgba(0,212,255,.4);}
+.dsub{font-size:11.5px;color:var(--soft);font-weight:600;margin-top:8px;}
+.dbars{display:flex;align-items:flex-end;gap:6px;height:52px;margin-top:14px;}
+.dbar{flex:1;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,var(--cyan),#0091B8);opacity:.85;}
+
+/* logos */
+.logos{display:flex;justify-content:center;gap:54px;padding:80px 0 0;flex-wrap:wrap;align-items:center;}
+.logo-item{font-family:var(--fd);font-size:15px;font-weight:800;color:var(--dim);letter-spacing:1px;}
+
+/* FEATURES glow cards */
+.section{padding:110px 0 0;}
+.sec-center{text-align:center;}
+.sec-title{font-family:var(--fd);font-size:clamp(32px,4.4vw,52px);font-weight:800;letter-spacing:-.03em;line-height:1.06;margin:16px 0 14px;}
+.sec-title em{font-style:normal;color:var(--cyan);}
+.sec-sub{font-size:16px;color:var(--soft);line-height:1.65;font-weight:500;max-width:560px;margin:0 auto;}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:54px;}
+.feat{
+  background:linear-gradient(170deg,var(--panel),var(--bg2));
+  border:1px solid var(--line);border-radius:22px;padding:26px;text-align:left;
+  position:relative;overflow:hidden;transition:border-color .25s,transform .25s;
+}
+.feat::before{content:'';position:absolute;top:-50px;right:-50px;width:160px;height:160px;background:radial-gradient(circle,rgba(0,212,255,.12),transparent 70%);pointer-events:none;}
+.feat:hover{border-color:var(--line-s);transform:translateY(-3px);}
+.feat-ico{width:44px;height:44px;border-radius:13px;background:rgba(0,212,255,.08);border:1px solid var(--line-s);display:grid;place-items:center;margin-bottom:16px;}
+.feat-ico svg{width:20px;height:20px;stroke:var(--cyan);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.feat h3{font-family:var(--fd);font-size:17px;font-weight:800;margin-bottom:7px;}
+.feat p{font-size:13px;color:var(--soft);line-height:1.6;font-weight:500;}
+.feat .out{display:block;margin-top:12px;font-family:var(--fm);font-size:9.5px;letter-spacing:.8px;color:var(--cyan);font-weight:700;text-transform:uppercase;}
+
+/* IA split */
+.ia{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center;margin-top:110px;}
+.ia-chat{background:linear-gradient(170deg,var(--panel),var(--bg2));border:1px solid var(--line-s);border-radius:24px;padding:24px;box-shadow:0 30px 70px rgba(0,0,0,.4),0 0 60px rgba(0,212,255,.06);}
+.iam{border-radius:13px 13px 13px 3px;background:rgba(0,212,255,.08);border:1px solid var(--line);padding:12px 15px;font-size:13px;line-height:1.6;color:var(--cyan-l);margin-bottom:10px;}
+.iam.user{border-radius:13px 13px 3px 13px;background:rgba(255,255,255,.05);color:var(--txt);margin-left:34px;border-color:rgba(255,255,255,.08);}
+.ia-tag{font-family:var(--fm);font-size:9px;letter-spacing:1.6px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
+.ia h2{font-family:var(--fd);font-size:clamp(28px,3.6vw,42px);font-weight:800;letter-spacing:-.025em;line-height:1.1;margin:14px 0 14px;}
+.ia h2 em{font-style:normal;color:var(--cyan);}
+.ia p{font-size:15px;color:var(--soft);line-height:1.7;font-weight:500;}
+
+/* PRICING */
+.price-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:760px;margin:54px auto 0;}
+.price{border:1px solid var(--line);border-radius:24px;padding:36px 32px;background:var(--bg2);position:relative;text-align:left;}
+.price.max{border-color:var(--line-s);background:linear-gradient(170deg,#0E2233,var(--bg2));box-shadow:0 24px 60px rgba(0,212,255,.1);}
+.p-name{font-family:var(--fd);font-size:20px;font-weight:800;}
+.p-badge{position:absolute;top:26px;right:26px;font-family:var(--fm);font-size:9px;letter-spacing:1.2px;background:var(--cyan);color:#001828;border-radius:99px;padding:5px 12px;font-weight:700;}
+.p-amount{font-family:var(--fd);font-size:54px;font-weight:800;letter-spacing:-.03em;margin:18px 0 2px;color:var(--cyan-l);}
+.p-per{font-family:var(--fm);font-size:10px;letter-spacing:1.4px;color:var(--dim);font-weight:700;}
+.price ul{list-style:none;margin:26px 0 30px;display:flex;flex-direction:column;gap:12px;}
+.price li{font-size:14px;font-weight:600;color:var(--soft);display:flex;gap:11px;align-items:center;}
+.price li svg{width:15px;height:15px;stroke:var(--cyan);stroke-width:2.8;fill:none;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;}
+
+.final{margin-top:120px;border-top:1px solid var(--line);text-align:center;padding:110px 0 100px;position:relative;overflow:hidden;}
+.final::before{content:'';position:absolute;left:50%;bottom:-320px;transform:translateX(-50%);width:860px;height:540px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.25),transparent 65%);pointer-events:none;}
+.final h2{font-family:var(--fd);font-size:clamp(36px,5.4vw,62px);font-weight:900;letter-spacing:-.035em;line-height:1.04;margin-bottom:16px;position:relative;}
+.final h2 em{font-style:normal;color:var(--cyan);}
+.final p{color:var(--soft);font-size:16px;margin-bottom:38px;position:relative;}
+.footer{border-top:1px solid var(--line);padding:30px 32px 42px;display:flex;justify-content:space-between;max-width:1180px;margin:0 auto;font-size:12px;color:var(--dim);font-weight:600;}
+@media(max-width:980px){.feats{grid-template-columns:1fr;}.ia,.price-grid{grid-template-columns:1fr;}.nav-links{display:none;}.dash-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-inner">
+  <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 0l2.8 9.2L24 12l-9.2 2.8L12 24l-2.8-9.2L0 12l9.2-2.8z"/></svg>VELUM</div>
+  <div class="nav-links"><span>Producto</span><span>IA</span><span>Precios</span><span>Demo</span></div>
+  <button class="nav-cta">Prueba gratis →</button>
+</div></nav>
+
+<header class="hero wrap">
+  <span class="tag">✦ Software de gestión para gyms · LATAM</span>
+  <h1>El pulso de tu gym,<br><em>en una pantalla.</em></h1>
+  <p class="hero-sub">Cobros domiciliados, reservas, check-in QR, retención y una IA que conoce tu operación. <b>Todo lo que hacías a mano, en piloto automático.</b></p>
+  <div class="hero-btns">
+    <a class="btn-cyan">Crear mi gym gratis →</a>
+    <a class="btn-line">Ver demo de 2 min</a>
+  </div>
+  <div class="hero-note">7 días gratis · Sin tarjeta · Configurado en 10 minutos</div>
+
+  <div class="stage">
+    <div class="dash">
+      <div class="dash-head">
+        <div class="dash-title">MOVE Studio — Dashboard</div>
+        <span class="live"><i></i>EN VIVO</span>
+      </div>
+      <div class="dash-grid">
+        <div class="dcell">
+          <div class="dlabel">Ingresos · Junio</div>
+          <div class="dnum cy">$84,200</div>
+          <div class="dsub">▲ +18% vs mayo · 89% de la meta</div>
+          <div class="dbars">
+            <div class="dbar" style="height:36%;"></div><div class="dbar" style="height:58%;"></div>
+            <div class="dbar" style="height:46%;"></div><div class="dbar" style="height:72%;"></div>
+            <div class="dbar" style="height:60%;"></div><div class="dbar" style="height:88%;"></div>
+            <div class="dbar" style="height:100%;"></div>
+          </div>
+        </div>
+        <div class="dcell"><div class="dlabel">Miembros activos</div><div class="dnum">217</div><div class="dsub">+12 esta semana</div></div>
+        <div class="dcell"><div class="dlabel">Check-ins hoy</div><div class="dnum">96</div><div class="dsub">7 en riesgo de churn</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="logos">
+    <span class="logo-item">MOVE</span><span class="logo-item">FORZA</span><span class="logo-item">IRONBOX</span><span class="logo-item">ALTITUDE</span><span class="logo-item">K9 CROSS</span>
+  </div>
+</header>
+
+<section class="section wrap sec-center">
+  <span class="tag">El sistema completo</span>
+  <h2 class="sec-title">Deja el Excel. <em>Dirige.</em></h2>
+  <p class="sec-sub">Cada módulo resuelve un dolor real de operar un gym en LATAM. Nada decorativo.</p>
+  <div class="feats">
+    <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M5 20v-8M10 20V4M15 20v-6M20 20V9"/></svg></div><h3>Dashboard en tiempo real</h3><p>Ingresos, asistencia y vencimientos del día en una sola pantalla.</p><span class="out">→ Decisiones con datos</span></div>
+    <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><h3>Cobros que se cobran solos</h3><p>Domiciliación con Stripe. Adiós a perseguir pagos por WhatsApp.</p><span class="out">→ 98% de cobranza puntual</span></div>
+    <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4"/></svg></div><h3>Check-in QR</h3><p>Asistencia y rachas automáticas, sin recepcionista.</p><span class="out">→ Sabes quién vino y cuándo</span></div>
+    <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M11 18h2"/></svg></div><h3>App para tus atletas</h3><p>Reservas, plan y progreso — en App Store y Google Play con tu marca.</p><span class="out">→ Tu gym, en su bolsillo</span></div>
+    <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h3>Radar de retención</h3><p>Te avisa antes de que un cliente se pierda, con acción de 1 click.</p><span class="out">→ +31% retención</span></div>
+    <div class="feat"><div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><h3>CRM & Marketing</h3><p>Pipeline de leads, campañas y seguimiento — del DM al cliente activo.</p><span class="out">→ Menos prospectos perdidos</span></div>
+  </div>
+
+  <div class="ia" style="text-align:left;">
+    <div>
+      <span class="tag">✦ VELUM IA</span>
+      <h2>La única IA que <em>conoce tu gym</em></h2>
+      <p>Pregúntale por tus ingresos, tus clientes en riesgo o pídele que genere la clase de mañana. Responde con TUS datos — no con generalidades.</p>
+    </div>
+    <div class="ia-chat">
+      <div class="ia-tag">✦ VELUM ASSISTANT</div>
+      <div class="iam user">¿Quién está en riesgo de irse este mes?</div>
+      <div class="iam">Detecté <b>7 clientes</b> sin check-in en 14+ días. Ana P. y Luis R. vencen esta semana. ¿Lanzo la campaña de reactivación?</div>
+      <div class="iam user">Genera la clase HYROX de mañana</div>
+      <div class="iam">Listo ✦ 8 estaciones · 45 min · escalada para los 14 reservados.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section wrap sec-center">
+  <span class="tag">Directo. Sin sorpresas.</span>
+  <h2 class="sec-title">Un precio. <em>Todo incluido.</em></h2>
+  <div class="price-grid">
+    <div class="price">
+      <div class="p-name">Pro</div><div class="p-amount">$599</div><div class="p-per">MXN / MES · POR GYM</div>
+      <ul>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Clientes y membresías ilimitadas</li>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Check-in QR + app del atleta</li>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pagos domiciliados con Stripe</li>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Horarios, coaches y reservas</li>
+      </ul>
+      <a class="btn-line" style="width:100%;text-align:center;">Empezar con Pro</a>
+    </div>
+    <div class="price max">
+      <span class="p-badge">RECOMENDADO</span>
+      <div class="p-name">Max</div><div class="p-amount">$999</div><div class="p-per">MXN / MES · POR GYM</div>
+      <ul>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Todo lo de Pro</li>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>VELUM IA — Assistant + Coach</li>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Radar de retención + cohorts</li>
+        <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>CRM, campañas y marketing</li>
+      </ul>
+      <a class="btn-cyan" style="width:100%;text-align:center;">Empieza con Max →</a>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2>Tu competencia ya usa<br>un sistema. <em>¿Tú?</em></h2>
+    <p>7 días gratis. Configurado en menos de 10 minutos.</p>
+    <a class="btn-cyan" style="font-size:18px;padding:21px 46px;">Crear mi gym en VELUM →</a>
+  </div>
+</section>
+
+<div class="footer">
+  <div class="logo" style="font-size:11px;letter-spacing:4px;">✦ VELUM</div>
+  <div>Hecho para LATAM. No adaptado. · © 2026</div>
+</div>
+
+</body>
+</html>

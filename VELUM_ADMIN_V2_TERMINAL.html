@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VELUM Admin V2 — Terminal (densidad máxima)</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0A0705;--bg2:#0F0B07;--panel:#13100B;
+  --sun:#F97316;--sun-l:#FFAE5C;--sun-pale:#FFD9A8;
+  --line:rgba(255,180,110,.12);--line-s:rgba(255,180,110,.3);
+  --txt:#F2EAE0;--soft:rgba(230,210,185,.6);--dim:rgba(230,210,185,.32);
+  --ok:#5BD75B;--warn:#FFC24B;--bad:#FF6A5C;
+  --font:'Inter',system-ui,sans-serif;--fd:'Outfit',system-ui,sans-serif;--fm:'Geist Mono',monospace;
+}
+body{font-family:var(--fm);color:var(--txt);background:#121110;padding:40px 28px 60px;}
+.canvas-title{text-align:center;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:5px;color:#65605A;}
+.canvas-sub{text-align:center;font-family:var(--font);font-size:12.5px;color:#7E776F;margin-bottom:30px;}
+.frame{max-width:1500px;margin:0 auto;border-radius:10px;overflow:hidden;background:var(--bg);border:1px solid rgba(255,255,255,.06);box-shadow:0 40px 100px rgba(0,0,0,.6);display:flex;flex-direction:column;}
+
+/* header terminal */
+.hdr{display:flex;align-items:center;height:42px;border-bottom:1px solid var(--line);padding:0 14px;gap:16px;background:var(--bg2);}
+.logo{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:4px;color:var(--sun-pale);}
+.logo svg{width:13px;height:13px;fill:var(--sun);}
+.hdr-path{font-size:10px;color:var(--dim);letter-spacing:1px;}
+.hdr-path b{color:var(--txt);}
+.ticker{margin-left:auto;display:flex;gap:22px;font-size:9.5px;letter-spacing:.8px;}
+.tk{color:var(--dim);}
+.tk b{color:var(--sun-pale);}
+.tk em{font-style:normal;}
+.tk .up{color:var(--ok);}
+.tk .dn{color:var(--bad);}
+.live{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1.4px;color:var(--ok);font-weight:700;}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);}
+
+.body{display:flex;flex:1;}
+/* rail de íconos */
+.rail{width:52px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;background:var(--bg2);}
+.r-it{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--dim);cursor:pointer;position:relative;transition:all .15s;}
+.r-it:hover{color:var(--sun-pale);background:rgba(249,115,22,.07);}
+.r-it.on{color:var(--sun-l);background:rgba(249,115,22,.12);box-shadow:0 0 0 1px var(--line-s) inset;}
+.r-it svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.r-it .b{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--bad);}
+.r-sep{width:24px;height:1px;background:var(--line);margin:7px 0;}
+
+/* mosaico denso */
+.mosaic{flex:1;display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:88px;gap:1px;background:var(--line);}
+.m{background:var(--bg);padding:13px 15px;overflow:hidden;position:relative;}
+.m-l{font-size:8px;letter-spacing:1.6px;color:var(--dim);text-transform:uppercase;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+.m-l .lk{color:var(--sun);cursor:pointer;}
+.big{font-family:var(--fd);font-weight:800;letter-spacing:-.03em;line-height:1;}
+
+.c1{grid-column:span 5;grid-row:span 2;}
+.n1{font-size:54px;margin-top:14px;color:var(--sun-pale);}
+.sub1{font-size:9.5px;color:var(--ok);margin-top:10px;letter-spacing:.6px;}
+.sub1 span{color:var(--dim);}
+.bars{position:absolute;right:15px;bottom:13px;display:flex;align-items:flex-end;gap:4px;height:54px;width:170px;}
+.bar{flex:1;background:linear-gradient(180deg,var(--sun-l),var(--sun));border-radius:2px 2px 0 0;opacity:.9;}
+
+.c2{grid-column:span 2;}
+.n2{font-size:30px;margin-top:10px;}
+.s2{font-size:8.5px;color:var(--dim);margin-top:6px;letter-spacing:.6px;}
+.n2.ok{color:var(--ok);}.n2.bad{color:var(--bad);}.n2.warn{color:var(--warn);}
+
+/* heatmap asistencia */
+.c-heat{grid-column:span 3;grid-row:span 2;}
+.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;margin-top:12px;}
+.h{aspect-ratio:1;border-radius:2px;background:rgba(249,115,22,.08);}
+.h.l1{background:rgba(249,115,22,.2);}
+.h.l2{background:rgba(249,115,22,.42);}
+.h.l3{background:rgba(249,115,22,.68);}
+.h.l4{background:var(--sun);box-shadow:0 0 6px rgba(249,115,22,.5);}
+.heat-foot{display:flex;justify-content:space-between;font-size:8px;color:var(--dim);margin-top:8px;letter-spacing:1px;}
+
+/* tabla pagos densa */
+.c-pay{grid-column:span 4;grid-row:span 4;}
+.trow{display:flex;justify-content:space-between;align-items:center;padding:7.5px 0;border-bottom:1px solid rgba(255,180,110,.06);font-size:10.5px;}
+.trow .who{font-family:var(--font);font-weight:700;font-size:11.5px;color:var(--txt);}
+.trow .what{font-size:8.5px;color:var(--dim);letter-spacing:.6px;margin-top:2px;}
+.trow .amt{font-weight:700;color:var(--sun-pale);font-size:11px;}
+.pill{font-size:7.5px;letter-spacing:.8px;font-weight:700;padding:2.5px 7px;border-radius:3px;margin-left:8px;}
+.pill.auto{background:rgba(249,115,22,.15);color:var(--sun-l);}
+.pill.ok{background:rgba(91,215,91,.12);color:var(--ok);}
+.pill.warn{background:rgba(255,194,75,.13);color:var(--warn);}
+.pill.bad{background:rgba(255,106,92,.13);color:var(--bad);}
+
+/* clases hoy timeline densa */
+.c-cls{grid-column:span 5;grid-row:span 2;}
+.crow{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,180,110,.06);}
+.ct{font-size:10px;font-weight:700;color:var(--sun-l);width:44px;}
+.cn{font-family:var(--font);flex:1;font-size:11.5px;font-weight:700;}
+.cc{font-size:8.5px;color:var(--dim);letter-spacing:.5px;}
+.cbar{width:90px;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.cbar i{display:block;height:100%;background:var(--sun);}
+.cnum{font-size:9px;color:var(--soft);width:38px;text-align:right;}
+
+/* pipeline + riesgo */
+.c-pipe{grid-column:span 3;grid-row:span 2;}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,180,110,.06);}
+.pn{font-family:var(--font);font-size:11px;font-weight:700;}
+.pv{font-size:13px;font-weight:700;color:var(--sun-pale);}
+.pb{width:100%;height:3px;background:rgba(255,255,255,.05);border-radius:99px;margin-top:5px;overflow:hidden;}
+.pb i{display:block;height:100%;background:var(--sun);}
+
+.c-risk{grid-column:span 8;grid-row:span 2;}
+.rrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,180,110,.06);}
+.rd{width:6px;height:6px;border-radius:50%;background:var(--bad);box-shadow:0 0 6px var(--bad);flex-shrink:0;}
+.rn{font-family:var(--font);font-size:11.5px;font-weight:700;flex:1;}
+.rm{font-size:8.5px;color:var(--dim);letter-spacing:.5px;}
+.ra{font-size:8px;letter-spacing:1px;color:var(--sun);font-weight:700;cursor:pointer;}
+
+/* IA strip */
+.c-ia{grid-column:span 12;}
+.ia-line{display:flex;align-items:center;gap:14px;margin-top:10px;background:rgba(249,115,22,.05);border:1px solid var(--line);border-radius:7px;padding:9px 14px;}
+.ia-line .sp{color:var(--sun-l);animation:br 3.2s ease-in-out infinite;}
+@keyframes br{0%,100%{opacity:.5;}50%{opacity:1;}}
+.ia-q{font-family:var(--font);font-size:11.5px;color:var(--soft);flex:1;}
+.ia-chip{font-size:8px;letter-spacing:.8px;font-weight:700;color:var(--sun-pale);border:1px solid var(--line);border-radius:99px;padding:5px 11px;cursor:pointer;white-space:nowrap;}
+
+/* statusbar */
+.statusbar{height:30px;border-top:1px solid var(--line);display:flex;align-items:center;gap:24px;padding:0 16px;font-size:8.5px;letter-spacing:1.2px;color:var(--dim);background:var(--bg2);}
+.statusbar b{color:var(--soft);}
+.statusbar .r{margin-left:auto;}
+</style>
+</head>
+<body>
+
+<div class="canvas-title">SISTEMA INTERNO · V2 — TERMINAL</div>
+<div class="canvas-sub">Densidad máxima tipo trading terminal: rail de íconos, mosaico de paneles, heatmap de asistencia, todo monospace · naranja sobre dark</div>
+
+<div class="frame">
+  <div class="hdr">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 0l2.8 9.2L24 12l-9.2 2.8L12 24l-2.8-9.2L0 12l9.2-2.8z"/></svg>VELUM</div>
+    <div class="hdr-path">/ <b>MOVE STUDIO</b> / DASHBOARD</div>
+    <div class="ticker">
+      <span class="tk">MRR <b>$84.2K</b> <em class="up">▲18%</em></span>
+      <span class="tk">ACTIVOS <b>217</b> <em class="up">+12</em></span>
+      <span class="tk">CHURN <b>2.1%</b> <em class="dn">▼0.4</em></span>
+      <span class="tk">HOY <b>96</b> CHECK-INS</span>
+    </div>
+    <div class="live"><i></i>LIVE</div>
+  </div>
+
+  <div class="body">
+    <div class="rail">
+      <div class="r-it on"><svg viewBox="0 0 24 24"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><path d="M22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="b"></span></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span class="b"></span></div>
+      <div class="r-sep"></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v3M17 21h4"/></svg></div>
+      <div class="r-sep"></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><path d="M5 20v-8M10 20V4M15 20v-6M20 20V9"/></svg></div>
+      <div class="r-it"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8 7 17M17 7l2.8-2.8"/></svg></div>
+    </div>
+
+    <div class="mosaic">
+      <div class="m c1">
+        <div class="m-l">INGRESOS · JUNIO <span class="lk">REVENUE →</span></div>
+        <div class="big n1">$84,200</div>
+        <div class="sub1">▲ +18% VS MAYO <span>· META $95K · 89%</span></div>
+        <div class="bars">
+          <div class="bar" style="height:32%;"></div><div class="bar" style="height:50%;"></div><div class="bar" style="height:42%;"></div>
+          <div class="bar" style="height:64%;"></div><div class="bar" style="height:55%;"></div><div class="bar" style="height:78%;"></div>
+          <div class="bar" style="height:70%;"></div><div class="bar" style="height:92%;"></div><div class="bar" style="height:100%;"></div>
+        </div>
+      </div>
+      <div class="m c2"><div class="m-l">ACTIVOS</div><div class="big n2">217</div><div class="s2">+12 ESTA SEMANA</div></div>
+      <div class="m c2"><div class="m-l">CHECK-INS HOY</div><div class="big n2 ok">96</div><div class="s2">PICO 19:00</div></div>
+      <div class="m c-heat">
+        <div class="m-l">ASISTENCIA · ÚLT. 8 SEMANAS <span class="lk">VISITAS →</span></div>
+        <div class="heat">
+          <div class="h l1"></div><div class="h l2"></div><div class="h l1"></div><div class="h l3"></div><div class="h l2"></div><div class="h l4"></div><div class="h l3"></div><div class="h l1"></div><div class="h l2"></div><div class="h l3"></div><div class="h l2"></div><div class="h l4"></div><div class="h l4"></div><div class="h l2"></div>
+          <div class="h l2"></div><div class="h l3"></div><div class="h l2"></div><div class="h l4"></div><div class="h l3"></div><div class="h l4"></div><div class="h l2"></div><div class="h l1"></div><div class="h l3"></div><div class="h l4"></div><div class="h l3"></div><div class="h l4"></div><div class="h l3"></div><div class="h l1"></div>
+          <div class="h l1"></div><div class="h l2"></div><div class="h l3"></div><div class="h l3"></div><div class="h l4"></div><div class="h l4"></div><div class="h l3"></div><div class="h l2"></div><div class="h l2"></div><div class="h l3"></div><div class="h l4"></div><div class="h l4"></div><div class="h l2"></div><div class="h"></div>
+        </div>
+        <div class="heat-foot"><span>ABR</span><span>MAY</span><span>JUN</span></div>
+      </div>
+      <div class="m c2"><div class="m-l">RETENCIÓN 90D</div><div class="big n2">87%</div><div class="s2">COHORT MAR: 91%</div></div>
+      <div class="m c2"><div class="m-l">EN RIESGO</div><div class="big n2 bad">7</div><div class="s2">2 CRÍTICOS</div></div>
+
+      <div class="m c-pay">
+        <div class="m-l">PAGOS · HOY <span class="lk">PAGOS →</span></div>
+        <div style="margin-top:8px;">
+          <div class="trow"><div><div class="who">Karla Mendoza</div><div class="what">MENSUAL · STRIPE</div></div><div><span class="amt">$1,299</span><span class="pill auto">AUTO</span></div></div>
+          <div class="trow"><div><div class="who">Sofía Treviño</div><div class="what">MENSUAL · STRIPE</div></div><div><span class="amt">$1,299</span><span class="pill auto">AUTO</span></div></div>
+          <div class="trow"><div><div class="who">Diego Ramos</div><div class="what">10 CLASES · EFECTIVO</div></div><div><span class="amt">$950</span><span class="pill ok">OK</span></div></div>
+          <div class="trow"><div><div class="who">Luis Rentería</div><div class="what">MENSUAL · PENDIENTE</div></div><div><span class="amt">$1,299</span><span class="pill warn">JUE</span></div></div>
+          <div class="trow"><div><div class="who">Ana Paredes</div><div class="what">MENSUAL · PENDIENTE</div></div><div><span class="amt">$1,299</span><span class="pill bad">RIESGO</span></div></div>
+          <div class="trow"><div><div class="who">Marco Ávila</div><div class="what">ANUAL · TRANSFERENCIA</div></div><div><span class="amt">$11,990</span><span class="pill ok">OK</span></div></div>
+        </div>
+      </div>
+
+      <div class="m c-cls">
+        <div class="m-l">CLASES · HOY 11 <span class="lk">HORARIO →</span></div>
+        <div style="margin-top:8px;">
+          <div class="crow"><div class="ct">06:00</div><div style="flex:1;"><div class="cn">CrossFit</div><div class="cc">ANDRÉS · SALA A</div></div><div class="cbar"><i style="width:87%;"></i></div><div class="cnum">14/16</div></div>
+          <div class="crow"><div class="ct">07:30</div><div style="flex:1;"><div class="cn">Hyrox</div><div class="cc">VALERIA · SALA B</div></div><div class="cbar"><i style="width:64%;"></i></div><div class="cnum">9/14</div></div>
+          <div class="crow"><div class="ct">18:00</div><div style="flex:1;"><div class="cn">Box</div><div class="cc">MEMO · SALA A</div></div><div class="cbar"><i style="width:100%;background:var(--warn);"></i></div><div class="cnum" style="color:var(--warn);">FULL</div></div>
+          <div class="crow"><div class="ct">19:00</div><div style="flex:1;"><div class="cn">HYROX Training</div><div class="cc">VALERIA · PRINCIPAL</div></div><div class="cbar"><i style="width:87%;"></i></div><div class="cnum">14/16</div></div>
+        </div>
+      </div>
+
+      <div class="m c-pipe">
+        <div class="m-l">CRM · PIPELINE <span class="lk">CRM →</span></div>
+        <div style="margin-top:8px;">
+          <div class="prow"><div style="flex:1;margin-right:14px;"><div class="pn">Leads nuevos</div><div class="pb"><i style="width:90%;"></i></div></div><div class="pv">18</div></div>
+          <div class="prow"><div style="flex:1;margin-right:14px;"><div class="pn">Contactados</div><div class="pb"><i style="width:62%;"></i></div></div><div class="pv">11</div></div>
+          <div class="prow"><div style="flex:1;margin-right:14px;"><div class="pn">Clase muestra</div><div class="pb"><i style="width:38%;"></i></div></div><div class="pv">6</div></div>
+          <div class="prow"><div style="flex:1;margin-right:14px;"><div class="pn">Cerrados jun</div><div class="pb"><i style="width:78%;"></i></div></div><div class="pv">14</div></div>
+        </div>
+      </div>
+
+      <div class="m c-risk">
+        <div class="m-l">RADAR DE RETENCIÓN · 7 <span class="lk">RETENCIÓN →</span></div>
+        <div style="margin-top:8px;">
+          <div class="rrow"><div class="rd"></div><div style="flex:1;"><div class="rn">Ana Paredes</div><div class="rm">16D SIN VENIR · VENCE JUE</div></div><div class="ra">REACTIVAR →</div></div>
+          <div class="rrow"><div class="rd"></div><div style="flex:1;"><div class="rn">Luis Rentería</div><div class="rm">ASISTENCIA −60% ESTE MES</div></div><div class="ra">LLAMAR →</div></div>
+          <div class="rrow"><div class="rd" style="background:var(--warn);box-shadow:0 0 6px var(--warn);"></div><div style="flex:1;"><div class="rn">9 membresías</div><div class="rm">VENCEN ESTA SEMANA</div></div><div class="ra">COBRAR →</div></div>
+        </div>
+      </div>
+
+      <div class="m c-ia">
+        <div class="m-l">✦ VELUM ASSISTANT · CONECTADO A TUS DATOS</div>
+        <div class="ia-line">
+          <span class="sp">✦</span>
+          <div class="ia-q">"Si cierras las 9 renovaciones de esta semana, superas la meta de junio por $3,400" — pregunta o ejecuta:</div>
+          <span class="ia-chip">CLIENTES EN RIESGO</span>
+          <span class="ia-chip">CLASE DE MAÑANA</span>
+          <span class="ia-chip">RESUMEN DEL MES</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>VELUM OS <b>v2.4</b></span><span>GYM <b>MOVE-001</b></span><span>SYNC <b>HACE 4S</b></span><span>STRIPE <b>● CONECTADO</b></span>
+    <span class="r">MIÉ 10 JUN 2026 · 18:42:07</span>
+  </div>
+</div>
+
+</body>
+</html>

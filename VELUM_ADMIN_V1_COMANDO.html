@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VELUM Admin V1 — Comando (topbar, sin sidebar)</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#05080C;--bg2:#0A0F16;--panel:#0E141D;
+  --cyan:#00D4FF;--cyan-l:#66E8FF;
+  --line:rgba(140,170,190,.1);--line-s:rgba(0,212,255,.3);
+  --txt:#EDF2F7;--soft:rgba(165,190,205,.6);--dim:rgba(165,190,205,.34);
+  --ok:#3DDC84;--warn:#FFB224;--bad:#FF6166;
+  --font:'Inter',system-ui,sans-serif;--fd:'Outfit',system-ui,sans-serif;--fm:'Geist Mono',monospace;
+}
+body{font-family:var(--font);color:var(--txt);background:#101316;padding:40px 28px 60px;}
+.canvas-title{text-align:center;margin-bottom:6px;font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:5px;color:#5E676E;}
+.canvas-sub{text-align:center;font-size:12.5px;color:#788087;margin-bottom:30px;}
+.frame{max-width:1500px;margin:0 auto;border-radius:14px;overflow:hidden;background:var(--bg);border:1px solid rgba(255,255,255,.07);box-shadow:0 40px 100px rgba(0,0,0,.6);}
+
+/* ── TOPBAR: navegación principal arriba, sin sidebar ── */
+.topnav{display:flex;align-items:center;gap:8px;padding:0 20px;height:52px;border-bottom:1px solid var(--line);background:var(--bg2);}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--fm);font-weight:700;font-size:12px;letter-spacing:4px;margin-right:18px;}
+.logo svg{width:14px;height:14px;fill:var(--cyan);}
+.gym-chip{font-size:11.5px;font-weight:700;color:var(--soft);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 10px;margin-right:14px;display:flex;gap:7px;align-items:center;}
+.gym-chip b{color:var(--txt);}
+.tab{font-size:13px;font-weight:600;color:var(--soft);padding:6px 13px;border-radius:6px;cursor:pointer;transition:all .15s;position:relative;}
+.tab:hover{color:var(--txt);background:rgba(255,255,255,.04);}
+.tab.active{color:var(--cyan-l);background:rgba(0,212,255,.08);}
+.tab .n{font-family:var(--fm);font-size:9px;color:var(--bad);margin-left:5px;vertical-align:2px;}
+.cmdk{
+  margin-left:auto;display:flex;align-items:center;gap:10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:7px 14px;font-size:12px;color:var(--dim);width:280px;cursor:text;
+}
+.cmdk kbd{margin-left:auto;font-family:var(--fm);font-size:9px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:var(--soft);}
+.avatar{width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,.12);border:1px solid var(--line-s);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--cyan-l);margin-left:14px;}
+
+/* sub-rail contextual */
+.subrail{display:flex;align-items:center;gap:22px;padding:0 20px;height:40px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--dim);}
+.subrail .on{color:var(--txt);border-bottom:2px solid var(--cyan);height:100%;display:flex;align-items:center;}
+.subrail span{cursor:pointer;}
+.subrail .right{margin-left:auto;font-family:var(--fm);font-size:9.5px;letter-spacing:1.2px;color:var(--dim);}
+.subrail .right b{color:var(--ok);}
+
+/* ── MAIN ── */
+.main{padding:34px 38px 44px;}
+/* Hero MRR centrado, jerarquía tipográfica */
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;padding-bottom:30px;border-bottom:1px solid var(--line);}
+.h-label{font-family:var(--fm);font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;font-weight:700;}
+.h-num{font-family:var(--fd);font-size:92px;font-weight:800;letter-spacing:-.045em;line-height:.95;margin-top:14px;}
+.h-num small{font-size:30px;color:var(--soft);font-weight:700;letter-spacing:-.02em;}
+.h-delta{display:inline-flex;gap:8px;align-items:center;margin-top:14px;font-size:13px;font-weight:700;color:var(--ok);}
+.h-delta span{color:var(--dim);font-weight:600;}
+.spark{display:flex;align-items:flex-end;gap:5px;height:84px;width:340px;}
+.sp{flex:1;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--cyan),rgba(0,212,255,.15));}
+.hero-side{display:flex;gap:44px;}
+.hs{text-align:right;}
+.hs-n{font-family:var(--fd);font-size:34px;font-weight:800;letter-spacing:-.03em;}
+.hs-n em{font-style:normal;color:var(--cyan-l);}
+.hs-l{font-family:var(--fm);font-size:8.5px;letter-spacing:1.6px;color:var(--dim);text-transform:uppercase;font-weight:700;margin-top:6px;}
+
+/* fila de trabajo: tablas planas, sin tarjetas redondeadas */
+.work{display:grid;grid-template-columns:1.5fr 1fr;gap:0;border-bottom:1px solid var(--line);}
+.col{padding:26px 0;}
+.col+.col{border-left:1px solid var(--line);padding-left:34px;}
+.col-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-right:34px;}
+.col-title{font-family:var(--fd);font-size:15px;font-weight:800;}
+.col-link{font-family:var(--fm);font-size:9px;letter-spacing:1.2px;color:var(--cyan);font-weight:700;cursor:pointer;text-transform:uppercase;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:var(--fm);font-size:8.5px;letter-spacing:1.4px;color:var(--dim);text-transform:uppercase;font-weight:700;text-align:left;padding:8px 0;border-bottom:1px solid var(--line);}
+td{font-size:13px;font-weight:600;padding:11px 0;border-bottom:1px solid rgba(140,170,190,.05);}
+td.mono{font-family:var(--fm);font-size:11.5px;color:var(--soft);}
+td.amt{font-family:var(--fd);font-weight:800;font-size:14px;}
+.st{font-family:var(--fm);font-size:8px;letter-spacing:.8px;font-weight:700;padding:3px 9px;border-radius:4px;}
+.st.auto{background:rgba(0,212,255,.1);color:var(--cyan-l);}
+.st.ok{background:rgba(61,220,132,.1);color:var(--ok);}
+.st.risk{background:rgba(255,97,102,.1);color:var(--bad);}
+.st.warn{background:rgba(255,178,36,.12);color:var(--warn);}
+.cls-line{display:flex;align-items:center;gap:14px;padding:11px 34px 11px 0;border-bottom:1px solid rgba(140,170,190,.05);}
+.cls-t{font-family:var(--fm);font-size:12px;font-weight:700;color:var(--cyan-l);width:52px;}
+.cls-n{flex:1;font-size:13px;font-weight:700;}
+.cls-c{font-size:11px;color:var(--dim);font-weight:600;}
+.cap{font-family:var(--fm);font-size:10px;color:var(--soft);}
+.capbar{width:60px;height:3px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:4px;}
+.capbar i{display:block;height:100%;background:var(--cyan);}
+
+/* command strip de alertas accionables */
+.actions{padding:24px 0 0;}
+.actions-title{font-family:var(--fm);font-size:9px;letter-spacing:1.8px;color:var(--dim);text-transform:uppercase;font-weight:700;margin-bottom:14px;}
+.act-row{display:flex;gap:10px;flex-wrap:wrap;}
+.act{
+  display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:12px 16px;font-size:12.5px;font-weight:600;color:var(--soft);cursor:pointer;
+  transition:border-color .2s;
+}
+.act:hover{border-color:var(--line-s);}
+.act b{color:var(--txt);}
+.act .go{font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--cyan);font-weight:700;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="canvas-title">SISTEMA INTERNO · V1 — COMANDO</div>
+<div class="canvas-sub">Sin sidebar: navegación superior por áreas + ⌘K · jerarquía tipográfica, esquinas rectas, estilo Linear/Vercel · cyan de marca</div>
+
+<div class="frame">
+  <div class="topnav">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 0l2.8 9.2L24 12l-9.2 2.8L12 24l-2.8-9.2L0 12l9.2-2.8z"/></svg>VELUM</div>
+    <div class="gym-chip"><b>MOVE Studio</b> · MAX</div>
+    <div class="tab active">Dashboard</div>
+    <div class="tab">Ventas<span class="n">●5</span></div>
+    <div class="tab">Marketing</div>
+    <div class="tab">Operación</div>
+    <div class="tab">Finanzas<span class="n">●9</span></div>
+    <div class="tab">IA ✦</div>
+    <div class="cmdk">Buscar o ejecutar acción… <kbd>⌘K</kbd></div>
+    <div class="avatar">R</div>
+  </div>
+  <div class="subrail">
+    <span class="on">Resumen</span><span>Clientes</span><span>Pagos</span><span>Retención</span><span>Vencimientos</span><span>Visitas</span>
+    <span class="right">SYNC <b>● EN VIVO</b> · MIÉ 10 JUN · 18:42</span>
+  </div>
+
+  <div class="main">
+    <div class="hero">
+      <div>
+        <div class="h-label">Ingresos · Junio</div>
+        <div class="h-num">$84,200<small> MXN</small></div>
+        <div class="h-delta">▲ +18% vs mayo <span>· 89% de la meta de $95,000</span></div>
+      </div>
+      <div class="spark">
+        <div class="sp" style="height:30%;"></div><div class="sp" style="height:48%;"></div><div class="sp" style="height:38%;"></div>
+        <div class="sp" style="height:62%;"></div><div class="sp" style="height:52%;"></div><div class="sp" style="height:74%;"></div>
+        <div class="sp" style="height:66%;"></div><div class="sp" style="height:88%;"></div><div class="sp" style="height:100%;"></div>
+      </div>
+      <div class="hero-side">
+        <div class="hs"><div class="hs-n">217</div><div class="hs-l">Activos</div></div>
+        <div class="hs"><div class="hs-n">96</div><div class="hs-l">Check-ins hoy</div></div>
+        <div class="hs"><div class="hs-n"><em>87%</em></div><div class="hs-l">Retención 90d</div></div>
+        <div class="hs"><div class="hs-n" style="color:var(--bad);">7</div><div class="hs-l">En riesgo</div></div>
+      </div>
+    </div>
+
+    <div class="work">
+      <div class="col">
+        <div class="col-head"><div class="col-title">Pagos recientes</div><div class="col-link">Ver pagos →</div></div>
+        <table>
+          <tr><th>Cliente</th><th>Concepto</th><th>Método</th><th style="text-align:right;">Monto</th><th></th></tr>
+          <tr><td>Karla Mendoza</td><td class="mono">MENSUAL</td><td class="mono">STRIPE</td><td class="amt" style="text-align:right;">$1,299</td><td style="text-align:right;"><span class="st auto">AUTO</span></td></tr>
+          <tr><td>Sofía Treviño</td><td class="mono">MENSUAL</td><td class="mono">STRIPE</td><td class="amt" style="text-align:right;">$1,299</td><td style="text-align:right;"><span class="st auto">AUTO</span></td></tr>
+          <tr><td>Diego Ramos</td><td class="mono">10 CLASES</td><td class="mono">EFECTIVO</td><td class="amt" style="text-align:right;">$950</td><td style="text-align:right;"><span class="st ok">PAGADO</span></td></tr>
+          <tr><td>Luis Rentería</td><td class="mono">MENSUAL</td><td class="mono">—</td><td class="amt" style="text-align:right;">$1,299</td><td style="text-align:right;"><span class="st warn">VENCE JUE</span></td></tr>
+          <tr><td>Ana Paredes</td><td class="mono">MENSUAL</td><td class="mono">—</td><td class="amt" style="text-align:right;">$1,299</td><td style="text-align:right;"><span class="st risk">16D SIN VENIR</span></td></tr>
+        </table>
+      </div>
+      <div class="col">
+        <div class="col-head" style="padding-right:0;"><div class="col-title">Hoy en el gym</div><div class="col-link">Horario →</div></div>
+        <div class="cls-line"><div class="cls-t">6:00</div><div style="flex:1;"><div class="cls-n">CrossFit</div><div class="cls-c">Coach Andrés · Sala A</div></div><div><div class="cap">14/16</div><div class="capbar"><i style="width:87%;"></i></div></div></div>
+        <div class="cls-line"><div class="cls-t">7:30</div><div style="flex:1;"><div class="cls-n">Hyrox</div><div class="cls-c">Coach Valeria · Sala B</div></div><div><div class="cap">9/14</div><div class="capbar"><i style="width:64%;"></i></div></div></div>
+        <div class="cls-line"><div class="cls-t">18:00</div><div style="flex:1;"><div class="cls-n">Box</div><div class="cls-c">Coach Memo · Sala A</div></div><div><div class="cap" style="color:var(--warn);">LLENO</div><div class="capbar"><i style="width:100%;background:var(--warn);"></i></div></div></div>
+        <div class="cls-line"><div class="cls-t">19:00</div><div style="flex:1;"><div class="cls-n">HYROX Training</div><div class="cls-c">Coach Valeria · Principal</div></div><div><div class="cap">14/16</div><div class="capbar"><i style="width:87%;"></i></div></div></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="actions-title">✦ Acciones sugeridas por VELUM IA</div>
+      <div class="act-row">
+        <div class="act"><span class="dot" style="background:var(--bad);box-shadow:0 0 8px var(--bad);"></span><b>Ana P.</b> lleva 16 días sin venir y vence el jueves <span class="go">ENVIAR REACTIVACIÓN →</span></div>
+        <div class="act"><span class="dot" style="background:var(--warn);box-shadow:0 0 8px var(--warn);"></span><b>9 membresías</b> vencen esta semana <span class="go">COBRAR EN 1 CLICK →</span></div>
+        <div class="act"><span class="dot" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan);"></span><b>5 leads</b> sin contactar desde el lunes <span class="go">ABRIR CRM →</span></div>
+        <div class="act"><span class="dot" style="background:var(--ok);box-shadow:0 0 8px var(--ok);"></span>Box 18:00 llenó — <b>4 en lista de espera</b> <span class="go">ABRIR 2ª SALA →</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
