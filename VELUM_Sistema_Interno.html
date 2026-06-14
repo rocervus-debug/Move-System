@@ -19436,8 +19436,9 @@ function coachColorIdx(coach_id, coach_nombre){
 
 async function loadHorarioOverridesFromSupabase(){
   const mm    = String(hvMonth+1).padStart(2,'0');
+  const dd    = String(new Date(hvYear, hvMonth+1, 0).getDate());  // último día real del mes
   const start = `${hvYear}-${mm}-01`;
-  const end   = `${hvYear}-${mm}-31`;
+  const end   = `${hvYear}-${mm}-${dd}`;
   // Overrides = records in the same 'horarios' table that have a specific fecha
   const { data, error } = await gf(window.supabaseClient.from('horarios').select('*')).gte('fecha', start).lte('fecha', end).not('fecha','is',null);
   if(error){ console.error('Error cargando overrides:', error); horarioOverrides=[]; return; }
@@ -19452,8 +19453,9 @@ async function loadHorarioOverridesFromSupabase(){
 
 async function loadHorarioCancelaciones(){
   const mm    = String(hvMonth+1).padStart(2,'0');
+  const dd    = String(new Date(hvYear, hvMonth+1, 0).getDate());  // último día real del mes
   const start = `${hvYear}-${mm}-01`;
-  const end   = `${hvYear}-${mm}-31`;
+  const end   = `${hvYear}-${mm}-${dd}`;
   const { data, error } = await gf(window.supabaseClient.from('horario_cancelaciones').select('id,horario_id,fecha,motivo')).gte('fecha', start).lte('fecha', end);
   if(error){ console.error('Error cargando cancelaciones:', error); horarioCancelaciones=[]; return; }
   horarioCancelaciones = data||[];
@@ -20199,12 +20201,13 @@ async function saveClase(){
 
   const coachObj = coaches.find(c=>String(c.id)===String(cid));
   // Build one payload per day; fecha='' marks it as base template (not a specific date override)
+  // coach_id/coach_nombre son text NOT NULL en la BD → usar '' cuando no hay coach asignado
   const payloads = dias.map(dia=>withGymId({
     dia, hora, tipo,
     fecha:        '',             // empty string = base template (avoids PK null violation)
-    coach_id:     cid||null,
+    coach_id:     cid||'',
     coach_nombre: coachObj ? coachObj.nombre : '',
-    cupo, notas
+    cupo, notas: notas||''
   }));
 
   const { error } = await window.supabaseClient.from('horarios').insert(payloads);
@@ -20251,12 +20254,13 @@ async function saveEditClase(){
   const cupo  = parseInt(document.getElementById('ecl-cupo').value)||15;
   const notas = document.getElementById('ecl-notas').value.trim();
   const coachObj = coaches.find(c=>String(c.id)===String(cid));
+  // coach_id/coach_nombre son text NOT NULL → '' cuando no hay coach
   const payload = {
     dia, hora, tipo,
     fecha:        '',   // keep as base template
-    coach_id:     cid||null,
+    coach_id:     cid||'',
     coach_nombre: coachObj ? coachObj.nombre : '',
-    cupo, notas
+    cupo, notas: notas||''
   };
   const { error } = await window.supabaseClient.from('horarios').update(payload).eq('id', id);
   if(error){ toast('Error al guardar ❌','✕'); console.error(error); return; }
