@@ -3432,6 +3432,9 @@ body::before{
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
 
+      <!-- ══ STRIP DE STUDIOS — KPIs boutique (solo vertical studios) ══ -->
+      <div id="studios-dash-strip" style="display:none;"></div>
+
       <!-- ══ ONBOARDING — guía de configuración inicial (se auto-oculta al completar) ══ -->
       <div id="onboarding-card" style="display:none;"></div>
 
@@ -8806,6 +8809,7 @@ function applyVertical(vertical){
   _gymVertical = (v === 'studios' || v === 'recovery') ? v : 'velum';
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
+  if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
   if(_gymVertical === 'velum') return;   // sin cambios para el sistema actual
   const def = _VERTICAL_DEFAULTS[_gymVertical];
   // Si el gym no eligió un color propio, usar el acento de la vertical.
@@ -15696,6 +15700,7 @@ function renderMobileHome(){
 }
 
 function renderDashboard(){
+  if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique (solo studios)
   // Show skeleton in KPI values while computing
   showKpiSkeleton(['kpi-activos','kpi-ingresos-mes','kpi-total-ingresos','kpi-socios-nuevos','kpi-vencidas','kpi-por-vencer']);
 
@@ -22519,6 +22524,64 @@ async function promoverDeWaitlist(waitlistId){
   await window.supabaseClient.from('waitlist').update({ estado:'promovido' }).eq('id', waitlistId);
   toast(`${(w.cliente_nombre||'').split(' ')[0]} promovido a la clase ✓`,'✅');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
+}
+
+// Studios: strip de KPIs boutique en el dashboard (solo vertical studios).
+async function renderStudiosDash(){
+  const strip = document.getElementById('studios-dash-strip');
+  if(!strip) return;
+  if(typeof _gymVertical==='undefined' || _gymVertical!=='studios'){ strip.style.display='none'; strip.innerHTML=''; return; }
+  try{
+    const gymId = MOVE_GYM_ID||null;
+    const now = new Date();
+    const pad = n=>String(n).padStart(2,'0');
+    const dstr = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const hoyStr = dstr(now);
+    const diaHoy = _DIAS_ES[now.getDay()];
+    const hace7 = new Date(now); hace7.setDate(now.getDate()-7);
+    // Clases de hoy → cupo total
+    let hQ = window.supabaseClient.from('horarios').select('cupo').eq('dia',diaHoy);
+    if(gymId) hQ = hQ.eq('gym_id',gymId);
+    const {data:hoyClases} = await hQ;
+    const cupoTotal = (hoyClases||[]).reduce((s,h)=>s+(h.cupo||0),0);
+    const numClases = (hoyClases||[]).length;
+    // Reservas de hoy
+    let rQ = window.supabaseClient.from('reservas').select('id',{count:'exact',head:true}).eq('fecha',hoyStr).neq('estado','cancelado');
+    if(gymId) rQ = rQ.eq('gym_id',gymId);
+    const {count:reservasHoy} = await rQ;
+    const ocup = cupoTotal>0 ? Math.round((reservasHoy||0)/cupoTotal*100) : 0;
+    // No-shows últimos 7 días
+    let aQ = window.supabaseClient.from('reservas').select('estado').gte('fecha',dstr(hace7)).lte('fecha',hoyStr);
+    if(gymId) aQ = aQ.eq('gym_id',gymId);
+    const {data:r7} = await aQ;
+    const tot7 = (r7||[]).filter(r=>r.estado!=='cancelado').length;
+    const ns7  = (r7||[]).filter(r=>r.estado==='ausente').length;
+    const nsPct = tot7>0 ? Math.round(ns7/tot7*100) : 0;
+    // En lista de espera hoy
+    let wQ = window.supabaseClient.from('waitlist').select('id',{count:'exact',head:true}).eq('fecha',hoyStr).eq('estado','espera');
+    if(gymId) wQ = wQ.eq('gym_id',gymId);
+    const {count:espera} = await wQ;
+    const card=(ico,label,val,sub,clr)=>`
+      <div style="flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;">
+        <div style="position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,${clr||'var(--accent)'},transparent);opacity:.7;"></div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:700;">${ico} ${label}</div>
+        <div style="font-family:var(--font-display);font-size:30px;font-weight:800;line-height:1.05;margin:7px 0 2px;color:var(--text);">${val}</div>
+        <div style="font-size:11.5px;color:var(--text3);">${sub}</div>
+      </div>`;
+    strip.innerHTML = `
+      <div style="display:flex;align-items:baseline;gap:10px;margin:2px 0 12px;">
+        <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--text);">Tu día en el studio</div>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <div style="font-size:11px;color:var(--text3);">${numClases} clase${numClases!==1?'s':''} hoy</div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
+        ${card('◷','Ocupación hoy', ocup+'%', `${reservasHoy||0} de ${cupoTotal} lugares`, 'var(--accent)')}
+        ${card('▣','Reservas hoy', (reservasHoy||0), `en ${numClases} clase${numClases!==1?'s':''}`, 'var(--accent)')}
+        ${card('⊘','No-shows · 7d', nsPct+'%', `${ns7} de ${tot7} reservas`, nsPct>10?'var(--danger)':'var(--ok)')}
+        ${card('⏳','En lista de espera', (espera||0), 'esperando lugar hoy', '#a78bfa')}
+      </div>`;
+    strip.style.display='block';
+  }catch(e){ console.warn('renderStudiosDash',e); strip.style.display='none'; }
 }
 
 let _asistSearchTimer = null;
