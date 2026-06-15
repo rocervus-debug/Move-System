@@ -22365,6 +22365,26 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     window._dcCupo = cupo||0;
     window._dcTaken = {};
     lista.forEach(r=>{ if(r.spot) window._dcTaken[r.spot]=r.cliente_nombre; });
+    // Studios: lista de espera de esta clase+fecha (mostrar + promover)
+    let waitlistHtml = '';
+    if(typeof _gymVertical!=='undefined' && _gymVertical==='studios'){
+      let wq = window.supabaseClient.from('waitlist')
+        .select('id,cliente_nombre,posicion').eq('horario_id',horarioId).eq('fecha',hoyStr).eq('estado','espera')
+        .order('posicion',{ascending:true});
+      if(gymId) wq = wq.eq('gym_id',gymId);
+      const { data:wl } = await wq;
+      if(wl && wl.length){
+        waitlistHtml = `
+          <div style="font-size:11px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.8px;margin:22px 0 8px;">⏳ Lista de espera · ${wl.length}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${wl.map(w=>`<div class="persona-row" style="border-color:rgba(167,139,250,.2);background:rgba(167,139,250,.04);">
+              <div style="width:34px;height:34px;border-radius:50%;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:#a78bfa;">${w.posicion}</div>
+              <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(w.cliente_nombre)}</div>
+              <button onclick="promoverDeWaitlist('${w.id}')" style="flex-shrink:0;padding:6px 11px;border-radius:7px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-bg2);font-size:11px;font-weight:700;cursor:pointer;">↑ Promover</button>
+            </div>`).join('')}
+          </div>`;
+      }
+    }
     const checkins  = lista.filter(r=>r.estado==='checkin');
     const ausentes  = lista.filter(r=>r.estado==='ausente');
     const pendientes= lista.filter(r=>r.estado==='reservado');
@@ -22407,6 +22427,8 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
         <div style="display:flex;flex-direction:column;gap:6px;">
           ${pendientes.map(r=>_renderPersonaRow(r,'reservado',horarioId,hEsc,tEsc)).join('')}
         </div>`:''}
+
+      ${waitlistHtml}
 
       ${!lista.length?`<div style="padding:32px 20px;text-align:center;font-size:13px;color:var(--text3);">Sin reservas para esta clase.<br>Usa el campo de arriba para agregar clientes.</div>`:''}`;
   }catch(e){
@@ -22461,6 +22483,41 @@ async function asignarSpot(reservaId, spotVal){
   const { error } = await window.supabaseClient.from('reservas').update({ spot }).eq('id', reservaId);
   if(error){ toast('No se pudo asignar el spot ❌','✕'); console.error('asignarSpot',error); return; }
   toast(spot ? `Spot ${spot} asignado ✦` : 'Spot liberado','✦');
+  if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
+}
+
+// Studios: agrega a la lista de espera de una clase llena.
+async function _agregarAWaitlist(clienteId, nombre, horarioId, hora, tipo, fecha, gymId){
+  const gid = gymId || MOVE_GYM_ID || 1;   // waitlist.gym_id es NOT NULL
+  const diaHoy = _DIAS_ES[new Date().getDay()];
+  // posición = cuántos ya en espera para esta clase+fecha
+  let cq = window.supabaseClient.from('waitlist').select('id',{count:'exact',head:true})
+    .eq('horario_id',horarioId).eq('fecha',fecha).eq('estado','espera');
+  if(gid) cq = cq.eq('gym_id',gid);
+  const { count } = await cq;
+  const pos = (count||0)+1;
+  const { error } = await window.supabaseClient.from('waitlist').insert({
+    gym_id: gid, horario_id: horarioId, cliente_id: parseInt(clienteId)||null,
+    cliente_nombre: nombre, fecha, clase_tipo: tipo, clase_hora: hora, clase_dia: diaHoy,
+    posicion: pos, estado: 'espera'
+  });
+  if(error){ toast('No se pudo agregar a la lista de espera ❌','✕'); console.error('_agregarAWaitlist',error); return; }
+  toast(`${nombre.split(' ')[0]} en lista de espera · #${pos} ⏳`,'⏳');
+  if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
+}
+
+// Studios: promueve a alguien de la lista de espera → crea su reserva.
+async function promoverDeWaitlist(waitlistId){
+  const { data:w, error:eRead } = await window.supabaseClient.from('waitlist').select('*').eq('id', waitlistId).single();
+  if(eRead || !w){ toast('Entrada de lista de espera no encontrada','⚠️'); return; }
+  const { error:eIns } = await window.supabaseClient.from('reservas').insert({
+    gym_id: w.gym_id, horario_id: w.horario_id, cliente_id: w.cliente_id,
+    cliente_nombre: w.cliente_nombre, fecha: w.fecha, clase_tipo: w.clase_tipo,
+    clase_hora: w.clase_hora, clase_dia: w.clase_dia, estado: 'reservado'
+  });
+  if(eIns){ toast('No se pudo promover ❌','✕'); console.error('promoverDeWaitlist',eIns); return; }
+  await window.supabaseClient.from('waitlist').update({ estado:'promovido' }).eq('id', waitlistId);
+  toast(`${(w.cliente_nombre||'').split(' ')[0]} promovido a la clase ✓`,'✅');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
 }
 
@@ -22540,6 +22597,16 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
     .from('reservas').select('id',{count:'exact',head:true})
     .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado');
   if(cupo>0 && (cntActual||0)>=cupo){
+    // Studios: clase llena → ofrecer lista de espera (no fuerza la reserva).
+    if(typeof _gymVertical!=='undefined' && _gymVertical==='studios'){
+      const irWaitlist = await confirmDialog(
+        `La clase está llena (${cntActual}/${cupo}). ¿Agregar a ${clienteNombre.split(' ')[0]} a la lista de espera?`,
+        {title:'Clase llena',icon:'⏳',confirmText:'Sí, a la lista'}
+      );
+      if(irWaitlist) await _agregarAWaitlist(clienteId, clienteNombre, horarioId, hora, tipo, hoyStr, gymId);
+      return; // no crea reserva en clase llena
+    }
+    // Resto de verticales: comportamiento actual sin cambios.
     if(!await confirmDialog(
       `La clase está llena (${cntActual}/${cupo} cupos). ¿Registrar de todas formas?`,
       {title:'Clase llena ⚠️',icon:'⚠️'}
