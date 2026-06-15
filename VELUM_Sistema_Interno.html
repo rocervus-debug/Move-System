@@ -22355,12 +22355,16 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
   const gymId  = MOVE_GYM_ID||null;
   try{
     let q = window.supabaseClient.from('reservas')
-      .select('id,cliente_nombre,estado,portal_token,cliente_id')
+      .select('id,cliente_nombre,estado,portal_token,cliente_id,spot')
       .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado').order('created_at',{ascending:true});
     if(gymId) q = q.eq('gym_id',gymId);
     const {data:reservas,error} = await q;
     if(error) throw error;
     const lista     = reservas||[];
+    // Studios: spots/reformers ocupados (para el selector por persona)
+    window._dcCupo = cupo||0;
+    window._dcTaken = {};
+    lista.forEach(r=>{ if(r.spot) window._dcTaken[r.spot]=r.cliente_nombre; });
     const checkins  = lista.filter(r=>r.estado==='checkin');
     const ausentes  = lista.filter(r=>r.estado==='ausente');
     const pendientes= lista.filter(r=>r.estado==='reservado');
@@ -22419,12 +22423,28 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
   const icon   = isCheckin?'✅':isAusente?'❌':'👤';
   const label  = isCheckin?'Asistió ✓':isAusente?'No asistió':'Pendiente';
   const lColor = isCheckin?'var(--ok)':isAusente?'#f06060':'var(--text3)';
+  // Studios: selector de spot/reformer por persona
+  const showSpot = (typeof _gymVertical!=='undefined' && _gymVertical==='studios');
+  const cupo  = (typeof window!=='undefined' && window._dcCupo) || 0;
+  const taken = (typeof window!=='undefined' && window._dcTaken) || {};
+  let spotSel = '';
+  if(showSpot && cupo>0){
+    let opts = `<option value="">— spot —</option>`;
+    for(let i=1;i<=cupo;i++){
+      const ocupadoOtro = taken[i] && taken[i]!==r.cliente_nombre;
+      opts += `<option value="${i}"${r.spot===i?' selected':''}${ocupadoOtro?' disabled':''}>Spot ${i}${ocupadoOtro?' ·ocupado':''}</option>`;
+    }
+    spotSel = `<select onclick="event.stopPropagation()" onchange="event.stopPropagation();asignarSpot('${r.id}',this.value)"
+      style="flex-shrink:0;padding:6px 8px;border-radius:7px;background:var(--accent-bg);border:1px solid var(--accent-bg2);color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);max-width:110px;">${opts}</select>`;
+  }
+  const labelSpot = (showSpot && r.spot) ? ` · <span style="color:var(--accent);font-weight:700;">Spot ${r.spot}</span>` : '';
   return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}" style="${isAusente?'border-color:rgba(240,96,96,.2);background:rgba(240,96,96,.04);':''}">
     <div style="width:36px;height:36px;border-radius:50%;background:${avatar};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">${icon}</div>
     <div style="flex:1;min-width:0;">
       <div style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</div>
-      <div style="font-size:11px;color:${lColor};">${label}</div>
+      <div style="font-size:11px;color:${lColor};">${label}${labelSpot}</div>
     </div>
+    ${spotSel}
     ${estado==='reservado'?`
     <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
       <button onclick="marcarPresenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
@@ -22433,6 +22453,15 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
         style="padding:6px 10px;border-radius:7px;background:rgba(240,96,96,.1);color:#f06060;border:1px solid rgba(240,96,96,.25);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✗ No asistió</button>
     </div>`:''}
   </div>`;
+}
+
+// Studios: asigna/libera el spot (reformer/bici/mat) de una reserva.
+async function asignarSpot(reservaId, spotVal){
+  const spot = spotVal ? parseInt(spotVal) : null;
+  const { error } = await window.supabaseClient.from('reservas').update({ spot }).eq('id', reservaId);
+  if(error){ toast('No se pudo asignar el spot ❌','✕'); console.error('asignarSpot',error); return; }
+  toast(spot ? `Spot ${spot} asignado ✦` : 'Spot liberado','✦');
+  if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
 }
 
 let _asistSearchTimer = null;
