@@ -1214,6 +1214,33 @@ body{
 .pwiz-ck{color:var(--text3);flex-shrink:0;}
 .pwiz-cv{color:var(--text);text-align:right;}
 
+/* ══ Sistema de wizard genérico (.wzd-*) — reutilizable en cualquier modal ══ */
+.wzd-bar{padding:14px 24px 0;}
+.wzd-steplabel{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.4px;}
+.wzd-steplabel strong{color:var(--accent);}
+.wzd-segs{display:flex;gap:6px;margin-top:8px;}
+.wzd-seg{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.08);transition:background .3s,box-shadow .3s;}
+.wzd-seg.done{background:rgba(0,212,255,.45);}
+.wzd-seg.active{background:var(--accent);box-shadow:0 0 10px rgba(0,212,255,.45);}
+.wzd-step{display:none;}
+.wzd-step.active{display:block;animation:wzd-in .22s ease;}
+@keyframes wzd-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+.wzd-q{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:.2px;}
+.wzd-hint{font-size:12.5px;color:var(--text3);margin:4px 0 16px;line-height:1.6;}
+.wzd-crow{display:flex;justify-content:space-between;gap:16px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
+.wzd-crow:last-child{border-bottom:none;}
+.wzd-ck{color:var(--text3);flex-shrink:0;}
+.wzd-cv{color:var(--text);text-align:right;font-weight:600;}
+/* Cards de opción tipo "elige uno" (tipo de clase, etc.) */
+.wzd-opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:8px;}
+.wzd-opt{position:relative;padding:14px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color .18s,transform .18s,box-shadow .18s,background .18s;text-align:center;}
+.wzd-opt:hover{border-color:rgba(0,212,255,.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.35);}
+.wzd-opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.wzd-opt.sel{border-color:var(--accent);background:rgba(0,212,255,.08);box-shadow:0 0 0 1px var(--accent) inset,var(--glow-soft);}
+.wzd-opt-ico{font-size:22px;line-height:1;margin-bottom:7px;}
+.wzd-opt-name{font-size:13px;font-weight:600;color:var(--text);}
+.wzd-opt-sub{font-size:10.5px;color:var(--text3);margin-top:3px;}
+
 /* ── Form fields — glass system ── */
 .field{margin-bottom:16px;}
 .field label{
@@ -5728,37 +5755,64 @@ body::before{
 
 <!-- Modal: Agregar Coach -->
 <div class="modal-overlay" id="modal-coach">
-  <div class="modal">
+  <div class="modal" style="width:460px;">
     <div class="modal-head">
-      <div class="modal-title">Agregar Coach</div>
+      <div class="modal-title">Agregar coach</div>
       <button class="modal-close" onclick="closeModal('coach')">✕</button>
     </div>
-    <div class="modal-body">
-      <div style="background:var(--accent-bg);border:1px solid rgba(18,70,96,.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--accent);">
-        ℹ️ Los coaches son perfiles del equipo interno, completamente separados de los clientes del CRM.
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>Nombre completo *</label><input id="c-nombre" type="text" placeholder="Ej: Andrés Villanueva"/></div>
-        <div class="field"><label>Teléfono</label><input id="c-tel" type="text" placeholder="+52 461…"/></div>
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>Email</label><input id="c-email" type="email" placeholder="coach@example.com"/></div>
-        <div class="field"><label>Rol</label><input id="c-rol" type="text" placeholder="Ej: Coach Principal"/></div>
-      </div>
-      <div class="field"><label>Clases que imparte</label><input id="c-clases" type="text" placeholder="Ej: Strength, Hyrox"/></div>
-      <div class="field"><label>Foto del coach <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);">(opcional · aparece en el Storefront público)</span></label>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
-          <button type="button" class="btn btn-primary btn-sm" onclick="uploadCoachFoto()">📁 Subir foto</button>
-          <img id="c-foto-preview" src="" style="display:none;width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(0,212,255,.25);"/>
-          <span id="c-foto-upload-status" style="font-size:11px;color:var(--text3);"></span>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Quién es? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Quién es el coach?</div>
+        <div class="wzd-hint">Los coaches son tu equipo interno, separados de los clientes. Solo el nombre es obligatorio.</div>
+        <div class="field">
+          <label>Nombre completo *</label>
+          <input id="c-nombre" type="text" placeholder="Ej: Andrés Villanueva"/>
+          <span class="field-err" id="c-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
-        <input id="c-foto" type="text" placeholder="o pega URL: https://..."/>
+        <div class="field-grid">
+          <div class="field"><label>Teléfono <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="c-tel" type="text" placeholder="+52 461…"/></div>
+          <div class="field"><label>Email <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="c-email" type="email" placeholder="coach@example.com"/></div>
+        </div>
       </div>
-      <div class="field"><label>Notas internas</label><textarea id="c-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
+
+      <!-- PASO 2 — ¿Qué hace? -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿Qué hace en el gym?</div>
+        <div class="wzd-hint">Todo esto es opcional — puedes completarlo después desde su perfil.</div>
+        <div class="field-grid">
+          <div class="field"><label>Rol</label><input id="c-rol" type="text" placeholder="Ej: Coach Principal"/></div>
+          <div class="field"><label>Clases que imparte</label><input id="c-clases" type="text" placeholder="Ej: Strength, Hyrox"/></div>
+        </div>
+        <div class="field"><label>Foto del coach <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);">(opcional · aparece en el Storefront público)</span></label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="uploadCoachFoto()">📁 Subir foto</button>
+            <img id="c-foto-preview" src="" style="display:none;width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(0,212,255,.25);"/>
+            <span id="c-foto-upload-status" style="font-size:11px;color:var(--text3);"></span>
+          </div>
+          <input id="c-foto" type="text" placeholder="o pega URL: https://..."/>
+        </div>
+        <div class="field"><label>Notas internas</label><textarea id="c-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
+      </div>
+
+      <!-- PASO 3 — Confirma -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Confirma el coach</div>
+        <div class="wzd-hint">Revisa los datos. Puedes regresar a corregir lo que quieras.</div>
+        <div id="c-confirm"></div>
+      </div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('coach')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveCoach()">Guardar Coach</button>
+      <button class="btn btn-ghost" onclick="closeModal('coach')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('coach')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('coach')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveCoach()" style="display:none;">Guardar coach</button>
     </div>
   </div>
 </div>
@@ -5988,60 +6042,83 @@ body::before{
 
 <!-- Modal: Registrar Visita (Pase de Día) -->
 <div class="modal-overlay" id="modal-visita">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:440px;">
     <div class="modal-head">
-      <div class="modal-title">🎫 Registrar Visita</div>
+      <div class="modal-title">🎫 Registrar visita</div>
       <button class="modal-close" onclick="closeModal('visita')">✕</button>
     </div>
-    <div class="modal-body">
-      <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#c4b5fd;margin-bottom:14px;line-height:1.5;">
-        🎫 <strong>Pase de día / visita ocasional.</strong> No crea membresía ni número de socio. El ingreso se suma al balance del mes.
-      </div>
-      <div class="field" style="position:relative;">
-        <label>Nombre *</label>
-        <input id="v-nombre" type="text" placeholder="Buscar socio o escribir nombre..." autocomplete="off"
-          oninput="_vAutoInput(this)" onfocus="_vAutoInput(this)" onblur="_vAutoBlur()"/>
-        <div id="v-nombre-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:9999;
-          background:var(--card);border:1px solid rgba(167,139,250,.3);border-radius:10px;
-          box-shadow:0 8px 32px rgba(0,0,0,.5);max-height:160px;overflow-y:auto;margin-top:4px;"></div>
-        <span class="field-err" id="v-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
-      </div>
-      <div class="field-grid">
-        <div class="field">
-          <label>Monto (MXN) *</label>
-          <input id="v-monto" type="number" placeholder="150" min="0"/>
-          <span class="field-err" id="v-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
-        </div>
-        <div class="field">
-          <label>Fecha *</label>
-          <input id="v-fecha" type="date"/>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Quién entra? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Quién entra hoy?</div>
+        <div class="wzd-hint">Pase de día / visita ocasional — no crea membresía ni número de socio. Escribe el nombre o búscalo si ya está en tu base.</div>
+        <div class="field" style="position:relative;">
+          <label>Nombre *</label>
+          <input id="v-nombre" type="text" placeholder="Buscar socio o escribir nombre..." autocomplete="off"
+            oninput="_vAutoInput(this)" onfocus="_vAutoInput(this)" onblur="_vAutoBlur()"/>
+          <div id="v-nombre-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:9999;
+            background:var(--card);border:1px solid rgba(167,139,250,.3);border-radius:10px;
+            box-shadow:0 8px 32px rgba(0,0,0,.5);max-height:160px;overflow-y:auto;margin-top:4px;"></div>
+          <span class="field-err" id="v-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
       </div>
-      <div class="field-grid">
-        <div class="field">
-          <label>Método de pago</label>
-          <select id="v-metodo">
-            <option>Efectivo</option>
-            <option>Transferencia</option>
-            <option>Tarjeta</option>
-            <option>TotalPass</option>
-            <option>Nessty</option>
-            <option>Otro</option>
-          </select>
+
+      <!-- PASO 2 — ¿Cuánto paga? -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿Cuánto paga?</div>
+        <div class="wzd-hint">El ingreso se suma al balance del mes. La fecha ya está puesta en hoy.</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Monto (MXN) *</label>
+            <input id="v-monto" type="number" placeholder="150" min="0"/>
+            <span class="field-err" id="v-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+          <div class="field">
+            <label>Fecha *</label>
+            <input id="v-fecha" type="date"/>
+          </div>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Método de pago</label>
+            <select id="v-metodo">
+              <option>Efectivo</option>
+              <option>Transferencia</option>
+              <option>Tarjeta</option>
+              <option>TotalPass</option>
+              <option>Nessty</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>WhatsApp <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+            <input id="v-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+          </div>
         </div>
         <div class="field">
-          <label>WhatsApp (opcional)</label>
-          <input id="v-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+          <label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+          <input id="v-notas" type="text" placeholder="Observaciones..."/>
         </div>
       </div>
-      <div class="field">
-        <label>Notas</label>
-        <input id="v-notas" type="text" placeholder="Observaciones..."/>
+
+      <!-- PASO 3 — Confirma -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Confirma la visita</div>
+        <div class="wzd-hint">Revisa que esté bien. Puedes regresar a corregir.</div>
+        <div id="v-confirm"></div>
       </div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('visita')">Cancelar</button>
-      <button class="btn btn-primary" id="v-save-btn" style="background:#7c3aed;" onclick="saveVisita()">🎫 Registrar Visita</button>
+      <button class="btn btn-ghost" onclick="closeModal('visita')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('visita')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('visita')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" id="v-save-btn" style="display:none;background:#7c3aed;" onclick="saveVisita()">🎫 Registrar visita</button>
     </div>
   </div>
 </div>
@@ -6155,43 +6232,60 @@ body::before{
 
 <!-- Modal: Agregar Cliente (sin pago / migración) -->
 <div class="modal-overlay" id="modal-solo-cliente">
-  <div class="modal" style="width:420px;">
+  <div class="modal" style="width:440px;">
     <div class="modal-head">
-      <div class="modal-title">Agregar Cliente</div>
+      <div class="modal-title">Agregar cliente</div>
       <button class="modal-close" onclick="closeModal('solo-cliente')">✕</button>
     </div>
-    <div class="modal-body">
-      <div style="background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--text2);">
-        Registra un cliente en el directorio sin asociar un pago. Útil para migrar tu base de datos existente. Puedes asignarle una membresía después.
-      </div>
-      <div class="field">
-        <label>Nombre completo *</label>
-        <input id="sc-nombre" type="text" placeholder="Nombre del cliente"/>
-        <span class="field-err" id="sc-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
-      </div>
-      <div class="field">
-        <label>Email * <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(evita duplicados)</span></label>
-        <input id="sc-email-new" type="email" placeholder="cliente@email.com" autocapitalize="off" autocorrect="off"/>
-        <span class="field-err" id="sc-email-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
-      </div>
-      <div class="field-grid">
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — Datos -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿A quién registramos?</div>
+        <div class="wzd-hint">Con nombre y email basta para empezar. El email evita registrar dos veces a la misma persona; podrás asignarle una membresía después.</div>
         <div class="field">
-          <label>WhatsApp (10 dígitos)</label>
-          <input id="sc-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+          <label>Nombre completo *</label>
+          <input id="sc-nombre" type="text" placeholder="Ej: Ana López"/>
+          <span class="field-err" id="sc-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
         <div class="field">
-          <label>🎂 Fecha de nacimiento</label>
-          <input id="sc-cumpleanos" type="date"/>
+          <label>Email * <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(evita duplicados)</span></label>
+          <input id="sc-email-new" type="email" placeholder="cliente@email.com" autocapitalize="off" autocorrect="off"/>
+          <span class="field-err" id="sc-email-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>WhatsApp <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+            <input id="sc-telefono" type="tel" placeholder="5512345678" maxlength="15"/>
+          </div>
+          <div class="field">
+            <label>🎂 Cumpleaños <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+            <input id="sc-cumpleanos" type="date"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+          <input id="sc-notas" type="text" placeholder="Observaciones, referido por..."/>
         </div>
       </div>
-      <div class="field">
-        <label>Notas</label>
-        <input id="sc-notas" type="text" placeholder="Observaciones, referido por..."/>
+
+      <!-- PASO 2 — Confirma -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Confirma el alta</div>
+        <div class="wzd-hint">Revisa que todo esté bien. Puedes regresar a corregir lo que sea.</div>
+        <div id="sc-confirm"></div>
       </div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('solo-cliente')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveClienteSinPago()">Agregar Cliente</button>
+      <button class="btn btn-ghost" onclick="closeModal('solo-cliente')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('solo-cliente')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('solo-cliente')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveClienteSinPago()" style="display:none;">Agregar cliente</button>
     </div>
   </div>
 </div>
@@ -6677,14 +6771,23 @@ body::before{
   </div>
 </div>
 
-<!-- MODAL ADD CLASE -->
+<!-- MODAL ADD CLASE — Asistente guiado 3 pasos -->
 <div class="modal-overlay" id="modal-clase">
-  <div class="modal" style="width:480px;">
+  <div class="modal" style="width:500px;">
     <div class="modal-head">
-      <div class="modal-title">🗓 Nueva Clase — Plantilla Semanal</div>
+      <div class="modal-title">🗓 Nueva clase — plantilla semanal</div>
       <button class="modal-close" onclick="closeModal('clase')">✕</button>
     </div>
-    <div class="modal-body">
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué días y a qué hora? -->
+      <div class="wzd-step" data-step="1">
+      <div class="wzd-q">¿Qué días y a qué hora?</div>
+      <div class="wzd-hint">Marca todos los días en que se repite esta clase. Crearemos una clase por cada día seleccionado.</div>
       <!-- Multi-day selector -->
       <div class="field">
         <label>Días recurrentes *</label>
@@ -6703,6 +6806,7 @@ body::before{
           <button class="btn btn-outline btn-sm" type="button" onclick="toggleDayPreset('finsem')">Sáb+Dom</button>
           <button class="btn btn-outline btn-sm" type="button" onclick="toggleDayPreset('none')" style="margin-left:auto;color:var(--text3);">Ninguno</button>
         </div>
+        <span class="field-err" id="cl-dias-err" style="display:none;font-size:11px;color:var(--danger);margin-top:6px;"></span>
       </div>
       <div class="field"><label>Hora *</label>
         <select id="cl-hora">
@@ -6725,29 +6829,47 @@ body::before{
           <option>9:00pm</option>
         </select>
       </div>
+      </div><!-- /paso 1 -->
+
+      <!-- PASO 2 — ¿Qué clase y quién? -->
+      <div class="wzd-step" data-step="2">
+      <div class="wzd-q">¿Qué clase y quién la da?</div>
+      <div class="wzd-hint">Elige el tipo de clase. Puedes asignar coach ahora o dejarlo para después.</div>
+      <div class="field">
+        <label>Tipo de clase *</label>
+        <!-- select oculto controlado por las cards (la lógica de saveClase no cambia) -->
+        <select id="cl-tipo" style="display:none;">
+          <option value="Strength">Strength</option>
+          <option value="Endurance">Endurance</option>
+          <option value="Hyrox">Hyrox</option>
+          <option value="Open">Open</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <div id="cl-tipo-grid" class="wzd-opt-grid"></div>
+      </div>
       <div class="field-grid">
-        <div class="field"><label>Tipo *</label>
-          <select id="cl-tipo">
-            <option value="Strength">Strength</option>
-            <option value="Endurance">Endurance</option>
-            <option value="Hyrox">Hyrox</option>
-            <option value="Open">Open</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
-        <div class="field"><label>Coach</label>
+        <div class="field"><label>Coach <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
           <select id="cl-coach"><option value="">Sin asignar</option></select>
         </div>
-      </div>
-      <div class="field-grid">
         <div class="field"><label>Cupo máximo</label><input id="cl-cupo" type="number" min="1" value="15"/></div>
-        <div class="field"><label>Notas</label><input id="cl-notas" type="text" placeholder="Opcional…"/></div>
       </div>
+      <div class="field"><label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="cl-notas" type="text" placeholder="Opcional…"/></div>
+      </div><!-- /paso 2 -->
+
+      <!-- PASO 3 — Confirma -->
+      <div class="wzd-step" data-step="3">
+      <div class="wzd-q">Confirma la clase</div>
+      <div class="wzd-hint">Revisa el resumen. Puedes regresar a corregir cualquier paso.</div>
+      <div id="cl-confirm"></div>
+      </div><!-- /paso 3 -->
+
     </div>
     <div class="modal-footer">
       <span id="cl-days-count" style="font-size:11px;color:var(--text3);margin-right:auto;"></span>
-      <button class="btn btn-outline" onclick="closeModal('clase')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveClase()">Agregar Clase(s)</button>
+      <button class="btn btn-ghost" onclick="closeModal('clase')" style="padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('clase')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('clase')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveClase()" style="display:none;">Agregar clase(s)</button>
     </div>
   </div>
 </div>
@@ -9867,12 +9989,22 @@ function openModal(id){
     ['v-nombre','v-monto','v-telefono','v-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
     const vm = document.getElementById('v-metodo'); if(vm) vm.selectedIndex=0;
     ['v-nombre-err','v-monto-err'].forEach(fid=>{ const e=document.getElementById(fid); if(e){ e.style.display='none'; e.textContent=''; } });
+    if(typeof wizInit==='function') wizInit('visita');
   }
   if(id==='solo-cliente'){
     // Reset form completo
     ['sc-nombre','sc-email-new','sc-telefono','sc-notas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
     const cb = document.getElementById('sc-cumpleanos'); if(cb) cb.value='';
     ['sc-nombre-err','sc-email-err'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; } });
+    if(typeof wizInit==='function') wizInit('solo-cliente');
+  }
+  if(id==='coach'){
+    // Reset form + arrancar el asistente en el paso 1
+    ['c-nombre','c-tel','c-email','c-rol','c-clases','c-foto','c-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    const fp = document.getElementById('c-foto-preview'); if(fp){ fp.src=''; fp.style.display='none'; }
+    const fs = document.getElementById('c-foto-upload-status'); if(fs) fs.textContent='';
+    wzdFieldErr('c-nombre','');
+    if(typeof wizInit==='function') wizInit('coach');
   }
 }
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
@@ -11775,7 +11907,10 @@ async function saveCoach(){
     notas:    document.getElementById('c-notas').value.trim(),
     foto_url: (document.getElementById('c-foto')?.value || '').trim() || null
   };
+  const _cbtn = document.querySelector('#modal-coach .wzd-save');
+  setBtnLoading(_cbtn, true);
   const { error } = await window.supabaseClient.from('coaches').insert([withGymId(payload)]);
+  setBtnLoading(_cbtn, false);
   if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'); return; }
   await loadCoachesFromSupabase();
   closeModal('coach');
@@ -15760,11 +15895,11 @@ async function saveVisita(){
   const mErr = document.getElementById('v-monto-err');
   [nErr,mErr].forEach(e=>{ if(e){ e.style.display='none'; e.textContent=''; } });
   let err=false;
-  if(!nombre){ if(nErr){nErr.textContent='El nombre es obligatorio.';nErr.style.display='block';} err=true; }
-  if(!monto||monto<=0){ if(mErr){mErr.textContent='Ingresa un monto válido.';mErr.style.display='block';} err=true; }
+  if(!nombre){ if(nErr){nErr.textContent='El nombre es obligatorio.';nErr.style.display='block';} err=true; if(typeof wizGoto==='function') wizGoto('visita',1); }
+  else if(!monto||monto<=0){ if(mErr){mErr.textContent='Ingresa un monto válido.';mErr.style.display='block';} err=true; if(typeof wizGoto==='function') wizGoto('visita',2); }
   if(err) return;
   const btn = document.getElementById('v-save-btn');
-  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+  setBtnLoading(btn, true);
   const payload = {
     nombre, monto,
     fecha:    fecha || new Date().toISOString().slice(0,10),
@@ -15773,7 +15908,7 @@ async function saveVisita(){
     notas:    (document.getElementById('v-notas').value||'').trim()||null,
   };
   const { error } = await window.supabaseClient.from('visitas').insert([withGymId(payload)]);
-  if(btn){ btn.disabled=false; btn.textContent='🎫 Registrar Visita'; }
+  setBtnLoading(btn, false);
   if(error){ toast('Error al guardar visita: '+error.message,'❌'); return; }
   await loadVisitasFromSupabase();
   closeModal('visita');
@@ -17954,6 +18089,207 @@ function _clearPagoErrors(){
 }
 
 // ══════════════════════════════════════════════════════════════════
+// CONTROLADOR DE WIZARD GENÉRICO (.wzd-*)
+// Convierte cualquier modal en asistente paso a paso SIN tocar su lógica
+// de guardado. Cada modal con id="modal-<key>" que tenga .wzd-step lo usa.
+//   wizRegister(key, {labels, validate, onStep})  — config una vez
+//   wizInit(key)   — al abrir el modal (resetea al paso 1)
+//   wizNext/wizBack(key) — navegación (validate bloquea el avance)
+// ══════════════════════════════════════════════════════════════════
+const _wzdState = {};       // key -> {step, total}
+const _wzdLabels = {};      // key -> {1:'…', 2:'…'}
+const _wzdValidators = {};  // key -> (step)=>bool  (false = no avanza)
+const _wzdOnStep = {};      // key -> (step)=>void  (al entrar a un paso)
+
+function wizRegister(key, {labels={}, validate=null, onStep=null}={}){
+  _wzdLabels[key] = labels;
+  _wzdValidators[key] = validate;
+  _wzdOnStep[key] = onStep;
+}
+
+function wizGoto(key, n){
+  const modal = document.getElementById('modal-'+key);
+  if(!modal) return;
+  const steps = [...modal.querySelectorAll('.wzd-step')];
+  const total = steps.length;
+  if(!total) return;
+  n = Math.max(1, Math.min(total, n));
+  _wzdState[key] = { step:n, total };
+  steps.forEach(s => s.classList.toggle('active', parseInt(s.dataset.step) === n));
+  modal.querySelectorAll('.wzd-seg').forEach((seg,i)=>{
+    seg.classList.toggle('done',   i+1 < n);
+    seg.classList.toggle('active', i+1 === n);
+  });
+  const lbl = modal.querySelector('.wzd-steplabel');
+  const labels = _wzdLabels[key] || {};
+  if(lbl) lbl.innerHTML = `Paso <strong>${n}</strong> de ${total}${labels[n] ? ' · '+labels[n] : ''}`;
+  const back = modal.querySelector('.wzd-back');
+  const next = modal.querySelector('.wzd-next');
+  const save = modal.querySelector('.wzd-save');
+  if(back) back.style.display = n > 1 ? 'inline-flex' : 'none';
+  if(next) next.style.display = n < total ? 'inline-flex' : 'none';
+  if(save) save.style.display = n === total ? 'inline-flex' : 'none';
+  // foco al primer campo del paso (accesibilidad/rapidez)
+  const firstInput = steps[n-1] && steps[n-1].querySelector('input:not([type=hidden]),select,textarea');
+  if(firstInput) setTimeout(()=>{ try{ firstInput.focus(); }catch(e){} }, 80);
+  if(typeof _wzdOnStep[key] === 'function') _wzdOnStep[key](n);
+}
+
+function wizNext(key){
+  const st = _wzdState[key]; if(!st) return;
+  const v = _wzdValidators[key];
+  if(typeof v === 'function' && !v(st.step)) return;  // validación bloquea
+  if(st.step < st.total) wizGoto(key, st.step + 1);
+}
+function wizBack(key){
+  const st = _wzdState[key]; if(!st) return;
+  if(st.step > 1) wizGoto(key, st.step - 1);
+}
+function wizInit(key){ wizGoto(key, 1); }
+
+// Helper de error inline genérico para wizards: muestra/oculta <span id="<field>-err">
+// errId opcional cuando el span de error no sigue la convención <field>-err.
+function wzdFieldErr(fieldId, msg, errId){
+  const err = document.getElementById(errId || (fieldId+'-err'));
+  const inp = document.getElementById(fieldId);
+  if(err){ err.textContent = msg||''; err.style.display = msg ? 'block' : 'none'; }
+  if(inp) inp.style.borderColor = msg ? 'var(--danger)' : '';
+}
+function _wzdRow(k, v){ return `<div class="wzd-crow"><span class="wzd-ck">${k}</span><span class="wzd-cv">${v}</span></div>`; }
+
+// ── Registro de los wizards de Fase 1 (presentación; el save* no cambia) ──
+// CLIENTE NUEVO (modal-solo-cliente) — 2 pasos
+wizRegister('solo-cliente', {
+  labels: {1:'Datos del cliente', 2:'Confirma'},
+  validate(n){
+    if(n!==1) return true;
+    const nom=(document.getElementById('sc-nombre').value||'').trim();
+    const em =(document.getElementById('sc-email-new').value||'').trim();
+    let ok=true;
+    if(!nom){ wzdFieldErr('sc-nombre','El nombre es obligatorio.'); ok=false; } else wzdFieldErr('sc-nombre','');
+    if(!em){ wzdFieldErr('sc-email-new','El email evita clientes duplicados — es obligatorio.','sc-email-err'); ok=false; }
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ wzdFieldErr('sc-email-new','Ese email no se ve válido.','sc-email-err'); ok=false; }
+    else wzdFieldErr('sc-email-new','','sc-email-err');
+    return ok;
+  },
+  onStep(n){
+    if(n!==2) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const cumple=g('sc-cumpleanos');
+    const rows=[ _wzdRow('Nombre', esc(g('sc-nombre'))), _wzdRow('Email', esc(g('sc-email-new'))) ];
+    if(g('sc-telefono')) rows.push(_wzdRow('WhatsApp', esc(g('sc-telefono'))));
+    if(cumple) rows.push(_wzdRow('Cumpleaños', new Date(cumple+'T00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long'})));
+    if(g('sc-notas')) rows.push(_wzdRow('Notas', esc(g('sc-notas'))));
+    document.getElementById('sc-confirm').innerHTML = rows.join('');
+  }
+});
+
+// AGREGAR COACH (modal-coach) — 3 pasos
+wizRegister('coach', {
+  labels: {1:'¿Quién es?', 2:'¿Qué hace?', 3:'Confirma'},
+  validate(n){
+    if(n!==1) return true;
+    const nom=(document.getElementById('c-nombre').value||'').trim();
+    if(!nom){ wzdFieldErr('c-nombre','El nombre del coach es obligatorio.'); return false; }
+    wzdFieldErr('c-nombre',''); return true;
+  },
+  onStep(n){
+    if(n!==3) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const rows=[ _wzdRow('Nombre', esc(g('c-nombre'))) ];
+    if(g('c-rol'))    rows.push(_wzdRow('Rol', esc(g('c-rol'))));
+    if(g('c-clases')) rows.push(_wzdRow('Clases', esc(g('c-clases'))));
+    if(g('c-tel'))    rows.push(_wzdRow('Teléfono', esc(g('c-tel'))));
+    if(g('c-email'))  rows.push(_wzdRow('Email', esc(g('c-email'))));
+    rows.push(_wzdRow('Foto', g('c-foto') ? '✅ Sí' : '— (puedes agregarla luego)'));
+    document.getElementById('c-confirm').innerHTML = rows.join('');
+  }
+});
+
+// REGISTRAR VISITA / CHECK-IN (modal-visita) — 3 pasos
+wizRegister('visita', {
+  labels: {1:'¿Quién entra?', 2:'¿Cuánto paga?', 3:'Confirma'},
+  validate(n){
+    if(n===1){
+      const nom=(document.getElementById('v-nombre').value||'').trim();
+      if(!nom){ wzdFieldErr('v-nombre','Escribe el nombre de quien entra.'); return false; }
+      wzdFieldErr('v-nombre',''); return true;
+    }
+    if(n===2){
+      const m=parseFloat(document.getElementById('v-monto').value);
+      if(!m||m<=0){ wzdFieldErr('v-monto','Ingresa cuánto paga la visita.'); return false; }
+      wzdFieldErr('v-monto',''); return true;
+    }
+    return true;
+  },
+  onStep(n){
+    if(n!==3) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const monto=parseFloat(document.getElementById('v-monto').value)||0;
+    const f=g('v-fecha');
+    const rows=[
+      _wzdRow('Visita', esc(g('v-nombre'))),
+      _wzdRow('Monto', `<strong style="color:var(--ok);">$${monto.toLocaleString('es-MX')}</strong>`),
+      _wzdRow('Método', esc(g('v-metodo'))),
+      _wzdRow('Fecha', f ? new Date(f+'T00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : 'Hoy'),
+    ];
+    if(g('v-telefono')) rows.push(_wzdRow('WhatsApp', esc(g('v-telefono'))));
+    if(g('v-notas'))    rows.push(_wzdRow('Notas', esc(g('v-notas'))));
+    document.getElementById('v-confirm').innerHTML = rows.join('');
+  }
+});
+
+// CREAR CLASE / PLANTILLA SEMANAL (modal-clase) — 3 pasos
+const _CLASE_TIPOS = [
+  {v:'Strength', ico:'🏋️', sub:'Fuerza'},
+  {v:'Endurance',ico:'🏃', sub:'Resistencia'},
+  {v:'Hyrox',    ico:'🔥', sub:'Híbrido'},
+  {v:'Open',     ico:'🟢', sub:'Libre'},
+  {v:'Otro',     ico:'⚙️', sub:'Personalizado'},
+];
+function _renderClaseTipoCards(){
+  const grid=document.getElementById('cl-tipo-grid');
+  if(!grid) return;
+  const cur=document.getElementById('cl-tipo').value||'Strength';
+  grid.innerHTML=_CLASE_TIPOS.map(t=>`<div class="wzd-opt${t.v===cur?' sel':''}" role="button" tabindex="0"
+    onclick="_pickClaseTipo('${t.v}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pickClaseTipo('${t.v}');}">
+    <div class="wzd-opt-ico">${t.ico}</div><div class="wzd-opt-name">${t.v}</div><div class="wzd-opt-sub">${t.sub}</div></div>`).join('');
+}
+function _pickClaseTipo(v){
+  const sel=document.getElementById('cl-tipo'); if(sel) sel.value=v;
+  _renderClaseTipoCards();
+}
+wizRegister('clase', {
+  labels: {1:'¿Qué días y a qué hora?', 2:'¿Qué clase y quién?', 3:'Confirma'},
+  validate(n){
+    if(n!==1) return true;
+    const dias=document.querySelectorAll('.cl-dia-chk:checked').length;
+    const err=document.getElementById('cl-dias-err');
+    if(!dias){ if(err){ err.textContent='Elige al menos un día para la clase.'; err.style.display='block'; } return false; }
+    if(err) err.style.display='none';
+    return true;
+  },
+  onStep(n){
+    if(n===2){ _renderClaseTipoCards(); return; }
+    if(n!==3) return;
+    const dias=[...document.querySelectorAll('.cl-dia-chk:checked')].map(c=>c.value);
+    const cidSel=document.getElementById('cl-coach');
+    const coachTxt=cidSel && cidSel.value ? (cidSel.options[cidSel.selectedIndex]?.text||'') : 'Sin asignar';
+    const rows=[
+      _wzdRow('Días', dias.length ? dias.join(', ') : '—'),
+      _wzdRow('Hora', document.getElementById('cl-hora').value||'—'),
+      _wzdRow('Tipo', document.getElementById('cl-tipo').value||'—'),
+      _wzdRow('Coach', esc(coachTxt)),
+      _wzdRow('Cupo', (document.getElementById('cl-cupo').value||'15')+' personas'),
+    ];
+    const notas=(document.getElementById('cl-notas').value||'').trim();
+    if(notas) rows.push(_wzdRow('Notas', esc(notas)));
+    rows.push(_wzdRow('Se crearán', `<strong style="color:var(--accent);">${dias.length} clase${dias.length>1?'s':''}</strong>`));
+    document.getElementById('cl-confirm').innerHTML = rows.join('');
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
 // WIZARD DE PAGO — asistente guiado en 4 pasos
 // Solo presentación: toda la lógica de datos (savePago, paquetes,
 // descuentos) sigue siendo la misma. Los pasos validan antes de avanzar.
@@ -18406,6 +18742,7 @@ async function saveClienteSinPago(){
   const emailDupe = clientesDB.find(c=>(c.email||'').toLowerCase()===email);
   if(emailDupe){
     _scErr('email', `Este email ya pertenece a ${emailDupe.nombre}. ¿Es la misma persona?`);
+    wizGoto('solo-cliente', 1);   // el error está en el paso 1 — regresar ahí
     return;
   }
 
@@ -18416,8 +18753,8 @@ async function saveClienteSinPago(){
       {title:'Nombre similar', danger:false, confirmText:'Sí, es diferente', icon:'👤'})) return;
   }
 
-  const btn = document.querySelector('#modal-solo-cliente .btn-primary');
-  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+  const btn = document.querySelector('#modal-solo-cliente .wzd-save');
+  setBtnLoading(btn, true);
 
   const payload = {
     nombre,
@@ -18428,7 +18765,7 @@ async function saveClienteSinPago(){
   };
 
   const { error } = await window.supabaseClient.from('clientes').insert([withGymId(payload)]);
-  if(btn){ btn.disabled=false; btn.textContent='Agregar Cliente'; }
+  setBtnLoading(btn, false);
   if(error){
     console.error('Error guardando cliente:', error);
     const m = error.message||'';
@@ -18436,6 +18773,7 @@ async function saveClienteSinPago(){
     if(m.includes('unique')||m.includes('duplicate')){
       const isNombre = m.includes('nombre');
       _scErr(isNombre?'nombre':'email', isNombre ? 'Ya existe un cliente con ese nombre exacto en este gym.' : 'Este email ya está registrado en este gym.');
+      wizGoto('solo-cliente', 1);   // el error está en el paso 1
       return;
     }
     toast('No se pudo guardar el cliente: '+m,'❌');
@@ -20186,7 +20524,9 @@ function openAddClaseModal(dia, hora){
   document.getElementById('cl-tipo').value = 'Strength';
   document.getElementById('cl-cupo').value = '15';
   document.getElementById('cl-notas').value = '';
+  const clErr = document.getElementById('cl-dias-err'); if(clErr) clErr.style.display='none';
   openModal('clase');
+  if(typeof wizInit==='function') wizInit('clase');   // arranca el asistente en el paso 1
 }
 
 async function saveClase(){
@@ -20197,7 +20537,12 @@ async function saveClase(){
   const cupo  = parseInt(document.getElementById('cl-cupo').value)||15;
   const notas = document.getElementById('cl-notas').value.trim();
 
-  if(!dias.length){ alert('Selecciona al menos un día.'); return; }
+  if(!dias.length){
+    const err=document.getElementById('cl-dias-err');
+    if(err){ err.textContent='Elige al menos un día para la clase.'; err.style.display='block'; }
+    if(typeof wizGoto==='function') wizGoto('clase',1);
+    return;
+  }
 
   const coachObj = coaches.find(c=>String(c.id)===String(cid));
   // Build one payload per day; fecha='' marks it as base template (not a specific date override)
@@ -20210,7 +20555,10 @@ async function saveClase(){
     cupo, notas: notas||''
   }));
 
+  const _clbtn = document.querySelector('#modal-clase .wzd-save');
+  setBtnLoading(_clbtn, true);
   const { error } = await window.supabaseClient.from('horarios').insert(payloads);
+  setBtnLoading(_clbtn, false);
   if(error){
     const msg = error.message||JSON.stringify(error);
     toast('Error ❌: '+msg.slice(0,60),'✕');
