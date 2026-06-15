@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VELUM · App del atleta en cada vertical</title>
+<link rel="stylesheet" href="assets/velum-core.css"/>
+<style>
+  body{padding:36px 20px 60px;}
+  .head{text-align:center;max-width:760px;margin:0 auto 14px;}
+  .head h1{font-family:var(--font-display);font-size:clamp(24px,4vw,34px);font-weight:900;letter-spacing:-.5px;}
+  .head p{color:var(--text-2);font-size:14px;margin-top:10px;line-height:1.6;}
+  .head .kick{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px;}
+  .note{max-width:680px;margin:18px auto 34px;font-size:12.5px;color:var(--text-3);text-align:center;line-height:1.7;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;}
+  .note b{color:var(--text-2);}
+  .phones{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;}
+
+  /* Marco de teléfono */
+  .phone{width:300px;border-radius:42px;padding:11px;background:#000;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.06), inset 0 0 0 2px rgba(255,255,255,.03);}
+  .screen{border-radius:33px;overflow:hidden;background:var(--bg);height:600px;position:relative;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:24px;background:#000;border-radius:0 0 16px 16px;z-index:5;}
+  .statusbar{display:flex;justify-content:space-between;padding:13px 22px 4px;font-size:11px;font-weight:700;color:var(--text);}
+  .vlabelp{text-align:center;margin-top:14px;font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--accent);}
+  .vsubp{text-align:center;font-size:11px;color:var(--text-3);margin-top:2px;}
+
+  /* Per-vertical theming del teléfono */
+  .phone[data-vertical="velum"]{--accent:#00D4FF;--accent-2:#66E8FF;--accent-ink:#04222E;--accent-bg:rgba(0,212,255,.10);--accent-bg-2:rgba(0,212,255,.18);--border-2:rgba(0,212,255,.20);--glow:0 0 22px rgba(0,212,255,.30);--bg:#040C14;--card:#0B1622;--card-2:#0F1E2E;--text:#E8EDF5;--text-2:#9FB3C8;--text-3:#5C7488;--border:rgba(255,255,255,.08);--font-display:'Outfit',sans-serif;}
+  .phone[data-vertical="studios"]{--accent:#C9A86A;--accent-2:#E4CF9B;--accent-ink:#241829;--accent-bg:rgba(201,168,106,.12);--accent-bg-2:rgba(201,168,106,.22);--border-2:rgba(201,168,106,.24);--glow:0 0 28px rgba(201,168,106,.22);--bg:#0E0A12;--card:#1B1422;--card-2:#241829;--text:#F4EEF2;--text-2:#C9B6C4;--text-3:#8A7486;--border:rgba(255,255,255,.07);--font-display:'Fraunces',serif;}
+  .phone[data-vertical="recovery"]{--accent:#5EC8B0;--accent-2:#92E0CD;--accent-ink:#0A2420;--accent-bg:rgba(94,200,176,.12);--accent-bg-2:rgba(94,200,176,.20);--border-2:rgba(94,200,176,.24);--glow:0 0 28px rgba(94,200,176,.22);--bg:#070F0E;--card:#101D1C;--card-2:#162625;--text:#ECF4F2;--text-2:#A6C2BC;--text-3:#5E7E78;--border:rgba(255,255,255,.07);--font-display:'Fraunces',serif;}
+
+  .appbody{flex:1;overflow:hidden;padding:6px 18px 0;}
+  .applogo{display:flex;align-items:center;gap:9px;padding:6px 0 14px;}
+  .applogo .lg{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:var(--accent-ink);font-weight:800;font-family:var(--font-display);font-size:15px;}
+  .applogo .nm{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--text);}
+  .applogo .nm small{display:block;font-size:9px;font-weight:600;color:var(--text-3);letter-spacing:.5px;font-family:'Inter';}
+  .hello{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);margin:2px 0 2px;}
+  .helsub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+  .acard{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:15px;margin-bottom:12px;}
+  .acard .lab{font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);font-weight:700;}
+  .acard .big{font-family:var(--font-display);font-size:23px;font-weight:800;color:var(--text);margin:5px 0 1px;}
+  .acard .sm{font-size:11px;color:var(--text-2);}
+  .hero-act{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-radius:18px;padding:17px;text-align:center;font-weight:800;font-size:15px;font-family:var(--font-display);box-shadow:var(--glow);margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .mini{display:flex;gap:9px;}
+  .mini .acard{flex:1;margin-bottom:12px;}
+  .chiprow{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+  .chip2{font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--accent-bg-2);color:var(--accent);}
+  .listrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+  .listrow:last-child{border-bottom:none;}
+  .listrow .t{flex:1;}
+  .listrow .t b{font-size:12.5px;color:var(--text);font-weight:600;display:block;}
+  .listrow .t span{font-size:10.5px;color:var(--text-3);}
+  .listrow .badge2{font-size:9.5px;font-weight:700;color:var(--accent);}
+  .tabbar{display:flex;justify-content:space-around;padding:11px 0 16px;border-top:1px solid var(--border);background:var(--card);}
+  .tabbar .tb{font-size:9px;color:var(--text-3);text-align:center;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .tabbar .tb .i{font-size:16px;}
+  .tabbar .tb.on{color:var(--accent);}
+  .qr{width:96px;height:96px;margin:8px auto 4px;border-radius:14px;background:
+     repeating-linear-gradient(0deg,var(--text) 0 4px, transparent 4px 8px),
+     repeating-linear-gradient(90deg,var(--text) 0 4px, transparent 4px 8px);
+     opacity:.92;border:5px solid var(--card-2);}
+</style>
+</head>
+<body data-vertical="velum">
+
+  <div class="head">
+    <div class="kick">Una app · Tres pieles</div>
+    <h1>La misma app del atleta, en cada vertical</h1>
+    <p>Un solo binario en App Store y Google Play. El atleta inicia sesión, la app lee la vertical de su gym y se viste sola. Cambia la piel y la acción principal; el código es el mismo.</p>
+  </div>
+
+  <div class="phones">
+
+    <!-- VELUM / GYM -->
+    <div>
+      <div class="phone" data-vertical="velum">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>● ● ●  ⌟</span></div>
+          <div class="appbody">
+            <div class="applogo"><div class="lg">IP</div><div class="nm">Iron Pulse<small>VELUM · Monterrey</small></div></div>
+            <div class="hello">Hola, Diego 💪</div>
+            <div class="helsub">Tu membresía está vigente</div>
+            <div class="acard">
+              <div class="lab">Membresía mensual</div>
+              <div class="big">Vigente</div>
+              <div class="sm">Vence en <b style="color:var(--accent)">18 días</b> · 14 jul</div>
+            </div>
+            <div class="hero-act">⛶ &nbsp;Check-in con QR</div>
+            <div class="mini">
+              <div class="acard"><div class="lab">Racha</div><div class="big">12</div><div class="sm">visitas seguidas</div></div>
+              <div class="acard"><div class="lab">Este mes</div><div class="big">18</div><div class="sm">accesos</div></div>
+            </div>
+            <div class="acard">
+              <div class="lab" style="margin-bottom:6px">Tu rutina · Push day</div>
+              <div class="listrow"><div class="t"><b>Press banca</b><span>4×8 · 70kg</span></div><span class="badge2">✓</span></div>
+              <div class="listrow"><div class="t"><b>Press inclinado</b><span>3×10 · 24kg</span></div></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tb on"><span class="i">⌂</span>Inicio</div>
+            <div class="tb"><span class="i">⛶</span>Acceso</div>
+            <div class="tb"><span class="i">▤</span>Rutina</div>
+            <div class="tb"><span class="i">○</span>Perfil</div>
+          </div>
+        </div>
+      </div>
+      <div class="vlabelp">VELUM · Gym</div>
+      <div class="vsubp">Acción: Check-in QR · membresía</div>
+    </div>
+
+    <!-- STUDIOS -->
+    <div>
+      <div class="phone" data-vertical="studios">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>● ● ●  ⌟</span></div>
+          <div class="appbody">
+            <div class="applogo"><div class="lg">RP</div><div class="nm">Reforma Pilates<small>STUDIOS · Polanco</small></div></div>
+            <div class="hello">Hola, Valentina ✦</div>
+            <div class="helsub">Tienes una clase reservada hoy</div>
+            <div class="acard">
+              <div class="lab">Próxima reserva</div>
+              <div class="big" style="font-size:18px">Reformer Flow · N2</div>
+              <div class="sm">Hoy 18:30 · Andrea S. · <b style="color:var(--accent)">Spot 7</b></div>
+              <div class="chiprow"><span class="chip2">Confirmada</span><span class="chip2">Sala A</span></div>
+            </div>
+            <div class="hero-act">＋&nbsp;Reservar otra clase</div>
+            <div class="mini">
+              <div class="acard"><div class="lab">Créditos</div><div class="big">6</div><div class="sm">restantes</div></div>
+              <div class="acard"><div class="lab">Este mes</div><div class="big">9</div><div class="sm">clases</div></div>
+            </div>
+            <div class="acard">
+              <div class="lab" style="margin-bottom:6px">Clases de hoy</div>
+              <div class="listrow"><div class="t"><b>Barre Sculpt</b><span>08:30 · Mariana C.</span></div><span class="badge2">4 libres</span></div>
+              <div class="listrow"><div class="t"><b>Lagree</b><span>10:00 · Andrea S.</span></div><span class="badge2">1 libre</span></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tb on"><span class="i">⌂</span>Inicio</div>
+            <div class="tb"><span class="i">▦</span>Reservar</div>
+            <div class="tb"><span class="i">◈</span>Créditos</div>
+            <div class="tb"><span class="i">○</span>Perfil</div>
+          </div>
+        </div>
+      </div>
+      <div class="vlabelp" style="font-family:'Fraunces',serif">Studios · Boutique</div>
+      <div class="vsubp">Acción: Reservar clase · créditos</div>
+    </div>
+
+    <!-- RECOVERY -->
+    <div>
+      <div class="phone" data-vertical="recovery">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>● ● ●  ⌟</span></div>
+          <div class="appbody">
+            <div class="applogo"><div class="lg">OR</div><div class="nm">Origen Recovery<small>RECOVERY · Guadalajara</small></div></div>
+            <div class="hello">Hola, Mariana 💧</div>
+            <div class="helsub">Tu sesión de hoy está lista</div>
+            <div class="acard">
+              <div class="lab">Próxima cita</div>
+              <div class="big" style="font-size:18px">Crioterapia</div>
+              <div class="sm">Hoy 17:00 · Cabina 2 · 10 min</div>
+              <div class="chiprow"><span class="chip2">Protocolo: piernas</span></div>
+            </div>
+            <div class="hero-act">＋&nbsp;Agendar sesión</div>
+            <div class="mini">
+              <div class="acard"><div class="lab">Paquete</div><div class="big">4</div><div class="sm">sesiones restantes</div></div>
+              <div class="acard"><div class="lab">Esta semana</div><div class="big">2</div><div class="sm">visitas</div></div>
+            </div>
+            <div class="acard">
+              <div class="lab" style="margin-bottom:6px">Tu protocolo · Piernas pesadas</div>
+              <div class="listrow"><div class="t"><b>Crioterapia</b><span>10 min · −110°C</span></div><span class="badge2">Hoy</span></div>
+              <div class="listrow"><div class="t"><b>Bota de compresión</b><span>20 min</span></div><span class="badge2">Sigue</span></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tb on"><span class="i">⌂</span>Inicio</div>
+            <div class="tb"><span class="i">◷</span>Agendar</div>
+            <div class="tb"><span class="i">✦</span>Protocolos</div>
+            <div class="tb"><span class="i">○</span>Perfil</div>
+          </div>
+        </div>
+      </div>
+      <div class="vlabelp" style="font-family:'Fraunces',serif">Recovery · Wellness</div>
+      <div class="vsubp">Acción: Agendar cita · protocolos</div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <b>Una sola app en la tienda.</b> Mismo código (<span class="mono">atleta.html → build.js</span>), misma cuenta de desarrollador, misma ficha.
+    El atleta inicia sesión → la app lee <span class="mono">gyms.vertical</span> + el logo del gym → se viste sola.
+    Lo que cambia entre verticales: la piel (color, tipografía) y la <b>acción principal</b>
+    (check-in / reservar / agendar). El resto de la app es idéntico.
+    <br><a href="index.html" style="color:var(--accent);font-weight:600">↔ Volver al selector</a>
+  </div>
+
+</body>
+</html>
