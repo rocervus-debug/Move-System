@@ -8805,6 +8805,7 @@ function applyVertical(vertical){
   const v = String(vertical || 'velum').toLowerCase();
   _gymVertical = (v === 'studios' || v === 'recovery') ? v : 'velum';
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
+  if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(_gymVertical === 'velum') return;   // sin cambios para el sistema actual
   const def = _VERTICAL_DEFAULTS[_gymVertical];
   // Si el gym no eligió un color propio, usar el acento de la vertical.
@@ -8812,6 +8813,39 @@ function applyVertical(vertical){
   if(def && !escogioColor && typeof _applyColorToDOM === 'function'){
     _applyColorToDOM(def.accent, null, def.bg1, def.bg2, hexToRgba(def.accent, .16));
   }
+}
+
+// ── Fase A.4: módulos + vocabulario por vertical (sobre el sidebar actual) ──
+// Relabela y oculta items del nav. Idempotente: 'velum' restaura todo.
+const _VERTICAL_NAV = {
+  studios: {
+    relabel: { 'nav-horario':'Clases & Horario', 'nav-coaches':'Instructores',
+               'nav-asistencia':'Reservas', 'nav-pagos':'Pagos & Créditos', 'nav-visitas':'Drop-ins' },
+    hide: ['nav-programa'],
+  },
+  recovery: {
+    relabel: { 'nav-horario':'Agenda & Citas', 'nav-coaches':'Terapeutas',
+               'nav-asistencia':'Sesiones', 'nav-pagos':'Pagos & Paquetes', 'nav-visitas':'Sesiones del Día' },
+    hide: ['nav-programa','nav-evaluaciones'],
+  },
+};
+let _navOrigLabels = null;
+function _navLblEl(id){ const it=document.getElementById(id); return it ? it.querySelector('.nav-label-text') : null; }
+function applyVerticalModules(vertical){
+  // Capturar las etiquetas originales una sola vez (para poder restaurar).
+  if(_navOrigLabels === null){
+    _navOrigLabels = {};
+    const ids = new Set();
+    Object.values(_VERTICAL_NAV).forEach(c=>{ Object.keys(c.relabel||{}).forEach(i=>ids.add(i)); (c.hide||[]).forEach(i=>ids.add(i)); });
+    ids.forEach(id=>{ const l=_navLblEl(id); if(l) _navOrigLabels[id]=l.textContent; });
+  }
+  // Reset a defaults: restaurar etiquetas y volver a mostrar lo que gestionamos.
+  Object.entries(_navOrigLabels).forEach(([id,txt])=>{ const l=_navLblEl(id); if(l) l.textContent=txt; });
+  ['nav-programa','nav-evaluaciones'].forEach(id=>{ const it=document.getElementById(id); if(it && it.style.display==='none') it.style.display=''; });
+  const cfg = _VERTICAL_NAV[vertical];
+  if(!cfg) return; // velum = sin cambios
+  Object.entries(cfg.relabel||{}).forEach(([id,txt])=>{ const l=_navLblEl(id); if(l) l.textContent=' '+txt; });
+  (cfg.hide||[]).forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display='none'; });
 }
 
 function applyGymConfig(){
