@@ -1628,6 +1628,21 @@ body::before{
 }
 .pw-plain .pw-line{font-size:13px;color:var(--text2);line-height:1.7;}
 
+/* Render FIEL del programa: respeta el orden y los renglones tal cual los
+   escribió el coach. Solo resalta SUS encabezados (en su lugar, sin reagrupar). */
+.pw-faithful{padding:4px 2px 2px;}
+.pw-fhdr{
+  font-family:var(--fd);font-size:14px;font-weight:800;color:var(--cyan);
+  letter-spacing:.2px;margin:18px 0 7px;padding-bottom:6px;
+  border-bottom:1px solid rgba(0,212,255,.16);
+}
+.pw-fhdr:first-child{margin-top:2px;}
+.pw-fline{
+  font-size:13.5px;color:var(--text2);line-height:1.7;padding:1px 0;
+  white-space:pre-wrap;word-break:break-word;
+}
+.pw-gap{height:11px;}
+
 /* ══════════════════════════════════════
    ANIMATIONS
 ══════════════════════════════════════ */
@@ -5112,34 +5127,24 @@ function _parseExerLine(line){
   return {id, name:rest, detail:''};
 }
 
+// Render FIEL: respeta el orden y los renglones EXACTOS que escribió el coach.
+// No reagrupa en tarjetas ni parte líneas en columnas. Solo resalta los
+// encabezados que ella escribió (MAYÚSCULAS), en su misma posición.
+// Así el entreno manual se lee igual que como se guarda.
 function renderProgramContent(txt){
-  const sections=parseWorkoutSections(txt||'');
-  if(!sections.length) return `<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px;">Sin contenido</div>`;
-
-  return sections.map(s=>{
-    const linesHTML=s.lines.map(l=>{
-      const cls=_classifyLine(l);
-      // Render FIEL por renglón: solo se resaltan las líneas estructurales
-      // (EMOM/RONDAS/AMRAP…). El resto se muestra tal cual lo escribió el coach,
-      // sin partir en columnas — así el texto libre manual se ve igual que como
-      // se guarda (antes "1-2 min:" se rompía en dos columnas).
-      if(cls==='meta'){
-        return `<div class="pw-line pw-meta">${esc(l)}</div>`;
-      }
-      return `<div class="pw-line">${esc(l)}</div>`;
-    }).join('');
-
-    if(!s.header){
-      return `<div class="pw-plain">${linesHTML}</div>`;
-    }
-    return `<div class="pw-block ${s.type}">
-      <div class="pw-block-hdr">
-        <div class="pw-dot"></div>
-        <div class="pw-block-title">${esc(s.header)}</div>
-      </div>
-      ${s.lines.length?`<div class="pw-lines">${linesHTML}</div>`:''}
-    </div>`;
+  const lines = (txt||'').replace(/\r/g,'').replace(/\s+$/,'').split('\n');
+  if(!lines.some(l=>l.trim())) return `<div style="padding:20px 0;text-align:center;color:var(--text3);font-size:13px;">Sin contenido</div>`;
+  const html = lines.map(raw=>{
+    const t = raw.trim();
+    if(!t) return `<div class="pw-gap"></div>`;                 // renglón en blanco = espacio
+    // Encabezado de sección: EMPIEZA con mayúscula, todo en MAYÚSCULAS (sin
+    // minúsculas), corto. Ej: WARM UP, STRENGTH, WOD (...). Excluye líneas que
+    // empiezan con guion o número (ej. "- 5 WBS" es contenido, no encabezado).
+    const esEncabezado = t.length<=42 && /^[A-ZÁÉÍÓÚÑ]/.test(t) && !/[a-záéíóúñ]/.test(t);
+    if(esEncabezado) return `<div class="pw-fhdr">${esc(t)}</div>`;
+    return `<div class="pw-fline">${esc(raw.replace(/\s+$/,''))}</div>`;  // preserva indentación
   }).join('');
+  return `<div class="pw-faithful">${html}</div>`;
 }
 
 // ── Today's workout ──────────────────────────────────
