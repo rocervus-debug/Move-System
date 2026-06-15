@@ -4672,6 +4672,12 @@ body::before{
             <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el precio se llena automático al seleccionar el plan. Cambios sincronizados con la base de datos.</div>
             <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
 
+            <!-- Acceso guiado: crea un paquete paso a paso -->
+            <button class="btn btn-primary" onclick="openModal('paquete')" style="width:100%;justify-content:center;margin-bottom:14px;">📦 Crear paquete paso a paso</button>
+
+            <details style="margin-bottom:4px;">
+              <summary style="cursor:pointer;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:600;list-style:none;user-select:none;padding:6px 0;">⚙ Modo avanzado — agregar en una fila</summary>
+
             <!-- Fila 1: básico -->
             <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px;">
               <div class="field" style="flex:1;min-width:160px;margin:0;">
@@ -4709,6 +4715,7 @@ body::before{
             </div>
 
             <div id="plan-nuevo-err" style="display:none;font-size:11px;color:var(--danger);margin-top:8px;"></div>
+            </details>
           </div>
         </div>
       </div><!-- /cfg-panel-planes -->
@@ -6286,6 +6293,77 @@ body::before{
       <button class="btn btn-outline wzd-back" onclick="wizBack('solo-cliente')" style="display:none;">← Atrás</button>
       <button class="btn btn-primary wzd-next" onclick="wizNext('solo-cliente')">Siguiente →</button>
       <button class="btn btn-primary wzd-save" onclick="saveClienteSinPago()" style="display:none;">Agregar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Crear Paquete — Asistente guiado 3 pasos -->
+<div class="modal-overlay" id="modal-paquete">
+  <div class="modal" style="width:500px;">
+    <div class="modal-head">
+      <div class="modal-title">📦 Crear paquete</div>
+      <button class="modal-close" onclick="closeModal('paquete')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué tipo de plan? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué tipo de plan es?</div>
+        <div class="wzd-hint">Elige cómo funciona. Esto define si se cobra por tiempo o por número de clases.</div>
+        <input type="hidden" id="pk-tipo" value="ilimitado"/>
+        <div id="pk-tipo-grid" class="wzd-opt-grid" style="grid-template-columns:1fr;"></div>
+      </div>
+
+      <!-- PASO 2 — Detalles -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Nombre, precio y vigencia</div>
+        <div class="wzd-hint">Estos datos aparecen al registrar un pago: al elegir el plan, el precio y el vencimiento se llenan solos.</div>
+        <div class="field">
+          <label>Nombre del plan *</label>
+          <input id="pk-nombre" type="text" placeholder="Ej: Mensual, Pack 10 clases…"/>
+          <span class="field-err" id="pk-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Precio (MXN) *</label>
+            <input id="pk-precio" type="number" placeholder="1200" min="0"/>
+            <span class="field-err" id="pk-precio-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+          <div class="field">
+            <label>Vigencia (días) *</label>
+            <input id="pk-dias" type="number" placeholder="30" min="1"/>
+            <span class="field-err" id="pk-dias-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+        </div>
+        <div class="field" id="pk-clases-field" style="display:none;">
+          <label>¿Cuántas clases incluye? *</label>
+          <input id="pk-clases" type="number" placeholder="10" min="1" max="999"/>
+          <span class="field-err" id="pk-clases-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;">
+          <input id="pk-permite-desc" type="checkbox" checked style="width:15px;height:15px;cursor:pointer;"/>
+          <span style="font-size:12.5px;color:var(--text2);">Permitir descuentos en este plan al registrar pagos</span>
+        </label>
+      </div>
+
+      <!-- PASO 3 — Confirma -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Confirma el paquete</div>
+        <div class="wzd-hint">Revisa que esté bien. Puedes regresar a corregir cualquier dato.</div>
+        <div id="pk-confirm"></div>
+        <span class="field-err" id="pk-err" style="display:none;font-size:11px;color:var(--danger);margin-top:10px;"></span>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('paquete')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('paquete')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('paquete')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="savePaqueteWizard()" style="display:none;">Crear paquete</button>
     </div>
   </div>
 </div>
@@ -9611,7 +9689,7 @@ function closeSettingsPanel(){
 }
 
 // ── Onboarding guiado: checklist de configuración inicial (auto-detecta estado, se oculta al completar) ──
-function _onbGo(panel){ try{ if(typeof go==='function') go('settings'); if(typeof openSettingsPanel==='function') openSettingsPanel(panel); }catch(e){ console.warn('_onbGo', e); } }
+function _onbGo(panel){ try{ if(typeof go==='function') go('settings'); if(typeof openSettingsPanel==='function') openSettingsPanel(panel); if(panel==='planes' && typeof openModal==='function'){ setTimeout(()=>openModal('paquete'), 250); } }catch(e){ console.warn('_onbGo', e); } }
 function dismissOnboarding(){ try{ localStorage.setItem('velum_onboarding_done','1'); }catch(_){}; const c=document.getElementById('onboarding-card'); if(c) c.style.display='none'; }
 async function renderOnboardingCard(){
   const card = document.getElementById('onboarding-card');
@@ -10005,6 +10083,17 @@ function openModal(id){
     const fs = document.getElementById('c-foto-upload-status'); if(fs) fs.textContent='';
     wzdFieldErr('c-nombre','');
     if(typeof wizInit==='function') wizInit('coach');
+  }
+  if(id==='paquete'){
+    // Reset + arrancar el asistente de creación de paquete
+    const pt=document.getElementById('pk-tipo'); if(pt) pt.value='ilimitado';
+    ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    const pd=document.getElementById('pk-permite-desc'); if(pd) pd.checked=true;
+    const cf=document.getElementById('pk-clases-field'); if(cf) cf.style.display='none';
+    ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(f=>wzdFieldErr(f,''));
+    const pe=document.getElementById('pk-err'); if(pe) pe.style.display='none';
+    if(typeof _renderPaqueteTipoCards==='function') _renderPaqueteTipoCards();
+    if(typeof wizInit==='function') wizInit('paquete');
   }
 }
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
@@ -18288,6 +18377,115 @@ wizRegister('clase', {
     document.getElementById('cl-confirm').innerHTML = rows.join('');
   }
 });
+
+// CREAR PAQUETE (modal-paquete) — 3 pasos. Inserta en 'packages' con el mismo
+// payload que agregarPlan (no rompe el form inline de Configuración).
+const _PAQUETE_TIPOS = [
+  {v:'ilimitado', ico:'🔓', name:'Membresía ilimitada', sub:'Acceso libre por X días (mensual, trimestral, anual…)', dias:30},
+  {v:'paquete',   ico:'🎟️', name:'Paquete de clases',    sub:'Un número fijo de clases con vigencia (ej. 10 clases)', dias:30},
+  {v:'pasedia',   ico:'📅', name:'Pase de día',          sub:'Una sola visita, vence el mismo día', dias:1},
+];
+function _renderPaqueteTipoCards(){
+  const grid=document.getElementById('pk-tipo-grid');
+  if(!grid) return;
+  const cur=document.getElementById('pk-tipo').value||'ilimitado';
+  grid.innerHTML=_PAQUETE_TIPOS.map(t=>`<div class="wzd-opt${t.v===cur?' sel':''}" role="button" tabindex="0" style="text-align:left;display:flex;align-items:center;gap:12px;"
+    onclick="_pickPaqueteTipo('${t.v}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pickPaqueteTipo('${t.v}');}">
+    <div class="wzd-opt-ico" style="margin:0;">${t.ico}</div>
+    <div><div class="wzd-opt-name">${t.name}</div><div class="wzd-opt-sub" style="margin-top:2px;">${t.sub}</div></div></div>`).join('');
+}
+function _pickPaqueteTipo(v){
+  document.getElementById('pk-tipo').value=v;
+  // Mostrar campo de clases solo para "paquete"; default de días según tipo
+  const clasesField=document.getElementById('pk-clases-field');
+  if(clasesField) clasesField.style.display = (v==='paquete') ? '' : 'none';
+  const diasInp=document.getElementById('pk-dias');
+  const meta=_PAQUETE_TIPOS.find(t=>t.v===v);
+  if(diasInp && !diasInp.value && meta) diasInp.value=meta.dias;
+  if(v==='pasedia' && diasInp) diasInp.value=1;  // pase de día siempre vence el mismo día
+  _renderPaqueteTipoCards();
+}
+wizRegister('paquete', {
+  labels:{1:'¿Qué tipo de plan?', 2:'Detalles', 3:'Confirma'},
+  validate(n){
+    if(n!==2) return true;
+    const tipo=document.getElementById('pk-tipo').value;
+    const nom=(document.getElementById('pk-nombre').value||'').trim();
+    const precio=parseFloat(document.getElementById('pk-precio').value)||0;
+    const dias=parseInt(document.getElementById('pk-dias').value)||0;
+    const clases=parseInt(document.getElementById('pk-clases').value)||0;
+    let ok=true;
+    if(!nom){ wzdFieldErr('pk-nombre','Escribe el nombre del plan.'); ok=false; } else wzdFieldErr('pk-nombre','');
+    if(precio<=0){ wzdFieldErr('pk-precio','El precio debe ser mayor a 0.'); ok=false; } else wzdFieldErr('pk-precio','');
+    if(dias<1){ wzdFieldErr('pk-dias','La vigencia debe ser al menos 1 día.'); ok=false; } else wzdFieldErr('pk-dias','');
+    if(tipo==='paquete' && clases<1){ wzdFieldErr('pk-clases','Indica cuántas clases incluye.'); ok=false; } else wzdFieldErr('pk-clases','');
+    return ok;
+  },
+  onStep(n){
+    if(n===1){ _renderPaqueteTipoCards(); return; }
+    if(n!==3) return;
+    const tipo=document.getElementById('pk-tipo').value;
+    const meta=_PAQUETE_TIPOS.find(t=>t.v===tipo);
+    const precio=parseFloat(document.getElementById('pk-precio').value)||0;
+    const dias=parseInt(document.getElementById('pk-dias').value)||0;
+    const rows=[
+      _wzdRow('Tipo', meta?meta.name:tipo),
+      _wzdRow('Nombre', esc((document.getElementById('pk-nombre').value||'').trim())),
+      _wzdRow('Precio', `<strong style="color:var(--ok);">$${precio.toLocaleString('es-MX')}</strong>`),
+      _wzdRow('Vigencia', dias===1?'1 día':`${dias} días`),
+    ];
+    if(tipo==='paquete') rows.push(_wzdRow('Clases', (parseInt(document.getElementById('pk-clases').value)||0)+' clases'));
+    rows.push(_wzdRow('Descuentos', document.getElementById('pk-permite-desc').checked?'Permitidos':'No permitidos'));
+    document.getElementById('pk-confirm').innerHTML=rows.join('');
+    const err=document.getElementById('pk-err'); if(err) err.style.display='none';
+  }
+});
+
+async function savePaqueteWizard(){
+  const tipo   = document.getElementById('pk-tipo').value;
+  const nombre = (document.getElementById('pk-nombre').value||'').trim();
+  const precio = parseFloat(document.getElementById('pk-precio').value)||0;
+  const dias   = parseInt(document.getElementById('pk-dias').value)||0;
+  const clases = tipo==='paquete' ? (parseInt(document.getElementById('pk-clases').value)||null) : null;
+  const permiteDesc = document.getElementById('pk-permite-desc').checked;
+  const errEl = document.getElementById('pk-err');
+  const showErr = (msg)=>{ if(errEl){ errEl.textContent=msg; errEl.style.display=msg?'block':'none'; } };
+  showErr('');
+  // Red de seguridad (el wizard ya validó en el paso 2)
+  if(!nombre || precio<=0 || dias<1 || (tipo==='paquete' && (!clases||clases<1))){ wizGoto('paquete',2); return; }
+
+  const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+  const nextSort = ((_packagesDB||[]).reduce((m,p)=>Math.max(m, p.sort_order||0), 0)) + 1;
+  const payload = {
+    gym_id: gymId,
+    name: nombre,
+    price_mxn: Math.round(precio),
+    duration_days: dias,
+    num_classes: clases,
+    unlimited_classes: tipo!=='paquete',     // ilimitado y pase-de-día = acceso libre durante su vigencia
+    allow_discount: permiteDesc,
+    max_discount_pct: permiteDesc ? 100 : 0,
+    is_active: true,
+    internal_only: false,
+    sort_order: nextSort
+  };
+  const btn = document.querySelector('#modal-paquete .wzd-save');
+  setBtnLoading(btn, true);
+  const { error } = await window.supabaseClient.from('packages').insert([payload]);
+  setBtnLoading(btn, false);
+  if(error){
+    console.error('savePaqueteWizard error:', error);
+    const m = error.message || '';
+    if(m.includes('unique_active_name_per_gym') || m.includes('duplicate')) showErr(`Ya existe un plan "${nombre}" en tu catálogo.`);
+    else showErr('No se pudo crear: ' + m);
+    return;
+  }
+  closeModal('paquete');
+  if(typeof loadPackagesFromCatalog === 'function') await loadPackagesFromCatalog();
+  if(typeof renderPlanes === 'function') renderPlanes();
+  if(typeof renderOnboardingCard === 'function') renderOnboardingCard();
+  toast(`Paquete "${nombre}" creado ✓`, '📦');
+}
 
 // ══════════════════════════════════════════════════════════════════
 // WIZARD DE PAGO — asistente guiado en 4 pasos
