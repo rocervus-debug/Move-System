@@ -5723,39 +5723,70 @@ body::before{
 
 <!-- Modal: Nuevo Lead -->
 <div class="modal-overlay" id="modal-lead">
-  <div class="modal">
+  <div class="modal" style="width:480px;">
     <div class="modal-head">
-      <div class="modal-title">Nuevo Prospecto</div>
+      <div class="modal-title">Nuevo prospecto</div>
       <button class="modal-close" onclick="closeModal('lead')">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="field-grid">
-        <div class="field"><label>Nombre completo *</label><input id="l-nombre" type="text" placeholder="Ej: Ana García"/></div>
-        <div class="field"><label>Teléfono / WhatsApp *</label><input id="l-tel" type="text" placeholder="+52 461…"/></div>
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>Email</label><input id="l-email" type="email" placeholder="correo@email.com"/></div>
-        <div class="field"><label>Canal de contacto preferido</label>
-          <select id="l-canal"><option>WhatsApp</option><option>Llamada</option><option>Email</option><option>DM Instagram</option></select>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Quién es? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Quién es el prospecto?</div>
+        <div class="wzd-hint">Sus datos de contacto. Nombre y teléfono son lo mínimo para darle seguimiento.</div>
+        <div class="field">
+          <label>Nombre completo *</label>
+          <input id="l-nombre" type="text" placeholder="Ej: Ana García"/>
+          <span class="field-err" id="l-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
+        <div class="field">
+          <label>Teléfono / WhatsApp *</label>
+          <input id="l-tel" type="text" placeholder="+52 461…"/>
+          <span class="field-err" id="l-tel-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field"><label>Email <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="l-email" type="email" placeholder="correo@email.com"/></div>
       </div>
-      <div class="field-grid">
-        <div class="field"><label>Fuente del lead *</label>
+
+      <!-- PASO 2 — ¿De dónde viene? -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿De dónde viene?</div>
+        <div class="wzd-hint">Saber la fuente te ayuda a medir qué canal te trae más clientes.</div>
+        <div class="field">
+          <label>Fuente del lead *</label>
           <select id="l-fuente"><option value="">Selecciona…</option><option>Landing Page</option><option>Instagram Orgánico</option><option>Meta Ads</option><option>TikTok</option><option>Google Ads</option><option>Referido</option><option>Walk-in</option><option>Otra</option></select>
+          <span class="field-err" id="l-fuente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
-        <div class="field"><label>Clase de interés</label>
-          <select id="l-clase"><option value="">No definido</option><option>Strength</option><option>Endurance</option><option>Hyrox</option></select>
+        <div class="field-grid">
+          <div class="field"><label>Canal de contacto preferido</label>
+            <select id="l-canal"><option>WhatsApp</option><option>Llamada</option><option>Email</option><option>DM Instagram</option></select>
+          </div>
+          <div class="field"><label>Clase de interés</label>
+            <select id="l-clase"><option value="">No definido</option><option>Strength</option><option>Endurance</option><option>Hyrox</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Estado inicial</label>
+          <select id="l-estado"><option>Lead Nuevo</option><option>Contactado</option><option>Prueba Agendada</option><option>Prueba Realizada</option><option>Propuesta Enviada</option></select>
         </div>
       </div>
-      <div class="field"><label>Estado inicial</label>
-        <select id="l-estado"><option>Lead Nuevo</option><option>Contactado</option><option>Prueba Agendada</option><option>Prueba Realizada</option><option>Propuesta Enviada</option></select>
+
+      <!-- PASO 3 — Notas + confirma -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Notas y confirmación</div>
+        <div class="wzd-hint">Agrega contexto si quieres y revisa antes de guardar.</div>
+        <div class="field"><label>Notas iniciales <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><textarea id="l-notas" placeholder="Objetivo, contexto, cómo llegó..."></textarea></div>
+        <div id="l-confirm"></div>
       </div>
-      <div class="field"><label>Notas iniciales</label><textarea id="l-notas" placeholder="Objetivo, contexto, cómo llegó..."></textarea></div>
-      <div class="field-note">* Campos obligatorios</div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('lead')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveLead()">Guardar Prospecto</button>
+      <button class="btn btn-ghost" onclick="closeModal('lead')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('lead')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('lead')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveLead()" style="display:none;">Guardar prospecto</button>
     </div>
   </div>
 </div>
@@ -6368,36 +6399,66 @@ body::before{
   </div>
 </div>
 
-<!-- Modal: Nueva Campaña -->
+<!-- Modal: Nueva Campaña — Asistente guiado 3 pasos -->
 <div class="modal-overlay" id="modal-campana">
-  <div class="modal">
+  <div class="modal" style="width:480px;">
     <div class="modal-head">
-      <div class="modal-title">Nueva Campaña</div>
+      <div class="modal-title">Nueva campaña</div>
       <button class="modal-close" onclick="closeModal('campana')">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="field"><label>Nombre de la campaña *</label><input id="ca-nombre" type="text" placeholder="Ej: Lanzamiento Mayo – Meta Ads"/></div>
-      <div class="field-grid">
-        <div class="field"><label>Canal *</label>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué campaña? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué campaña vas a medir?</div>
+        <div class="wzd-hint">Ponle un nombre claro y elige por dónde se va a promocionar.</div>
+        <div class="field">
+          <label>Nombre de la campaña *</label>
+          <input id="ca-nombre" type="text" placeholder="Ej: Lanzamiento Mayo – Meta Ads"/>
+          <span class="field-err" id="ca-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Canal *</label>
           <select id="ca-canal"><option value="">Selecciona…</option><option>Instagram Orgánico</option><option>Meta Ads</option><option>TikTok</option><option>Email</option><option>WhatsApp</option><option>Google Ads</option><option>Otra</option></select>
+          <span class="field-err" id="ca-canal-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
         </div>
-        <div class="field"><label>Estado</label>
-          <select id="ca-estado"><option>Activa</option><option>Borrador</option><option>Pausada</option><option>Finalizada</option></select>
+        <div class="field"><label>Objetivo <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="ca-objetivo" type="text" placeholder="Ej: 50 leads nuevos"/></div>
+      </div>
+
+      <!-- PASO 2 — Fechas y presupuesto -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Fechas y presupuesto</div>
+        <div class="wzd-hint">Todo opcional — sirve para calcular el costo por lead más adelante.</div>
+        <div class="field-grid">
+          <div class="field"><label>Fecha inicio</label><input id="ca-inicio" type="date"/></div>
+          <div class="field"><label>Fecha fin</label><input id="ca-fin" type="date"/></div>
+        </div>
+        <div class="field-grid">
+          <div class="field"><label>Presupuesto (MXN)</label><input id="ca-presup" type="number" placeholder="5000" min="0"/></div>
+          <div class="field"><label>Estado</label>
+            <select id="ca-estado"><option>Activa</option><option>Borrador</option><option>Pausada</option><option>Finalizada</option></select>
+          </div>
         </div>
       </div>
-      <div class="field-grid">
-        <div class="field"><label>Fecha inicio</label><input id="ca-inicio" type="date"/></div>
-        <div class="field"><label>Fecha fin</label><input id="ca-fin" type="date"/></div>
+
+      <!-- PASO 3 — Notas + confirma -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Notas y confirmación</div>
+        <div class="wzd-hint">Revisa antes de crear la campaña.</div>
+        <div class="field"><label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><textarea id="ca-notas" placeholder="Descripción, creativos, resultados esperados..."></textarea></div>
+        <div id="ca-confirm"></div>
       </div>
-      <div class="field-grid">
-        <div class="field"><label>Presupuesto (MXN)</label><input id="ca-presup" type="number" placeholder="5000" min="0"/></div>
-        <div class="field"><label>Objetivo</label><input id="ca-objetivo" type="text" placeholder="Ej: 50 leads nuevos"/></div>
-      </div>
-      <div class="field"><label>Notas</label><textarea id="ca-notas" placeholder="Descripción, creativos, resultados esperados..."></textarea></div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('campana')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveCampana()">Crear Campaña</button>
+      <button class="btn btn-ghost" onclick="closeModal('campana')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('campana')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('campana')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveCampana()" style="display:none;">Crear campaña</button>
     </div>
   </div>
 </div>
@@ -6406,28 +6467,50 @@ body::before{
 <div class="modal-overlay" id="modal-solicitud">
   <div class="modal" style="width:460px;">
     <div class="modal-head">
-      <div class="modal-title">Nueva Solicitud</div>
+      <div class="modal-title">Nueva solicitud</div>
       <button class="modal-close" onclick="closeModal('solicitud')">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="field"><label>Título / Descripción *</label><input id="s-titulo" type="text" placeholder="Ej: Diseño flyer clase especial Hyrox"/></div>
-      <div class="field-grid">
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué necesitas? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué necesitas?</div>
+        <div class="wzd-hint">Describe el entregable y de qué tipo es. Mientras más claro el briefing, mejor.</div>
+        <div class="field">
+          <label>Título / Descripción *</label>
+          <input id="s-titulo" type="text" placeholder="Ej: Diseño flyer clase especial Hyrox"/>
+          <span class="field-err" id="s-titulo-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
         <div class="field"><label>Tipo</label>
           <select id="s-tipo"><option>Diseño</option><option>Reel</option><option>Copy</option><option>Foto</option><option>Email</option><option>Otro</option></select>
         </div>
-        <div class="field"><label>Solicitante</label><input id="s-quien" type="text" placeholder="Head Coach, Ventas…"/></div>
+        <div class="field"><label>Notas / Briefing <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><textarea id="s-notas" placeholder="Detalles de lo que se necesita..."></textarea></div>
       </div>
-      <div class="field-grid">
-        <div class="field"><label>Fecha límite</label><input id="s-vence" type="date"/></div>
+
+      <!-- PASO 2 — ¿Quién y cuándo? + confirma -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿Quién y para cuándo?</div>
+        <div class="wzd-hint">Revisa antes de crear la solicitud.</div>
+        <div class="field-grid">
+          <div class="field"><label>Solicitante</label><input id="s-quien" type="text" placeholder="Head Coach, Ventas…"/></div>
+          <div class="field"><label>Fecha límite</label><input id="s-vence" type="date"/></div>
+        </div>
         <div class="field"><label>Estado</label>
           <select id="s-estado"><option>Nueva</option><option>En proceso</option><option>Completada</option><option>Cancelada</option></select>
         </div>
+        <div id="s-confirm"></div>
       </div>
-      <div class="field"><label>Notas / Briefing</label><textarea id="s-notas" placeholder="Detalles de lo que se necesita..."></textarea></div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('solicitud')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveSolicitud()">Crear Solicitud</button>
+      <button class="btn btn-ghost" onclick="closeModal('solicitud')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('solicitud')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('solicitud')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveSolicitud()" style="display:none;">Crear solicitud</button>
     </div>
   </div>
 </div>
@@ -7096,35 +7179,69 @@ body::before{
 <!-- ══ MODAL: GASTO ══ -->
 <div class="modal-overlay" id="modal-gasto">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="gasto-modal-title">Nuevo Gasto</div>
+    <div class="modal-head">
+      <div class="modal-title" id="gasto-modal-title">Nuevo gasto</div>
       <button class="modal-close" onclick="closeModal('gasto')">✕</button>
     </div>
-    <div class="field"><label>Descripción *</label><input id="ga-desc" type="text" placeholder="Ej: Renta del local, agua, etc."/></div>
-    <div class="field-row">
-      <div class="field"><label>Monto ($) *</label><input id="ga-monto" type="number" min="0" step="0.01" placeholder="0.00"/></div>
-      <div class="field"><label>Categoría</label>
-        <select id="ga-cat">
-          <option>Nómina</option><option>Renta</option><option>Servicios</option>
-          <option>Equipamiento</option><option>Marketing</option><option>Publicidad</option><option>Otro</option>
-        </select>
-      </div>
-    </div>
-    <div class="field"><label>Fecha *</label><input id="ga-fecha" type="date"/></div>
-    <div class="field" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:9px;">
-      <input type="checkbox" id="ga-recurrente" onchange="toggleGastoRec(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;"/>
-      <label for="ga-recurrente" style="cursor:pointer;margin-bottom:0;font-size:13px;color:var(--text2);">🔄 Gasto recurrente — se auto-crea cada mes</label>
-    </div>
-    <div class="field" id="ga-dia-row" style="display:none;">
-      <label>Día del mes en que se paga</label>
-      <input id="ga-dia" type="number" min="1" max="31" placeholder="Ej: 1, 5, 15, 30..." style="max-width:140px;"/>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px;">El sistema creará automáticamente la instancia de cada mes cuando llegue ese día.</div>
-    </div>
-    <div class="field"><label>Notas</label><textarea id="ga-notas" placeholder="Detalles adicionales..." rows="2"></textarea></div>
     <input type="hidden" id="ga-id"/>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué gasto? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué gasto registras?</div>
+        <div class="wzd-hint">Llevar tus egresos te muestra el margen real del gym.</div>
+        <div class="field">
+          <label>Descripción *</label>
+          <input id="ga-desc" type="text" placeholder="Ej: Renta del local, agua, etc."/>
+          <span class="field-err" id="ga-desc-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Monto ($) *</label>
+            <input id="ga-monto" type="number" min="0" step="0.01" placeholder="0.00"/>
+            <span class="field-err" id="ga-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+          <div class="field"><label>Categoría</label>
+            <select id="ga-cat">
+              <option>Nómina</option><option>Renta</option><option>Servicios</option>
+              <option>Equipamiento</option><option>Marketing</option><option>Publicidad</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2 — ¿Cuándo? + confirma -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿Cuándo se paga?</div>
+        <div class="wzd-hint">Marca si es un gasto fijo que se repite cada mes y lo creamos solo.</div>
+        <div class="field">
+          <label>Fecha *</label>
+          <input id="ga-fecha" type="date"/>
+          <span class="field-err" id="ga-fecha-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <label class="field" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:9px;cursor:pointer;">
+          <input type="checkbox" id="ga-recurrente" onchange="toggleGastoRec(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;"/>
+          <span style="font-size:13px;color:var(--text2);">🔄 Gasto recurrente — se auto-crea cada mes</span>
+        </label>
+        <div class="field" id="ga-dia-row" style="display:none;">
+          <label>Día del mes en que se paga</label>
+          <input id="ga-dia" type="number" min="1" max="31" placeholder="Ej: 1, 5, 15, 30..." style="max-width:140px;"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">El sistema creará automáticamente la instancia de cada mes cuando llegue ese día.</div>
+        </div>
+        <div class="field"><label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><textarea id="ga-notas" placeholder="Detalles adicionales..." rows="2"></textarea></div>
+        <div id="ga-confirm"></div>
+      </div>
+
+    </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('gasto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveGasto()">Guardar Gasto</button>
+      <button class="btn btn-ghost" onclick="closeModal('gasto')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('gasto')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('gasto')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveGasto()" style="display:none;">Guardar gasto</button>
     </div>
   </div>
 </div>
@@ -10095,6 +10212,24 @@ function openModal(id){
     if(typeof _renderPaqueteTipoCards==='function') _renderPaqueteTipoCards();
     if(typeof wizInit==='function') wizInit('paquete');
   }
+  if(id==='lead'){
+    ['l-nombre','l-tel','l-email','l-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    ['l-canal','l-fuente','l-clase','l-estado'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.selectedIndex=0; });
+    ['l-nombre','l-tel','l-fuente'].forEach(f=>wzdFieldErr(f,''));
+    if(typeof wizInit==='function') wizInit('lead');
+  }
+  if(id==='campana'){
+    ['ca-nombre','ca-objetivo','ca-inicio','ca-fin','ca-presup','ca-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    ['ca-canal','ca-estado'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.selectedIndex=0; });
+    ['ca-nombre','ca-canal'].forEach(f=>wzdFieldErr(f,''));
+    if(typeof wizInit==='function') wizInit('campana');
+  }
+  if(id==='solicitud'){
+    ['s-titulo','s-quien','s-vence','s-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    ['s-tipo','s-estado'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.selectedIndex=0; });
+    wzdFieldErr('s-titulo','');
+    if(typeof wizInit==='function') wizInit('solicitud');
+  }
 }
 function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
 
@@ -11082,8 +11217,13 @@ async function saveLead(){
   const nombre = document.getElementById('l-nombre').value.trim();
   const tel    = document.getElementById('l-tel').value.trim();
   const fuente = document.getElementById('l-fuente').value;
-  if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  if(!tel){ alert('El teléfono es obligatorio.'); return; }
+  if(!nombre || !tel){
+    wzdFieldErr('l-nombre', nombre?'':'El nombre es obligatorio.');
+    wzdFieldErr('l-tel', tel?'':'El teléfono es obligatorio.');
+    if(typeof wizGoto==='function') wizGoto('lead',1);
+    return;
+  }
+  if(!fuente){ wzdFieldErr('l-fuente','Elige de dónde llegó este prospecto.'); if(typeof wizGoto==='function') wizGoto('lead',2); return; }
   const payload = {
     name:     nombre,
     phone:    tel,
@@ -11095,7 +11235,10 @@ async function saveLead(){
     notes:    document.getElementById('l-notas').value.trim(),
     historial: [],
   };
+  const _lbtn = document.querySelector('#modal-lead .wzd-save');
+  setBtnLoading(_lbtn, true);
   const { data, error } = await window.supabaseClient.from('leads').insert([withGymId(payload)]).select();
+  setBtnLoading(_lbtn, false);
   if(error){ console.error('Error guardando lead:',error); alert('No se pudo guardar el prospecto.'); return; }
   await loadLeadsFromSupabase();
   closeModal('lead');
@@ -17101,7 +17244,9 @@ function openGastoModal(id=''){
   document.getElementById('ga-dia').value = (g && g.dia_recurrencia) ? g.dia_recurrencia : '';
   document.getElementById('ga-dia-row').style.display = isRec ? '' : 'none';
   setSelectVal('ga-cat', g ? g.categoria : 'Otro');
+  ['ga-desc','ga-monto','ga-fecha'].forEach(f=>wzdFieldErr(f,''));
   openModal('gasto');
+  if(typeof wizInit==='function') wizInit('gasto');   // arranca el asistente en el paso 1
 }
 
 async function saveGasto(){
@@ -17114,10 +17259,16 @@ async function saveGasto(){
   const recurrente   = document.getElementById('ga-recurrente').checked;
   const dia_rec_raw  = parseInt(document.getElementById('ga-dia').value)||null;
   const dia_recurrencia = recurrente ? dia_rec_raw : null;
-  if(!desc){ alert('La descripción es obligatoria.'); return; }
-  if(!monto){ alert('El monto debe ser mayor a 0.'); return; }
-  if(recurrente && !dia_recurrencia){ alert('Ingresa el día del mes para el gasto recurrente (1–31).'); return; }
+  if(!desc || !monto){
+    wzdFieldErr('ga-desc', desc?'':'Describe el gasto.');
+    wzdFieldErr('ga-monto', monto?'':'El monto debe ser mayor a 0.');
+    if(typeof wizGoto==='function') wizGoto('gasto',1);
+    return;
+  }
+  if(recurrente && !dia_recurrencia){ alert('Ingresa el día del mes para el gasto recurrente (1–31).'); if(typeof wizGoto==='function') wizGoto('gasto',2); return; }
   const payload = { descripcion: desc, monto, categoria: cat, fecha, notas, recurrente, dia_recurrencia };
+  const _gbtn = document.querySelector('#modal-gasto .wzd-save');
+  setBtnLoading(_gbtn, true);
   let err;
   if(id){
     const r = await window.supabaseClient.from('gastos').update(payload).eq('id', id);
@@ -17126,6 +17277,7 @@ async function saveGasto(){
     const r = await window.supabaseClient.from('gastos').insert([withGymId(payload)]);
     err = r.error;
   }
+  setBtnLoading(_gbtn, false);
   if(err){ toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
   closeModal('gasto');
   await loadGastosFromSupabase();
@@ -18487,6 +18639,120 @@ async function savePaqueteWizard(){
   toast(`Paquete "${nombre}" creado ✓`, '📦');
 }
 
+// ── Wizards de Fase 3 (secundarios): lead, campaña, gasto, solicitud ──
+// LEAD / PROSPECTO (modal-lead) — 3 pasos
+wizRegister('lead', {
+  labels:{1:'¿Quién es?', 2:'¿De dónde viene?', 3:'Notas y confirma'},
+  validate(n){
+    if(n===1){
+      let ok=true;
+      const nom=(document.getElementById('l-nombre').value||'').trim();
+      const tel=(document.getElementById('l-tel').value||'').trim();
+      if(!nom){ wzdFieldErr('l-nombre','El nombre es obligatorio.'); ok=false; } else wzdFieldErr('l-nombre','');
+      if(!tel){ wzdFieldErr('l-tel','El teléfono es obligatorio para dar seguimiento.'); ok=false; } else wzdFieldErr('l-tel','');
+      return ok;
+    }
+    if(n===2){
+      if(!document.getElementById('l-fuente').value){ wzdFieldErr('l-fuente','Elige de dónde llegó este prospecto.'); return false; }
+      wzdFieldErr('l-fuente',''); return true;
+    }
+    return true;
+  },
+  onStep(n){
+    if(n!==3) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const rows=[
+      _wzdRow('Nombre', esc(g('l-nombre'))),
+      _wzdRow('Teléfono', esc(g('l-tel'))),
+      _wzdRow('Fuente', esc(g('l-fuente'))),
+      _wzdRow('Interés', esc(g('l-clase')||'No definido')),
+      _wzdRow('Estado', esc(g('l-estado'))),
+    ];
+    if(g('l-email')) rows.splice(2,0,_wzdRow('Email', esc(g('l-email'))));
+    document.getElementById('l-confirm').innerHTML = rows.join('');
+  }
+});
+
+// CAMPAÑA (modal-campana) — 3 pasos
+wizRegister('campana', {
+  labels:{1:'¿Qué campaña?', 2:'Fechas y presupuesto', 3:'Notas y confirma'},
+  validate(n){
+    if(n!==1) return true;
+    let ok=true;
+    const nom=(document.getElementById('ca-nombre').value||'').trim();
+    if(!nom){ wzdFieldErr('ca-nombre','Ponle un nombre a la campaña.'); ok=false; } else wzdFieldErr('ca-nombre','');
+    if(!document.getElementById('ca-canal').value){ wzdFieldErr('ca-canal','Elige el canal de la campaña.'); ok=false; } else wzdFieldErr('ca-canal','');
+    return ok;
+  },
+  onStep(n){
+    if(n!==3) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const presup=parseFloat(document.getElementById('ca-presup').value)||0;
+    const rows=[
+      _wzdRow('Campaña', esc(g('ca-nombre'))),
+      _wzdRow('Canal', esc(g('ca-canal'))),
+      _wzdRow('Estado', esc(g('ca-estado'))),
+    ];
+    if(g('ca-objetivo')) rows.push(_wzdRow('Objetivo', esc(g('ca-objetivo'))));
+    if(presup>0) rows.push(_wzdRow('Presupuesto', `$${presup.toLocaleString('es-MX')}`));
+    if(g('ca-inicio')||g('ca-fin')) rows.push(_wzdRow('Periodo', `${g('ca-inicio')||'—'} → ${g('ca-fin')||'—'}`));
+    document.getElementById('ca-confirm').innerHTML = rows.join('');
+  }
+});
+
+// GASTO (modal-gasto, dual nuevo/editar) — 2 pasos
+wizRegister('gasto', {
+  labels:{1:'¿Qué gasto?', 2:'¿Cuándo? y confirma'},
+  validate(n){
+    if(n!==1) return true;
+    let ok=true;
+    const desc=(document.getElementById('ga-desc').value||'').trim();
+    const monto=parseFloat(document.getElementById('ga-monto').value)||0;
+    if(!desc){ wzdFieldErr('ga-desc','Describe el gasto.'); ok=false; } else wzdFieldErr('ga-desc','');
+    if(!monto||monto<=0){ wzdFieldErr('ga-monto','El monto debe ser mayor a 0.'); ok=false; } else wzdFieldErr('ga-monto','');
+    return ok;
+  },
+  onStep(n){
+    if(n!==2) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const monto=parseFloat(document.getElementById('ga-monto').value)||0;
+    const rec=document.getElementById('ga-recurrente').checked;
+    const f=g('ga-fecha');
+    const rows=[
+      _wzdRow('Descripción', esc(g('ga-desc'))),
+      _wzdRow('Monto', `<strong style="color:var(--danger);">$${monto.toLocaleString('es-MX')}</strong>`),
+      _wzdRow('Categoría', esc(g('ga-cat'))),
+      _wzdRow('Fecha', f ? new Date(f+'T00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : 'Hoy'),
+    ];
+    if(rec) rows.push(_wzdRow('Recurrente', `Cada mes, día ${g('ga-dia')||'—'}`));
+    document.getElementById('ga-confirm').innerHTML = rows.join('');
+  }
+});
+
+// SOLICITUD (modal-solicitud) — 2 pasos
+wizRegister('solicitud', {
+  labels:{1:'¿Qué necesitas?', 2:'¿Quién y cuándo?'},
+  validate(n){
+    if(n!==1) return true;
+    const t=(document.getElementById('s-titulo').value||'').trim();
+    if(!t){ wzdFieldErr('s-titulo','Escribe qué necesitas.'); return false; }
+    wzdFieldErr('s-titulo',''); return true;
+  },
+  onStep(n){
+    if(n!==2) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const f=g('s-vence');
+    const rows=[
+      _wzdRow('Solicitud', esc(g('s-titulo'))),
+      _wzdRow('Tipo', esc(g('s-tipo'))),
+      _wzdRow('Estado', esc(g('s-estado'))),
+    ];
+    if(g('s-quien')) rows.push(_wzdRow('Solicitante', esc(g('s-quien'))));
+    if(f) rows.push(_wzdRow('Fecha límite', new Date(f+'T00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long'})));
+    document.getElementById('s-confirm').innerHTML = rows.join('');
+  }
+});
+
 // ══════════════════════════════════════════════════════════════════
 // WIZARD DE PAGO — asistente guiado en 4 pasos
 // Solo presentación: toda la lógica de datos (savePago, paquetes,
@@ -19450,10 +19716,16 @@ const CA_ESTADO_BADGE = { 'Activa':'b-ok','Borrador':'b-gray','Pausada':'b-warn'
 
 async function saveCampana(){
   const nombre = document.getElementById('ca-nombre').value.trim();
-  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  const canal  = document.getElementById('ca-canal').value;
+  if(!nombre || !canal){
+    wzdFieldErr('ca-nombre', nombre?'':'Ponle un nombre a la campaña.');
+    wzdFieldErr('ca-canal', canal?'':'Elige el canal de la campaña.');
+    if(typeof wizGoto==='function') wizGoto('campana',1);
+    return;
+  }
   const payload = {
     nombre,
-    canal:        document.getElementById('ca-canal').value,
+    canal:        canal,
     estado:       document.getElementById('ca-estado').value,
     inicio:       document.getElementById('ca-inicio').value,
     fin:          document.getElementById('ca-fin').value,
@@ -19462,7 +19734,10 @@ async function saveCampana(){
     leads_count: 0, conversiones: 0,
     notas:        document.getElementById('ca-notas').value.trim(),
   };
+  const _cabtn = document.querySelector('#modal-campana .wzd-save');
+  setBtnLoading(_cabtn, true);
   const { error } = await window.supabaseClient.from('campanas').insert([withGymId(payload)]);
+  setBtnLoading(_cabtn, false);
   if(error){ console.error('Error guardando campaña:', error); alert('No se pudo guardar la campaña.'); return; }
   await loadCampanasFromSupabase();
   closeModal('campana');
@@ -19568,19 +19843,23 @@ const SOL_ESTADO_BADGE = {'Nueva':'b-info','En proceso':'b-warn','Completada':'b
 
 async function saveSolicitud(){
   const titulo = document.getElementById('s-titulo').value.trim();
-  if(!titulo){ alert('El título es obligatorio.'); return; }
+  if(!titulo){ wzdFieldErr('s-titulo','Escribe qué necesitas.'); if(typeof wizGoto==='function') wizGoto('solicitud',1); return; }
   const payload = {
     titulo,
     tipo:   document.getElementById('s-tipo').value,
     quien:  document.getElementById('s-quien').value.trim(),
     vence:  document.getElementById('s-vence').value,
-    estado: 'Nueva', notas: ''
+    estado: document.getElementById('s-estado').value || 'Nueva',
+    notas:  document.getElementById('s-notas').value.trim()   // antes se guardaba siempre vacío
   };
+  const _sbtn = document.querySelector('#modal-solicitud .wzd-save');
+  setBtnLoading(_sbtn, true);
   const { error } = await window.supabaseClient.from('solicitudes').insert([withGymId(payload)]);
+  setBtnLoading(_sbtn, false);
   if(error){ console.error('Error guardando solicitud:', error); alert('No se pudo guardar.'); return; }
   await loadSolicitudesFromSupabase();
   closeModal('solicitud');
-  ['s-titulo','s-quien'].forEach(id=>document.getElementById(id).value='');
+  ['s-titulo','s-quien','s-notas'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('s-vence').value='';
   toast(`Solicitud "${titulo}" creada.`,'📝');
   renderSolicitudes();
