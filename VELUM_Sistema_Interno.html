@@ -9452,7 +9452,9 @@ function _iniciarKiosco(){
     if(btn) btn.textContent='⏳ Registrando...';
     const now  = new Date();
     const fecha= now.toISOString().slice(0,10);
-    const hora = now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    // La columna asistencias.hora es `time`: debe ir en 24h HH:MM:SS.
+    // toLocaleTimeString('es-MX',…) daba "02:30 p.m." y Postgres lo rechazaba → check-in fallaba.
+    const hora = now.toTimeString().slice(0,8);
     // Fetch foto_url fresca + insert asistencia en paralelo
     const [{error}, fotoResult] = await Promise.all([
       gf(window.supabaseClient.from('asistencias')
