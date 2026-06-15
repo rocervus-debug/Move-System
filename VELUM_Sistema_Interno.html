@@ -3992,14 +3992,10 @@ body::before{
             <button class="pf-btn" data-filter="estado" data-val="vencido" onclick="setPagoFilter('estado','vencido',this)">🔴 Vencido</button>
           </div>
           <div style="width:1px;background:var(--border);margin:0 4px;"></div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <!-- Filtros de plan: se generan desde los planes reales del gym (ver renderPlanFilters) -->
+          <div id="pago-plan-filters" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;">Plan:</span>
             <button class="pf-btn active" data-filter="plan" data-val="todos" onclick="setPagoFilter('plan','todos',this)">Todos</button>
-            <button class="pf-btn" data-filter="plan" data-val="Mensual" onclick="setPagoFilter('plan','Mensual',this)">Mensual</button>
-            <button class="pf-btn" data-filter="plan" data-val="Trimestral" onclick="setPagoFilter('plan','Trimestral',this)">Trimestral</button>
-            <button class="pf-btn" data-filter="plan" data-val="Semestral" onclick="setPagoFilter('plan','Semestral',this)">Semestral</button>
-            <button class="pf-btn" data-filter="plan" data-val="Anual" onclick="setPagoFilter('plan','Anual',this)">Anual</button>
-            <button class="pf-btn" data-filter="plan" data-val="__paquete_activo__" onclick="setPagoFilter('plan','__paquete_activo__',this)" style="border-color:rgba(0,212,255,.4);color:var(--accent-light);">📦 Paquetes activos</button>
           </div>
           <div style="width:1px;background:var(--border);margin:0 4px;"></div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -19522,6 +19518,31 @@ function setPagoFilter(key, val, btn){
   renderPagos();
 }
 
+// Genera los botones de filtro de plan desde los planes REALES que aparecen en
+// los pagos del gym (antes estaban fijos: Mensual/Trimestral/… que no coincidían
+// con catálogos personalizados). Se re-dibuja solo si cambió el set de planes.
+let _planFilterSig = '';
+function renderPlanFilters(){
+  const wrap = document.getElementById('pago-plan-filters');
+  if(!wrap) return;
+  const planes = [...new Set((pagos||[])
+    .filter(p => p && p.plan && p.notas !== '__sin_pago__')
+    .map(p => String(p.plan).trim())
+    .filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const sig = planes.join('||') + '#' + pagoFilter.plan;
+  if(sig === _planFilterSig && wrap.children.length > 1) return;  // sin cambios → no re-render
+  _planFilterSig = sig;
+  const cur = pagoFilter.plan;
+  const jsq = s => String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  let html = `<span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;">Plan:</span>`;
+  html += `<button class="pf-btn${cur==='todos'?' active':''}" data-filter="plan" data-val="todos" onclick="setPagoFilter('plan','todos',this)">Todos</button>`;
+  planes.forEach(pl=>{
+    html += `<button class="pf-btn${cur===pl?' active':''}" data-filter="plan" data-val="${escapeHtml(pl)}" onclick="setPagoFilter('plan','${jsq(pl)}',this)">${escapeHtml(pl)}</button>`;
+  });
+  html += `<button class="pf-btn${cur==='__paquete_activo__'?' active':''}" data-filter="plan" data-val="__paquete_activo__" onclick="setPagoFilter('plan','__paquete_activo__',this)" style="border-color:rgba(0,212,255,.4);color:var(--accent-light);">📦 Paquetes activos</button>`;
+  wrap.innerHTML = html;
+}
+
 function getPagoEstado(p, today, in7){
   if(!p.vence||p.vence==='—') return 'sin_fecha';
   const v = new Date(p.vence);
@@ -19531,6 +19552,8 @@ function getPagoEstado(p, today, in7){
 }
 
 function renderPagos(){
+  // Filtros de plan dinámicos (planes reales del gym)
+  renderPlanFilters();
   // ─── KPIs reales ────────────────────────────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
   const in7   = new Date(today); in7.setDate(today.getDate()+7);
