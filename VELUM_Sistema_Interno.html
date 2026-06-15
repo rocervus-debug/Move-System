@@ -24,7 +24,7 @@
 <!-- ═══ SEO / descripción ═══ -->
 <meta name="description" content="VELUM — Sistema de gestión fitness. Membresías, pagos, coaches y más."/>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet"/>
 <!-- SRI: genera los hashes con: curl -s <URL> | openssl dgst -sha384 -binary | base64 -w0
      Luego añade integrity="sha384-<hash>" a cada script tag.
      Supabase usa un build dinámico (@2) — no es compatible con SRI; fija la versión cuando sea posible. -->
@@ -127,6 +127,33 @@
   --font:'Inter',system-ui,sans-serif;
   --font-display:'Outfit',system-ui,sans-serif;
   --fm:'Geist Mono',monospace;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TEMA POR VERTICAL (Fase A) — aditivo. Solo cambia la ESTRUCTURA
+   del tema (fondo, neutros, tipografía display, radios). El acento
+   sigue gobernado por el sistema de color por-gym (applyVertical le
+   pone un default por vertical). 'velum' (default) = SIN cambios.
+   ════════════════════════════════════════════════════════════════ */
+body[data-vertical="studios"]{
+  --bg:#0E0A12; --bg-card:#160F1C; --card:#1B1422; --card2:#241829; --white:#1B1422;
+  --border:rgba(255,255,255,.07); --border2:rgba(201,168,106,.20);
+  --text:#F4EEF2; --text2:#C9B6C4; --text3:#8A7486; --text4:#5A4A57;
+  --accent:#C9A86A; --accent-light:#E4CF9B; --accent-hover:#E4CF9B;
+  --accent-bg:rgba(201,168,106,.10); --accent-bg2:rgba(201,168,106,.18);
+  --glow:0 0 30px rgba(201,168,106,.20);
+  --font-display:'Fraunces',Georgia,serif;
+  --radius:22px; --radius-sm:14px;
+}
+body[data-vertical="recovery"]{
+  --bg:#070F0E; --bg-card:#0C1716; --card:#101D1C; --card2:#162625; --white:#101D1C;
+  --border:rgba(255,255,255,.07); --border2:rgba(94,200,176,.20);
+  --text:#ECF4F2; --text2:#A6C2BC; --text3:#5E7E78; --text4:#3A504C;
+  --accent:#5EC8B0; --accent-light:#92E0CD; --accent-hover:#92E0CD;
+  --accent-bg:rgba(94,200,176,.12); --accent-bg2:rgba(94,200,176,.18);
+  --glow:0 0 30px rgba(94,200,176,.20);
+  --font-display:'Fraunces',Georgia,serif;
+  --radius:20px; --radius-sm:14px;
 }
 
 /* ══════════════════════════════════
@@ -8685,6 +8712,12 @@ async function loadConfigFromSupabase(){
       }
     });
   }
+  // Fase A: leer la vertical del gym y aplicar su tema. Default/fallo = 'velum' (sin cambio).
+  if(MOVE_GYM_ID && window.supabaseClient){
+    window.supabaseClient.from('gyms').select('vertical').eq('id', MOVE_GYM_ID).single()
+      .then(({data:g})=>{ if(typeof applyVertical==='function') applyVertical(g && g.vertical ? g.vertical : 'velum'); })
+      .catch(()=>{ if(typeof applyVertical==='function') applyVertical('velum'); });
+  }
   applyGymConfig();
   renderThemeGrid();
 }
@@ -8756,6 +8789,29 @@ function applyCustomColor(){
   _applyColorToDOM(hex, null, hexToRgba(hex,.07), hexToRgba(hex,.04), hexToRgba(hex,.16));
   document.querySelectorAll('.theme-card').forEach(c=>c.classList.remove('t-active'));
   toast('Color personalizado aplicado ✓');
+}
+
+// ── Fase A: aplica el TEMA por vertical del gym ────────────────────
+// Pone <body data-vertical="..."> (el CSS hace el resto: fondo, serif,
+// radios). Para 'velum' NO toca nada → los gyms actuales se ven igual.
+// Para studios/recovery, fija el acento default de la vertical reusando
+// el mismo _applyColorToDOM del sistema de color por-gym.
+let _gymVertical = 'velum';
+const _VERTICAL_DEFAULTS = {
+  studios:  { accent:'#C9A86A', bg1:'rgba(201,168,106,.07)', bg2:'rgba(201,168,106,.04)' },
+  recovery: { accent:'#5EC8B0', bg1:'rgba(94,200,176,.07)',  bg2:'rgba(94,200,176,.04)' },
+};
+function applyVertical(vertical){
+  const v = String(vertical || 'velum').toLowerCase();
+  _gymVertical = (v === 'studios' || v === 'recovery') ? v : 'velum';
+  try { document.body.dataset.vertical = _gymVertical; } catch(e){}
+  if(_gymVertical === 'velum') return;   // sin cambios para el sistema actual
+  const def = _VERTICAL_DEFAULTS[_gymVertical];
+  // Si el gym no eligió un color propio, usar el acento de la vertical.
+  const escogioColor = gymConfig && gymConfig.gym_theme && gymConfig.gym_theme === 'custom';
+  if(def && !escogioColor && typeof _applyColorToDOM === 'function'){
+    _applyColorToDOM(def.accent, null, def.bg1, def.bg2, hexToRgba(def.accent, .16));
+  }
 }
 
 function applyGymConfig(){
