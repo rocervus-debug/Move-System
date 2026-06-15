@@ -1,0 +1,88 @@
+/* ══════════════════════════════════════════════════════════════════════
+   VELUM · SISTEMA DE DISEÑO POR VERTICAL  (Fase A — aditivo, no-breaking)
+   ─────────────────────────────────────────────────────────────────────
+   Fuente de verdad de los design tokens de TODA la plataforma.
+   Usa los MISMOS nombres de variable que ya existen en
+   VELUM_Sistema_Interno.html (:root) → adoptarlo NO cambia el look actual.
+
+   El tema BASE = el VELUM actual (cian #00D4FF) = vertical
+   "gym/hyrox/tradicional". Studios y Recovery sólo SE AGREGAN encima
+   cuando el <body> (o el contenedor) declara data-vertical.
+
+   Cómo se activa por gym:
+     <body data-vertical="studios">   ← boutique
+     <body data-vertical="recovery">  ← wellness / spa / fisio
+     (sin atributo, o data-vertical="velum")  ← el sistema actual
+
+   Cómo se debe leer en runtime (Fase A.2):
+     el panel lee gym_config → vertical_profile.vertical y pone el atributo.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── BASE / VELUM (gym · hyrox · tradicional) — IDÉNTICO al sistema actual ── */
+:root,
+[data-vertical="velum"]{
+  /* Superficies */
+  --bg:#040C14; --bg-card:#08121E; --card:#08121E; --card2:#0D1B2A;
+  --border:rgba(0,212,255,.08); --border2:rgba(0,212,255,.18);
+  /* Texto */
+  --text:#E8EDF5; --text2:#7ABFCC; --text3:#2A4A5A; --text4:#1E3A4A;
+  /* Acento (marca actual — NO se toca) */
+  --accent:#00D4FF; --accent-light:#66E8FF; --accent-ink:#04222E;
+  --accent-bg:rgba(0,212,255,.10); --accent-bg2:rgba(0,212,255,.18);
+  --glow:0 0 24px rgba(0,212,255,.22);
+  /* Tipografía */
+  --font:'Inter',system-ui,sans-serif;
+  --font-display:'Outfit',system-ui,sans-serif;
+  --fm:'Geist Mono',monospace;
+  /* Forma / densidad */
+  --radius:20px; --radius-sm:12px; --radius-lg:24px;
+  --density:1;
+  /* Estados (compartidos en todas las verticales) */
+  --ok:#10E8A0;     --ok-bg:rgba(16,232,160,.1);
+  --warn:#FBBF24;   --warn-bg:rgba(251,191,36,.1);
+  --danger:#F87171; --danger-bg:rgba(248,113,113,.1);
+}
+
+/* ── STUDIOS (boutique premium) — champagne sobre noche ciruela ── */
+[data-vertical="studios"]{
+  --bg:#0E0A12; --bg-card:#160F1C; --card:#1B1422; --card2:#241829;
+  --border:rgba(232,210,200,.08); --border2:rgba(201,168,106,.20);
+  --text:#F4EEF2; --text2:#C9B6C4; --text3:#8A7486; --text4:#5A4A57;
+  --accent:#C9A86A; --accent-light:#E4CF9B; --accent-ink:#241829;
+  --accent-bg:rgba(201,168,106,.12); --accent-bg2:rgba(201,168,106,.22);
+  --glow:0 0 34px rgba(201,168,106,.20);
+  --font-display:'Fraunces',Georgia,serif;
+  --radius:22px; --radius-sm:14px; --radius-lg:30px;
+  --density:1.12;
+}
+
+/* ── RECOVERY (wellness · spa · fisio) — salvia sobre niebla nocturna ── */
+[data-vertical="recovery"]{
+  --bg:#070F0E; --bg-card:#0C1716; --card:#101D1C; --card2:#162625;
+  --border:rgba(122,200,184,.08); --border2:rgba(94,200,176,.20);
+  --text:#ECF4F2; --text2:#A6C2BC; --text3:#5E7E78; --text4:#3A504C;
+  --accent:#5EC8B0; --accent-light:#92E0CD; --accent-ink:#0A2420;
+  --accent-bg:rgba(94,200,176,.12); --accent-bg2:rgba(94,200,176,.20);
+  --glow:0 0 34px rgba(94,200,176,.20);
+  --font-display:'Fraunces',Georgia,serif;
+  --radius:20px; --radius-sm:14px; --radius-lg:28px;
+  --density:1.15;
+}
+
+/* ── Fuentes extra que algunas verticales necesitan (Fraunces para serif) ──
+   Cargar sólo si no están ya importadas en el documento. */
+@font-face{ font-family:'Fraunces'; font-display:swap; src:local('Fraunces'); }
+
+/* ──────────────────────────────────────────────────────────────────────
+   NOTA DE ADOPCIÓN (importante para no romper nada):
+   - El panel actual ya define estas variables en su propio :root. Para
+     adoptar este archivo SIN conflictos, se incluye DESPUÉS del CSS actual
+     y se elimina el bloque duplicado del panel en un paso posterior. En la
+     práctica, como los valores BASE aquí son idénticos a los actuales, el
+     panel se ve igual aunque ambos coexistan.
+   - Ninguna vertical redefine --ok/--warn/--danger: el semáforo de negocio
+     es consistente en toda la plataforma.
+   - La densidad (--density) está pensada para multiplicar tamaños/espacios
+     en componentes que la usen; su adopción es gradual, componente por
+     componente, sin obligar a refactor.
+   ────────────────────────────────────────────────────────────────────── */
