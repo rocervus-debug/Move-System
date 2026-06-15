@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VELUM Recovery · Dashboard</title>
+<link rel="stylesheet" href="assets/velum-core.css"/>
+<style>
+  /* ── timeline de la agenda del día ── */
+  .tl{position:relative;margin-left:8px;}
+  .tl-row{display:flex;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .tl-row:last-child{border-bottom:none;}
+  .tl-time{width:58px;flex-shrink:0;text-align:right;}
+  .tl-time .h{font-family:var(--font-mono);font-weight:500;font-size:13px;color:var(--text);}
+  .tl-time .m{font-size:10.5px;color:var(--text-3);}
+  .tl-line{position:relative;width:14px;flex-shrink:0;}
+  .tl-line::before{content:'';position:absolute;left:6px;top:0;bottom:-21px;width:2px;background:var(--border);}
+  .tl-line .dot{position:absolute;left:1px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--accent);}
+  .tl-row.done .tl-line .dot{background:var(--accent);}
+  .tl-row.now .tl-line .dot{box-shadow:var(--glow);}
+  .tl-body{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;}
+  .tl-row.now .tl-body{border-color:var(--accent);}
+  .res-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  @media(max-width:1100px){.res-grid{grid-template-columns:1fr;}}
+  .res{display:flex;align-items:center;gap:13px;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card-2);}
+  .res .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:19px;flex-shrink:0;background:var(--accent-bg);border:1px solid var(--border-2);}
+  .res .meter{height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin-top:7px;}
+  .res .meter i{display:block;height:100%;border-radius:99px;}
+</style>
+</head>
+<body data-vertical="recovery">
+<div class="app">
+
+  <!-- SIDEBAR (shell compartido) -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">V</div>
+      <div><div class="sb-name">VELUM</div><div class="sb-vertical">Recovery</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-item active"><span class="ic">◎</span> Dashboard</div>
+      <div class="sb-item"><a href="recovery-citas.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">▦</span> Citas</a><span class="sb-badge">23 hoy</span></div>
+      <div class="sb-item"><span class="ic">◇</span> Recursos</div>
+      <div class="sb-item"><span class="ic">❋</span> Protocolos</div>
+      <div class="sb-item"><span class="ic">○</span> Clientes</div>
+      <div class="sb-item"><span class="ic">◈</span> Paquetes</div>
+      <div class="sb-group">Negocio</div>
+      <div class="sb-item"><span class="ic">▤</span> Ingresos</div>
+      <div class="sb-item"><span class="ic">↻</span> Retención</div>
+      <div class="sb-item"><span class="ic">⚙</span> Configuración</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="av">SR</div>
+      <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Serena Recovery Lab</div><div style="font-size:10.5px;color:var(--text-3)">Roma Norte · CDMX</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="vbar">Estás viendo <b>VELUM Recovery</b> · wellness con citas por recurso y protocolos <a href="index.html">↔ Cambiar vertical</a></div>
+
+    <header class="topbar">
+      <div>
+        <div class="tb-title">Buenos días, Mariana</div>
+        <div class="tb-sub">Lunes 15 de junio · 23 citas agendadas · 5 recursos activos</div>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="tb-search">⌕ Buscar cliente o cita…</div>
+      <button class="btn btn-primary">+ Agendar cita</button>
+    </header>
+
+    <div class="content">
+
+      <!-- KPIs de wellness / recovery -->
+      <div class="grid g-4">
+        <div class="kpi">
+          <div class="kpi-label">▦ Citas de hoy</div>
+          <div class="kpi-value">23</div>
+          <div class="kpi-delta flat">9 completadas · 14 por venir</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">◷ Ocupación de recursos</div>
+          <div class="kpi-value">76<span style="font-size:18px;color:var(--text-3)">%</span></div>
+          <div class="kpi-delta up">▲ +8% vs media semanal</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">$ Ingresos del mes</div>
+          <div class="kpi-value mono">$312k</div>
+          <div class="kpi-delta up">▲ 81% de la meta ($385k)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">⊘ No-shows (7d)</div>
+          <div class="kpi-value">3.4<span style="font-size:18px;color:var(--text-3)">%</span></div>
+          <div class="kpi-delta up">▼ −1.1% — recordatorio 24h activo</div>
+        </div>
+      </div>
+
+      <!-- Agenda del día (timeline) + estado de recursos -->
+      <div class="grid g-2 mt" style="grid-template-columns:1.25fr 1fr;">
+
+        <div class="card">
+          <div class="flex between" style="margin-bottom:6px">
+            <div class="card-title">▦ Agenda de hoy</div>
+            <div class="seg"><button class="on">Hoy</button><button>Mañana</button></div>
+          </div>
+          <div class="card-sub" style="margin-bottom:14px">Citas 1-a-1 por recurso · protocolo asignado a cada sesión</div>
+
+          <div class="tl">
+            <div class="tl-row done">
+              <div class="tl-time"><div class="h">08:00</div><div class="m">45 min</div></div>
+              <div class="tl-line"><span class="dot"></span></div>
+              <div class="tl-body"><div class="flex between"><div class="row-name">Valeria Camacho</div><span class="badge b-ok">Completada</span></div><div class="row-sub" style="margin-top:2px">Crioterapia + compresión · Protocolo "Post-competencia"</div></div>
+            </div>
+            <div class="tl-row done">
+              <div class="tl-time"><div class="h">09:00</div><div class="m">60 min</div></div>
+              <div class="tl-line"><span class="dot"></span></div>
+              <div class="tl-body"><div class="flex between"><div class="row-name">Emilio Tovar</div><span class="badge b-ok">Completada</span></div><div class="row-sub" style="margin-top:2px">Masaje deportivo · Camilla 1 · Lic. Andrea Pineda</div></div>
+            </div>
+            <div class="tl-row now">
+              <div class="tl-time"><div class="h">10:30</div><div class="m">30 min</div></div>
+              <div class="tl-line"><span class="dot"></span></div>
+              <div class="tl-body"><div class="flex between"><div class="row-name">Sofía Beltrán</div><span class="badge b-accent">En curso</span></div><div class="row-sub" style="margin-top:2px">Sauna infrarroja · Protocolo "Relajación profunda"</div></div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-time"><div class="h">11:15</div><div class="m">40 min</div></div>
+              <div class="tl-line"><span class="dot"></span></div>
+              <div class="tl-body"><div class="flex between"><div class="row-name">Rodrigo Esquivel</div><span class="badge b-muted">Confirmada</span></div><div class="row-sub" style="margin-top:2px">Bota de compresión + crio · Protocolo "Piernas pesadas"</div></div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-time"><div class="h">12:00</div><div class="m">60 min</div></div>
+              <div class="tl-line"><span class="dot"></span></div>
+              <div class="tl-body"><div class="flex between"><div class="row-name">Natalia Ríos</div><span class="badge b-warn">Por confirmar</span></div><div class="row-sub" style="margin-top:2px">Masaje de tejido profundo · Camilla 2</div></div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-time"><div class="h">13:30</div><div class="m">45 min</div></div>
+              <div class="tl-line"><span class="dot"></span></div>
+              <div class="tl-body"><div class="flex between"><div class="row-name">Diego Maldonado</div><span class="badge b-muted">Confirmada</span></div><div class="row-sub" style="margin-top:2px">Crioterapia · Protocolo "Post-competencia"</div></div>
+            </div>
+          </div>
+          <a href="recovery-citas.html" class="btn btn-ghost btn-sm" style="margin-top:14px;width:100%">Ver agenda por recurso →</a>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-title">◇ Estado de recursos · en vivo</div>
+            <div class="card-sub" style="margin-bottom:12px">Disponibilidad en tiempo real</div>
+            <div class="res-grid">
+              <div class="res">
+                <div class="ico">♨</div>
+                <div style="flex:1"><div class="flex between"><div class="row-name">Sauna infrarroja</div><span class="badge b-warn">Ocupado</span></div><div class="row-sub">Libre 11:00</div><div class="meter"><i style="width:80%;background:var(--warn)"></i></div></div>
+              </div>
+              <div class="res">
+                <div class="ico">❄</div>
+                <div style="flex:1"><div class="flex between"><div class="row-name">Cámara de crio</div><span class="badge b-ok">Libre</span></div><div class="row-sub">Próxima 11:15</div><div class="meter"><i style="width:22%;background:var(--ok)"></i></div></div>
+              </div>
+              <div class="res">
+                <div class="ico">✋</div>
+                <div style="flex:1"><div class="flex between"><div class="row-name">Sala de masaje 1</div><span class="badge b-ok">Libre</span></div><div class="row-sub">Próxima 12:00</div><div class="meter"><i style="width:35%;background:var(--ok)"></i></div></div>
+              </div>
+              <div class="res">
+                <div class="ico">✋</div>
+                <div style="flex:1"><div class="flex between"><div class="row-name">Sala de masaje 2</div><span class="badge b-warn">Por confirmar</span></div><div class="row-sub">12:00 sin confirmar</div><div class="meter"><i style="width:55%;background:var(--warn)"></i></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">⚑ Requiere atención</div>
+            <div class="row-item"><span class="dot" style="background:var(--warn)"></span><div class="row-main"><div class="row-name">2 citas sin confirmar para hoy</div><div class="row-sub">Enviar recordatorio antes de las 11:00</div></div><button class="btn btn-ghost btn-sm">Avisar</button></div>
+            <div class="row-item"><span class="dot" style="background:var(--accent)"></span><div class="row-main"><div class="row-name">11 clientes con créditos por vencer</div><div class="row-sub">Paquetes de recovery vencen este mes</div></div><button class="btn btn-ghost btn-sm">Ver</button></div>
+            <div class="row-item"><span class="dot" style="background:var(--danger)"></span><div class="row-main"><div class="row-name">Cámara de crio · mantenimiento</div><div class="row-sub">Revisión de nitrógeno programada jueves</div></div><button class="btn btn-ghost btn-sm">Agendar</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila inferior: protocolos populares + ocupación por hora -->
+      <div class="grid g-2 mt">
+        <div class="card">
+          <div class="card-title">❋ Protocolos más solicitados (30d)</div>
+          <div class="card-sub" style="margin-bottom:8px">Combinaciones de recursos por objetivo</div>
+          <div class="row-item"><span class="av-sm" style="width:34px;height:34px">❋</span><div class="row-main"><div class="row-name">Post-competencia</div><div class="row-sub">Crio 10min + compresión 20min + sauna 15min</div></div><div style="text-align:right"><div style="font-weight:700">84</div><div class="row-sub">sesiones</div></div></div>
+          <div class="row-item"><span class="av-sm" style="width:34px;height:34px">❋</span><div class="row-main"><div class="row-name">Piernas pesadas</div><div class="row-sub">Bota de compresión 25min + crio 8min</div></div><div style="text-align:right"><div style="font-weight:700">61</div><div class="row-sub">sesiones</div></div></div>
+          <div class="row-item"><span class="av-sm" style="width:34px;height:34px">❋</span><div class="row-main"><div class="row-name">Relajación profunda</div><div class="row-sub">Sauna infrarroja 30min + masaje 45min</div></div><div style="text-align:right"><div style="font-weight:700">47</div><div class="row-sub">sesiones</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">◷ Ocupación por hora</div>
+          <div class="card-sub">Promedio últimos 30 días</div>
+          <div class="chart">
+            <div class="col"><i style="height:42%"></i><span class="lbl">8a</span></div>
+            <div class="col hl"><i style="height:88%"></i><span class="lbl">9a</span></div>
+            <div class="col"><i style="height:70%"></i><span class="lbl">11a</span></div>
+            <div class="col"><i style="height:54%"></i><span class="lbl">1p</span></div>
+            <div class="col"><i style="height:48%"></i><span class="lbl">3p</span></div>
+            <div class="col"><i style="height:76%"></i><span class="lbl">5p</span></div>
+            <div class="col hl"><i style="height:96%"></i><span class="lbl">7p</span></div>
+          </div>
+          <div class="row-sub" style="margin-top:10px">Mayor demanda a las <b style="color:var(--accent)">9am</b> y <b style="color:var(--accent)">7pm</b> — ventana ideal para protocolos largos.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

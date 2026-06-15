@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VELUM Studios · Horario de clases</title>
+<link rel="stylesheet" href="assets/velum-core.css"/>
+<style>
+  /* Layout puntual del calendario semanal */
+  .cal-wrap{display:grid;grid-template-columns:1.55fr .95fr;gap:18px;}
+  @media(max-width:1180px){.cal-wrap{grid-template-columns:1fr;}}
+
+  .cal{display:grid;grid-template-columns:54px repeat(6,1fr);gap:6px;}
+  .cal-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);text-align:center;padding:6px 0;}
+  .cal-head b{display:block;color:var(--text);font-size:13px;font-family:var(--font-display);}
+  .cal-time{font-size:11px;color:var(--text-4);font-family:var(--font-mono);text-align:right;padding-top:10px;padding-right:6px;}
+  .cal-cell{min-height:62px;border-radius:var(--radius-sm);border:1px dashed var(--border);}
+
+  .cls{
+    border-radius:var(--radius-sm);padding:8px 9px;cursor:pointer;border:1px solid var(--border-2);
+    background:var(--card);transition:transform .14s,border-color .14s;height:100%;
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .cls:hover{transform:translateY(-1px);}
+  .cls .cn{font-size:11.5px;font-weight:700;line-height:1.15;}
+  .cls .ci{font-size:10px;color:var(--text-3);}
+  .cls .cm{font-size:10px;font-weight:700;font-family:var(--font-mono);margin-top:auto;}
+  .cls.open{border-left:3px solid var(--ok);}
+  .cls.open .cm{color:var(--ok);}
+  .cls.almost{border-left:3px solid var(--accent);background:var(--accent-bg);}
+  .cls.almost .cm{color:var(--accent);}
+  .cls.full{border-left:3px solid var(--warn);background:var(--warn-bg);}
+  .cls.full .cm{color:var(--warn);}
+  .cls.sel{outline:2px solid var(--accent);box-shadow:var(--glow);}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .lg-dot{width:10px;height:10px;border-radius:3px;}
+
+  /* Panel de clase seleccionada */
+  .reformers{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .rf{
+    border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 6px;text-align:center;
+    font-size:10.5px;position:relative;
+  }
+  .rf .num{font-family:var(--font-mono);font-size:13px;font-weight:700;display:block;}
+  .rf.taken{background:var(--accent-bg-2);border-color:var(--border-2);}
+  .rf.taken .who{color:var(--accent);font-weight:600;margin-top:2px;}
+  .rf.free{color:var(--text-4);border-style:dashed;}
+  .rf.broken{background:var(--danger-bg);border-color:var(--danger);color:var(--danger);}
+  .wl-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);}
+  .wl-pos{width:24px;height:24px;border-radius:50%;background:var(--card-2);display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--warn);border:1px solid var(--border-2);}
+</style>
+</head>
+<body data-vertical="studios">
+<div class="app">
+
+  <!-- SIDEBAR (shell compartido) -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">V</div>
+      <div><div class="sb-name">VELUM</div><div class="sb-vertical">Studios</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-item"><a href="studios-dashboard.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">◎</span> Dashboard</a></div>
+      <div class="sb-item active"><span class="ic">▦</span> Horario de clases<span class="sb-badge">8 hoy</span></div>
+      <div class="sb-item"><a href="studios-paquetes.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">◈</span> Paquetes & créditos</a></div>
+      <div class="sb-item"><a href="studios-cliente.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">○</span> Clientes</a></div>
+      <div class="sb-item"><a href="studios-instructor.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">✦</span> Instructores & equipo</a></div>
+      <div class="sb-group">Negocio</div>
+      <div class="sb-item"><span class="ic">▤</span> Ingresos</div>
+      <div class="sb-item"><span class="ic">↻</span> Retención</div>
+      <div class="sb-item"><span class="ic">⚙</span> Configuración</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="av">RM</div>
+      <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Reforma Pilates</div><div style="font-size:10.5px;color:var(--text-3)">Polanco · CDMX</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="vbar">Estás viendo <b>VELUM Studios</b> · boutique class-based <a href="index.html">↔ Cambiar vertical</a></div>
+
+    <header class="topbar">
+      <div>
+        <div class="tb-title">Horario de clases</div>
+        <div class="tb-sub">Semana del 15 al 21 de junio · 47 clases programadas</div>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="seg"><button class="on">Semana</button><button>Día</button><button>Mes</button></div>
+      <button class="btn btn-primary">+ Crear clase</button>
+    </header>
+
+    <div class="content">
+
+      <div class="flex between wrap" style="margin-bottom:14px">
+        <div class="legend">
+          <span><i class="lg-dot" style="background:var(--ok)"></i> Abierta</span>
+          <span><i class="lg-dot" style="background:var(--accent)"></i> Casi llena</span>
+          <span><i class="lg-dot" style="background:var(--warn)"></i> Llena + waitlist</span>
+          <span><i class="lg-dot" style="border:1px dashed var(--border-2);background:transparent"></i> Sin clase</span>
+        </div>
+        <div class="flex" style="font-size:12.5px;color:var(--text-3)">
+          <button class="btn btn-ghost btn-sm">‹ Anterior</button>
+          <b style="color:var(--text)">15 – 21 jun</b>
+          <button class="btn btn-ghost btn-sm">Siguiente ›</button>
+        </div>
+      </div>
+
+      <div class="cal-wrap">
+
+        <!-- GRID SEMANAL -->
+        <div class="card" style="overflow-x:auto">
+          <div class="cal" style="min-width:680px">
+            <div></div>
+            <div class="cal-head">Lun<b>15</b></div>
+            <div class="cal-head">Mar<b>16</b></div>
+            <div class="cal-head">Mié<b>17</b></div>
+            <div class="cal-head">Jue<b>18</b></div>
+            <div class="cal-head">Vie<b>19</b></div>
+            <div class="cal-head" style="color:var(--accent)">Sáb<b style="color:var(--accent)">20</b></div>
+
+            <!-- 07:00 -->
+            <div class="cal-time">07:00</div>
+            <div class="cls full sel" onclick="">
+              <div class="cn">Reformer Flow N2</div><div class="ci">Andrea S. · Sala A</div><div class="cm">12/12 · 3 esp</div>
+            </div>
+            <div class="cls open"><div class="cn">Reformer Flow N1</div><div class="ci">Mariana C. · Sala A</div><div class="cm">8/12</div></div>
+            <div class="cls full"><div class="cn">Lagree Mega</div><div class="ci">Andrea S. · Sala A</div><div class="cm">12/12 · 2 esp</div></div>
+            <div class="cls almost"><div class="cn">Reformer Flow N2</div><div class="ci">Mariana C. · Sala A</div><div class="cm">11/12</div></div>
+            <div class="cls open"><div class="cn">Barre Sculpt</div><div class="ci">Mariana C. · Sala B</div><div class="cm">10/16</div></div>
+            <div class="cls almost"><div class="cn">Reformer Flow N2</div><div class="ci">Andrea S. · Sala A</div><div class="cm">11/12</div></div>
+
+            <!-- 08:30 -->
+            <div class="cal-time">08:30</div>
+            <div class="cls open"><div class="cn">Barre Sculpt</div><div class="ci">Mariana C. · Sala B</div><div class="cm">12/16</div></div>
+            <div class="cls almost"><div class="cn">Lagree Mega</div><div class="ci">Andrea S. · Sala A</div><div class="cm">11/12</div></div>
+            <div class="cls open"><div class="cn">Vinyasa Flow</div><div class="ci">Paola R. · Sala B</div><div class="cm">9/16</div></div>
+            <div class="cal-cell"></div>
+            <div class="cls full"><div class="cn">Lagree Mega</div><div class="ci">Andrea S. · Sala A</div><div class="cm">12/12 · 4 esp</div></div>
+            <div class="cls open"><div class="cn">Barre Sculpt</div><div class="ci">Mariana C. · Sala B</div><div class="cm">7/16</div></div>
+
+            <!-- 10:00 -->
+            <div class="cal-time">10:00</div>
+            <div class="cls almost"><div class="cn">Lagree Mega</div><div class="ci">Andrea S. · Sala A</div><div class="cm">11/12</div></div>
+            <div class="cls open"><div class="cn">Vinyasa Flow</div><div class="ci">Paola R. · Sala B</div><div class="cm">6/16</div></div>
+            <div class="cal-cell"></div>
+            <div class="cls open"><div class="cn">Cycle Beat</div><div class="ci">Diego N. · Sala C</div><div class="cm">14/20</div></div>
+            <div class="cal-cell"></div>
+            <div class="cls full"><div class="cn">Reformer Flow N3</div><div class="ci">Mariana C. · Sala A</div><div class="cm">12/12 · 6 esp</div></div>
+
+            <!-- 12:00 -->
+            <div class="cal-time">12:00</div>
+            <div class="cls open"><div class="cn">Vinyasa Flow</div><div class="ci">Paola R. · Sala B</div><div class="cm">7/16</div></div>
+            <div class="cal-cell"></div>
+            <div class="cls open"><div class="cn">Cycle Beat</div><div class="ci">Diego N. · Sala C</div><div class="cm">11/20</div></div>
+            <div class="cal-cell"></div>
+            <div class="cls open"><div class="cn">Vinyasa Flow</div><div class="ci">Paola R. · Sala B</div><div class="cm">8/16</div></div>
+            <div class="cls almost"><div class="cn">Cycle Beat</div><div class="ci">Diego N. · Sala C</div><div class="cm">18/20</div></div>
+
+            <!-- 18:30 -->
+            <div class="cal-time">18:30</div>
+            <div class="cls full"><div class="cn">Reformer Flow N3</div><div class="ci">Mariana C. · Sala A</div><div class="cm">12/12 · 5 esp</div></div>
+            <div class="cls full"><div class="cn">Lagree Mega</div><div class="ci">Andrea S. · Sala A</div><div class="cm">12/12 · 3 esp</div></div>
+            <div class="cls almost"><div class="cn">Cycle Beat</div><div class="ci">Diego N. · Sala C</div><div class="cm">19/20</div></div>
+            <div class="cls full"><div class="cn">Reformer Flow N3</div><div class="ci">Andrea S. · Sala A</div><div class="cm">12/12 · 7 esp</div></div>
+            <div class="cls almost"><div class="cn">Barre Sculpt</div><div class="ci">Mariana C. · Sala B</div><div class="cm">15/16</div></div>
+            <div class="cal-cell"></div>
+
+            <!-- 19:45 -->
+            <div class="cal-time">19:45</div>
+            <div class="cls almost"><div class="cn">Vinyasa Restaura</div><div class="ci">Paola R. · Sala B</div><div class="cm">14/16</div></div>
+            <div class="cls open"><div class="cn">Reformer Flow N1</div><div class="ci">Mariana C. · Sala A</div><div class="cm">9/12</div></div>
+            <div class="cls almost"><div class="cn">Lagree Mega</div><div class="ci">Andrea S. · Sala A</div><div class="cm">11/12</div></div>
+            <div class="cls open"><div class="cn">Vinyasa Restaura</div><div class="ci">Paola R. · Sala B</div><div class="cm">10/16</div></div>
+            <div class="cal-cell"></div>
+            <div class="cal-cell"></div>
+          </div>
+        </div>
+
+        <!-- PANEL: clase seleccionada -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="flex between">
+              <div>
+                <div class="card-title" style="margin-bottom:2px">Reformer Flow · Nivel 2</div>
+                <div class="card-sub">Lun 15 jun · 07:00–08:00 · Sala A · Andrea Salinas</div>
+              </div>
+              <span class="badge b-warn">Lleno</span>
+            </div>
+
+            <div class="grid g-3" style="margin:14px 0 4px;gap:10px">
+              <div style="text-align:center"><div class="kpi-value" style="font-size:22px">12/12</div><div class="row-sub">Reservas</div></div>
+              <div style="text-align:center"><div class="kpi-value" style="font-size:22px;color:var(--warn)">3</div><div class="row-sub">En espera</div></div>
+              <div style="text-align:center"><div class="kpi-value" style="font-size:22px">$5,400</div><div class="row-sub">Ingreso clase</div></div>
+            </div>
+
+            <div class="sec-head" style="margin:16px 0 10px"><h2 style="font-size:13px">Reformers · Sala A</h2><div class="line"></div></div>
+            <div class="reformers">
+              <div class="rf taken"><span class="num">1</span><div class="who">V. Arteaga</div></div>
+              <div class="rf taken"><span class="num">2</span><div class="who">S. Domínguez</div></div>
+              <div class="rf taken"><span class="num">3</span><div class="who">R. Mejía</div></div>
+              <div class="rf taken"><span class="num">4</span><div class="who">C. Lozano</div></div>
+              <div class="rf taken"><span class="num">5</span><div class="who">F. Garza</div></div>
+              <div class="rf taken"><span class="num">6</span><div class="who">A. Treviño</div></div>
+              <div class="rf taken"><span class="num">7</span><div class="who">M. Bañuelos</div></div>
+              <div class="rf taken"><span class="num">8</span><div class="who">L. Quintero</div></div>
+              <div class="rf taken"><span class="num">9</span><div class="who">P. Esquivel</div></div>
+              <div class="rf taken"><span class="num">10</span><div class="who">N. Olvera</div></div>
+              <div class="rf taken"><span class="num">11</span><div class="who">D. Ferrer</div></div>
+              <div class="rf taken"><span class="num">12</span><div class="who">G. Ríos</div></div>
+            </div>
+            <div class="row-sub" style="margin-top:8px">Todos los reformers asignados. Para liberar un spot, mueve una reserva o registra un no-show.</div>
+          </div>
+
+          <div class="card">
+            <div class="flex between">
+              <div class="card-title">⏳ Lista de espera</div>
+              <span class="badge b-warn">3 personas</span>
+            </div>
+            <div class="card-sub" style="margin-bottom:6px">Se promueven en orden al liberarse un reformer</div>
+
+            <div class="wl-row">
+              <div class="wl-pos">1</div>
+              <div class="row-main"><div class="row-name">Daniela Cervantes</div><div class="row-sub">Pack 20 · 13 créditos · en espera 2h</div></div>
+              <button class="btn btn-primary btn-sm">Promover</button>
+            </div>
+            <div class="wl-row">
+              <div class="wl-pos">2</div>
+              <div class="row-main"><div class="row-name">Ximena Robles</div><div class="row-sub">Ilimitado mensual · en espera 1h</div></div>
+              <button class="btn btn-ghost btn-sm">Promover</button>
+            </div>
+            <div class="wl-row" style="border-bottom:none">
+              <div class="wl-pos">3</div>
+              <div class="row-main"><div class="row-name">Andrés Fonseca</div><div class="row-sub">Drop-in pagado · en espera 35 min</div></div>
+              <button class="btn btn-ghost btn-sm">Promover</button>
+            </div>
+
+            <div style="background:var(--accent-bg);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:10px 12px;margin-top:14px;font-size:11.5px;color:var(--text-2)">
+              <b style="color:var(--accent)">Nota de visión:</b> la lista de espera es parte del roadmap. Hoy el sistema gestiona reservas y reformers; la waitlist automatizada se construye en esta fase.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

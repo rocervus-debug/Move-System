@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VELUM Recovery · Citas por recurso</title>
+<link rel="stylesheet" href="assets/velum-core.css"/>
+<style>
+  /* ── agenda por recurso (columnas = recursos, filas = horas) ── */
+  .agenda{display:grid;grid-template-columns:54px repeat(5,1fr);gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
+  .ag-head{padding:11px 10px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--card-2);}
+  .ag-head:first-child{border-left:none;}
+  .ag-head .rn{font-family:var(--font-display);font-weight:600;font-size:12.5px;}
+  .ag-head .ri{font-size:17px;display:block;margin-bottom:3px;}
+  .ag-time{font-family:var(--font-mono);font-size:10.5px;color:var(--text-3);padding:8px 6px;text-align:right;border-top:1px solid var(--border);}
+  .ag-cell{border-top:1px solid var(--border);border-left:1px solid var(--border);min-height:48px;padding:3px;position:relative;}
+  .appt{border-radius:6px;padding:6px 8px;font-size:11px;height:100%;border:1px solid var(--border-2);background:var(--accent-bg);cursor:pointer;transition:border-color .15s;}
+  .appt:hover{border-color:var(--accent);}
+  .appt.sel{background:var(--accent-bg-2);border-color:var(--accent);box-shadow:var(--glow);}
+  .appt .who{font-weight:600;color:var(--text);}
+  .appt .pr{color:var(--text-3);font-size:10px;margin-top:1px;}
+  .appt.alt{background:rgba(94,200,176,.05);}
+  .proto-step{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);}
+  .proto-step:last-child{border-bottom:none;}
+  .proto-step .num{width:24px;height:24px;border-radius:50%;background:var(--accent-bg-2);color:var(--accent);font-weight:700;font-size:12px;display:grid;place-items:center;flex-shrink:0;}
+  .proto-step .dur{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--text-2);}
+</style>
+</head>
+<body data-vertical="recovery">
+<div class="app">
+
+  <!-- SIDEBAR (shell compartido) -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">V</div>
+      <div><div class="sb-name">VELUM</div><div class="sb-vertical">Recovery</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-item"><a href="recovery-dashboard.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">◎</span> Dashboard</a></div>
+      <div class="sb-item active"><span class="ic">▦</span> Citas <span class="sb-badge">23 hoy</span></div>
+      <div class="sb-item"><span class="ic">◇</span> Recursos</div>
+      <div class="sb-item"><span class="ic">❋</span> Protocolos</div>
+      <div class="sb-item"><span class="ic">○</span> Clientes</div>
+      <div class="sb-item"><span class="ic">◈</span> Paquetes</div>
+      <div class="sb-group">Negocio</div>
+      <div class="sb-item"><span class="ic">▤</span> Ingresos</div>
+      <div class="sb-item"><span class="ic">↻</span> Retención</div>
+      <div class="sb-item"><span class="ic">⚙</span> Configuración</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="av">SR</div>
+      <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Serena Recovery Lab</div><div style="font-size:10.5px;color:var(--text-3)">Roma Norte · CDMX</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="vbar">Estás viendo <b>VELUM Recovery</b> · agenda por recurso y protocolos de recuperación <a href="index.html">↔ Cambiar vertical</a></div>
+
+    <header class="topbar">
+      <div>
+        <div class="tb-title">Citas por recurso</div>
+        <div class="tb-sub">Lunes 15 de junio · cada columna es un recurso · bloques de 30 min</div>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="seg"><button>‹ Dom</button><button class="on">Lun 15</button><button>Mar ›</button></div>
+      <button class="btn btn-primary">+ Agendar cita</button>
+    </header>
+
+    <div class="content">
+
+      <div class="grid g-2" style="grid-template-columns:1.55fr 1fr;align-items:start;">
+
+        <!-- Agenda por recurso -->
+        <div class="card" style="padding:14px;">
+          <div class="card-title" style="margin-bottom:12px">▦ Agenda · lunes 15 de junio</div>
+          <div class="agenda">
+            <!-- encabezado de recursos -->
+            <div class="ag-head" style="background:transparent"></div>
+            <div class="ag-head"><span class="ri">♨</span><span class="rn">Sauna IR</span></div>
+            <div class="ag-head"><span class="ri">❄</span><span class="rn">Crioterapia</span></div>
+            <div class="ag-head"><span class="ri">✋</span><span class="rn">Masaje 1</span></div>
+            <div class="ag-head"><span class="ri">✋</span><span class="rn">Masaje 2</span></div>
+            <div class="ag-head"><span class="ri">🦵</span><span class="rn">Compresión</span></div>
+
+            <!-- 09:00 -->
+            <div class="ag-time">09:00</div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt"><div class="who">V. Camacho</div><div class="pr">Post-competencia</div></div></div>
+            <div class="ag-cell"><div class="appt alt"><div class="who">E. Tovar</div><div class="pr">Masaje deportivo</div></div></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt"><div class="who">V. Camacho</div><div class="pr">Post-competencia</div></div></div>
+
+            <!-- 10:30 -->
+            <div class="ag-time">10:30</div>
+            <div class="ag-cell"><div class="appt"><div class="who">S. Beltrán</div><div class="pr">Relajación</div></div></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+
+            <!-- 11:15 -->
+            <div class="ag-time">11:15</div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt sel"><div class="who">R. Esquivel</div><div class="pr">Piernas pesadas</div></div></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt sel"><div class="who">R. Esquivel</div><div class="pr">Piernas pesadas</div></div></div>
+
+            <!-- 12:00 -->
+            <div class="ag-time">12:00</div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt alt"><div class="who">N. Ríos</div><div class="pr">Tejido profundo</div></div></div>
+            <div class="ag-cell"><div class="appt alt"><div class="who">P. Salgado</div><div class="pr">Relajante</div></div></div>
+            <div class="ag-cell"></div>
+
+            <!-- 13:30 -->
+            <div class="ag-time">13:30</div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt"><div class="who">D. Maldonado</div><div class="pr">Post-competencia</div></div></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"></div>
+
+            <!-- 17:00 -->
+            <div class="ag-time">17:00</div>
+            <div class="ag-cell"><div class="appt"><div class="who">G. Aguirre</div><div class="pr">Relajación</div></div></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt alt"><div class="who">M. Flores</div><div class="pr">Deportivo</div></div></div>
+            <div class="ag-cell"></div>
+            <div class="ag-cell"><div class="appt"><div class="who">C. Vega</div><div class="pr">Piernas pesadas</div></div></div>
+          </div>
+          <div class="flex wrap mt" style="gap:14px;font-size:11px;color:var(--text-3)">
+            <span class="flex" style="gap:6px"><span class="dot" style="background:var(--accent)"></span>Crio / sauna / compresión</span>
+            <span class="flex" style="gap:6px"><span class="dot" style="background:#5EC8B0;opacity:.5"></span>Masaje</span>
+            <span class="flex" style="gap:6px"><span class="dot" style="box-shadow:var(--glow);background:var(--accent)"></span>Cita seleccionada</span>
+          </div>
+        </div>
+
+        <!-- Panel de cita seleccionada + protocolo -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="flex between" style="margin-bottom:4px">
+              <div class="card-title">○ Cita seleccionada</div>
+              <span class="badge b-muted">11:15 · 40 min</span>
+            </div>
+            <div class="flex" style="gap:12px;margin:8px 0 14px">
+              <span class="av-sm" style="width:42px;height:42px">RE</span>
+              <div><div class="row-name" style="font-size:15px">Rodrigo Esquivel</div><div class="row-sub">Paquete "Atleta · 10 sesiones" · 4 créditos restantes</div></div>
+            </div>
+
+            <div class="sec-head" style="margin:6px 0 8px"><h2 style="font-size:14px;color:var(--accent)">❋ Protocolo: Piernas pesadas</h2><div class="line"></div></div>
+            <div class="card-sub" style="margin-bottom:6px">Secuencia asignada · 2 recursos encadenados</div>
+            <div class="proto-step"><span class="num">1</span><div class="row-main"><div class="row-name">Bota de compresión</div><div class="row-sub">Presión secuencial · piernas completas</div></div><span class="dur">25 min</span></div>
+            <div class="proto-step"><span class="num">2</span><div class="row-main"><div class="row-name">Crioterapia localizada</div><div class="row-sub">Cuádriceps y pantorrillas · −110°C</div></div><span class="dur">8 min</span></div>
+            <div class="proto-step"><span class="num">✓</span><div class="row-main"><div class="row-name">Hidratación + valoración</div><div class="row-sub">Notas de la terapeuta</div></div><span class="dur">7 min</span></div>
+
+            <div class="flex" style="gap:8px;margin-top:14px">
+              <button class="btn btn-primary" style="flex:1">Iniciar sesión</button>
+              <button class="btn btn-ghost">Reagendar</button>
+            </div>
+          </div>
+
+          <!-- Paquetes de sesiones -->
+          <div class="card">
+            <div class="card-title">◈ Paquetes de recovery</div>
+            <div class="card-sub" style="margin-bottom:10px">Créditos por sesión · se descuentan al completar la cita</div>
+            <div class="row-item">
+              <div class="row-main"><div class="row-name">Esencial · 5 sesiones</div><div class="row-sub">Cualquier recurso individual</div></div>
+              <div style="text-align:right"><div class="mono" style="font-weight:700">$2,400</div><span class="badge b-muted">$480 c/u</span></div>
+            </div>
+            <div class="row-item">
+              <div class="row-main"><div class="row-name">Atleta · 10 sesiones</div><div class="row-sub">Protocolos combinados incluidos</div></div>
+              <div style="text-align:right"><div class="mono" style="font-weight:700">$4,200</div><span class="badge b-accent">Popular</span></div>
+            </div>
+            <div class="row-item">
+              <div class="row-main"><div class="row-name">Élite · ilimitado mensual</div><div class="row-sub">Acceso a todos los recursos</div></div>
+              <div style="text-align:right"><div class="mono" style="font-weight:700">$6,900</div><span class="badge b-muted">/mes</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

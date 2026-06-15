@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VELUM Gym · Control de acceso</title>
+<link rel="stylesheet" href="assets/velum-core.css"/>
+<style>
+  .feed-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;background:var(--card);}
+  .feed-row.denied{border-color:var(--danger);background:var(--danger-bg);}
+  .feed-time{font-family:var(--font-mono);font-weight:600;font-size:13px;width:58px;color:var(--text-2);}
+  .feed-method{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;background:var(--card-2);border:1px solid var(--border);font-size:14px;}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,232,160,.5)}70%{box-shadow:0 0 0 8px rgba(16,232,160,0)}100%{box-shadow:0 0 0 0 rgba(16,232,160,0)}}
+</style>
+</head>
+<body data-vertical="gym">
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">V</div>
+      <div><div class="sb-name">VELUM</div><div class="sb-vertical">Gym</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-item"><a href="gym-dashboard.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">◎</span> Dashboard</a></div>
+      <div class="sb-item active"><span class="ic">⊞</span> Control de acceso <span class="sb-badge">47 dentro</span></div>
+      <div class="sb-item"><a href="gym-membresias.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">◈</span> Membresías</a></div>
+      <div class="sb-item"><a href="gym-coaches.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">✦</span> Coaches & PT</a></div>
+      <div class="sb-item"><a href="gym-cliente.html" style="display:flex;align-items:center;gap:11px;flex:1"><span class="ic">○</span> Socios</a></div>
+      <div class="sb-group">Negocio</div>
+      <div class="sb-item"><span class="ic">▤</span> Cobranza</div>
+      <div class="sb-item"><span class="ic">↻</span> Renovaciones</div>
+      <div class="sb-item"><span class="ic">⚙</span> Configuración</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="av">IP</div>
+      <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Iron Pulse Gym</div><div style="font-size:10.5px;color:var(--text-3)">San Pedro · Monterrey</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="vbar">Estás viendo <b>VELUM Gym</b> · gimnasio tradicional <a href="index.html">↔ Cambiar vertical</a></div>
+
+    <header class="topbar">
+      <div>
+        <div class="tb-title">Control de acceso</div>
+        <div class="tb-sub flex" style="gap:7px"><span class="live-dot"></span> En vivo · torniquete principal</div>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="tb-search">⌕ Buscar por nº de socio…</div>
+      <button class="btn btn-primary">+ Acceso manual</button>
+    </header>
+
+    <div class="content">
+
+      <!-- KPIs de acceso -->
+      <div class="grid g-4">
+        <div class="kpi">
+          <div class="kpi-label">◉ Aforo actual</div>
+          <div class="kpi-value">47<span style="font-size:18px;color:var(--text-3)"> /120</span></div>
+          <div class="kpi-delta flat">39% de capacidad</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">⊞ Accesos de hoy</div>
+          <div class="kpi-value">318</div>
+          <div class="kpi-delta up">▲ +22 vs mismo día sem. pasada</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">⊘ Accesos denegados</div>
+          <div class="kpi-value">7</div>
+          <div class="kpi-delta down">Membresía vencida o adeudo</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">◷ Estancia promedio</div>
+          <div class="kpi-value">1h 12m</div>
+          <div class="kpi-delta flat">Hora pico 19:00</div>
+        </div>
+      </div>
+
+      <!-- Feed en vivo + aforo -->
+      <div class="grid g-2 mt" style="grid-template-columns:1.5fr 1fr;">
+        <div class="card">
+          <div class="flex between" style="margin-bottom:10px">
+            <div class="card-title flex" style="gap:8px"><span class="live-dot"></span> Feed de entradas en vivo</div>
+            <span class="badge b-muted">últimos 6 accesos</span>
+          </div>
+
+          <div class="feed-row">
+            <div class="feed-time">08:42</div>
+            <div class="feed-method" title="QR">▦</div>
+            <div class="row-main"><div class="row-name">Diego Treviño</div><div class="row-sub">Socio #1042 · Mensual</div></div>
+            <span class="badge b-ok">✓ Vigente</span>
+          </div>
+          <div class="feed-row">
+            <div class="feed-time">08:41</div>
+            <div class="feed-method" title="Huella">⊙</div>
+            <div class="row-main"><div class="row-name">Paulina Mendoza</div><div class="row-sub">Socio #0871 · Trimestral</div></div>
+            <span class="badge b-warn">⚠ Vence en 3 días</span>
+          </div>
+          <div class="feed-row denied">
+            <div class="feed-time">08:39</div>
+            <div class="feed-method" title="Tarjeta" style="border-color:var(--danger)">▭</div>
+            <div class="row-main"><div class="row-name">Mauricio Garza</div><div class="row-sub">Socio #0654 · Mensual</div></div>
+            <span class="badge b-danger">✕ Acceso denegado · vencido hace 9 días</span>
+          </div>
+          <div class="feed-row">
+            <div class="feed-time">08:37</div>
+            <div class="feed-method" title="QR">▦</div>
+            <div class="row-main"><div class="row-name">Gabriela Cantú</div><div class="row-sub">Socio #0312 · Anual</div></div>
+            <span class="badge b-ok">✓ Vigente</span>
+          </div>
+          <div class="feed-row">
+            <div class="feed-time">08:35</div>
+            <div class="feed-method" title="Huella">⊙</div>
+            <div class="row-main"><div class="row-name">Javier Rangel</div><div class="row-sub">Socio #1188 · Mensual</div></div>
+            <span class="badge b-ok">✓ Vigente</span>
+          </div>
+          <div class="feed-row denied">
+            <div class="feed-time">08:33</div>
+            <div class="feed-method" title="Tarjeta" style="border-color:var(--danger)">▭</div>
+            <div class="row-main"><div class="row-name">Sandra Olvera</div><div class="row-sub">Socio #0907 · Mensual</div></div>
+            <span class="badge b-danger">✕ Denegado · adeudo $899</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-title">◉ Aforo en tiempo real</div>
+            <div class="flex between" style="margin:12px 0 8px">
+              <div class="kpi-value" style="font-size:40px;margin:0">47<span style="font-size:18px;color:var(--text-3)"> /120</span></div>
+              <span class="badge b-ok">Holgado</span>
+            </div>
+            <div class="bar" style="height:11px"><i style="width:39%"></i></div>
+            <div class="grid g-3 mt" style="gap:10px">
+              <div style="text-align:center"><div class="row-sub">Hombres</div><div style="font-weight:700;font-size:18px">29</div></div>
+              <div style="text-align:center"><div class="row-sub">Mujeres</div><div style="font-weight:700;font-size:18px">18</div></div>
+              <div style="text-align:center"><div class="row-sub">Pico hoy</div><div style="font-weight:700;font-size:18px">96</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">⊞ Métodos de check-in hoy</div>
+            <div class="row-item"><div class="feed-method">▦</div><div class="row-main"><div class="row-name">Código QR (app)</div></div><div style="font-weight:700">61%</div></div>
+            <div class="row-item"><div class="feed-method">⊙</div><div class="row-main"><div class="row-name">Huella digital</div></div><div style="font-weight:700">28%</div></div>
+            <div class="row-item"><div class="feed-method">▭</div><div class="row-main"><div class="row-name">Tarjeta / TAG</div></div><div style="font-weight:700">11%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla últimos accesos del día -->
+      <div class="card mt">
+        <div class="flex between" style="margin-bottom:6px">
+          <div class="card-title">▤ Últimos accesos del día</div>
+          <div class="seg"><button class="on">Todos</button><button>Vigentes</button><button>Denegados</button></div>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>Hora</th><th>Socio</th><th>Nº</th><th>Método</th><th>Membresía</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">08:42</td><td><div class="flex"><span class="av-sm">DT</span><span class="name">Diego Treviño</span></div></td><td class="mono">#1042</td><td>QR</td><td>Mensual</td><td><span class="badge b-ok">Vigente</span></td></tr>
+            <tr><td class="mono">08:41</td><td><div class="flex"><span class="av-sm">PM</span><span class="name">Paulina Mendoza</span></div></td><td class="mono">#0871</td><td>Huella</td><td>Trimestral</td><td><span class="badge b-warn">Por vencer</span></td></tr>
+            <tr><td class="mono">08:39</td><td><div class="flex"><span class="av-sm">MG</span><span class="name">Mauricio Garza</span></div></td><td class="mono">#0654</td><td>Tarjeta</td><td>Mensual</td><td><span class="badge b-danger">Vencido</span></td></tr>
+            <tr><td class="mono">08:37</td><td><div class="flex"><span class="av-sm">GC</span><span class="name">Gabriela Cantú</span></div></td><td class="mono">#0312</td><td>QR</td><td>Anual</td><td><span class="badge b-ok">Vigente</span></td></tr>
+            <tr><td class="mono">08:35</td><td><div class="flex"><span class="av-sm">JR</span><span class="name">Javier Rangel</span></div></td><td class="mono">#1188</td><td>Huella</td><td>Mensual</td><td><span class="badge b-ok">Vigente</span></td></tr>
+            <tr><td class="mono">08:33</td><td><div class="flex"><span class="av-sm">SO</span><span class="name">Sandra Olvera</span></div></td><td class="mono">#0907</td><td>Tarjeta</td><td>Mensual</td><td><span class="badge b-danger">Adeudo</span></td></tr>
+            <tr><td class="mono">08:30</td><td><div class="flex"><span class="av-sm">LF</span><span class="name">Luis Fernando Soto</span></div></td><td class="mono">#0455</td><td>QR</td><td>Mensual</td><td><span class="badge b-ok">Vigente</span></td></tr>
+            <tr><td class="mono">08:28</td><td><div class="flex"><span class="av-sm">RA</span><span class="name">Regina Almanza</span></div></td><td class="mono">#1390</td><td>Huella</td><td>Anual</td><td><span class="badge b-ok">Vigente</span></td></tr>
+            <tr><td class="mono">08:25</td><td><div class="flex"><span class="av-sm">FE</span><span class="name">Fernando Escobedo</span></div></td><td class="mono">#0788</td><td>QR</td><td>Pase de día</td><td><span class="badge b-accent">Visita</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

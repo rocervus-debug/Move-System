@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VELUM · Super Admin — todos los gyms</title>
+<link rel="stylesheet" href="assets/velum-core.css"/>
+<style>
+  .gymcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:transform .18s,border-color .18s;cursor:pointer;}
+  .gymcard:hover{transform:translateY(-3px);border-color:var(--accent);}
+  .gymcard .vtag{font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent);background:var(--accent-bg-2);border:1px solid var(--border-2);padding:3px 9px;border-radius:99px;}
+  /* Cada card toma el acento de SU vertical (velum-core tematiza por body[data-vertical],
+     así que aquí re-declaramos los tokens de acento por card para el demo de superadmin). */
+  .gymcard[data-vertical="velum"]{--accent:#00D4FF;--accent-2:#66E8FF;--accent-ink:#04222E;--accent-bg-2:rgba(0,212,255,.18);--border-2:rgba(0,212,255,.22);--glow:0 0 22px rgba(0,212,255,.22);}
+  .gymcard[data-vertical="studios"]{--accent:#C9A86A;--accent-2:#E4CF9B;--accent-ink:#241829;--accent-bg-2:rgba(201,168,106,.22);--border-2:rgba(201,168,106,.28);--glow:0 0 22px rgba(201,168,106,.22);}
+  .gymcard[data-vertical="recovery"]{--accent:#5EC8B0;--accent-2:#92E0CD;--accent-ink:#0A2420;--accent-bg-2:rgba(94,200,176,.22);--border-2:rgba(94,200,176,.28);--glow:0 0 22px rgba(94,200,176,.22);}
+  .gymcard .gname{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);margin:10px 0 1px;}
+  .gymcard .gcity{font-size:11.5px;color:var(--text3);}
+  .gstat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .gstat:last-of-type{border-bottom:none;}
+  .gstat .gk{color:var(--text3);} .gstat .gv{color:var(--text);font-weight:700;}
+  .enter{margin-top:12px;width:100%;justify-content:center;}
+  .filterow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 20px;}
+  .fchip{font-size:12px;font-weight:600;padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;display:inline-flex;gap:7px;align-items:center;}
+  .fchip.on{background:var(--accent-bg2);border-color:var(--accent);color:var(--accent);}
+  .fchip i{width:9px;height:9px;border-radius:50%;}
+</style>
+</head>
+<body data-vertical="velum">
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">V</div>
+      <div><div class="sb-name">VELUM</div><div class="sb-vertical" style="color:var(--accent)">Super Admin</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-item active"><span class="ic">▦</span> Todos los gyms</div>
+      <div class="sb-item"><span class="ic">▤</span> Métricas SaaS</div>
+      <div class="sb-item"><span class="ic">$</span> Facturación VELUM</div>
+      <div class="sb-item"><span class="ic">◷</span> Altas & onboarding</div>
+      <div class="sb-group">Plataforma</div>
+      <div class="sb-item"><span class="ic">◈</span> Verticales</div>
+      <div class="sb-item"><span class="ic">⚑</span> Salud del sistema</div>
+      <div class="sb-item"><span class="ic">⚙</span> Configuración global</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="av" style="color:var(--accent)">RM</div>
+      <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Roy Méndez</div><div style="font-size:10.5px;color:var(--text-3)">Superadmin · VELUM</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="vbar">Vista <b>Super Admin</b> · ves TODOS los gyms de TODAS las verticales (RLS: <span class="mono">is_superadmin()</span>) <a href="index.html">↔ Selector</a></div>
+
+    <header class="topbar">
+      <div>
+        <div class="tb-title">Operación VELUM</div>
+        <div class="tb-sub">8 gyms activos · 3 verticales · MRR agregado $1.94M MXN</div>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="tb-search">⌕ Buscar gym…</div>
+      <button class="btn btn-primary">+ Dar de alta gym</button>
+    </header>
+
+    <div class="content">
+
+      <!-- KPIs agregados de plataforma -->
+      <div class="grid g-4">
+        <div class="kpi"><div class="kpi-label">⛯ Gyms activos</div><div class="kpi-value">8</div><div class="kpi-delta up">▲ +2 este mes</div></div>
+        <div class="kpi"><div class="kpi-label">$ MRR agregado</div><div class="kpi-value mono">$1.94M</div><div class="kpi-delta up">▲ +11% MoM</div></div>
+        <div class="kpi"><div class="kpi-label">○ Clientes totales</div><div class="kpi-value">3,420</div><div class="kpi-delta up">▲ +280</div></div>
+        <div class="kpi"><div class="kpi-label">⚑ Churn de gyms</div><div class="kpi-value">0<span style="font-size:18px;color:var(--text-3)">%</span></div><div class="kpi-delta flat">Ningún gym dado de baja</div></div>
+      </div>
+
+      <!-- Distribución por vertical + filtros -->
+      <div class="sec-head"><h2>Gyms por vertical</h2><div class="line"></div></div>
+      <div class="filterow filterow">
+        <span class="fchip on">Todos <span class="badge b-muted" style="margin-left:2px">8</span></span>
+        <span class="fchip"><i style="background:#00D4FF"></i> VELUM · gym/hyrox/trad <span class="badge b-muted">5</span></span>
+        <span class="fchip"><i style="background:#C9A86A"></i> Studios <span class="badge b-muted">2</span></span>
+        <span class="fchip"><i style="background:#5EC8B0"></i> Recovery <span class="badge b-muted">1</span></span>
+      </div>
+
+      <!-- Cada card toma el TEMA de su vertical (data-vertical) → demuestra el motor -->
+      <div class="grid g-3">
+
+        <!-- VELUM (gym/hyrox/tradicional) -->
+        <div class="gymcard" data-vertical="velum">
+          <div class="flex between"><span class="vtag">VELUM</span><span class="badge b-ok">● Activo</span></div>
+          <div class="gname">Iron Pulse</div><div class="gcity">Monterrey · NL</div>
+          <div style="margin-top:12px">
+            <div class="gstat"><span class="gk">Socios activos</span><span class="gv">842</span></div>
+            <div class="gstat"><span class="gk">Accesos hoy</span><span class="gv">312</span></div>
+            <div class="gstat"><span class="gk">Morosidad</span><span class="gv" style="color:var(--warn)">18 · $32k</span></div>
+            <div class="gstat"><span class="gk">MRR</span><span class="gv mono">$612k</span></div>
+          </div>
+          <button class="btn btn-primary enter">Entrar como Iron Pulse →</button>
+        </div>
+
+        <!-- STUDIOS -->
+        <div class="gymcard" data-vertical="studios">
+          <div class="flex between"><span class="vtag">Studios</span><span class="badge b-ok">● Activo</span></div>
+          <div class="gname">Reforma Pilates</div><div class="gcity">Polanco · CDMX</div>
+          <div style="margin-top:12px">
+            <div class="gstat"><span class="gk">Clientes con créditos</span><span class="gv">214</span></div>
+            <div class="gstat"><span class="gk">Ocupación hoy</span><span class="gv">87%</span></div>
+            <div class="gstat"><span class="gk">No-shows (7d)</span><span class="gv">5.2%</span></div>
+            <div class="gstat"><span class="gk">MRR</span><span class="gv mono">$184k</span></div>
+          </div>
+          <button class="btn btn-primary enter">Entrar como Reforma →</button>
+        </div>
+
+        <!-- RECOVERY -->
+        <div class="gymcard" data-vertical="recovery">
+          <div class="flex between"><span class="vtag">Recovery</span><span class="badge b-ok">● Activo</span></div>
+          <div class="gname">Origen Recovery</div><div class="gcity">Guadalajara · JAL</div>
+          <div style="margin-top:12px">
+            <div class="gstat"><span class="gk">Clientes activos</span><span class="gv">156</span></div>
+            <div class="gstat"><span class="gk">Citas hoy</span><span class="gv">24</span></div>
+            <div class="gstat"><span class="gk">Ocupación de recursos</span><span class="gv">78%</span></div>
+            <div class="gstat"><span class="gk">MRR</span><span class="gv mono">$142k</span></div>
+          </div>
+          <button class="btn btn-primary enter">Entrar como Origen →</button>
+        </div>
+
+        <!-- más VELUM -->
+        <div class="gymcard" data-vertical="velum">
+          <div class="flex between"><span class="vtag">VELUM</span><span class="badge b-ok">● Activo</span></div>
+          <div class="gname">MOVE</div><div class="gcity">Querétaro · QRO</div>
+          <div style="margin-top:12px">
+            <div class="gstat"><span class="gk">Socios activos</span><span class="gv">180</span></div>
+            <div class="gstat"><span class="gk">Accesos hoy</span><span class="gv">94</span></div>
+            <div class="gstat"><span class="gk">Morosidad</span><span class="gv" style="color:var(--ok)">4 · $6k</span></div>
+            <div class="gstat"><span class="gk">MRR</span><span class="gv mono">$148k</span></div>
+          </div>
+          <button class="btn btn-primary enter">Entrar como MOVE →</button>
+        </div>
+
+        <div class="gymcard" data-vertical="studios">
+          <div class="flex between"><span class="vtag">Studios</span><span class="badge b-warn">● Trial</span></div>
+          <div class="gname">Pulse Studio</div><div class="gcity">Mérida · YUC</div>
+          <div style="margin-top:12px">
+            <div class="gstat"><span class="gk">Clientes con créditos</span><span class="gv">63</span></div>
+            <div class="gstat"><span class="gk">Ocupación hoy</span><span class="gv">71%</span></div>
+            <div class="gstat"><span class="gk">No-shows (7d)</span><span class="gv">8.1%</span></div>
+            <div class="gstat"><span class="gk">MRR</span><span class="gv mono">$54k</span></div>
+          </div>
+          <button class="btn btn-primary enter">Entrar como Pulse →</button>
+        </div>
+
+        <div class="gymcard" data-vertical="velum">
+          <div class="flex between"><span class="vtag">VELUM</span><span class="badge b-ok">● Activo</span></div>
+          <div class="gname">Functional Gym</div><div class="gcity">Tijuana · BC</div>
+          <div style="margin-top:12px">
+            <div class="gstat"><span class="gk">Socios activos</span><span class="gv">410</span></div>
+            <div class="gstat"><span class="gk">Accesos hoy</span><span class="gv">168</span></div>
+            <div class="gstat"><span class="gk">Morosidad</span><span class="gv" style="color:var(--warn)">9 · $14k</span></div>
+            <div class="gstat"><span class="gk">MRR</span><span class="gv mono">$298k</span></div>
+          </div>
+          <button class="btn btn-primary enter">Entrar como Functional →</button>
+        </div>
+
+      </div>
+
+      <div class="card mt" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div class="card-title">◈ Cómo lo ves todo</div>
+          <div class="card-sub" style="line-height:1.7;margin-top:6px">
+            Un solo backend, una sola base. Cada gym está aislado por <span class="mono">gym_id</span> (RLS).
+            Tu rol <span class="mono">superadmin</span> es el único que cruza esa barrera —
+            la política <span class="mono">is_superadmin() OR gym_id = auth_gym_id()</span> te deja leer
+            todos los gyms de todas las verticales. Cada dueño, en cambio, solo ve el suyo, con su tema.
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div style="text-align:center"><div class="kpi-value" style="font-size:24px;color:#00D4FF">5</div><div class="row-sub">VELUM</div></div>
+          <div style="text-align:center"><div class="kpi-value" style="font-size:24px;color:#C9A86A">2</div><div class="row-sub">Studios</div></div>
+          <div style="text-align:center"><div class="kpi-value" style="font-size:24px;color:#5EC8B0">1</div><div class="row-sub">Recovery</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
