@@ -17764,6 +17764,23 @@ function applySidebarOrder(order){
     // Re-show if current user is superadmin
     if(currentUser&&currentUser.rol==='superadmin') el.style.display='';
   }
+
+  // Items propios de una vertical (Recovery: Agenda/Recursos/Protocolos) — NO viven en
+  // VELUM_NAV_CATALOG a propósito (no deben exponerse en la config de sidebar de otras
+  // verticales). El rebuild de arriba los dejaría fuera; los re-insertamos aquí ocultos
+  // y dejamos que applyVerticalModules decida su visibilidad según la vertical del gym.
+  let _after = nav.querySelector('#nav-asistencia') || nav.querySelector('#nav-coaches');
+  ['citas','recursos','protocolos'].forEach(sid=>{
+    if(nav.querySelector('#nav-'+sid)) return;
+    const html=_origNavItems[sid]; if(!html) return;
+    const w=document.createElement('div'); w.innerHTML=html;
+    const el=w.firstElementChild; if(!el) return;
+    el.style.display='none';
+    if(_after && _after.parentNode===nav){ nav.insertBefore(el, _after.nextSibling); _after=el; }
+    else nav.appendChild(el);
+  });
+  // Reaplicar módulos/visibilidad por vertical sobre el sidebar recién reconstruido.
+  if(typeof applyVerticalModules==='function' && typeof _gymVertical!=='undefined'){ applyVerticalModules(_gymVertical); }
 }
 
 function renderSidebarCustomizer(){
