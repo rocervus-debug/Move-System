@@ -3257,6 +3257,15 @@ body::before{
       <div class="nav-item mob-hidden" id="nav-coaches" onclick="go('coaches',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-label-text"> Coaches</span>
       </div>
+      <div class="nav-item mob-hidden" id="nav-citas" onclick="go('citas',this)" style="display:none;">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15.5" r="2.2"/></svg></span><span class="nav-label-text"> Agenda & Citas</span>
+      </div>
+      <div class="nav-item mob-hidden" id="nav-recursos" onclick="go('recursos',this)" style="display:none;">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span><span class="nav-label-text"> Recursos</span>
+      </div>
+      <div class="nav-item mob-hidden" id="nav-protocolos" onclick="go('protocolos',this)" style="display:none;">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="nav-label-text"> Protocolos</span>
+      </div>
       <div class="nav-item mob-hidden" id="nav-evaluaciones" onclick="go('evaluaciones',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span><span class="nav-label-text"> Evaluaciones</span>
       </div>
@@ -4204,6 +4213,57 @@ body::before{
         </div>
         <div id="coach-metas-body">
           <div style="color:var(--text3);font-size:12px;padding:8px 0;">Agrega coaches para configurar metas mensuales de clases.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RECOVERY · Agenda de citas por recurso (solo vertical recovery) ═══ -->
+    <div class="view" id="v-citas">
+      <div class="sh">
+        <div class="sh-title">Agenda de Recovery</div>
+        <button class="btn btn-primary" onclick="openModal('cita')">+ Agendar Cita</button>
+      </div>
+      <!-- Navegación de día -->
+      <div class="card" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;padding:12px 16px;">
+        <button class="btn btn-outline btn-sm" onclick="citaPrevDay()" title="Día anterior">‹</button>
+        <div style="text-align:center;min-width:230px;">
+          <div id="cita-fecha-label" style="font-weight:700;color:var(--text);font-size:15px;text-transform:capitalize;">—</div>
+          <div id="cita-fecha-sub" style="font-size:11px;color:var(--accent);min-height:14px;"></div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="citaNextDay()" title="Día siguiente">›</button>
+        <button class="btn btn-ghost btn-sm" onclick="citaToday()" style="margin-left:6px;">Hoy</button>
+      </div>
+      <div id="citas-body"></div>
+    </div>
+
+    <!-- ═══ RECOVERY · Recursos reservables (solo vertical recovery) ═══ -->
+    <div class="view" id="v-recursos">
+      <div class="sh">
+        <div class="sh-title">Recursos de Recovery</div>
+        <button class="btn btn-primary" onclick="openModal('recurso')">+ Agregar Recurso</button>
+      </div>
+      <div style="background:var(--accent-bg);border:1px solid rgba(18,70,96,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--accent);display:flex;align-items:center;gap:8px;">
+        <span>🧖</span> <strong>Un recurso se reserva 1-a-1.</strong> Sauna, cabina de crioterapia, camilla de masaje, bota de compresión… Cada cita ocupa un recurso en un horario.
+      </div>
+      <div class="recurso-grid" id="recursos-grid" style="display:grid;gap:12px;">
+        <div class="card" style="grid-column:1/-1;">
+          <div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="empty-title">Sin recursos aún</div><div class="empty-sub">Agrega tu primer recurso reservable (sauna, cabina, camilla) para empezar a agendar citas.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RECOVERY · Protocolos (plantillas de recuperación, solo vertical recovery) ═══ -->
+    <div class="view" id="v-protocolos">
+      <div class="sh">
+        <div class="sh-title">Protocolos de Recovery</div>
+        <button class="btn btn-primary" onclick="openModal('protocolo')">+ Agregar Protocolo</button>
+      </div>
+      <div style="background:var(--accent-bg);border:1px solid rgba(18,70,96,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--accent);display:flex;align-items:center;gap:8px;">
+        <span>📋</span> <strong>Un protocolo es una plantilla de sesión.</strong> Define los pasos de una recuperación (ej. "Contraste: 3 min sauna → 1 min frío × 4 rondas"). Luego lo asignas a una cita.
+      </div>
+      <div class="protocolo-grid" id="protocolos-grid" style="display:grid;gap:12px;">
+        <div class="card" style="grid-column:1/-1;">
+          <div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div><div class="empty-title">Sin protocolos aún</div><div class="empty-sub">Crea plantillas de recuperación reutilizables para asignarlas a las citas de tus clientes.</div></div>
         </div>
       </div>
     </div>
@@ -5877,6 +5937,169 @@ body::before{
       <button class="btn btn-outline wzd-back" onclick="wizBack('coach')" style="display:none;">← Atrás</button>
       <button class="btn btn-primary wzd-next" onclick="wizNext('coach')">Siguiente →</button>
       <button class="btn btn-primary wzd-save" onclick="saveCoach()" style="display:none;">Guardar coach</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar recurso (Recovery) — wizard 2 pasos -->
+<div class="modal-overlay" id="modal-recurso">
+  <div class="modal" style="width:440px;">
+    <div class="modal-head">
+      <div class="modal-title">Agregar recurso</div>
+      <button class="modal-close" onclick="closeModal('recurso')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué recurso? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué recurso reservable?</div>
+        <div class="wzd-hint">Un recurso es algo que un cliente reserva 1-a-1: una sauna, una cabina de crioterapia, una camilla de masaje, una bota de compresión.</div>
+        <div class="field">
+          <label>Nombre del recurso *</label>
+          <input id="rec-nombre" type="text" placeholder="Ej: Sauna infrarroja 1"/>
+          <span class="field-err" id="rec-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field-grid">
+          <div class="field"><label>Tipo</label>
+            <select id="rec-tipo" style="width:100%;padding:12px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:14px;cursor:pointer;">
+              <option value="sauna">🔥 Sauna / temazcal</option>
+              <option value="crioterapia">❄️ Crioterapia / frío</option>
+              <option value="masaje">💆 Masaje / camilla</option>
+              <option value="compresion">🦵 Compresión / botas</option>
+              <option value="otro">✨ Otro</option>
+            </select>
+          </div>
+          <div class="field"><label>Duración (min)</label><input id="rec-duracion" type="number" min="5" step="5" value="30" placeholder="30"/></div>
+        </div>
+      </div>
+
+      <!-- PASO 2 — Confirma -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Confirma el recurso</div>
+        <div class="wzd-hint">Una vez creado, podrás agendarle citas desde la Agenda de Recovery.</div>
+        <div id="rec-confirm"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('recurso')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('recurso')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('recurso')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveRecurso()" style="display:none;">Guardar recurso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agendar cita (Recovery) — wizard 3 pasos -->
+<div class="modal-overlay" id="modal-cita">
+  <div class="modal" style="width:480px;">
+    <div class="modal-head">
+      <div class="modal-title">Agendar cita</div>
+      <button class="modal-close" onclick="closeModal('cita')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Quién? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Para quién es la cita?</div>
+        <div class="wzd-hint">Escribe el nombre del cliente. Si ya es socio, aparecerá en la lista al escribir.</div>
+        <div class="field">
+          <label>Cliente *</label>
+          <input id="cita-cliente" type="text" list="cita-cliente-list" placeholder="Ej: Daniela Ríos" autocomplete="off"/>
+          <datalist id="cita-cliente-list"></datalist>
+          <span class="field-err" id="cita-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field"><label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><textarea id="cita-notas" rows="2" placeholder="Observaciones, lesiones, preferencias…"></textarea></div>
+      </div>
+
+      <!-- PASO 2 — ¿Qué y cuándo? -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿Qué recurso y cuándo?</div>
+        <div class="wzd-hint">Elige el recurso, la fecha y la hora. Opcionalmente asígnale un protocolo.</div>
+        <div class="field">
+          <label>Recurso *</label>
+          <select id="cita-recurso" onchange="_citaSyncDuracion()" style="width:100%;padding:12px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:14px;cursor:pointer;"></select>
+          <span class="field-err" id="cita-recurso-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field-grid">
+          <div class="field"><label>Fecha *</label><input id="cita-fecha" type="date"/></div>
+          <div class="field"><label>Hora *</label><input id="cita-hora" type="time"/></div>
+        </div>
+        <span class="field-err" id="cita-hora-err" style="display:none;font-size:11px;color:var(--danger);margin:-6px 0 6px;"></span>
+        <div class="field-grid">
+          <div class="field"><label>Protocolo <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+            <select id="cita-protocolo" style="width:100%;padding:12px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:14px;cursor:pointer;"></select>
+          </div>
+          <div class="field"><label>Duración (min)</label><input id="cita-duracion" type="number" min="5" step="5" value="30"/></div>
+        </div>
+      </div>
+
+      <!-- PASO 3 — Confirma -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Confirma la cita</div>
+        <div class="wzd-hint">Revisa los datos antes de agendar.</div>
+        <div id="cita-confirm"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cita')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('cita')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('cita')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveCita()" style="display:none;">Agendar cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar protocolo (Recovery) — wizard 2 pasos -->
+<div class="modal-overlay" id="modal-protocolo">
+  <div class="modal" style="width:480px;">
+    <div class="modal-head">
+      <div class="modal-title">Agregar protocolo</div>
+      <button class="modal-close" onclick="closeModal('protocolo')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿Qué protocolo? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué protocolo de recuperación?</div>
+        <div class="wzd-hint">Una plantilla de sesión reutilizable: ponle un nombre y describe los pasos. Luego la asignas a las citas.</div>
+        <div class="field">
+          <label>Nombre del protocolo *</label>
+          <input id="prot-nombre" type="text" placeholder="Ej: Contraste sauna–frío"/>
+          <span class="field-err" id="prot-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Pasos <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(uno por línea)</span></label>
+          <textarea id="prot-pasos" rows="5" placeholder="3 min en sauna&#10;1 min en cabina de frío&#10;Repetir × 4 rondas&#10;Cerrar con 5 min de compresión"></textarea>
+        </div>
+      </div>
+
+      <!-- PASO 2 — Confirma -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Confirma el protocolo</div>
+        <div class="wzd-hint">Podrás editarlo o asignarlo a una cita cuando quieras.</div>
+        <div id="prot-confirm"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('protocolo')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('protocolo')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('protocolo')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saveProtocolo()" style="display:none;">Guardar protocolo</button>
     </div>
   </div>
 </div>
@@ -8828,9 +9051,10 @@ const _VERTICAL_NAV = {
     hide: ['nav-programa'],
   },
   recovery: {
-    relabel: { 'nav-horario':'Agenda & Citas', 'nav-coaches':'Terapeutas',
+    relabel: { 'nav-coaches':'Terapeutas',
                'nav-asistencia':'Sesiones', 'nav-pagos':'Pagos & Paquetes', 'nav-visitas':'Sesiones del Día' },
-    hide: ['nav-programa','nav-evaluaciones'],
+    hide: ['nav-programa','nav-evaluaciones','nav-horario'],
+    show: ['nav-citas','nav-recursos','nav-protocolos'],   // vistas propias de Recovery (agenda + recurso reservable + protocolos)
   },
 };
 let _navOrigLabels = null;
@@ -8845,11 +9069,15 @@ function applyVerticalModules(vertical){
   }
   // Reset a defaults: restaurar etiquetas y volver a mostrar lo que gestionamos.
   Object.entries(_navOrigLabels).forEach(([id,txt])=>{ const l=_navLblEl(id); if(l) l.textContent=txt; });
-  ['nav-programa','nav-evaluaciones'].forEach(id=>{ const it=document.getElementById(id); if(it && it.style.display==='none') it.style.display=''; });
+  ['nav-programa','nav-evaluaciones','nav-horario'].forEach(id=>{ const it=document.getElementById(id); if(it && it.style.display==='none') it.style.display=''; });
+  // Reset: ocultar todos los items "solo-vertical" (ej. recovery: nav-recursos) antes de aplicar.
+  const _showIds = new Set(); Object.values(_VERTICAL_NAV).forEach(c=>(c.show||[]).forEach(i=>_showIds.add(i)));
+  _showIds.forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display='none'; });
   const cfg = _VERTICAL_NAV[vertical];
   if(!cfg) return; // velum = sin cambios
   Object.entries(cfg.relabel||{}).forEach(([id,txt])=>{ const l=_navLblEl(id); if(l) l.textContent=' '+txt; });
   (cfg.hide||[]).forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display='none'; });
+  (cfg.show||[]).forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display=''; });
 }
 
 function applyGymConfig(){
@@ -9720,6 +9948,9 @@ const topTitles = {
   'landing-leads': ['Leads Landing',             'Emails capturados desde myvelum.app'],
   horario:     ['Calendario de Clases',      ()=>`Vista mensual · ${_mesLabel()}`],
   coaches:     ['Equipo de Coaches',         'Perfiles del equipo de entrenamiento'],
+  citas:       ['Agenda de Recovery',        'Citas 1-a-1 por recurso'],
+  recursos:    ['Recursos de Recovery',      'Sauna, crioterapia, masaje, compresión — reservables 1-a-1'],
+  protocolos:  ['Protocolos de Recovery',    'Plantillas de sesión reutilizables'],
   evaluaciones:['Evaluaciones',              'Rúbricas de desempeño'],
   revenue:     ['Revenue Dashboard',          ()=>`Análisis financiero · ${_mesLabel()}`],
   'por-vencer':['Por Vencer',                 'Membresías próximas a vencer — recordatorios WA'],
@@ -9744,6 +9975,9 @@ const topBtnLabels = {
   'landing-leads': '↓ Exportar CSV',
   horario:     '+ Plantilla',
   coaches:     '+ Agregar Coach',
+  citas:       '+ Agendar Cita',
+  recursos:    '+ Agregar Recurso',
+  protocolos:  '+ Agregar Protocolo',
   evaluaciones:'+ Evaluar Coach',
   revenue:     '↓ Exportar CSV',
   'por-vencer':'📲 WA a todos',
@@ -9759,6 +9993,9 @@ const topBtnActions = {
   crm:         ()=>openModal('lead'),
   pipeline:    ()=>openModal('lead'),
   coaches:     ()=>openModal('coach'),
+  citas:       ()=>openModal('cita'),
+  recursos:    ()=>openModal('recurso'),
+  protocolos:  ()=>openModal('protocolo'),
   campanas:    ()=>openModal('campana'),
   solicitudes:     ()=>openModal('solicitud'),
   'landing-leads': ()=>exportLandingLeadsCSV(),
@@ -10139,6 +10376,9 @@ function go(id, el){
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
   if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); renderReporteCoach(); }
+  if(id==='recursos')    { loadRecursos().then(renderRecursos); }
+  if(id==='protocolos')  { loadProtocolos().then(renderProtocolos); }
+  if(id==='citas')       { _citaEnsureFecha(); Promise.all([loadRecursos(),loadProtocolos(),loadCitas()]).then(renderCitas); }
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
   if(id==='dashboard')   renderDashboard();
   if(id==='pagos')       renderPagos();
@@ -10277,6 +10517,31 @@ function openModal(id){
     const vm = document.getElementById('v-metodo'); if(vm) vm.selectedIndex=0;
     ['v-nombre-err','v-monto-err'].forEach(fid=>{ const e=document.getElementById(fid); if(e){ e.style.display='none'; e.textContent=''; } });
     if(typeof wizInit==='function') wizInit('visita');
+  }
+  if(id==='recurso'){
+    const rn=document.getElementById('rec-nombre'); if(rn) rn.value='';
+    const rd=document.getElementById('rec-duracion'); if(rd) rd.value='30';
+    const rt=document.getElementById('rec-tipo'); if(rt) rt.selectedIndex=0;
+    wzdFieldErr('rec-nombre','');
+    if(typeof wizInit==='function') wizInit('recurso');
+  }
+  if(id==='protocolo'){
+    const pn=document.getElementById('prot-nombre'); if(pn) pn.value='';
+    const pp=document.getElementById('prot-pasos'); if(pp) pp.value='';
+    wzdFieldErr('prot-nombre','');
+    if(typeof wizInit==='function') wizInit('protocolo');
+  }
+  if(id==='cita'){
+    _citaEnsureFecha();
+    // asegurar catálogos cargados para los selects, luego (re)poblar
+    Promise.all([ recursosDB.length?Promise.resolve():loadRecursos(), protocolosDB.length?Promise.resolve():loadProtocolos() ]).then(_citaPopulateSelects);
+    _citaPopulateSelects();
+    const cf=document.getElementById('cita-fecha'); if(cf) cf.value=_citaFecha;
+    ['cita-cliente','cita-hora','cita-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    const cd=document.getElementById('cita-duracion'); if(cd) cd.value='30';
+    wzdFieldErr('cita-cliente',''); wzdFieldErr('cita-recurso',''); wzdFieldErr('cita-hora','');
+    _citaSyncDuracion();
+    if(typeof wizInit==='function') wizInit('cita');
   }
   if(id==='solo-cliente'){
     // Reset form completo
@@ -18537,6 +18802,392 @@ wizRegister('coach', {
     if(g('c-email'))  rows.push(_wzdRow('Email', esc(g('c-email'))));
     rows.push(_wzdRow('Foto', g('c-foto') ? '✅ Sí' : '— (puedes agregarla luego)'));
     document.getElementById('c-confirm').innerHTML = rows.join('');
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// RECOVERY · Recursos reservables (sauna, crio, camilla, botas…)
+// Solo se usa en la vertical 'recovery'. Tabla public.recursos (RLS por gym_id).
+// ════════════════════════════════════════════════════════════════
+let recursosDB = [];
+const _RECURSO_TIPOS = [
+  {v:'sauna',       ico:'🔥', sub:'Sauna / temazcal'},
+  {v:'crioterapia', ico:'❄️', sub:'Crioterapia / frío'},
+  {v:'masaje',      ico:'💆', sub:'Masaje / camilla'},
+  {v:'compresion',  ico:'🦵', sub:'Compresión / botas'},
+  {v:'otro',        ico:'✨', sub:'Otro recurso'},
+];
+function _recursoTipoMeta(t){ return _RECURSO_TIPOS.find(x=>x.v===t) || {v:t||'otro', ico:'✨', sub:'Recurso'}; }
+
+async function loadRecursos(){
+  const { data, error } = await gf(window.supabaseClient.from('recursos').select('*')).order('sort_order').order('created_at');
+  if(error){ console.error('Error cargando recursos:', error); return; }
+  recursosDB = (data||[]).map(r=>({
+    id:r.id, nombre:r.nombre||'', tipo:r.tipo||'otro',
+    duracion_min: r.duracion_min||30, activo: r.activo!==false, sort_order: r.sort_order||0
+  }));
+}
+
+function renderRecursos(){
+  const grid = document.getElementById('recursos-grid'); if(!grid) return;
+  if(!recursosDB.length){
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="empty-title">Sin recursos aún</div><div class="empty-sub">Agrega tu primer recurso reservable (sauna, cabina, camilla) para empezar a agendar citas.</div></div></div>`;
+    return;
+  }
+  grid.innerHTML = recursosDB.map(r=>{
+    const m=_recursoTipoMeta(r.tipo);
+    return `<div class="card" style="display:flex;align-items:center;gap:14px;${r.activo?'':'opacity:.55;'}">
+      <div style="font-size:26px;line-height:1;">${m.ico}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;color:var(--text);">${esc(r.nombre)}</div>
+        <div style="font-size:12px;color:var(--text3);">${esc(m.sub)} · ${r.duracion_min} min${r.activo?'':' · pausado'}</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="toggleRecursoActivo(${r.id})">${r.activo?'Pausar':'Activar'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="deleteRecurso(${r.id})" title="Eliminar recurso">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+async function saveRecurso(){
+  const nombre = document.getElementById('rec-nombre').value.trim();
+  if(!nombre){ alert('El nombre del recurso es obligatorio.'); return; }
+  const payload = {
+    nombre,
+    tipo:         document.getElementById('rec-tipo').value || 'otro',
+    duracion_min: parseInt(document.getElementById('rec-duracion').value)||30,
+    activo:       true,
+    sort_order:   recursosDB.length
+  };
+  const _b = document.querySelector('#modal-recurso .wzd-save');
+  setBtnLoading(_b, true);
+  const { error } = await window.supabaseClient.from('recursos').insert([withGymId(payload)]);
+  setBtnLoading(_b, false);
+  if(error){ console.error('Error guardando recurso:', error); alert('No se pudo guardar el recurso.'); return; }
+  await loadRecursos();
+  closeModal('recurso');
+  document.getElementById('rec-nombre').value='';
+  document.getElementById('rec-duracion').value='30';
+  document.getElementById('rec-tipo').value='sauna';
+  auditLog('CREAR_RECURSO','recursos','',`Nuevo recurso: ${nombre}`);
+  toast(`Recurso "${nombre}" agregado.`,'✓');
+  renderRecursos();
+}
+
+async function toggleRecursoActivo(id){
+  const r = recursosDB.find(x=>x.id===id); if(!r) return;
+  const { error } = await window.supabaseClient.from('recursos').update({activo: !r.activo}).eq('id', id);
+  if(error){ console.error('Error actualizando recurso:', error); alert('No se pudo actualizar.'); return; }
+  await loadRecursos();
+  renderRecursos();
+  toast(r.activo?'Recurso pausado.':'Recurso activado.','✓');
+}
+
+async function deleteRecurso(id){
+  if(!await confirmDialog('¿Eliminar este recurso? Las citas pasadas que lo usaron conservan su registro.', {title:'Eliminar recurso', icon:'🧖'})) return;
+  const { error } = await window.supabaseClient.from('recursos').delete().eq('id', id);
+  if(error){ console.error('Error eliminando recurso:', error); alert('No se pudo eliminar.'); return; }
+  await loadRecursos();
+  renderRecursos();
+  toast('Recurso eliminado.','🗑');
+}
+
+// Wizard de Recurso (modal-recurso) — 2 pasos
+wizRegister('recurso', {
+  labels: {1:'¿Qué recurso?', 2:'Confirma'},
+  validate(n){
+    if(n!==1) return true;
+    const nom=(document.getElementById('rec-nombre').value||'').trim();
+    if(!nom){ wzdFieldErr('rec-nombre','El nombre del recurso es obligatorio.'); return false; }
+    wzdFieldErr('rec-nombre',''); return true;
+  },
+  onStep(n){
+    if(n!==2) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const m=_recursoTipoMeta(g('rec-tipo'));
+    const dur=parseInt(g('rec-duracion'))||30;
+    document.getElementById('rec-confirm').innerHTML=[
+      _wzdRow('Recurso', esc(g('rec-nombre'))),
+      _wzdRow('Tipo', `${m.ico} ${esc(m.sub)}`),
+      _wzdRow('Duración', `${dur} min`)
+    ].join('');
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// RECOVERY · Protocolos (plantillas de sesión reutilizables)
+// Tabla public.protocolos (RLS por gym_id). Solo vertical 'recovery'.
+// ════════════════════════════════════════════════════════════════
+let protocolosDB = [];
+
+async function loadProtocolos(){
+  const { data, error } = await gf(window.supabaseClient.from('protocolos').select('*')).order('created_at');
+  if(error){ console.error('Error cargando protocolos:', error); return; }
+  protocolosDB = (data||[]).map(p=>({ id:p.id, nombre:p.nombre||'', pasos:p.pasos||'', activo:p.activo!==false }));
+}
+
+function renderProtocolos(){
+  const grid = document.getElementById('protocolos-grid'); if(!grid) return;
+  if(!protocolosDB.length){
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div><div class="empty-title">Sin protocolos aún</div><div class="empty-sub">Crea plantillas de recuperación reutilizables para asignarlas a las citas de tus clientes.</div></div></div>`;
+    return;
+  }
+  grid.innerHTML = protocolosDB.map(p=>{
+    const pasosHtml = (p.pasos||'').split('\n').map(s=>s.trim()).filter(Boolean)
+      .map(s=>`<div style="font-size:12px;color:var(--text2);padding:2px 0;">• ${esc(s)}</div>`).join('')
+      || '<div style="font-size:12px;color:var(--text3);">Sin pasos definidos</div>';
+    return `<div class="card" style="${p.activo?'':'opacity:.55;'}">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-size:22px;line-height:1;">📋</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;color:var(--text);margin-bottom:6px;">${esc(p.nombre)}${p.activo?'':' <span style="font-size:11px;color:var(--text3);font-weight:400;">· pausado</span>'}</div>
+          ${pasosHtml}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 auto;">
+          <button class="btn btn-outline btn-sm" onclick="toggleProtocoloActivo(${p.id})">${p.activo?'Pausar':'Activar'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteProtocolo(${p.id})" title="Eliminar protocolo">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveProtocolo(){
+  const nombre = document.getElementById('prot-nombre').value.trim();
+  if(!nombre){ alert('El nombre del protocolo es obligatorio.'); return; }
+  const payload = { nombre, pasos: document.getElementById('prot-pasos').value.trim(), activo: true };
+  const _b = document.querySelector('#modal-protocolo .wzd-save');
+  setBtnLoading(_b, true);
+  const { error } = await window.supabaseClient.from('protocolos').insert([withGymId(payload)]);
+  setBtnLoading(_b, false);
+  if(error){ console.error('Error guardando protocolo:', error); alert('No se pudo guardar el protocolo.'); return; }
+  await loadProtocolos();
+  closeModal('protocolo');
+  document.getElementById('prot-nombre').value='';
+  document.getElementById('prot-pasos').value='';
+  auditLog('CREAR_PROTOCOLO','protocolos','',`Nuevo protocolo: ${nombre}`);
+  toast(`Protocolo "${nombre}" agregado.`,'✓');
+  renderProtocolos();
+}
+
+async function toggleProtocoloActivo(id){
+  const p = protocolosDB.find(x=>x.id===id); if(!p) return;
+  const { error } = await window.supabaseClient.from('protocolos').update({activo: !p.activo}).eq('id', id);
+  if(error){ console.error('Error actualizando protocolo:', error); alert('No se pudo actualizar.'); return; }
+  await loadProtocolos();
+  renderProtocolos();
+  toast(p.activo?'Protocolo pausado.':'Protocolo activado.','✓');
+}
+
+async function deleteProtocolo(id){
+  if(!await confirmDialog('¿Eliminar este protocolo? Las citas que ya lo usaron conservan su copia.', {title:'Eliminar protocolo', icon:'📋'})) return;
+  const { error } = await window.supabaseClient.from('protocolos').delete().eq('id', id);
+  if(error){ console.error('Error eliminando protocolo:', error); alert('No se pudo eliminar.'); return; }
+  await loadProtocolos();
+  renderProtocolos();
+  toast('Protocolo eliminado.','🗑');
+}
+
+// Wizard de Protocolo (modal-protocolo) — 2 pasos
+wizRegister('protocolo', {
+  labels: {1:'¿Qué protocolo?', 2:'Confirma'},
+  validate(n){
+    if(n!==1) return true;
+    const nom=(document.getElementById('prot-nombre').value||'').trim();
+    if(!nom){ wzdFieldErr('prot-nombre','El nombre del protocolo es obligatorio.'); return false; }
+    wzdFieldErr('prot-nombre',''); return true;
+  },
+  onStep(n){
+    if(n!==2) return;
+    const nom=(document.getElementById('prot-nombre').value||'').trim();
+    const pasos=(document.getElementById('prot-pasos').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const pasosHtml = pasos.length ? pasos.map(s=>`<div style="font-size:12px;color:var(--text2);padding:1px 0;">• ${esc(s)}</div>`).join('') : '<span style="color:var(--text3);">— sin pasos</span>';
+    document.getElementById('prot-confirm').innerHTML=[
+      _wzdRow('Protocolo', esc(nom)),
+      _wzdRow('Pasos', pasosHtml)
+    ].join('');
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// RECOVERY · Agenda de citas 1-a-1 por recurso
+// Tabla public.citas (RLS por gym_id). Solo vertical 'recovery'.
+// ════════════════════════════════════════════════════════════════
+let citasDB = [];
+let _citaFecha = null;
+function _citaYMD(d){ const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
+function _citaEnsureFecha(){ if(!_citaFecha) _citaFecha=_citaYMD(new Date()); }
+const _CITA_ESTADOS = {
+  agendada:   {lbl:'Agendada',  col:'var(--accent)'},
+  completada: {lbl:'Completada',col:'var(--ok)'},
+  no_show:    {lbl:'No-show',   col:'var(--warn)'},
+  cancelada:  {lbl:'Cancelada', col:'var(--text3)'},
+};
+
+async function loadCitas(){
+  _citaEnsureFecha();
+  const { data, error } = await gf(window.supabaseClient.from('citas').select('*').eq('fecha', _citaFecha)).order('hora_inicio');
+  if(error){ console.error('Error cargando citas:', error); citasDB=[]; return; }
+  citasDB = (data||[]).map(c=>({
+    id:c.id, recurso_id:c.recurso_id, cliente_id:c.cliente_id, cliente_nombre:c.cliente_nombre||'',
+    fecha:c.fecha, hora_inicio:c.hora_inicio||'', duracion_min:c.duracion_min||30,
+    protocolo:c.protocolo||'', estado:c.estado||'agendada', notas:c.notas||''
+  }));
+}
+
+function _citaRowHTML(c){
+  const e=_CITA_ESTADOS[c.estado]||_CITA_ESTADOS.agendada;
+  const prot = c.protocolo ? `<span style="font-size:11px;color:var(--text2);background:var(--accent-bg);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">📋 ${esc(c.protocolo)}</span>` : '';
+  const acciones = c.estado==='agendada'
+    ? `<button class="btn btn-outline btn-sm" onclick="setCitaEstado('${c.id}','completada')" title="Marcar completada">✓</button>
+       <button class="btn btn-ghost btn-sm" onclick="setCitaEstado('${c.id}','no_show')" title="Marcar no-show">∅</button>`
+    : `<button class="btn btn-ghost btn-sm" onclick="setCitaEstado('${c.id}','agendada')" title="Reabrir">↺</button>`;
+  return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--border);">
+    <div style="font-family:var(--fm,monospace);font-weight:700;color:var(--text);min-width:52px;">${esc(c.hora_inicio||'--:--')}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:600;color:var(--text);">${esc(c.cliente_nombre||'—')}</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px;">${prot}<span style="font-size:11px;color:${e.col};">● ${e.lbl}</span><span style="font-size:11px;color:var(--text3);">${c.duracion_min} min</span></div>
+    </div>
+    <div style="display:flex;gap:4px;flex:0 0 auto;">${acciones}<button class="btn btn-ghost btn-sm" onclick="deleteCita('${c.id}')" title="Eliminar cita">🗑</button></div>
+  </div>`;
+}
+
+function renderCitas(){
+  const body=document.getElementById('citas-body'); if(!body) return;
+  _citaEnsureFecha();
+  const d=new Date(_citaFecha+'T12:00:00');
+  const lbl=document.getElementById('cita-fecha-label'); if(lbl) lbl.textContent=d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const sub=document.getElementById('cita-fecha-sub'); if(sub) sub.textContent = (_citaFecha===_citaYMD(new Date()))?'Hoy':'';
+  const activos=recursosDB.filter(r=>r.activo);
+  if(!activos.length){
+    body.innerHTML=`<div class="card"><div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="empty-title">Primero agrega recursos</div><div class="empty-sub">La agenda agrupa las citas por recurso. Ve a <strong>Recursos</strong> y agrega al menos uno (sauna, cabina, camilla).</div></div></div>`;
+    return;
+  }
+  const totalDia = citasDB.length;
+  body.innerHTML = activos.map(r=>{
+    const m=_recursoTipoMeta(r.tipo);
+    const cs=citasDB.filter(c=>String(c.recurso_id)===String(r.id)).sort((a,b)=>(a.hora_inicio||'').localeCompare(b.hora_inicio||''));
+    const rows = cs.length ? cs.map(_citaRowHTML).join('') : `<div style="font-size:12px;color:var(--text3);padding:8px 2px;">Sin citas este día · <a onclick="_citaQuickAdd(${r.id})" style="color:var(--accent);cursor:pointer;">agendar →</a></div>`;
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">${m.ico}</span>
+        <span style="font-weight:700;color:var(--text);">${esc(r.nombre)}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto;">${cs.length} cita${cs.length===1?'':'s'}</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('') + `<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:4px;">${totalDia} cita${totalDia===1?'':'s'} en total este día</div>`;
+}
+
+function citaPrevDay(){ _citaEnsureFecha(); const d=new Date(_citaFecha+'T12:00:00'); d.setDate(d.getDate()-1); _citaFecha=_citaYMD(d); loadCitas().then(renderCitas); }
+function citaNextDay(){ _citaEnsureFecha(); const d=new Date(_citaFecha+'T12:00:00'); d.setDate(d.getDate()+1); _citaFecha=_citaYMD(d); loadCitas().then(renderCitas); }
+function citaToday(){ _citaFecha=_citaYMD(new Date()); loadCitas().then(renderCitas); }
+
+function _citaQuickAdd(recursoId){ openModal('cita'); const sel=document.getElementById('cita-recurso'); if(sel){ sel.value=String(recursoId); _citaSyncDuracion(); } }
+
+// Llenar selects del modal con recursos/protocolos activos + datalist de clientes
+function _citaPopulateSelects(){
+  const rsel=document.getElementById('cita-recurso');
+  if(rsel){ rsel.innerHTML = recursosDB.filter(r=>r.activo).map(r=>`<option value="${r.id}">${esc(r.nombre)}</option>`).join('') || '<option value="">— sin recursos —</option>'; }
+  const psel=document.getElementById('cita-protocolo');
+  if(psel){ psel.innerHTML = '<option value="">— sin protocolo —</option>' + protocolosDB.filter(p=>p.activo).map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join(''); }
+  const dl=document.getElementById('cita-cliente-list');
+  if(dl && typeof clientesDB!=='undefined'){ dl.innerHTML = clientesDB.slice(0,500).map(c=>`<option value="${esc(c.nombre||'')}"></option>`).join(''); }
+}
+function _citaSyncDuracion(){
+  const rid=document.getElementById('cita-recurso')?.value;
+  const r=recursosDB.find(x=>String(x.id)===String(rid));
+  const dur=document.getElementById('cita-duracion');
+  if(r && dur) dur.value=r.duracion_min||30;
+}
+
+async function saveCita(){
+  const cliente_nombre=document.getElementById('cita-cliente').value.trim();
+  if(!cliente_nombre){ wzdFieldErr('cita-cliente','Escribe el nombre del cliente.'); return; }
+  const recurso_id=document.getElementById('cita-recurso').value;
+  const hora=document.getElementById('cita-hora').value;
+  const fecha=document.getElementById('cita-fecha').value || _citaYMD(new Date());
+  const protId=document.getElementById('cita-protocolo').value;
+  const prot=protocolosDB.find(p=>String(p.id)===String(protId));
+  const recurso=recursosDB.find(r=>String(r.id)===String(recurso_id));
+  const cli=(typeof clientesDB!=='undefined'?clientesDB:[]).find(c=>(c.nombre||'').trim().toLowerCase()===cliente_nombre.toLowerCase());
+  const payload={
+    recurso_id:  recurso_id?(parseInt(recurso_id)||null):null,
+    cliente_id:  cli?cli.id:null,
+    cliente_nombre,
+    fecha,
+    hora_inicio: hora,
+    duracion_min: parseInt(document.getElementById('cita-duracion').value) || (recurso?recurso.duracion_min:30),
+    protocolo_id: protId?(parseInt(protId)||null):null,
+    protocolo:   prot?prot.nombre:null,
+    estado:'agendada',
+    notas: document.getElementById('cita-notas').value.trim()
+  };
+  const _b=document.querySelector('#modal-cita .wzd-save');
+  setBtnLoading(_b,true);
+  const { error } = await window.supabaseClient.from('citas').insert([withGymId(payload)]);
+  setBtnLoading(_b,false);
+  if(error){ console.error('Error guardando cita:', error); alert('No se pudo agendar la cita.'); return; }
+  _citaFecha = fecha;   // saltar al día de la cita recién creada
+  await loadCitas();
+  closeModal('cita');
+  auditLog('CREAR_CITA','citas','',`Cita: ${cliente_nombre} · ${fecha} ${hora}`);
+  toast('Cita agendada.','✓');
+  renderCitas();
+}
+
+async function setCitaEstado(id, estado){
+  const { error } = await window.supabaseClient.from('citas').update({estado}).eq('id', id);
+  if(error){ console.error('Error actualizando cita:', error); alert('No se pudo actualizar la cita.'); return; }
+  await loadCitas();
+  renderCitas();
+  const e=_CITA_ESTADOS[estado]||{lbl:estado};
+  toast(`Cita: ${e.lbl}.`,'✓');
+}
+
+async function deleteCita(id){
+  if(!await confirmDialog('¿Eliminar esta cita?', {title:'Eliminar cita', icon:'🗓'})) return;
+  const { error } = await window.supabaseClient.from('citas').delete().eq('id', id);
+  if(error){ console.error('Error eliminando cita:', error); alert('No se pudo eliminar.'); return; }
+  await loadCitas();
+  renderCitas();
+  toast('Cita eliminada.','🗑');
+}
+
+// Wizard de Cita (modal-cita) — 3 pasos
+wizRegister('cita', {
+  labels: {1:'¿Quién?', 2:'¿Qué y cuándo?', 3:'Confirma'},
+  validate(n){
+    if(n===1){
+      const nom=(document.getElementById('cita-cliente').value||'').trim();
+      if(!nom){ wzdFieldErr('cita-cliente','Escribe el nombre del cliente.'); return false; }
+      wzdFieldErr('cita-cliente',''); return true;
+    }
+    if(n===2){
+      const rid=document.getElementById('cita-recurso').value;
+      if(!rid){ wzdFieldErr('cita-recurso','Elige un recurso.'); return false; }
+      wzdFieldErr('cita-recurso','');
+      const hora=document.getElementById('cita-hora').value;
+      if(!hora){ wzdFieldErr('cita-hora','Elige una hora.'); return false; }
+      wzdFieldErr('cita-hora',''); return true;
+    }
+    return true;
+  },
+  onStep(n){
+    if(n!==3) return;
+    const g=id=>(document.getElementById(id)?.value||'').trim();
+    const recurso=recursosDB.find(r=>String(r.id)===String(g('cita-recurso')));
+    const prot=protocolosDB.find(p=>String(p.id)===String(g('cita-protocolo')));
+    const f=g('cita-fecha');
+    const rows=[
+      _wzdRow('Cliente', esc(g('cita-cliente'))),
+      _wzdRow('Recurso', recurso?`${_recursoTipoMeta(recurso.tipo).ico} ${esc(recurso.nombre)}`:'—'),
+      _wzdRow('Fecha', f? new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'long'}) : 'Hoy'),
+      _wzdRow('Hora', esc(g('cita-hora')||'—')),
+      _wzdRow('Duración', `${parseInt(g('cita-duracion'))||30} min`),
+    ];
+    if(prot) rows.push(_wzdRow('Protocolo', `📋 ${esc(prot.nombre)}`));
+    if(g('cita-notas')) rows.push(_wzdRow('Notas', esc(g('cita-notas'))));
+    document.getElementById('cita-confirm').innerHTML=rows.join('');
   }
 });
 
