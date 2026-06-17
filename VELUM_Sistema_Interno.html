@@ -8941,8 +8941,8 @@ async function loadConfigFromSupabase(){
   // Fase A: leer la vertical del gym y aplicar su tema. Default/fallo = 'velum' (sin cambio).
   if(MOVE_GYM_ID && window.supabaseClient){
     window.supabaseClient.from('gyms').select('vertical').eq('id', MOVE_GYM_ID).single()
-      .then(({data:g})=>{ if(typeof applyVertical==='function') applyVertical(g && g.vertical ? g.vertical : 'velum'); })
-      .catch(()=>{ if(typeof applyVertical==='function') applyVertical('velum'); });
+      .then(({data:g})=>{ if(typeof applyVertical==='function') applyVertical(g && g.vertical ? g.vertical : 'gym'); })
+      .catch(()=>{ if(typeof applyVertical==='function') applyVertical('gym'); });
   }
   applyGymConfig();
   renderThemeGrid();
@@ -9022,18 +9022,18 @@ function applyCustomColor(){
 // radios). Para 'velum' NO toca nada → los gyms actuales se ven igual.
 // Para studios/recovery, fija el acento default de la vertical reusando
 // el mismo _applyColorToDOM del sistema de color por-gym.
-let _gymVertical = 'velum';
+let _gymVertical = 'gym';
 const _VERTICAL_DEFAULTS = {
   studios:  { accent:'#C9A86A', bg1:'rgba(201,168,106,.07)', bg2:'rgba(201,168,106,.04)' },
   recovery: { accent:'#5EC8B0', bg1:'rgba(94,200,176,.07)',  bg2:'rgba(94,200,176,.04)' },
 };
 function applyVertical(vertical){
-  const v = String(vertical || 'velum').toLowerCase();
-  _gymVertical = (v === 'studios' || v === 'recovery') ? v : 'velum';
+  const v = String(vertical || 'gym').toLowerCase();
+  _gymVertical = (v === 'studios' || v === 'recovery') ? v : 'gym';   // 'velum' (legacy en DB) → 'gym'
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
-  if(_gymVertical === 'velum') return;   // sin cambios para el sistema actual
+  if(_gymVertical === 'gym') return;   // gym = base: conserva su propio color/acento (cyan por defecto)
   const def = _VERTICAL_DEFAULTS[_gymVertical];
   // Si el gym no eligió un color propio, usar el acento de la vertical.
   const escogioColor = gymConfig && gymConfig.gym_theme && gymConfig.gym_theme === 'custom';
@@ -9045,6 +9045,13 @@ function applyVertical(vertical){
 // ── Fase A.4: módulos + vocabulario por vertical (sobre el sidebar actual) ──
 // Relabela y oculta items del nav. Idempotente: 'velum' restaura todo.
 const _VERTICAL_NAV = {
+  // GYM / FUNCIONAL (hyrox/tradicional/box) — el sistema base. Curación minimal:
+  // oculta la suite de marketing/growth-agencia; deja toda la operación + programa de entreno.
+  // (El valor legacy 'velum' en la DB se normaliza a 'gym' en applyVertical.)
+  gym: {
+    hide: ['nav-crm','nav-retencion','nav-revenue','nav-landing-leads',
+           'nav-marketing','nav-campanas','nav-solicitudes'],
+  },
   // STUDIOS (boutique: pilates/yoga/cycle/reformer) — núcleo: clases, reservas, créditos.
   studios: {
     relabel: { 'nav-horario':'Clases & Horario', 'nav-coaches':'Instructores',
