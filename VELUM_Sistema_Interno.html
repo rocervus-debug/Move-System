@@ -156,6 +156,58 @@ body[data-vertical="recovery"]{
   --radius:20px; --radius-sm:14px;
 }
 
+/* ── Recovery · Agenda por recurso (grid temporal, estética bespoke del mockup) ── */
+.rc-layout{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start;}
+@media(max-width:1100px){ .rc-layout{grid-template-columns:1fr;} }
+.rc-agenda-card{padding:16px;}
+.rc-agenda{display:grid;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.rc-head{padding:10px 8px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--card2);}
+.rc-head.rc-corner{background:transparent;border-left:none;}
+.rc-ri{font-size:16px;display:block;margin-bottom:2px;line-height:1;}
+.rc-rn{font-size:12px;font-weight:600;color:var(--text);font-family:var(--font-display,inherit);}
+.rc-time{font-family:var(--fm,monospace);font-size:10.5px;color:var(--text3);padding:8px 6px;text-align:right;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;}
+.rc-cell{border-top:1px solid var(--border);border-left:1px solid var(--border);min-height:46px;padding:3px;}
+.rc-appt{border-radius:7px;padding:6px 8px;font-size:11px;height:100%;border:1px solid var(--border2,var(--border));background:var(--accent-bg);cursor:pointer;transition:border-color .15s, transform .1s;}
+.rc-appt:hover{border-color:var(--accent);transform:translateY(-1px);}
+.rc-appt.alt{background:rgba(94,200,176,.06);}
+.rc-appt.sel{background:var(--accent-bg2);border-color:var(--accent);box-shadow:var(--glow);}
+.rc-appt.done{opacity:.55;}
+.rc-appt.noshow{opacity:.5;border-style:dashed;}
+.rc-appt.canc{opacity:.4;}
+.rc-appt .rc-who{font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rc-appt .rc-pr{color:var(--text3);font-size:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rc-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11px;color:var(--text2);align-items:center;}
+.rc-legend span{display:inline-flex;align-items:center;gap:6px;}
+.rc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.rc-side{display:flex;flex-direction:column;gap:16px;}
+.rc-side-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.rc-card-title{font-size:14px;font-weight:800;color:var(--text);font-family:var(--font-display,inherit);}
+.rc-badge{font-size:11px;font-family:var(--fm,monospace);color:var(--text2);background:var(--accent-bg);border:1px solid var(--border);border-radius:6px;padding:3px 9px;white-space:nowrap;}
+.rc-client{display:flex;align-items:center;gap:12px;margin:10px 0 14px;}
+.rc-av{width:42px;height:42px;border-radius:12px;background:var(--accent-bg2);color:var(--accent);font-weight:800;font-size:14px;display:grid;place-items:center;flex:0 0 auto;}
+.rc-cname{font-size:15px;font-weight:700;color:var(--text);}
+.rc-csub{font-size:12px;color:var(--text3);margin-top:2px;}
+.rc-proto-head{font-size:13px;font-weight:700;color:var(--accent);margin:8px 0 4px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.rc-step{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.rc-step:last-child{border-bottom:none;}
+.rc-num{width:24px;height:24px;border-radius:50%;background:var(--accent-bg2);color:var(--accent);font-weight:700;font-size:12px;display:grid;place-items:center;flex:0 0 auto;}
+.rc-step-name{font-size:13px;color:var(--text);font-weight:500;}
+.rc-actions{display:flex;gap:8px;margin-top:14px;align-items:center;}
+.rc-side-empty{text-align:center;padding:34px 18px;}
+.rc-side-emptyico{font-size:30px;color:var(--text3);margin-bottom:10px;line-height:1;}
+
+/* ── Botones primarios siguen el acento de la vertical (studios/recovery). Gym (base) queda cyan tal cual. ── */
+body[data-vertical="studios"] .btn-primary,
+body[data-vertical="recovery"] .btn-primary{
+  background:linear-gradient(135deg, var(--accent), var(--accent-hover, var(--accent)));
+  box-shadow:0 2px 10px rgba(0,0,0,.25), var(--glow);
+  color:#06201B;
+}
+body[data-vertical="studios"] .btn-primary:hover,
+body[data-vertical="recovery"] .btn-primary:hover{
+  background:var(--accent-hover, var(--accent));
+}
+
 /* ══════════════════════════════════
    LIGHT MODE — body.light-mode overrides
 ══════════════════════════════════ */
@@ -19066,20 +19118,38 @@ async function loadCitas(){
   }));
 }
 
-function _citaRowHTML(c){
+let _citaSelId = null;
+function selCita(id){ _citaSelId = id; renderCitas(); }
+
+// Pasos de un protocolo por su nombre (snapshot guardado en la cita).
+function _citaProtoPasos(nombre){
+  if(!nombre) return [];
+  const p = (typeof protocolosDB!=='undefined'?protocolosDB:[]).find(x=>(x.nombre||'')===nombre);
+  return p ? (p.pasos||'').split('\n').map(s=>s.trim()).filter(Boolean) : [];
+}
+
+// Panel lateral "Cita seleccionada" (con protocolo paso-a-paso), como el mockup.
+function _citaPanelHTML(c){
+  if(!c) return `<div class="card rc-side-empty"><div class="rc-side-emptyico">◷</div><div class="rc-card-title" style="margin-bottom:4px;">Cita seleccionada</div><div class="card-sub" style="color:var(--text3);">Toca una cita en la agenda para ver su protocolo y gestionarla.</div></div>`;
   const e=_CITA_ESTADOS[c.estado]||_CITA_ESTADOS.agendada;
-  const prot = c.protocolo ? `<span style="font-size:11px;color:var(--text2);background:var(--accent-bg);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">📋 ${esc(c.protocolo)}</span>` : '';
+  const recurso=recursosDB.find(r=>String(r.id)===String(c.recurso_id));
+  const ini=(c.cliente_nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const pasos=_citaProtoPasos(c.protocolo);
+  const protoBlock = c.protocolo
+    ? `<div class="rc-proto-head">❋ Protocolo · ${esc(c.protocolo)}</div>`
+      + (pasos.length
+          ? pasos.map((p,i)=>`<div class="rc-step"><span class="rc-num">${i+1}</span><div class="rc-step-main"><div class="rc-step-name">${esc(p)}</div></div></div>`).join('')
+          : `<div class="card-sub" style="padding:6px 0;color:var(--text3);">Protocolo sin pasos detallados.</div>`)
+    : `<div class="card-sub" style="margin:10px 0;color:var(--text3);">Sin protocolo asignado.</div>`;
   const acciones = c.estado==='agendada'
-    ? `<button class="btn btn-outline btn-sm" onclick="setCitaEstado('${c.id}','completada')" title="Marcar completada">✓</button>
-       <button class="btn btn-ghost btn-sm" onclick="setCitaEstado('${c.id}','no_show')" title="Marcar no-show">∅</button>`
-    : `<button class="btn btn-ghost btn-sm" onclick="setCitaEstado('${c.id}','agendada')" title="Reabrir">↺</button>`;
-  return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--border);">
-    <div style="font-family:var(--fm,monospace);font-weight:700;color:var(--text);min-width:52px;">${esc(c.hora_inicio||'--:--')}</div>
-    <div style="flex:1;min-width:0;">
-      <div style="font-weight:600;color:var(--text);">${esc(c.cliente_nombre||'—')}</div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px;">${prot}<span style="font-size:11px;color:${e.col};">● ${e.lbl}</span><span style="font-size:11px;color:var(--text3);">${c.duracion_min} min</span></div>
-    </div>
-    <div style="display:flex;gap:4px;flex:0 0 auto;">${acciones}<button class="btn btn-ghost btn-sm" onclick="deleteCita('${c.id}')" title="Eliminar cita">🗑</button></div>
+    ? `<button class="btn btn-primary" style="flex:1" onclick="setCitaEstado('${c.id}','completada')">Iniciar sesión</button>
+       <button class="btn btn-ghost" onclick="setCitaEstado('${c.id}','no_show')">No-show</button>`
+    : `<button class="btn btn-ghost" style="flex:1" onclick="setCitaEstado('${c.id}','agendada')">↺ Reabrir</button>`;
+  return `<div class="card">
+    <div class="rc-side-top"><div class="rc-card-title">○ Cita seleccionada</div><span class="rc-badge">${esc(c.hora_inicio||'--:--')} · ${c.duracion_min} min</span></div>
+    <div class="rc-client"><span class="rc-av">${esc(ini)}</span><div><div class="rc-cname">${esc(c.cliente_nombre||'—')}</div><div class="rc-csub">${recurso?esc(recurso.nombre):'—'} · <span style="color:${e.col};font-weight:600;">${e.lbl}</span></div></div></div>
+    ${protoBlock}
+    <div class="rc-actions">${acciones}<button class="btn btn-ghost" onclick="deleteCita('${c.id}')" title="Eliminar cita">🗑</button></div>
   </div>`;
 }
 
@@ -19087,27 +19157,47 @@ function renderCitas(){
   const body=document.getElementById('citas-body'); if(!body) return;
   _citaEnsureFecha();
   const d=new Date(_citaFecha+'T12:00:00');
-  const lbl=document.getElementById('cita-fecha-label'); if(lbl) lbl.textContent=d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const dayLabel=d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const lbl=document.getElementById('cita-fecha-label'); if(lbl) lbl.textContent=dayLabel;
   const sub=document.getElementById('cita-fecha-sub'); if(sub) sub.textContent = (_citaFecha===_citaYMD(new Date()))?'Hoy':'';
   const activos=recursosDB.filter(r=>r.activo);
   if(!activos.length){
-    body.innerHTML=`<div class="card"><div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="empty-title">Primero agrega recursos</div><div class="empty-sub">La agenda agrupa las citas por recurso. Ve a <strong>Recursos</strong> y agrega al menos uno (sauna, cabina, camilla).</div></div></div>`;
+    body.innerHTML=`<div class="card"><div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="empty-title">Primero agrega recursos</div><div class="empty-sub">La agenda muestra una columna por recurso. Ve a <strong>Recursos</strong> y agrega al menos uno (sauna, cabina, camilla).</div></div></div>`;
     return;
   }
-  const totalDia = citasDB.length;
-  body.innerHTML = activos.map(r=>{
-    const m=_recursoTipoMeta(r.tipo);
-    const cs=citasDB.filter(c=>String(c.recurso_id)===String(r.id)).sort((a,b)=>(a.hora_inicio||'').localeCompare(b.hora_inicio||''));
-    const rows = cs.length ? cs.map(_citaRowHTML).join('') : `<div style="font-size:12px;color:var(--text3);padding:8px 2px;">Sin citas este día · <a onclick="_citaQuickAdd(${r.id})" style="color:var(--accent);cursor:pointer;">agendar →</a></div>`;
-    return `<div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:18px;">${m.ico}</span>
-        <span style="font-weight:700;color:var(--text);">${esc(r.nombre)}</span>
-        <span style="font-size:11px;color:var(--text3);margin-left:auto;">${cs.length} cita${cs.length===1?'':'s'}</span>
-      </div>
-      ${rows}
-    </div>`;
-  }).join('') + `<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:4px;">${totalDia} cita${totalDia===1?'':'s'} en total este día</div>`;
+  // Limpiar selección si ya no existe (cambio de día / borrada).
+  if(_citaSelId && !citasDB.some(c=>String(c.id)===String(_citaSelId))) _citaSelId=null;
+  // Filas = horas distintas con cita (orden); columnas = recursos activos.
+  const horas=[...new Set(citasDB.map(c=>c.hora_inicio).filter(Boolean))].sort();
+  const cols=`52px repeat(${activos.length}, minmax(0,1fr))`;
+  let g=`<div class="rc-agenda" style="grid-template-columns:${cols};">`;
+  g+=`<div class="rc-head rc-corner"></div>`;
+  activos.forEach(r=>{ const m=_recursoTipoMeta(r.tipo); g+=`<div class="rc-head"><span class="rc-ri">${m.ico}</span><span class="rc-rn">${esc(r.nombre)}</span></div>`; });
+  if(!horas.length){
+    g+=`<div class="rc-time">—</div>`+activos.map(()=>`<div class="rc-cell"></div>`).join('');
+  } else {
+    horas.forEach(h=>{
+      g+=`<div class="rc-time">${esc(h)}</div>`;
+      activos.forEach(r=>{
+        const cs=citasDB.filter(c=>String(c.recurso_id)===String(r.id)&&c.hora_inicio===h);
+        if(!cs.length){ g+=`<div class="rc-cell"></div>`; return; }
+        g+=`<div class="rc-cell">`+cs.map(c=>{
+          const sel=String(c.id)===String(_citaSelId)?' sel':'';
+          const st=c.estado==='completada'?' done':c.estado==='no_show'?' noshow':c.estado==='cancelada'?' canc':'';
+          const alt=(r.tipo==='masaje')?' alt':'';
+          return `<div class="rc-appt${alt}${sel}${st}" onclick="selCita('${c.id}')"><div class="rc-who">${esc(c.cliente_nombre||'—')}</div><div class="rc-pr">${esc(c.protocolo||_recursoTipoMeta(r.tipo).sub)}</div></div>`;
+        }).join('')+`</div>`;
+      });
+    });
+  }
+  g+=`</div>`;
+  const total=citasDB.length;
+  const legend=`<div class="rc-legend"><span><span class="rc-dot" style="background:var(--accent)"></span>Crio · sauna · compresión</span><span><span class="rc-dot" style="background:#5EC8B0;opacity:.55"></span>Masaje</span><span><span class="rc-dot" style="background:var(--accent);box-shadow:var(--glow)"></span>Seleccionada</span><span style="margin-left:auto;color:var(--text3);">${total} cita${total===1?'':'s'} hoy</span></div>`;
+  const sel=citasDB.find(c=>String(c.id)===String(_citaSelId));
+  body.innerHTML=`<div class="rc-layout">
+    <div class="card rc-agenda-card"><div class="rc-card-title" style="margin-bottom:12px;">▦ Agenda · ${esc(dayLabel)}</div>${g}${legend}</div>
+    <div class="rc-side">${_citaPanelHTML(sel)}</div>
+  </div>`;
 }
 
 function citaPrevDay(){ _citaEnsureFecha(); const d=new Date(_citaFecha+'T12:00:00'); d.setDate(d.getDate()-1); _citaFecha=_citaYMD(d); loadCitas().then(renderCitas); }
