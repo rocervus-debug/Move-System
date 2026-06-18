@@ -208,6 +208,45 @@ body[data-vertical="recovery"] .btn-primary:hover{
   background:var(--accent-hover, var(--accent));
 }
 
+/* ── Recovery · Dashboard bespoke (KPIs + timeline del día + estado de recursos) ── */
+.rd-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:1100px){.rd-kpis{grid-template-columns:repeat(2,1fr);}}
+.rd-kpi{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+.rd-kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.rd-kpi-value{font-size:32px;font-weight:800;color:var(--text);font-family:var(--font-display,inherit);line-height:1;}
+.rd-kpi-sub{font-size:11px;color:var(--text2);margin-top:7px;}
+.rd-grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start;margin-top:16px;}
+@media(max-width:1100px){.rd-grid2{grid-template-columns:1fr;}}
+.rd-side{display:flex;flex-direction:column;gap:16px;}
+.rd-tl-row{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);}
+.rd-tl-row:last-child{border-bottom:none;}
+.rd-tl-time{width:56px;flex-shrink:0;text-align:right;}
+.rd-tl-time .h{font-family:var(--fm,monospace);font-weight:600;font-size:13px;color:var(--text);}
+.rd-tl-time .m{font-size:10px;color:var(--text3);}
+.rd-tl-line{position:relative;width:14px;flex-shrink:0;}
+.rd-tl-line::before{content:'';position:absolute;left:6px;top:5px;bottom:-15px;width:2px;background:var(--border);}
+.rd-tl-row:last-child .rd-tl-line::before{display:none;}
+.rd-tl-dot{position:absolute;left:1px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--accent);}
+.rd-tl-row.done .rd-tl-dot{background:var(--accent);}
+.rd-tl-row.now .rd-tl-dot{box-shadow:var(--glow);}
+.rd-tl-body{flex:1;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 13px;}
+.rd-tl-row.now .rd-tl-body{border-color:var(--accent);}
+.rd-tl-name{font-weight:700;color:var(--text);font-size:13px;}
+.rd-tl-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.rd-res{display:flex;align-items:flex-start;gap:12px;padding:12px 13px;border:1px solid var(--border);border-radius:12px;background:var(--card2);margin-bottom:10px;}
+.rd-res:last-child{margin-bottom:0;}
+.rd-res-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex-shrink:0;background:var(--accent-bg);border:1px solid var(--border2,var(--border));}
+.rd-res-body{flex:1;min-width:0;}
+.rd-meter{height:6px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:7px;}
+.rd-meter i{display:block;height:100%;border-radius:99px;}
+.rd-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.rd-row:last-child{border-bottom:none;}
+.rd-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;}
+.rd-b-ok{background:var(--ok-bg);color:var(--ok);}
+.rd-b-warn{background:var(--warn-bg);color:var(--warn);}
+.rd-b-accent{background:var(--accent-bg2);color:var(--accent);}
+.rd-b-muted{background:rgba(255,255,255,.05);color:var(--text2);}
+
 /* ══════════════════════════════════
    LIGHT MODE — body.light-mode overrides
 ══════════════════════════════════ */
@@ -3089,7 +3128,7 @@ body::before{
 .topbar-gym-name-badge{
   font-family:var(--font-display);
   font-size:13px;font-weight:700;
-  color:var(--velum-mint,#00D4FF);
+  color:var(--accent);
   letter-spacing:1.5px;text-transform:uppercase;
   line-height:1;
 }
@@ -3177,7 +3216,7 @@ body::before{
   <div class="login-box">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px;">
       <svg width="28" height="28" viewBox="0 0 100 100">
-  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
+  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="var(--accent)"/>
 </svg>
       <div class="login-logo">VELUM</div>
     </div>
@@ -3238,7 +3277,7 @@ body::before{
   <div class="logo">
     <div class="logo-velum">
       <svg width="22" height="22" viewBox="0 0 100 100" style="flex-shrink:0;">
-  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
+  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="var(--accent)"/>
 </svg>
       <div class="logo-velum-wordmark" id="sidebar-gym-nombre">VELUM</div>
     </div>
@@ -3498,6 +3537,9 @@ body::before{
 
       <!-- ══ ONBOARDING — guía de configuración inicial (se auto-oculta al completar) ══ -->
       <div id="onboarding-card" style="display:none;"></div>
+
+      <!-- ══ DASHBOARD BESPOKE DE RECOVERY (solo vertical recovery; reemplaza el genérico) ══ -->
+      <div id="recovery-dash" style="display:none;"></div>
 
       <!-- ══ MOBILE HOME WIDGET — solo visible en móvil ══ -->
       <div id="mob-home-widget">
@@ -9085,6 +9127,7 @@ function applyVertical(vertical){
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
+  if(typeof renderRecoveryDash === 'function') renderRecoveryDash(); // dashboard bespoke recovery
   if(_gymVertical === 'gym') return;   // gym = base: conserva su propio color/acento (cyan por defecto)
   const def = _VERTICAL_DEFAULTS[_gymVertical];
   // Si el gym no eligió un color propio, usar el acento de la vertical.
@@ -10447,7 +10490,7 @@ function go(id, el){
   if(id==='protocolos')  { loadProtocolos().then(renderProtocolos); }
   if(id==='citas')       { _citaEnsureFecha(); Promise.all([loadRecursos(),loadProtocolos(),loadCitas()]).then(renderCitas); }
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
-  if(id==='dashboard')   renderDashboard();
+  if(id==='dashboard')   { renderDashboard(); if(typeof renderRecoveryDash==='function') renderRecoveryDash(); }
   if(id==='pagos')       renderPagos();
   if(id==='clientes')    renderClientes();
   if(id==='visitas')     renderVisitas();
@@ -19312,6 +19355,88 @@ wizRegister('cita', {
     document.getElementById('cita-confirm').innerHTML=rows.join('');
   }
 });
+
+// ════════════════════════════════════════════════════════════════
+// RECOVERY · Dashboard bespoke (hero que reemplaza el dashboard genérico)
+// ════════════════════════════════════════════════════════════════
+async function renderRecoveryDash(){
+  const host=document.getElementById('recovery-dash'); if(!host) return;
+  // Hijos directos del dashboard, menos el propio hero de recovery.
+  const vd=document.getElementById('v-dashboard');
+  const sibs=vd ? Array.prototype.slice.call(vd.children).filter(c=>c.id!=='recovery-dash') : [];
+  if(_gymVertical!=='recovery'){
+    host.style.display='none';
+    sibs.forEach(el=>{ if(el.dataset.rhHidden){ el.style.display=el.dataset.rhPrev||''; delete el.dataset.rhHidden; delete el.dataset.rhPrev; } });
+    return;
+  }
+  // Recovery: ocultar TODO el dashboard genérico de gym y mostrar solo el hero bespoke.
+  sibs.forEach(el=>{ if(!el.dataset.rhHidden){ el.dataset.rhPrev=el.style.display||''; el.dataset.rhHidden='1'; } el.style.display='none'; });
+  host.style.display='';
+  if(!host.innerHTML.trim()) host.innerHTML='<div class="card" style="color:var(--text3);">Cargando agenda de hoy…</div>';
+  try{
+    if(typeof loadRecursos==='function' && !recursosDB.length) await loadRecursos();
+    if(typeof loadProtocolos==='function' && !protocolosDB.length) await loadProtocolos();
+    const hoy=_citaYMD(new Date());
+    let citas=[];
+    try{
+      const { data } = await gf(window.supabaseClient.from('citas').select('*').eq('fecha',hoy)).order('hora_inicio');
+      citas=(data||[]).map(c=>({recurso_id:c.recurso_id,cliente_nombre:c.cliente_nombre||'',hora_inicio:c.hora_inicio||'',duracion_min:c.duracion_min||30,protocolo:c.protocolo||'',estado:c.estado||'agendada'}));
+    }catch(_){}
+    host.innerHTML=_recoveryDashHTML(citas);
+  }catch(e){ console.warn('renderRecoveryDash:', e); host.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el dashboard.</div>'; }
+}
+
+function _recoveryDashHTML(citas){
+  const activos=recursosDB.filter(r=>r.activo);
+  const toMin=h=>{const p=(h||'0:0').split(':');return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);};
+  const now=new Date(); const nowMin=now.getHours()*60+now.getMinutes();
+  const total=citas.length;
+  const comp=citas.filter(c=>c.estado==='completada').length;
+  const porVenir=citas.filter(c=>c.estado==='agendada').length;
+  const noShow=citas.filter(c=>c.estado==='no_show').length;
+  const nsPct = total? Math.round(noShow/total*1000)/10 : 0;
+  const cap=Math.max(activos.length,1)*600;
+  const booked=citas.filter(c=>c.estado!=='cancelada').reduce((s,c)=>s+(c.duracion_min||0),0);
+  const occ=Math.min(100,Math.round(booked/cap*100));
+
+  const kpis=`<div class="rd-kpis">
+    <div class="rd-kpi"><div class="rd-kpi-label">▦ Citas de hoy</div><div class="rd-kpi-value">${total}</div><div class="rd-kpi-sub">${comp} completadas · ${porVenir} por venir</div></div>
+    <div class="rd-kpi"><div class="rd-kpi-label">◷ Ocupación de recursos</div><div class="rd-kpi-value">${occ}<span style="font-size:18px;color:var(--text3)">%</span></div><div class="rd-kpi-sub">${activos.length} recurso${activos.length===1?'':'s'} activo${activos.length===1?'':'s'}</div></div>
+    <div class="rd-kpi"><div class="rd-kpi-label">⊘ No-shows hoy</div><div class="rd-kpi-value">${nsPct}<span style="font-size:18px;color:var(--text3)">%</span></div><div class="rd-kpi-sub">${noShow} de ${total} cita${total===1?'':'s'}</div></div>
+    <div class="rd-kpi"><div class="rd-kpi-label">❋ Protocolos</div><div class="rd-kpi-value">${protocolosDB.filter(p=>p.activo).length}</div><div class="rd-kpi-sub">plantillas de sesión</div></div>
+  </div>`;
+
+  const sorted=[...citas].sort((a,b)=>(a.hora_inicio||'').localeCompare(b.hora_inicio||''));
+  const tl = sorted.length ? sorted.map(c=>{
+    const rec=recursosDB.find(r=>String(r.id)===String(c.recurso_id));
+    const ini=toMin(c.hora_inicio), fin=ini+(c.duracion_min||0);
+    const isNow = c.estado==='agendada' && nowMin>=ini && nowMin<fin;
+    const rowCls = c.estado==='completada'?'done':(isNow?'now':'');
+    const badge = c.estado==='completada'?'<span class="rd-badge rd-b-ok">Completada</span>':c.estado==='no_show'?'<span class="rd-badge rd-b-warn">No-show</span>':isNow?'<span class="rd-badge rd-b-accent">En curso</span>':'<span class="rd-badge rd-b-muted">Agendada</span>';
+    return `<div class="rd-tl-row ${rowCls}"><div class="rd-tl-time"><div class="h">${esc(c.hora_inicio||'--:--')}</div><div class="m">${c.duracion_min} min</div></div><div class="rd-tl-line"><span class="rd-tl-dot"></span></div><div class="rd-tl-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><div class="rd-tl-name">${esc(c.cliente_nombre||'—')}</div>${badge}</div><div class="rd-tl-sub">${rec?esc(rec.nombre):'—'}${c.protocolo?' · '+esc(c.protocolo):''}</div></div></div>`;
+  }).join('') : `<div style="color:var(--text3);font-size:13px;padding:16px 0;text-align:center;">Sin citas para hoy. <a onclick="openModal('cita')" style="color:var(--accent);cursor:pointer;">Agendar una →</a></div>`;
+  const agenda=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><div class="rc-card-title">▦ Agenda de hoy</div><a onclick="go('citas',document.getElementById('nav-citas'))" style="font-size:12px;color:var(--accent);cursor:pointer;">Ver por recurso →</a></div><div class="card-sub" style="margin-bottom:12px;color:var(--text3);">Citas 1-a-1 · protocolo por sesión</div>${tl}</div>`;
+
+  const resHtml = activos.length ? activos.map(r=>{
+    const m=_recursoTipoMeta(r.tipo);
+    const cs=citas.filter(c=>String(c.recurso_id)===String(r.id)&&c.estado!=='cancelada');
+    const busyNow=cs.some(c=>{const i=toMin(c.hora_inicio);return nowMin>=i&&nowMin<i+(c.duracion_min||0);});
+    const next=cs.map(c=>c.hora_inicio).filter(h=>toMin(h)>=nowMin).sort()[0];
+    const pct=Math.min(100,Math.round(cs.reduce((s,c)=>s+(c.duracion_min||0),0)/600*100));
+    const badge = busyNow?'<span class="rd-badge rd-b-warn">Ocupado</span>':'<span class="rd-badge rd-b-ok">Libre</span>';
+    return `<div class="rd-res"><div class="rd-res-ico">${m.ico}</div><div class="rd-res-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><div class="rd-tl-name">${esc(r.nombre)}</div>${badge}</div><div class="rd-tl-sub">${cs.length} cita${cs.length===1?'':'s'} hoy${next?' · próx. '+esc(next):''}</div><div class="rd-meter"><i style="width:${pct}%;background:${busyNow?'var(--warn)':'var(--accent)'};"></i></div></div></div>`;
+  }).join('') : `<div style="color:var(--text3);font-size:13px;">Sin recursos. <a onclick="go('recursos',document.getElementById('nav-recursos'))" style="color:var(--accent);cursor:pointer;">Agregar →</a></div>`;
+  const recursos=`<div class="card"><div class="rc-card-title">◇ Estado de recursos · hoy</div><div class="card-sub" style="margin:2px 0 12px;color:var(--text3);">Disponibilidad y carga del día</div>${resHtml}</div>`;
+
+  const alerts=[];
+  if(porVenir>0) alerts.push(`<div class="rd-row"><span class="rc-dot" style="background:var(--accent)"></span><div style="flex:1;"><div class="rd-tl-name">${porVenir} cita${porVenir===1?'':'s'} por venir hoy</div><div class="rd-tl-sub">Confirma asistencia y prepara los recursos</div></div></div>`);
+  if(noShow>0) alerts.push(`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${noShow} no-show${noShow===1?'':'s'} hoy</div><div class="rd-tl-sub">Considera recordatorio 24h antes de la cita</div></div></div>`);
+  if(!activos.length) alerts.push(`<div class="rd-row"><span class="rc-dot" style="background:var(--danger)"></span><div style="flex:1;"><div class="rd-tl-name">Aún no tienes recursos</div><div class="rd-tl-sub">Agrega sauna, crio o camilla para empezar a agendar</div></div></div>`);
+  if(!alerts.length) alerts.push(`<div style="color:var(--text3);font-size:13px;padding:8px 0;">Todo en orden ✓ — sin pendientes urgentes.</div>`);
+  const atencion=`<div class="card"><div class="rc-card-title">⚑ Requiere atención</div><div style="margin-top:6px;">${alerts.join('')}</div></div>`;
+
+  return kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${recursos}${atencion}</div></div>`;
+}
 
 // REGISTRAR VISITA / CHECK-IN (modal-visita) — 3 pasos
 wizRegister('visita', {
