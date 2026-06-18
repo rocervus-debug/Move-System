@@ -3311,7 +3311,7 @@ body::before{
         <span class="nav-badge" id="badge-visitas-hoy" style="display:none;background:#a78bfa;">0</span>
       </div>
       <div class="nav-item" id="nav-paquetes" onclick="go('paquetes',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="nav-label-text"> Paquetes</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="nav-label-text"> Paquetes</span>
       </div>
       <div class="nav-item" id="nav-clientes" onclick="go('clientes',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg></span><span class="nav-label-text"> Clientes</span>
@@ -4321,7 +4321,7 @@ body::before{
         <button class="btn btn-primary" onclick="openModal('paquete')">+ Crear paquete</button>
       </div>
       <div style="background:var(--accent-bg);border:1px solid rgba(18,70,96,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--accent);display:flex;align-items:center;gap:8px;">
-        <span>📦</span> <strong>Tu catálogo de planes y servicios.</strong> Al registrar un pago, el precio se llena solo al elegir el plan. Crea y edita aquí cuantos necesites.
+        <span>◈</span> <strong>Tu catálogo de planes y servicios.</strong> Al registrar un pago, el precio se llena solo al elegir el plan. Crea y edita aquí cuantos necesites.
       </div>
       <div id="paquetes-host"></div>
     </div>
@@ -4864,7 +4864,7 @@ body::before{
             <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
 
             <!-- Acceso guiado: crea un paquete paso a paso -->
-            <button class="btn btn-primary" onclick="openModal('paquete')" style="width:100%;justify-content:center;margin-bottom:14px;">📦 Crear paquete paso a paso</button>
+            <button class="btn btn-primary" onclick="openModal('paquete')" style="width:100%;justify-content:center;margin-bottom:14px;">◈ Crear paquete paso a paso</button>
 
             <details style="margin-bottom:4px;">
               <summary style="cursor:pointer;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:600;list-style:none;user-select:none;padding:6px 0;">⚙ Modo avanzado — agregar en una fila</summary>
@@ -6686,7 +6686,7 @@ body::before{
 <div class="modal-overlay" id="modal-paquete">
   <div class="modal" style="width:500px;">
     <div class="modal-head">
-      <div class="modal-title">📦 Crear paquete</div>
+      <div class="modal-title">◈ Crear paquete</div>
       <button class="modal-close" onclick="closeModal('paquete')">✕</button>
     </div>
     <div class="wzd-bar">
@@ -7070,7 +7070,7 @@ body::before{
       </div>
       <div class="field-grid">
         <div class="field"><label>Plan / Membresía</label>
-          <select id="ep-plan" onchange="onPlanChange('ep-plan','ep-monto','ep-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option><option value="Paquete de Clases">📦 Paquete de Clases</option></select>
+          <select id="ep-plan" onchange="onPlanChange('ep-plan','ep-monto','ep-vence')"><option>Mensual</option><option>Quincenal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option><option>Pase de Día</option><option value="Paquete de Clases">◈ Paquete de Clases</option></select>
           <!-- Pase de Día se conserva en editar para compatibilidad con pagos históricos -->
         </div>
         <div class="field"><label>Método de pago</label>
@@ -7088,7 +7088,7 @@ body::before{
       <div id="ep-clases-row" style="display:none;">
         <div class="field-grid">
           <div class="field">
-            <label>📦 Clases totales del paquete</label>
+            <label>◈ Clases totales del paquete</label>
             <input id="ep-clases-totales" type="number" min="1" max="999" placeholder="Ej: 10"/>
           </div>
           <div class="field">
@@ -10709,6 +10709,14 @@ function openModal(id){
     const cf=document.getElementById('pk-clases-field'); if(cf) cf.style.display='none';
     ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(f=>wzdFieldErr(f,''));
     const pe=document.getElementById('pk-err'); if(pe) pe.style.display='none';
+    // Vocabulario por vertical (recovery: sesiones; gym/studios: clases)
+    try{
+      const _u=(typeof _pkUnidad==='function')?_pkUnidad():'clases';
+      const _cl=document.querySelector('#pk-clases-field label'); if(_cl) _cl.textContent=`¿Cuántas ${_u} incluye? *`;
+      const _cn=document.getElementById('pk-clases'); if(_cn) _cn.setAttribute('placeholder', _gymVertical==='recovery'?'10':'10');
+      const _nn=document.getElementById('pk-nombre'); if(_nn) _nn.setAttribute('placeholder', _gymVertical==='recovery'?'Ej: Pack 10 sesiones, Ilimitado mensual…':'Ej: Mensual, Pack 10 clases…');
+      const _mt=document.querySelector('#modal-paquete .modal-title'); if(_mt) _mt.textContent=_gymVertical==='recovery'?'Crear paquete de recovery':'Crear paquete';
+    }catch(_){}
     if(typeof _renderPaqueteTipoCards==='function') _renderPaqueteTipoCards();
     if(typeof wizInit==='function') wizInit('paquete');
   }
@@ -12957,7 +12965,7 @@ function renderMembresiasAlert(){
   let paquetesHtml = '';
   if(paquetesLow.length){
     paquetesHtml = `<div style="padding:8px 16px 4px;font-size:10px;font-weight:800;color:var(--warn);letter-spacing:.8px;text-transform:uppercase;border-top:1px solid var(--border);margin-top:4px;">
-      📦 Paquetes por agotarse
+      ◈ Paquetes por agotarse
     </div>` + paquetesLow.map(p => {
       const restantes = p.clases_totales - (p.clases_usadas ?? 0);
       const colorPkg = restantes === 0 ? 'var(--danger)' : 'var(--warn)';
@@ -17819,7 +17827,7 @@ const VELUM_NAV_CATALOG = [
   { id:'crm',            label:'CRM & Prospectos',        emoji:'👤' },
   { id:'pipeline',       label:'Pipeline de Ventas',      emoji:'📈' },
   { id:'pagos',          label:'Pagos & Renovaciones',    emoji:'💳' },
-  { id:'paquetes',       label:'Paquetes & Servicios',    emoji:'📦' },
+  { id:'paquetes',       label:'Paquetes & Servicios',    emoji:'◈' },
   { id:'clientes',       label:'Clientes',                emoji:'👥' },
   { id:'retencion',      label:'Retención & Churn',       emoji:'📉' },
   { id:'calendario-venc',label:'Calendario Vencimientos', emoji:'📅' },
@@ -19557,16 +19565,31 @@ wizRegister('clase', {
 
 // CREAR PAQUETE (modal-paquete) — 3 pasos. Inserta en 'packages' con el mismo
 // payload que agregarPlan (no rompe el form inline de Configuración).
-const _PAQUETE_TIPOS = [
-  {v:'ilimitado', ico:'🔓', name:'Membresía ilimitada', sub:'Acceso libre por X días (mensual, trimestral, anual…)', dias:30},
-  {v:'paquete',   ico:'🎟️', name:'Paquete de clases',    sub:'Un número fijo de clases con vigencia (ej. 10 clases)', dias:30},
-  {v:'pasedia',   ico:'📅', name:'Pase de día',          sub:'Una sola visita, vence el mismo día', dias:1},
-];
+// Tipos de paquete por vertical (el modelo es el mismo; cambia el vocabulario del giro).
+function _pkUnidad(){ return _gymVertical==='recovery' ? 'sesiones' : 'clases'; }
+function _pkUnidadCap(){ return _gymVertical==='recovery' ? 'Sesiones' : 'Clases'; }
+function _paqueteTipos(){
+  if(_gymVertical==='recovery') return [
+    {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Acceso libre a los recursos por X días (mensual, trimestral…)', dias:30},
+    {v:'paquete',   ico:'❋',   name:'Paquete de sesiones', sub:'Un número fijo de sesiones con vigencia (ej. 10 sesiones)', dias:60},
+    {v:'pasedia',   ico:'◷',   name:'Sesión individual',   sub:'Una sola sesión, vence el mismo día', dias:1},
+  ];
+  if(_gymVertical==='studios') return [
+    {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Clases libres por X días (mensual, trimestral…)', dias:30},
+    {v:'paquete',   ico:'🎟️', name:'Paquete de créditos', sub:'Un número fijo de clases / créditos (ej. 10 clases)', dias:60},
+    {v:'pasedia',   ico:'📅',  name:'Drop-in / clase suelta', sub:'Una sola clase, vence el mismo día', dias:1},
+  ];
+  return [
+    {v:'ilimitado', ico:'🔓',  name:'Membresía ilimitada', sub:'Acceso libre por X días (mensual, trimestral, anual…)', dias:30},
+    {v:'paquete',   ico:'🎟️', name:'Paquete de clases',   sub:'Un número fijo de clases con vigencia (ej. 10 clases)', dias:30},
+    {v:'pasedia',   ico:'📅',  name:'Pase de día',         sub:'Una sola visita, vence el mismo día', dias:1},
+  ];
+}
 function _renderPaqueteTipoCards(){
   const grid=document.getElementById('pk-tipo-grid');
   if(!grid) return;
   const cur=document.getElementById('pk-tipo').value||'ilimitado';
-  grid.innerHTML=_PAQUETE_TIPOS.map(t=>`<div class="wzd-opt${t.v===cur?' sel':''}" role="button" tabindex="0" style="text-align:left;display:flex;align-items:center;gap:12px;"
+  grid.innerHTML=_paqueteTipos().map(t=>`<div class="wzd-opt${t.v===cur?' sel':''}" role="button" tabindex="0" style="text-align:left;display:flex;align-items:center;gap:12px;"
     onclick="_pickPaqueteTipo('${t.v}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pickPaqueteTipo('${t.v}');}">
     <div class="wzd-opt-ico" style="margin:0;">${t.ico}</div>
     <div><div class="wzd-opt-name">${t.name}</div><div class="wzd-opt-sub" style="margin-top:2px;">${t.sub}</div></div></div>`).join('');
@@ -19577,7 +19600,7 @@ function _pickPaqueteTipo(v){
   const clasesField=document.getElementById('pk-clases-field');
   if(clasesField) clasesField.style.display = (v==='paquete') ? '' : 'none';
   const diasInp=document.getElementById('pk-dias');
-  const meta=_PAQUETE_TIPOS.find(t=>t.v===v);
+  const meta=_paqueteTipos().find(t=>t.v===v);
   if(diasInp && !diasInp.value && meta) diasInp.value=meta.dias;
   if(v==='pasedia' && diasInp) diasInp.value=1;  // pase de día siempre vence el mismo día
   _renderPaqueteTipoCards();
@@ -19595,14 +19618,14 @@ wizRegister('paquete', {
     if(!nom){ wzdFieldErr('pk-nombre','Escribe el nombre del plan.'); ok=false; } else wzdFieldErr('pk-nombre','');
     if(precio<=0){ wzdFieldErr('pk-precio','El precio debe ser mayor a 0.'); ok=false; } else wzdFieldErr('pk-precio','');
     if(dias<1){ wzdFieldErr('pk-dias','La vigencia debe ser al menos 1 día.'); ok=false; } else wzdFieldErr('pk-dias','');
-    if(tipo==='paquete' && clases<1){ wzdFieldErr('pk-clases','Indica cuántas clases incluye.'); ok=false; } else wzdFieldErr('pk-clases','');
+    if(tipo==='paquete' && clases<1){ wzdFieldErr('pk-clases','Indica cuántas '+_pkUnidad()+' incluye.'); ok=false; } else wzdFieldErr('pk-clases','');
     return ok;
   },
   onStep(n){
     if(n===1){ _renderPaqueteTipoCards(); return; }
     if(n!==3) return;
     const tipo=document.getElementById('pk-tipo').value;
-    const meta=_PAQUETE_TIPOS.find(t=>t.v===tipo);
+    const meta=_paqueteTipos().find(t=>t.v===tipo);
     const precio=parseFloat(document.getElementById('pk-precio').value)||0;
     const dias=parseInt(document.getElementById('pk-dias').value)||0;
     const rows=[
@@ -19611,7 +19634,7 @@ wizRegister('paquete', {
       _wzdRow('Precio', `<strong style="color:var(--ok);">$${precio.toLocaleString('es-MX')}</strong>`),
       _wzdRow('Vigencia', dias===1?'1 día':`${dias} días`),
     ];
-    if(tipo==='paquete') rows.push(_wzdRow('Clases', (parseInt(document.getElementById('pk-clases').value)||0)+' clases'));
+    if(tipo==='paquete') rows.push(_wzdRow(_pkUnidadCap(), (parseInt(document.getElementById('pk-clases').value)||0)+' '+_pkUnidad()));
     rows.push(_wzdRow('Descuentos', document.getElementById('pk-permite-desc').checked?'Permitidos':'No permitidos'));
     document.getElementById('pk-confirm').innerHTML=rows.join('');
     const err=document.getElementById('pk-err'); if(err) err.style.display='none';
@@ -19661,7 +19684,7 @@ async function savePaqueteWizard(){
   if(typeof loadPackagesFromCatalog === 'function') await loadPackagesFromCatalog();
   if(typeof renderPlanes === 'function') renderPlanes();
   if(typeof renderOnboardingCard === 'function') renderOnboardingCard();
-  toast(`Paquete "${nombre}" creado ✓`, '📦');
+  toast(`Paquete "${nombre}" creado ✓`, '◈');
 }
 
 // ── Wizards de Fase 3 (secundarios): lead, campaña, gasto, solicitud ──
@@ -20448,9 +20471,9 @@ async function descontarClase(id){
   p.clases_usadas = nuevasUsadas;
   const ahoraRestantes = (p.clases_totales||0) - nuevasUsadas;
   if(ahoraRestantes === 0){
-    toast(`✅ Última clase de ${p.cliente} usada — paquete agotado`, '📦');
+    toast(`✅ Última clase de ${p.cliente} usada — paquete agotado`, '◈');
   } else {
-    toast(`✅ 1 clase descontada — ${ahoraRestantes} restantes para ${p.cliente}`, '📦');
+    toast(`✅ 1 clase descontada — ${ahoraRestantes} restantes para ${p.cliente}`, '◈');
   }
   renderPagos();
 }
@@ -20568,7 +20591,7 @@ function renderPlanFilters(){
   planes.forEach(pl=>{
     html += `<button class="pf-btn${cur===pl?' active':''}" data-filter="plan" data-val="${escapeHtml(pl)}" onclick="setPagoFilter('plan','${jsq(pl)}',this)">${escapeHtml(pl)}</button>`;
   });
-  html += `<button class="pf-btn${cur==='__paquete_activo__'?' active':''}" data-filter="plan" data-val="__paquete_activo__" onclick="setPagoFilter('plan','__paquete_activo__',this)" style="border-color:color-mix(in srgb, var(--accent) 40%, transparent);color:var(--accent-light);">📦 Paquetes activos</button>`;
+  html += `<button class="pf-btn${cur==='__paquete_activo__'?' active':''}" data-filter="plan" data-val="__paquete_activo__" onclick="setPagoFilter('plan','__paquete_activo__',this)" style="border-color:color-mix(in srgb, var(--accent) 40%, transparent);color:var(--accent-light);">◈ Paquetes activos</button>`;
   wrap.innerHTML = html;
 }
 
@@ -23973,8 +23996,8 @@ function renderObStep(){
     body = '<div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;margin-bottom:8px;">🎯</div><div style="font-size:13px;color:var(--text3);line-height:1.6;">¿Cuánto quieres generar al mes?<br>Te mostramos tu avance en el dashboard.</div></div><div><label style="display:block;font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px;">Meta de ingresos mensuales (MXN)</label><div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;font-weight:700;">$</span><input id="ob-meta" type="number" min="0" placeholder="50000" value="'+curMeta+'" style="width:100%;padding:12px 14px 12px 28px;background:rgba(255,255,255,.06);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:22px;font-weight:700;font-family:var(--font-display);outline:none;box-sizing:border-box;" oninput="this.style.borderColor=\"var(--accent)\""/></div><div style="font-size:11px;color:var(--text3);margin-top:8px;">Puedes cambiarlo después en Configuración → Meta mensual.</div></div>';
   } else if(_obStep===4){
     const nombre = gymConfig.gym_nombre||'tu gym';
-    const steps = ['➕ Registra tus primeros clientes en la sección <strong>Clientes</strong>','💳 Agrega pagos en <strong>Pagos & Renovaciones</strong> — membresías mensuales o <strong>📦 Paquetes de Clases</strong>','🗓 Crea el horario semanal en <strong>Horario</strong>','📱 Activa el <strong>Kiosco QR</strong> para registro de asistencia'];
-    body = '<div style="text-align:center;"><div style="font-size:56px;margin-bottom:12px;">🚀</div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px;">¡'+esc(nombre)+' está listo!</div><div style="font-size:13px;color:var(--text3);line-height:1.7;margin-bottom:16px;">Tu sistema de gestión ya está configurado.<br>Aquí te dejamos tus primeros pasos:</div><div style="display:flex;flex-direction:column;gap:8px;text-align:left;max-width:360px;margin:0 auto;">'+steps.map(s=>'<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid var(--accent-bg2);border-radius:9px;font-size:12px;color:var(--text);">'+s+'</div>').join('')+'</div><div style="margin-top:14px;padding:10px 14px;background:color-mix(in srgb, var(--accent) 6%, transparent);border:1px solid color-mix(in srgb, var(--accent) 15%, transparent);border-radius:9px;font-size:11px;color:var(--text2);text-align:left;max-width:360px;margin:14px auto 0;">📦 <strong style="color:var(--accent-light);">¿Tu gym opera por clases?</strong> Selecciona "Paquete de Clases" al registrar un pago e indica cuántas clases incluye — VELUM descuenta una automáticamente en cada check-in QR.</div></div>';
+    const steps = ['➕ Registra tus primeros clientes en la sección <strong>Clientes</strong>','💳 Agrega pagos en <strong>Pagos & Renovaciones</strong> — membresías mensuales o <strong>◈ Paquetes de Clases</strong>','🗓 Crea el horario semanal en <strong>Horario</strong>','📱 Activa el <strong>Kiosco QR</strong> para registro de asistencia'];
+    body = '<div style="text-align:center;"><div style="font-size:56px;margin-bottom:12px;">🚀</div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px;">¡'+esc(nombre)+' está listo!</div><div style="font-size:13px;color:var(--text3);line-height:1.7;margin-bottom:16px;">Tu sistema de gestión ya está configurado.<br>Aquí te dejamos tus primeros pasos:</div><div style="display:flex;flex-direction:column;gap:8px;text-align:left;max-width:360px;margin:0 auto;">'+steps.map(s=>'<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--accent-bg);border:1px solid var(--accent-bg2);border-radius:9px;font-size:12px;color:var(--text);">'+s+'</div>').join('')+'</div><div style="margin-top:14px;padding:10px 14px;background:color-mix(in srgb, var(--accent) 6%, transparent);border:1px solid color-mix(in srgb, var(--accent) 15%, transparent);border-radius:9px;font-size:11px;color:var(--text2);text-align:left;max-width:360px;margin:14px auto 0;">◈ <strong style="color:var(--accent-light);">¿Tu gym opera por clases?</strong> Selecciona "Paquete de Clases" al registrar un pago e indica cuántas clases incluye — VELUM descuenta una automáticamente en cada check-in QR.</div></div>';
   }
   document.getElementById('ob-body').innerHTML        = body;
   document.getElementById('ob-title').textContent     = titles[_obStep];
