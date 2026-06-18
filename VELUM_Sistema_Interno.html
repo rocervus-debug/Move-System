@@ -9175,6 +9175,19 @@ const _VERTICAL_NAV = {
     show: ['nav-citas','nav-recursos','nav-protocolos'],   // vistas propias de Recovery
   },
 };
+// Subtítulos (vocabulario) por vertical para pantallas reusadas — recovery/studios.
+const _VERTICAL_TOPSUB = {
+  recovery: {
+    clientes:'Directorio de clientes y sus paquetes', pagos:'Pagos y paquetes de sesiones',
+    coaches:'Tu equipo de terapeutas', asistencia:'Sesiones registradas', visitas:'Sesiones del día',
+    'calendario-venc':'Paquetes próximos a vencer', gastos:'Balance del centro de recovery',
+  },
+  studios: {
+    clientes:'Miembros y sus créditos', pagos:'Pagos y créditos de clases',
+    coaches:'Tu equipo de instructores', asistencia:'Reservas registradas', visitas:'Drop-ins del día',
+    'calendario-venc':'Créditos y membresías por vencer', gastos:'Balance del estudio',
+  },
+};
 let _navOrigLabels = null;
 let _navVertHidden = [];   // ids que ESTA función ocultó la vez pasada (para restaurar sin pisar sidebar_order)
 function _navLblEl(id){ const it=document.getElementById(id); return it ? it.querySelector('.nav-label-text') : null; }
@@ -10493,6 +10506,9 @@ function go(id, el){
   const t = topTitles[id]||[id,''];
   document.getElementById('topTitle').textContent = t[0];
   document.getElementById('topSub').textContent = typeof t[1]==='function' ? t[1]() : t[1];
+  // Verticaliza el subtítulo de pantallas reusadas (vocabulario por giro).
+  try{ const _vs=(typeof _VERTICAL_TOPSUB!=='undefined') && _VERTICAL_TOPSUB[_gymVertical] && _VERTICAL_TOPSUB[_gymVertical][id];
+    if(_vs) document.getElementById('topSub').textContent=_vs; }catch(_){}
   const topBtn = document.getElementById('topBtn');
   topBtn.textContent = topBtnLabels[id]||'Nuevo';
   topBtn.onclick = topBtnActions[id]||null;
