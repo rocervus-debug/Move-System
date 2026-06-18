@@ -9139,6 +9139,7 @@ function applyVertical(vertical){
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
   if(typeof renderRecoveryDash === 'function') renderRecoveryDash(); // dashboard bespoke recovery
+  if(typeof _verticalizeUI === 'function') _verticalizeUI();         // relabels finos + ocultar lo que no aplica al giro
   if(_gymVertical === 'gym') return;   // gym = base: conserva su propio color/acento (cyan por defecto)
   const def = _VERTICAL_DEFAULTS[_gymVertical];
   // Si el gym no eligió un color propio, usar el acento de la vertical.
@@ -9212,6 +9213,18 @@ function applyVerticalModules(vertical){
   Object.entries(cfg.relabel||{}).forEach(([id,txt])=>{ const l=_navLblEl(id); if(l) l.textContent=' '+txt; });
   (cfg.hide||[]).forEach(id=>{ const it=document.getElementById(id); if(it){ it.style.display='none'; _navVertHidden.push(id); } });
   (cfg.show||[]).forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display=''; });
+}
+
+// Relabels finos in-page + ocultar funciones que no aplican al giro. Idempotente (restaura en gym/studios).
+function _verticalizeUI(){
+  const rec = (_gymVertical==='recovery');
+  // Clientes: filtros con vocabulario del giro
+  const t1=document.querySelector('.cli-tab-tipo[data-tipo="paquete"]'); if(t1) t1.textContent = rec?'Paquetes':'🏋️ Membresías';
+  const t2=document.querySelector('.cli-tab-tipo[data-tipo="pase"]');    if(t2) t2.textContent = rec?'Sesión suelta':'🎫 Pase de Día';
+  document.querySelectorAll('.cli-filter-label').forEach(l=>{ if(/^\s*Estado d/i.test(l.textContent)) l.textContent = rec?'Estado del paquete':'Estado de membresía'; });
+  // Kiosco (check-in con PIN): recovery no lo usa.
+  document.querySelectorAll('[onclick="launchKiosco()"],[onclick="abrirKiosco()"]').forEach(b=>{ b.style.display = rec?'none':''; });
+  document.querySelectorAll('.cfg-menu-item').forEach(mi=>{ if(/Kiosco de Check/i.test(mi.textContent)) mi.style.display = rec?'none':''; });
 }
 
 function applyGymConfig(){
@@ -19572,7 +19585,7 @@ function _paqueteTipos(){
   if(_gymVertical==='recovery') return [
     {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Acceso libre a los recursos por X días (mensual, trimestral…)', dias:30},
     {v:'paquete',   ico:'❋',   name:'Paquete de sesiones', sub:'Un número fijo de sesiones con vigencia (ej. 10 sesiones)', dias:60},
-    {v:'pasedia',   ico:'◷',   name:'Sesión individual',   sub:'Una sola sesión, vence el mismo día', dias:1},
+    {v:'pasedia',   ico:'◷',   name:'Sesión suelta',       sub:'Una sola sesión, vence el mismo día', dias:1},
   ];
   if(_gymVertical==='studios') return [
     {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Clases libres por X días (mensual, trimestral…)', dias:30},
