@@ -4885,6 +4885,12 @@ body::before{
             <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Al registrar un pago, el precio se llena automático al seleccionar el plan. Cambios sincronizados con la base de datos.</div>
             <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
 
+            <!-- Domiciliaciones activas (atletas con cobro mensual automático) -->
+            <div id="domiciliaciones-wrap" style="margin:18px 0 16px;">
+              <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Domiciliaciones activas</div>
+              <div id="domiciliaciones-lista" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+
             <!-- Acceso guiado: crea un paquete paso a paso -->
             <button class="btn btn-primary" onclick="openModal('paquete')" style="width:100%;justify-content:center;margin-bottom:14px;">◈ Crear paquete paso a paso</button>
 
@@ -10318,6 +10324,7 @@ function openSettingsPanel(id){
     if(ls) ls.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0;">Cargando catálogo…</div>`;
     if(typeof _togglePlanTipo === 'function') _togglePlanTipo();
     loadPackagesFromCatalog().then(()=>renderPlanes());
+    if(typeof loadMemberSubs === 'function') loadMemberSubs();
   }
   if(id === 'storefront'){
     if(typeof loadStorefrontPanel === 'function') loadStorefrontPanel();
@@ -14885,6 +14892,63 @@ async function eliminarPlan(id){
   await loadPackagesFromCatalog();
   renderPlanes();
   toast('Plan eliminado del catálogo ✓', '✅');
+}
+
+async function loadMemberSubs(){
+  const el = document.getElementById('domiciliaciones-lista');
+  if(!el) return;
+  const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+  el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0;">Cargando…</div>`;
+  try{
+    const { data, error } = await window.supabaseClient
+      .from('member_subscriptions')
+      .select('id, cliente_nombre, status, current_period_end, cancel_at_period_end, amount_cents, stripe_subscription_id, packages(name)')
+      .eq('gym_id', gymId)
+      .in('status', ['active','past_due','incomplete'])
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    const subs = (data||[]).filter(s=>s.stripe_subscription_id);
+    if(!subs.length){
+      el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0;line-height:1.5;">Aún no hay atletas domiciliados.<br>Crea un plan <strong>"Mensualidad domiciliada"</strong> y publícalo en tu storefront para que tus socios se suscriban con cobro automático.</div>`;
+      return;
+    }
+    el.innerHTML = subs.map(s=>{
+      const monto = s.amount_cents ? `$${Math.round(s.amount_cents/100).toLocaleString('es-MX')}/mes` : '';
+      const plan = (s.packages && s.packages.name) ? s.packages.name : 'Plan';
+      const next = s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('es-MX',{day:'numeric',month:'short'}) : '—';
+      const estado = s.cancel_at_period_end ? '<span style="color:var(--warn);">Cancela al fin del periodo</span>'
+        : s.status==='active' ? '<span style="color:var(--ok);">● Activa</span>'
+        : s.status==='past_due' ? '<span style="color:var(--danger);">● Pago pendiente</span>'
+        : '<span style="color:var(--text3);">● Pendiente</span>';
+      const cancelBtn = (s.status!=='canceled' && !s.cancel_at_period_end)
+        ? `<button class="btn btn-sm btn-outline" onclick="cancelMemberSub('${s.stripe_subscription_id}')" style="font-size:11px;">Cancelar</button>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:9px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(s.cliente_nombre||'Socio')}</span>
+            <span style="font-size:11px;color:var(--accent);font-weight:700;">${monto}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${esc(plan)} · próx. cobro ${next} · ${estado}</div>
+        </div>
+        ${cancelBtn}
+      </div>`;
+    }).join('');
+  }catch(e){ console.error('loadMemberSubs', e); el.innerHTML = `<div style="font-size:12px;color:var(--danger);padding:6px 0;">Error al cargar domiciliaciones.</div>`; }
+}
+
+async function cancelMemberSub(subId){
+  if(!confirm('¿Cancelar la domiciliación de este socio? Mantendrá acceso hasta el fin del periodo que ya pagó.')) return;
+  try{
+    const res = await fetch(`${supabaseUrl}/functions/v1/velum-member-subscription`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': window._ANON_KEY||'', 'Authorization':'Bearer '+(currentUser.jwt||'') },
+      body: JSON.stringify({ action:'cancel', subscription_id: subId })
+    });
+    const d = await res.json();
+    if(!res.ok || d.error) throw new Error(d.error||'Error');
+    toast('Domiciliación cancelada (acceso hasta fin del periodo) ✓','✓');
+    loadMemberSubs();
+  }catch(e){ console.error(e); toast('No se pudo cancelar: '+(e.message||e),'⚠️'); }
 }
 
 function renderPlanes(){
