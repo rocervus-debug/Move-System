@@ -19374,6 +19374,24 @@ function _citaProtoPasos(nombre){
 }
 
 // Panel lateral "Cita seleccionada" (con protocolo paso-a-paso), como el mockup.
+// Saldo de sesiones del cliente de una cita (recovery): busca su paquete en `pagos` por nombre
+// (mismo modelo name-keyed que usa el dashboard de "paquetes por agotarse"). Vacío si no tiene paquete.
+function _citaSaldoChip(c){
+  if(!c || typeof pagos==='undefined' || !Array.isArray(pagos)) return '';
+  const nom=(c.cliente_nombre||'').trim().toLowerCase();
+  if(!nom) return '';
+  const paqs = pagos.filter(p => (p.cliente||'').trim().toLowerCase()===nom && p.clases_totales);
+  if(!paqs.length) return '';
+  const restantes = Math.max(...paqs.map(p => p.clases_totales - (p.clases_usadas ?? 0)));
+  const unidad = (typeof _pkUnidad==='function') ? _pkUnidad() : 'sesiones';
+  const sing = {sesiones:'sesión', 'créditos':'crédito', clases:'clase'}[unidad] || unidad;
+  const col = restantes<=0 ? 'var(--danger)' : (restantes<=2 ? 'var(--warn)' : 'var(--accent)');
+  const txt = restantes<=0 ? 'Paquete agotado' : `${restantes} ${restantes===1?sing:unidad} ${restantes===1?'restante':'restantes'}`;
+  return `<div style="display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb, ${col} 9%, transparent);border:1px solid color-mix(in srgb, ${col} 24%, transparent);">
+    <span style="font-size:14px;color:${col};line-height:1;">◈</span>
+    <div style="font-size:12px;color:var(--text2);">Paquete · <strong style="color:${col};">${esc(txt)}</strong></div>
+  </div>`;
+}
 function _citaPanelHTML(c){
   if(!c) return `<div class="card rc-side-empty"><div class="rc-side-emptyico">◷</div><div class="rc-card-title" style="margin-bottom:4px;">Cita seleccionada</div><div class="card-sub" style="color:var(--text3);">Toca una cita en la agenda para ver su protocolo y gestionarla.</div></div>`;
   const e=_CITA_ESTADOS[c.estado]||_CITA_ESTADOS.agendada;
@@ -19393,6 +19411,7 @@ function _citaPanelHTML(c){
   return `<div class="card">
     <div class="rc-side-top"><div class="rc-card-title">○ Cita seleccionada</div><span class="rc-badge">${esc(c.hora_inicio||'--:--')} · ${c.duracion_min} min</span></div>
     <div class="rc-client"><span class="rc-av">${esc(ini)}</span><div><div class="rc-cname">${esc(c.cliente_nombre||'—')}</div><div class="rc-csub">${recurso?esc(recurso.nombre):'—'} · <span style="color:${e.col};font-weight:600;">${e.lbl}</span></div></div></div>
+    ${_citaSaldoChip(c)}
     ${protoBlock}
     <div class="rc-actions">${acciones}<button class="btn btn-ghost" onclick="deleteCita('${c.id}')" title="Eliminar cita">🗑</button></div>
   </div>`;
