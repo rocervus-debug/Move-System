@@ -14778,7 +14778,7 @@ async function loadPackagesFromCatalog(){
     const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
     const { data, error } = await window.supabaseClient
       .from('packages')
-      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active, billing_type')
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
@@ -14838,6 +14838,8 @@ async function agregarPlan(){
     unlimited_classes: tipo === 'ilimitado',
     allow_discount: permiteDesc,
     max_discount_pct: permiteDesc ? 100 : 0,
+    billing_type: cobro,
+    billing_interval: cobro === 'recurring' ? 'month' : null,
     is_active: true,
     internal_only: false,
     sort_order: nextSort
@@ -14861,6 +14863,7 @@ async function agregarPlan(){
   document.getElementById('plan-nuevo-dias').value = '';
   document.getElementById('plan-nuevo-clases').value = '';
   document.getElementById('plan-nuevo-tipo').value = 'ilimitado';
+  const _cobroEl = document.getElementById('plan-nuevo-cobro'); if(_cobroEl) _cobroEl.value = 'one_time';
   document.getElementById('plan-nuevo-permite-desc').checked = true;
   _togglePlanTipo();
 
@@ -14897,12 +14900,15 @@ function renderPlanes(){
     const descBadge = p.allow_discount === false
       ? '<span style="font-size:9px;background:rgba(251,191,36,.15);color:var(--warn);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">SIN DESC</span>'
       : '';
+    const cobroBadge = p.billing_type === 'recurring'
+      ? '<span style="font-size:9px;background:rgba(0,212,255,.15);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">DOMICILIADO /MES</span>'
+      : '';
     return `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:9px;">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
           <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(p.name)}</span>
-          <span style="font-size:12px;color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${descBadge}
+          <span style="font-size:12px;color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${cobroBadge}${descBadge}
         </div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px;">
           ${p.duration_days} día${p.duration_days===1?'':'s'} · ${tipo}

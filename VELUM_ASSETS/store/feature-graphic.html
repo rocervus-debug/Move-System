@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:1024px;height:500px;overflow:hidden;}
+  .canvas{
+    position:relative;width:1024px;height:500px;
+    background:
+      radial-gradient(660px 520px at 28% 50%, rgba(0,212,255,.16), rgba(0,212,255,0) 60%),
+      radial-gradient(900px 700px at 92% 120%, rgba(0,150,200,.10), rgba(0,0,0,0) 55%),
+      linear-gradient(135deg,#06101B 0%,#040C14 55%,#03080E 100%);
+    font-family:'Inter',system-ui,sans-serif;
+    display:flex;align-items:center;
+    overflow:hidden;
+  }
+  /* sutil grid de puntos */
+  .canvas::before{
+    content:"";position:absolute;inset:0;
+    background-image:radial-gradient(rgba(122,191,204,.10) 1px, transparent 1px);
+    background-size:26px 26px;
+    -webkit-mask-image:radial-gradient(720px 500px at 30% 50%, #000 0%, transparent 72%);
+            mask-image:radial-gradient(720px 500px at 30% 50%, #000 0%, transparent 72%);
+    opacity:.5;
+  }
+  /* vignette */
+  .canvas::after{
+    content:"";position:absolute;inset:0;
+    box-shadow:inset 0 0 160px 40px rgba(2,6,12,.85);
+    pointer-events:none;
+  }
+
+  .mark-wrap{
+    position:relative;width:330px;height:500px;flex:0 0 330px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .mark-glow{
+    position:absolute;width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle, rgba(0,212,255,.40), rgba(0,212,255,0) 62%);
+    filter:blur(6px);
+  }
+  .mark-ring{
+    position:absolute;width:262px;height:262px;border-radius:50%;
+    border:1px solid rgba(0,212,255,.22);
+    box-shadow:0 0 0 1px rgba(0,212,255,.05), inset 0 0 40px rgba(0,212,255,.06);
+  }
+  .mark-ring.r2{width:312px;height:312px;border-color:rgba(0,212,255,.10);}
+  svg.star{position:relative;width:188px;height:188px;filter:drop-shadow(0 0 18px rgba(0,212,255,.55));}
+
+  .content{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;height:100%;padding-right:64px;}
+  .wordmark{
+    font-family:'Outfit',system-ui,sans-serif;font-weight:900;
+    font-size:118px;line-height:.92;letter-spacing:14px;color:#fff;
+    text-shadow:0 2px 40px rgba(0,212,255,.25);
+    margin-left:-2px;
+  }
+  .tagline{
+    margin-top:18px;font-family:'Outfit',system-ui,sans-serif;font-weight:600;
+    font-size:30px;letter-spacing:1px;color:#CFE9F0;
+  }
+  .tagline b{color:#00D4FF;font-weight:700;}
+  .chips{display:flex;gap:12px;margin-top:30px;}
+  .chip{
+    display:flex;align-items:center;gap:8px;
+    font-family:'Geist Mono',monospace;font-size:14px;letter-spacing:.5px;
+    color:#9FD9E6;background:rgba(0,212,255,.07);
+    border:1px solid rgba(0,212,255,.20);border-radius:999px;
+    padding:9px 16px;
+  }
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:#00D4FF;box-shadow:0 0 8px #00D4FF;}
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="mark-wrap">
+      <div class="mark-glow"></div>
+      <div class="mark-ring r2"></div>
+      <div class="mark-ring"></div>
+      <svg class="star" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <!-- estrella de 4 puntas (north star): tip-sup, interno, tip-der, interno, tip-inf, interno, tip-izq, interno -->
+        <polygon fill="#00D4FF" points="150,6 181,119 294,150 181,181 150,294 119,181 6,150 119,119"/>
+      </svg>
+    </div>
+    <div class="content">
+      <div class="wordmark">VELUM</div>
+      <div class="tagline">Tu gym, <b>en tu bolsillo</b></div>
+      <div class="chips">
+        <span class="chip"><span class="dot"></span>Reserva clases</span>
+        <span class="chip"><span class="dot"></span>Check-in QR</span>
+        <span class="chip"><span class="dot"></span>Tu progreso</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
