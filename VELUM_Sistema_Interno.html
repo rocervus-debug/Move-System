@@ -247,6 +247,24 @@ body[data-vertical="recovery"] .btn-primary:hover{
 .rd-b-accent{background:var(--accent-bg2);color:var(--accent);}
 .rd-b-muted{background:rgba(255,255,255,.05);color:var(--text2);}
 
+/* ── Studios · Calendario semanal (grid días×horas) + mapa de reformers ── */
+.sc-layout{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
+@media(max-width:1100px){.sc-layout{grid-template-columns:1fr;}}
+.sc-grid{display:grid;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.sc-head{padding:9px 5px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--card2);font-size:11px;font-weight:700;color:var(--text);font-family:var(--font-display,inherit);}
+.sc-head.sc-corner{background:transparent;border-left:none;}
+.sc-time{font-family:var(--fm,monospace);font-size:10px;color:var(--text3);padding:6px 5px;text-align:right;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;}
+.sc-cell{border-top:1px solid var(--border);border-left:1px solid var(--border);min-height:50px;padding:3px;}
+.sc-cls{border-radius:7px;padding:5px 7px;font-size:10.5px;height:100%;border:1px solid var(--border2,var(--border));background:var(--accent-bg);cursor:pointer;transition:border-color .15s,transform .1s;}
+.sc-cls:hover{border-color:var(--accent);transform:translateY(-1px);}
+.sc-cls.sel{background:var(--accent-bg2);border-color:var(--accent);box-shadow:var(--glow);}
+.sc-cls.full{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);}
+.sc-cls-t{font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sc-cls-o{font-size:9.5px;color:var(--text3);margin-top:1px;}
+.sc-spots{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0 4px;}
+.sc-spot{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--card2);color:var(--text3);}
+.sc-spot.taken{background:var(--accent-bg2);border-color:var(--accent);color:var(--accent);}
+
 /* ══════════════════════════════════
    LIGHT MODE — body.light-mode overrides
 ══════════════════════════════════ */
@@ -4221,6 +4239,10 @@ body::before{
 
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
+
+      <!-- ═══ STUDIOS · Calendario semanal bespoke (solo studios; reemplaza las tabs genéricas) ═══ -->
+      <div id="studios-cal" style="display:none;"></div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
         <div class="tabs" style="margin-bottom:0;">
           <div class="tab active" id="htab-btn-mensual" onclick="switchHorTab('mensual')">📅 Vista Mensual</div>
@@ -4897,6 +4919,13 @@ body::before{
               <div class="field" id="plan-nuevo-clases-field" style="width:120px;margin:0;display:none;">
                 <label>Núm. clases</label>
                 <input id="plan-nuevo-clases" type="number" class="settings-input" placeholder="10" min="1" max="999"/>
+              </div>
+              <div class="field" style="width:190px;margin:0;">
+                <label>Cobro</label>
+                <select id="plan-nuevo-cobro" class="settings-input" title="Pago único, o mensualidad domiciliada con cobro automático cada mes">
+                  <option value="one_time">Pago único</option>
+                  <option value="recurring">Mensualidad domiciliada</option>
+                </select>
               </div>
               <div class="field" style="margin:0;display:flex;align-items:center;gap:6px;padding-bottom:10px;">
                 <input id="plan-nuevo-permite-desc" type="checkbox" checked style="width:14px;height:14px;cursor:pointer;"/>
@@ -9139,6 +9168,7 @@ function applyVertical(vertical){
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
   if(typeof renderRecoveryDash === 'function') renderRecoveryDash(); // dashboard bespoke recovery
+  if(typeof renderStudiosCal === 'function') renderStudiosCal();     // calendario semanal bespoke studios
   if(typeof _verticalizeUI === 'function') _verticalizeUI();         // relabels finos + ocultar lo que no aplica al giro
   if(_gymVertical === 'gym') return;   // gym = base: conserva su propio color/acento (cyan por defecto)
   const def = _VERTICAL_DEFAULTS[_gymVertical];
@@ -10578,7 +10608,7 @@ function go(id, el){
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
   if(id==='marketing')     renderCalendario();
-  if(id==='horario')     { Promise.all([loadHorarioOverridesFromSupabase(),loadHorarioCancelaciones()]).then(()=>switchHorTab('mensual')); }
+  if(id==='horario')     { Promise.all([loadHorarioOverridesFromSupabase(),loadHorarioCancelaciones()]).then(()=>{ switchHorTab('mensual'); if(typeof renderStudiosCal==='function') renderStudiosCal(); }); }
   if(id==='gastos')      { renderGastos(); }
   if(id==='revenue')     { renderRevenue(); }
   if(id==='por-vencer')  { renderPorVencer(); }
@@ -14789,6 +14819,7 @@ async function agregarPlan(){
   const tipo   = document.getElementById('plan-nuevo-tipo')?.value || 'ilimitado';
   const clases = parseInt(document.getElementById('plan-nuevo-clases')?.value)||null;
   const permiteDesc = document.getElementById('plan-nuevo-permite-desc')?.checked !== false;
+  const cobro = document.getElementById('plan-nuevo-cobro')?.value || 'one_time';
 
   if(!nombre){ showErr('Escribe el nombre del plan.'); return; }
   if(precio <= 0){ showErr('El precio debe ser mayor a 0.'); return; }
@@ -23605,6 +23636,88 @@ function _studiosDashHTML(d){
   const resumen=`<div class="card"><div class="rc-card-title">◷ Ocupación del día</div><div style="font-size:34px;font-weight:800;font-family:var(--font-display,inherit);color:var(--text);margin:8px 0 2px;">${d.ocup}%</div><div class="card-sub" style="color:var(--text3);">${d.reservasHoy} reservas · ${d.cupoTotal} lugares · ${llenas.length} llena${llenas.length===1?'':'s'}</div></div>`;
   return `<div style="display:flex;align-items:baseline;gap:10px;margin:2px 0 16px;"><div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);">Tu día en el studio</div><div style="flex:1;height:1px;background:var(--border);"></div><div style="font-size:11px;color:var(--text3);">${d.numClases} clase${d.numClases===1?'':'s'} hoy</div></div>`
     + kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${resumen}${atencion}</div></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// STUDIOS · Calendario semanal bespoke (grid días×horas + mapa de reformers)
+// ════════════════════════════════════════════════════════════════
+let _scSelId = null;
+function selStudiosClass(id){ _scSelId=id; renderStudiosCal(); }
+
+async function renderStudiosCal(){
+  const host=document.getElementById('studios-cal'); if(!host) return;
+  const vh=document.getElementById('v-horario');
+  const sibs=vh?Array.prototype.slice.call(vh.children).filter(c=>c.id!=='studios-cal'):[];
+  if(typeof _gymVertical==='undefined' || _gymVertical!=='studios'){
+    host.style.display='none';
+    sibs.forEach(el=>{ if(el.dataset.shHidden){ el.style.display=el.dataset.shPrev||''; delete el.dataset.shHidden; delete el.dataset.shPrev; } });
+    return;
+  }
+  sibs.forEach(el=>{ if(!el.dataset.shHidden){ el.dataset.shPrev=el.style.display||''; el.dataset.shHidden='1'; } el.style.display='none'; });
+  host.style.display='';
+  if(!host.innerHTML.trim()) host.innerHTML='<div class="card" style="color:var(--text3);">Cargando calendario…</div>';
+  try{
+    const gymId=MOVE_GYM_ID||null;
+    const pad=n=>String(n).padStart(2,'0');
+    const dstr=dd=>`${dd.getFullYear()}-${pad(dd.getMonth()+1)}-${pad(dd.getDate())}`;
+    const now=new Date(); const dow=now.getDay();
+    const monday=new Date(now); monday.setDate(now.getDate()-(dow===0?6:dow-1));
+    const sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
+    let hQ=window.supabaseClient.from('horarios').select('*'); if(gymId) hQ=hQ.eq('gym_id',gymId);
+    let {data:clases}=await hQ; clases=(clases||[]);
+    let rQ=window.supabaseClient.from('reservas').select('horario_id,cliente_nombre,spot,estado').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday));
+    if(gymId) rQ=rQ.eq('gym_id',gymId);
+    let {data:res}=await rQ; res=(res||[]).filter(r=>r.estado!=='cancelado');
+    let wQ=window.supabaseClient.from('waitlist').select('horario_id,cliente_nombre').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday)).eq('estado','espera');
+    if(gymId) wQ=wQ.eq('gym_id',gymId);
+    let {data:wl}=await wQ; wl=(wl||[]);
+    host.innerHTML=_studiosCalHTML(clases,res,wl);
+  }catch(e){ console.warn('renderStudiosCal',e); host.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el calendario.</div>'; }
+}
+
+function _studiosCalHTML(clases,res,wl){
+  const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const ABBR={Lunes:'Lun',Martes:'Mar','Miércoles':'Mié',Jueves:'Jue',Viernes:'Vie','Sábado':'Sáb',Domingo:'Dom'};
+  const toMin=h=>{const p=(h||'0:0').split(':');return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);};
+  const resBy={}; res.forEach(r=>{ (resBy[r.horario_id]=resBy[r.horario_id]||[]).push(r); });
+  const wlBy={}; wl.forEach(w=>{ (wlBy[w.horario_id]=wlBy[w.horario_id]||[]).push(w); });
+  if(!clases.length) return `<div class="card"><div class="empty-state"><div class="empty-title">Sin clases en tu horario</div><div class="empty-sub">Crea tu plantilla semanal con el botón <strong>+ Plantilla</strong>.</div></div></div>`;
+  if(_scSelId && !clases.some(c=>String(c.id)===String(_scSelId))) _scSelId=null;
+  const horas=[...new Set(clases.map(c=>c.hora).filter(Boolean))].sort((a,b)=>toMin(a)-toMin(b));
+  const cols=`46px repeat(${DIAS.length}, minmax(0,1fr))`;
+  let g=`<div class="sc-grid" style="grid-template-columns:${cols};"><div class="sc-head sc-corner"></div>`;
+  DIAS.forEach(d=>{ g+=`<div class="sc-head">${ABBR[d]}</div>`; });
+  horas.forEach(h=>{
+    g+=`<div class="sc-time">${esc(h)}</div>`;
+    DIAS.forEach(d=>{
+      const cs=clases.filter(c=>c.dia===d && c.hora===h);
+      if(!cs.length){ g+=`<div class="sc-cell"></div>`; return; }
+      g+=`<div class="sc-cell">`+cs.map(c=>{
+        const r=(resBy[c.id]||[]).length, cap=c.cupo||0, full=cap>0&&r>=cap;
+        const sel=String(c.id)===String(_scSelId)?' sel':'';
+        return `<div class="sc-cls${full?' full':''}${sel}" onclick="selStudiosClass('${c.id}')"><div class="sc-cls-t">${esc(c.tipo||'Clase')}</div><div class="sc-cls-o">${r}/${cap}${full?' · lleno':''}</div></div>`;
+      }).join('')+`</div>`;
+    });
+  });
+  g+=`</div>`;
+  const sel=clases.find(c=>String(c.id)===String(_scSelId));
+  const panel = sel ? _studiosClassPanel(sel,resBy[sel.id]||[],wlBy[sel.id]||[]) : `<div class="card rc-side-empty"><div class="rc-side-emptyico">◷</div><div class="rc-card-title" style="margin-bottom:4px;">Clase seleccionada</div><div class="card-sub" style="color:var(--text3);">Toca una clase en el calendario para ver su cupo y lista de espera.</div></div>`;
+  return `<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 14px;"><div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);">Calendario de clases</div><div style="flex:1;height:1px;background:var(--border);"></div><div style="font-size:11px;color:var(--text3);">Semana actual · ${clases.length} en plantilla</div></div>`
+    + `<div class="sc-layout"><div class="card" style="padding:14px;">${g}<div class="rc-legend" style="margin-top:12px;"><span><span class="rc-dot" style="background:var(--accent)"></span>Con cupo</span><span><span class="rc-dot" style="background:#fbbf24"></span>Lleno</span><span><span class="rc-dot" style="background:var(--accent);box-shadow:var(--glow)"></span>Seleccionada</span></div></div>${panel}</div>`;
+}
+
+function _studiosClassPanel(c,reservas,waitlist){
+  const cap=c.cupo||0; const taken=new Set(reservas.map(r=>r.spot).filter(s=>s!=null));
+  let spots=''; for(let i=1;i<=cap;i++){ spots+=`<div class="sc-spot${taken.has(i)?' taken':''}">${i}</div>`; }
+  if(!cap) spots='<div class="card-sub" style="color:var(--text3);">Sin cupo definido</div>';
+  const wlHtml = waitlist.length ? waitlist.map((w,i)=>`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${esc(w.cliente_nombre||'—')}</div></div><span class="rc-badge">#${i+1}</span></div>`).join('') : `<div class="card-sub" style="color:var(--text3);padding:6px 0;">Sin lista de espera.</div>`;
+  return `<div class="rc-side"><div class="card">
+    <div class="rc-side-top"><div class="rc-card-title">${esc(c.tipo||'Clase')}</div><span class="rc-badge">${esc(c.dia||'')} · ${esc(c.hora||'')}</span></div>
+    <div class="rc-csub" style="margin-bottom:2px;">${c.coach_nombre?esc(c.coach_nombre)+' · ':''}${reservas.length}/${cap} lugares${reservas.length>=cap&&cap>0?' · lleno':''}</div>
+    <div class="rc-proto-head">◇ Mapa de lugares / reformers</div>
+    <div class="sc-spots">${spots}</div>
+  </div>
+  <div class="card"><div class="rc-card-title">⏳ Lista de espera (${waitlist.length})</div><div style="margin-top:8px;">${wlHtml}</div></div></div>`;
 }
 
 let _asistSearchTimer = null;
