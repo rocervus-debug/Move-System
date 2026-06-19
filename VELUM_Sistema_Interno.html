@@ -9225,6 +9225,14 @@ function _verticalizeUI(){
   // Kiosco (check-in con PIN): recovery no lo usa.
   document.querySelectorAll('[onclick="launchKiosco()"],[onclick="abrirKiosco()"]').forEach(b=>{ b.style.display = rec?'none':''; });
   document.querySelectorAll('.cfg-menu-item').forEach(mi=>{ if(/Kiosco de Check/i.test(mi.textContent)) mi.style.display = rec?'none':''; });
+  // Pago: "Clases del paquete" → "Sesiones del paquete" en recovery.
+  document.querySelectorAll('#modal-pago label').forEach(l=>{ const t=l.textContent.trim();
+    if(/^(Clases|Sesiones) del paquete$/.test(t)) l.textContent = rec?'Sesiones del paquete':'Clases del paquete';
+    if(/^(Clases|Sesiones) usadas al registrar$/.test(t)) l.textContent = rec?'Sesiones usadas al registrar':'Clases usadas al registrar'; });
+  // Config: "Atletas" → "Clientes" en recovery (no son atletas, son clientes de wellness).
+  document.querySelectorAll('.cfg-item-label,.settings-section-title').forEach(e=>{ const t=e.textContent.trim();
+    if(/^Portal de (Atletas|Clientes)$/.test(t)) e.textContent = rec?'Portal de Clientes':'Portal de Atletas';
+    if(/^Notificación Push a (Atletas|Clientes)$/.test(t)) e.textContent = rec?'Notificación Push a Clientes':'Notificación Push a Atletas'; });
 }
 
 function applyGymConfig(){
