@@ -10794,10 +10794,11 @@ function openModal(id){
     // Vocabulario por vertical (recovery: sesiones; gym/studios: clases)
     try{
       const _u=(typeof _pkUnidad==='function')?_pkUnidad():'clases';
-      const _cl=document.querySelector('#pk-clases-field label'); if(_cl) _cl.textContent=`¿Cuántas ${_u} incluye? *`;
-      const _cn=document.getElementById('pk-clases'); if(_cn) _cn.setAttribute('placeholder', _gymVertical==='recovery'?'10':'10');
-      const _nn=document.getElementById('pk-nombre'); if(_nn) _nn.setAttribute('placeholder', _gymVertical==='recovery'?'Ej: Pack 10 sesiones, Ilimitado mensual…':'Ej: Mensual, Pack 10 clases…');
-      const _mt=document.querySelector('#modal-paquete .modal-title'); if(_mt) _mt.textContent=_gymVertical==='recovery'?'Crear paquete de recovery':'Crear paquete';
+      const _art=_gymVertical==='studios'?'Cuántos':'Cuántas'; // créditos (masc) vs clases/sesiones (fem)
+      const _cl=document.querySelector('#pk-clases-field label'); if(_cl) _cl.textContent=`¿${_art} ${_u} incluye? *`;
+      const _cn=document.getElementById('pk-clases'); if(_cn) _cn.setAttribute('placeholder','10');
+      const _nn=document.getElementById('pk-nombre'); if(_nn) _nn.setAttribute('placeholder', _gymVertical==='recovery'?'Ej: Pack 10 sesiones, Ilimitado mensual…':(_gymVertical==='studios'?'Ej: Pack 10 créditos, Ilimitado mensual…':'Ej: Mensual, Pack 10 clases…'));
+      const _mt=document.querySelector('#modal-paquete .modal-title'); if(_mt) _mt.textContent=_gymVertical==='recovery'?'Crear paquete de recovery':(_gymVertical==='studios'?'Crear paquete de créditos':'Crear paquete');
     }catch(_){}
     if(typeof _renderPaqueteTipoCards==='function') _renderPaqueteTipoCards();
     if(typeof wizInit==='function') wizInit('paquete');
@@ -19713,8 +19714,8 @@ wizRegister('clase', {
 // CREAR PAQUETE (modal-paquete) — 3 pasos. Inserta en 'packages' con el mismo
 // payload que agregarPlan (no rompe el form inline de Configuración).
 // Tipos de paquete por vertical (el modelo es el mismo; cambia el vocabulario del giro).
-function _pkUnidad(){ return _gymVertical==='recovery' ? 'sesiones' : 'clases'; }
-function _pkUnidadCap(){ return _gymVertical==='recovery' ? 'Sesiones' : 'Clases'; }
+function _pkUnidad(){ return _gymVertical==='recovery' ? 'sesiones' : (_gymVertical==='studios' ? 'créditos' : 'clases'); }
+function _pkUnidadCap(){ return _gymVertical==='recovery' ? 'Sesiones' : (_gymVertical==='studios' ? 'Créditos' : 'Clases'); }
 function _paqueteTipos(){
   if(_gymVertical==='recovery') return [
     {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Acceso libre a los recursos por X días (mensual, trimestral…)', dias:30},
@@ -19722,9 +19723,9 @@ function _paqueteTipos(){
     {v:'pasedia',   ico:'◷',   name:'Sesión suelta',       sub:'Una sola sesión, vence el mismo día', dias:1},
   ];
   if(_gymVertical==='studios') return [
-    {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Clases libres por X días (mensual, trimestral…)', dias:30},
-    {v:'paquete',   ico:'🎟️', name:'Paquete de créditos', sub:'Un número fijo de clases / créditos (ej. 10 clases)', dias:60},
-    {v:'pasedia',   ico:'📅',  name:'Drop-in / clase suelta', sub:'Una sola clase, vence el mismo día', dias:1},
+    {v:'ilimitado', ico:'∞',   name:'Membresía ilimitada', sub:'Clases libres por X días (mensual, trimestral…)', dias:30},
+    {v:'paquete',   ico:'◈',   name:'Paquete de créditos', sub:'Un número fijo de clases / créditos (ej. 10 clases)', dias:60},
+    {v:'pasedia',   ico:'◷',   name:'Drop-in / clase suelta', sub:'Una sola clase, vence el mismo día', dias:1},
   ];
   return [
     {v:'ilimitado', ico:'🔓',  name:'Membresía ilimitada', sub:'Acceso libre por X días (mensual, trimestral, anual…)', dias:30},
