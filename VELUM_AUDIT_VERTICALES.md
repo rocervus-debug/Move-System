@@ -11,9 +11,10 @@
 |---|---|---|
 | **gym** | el sistema base, cian | 🟢 Maduro. Curado (oculta marketing-agencia). |
 | **recovery** | salvia, fisio/wellness | 🟢 **Bespoke**: dashboard + agenda por recurso + recursos + protocolos + paquetes; vocabulario 100% wellness; sin cyan; sin kiosco. |
-| **studios** | champagne, boutique | 🟡 **A medias**: tema + curación + strip de KPIs + spots/reformers + waitlist en roster. **Falta lo bespoke** (calendario semanal, dashboard completo, mapa de reformers). |
+| **studios** | champagne, boutique | 🟢 **Bespoke** (jun 19): dashboard boutique + calendario semanal + mapa de reformers/spots + waitlist; vocabulario créditos/reservas/instructores de punta a punta; glyphs boutique. |
+| **app del atleta** | sigue el color del giro | 🟢 **Por vertical** (jun 19): barrido anti-cyan → sigue el `gym_color`; recovery habla de sesiones/citas/terapeuta (lee `gym_config.vertical`). Entra en la próxima build nativa. |
 
-**La brecha grande hoy = STUDIOS.** Recovery quedó al nivel del mockup; studios tiene la fundación pero le faltan las 2 pantallas diferenciadoras.
+**Estado jun 19:** las 3 verticales + la app quedaron al nivel del mockup. Lo que resta es pulido menor (abajo) — nada bloquea vender ninguna vertical.
 
 ---
 
