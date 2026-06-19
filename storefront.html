@@ -1488,10 +1488,10 @@ function renderPackages(packages){
       <div class="pkg-card ${featured}" data-listing-id="${p.listing_id}">
         ${badge}
         <div class="pkg-name">${escapeHtml(p.name)}</div>
-        <div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span></div>
-        <div class="pkg-meta">${escapeHtml(meta)}</div>
+        <div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span>${p.recurring ? '<span style="font-size:14px;color:var(--text-3);font-weight:600;margin-left:3px;">/mes</span>' : ''}</div>
+        <div class="pkg-meta">${escapeHtml(meta)}${p.recurring ? ' · cobro mensual automático' : ''}</div>
         <ul class="pkg-features">${featuresHtml}</ul>
-        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${escapeHtml(p.name).replace(/'/g,"\\'")}')">Comprar ahora</button>
+        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${escapeHtml(p.name).replace(/'/g,"\\'")}')">${p.recurring ? 'Suscribirme' : 'Comprar ahora'}</button>
       </div>`;
   }).join('');
 }

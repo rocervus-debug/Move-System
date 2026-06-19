@@ -6768,6 +6768,14 @@ body::before{
           <input id="pk-permite-desc" type="checkbox" checked style="width:15px;height:15px;cursor:pointer;"/>
           <span style="font-size:12.5px;color:var(--text2);">Permitir descuentos en este plan al registrar pagos</span>
         </label>
+        <div class="field" style="margin-top:12px;">
+          <label>Tipo de cobro *</label>
+          <select id="pk-cobro" style="width:100%;">
+            <option value="one_time">Pago único</option>
+            <option value="recurring">Mensualidad domiciliada — cobro automático cada mes</option>
+          </select>
+          <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block;">Domiciliada: el socio registra su tarjeta una vez y se le cobra solo cada mes (usa vigencia de 30 días).</span>
+        </div>
       </div>
 
       <!-- PASO 3 — Confirma -->
@@ -10791,6 +10799,7 @@ function openModal(id){
     const pt=document.getElementById('pk-tipo'); if(pt) pt.value='ilimitado';
     ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
     const pd=document.getElementById('pk-permite-desc'); if(pd) pd.checked=true;
+    const pco=document.getElementById('pk-cobro'); if(pco) pco.value='one_time';
     const cf=document.getElementById('pk-clases-field'); if(cf) cf.style.display='none';
     ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(f=>wzdFieldErr(f,''));
     const pe=document.getElementById('pk-err'); if(pe) pe.style.display='none';
@@ -19800,6 +19809,7 @@ async function savePaqueteWizard(){
   const dias   = parseInt(document.getElementById('pk-dias').value)||0;
   const clases = tipo==='paquete' ? (parseInt(document.getElementById('pk-clases').value)||null) : null;
   const permiteDesc = document.getElementById('pk-permite-desc').checked;
+  const cobro = document.getElementById('pk-cobro') ? document.getElementById('pk-cobro').value : 'one_time';
   const errEl = document.getElementById('pk-err');
   const showErr = (msg)=>{ if(errEl){ errEl.textContent=msg; errEl.style.display=msg?'block':'none'; } };
   showErr('');
@@ -19817,6 +19827,8 @@ async function savePaqueteWizard(){
     unlimited_classes: tipo!=='paquete',     // ilimitado y pase-de-día = acceso libre durante su vigencia
     allow_discount: permiteDesc,
     max_discount_pct: permiteDesc ? 100 : 0,
+    billing_type: cobro,
+    billing_interval: cobro === 'recurring' ? 'month' : null,
     is_active: true,
     internal_only: false,
     sort_order: nextSort
