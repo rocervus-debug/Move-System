@@ -3555,6 +3555,7 @@ function switchView(name){
   if(name==='historial'){ renderHistorial(); }
   if(name==='planes'){ renderPlanes(); renderYoView(); }
   if(name==='bitacora') loadAndRenderBitacora();
+  _verticalizeAtleta();
 }
 
 // PROG tab — historial defaulting to progreso sub-tab
@@ -4100,6 +4101,71 @@ function applyPWABranding(gymName, themeHex){
   try{ localStorage.setItem('velum_pwa_brand', JSON.stringify({name, color})); }catch(_){}
 }
 
+// ── Vocabulario por vertical (recovery habla de "sesiones/citas", no "clases/reservas") ──
+// El color ya lo aplica applyGymAccent (sigue el gym_color del giro). Esto es solo el lenguaje.
+let _atletaVertical='gym';
+const _AT_TERMS={
+  recovery:{
+    nav:{ 'bn-clases':'SESIONES', 'bn-plan':'PLAN' },
+    // pares [regex, reemplazo], de lo MÁS específico a lo más general
+    phrases:[
+      [/Reservar clase/g,'Agendar sesión'],
+      [/Próxima clase reservada/g,'Próxima sesión agendada'],
+      [/Próxima clase/g,'Próxima sesión'],
+      [/Tu clase de hoy/g,'Tu sesión de hoy'],
+      [/Clase de hoy/g,'Sesión de hoy'],
+      [/Mis reservas/g,'Mis citas'],
+      [/\bclases\b/g,'sesiones'],[/\bClases\b/g,'Sesiones'],
+      [/\bclase\b/g,'sesión'],[/\bClase\b/g,'Sesión'],
+      [/\bReservar\b/g,'Agendar'],
+      [/\breservas\b/g,'citas'],[/\bReservas\b/g,'Citas'],
+      [/\breserva\b/g,'cita'],[/\bReserva\b/g,'Cita'],
+      [/\bcoach\b/g,'terapeuta'],[/\bCoach\b/g,'Terapeuta'],
+    ]
+  }
+};
+// Relabela el lenguaje del DOM al giro actual. Idempotente: como los renders reconstruyen el
+// innerHTML desde plantillas en lenguaje gym, re-correr transforma siempre desde el original
+// (no acumula). Para gym/studios es no-op (studios usa el mismo vocabulario de clases/reservas).
+function _verticalizeAtleta(){
+  const t=_AT_TERMS[_atletaVertical]; if(!t) return;
+  if(t.nav){ for(const id in t.nav){ const el=document.querySelector('#'+id+' .bn-lbl'); if(el && el.textContent!==t.nav[id]) el.textContent=t.nav[id]; } }
+  const root=document.body; if(!root) return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+    if(!n.nodeValue||!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+    const tag=n.parentNode&&n.parentNode.nodeName;
+    if(tag==='SCRIPT'||tag==='STYLE'||tag==='NOSCRIPT') return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;
+  }});
+  const nodes=[]; let n; while(n=walker.nextNode()) nodes.push(n);
+  nodes.forEach(node=>{ let v=node.nodeValue; const o=v; for(const [re,rep] of t.phrases) v=v.replace(re,rep); if(v!==o) node.nodeValue=v; });
+}
+// Re-traduce tras renders dinámicos. Observa solo childList (innerHTML nuevo); los cambios de
+// nodeValue/textContent que hace _verticalizeAtleta son characterData → no disparan el observer,
+// y el guard del nav evita el auto-loop. rAF para agrupar ráfagas de renders.
+let _vzScheduled=false, _vzObs=null;
+function _verticalizeAtletaSoon(){
+  if(_atletaVertical==='gym'||_vzScheduled) return; _vzScheduled=true;
+  const run=()=>{ _vzScheduled=false; _verticalizeAtleta(); };
+  (window.requestAnimationFrame?requestAnimationFrame:(f)=>setTimeout(f,16))(run);
+}
+function _startVerticalizeObserver(){
+  if(_vzObs||!('MutationObserver'in window)) return;
+  _vzObs=new MutationObserver(()=>_verticalizeAtletaSoon());
+  _vzObs.observe(document.body,{childList:true,subtree:true});
+}
+// Lee el giro del gym (mismo gym_config que el color) y, si es recovery, traduce el lenguaje.
+async function fetchGymVertical(gymId){
+  if(!gymId) return;
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&key=eq.vertical&select=value&limit=1`,{headers:apiHeaders()});
+    if(!res.ok) return;
+    const rows=await res.json();
+    const v=Array.isArray(rows)&&rows[0]&&rows[0].value;
+    if(v==='recovery'||v==='studios'){ _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+  }catch(_){}
+}
+
 async function fetchGymBranding(gymId, slug){
   // Preferir el color de acento del Storefront (mismo swatch que ve el cliente en la tienda),
   // para que app y tienda no choquen. Fallback: gym_config.
@@ -4162,6 +4228,7 @@ function showPortal(data){
   portalData=data;
   // 1.1 — Apply gym brand color (async, non-blocking). Prefiere el swatch del Storefront vía slug.
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
+  if(data.gym?.id) fetchGymVertical(data.gym.id);
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'VELUM'}`;
 
   if(data.cliente.portal_token){
