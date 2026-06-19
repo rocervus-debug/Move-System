@@ -19452,6 +19452,7 @@ async function renderRecoveryDash(){
   const sibs=vd ? Array.prototype.slice.call(vd.children).filter(c=>c.id!=='recovery-dash') : [];
   if(_gymVertical!=='recovery'){
     host.style.display='none';
+    if(_gymVertical==='studios') return;   // studios maneja su propio hide; no restaurar aquí
     sibs.forEach(el=>{ if(el.dataset.rhHidden){ el.style.display=el.dataset.rhPrev||''; delete el.dataset.rhHidden; delete el.dataset.rhPrev; } });
     return;
   }
@@ -23525,11 +23526,22 @@ async function promoverDeWaitlist(waitlistId){
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
 }
 
-// Studios: strip de KPIs boutique en el dashboard (solo vertical studios).
+// Studios: dashboard boutique bespoke (reemplaza el dashboard genérico de gym).
 async function renderStudiosDash(){
   const strip = document.getElementById('studios-dash-strip');
   if(!strip) return;
-  if(typeof _gymVertical==='undefined' || _gymVertical!=='studios'){ strip.style.display='none'; strip.innerHTML=''; return; }
+  const vd = document.getElementById('v-dashboard');
+  const sibs = vd ? Array.prototype.slice.call(vd.children).filter(c=>c.id!=='studios-dash-strip') : [];
+  if(typeof _gymVertical==='undefined' || _gymVertical!=='studios'){
+    strip.style.display='none'; strip.innerHTML='';
+    if(_gymVertical==='recovery') return;   // recovery maneja su propio hide; no restaurar aquí
+    sibs.forEach(el=>{ if(el.dataset.rhHidden){ el.style.display=el.dataset.rhPrev||''; delete el.dataset.rhHidden; delete el.dataset.rhPrev; } });
+    return;
+  }
+  // Studios: ocultar el dashboard genérico de gym; el strip es el hero bespoke.
+  sibs.forEach(el=>{ if(!el.dataset.rhHidden){ el.dataset.rhPrev=el.style.display||''; el.dataset.rhHidden='1'; } el.style.display='none'; });
+  strip.style.display='block';
+  if(!strip.innerHTML.trim()) strip.innerHTML='<div class="card" style="color:var(--text3);">Cargando tu día en el studio…</div>';
   try{
     const gymId = MOVE_GYM_ID||null;
     const now = new Date();
@@ -23538,49 +23550,61 @@ async function renderStudiosDash(){
     const hoyStr = dstr(now);
     const diaHoy = _DIAS_ES[now.getDay()];
     const hace7 = new Date(now); hace7.setDate(now.getDate()-7);
-    // Clases de hoy → cupo total
-    let hQ = window.supabaseClient.from('horarios').select('cupo').eq('dia',diaHoy);
+    let hQ = window.supabaseClient.from('horarios').select('*').eq('dia',diaHoy);
     if(gymId) hQ = hQ.eq('gym_id',gymId);
-    const {data:hoyClases} = await hQ;
-    const cupoTotal = (hoyClases||[]).reduce((s,h)=>s+(h.cupo||0),0);
-    const numClases = (hoyClases||[]).length;
-    // Reservas de hoy
-    let rQ = window.supabaseClient.from('reservas').select('id',{count:'exact',head:true}).eq('fecha',hoyStr).neq('estado','cancelado');
+    let {data:clases} = await hQ; clases=(clases||[]);
+    const cupoTotal = clases.reduce((s,h)=>s+(h.cupo||0),0);
+    const numClases = clases.length;
+    let rQ = window.supabaseClient.from('reservas').select('horario_id,estado').eq('fecha',hoyStr);
     if(gymId) rQ = rQ.eq('gym_id',gymId);
-    const {count:reservasHoy} = await rQ;
-    const ocup = cupoTotal>0 ? Math.round((reservasHoy||0)/cupoTotal*100) : 0;
-    // No-shows últimos 7 días
+    let {data:rHoy} = await rQ; rHoy=(rHoy||[]).filter(r=>r.estado!=='cancelado');
+    const reservasHoy = rHoy.length;
+    const ocup = cupoTotal>0 ? Math.round(reservasHoy/cupoTotal*100) : 0;
+    const resPorClase={}; rHoy.forEach(r=>{ resPorClase[r.horario_id]=(resPorClase[r.horario_id]||0)+1; });
     let aQ = window.supabaseClient.from('reservas').select('estado').gte('fecha',dstr(hace7)).lte('fecha',hoyStr);
     if(gymId) aQ = aQ.eq('gym_id',gymId);
     const {data:r7} = await aQ;
-    const tot7 = (r7||[]).filter(r=>r.estado!=='cancelado').length;
-    const ns7  = (r7||[]).filter(r=>r.estado==='ausente').length;
-    const nsPct = tot7>0 ? Math.round(ns7/tot7*100) : 0;
-    // En lista de espera hoy
-    let wQ = window.supabaseClient.from('waitlist').select('id',{count:'exact',head:true}).eq('fecha',hoyStr).eq('estado','espera');
+    const tot7=(r7||[]).filter(r=>r.estado!=='cancelado').length;
+    const ns7=(r7||[]).filter(r=>r.estado==='ausente').length;
+    const nsPct = tot7>0 ? Math.round(ns7/tot7*100):0;
+    let wQ = window.supabaseClient.from('waitlist').select('horario_id').eq('fecha',hoyStr).eq('estado','espera');
     if(gymId) wQ = wQ.eq('gym_id',gymId);
-    const {count:espera} = await wQ;
-    const card=(ico,label,val,sub,clr)=>`
-      <div style="flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;">
-        <div style="position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,${clr||'var(--accent)'},transparent);opacity:.7;"></div>
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:700;">${ico} ${label}</div>
-        <div style="font-family:var(--font-display);font-size:30px;font-weight:800;line-height:1.05;margin:7px 0 2px;color:var(--text);">${val}</div>
-        <div style="font-size:11.5px;color:var(--text3);">${sub}</div>
-      </div>`;
-    strip.innerHTML = `
-      <div style="display:flex;align-items:baseline;gap:10px;margin:2px 0 12px;">
-        <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--text);">Tu día en el studio</div>
-        <div style="flex:1;height:1px;background:var(--border);"></div>
-        <div style="font-size:11px;color:var(--text3);">${numClases} clase${numClases!==1?'s':''} hoy</div>
-      </div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
-        ${card('◷','Ocupación hoy', ocup+'%', `${reservasHoy||0} de ${cupoTotal} lugares`, 'var(--accent)')}
-        ${card('▣','Reservas hoy', (reservasHoy||0), `en ${numClases} clase${numClases!==1?'s':''}`, 'var(--accent)')}
-        ${card('⊘','No-shows · 7d', nsPct+'%', `${ns7} de ${tot7} reservas`, nsPct>10?'var(--danger)':'var(--ok)')}
-        ${card('⏳','En lista de espera', (espera||0), 'esperando lugar hoy', '#a78bfa')}
-      </div>`;
-    strip.style.display='block';
-  }catch(e){ console.warn('renderStudiosDash',e); strip.style.display='none'; }
+    let {data:wHoy} = await wQ; wHoy=(wHoy||[]);
+    const espera = wHoy.length;
+    const espPorClase={}; wHoy.forEach(w=>{ espPorClase[w.horario_id]=(espPorClase[w.horario_id]||0)+1; });
+    strip.innerHTML = _studiosDashHTML({clases,cupoTotal,numClases,reservasHoy,ocup,nsPct,ns7,tot7,espera,resPorClase,espPorClase});
+  }catch(e){ console.warn('renderStudiosDash',e); strip.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el dashboard.</div>'; }
+}
+
+function _studiosDashHTML(d){
+  const kpis=`<div class="rd-kpis">
+    <div class="rd-kpi"><div class="rd-kpi-label">◷ Ocupación hoy</div><div class="rd-kpi-value">${d.ocup}<span style="font-size:18px;color:var(--text3)">%</span></div><div class="rd-kpi-sub">${d.reservasHoy} de ${d.cupoTotal} lugares</div></div>
+    <div class="rd-kpi"><div class="rd-kpi-label">▣ Reservas hoy</div><div class="rd-kpi-value">${d.reservasHoy}</div><div class="rd-kpi-sub">en ${d.numClases} clase${d.numClases===1?'':'s'}</div></div>
+    <div class="rd-kpi"><div class="rd-kpi-label">⊘ No-shows · 7d</div><div class="rd-kpi-value">${d.nsPct}<span style="font-size:18px;color:var(--text3)">%</span></div><div class="rd-kpi-sub">${d.ns7} de ${d.tot7} reservas</div></div>
+    <div class="rd-kpi"><div class="rd-kpi-label">⏳ Lista de espera</div><div class="rd-kpi-value">${d.espera}</div><div class="rd-kpi-sub">esperando lugar hoy</div></div>
+  </div>`;
+  const toMin=h=>{const p=(h||'0:0').split(':');return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);};
+  const clases=[...d.clases].sort((a,b)=>toMin(a.hora)-toMin(b.hora));
+  const rows = clases.length ? clases.map(h=>{
+    const res=d.resPorClase[h.id]||0, cap=h.cupo||0, esp=d.espPorClase[h.id]||0;
+    const pct=cap>0?Math.min(100,Math.round(res/cap*100)):0;
+    const full=cap>0&&res>=cap;
+    const coach=h.coach||h.coach_nombre||h.instructor||'';
+    const badge = full ? `<span class="rd-badge rd-b-warn">Lleno${esp?' · '+esp+' en espera':''}</span>` : `<span class="rd-badge rd-b-ok">${res}/${cap}</span>`;
+    return `<div class="rd-tl-row"><div class="rd-tl-time"><div class="h">${esc(h.hora||'--:--')}</div></div><div class="rd-tl-line"><span class="rd-tl-dot"></span></div><div class="rd-tl-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><div class="rd-tl-name">${esc(h.tipo||'Clase')}</div>${badge}</div><div class="rd-tl-sub">${coach?esc(coach)+' · ':''}${res}/${cap} lugares</div><div class="rd-meter"><i style="width:${pct}%;background:${full?'var(--warn)':'var(--accent)'};"></i></div></div></div>`;
+  }).join('') : `<div style="color:var(--text3);font-size:13px;padding:16px 0;text-align:center;">Sin clases hoy. <a onclick="go('horario',document.getElementById('nav-horario'))" style="color:var(--accent);cursor:pointer;">Ver horario →</a></div>`;
+  const agenda=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><div class="rc-card-title">▦ Clases de hoy</div><a onclick="go('horario',document.getElementById('nav-horario'))" style="font-size:12px;color:var(--accent);cursor:pointer;">Ver horario →</a></div><div class="card-sub" style="margin-bottom:12px;color:var(--text3);">Reservas y ocupación por clase</div>${rows}</div>`;
+  const llenas=clases.filter(h=>{const res=d.resPorClase[h.id]||0;return (h.cupo||0)>0 && res>=(h.cupo||0);});
+  const conEspera=clases.filter(h=>(d.espPorClase[h.id]||0)>0);
+  const alerts=[];
+  if(conEspera.length) alerts.push(`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${conEspera.length} clase${conEspera.length===1?'':'s'} con lista de espera</div><div class="rd-tl-sub">Avisa si se libera un lugar</div></div></div>`);
+  if(d.nsPct>10) alerts.push(`<div class="rd-row"><span class="rc-dot" style="background:var(--danger)"></span><div style="flex:1;"><div class="rd-tl-name">No-shows en ${d.nsPct}% (7d)</div><div class="rd-tl-sub">Considera recordatorio o política de cancelación</div></div></div>`);
+  if(!d.numClases) alerts.push(`<div class="rd-row"><span class="rc-dot" style="background:var(--accent)"></span><div style="flex:1;"><div class="rd-tl-name">No hay clases hoy</div><div class="rd-tl-sub">Crea tu plantilla semanal en Clases & Horario</div></div></div>`);
+  if(!alerts.length) alerts.push(`<div style="color:var(--text3);font-size:13px;padding:8px 0;">Todo en orden ✓ — buen flujo de reservas.</div>`);
+  const atencion=`<div class="card"><div class="rc-card-title">⚑ Requiere atención</div><div style="margin-top:6px;">${alerts.join('')}</div></div>`;
+  const resumen=`<div class="card"><div class="rc-card-title">◷ Ocupación del día</div><div style="font-size:34px;font-weight:800;font-family:var(--font-display,inherit);color:var(--text);margin:8px 0 2px;">${d.ocup}%</div><div class="card-sub" style="color:var(--text3);">${d.reservasHoy} reservas · ${d.cupoTotal} lugares · ${llenas.length} llena${llenas.length===1?'':'s'}</div></div>`;
+  return `<div style="display:flex;align-items:baseline;gap:10px;margin:2px 0 16px;"><div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);">Tu día en el studio</div><div style="flex:1;height:1px;background:var(--border);"></div><div style="font-size:11px;color:var(--text3);">${d.numClases} clase${d.numClases===1?'':'s'} hoy</div></div>`
+    + kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${resumen}${atencion}</div></div>`;
 }
 
 let _asistSearchTimer = null;
