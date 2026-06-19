@@ -250,6 +250,7 @@ body[data-vertical="recovery"] .btn-primary:hover{
 /* ── Studios · Calendario semanal (grid días×horas) + mapa de reformers ── */
 .sc-layout{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
 @media(max-width:1100px){.sc-layout{grid-template-columns:1fr;}}
+@media(max-width:640px){#gym-pulso-grid{grid-template-columns:1fr !important;}}
 .sc-grid{display:grid;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .sc-head{padding:9px 5px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--card2);font-size:11px;font-weight:700;color:var(--text);font-family:var(--font-display,inherit);}
 .sc-head.sc-corner{background:transparent;border-left:none;}
@@ -3718,6 +3719,32 @@ body::before{
           <div class="kpi-sparkline-wrap"><canvas id="kpi-spark-ingresos"></canvas></div>
         </div>
       </div>
+      <!-- ══ EL PULSO (solo gym) — Hoy + Transacciones recientes. renderGymPulso() lo muestra/oculta. ══ -->
+      <div id="gym-pulso" style="display:none;margin-bottom:18px;">
+        <div id="gym-pulso-grid" style="display:grid;grid-template-columns:1.35fr 1fr;gap:14px;align-items:start;">
+          <div class="card" style="padding:15px 17px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <span style="font-size:15px;font-weight:800;color:var(--text);">Hoy</span>
+              <span onclick="go('horario',document.getElementById('nav-horario'))" style="font-size:11px;color:var(--accent);cursor:pointer;">Ver semana →</span>
+            </div>
+            <div id="gym-hoy-body"></div>
+          </div>
+          <div class="card" style="padding:15px 17px;border-color:color-mix(in srgb, var(--accent) 18%, transparent);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <span style="font-size:15px;font-weight:800;color:var(--text);">Transacciones recientes</span>
+              <span title="En vivo" style="width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);"></span>
+            </div>
+            <div id="gym-tx-body"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Toggle Análisis del negocio (plegado por defecto; solo gym) -->
+      <div id="gym-analisis-toggle" onclick="_gymAnalisisToggle()" style="display:none;align-items:center;gap:10px;cursor:pointer;padding:11px 15px;margin-bottom:18px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;user-select:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="color-mix(in srgb, var(--accent) 70%, transparent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span style="flex:1;font-size:12.5px;color:var(--text2);">Análisis del negocio <span style="color:var(--text4);">— ingresos, retención, meta, cumpleaños</span></span>
+        <span id="gym-analisis-chev" style="font-size:10px;color:var(--text3);transition:transform .2s;">▾</span>
+      </div>
+
       <!-- Secondary metrics — collapsible (FORGE v5) -->
       <details id="kpi-secondary-details" style="margin-bottom:18px;">
         <summary style="
@@ -9656,6 +9683,7 @@ async function loadPagosFromSupabase(){
     cumpleanos:  p.cumpleanos||'',
     clases_totales: p.clases_totales ?? null,
     clases_usadas:  p.clases_usadas  ?? 0,
+    created_at:  p.created_at || null,
   }));
   try{ if(typeof renderGymAnalytics==='function') renderGymAnalytics(); }catch(_){}
 }
@@ -16050,6 +16078,118 @@ async function renderCheckinsChart(){
 }
 
 // ── Briefing de hoy ──────────────────────────────────────────────
+// ══════════════════ EL PULSO (gym) — Hoy + Transacciones recientes ══════════════════
+function _haceCuanto(ts){
+  if(!ts) return '';
+  const t=new Date(ts).getTime(); if(isNaN(t)) return '';
+  const min=Math.floor((Date.now()-t)/60000);
+  if(min<1) return 'ahora';
+  if(min<60) return `Hace ${min} min`;
+  const h=Math.floor(min/60); if(h<24) return `Hace ${h} h`;
+  const d=Math.floor(h/24); if(d<7) return `Hace ${d} d`;
+  const sem=Math.floor(d/7); if(sem<5) return `Hace ${sem} sem`;
+  const mes=Math.floor(d/30); return `Hace ${mes} mes${mes>1?'es':''}`;
+}
+// Feed unificado: pagos (membresías/paquetes) + visitas (pases/drop-ins), por created_at desc.
+function _gymTxFeed(limit){
+  const fromPagos=(pagos||[]).filter(p=>p.notas!=='__sin_pago__').map(p=>({
+    nombre:p.cliente||'—', detalle:p.plan||'Pago', monto:p.monto||0, metodo:p.metodo||'',
+    ts:p.created_at||(p.fecha?p.fecha+'T12:00:00':null), tipo:'pago'
+  }));
+  const fromVis=(typeof visitasDB!=='undefined'?visitasDB:[]).map(v=>({
+    nombre:v.nombre||'—', detalle:'Pase de día', monto:parseFloat(v.monto)||0, metodo:v.metodo||'',
+    ts:v.created_at||(v.fecha?v.fecha+'T12:00:00':null), tipo:'visita'
+  }));
+  return [...fromPagos,...fromVis].filter(x=>x.ts)
+    .sort((a,b)=> new Date(b.ts)-new Date(a.ts)).slice(0, limit||6);
+}
+function _gymTxHTML(){
+  const items=_gymTxFeed(6);
+  if(!items.length) return `<div style="padding:18px 4px;text-align:center;font-size:12px;color:var(--text3);">Sin transacciones todavía.<br>Los pagos que registres aparecerán aquí en vivo.</div>`;
+  const ini=n=>(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const fmt=m=>'$'+Number(m||0).toLocaleString('es-MX');
+  const rows=items.map(x=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      <span style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${esc(ini(x.nombre))}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(x.nombre)}</div>
+        <div style="font-size:10.5px;color:var(--text4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(x.detalle)}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ok);">${fmt(x.monto)}</div>
+        <div style="font-size:10px;color:var(--text4);">${esc(_haceCuanto(x.ts))}</div>
+      </div>
+    </div>`).join('');
+  return rows + `<div onclick="go('pagos',document.getElementById('nav-pagos'))" style="text-align:center;font-size:11.5px;color:var(--accent);cursor:pointer;padding-top:11px;">Ver todas</div>`;
+}
+// Ocupación de hoy: cuenta reservas por horario_id (no-canceladas).
+async function _gymHoyOcupacion(){
+  try{
+    const hoy=new Date().toISOString().slice(0,10);
+    const { data } = await gf(window.supabaseClient.from('reservas').select('horario_id,estado')).eq('fecha',hoy).neq('estado','cancelado');
+    const map={}; (data||[]).forEach(r=>{ if(r.horario_id!=null) map[r.horario_id]=(map[r.horario_id]||0)+1; });
+    return map;
+  }catch(_){ return {}; }
+}
+function _gymHoyHTML(ocup){
+  if(!horario||!horario.length) return `<div style="padding:14px 4px;font-size:12px;color:var(--text3);">Cargando horario…</div>`;
+  const now=new Date(), today=now.toISOString().slice(0,10);
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const todayDia=dias[now.getDay()];
+  const ovs=(typeof horarioOverrides!=='undefined'?horarioOverrides:[]);
+  const clases=horario.filter(h=>{ if(h.tipo==='CERRADO') return false;
+    if(ovs.find(o=>o.fecha===today&&o.hora===h.hora)) return false;
+    return h.dia===todayDia; });
+  const ovHoy=ovs.filter(o=>o.fecha===today&&o.tipo!=='CERRADO');
+  const all=[...clases,...ovHoy].sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+  if(!all.length) return `<div style="padding:14px 4px;font-size:12px;color:var(--text3);">Sin clases programadas para hoy.</div>`;
+  const nowMin=now.getHours()*60+now.getMinutes();
+  return all.map(h=>{
+    const coach=(coaches.find(c=>String(c.id)===String(h.coach_id))||{}).nombre||'';
+    const hora=(typeof formatHoraDisplay==='function')?formatHoraDisplay(h.hora):h.hora;
+    const cupo=h.cupo||0, res=(ocup&&h.id!=null)?(ocup[h.id]||0):0;
+    const pct=cupo>0?Math.min(100,Math.round(res/cupo*100)):0;
+    const barCol=pct>=90?'var(--danger)':pct>=60?'var(--warn)':'var(--ok)';
+    const past=_horaToMinutes(h.hora)<nowMin;
+    return `<div style="display:flex;align-items:center;gap:11px;padding:8px 0;${past?'opacity:.5;':''}">
+      <span style="font-size:11px;color:${past?'var(--text4)':'var(--accent)'};width:64px;flex-shrink:0;font-weight:600;">${esc(hora)}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12.5px;color:var(--text);">${esc(h.tipo||'Clase')}${coach?`<span style="color:var(--text4);"> · ${esc(coach)}</span>`:''}</div>
+        ${cupo>0?`<div style="height:4px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:5px;"><div style="width:${pct}%;height:100%;background:${barCol};border-radius:3px;"></div></div>`:''}
+      </div>
+      ${cupo>0?`<span style="font-size:11px;color:var(--text3);width:40px;text-align:right;flex-shrink:0;">${res}/${cupo}</span>`:''}
+    </div>`;
+  }).join('');
+}
+function _applyGymAnalisisState(){
+  let open=false; try{ open=localStorage.getItem('velum_gym_analisis')==='1'; }catch(_){}
+  const sec=document.getElementById('kpi-secondary-details');
+  const wid=document.getElementById('dash-widgets-grid');
+  if(sec) sec.style.display=open?'':'none';
+  if(wid) wid.style.display=open?'':'none';
+  const ch=document.getElementById('gym-analisis-chev'); if(ch) ch.style.transform=open?'rotate(180deg)':'';
+}
+function _gymAnalisisToggle(){
+  let open=false; try{ open=localStorage.getItem('velum_gym_analisis')==='1'; localStorage.setItem('velum_gym_analisis',open?'0':'1'); }catch(_){}
+  _applyGymAnalisisState();
+}
+// Muestra/oculta el Pulso por giro y rinde sus columnas. Recovery/studios lo ocultan vía su hide-all.
+async function renderGymPulso(){
+  const pulso=document.getElementById('gym-pulso');
+  const toggle=document.getElementById('gym-analisis-toggle');
+  if(!pulso||!toggle) return;
+  if(_gymVertical!=='gym'){ pulso.style.display='none'; toggle.style.display='none'; return; }
+  pulso.style.display=''; toggle.style.display='flex';
+  const briefing=document.getElementById('dash-briefing-hoy'); if(briefing) briefing.style.display='none';
+  _applyGymAnalisisState();
+  const txb=document.getElementById('gym-tx-body'); if(txb) txb.innerHTML=_gymTxHTML();
+  const hoyb=document.getElementById('gym-hoy-body');
+  if(hoyb){
+    hoyb.innerHTML=_gymHoyHTML({});
+    const oc=await _gymHoyOcupacion();
+    if(_gymVertical==='gym'){ const hb=document.getElementById('gym-hoy-body'); if(hb) hb.innerHTML=_gymHoyHTML(oc); }
+  }
+}
+
 function renderBriefingHoy(){
   const el = document.getElementById('dash-briefing-hoy');
   if(!el) return;
@@ -16575,6 +16715,7 @@ function renderDashboard(){
 
   updateBadges();
   renderBriefingHoy();
+  if(typeof renderGymPulso==='function') renderGymPulso();
   renderMembresiasAlert();
   renderMetaMensual(ingresosMes);
   renderRetencion();
