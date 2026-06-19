@@ -9176,6 +9176,15 @@ const _VERTICAL_NAV = {
     show: ['nav-citas','nav-recursos','nav-protocolos'],   // vistas propias de Recovery
   },
 };
+// Título y botón del topbar por vertical (pantallas reusadas que cambian de nombre por giro).
+const _VERTICAL_TOPTITLE = {
+  recovery: { coaches:'Equipo de Terapeutas' },
+  studios:  { coaches:'Equipo de Instructores' },
+};
+const _VERTICAL_TOPBTN = {
+  recovery: { coaches:'+ Agregar Terapeuta' },
+  studios:  { coaches:'+ Agregar Instructor' },
+};
 // Subtítulos (vocabulario) por vertical para pantallas reusadas — recovery/studios.
 const _VERTICAL_TOPSUB = {
   recovery: {
@@ -9233,6 +9242,15 @@ function _verticalizeUI(){
   document.querySelectorAll('.cfg-item-label,.settings-section-title').forEach(e=>{ const t=e.textContent.trim();
     if(/^Portal de (Atletas|Clientes)$/.test(t)) e.textContent = rec?'Portal de Clientes':'Portal de Atletas';
     if(/^Notificación Push a (Atletas|Clientes)$/.test(t)) e.textContent = rec?'Notificación Push a Clientes':'Notificación Push a Atletas'; });
+  // Vista Coaches → Terapeutas (recovery) / Instructores (studios)
+  const _cs = rec?'Terapeuta':(_gymVertical==='studios'?'Instructor':'Coach');
+  const _cp = rec?'Terapeutas':(_gymVertical==='studios'?'Instructores':'Coaches');
+  const _csh=document.querySelector('#v-coaches .sh-title'); if(_csh) _csh.textContent='Equipo de '+_cp;
+  document.querySelectorAll('#v-coaches button[onclick="openModal(\'coach\')"]').forEach(b=>{ b.textContent='+ Agregar '+_cs; });
+  document.querySelectorAll('#v-coaches .empty-title').forEach(e=>{ if(/^Sin (coaches|terapeutas|instructores) registrad/i.test(e.textContent.trim())) e.textContent='Sin '+_cp.toLowerCase()+' registrados'; });
+  document.querySelectorAll('#v-coaches strong').forEach(s=>{ if(/^(Coaches|Terapeutas|Instructores) ≠ Clientes/.test(s.textContent.trim())) s.textContent=_cp+' ≠ Clientes.'; });
+  const _cmt=document.querySelector('#modal-coach .modal-title'); if(_cmt) _cmt.textContent='Agregar '+_cs.toLowerCase();
+  document.querySelectorAll("#modal-coach label,#modal-edit-coach label").forEach(l=>{ if(/^(Clases que imparte|Servicios \/ especialidades)$/.test(l.textContent.trim())) l.textContent = rec?'Servicios / especialidades':'Clases que imparte'; });
 }
 
 function applyGymConfig(){
@@ -10527,11 +10545,15 @@ function go(id, el){
   const t = topTitles[id]||[id,''];
   document.getElementById('topTitle').textContent = t[0];
   document.getElementById('topSub').textContent = typeof t[1]==='function' ? t[1]() : t[1];
-  // Verticaliza el subtítulo de pantallas reusadas (vocabulario por giro).
-  try{ const _vs=(typeof _VERTICAL_TOPSUB!=='undefined') && _VERTICAL_TOPSUB[_gymVertical] && _VERTICAL_TOPSUB[_gymVertical][id];
+  // Verticaliza título y subtítulo de pantallas reusadas (vocabulario por giro).
+  try{ const _vt=(typeof _VERTICAL_TOPTITLE!=='undefined') && _VERTICAL_TOPTITLE[_gymVertical] && _VERTICAL_TOPTITLE[_gymVertical][id];
+    if(_vt) document.getElementById('topTitle').textContent=_vt;
+    const _vs=(typeof _VERTICAL_TOPSUB!=='undefined') && _VERTICAL_TOPSUB[_gymVertical] && _VERTICAL_TOPSUB[_gymVertical][id];
     if(_vs) document.getElementById('topSub').textContent=_vs; }catch(_){}
   const topBtn = document.getElementById('topBtn');
   topBtn.textContent = topBtnLabels[id]||'Nuevo';
+  try{ const _vb=(typeof _VERTICAL_TOPBTN!=='undefined') && _VERTICAL_TOPBTN[_gymVertical] && _VERTICAL_TOPBTN[_gymVertical][id];
+    if(_vb) topBtn.textContent=_vb; }catch(_){}
   topBtn.onclick = topBtnActions[id]||null;
   // Hide + button in settings for non-admins (coaches, marketing, etc.)
   if(id==='settings') topBtn.style.display = (currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) ? 'inline-flex' : 'none';
