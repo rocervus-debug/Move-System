@@ -9228,8 +9228,9 @@ function applyVerticalModules(vertical){
 function _verticalizeUI(){
   const rec = (_gymVertical==='recovery');
   // Clientes: filtros con vocabulario del giro
-  const t1=document.querySelector('.cli-tab-tipo[data-tipo="paquete"]'); if(t1) t1.textContent = rec?'Paquetes':'🏋️ Membresías';
-  const t2=document.querySelector('.cli-tab-tipo[data-tipo="pase"]');    if(t2) t2.textContent = rec?'Sesión suelta':'🎫 Pase de Día';
+  const _stu=(_gymVertical==='studios');
+  const t1=document.querySelector('.cli-tab-tipo[data-tipo="paquete"]'); if(t1) t1.textContent = rec?'Paquetes':(_stu?'Membresías':'🏋️ Membresías');
+  const t2=document.querySelector('.cli-tab-tipo[data-tipo="pase"]');    if(t2) t2.textContent = rec?'Sesión suelta':(_stu?'Drop-in':'🎫 Pase de Día');
   document.querySelectorAll('.cli-filter-label').forEach(l=>{ if(/^\s*Estado d/i.test(l.textContent)) l.textContent = rec?'Estado del paquete':'Estado de membresía'; });
   // Kiosco (check-in con PIN): recovery no lo usa.
   document.querySelectorAll('[onclick="launchKiosco()"],[onclick="abrirKiosco()"]').forEach(b=>{ b.style.display = rec?'none':''; });
