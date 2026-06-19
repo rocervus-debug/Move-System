@@ -9273,12 +9273,13 @@ function _verticalizeUI(){
   document.querySelectorAll('.cfg-menu-item').forEach(mi=>{ if(/Kiosco de Check/i.test(mi.textContent)) mi.style.display = rec?'none':''; });
   // Pago: "Clases del paquete" → "Sesiones del paquete" en recovery.
   document.querySelectorAll('#modal-pago label').forEach(l=>{ const t=l.textContent.trim();
-    if(/^(Clases|Sesiones) del paquete$/.test(t)) l.textContent = rec?'Sesiones del paquete':'Clases del paquete';
-    if(/^(Clases|Sesiones) usadas al registrar$/.test(t)) l.textContent = rec?'Sesiones usadas al registrar':'Clases usadas al registrar'; });
-  // Config: "Atletas" → "Clientes" en recovery (no son atletas, son clientes de wellness).
+    if(/^(Clases|Sesiones|Cr[ée]ditos) del paquete$/.test(t)) l.textContent = rec?'Sesiones del paquete':(_stu?'Créditos del paquete':'Clases del paquete');
+    if(/^(Clases|Sesiones|Cr[ée]ditos) usad[ao]s al registrar$/.test(t)) l.textContent = rec?'Sesiones usadas al registrar':(_stu?'Créditos usados al registrar':'Clases usadas al registrar'); });
+  // Config: "Atletas" → "Clientes" en recovery (wellness) y studios (boutique): no son atletas.
+  const _cliWord = (rec||_stu);
   document.querySelectorAll('.cfg-item-label,.settings-section-title').forEach(e=>{ const t=e.textContent.trim();
-    if(/^Portal de (Atletas|Clientes)$/.test(t)) e.textContent = rec?'Portal de Clientes':'Portal de Atletas';
-    if(/^Notificación Push a (Atletas|Clientes)$/.test(t)) e.textContent = rec?'Notificación Push a Clientes':'Notificación Push a Atletas'; });
+    if(/^Portal de (Atletas|Clientes)$/.test(t)) e.textContent = _cliWord?'Portal de Clientes':'Portal de Atletas';
+    if(/^Notificación Push a (Atletas|Clientes)$/.test(t)) e.textContent = _cliWord?'Notificación Push a Clientes':'Notificación Push a Atletas'; });
   // Vista Coaches → Terapeutas (recovery) / Instructores (studios)
   const _cs = rec?'Terapeuta':(_gymVertical==='studios'?'Instructor':'Coach');
   const _cp = rec?'Terapeutas':(_gymVertical==='studios'?'Instructores':'Coaches');
@@ -10602,7 +10603,7 @@ function go(id, el){
   if(id==='recursos')    { loadRecursos().then(renderRecursos); }
   if(id==='protocolos')  { loadProtocolos().then(renderProtocolos); }
   if(id==='citas')       { _citaEnsureFecha(); Promise.all([loadRecursos(),loadProtocolos(),loadCitas()]).then(renderCitas); }
-  if(id==='paquetes')    { const _ph=document.getElementById('paquetes-host'); const _pc=document.querySelector('#cfg-panel-planes .card'); if(_ph&&_pc&&_pc.parentElement!==_ph) _ph.appendChild(_pc); if(typeof renderPlanes==='function') renderPlanes(); if(typeof loadMemberSubs==='function') loadMemberSubs(); }
+  if(id==='paquetes')    { const _ph=document.getElementById('paquetes-host'); const _pc=document.querySelector('#cfg-panel-planes .card'); if(_ph&&_pc&&_pc.parentElement!==_ph) _ph.appendChild(_pc); if(typeof loadPackagesFromCatalog==='function'){ loadPackagesFromCatalog().then(()=>{ if(typeof renderPlanes==='function') renderPlanes(); }); } else if(typeof renderPlanes==='function'){ renderPlanes(); } if(typeof loadMemberSubs==='function') loadMemberSubs(); }
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
   if(id==='dashboard')   { renderDashboard(); if(typeof renderRecoveryDash==='function') renderRecoveryDash(); }
   if(id==='pagos')       renderPagos();
