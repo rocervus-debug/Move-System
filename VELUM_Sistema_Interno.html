@@ -9280,6 +9280,9 @@ function _verticalizeUI(){
   document.querySelectorAll('.cfg-item-label,.settings-section-title').forEach(e=>{ const t=e.textContent.trim();
     if(/^Portal de (Atletas|Clientes)$/.test(t)) e.textContent = _cliWord?'Portal de Clientes':'Portal de Atletas';
     if(/^Notificación Push a (Atletas|Clientes)$/.test(t)) e.textContent = _cliWord?'Notificación Push a Clientes':'Notificación Push a Atletas'; });
+  // Texto largo de Config (descripción del push): "atletas" → "clientes" en recovery/studios.
+  document.querySelectorAll('.settings-section-sub').forEach(e=>{ if(/permiso de notificaciones/.test(e.textContent))
+    e.textContent = `Envía un mensaje directo a todos los ${_cliWord?'clientes':'atletas'} de tu gym que tengan el portal instalado y hayan dado permiso de notificaciones.`; });
   // Vista Coaches → Terapeutas (recovery) / Instructores (studios)
   const _cs = rec?'Terapeuta':(_gymVertical==='studios'?'Instructor':'Coach');
   const _cp = rec?'Terapeutas':(_gymVertical==='studios'?'Instructores':'Coaches');
@@ -14962,7 +14965,8 @@ function renderPlanes(){
     return;
   }
   el.innerHTML = planes.map(p=>{
-    const tipo = p.unlimited_classes ? 'Ilimitado' : (p.num_classes ? `${p.num_classes} clases` : 'Sin clases');
+    const _u = (typeof _pkUnidad==='function') ? _pkUnidad() : 'clases'; // sesiones/créditos/clases por giro
+    const tipo = p.unlimited_classes ? 'Ilimitado' : (p.num_classes ? `${p.num_classes} ${_u}` : `Sin ${_u}`);
     const descBadge = p.allow_discount === false
       ? '<span style="font-size:9px;background:rgba(251,191,36,.15);color:var(--warn);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">SIN DESC</span>'
       : '';
