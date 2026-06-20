@@ -251,6 +251,8 @@ body[data-vertical="recovery"] .btn-primary:hover{
 .sc-layout{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
 @media(max-width:1100px){.sc-layout{grid-template-columns:1fr;}}
 @media(max-width:640px){#gym-pulso-grid{grid-template-columns:1fr !important;}}
+@media(max-width:640px){ .kpi-grid,.camp-metrics,.coach-grid{grid-template-columns:repeat(2,1fr)!important;} }
+@media(max-width:420px){ .kpi-grid,.camp-metrics,.coach-grid{grid-template-columns:1fr!important;} }
 .sc-grid{display:grid;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .sc-head{padding:9px 5px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border);background:var(--card2);font-size:11px;font-weight:700;color:var(--text);font-family:var(--font-display,inherit);}
 .sc-head.sc-corner{background:transparent;border-left:none;}
@@ -507,7 +509,7 @@ body{
   box-shadow:var(--shadow-btn), 0 0 20px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .btn-primary:hover{
-  background:linear-gradient(135deg,#00D4FF,#00D4FF);
+  background:var(--accent);
   transform:translateY(-1px);
   box-shadow:0 4px 20px color-mix(in srgb, var(--accent) 45%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
 }
@@ -1552,7 +1554,7 @@ select option{background:#08121E;color:var(--text);}
 .nota-card:hover{border-color:color-mix(in srgb, var(--accent) 20%, transparent);}
 .nota-card:hover .nota-delete{opacity:1;}
 .nota-tipo-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.3px;border-radius:5px;padding:2px 7px;margin-bottom:5px;text-transform:uppercase;}
-.nota-tipo-Contacto{background:color-mix(in srgb, var(--accent) 15%, transparent);color:#00D4FF;}
+.nota-tipo-Contacto{background:color-mix(in srgb, var(--accent) 15%, transparent);color:var(--accent);}
 .nota-tipo-Llamada{background:rgba(96,165,250,.15);color:#60a5fa;}
 .nota-tipo-Mensaje{background:rgba(192,132,252,.15);color:#c084fc;}
 .nota-tipo-Visita{background:rgba(16,232,160,.15);color:#10e8a0;}
@@ -1658,7 +1660,7 @@ select option{background:#08121E;color:var(--text);}
   /* Mínimo de 44pt para Apple HIG */
   min-height:44px;
 }
-.login-btn:hover{background:linear-gradient(135deg,#00D4FF,#00D4FF);box-shadow:0 0 40px color-mix(in srgb, var(--accent) 50%, transparent);}
+.login-btn:hover{background:var(--accent);box-shadow:0 0 40px color-mix(in srgb, var(--accent) 50%, transparent);}
 .login-error{
   background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);
   color:var(--danger);font-size:12px;padding:10px 14px;
@@ -3002,7 +3004,7 @@ select option{background:#08121E;color:var(--text);}
 .va-msg.ai p:last-child{ margin:0; }
 .va-msg.ai ul,.va-msg.ai ol{ margin:4px 0 4px 16px;padding:0; }
 .va-msg.ai li{ margin-bottom:3px; }
-.va-msg.ai strong{ color:#00D4FF !important; -webkit-text-fill-color:#00D4FF !important; }
+.va-msg.ai strong{ color:var(--accent) !important; -webkit-text-fill-color:var(--accent) !important; }
 .va-typing{
   align-self:flex-start;
   background:rgba(255,255,255,.07);
@@ -3057,7 +3059,7 @@ select option{background:#08121E;color:var(--text);}
   display:flex;align-items:center;justify-content:center;
   transition:background .15s;
 }
-#va-send:hover{ background:#00D4FF; }
+#va-send:hover{ background:var(--accent); }
 #va-send:disabled{ opacity:.4;cursor:not-allowed; }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -4917,6 +4919,21 @@ body::before{
             <div id="domiciliaciones-wrap" style="margin:18px 0 16px;">
               <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Domiciliaciones activas</div>
               <div id="domiciliaciones-lista" style="display:flex;flex-direction:column;gap:8px;"></div>
+              <button class="btn btn-sm btn-outline" onclick="toggleDomiForm()" style="margin-top:10px;font-size:12px;">+ Domiciliar un socio (generar link)</button>
+              <div id="domi-form" style="display:none;margin-top:12px;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Genera un link de Stripe para que el socio registre su tarjeta. Cuando la registre, queda domiciliado con cobro automático cada mes.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                  <input id="domi-nombre" class="settings-input" placeholder="Nombre del socio" style="flex:1;min-width:140px;"/>
+                  <input id="domi-email" type="email" class="settings-input" placeholder="Email del socio" style="flex:1;min-width:140px;"/>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                  <input id="domi-wa" class="settings-input" placeholder="WhatsApp (opcional, ej. 5214611234567)" style="flex:1;min-width:140px;"/>
+                  <select id="domi-pkg" class="settings-input" style="flex:1;min-width:140px;"></select>
+                </div>
+                <button class="btn btn-sm btn-primary" id="domi-gen-btn" onclick="generarLinkDomiciliacion()" style="font-size:12px;">Generar link de domiciliación</button>
+                <div id="domi-err" style="display:none;font-size:11px;color:var(--danger);margin-top:8px;"></div>
+                <div id="domi-result" style="display:none;margin-top:12px;"></div>
+              </div>
             </div>
 
             <!-- Acceso guiado: crea un paquete paso a paso -->
@@ -14979,6 +14996,53 @@ async function loadMemberSubs(){
   }catch(e){ console.error('loadMemberSubs', e); el.innerHTML = `<div style="font-size:12px;color:var(--danger);padding:6px 0;">Error al cargar domiciliaciones.</div>`; }
 }
 
+function _fillDomiPkgs(){
+  const sel = document.getElementById('domi-pkg'); if(!sel) return;
+  const recs = (_packagesDB||[]).filter(p=>p.billing_type==='recurring' && p.is_active!==false);
+  if(!recs.length){ sel.innerHTML = '<option value="">— Crea primero un plan domiciliado —</option>'; }
+  else sel.innerHTML = recs.map(p=>`<option value="${p.id}">${esc(p.name)} · $${p.price_mxn.toLocaleString('es-MX')}/mes</option>`).join('');
+}
+function toggleDomiForm(){
+  const f=document.getElementById('domi-form'); if(!f) return;
+  const show = f.style.display==='none';
+  f.style.display = show ? 'block' : 'none';
+  if(show) _fillDomiPkgs();
+}
+async function generarLinkDomiciliacion(){
+  const nombre=(document.getElementById('domi-nombre').value||'').trim();
+  const email=(document.getElementById('domi-email').value||'').trim();
+  const wa=(document.getElementById('domi-wa').value||'').trim();
+  const pkgId=document.getElementById('domi-pkg').value;
+  const errEl=document.getElementById('domi-err'); const resEl=document.getElementById('domi-result'); const btn=document.getElementById('domi-gen-btn');
+  const showErr=(m)=>{ if(errEl){ errEl.textContent=m; errEl.style.display=m?'block':'none'; } };
+  showErr(''); if(resEl) resEl.style.display='none';
+  if(!pkgId){ showErr('Selecciona un plan domiciliado (crea uno con "Mensualidad domiciliada" si no aparece).'); return; }
+  if(!nombre||!email){ showErr('Nombre y email del socio son obligatorios.'); return; }
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ showErr('Email inválido.'); return; }
+  const _t=btn.textContent; btn.disabled=true; btn.textContent='Generando…';
+  try{
+    const res=await fetch(`${supabaseUrl}/functions/v1/velum-member-subscription`,{
+      method:'POST', headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+(currentUser.jwt||'')},
+      body:JSON.stringify({ action:'create_link', package_id: parseInt(pkgId,10), customer:{ name:nombre, email, phone:wa } })
+    });
+    const d=await res.json();
+    if(!res.ok||!d.checkout_url) throw new Error(d.error||'No se pudo generar el link.');
+    const url=d.checkout_url;
+    const waNum=wa.replace(/\D/g,'');
+    const waMsg=encodeURIComponent(`Hola ${nombre}, para activar tu mensualidad registra tu tarjeta aquí (solo una vez): ${url}`);
+    const waLink=waNum?`https://wa.me/${waNum}?text=${waMsg}`:'';
+    resEl.innerHTML=`
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Link listo — mándaselo al socio. Al registrar su tarjeta queda domiciliado.</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <input class="settings-input" readonly value="${url}" onclick="this.select()" style="flex:1;min-width:160px;font-size:11px;"/>
+        <button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Link copiado ✓','📋'))" style="font-size:11px;">Copiar</button>
+        ${waLink?`<a class="btn btn-sm btn-primary" href="${waLink}" target="_blank" rel="noopener" style="font-size:11px;text-decoration:none;">WhatsApp</a>`:''}
+      </div>`;
+    resEl.style.display='block';
+  }catch(e){ console.error('generarLinkDomiciliacion', e); showErr(e.message||'Error'); }
+  finally{ btn.disabled=false; btn.textContent=_t; }
+}
+
 async function cancelMemberSub(subId){
   if(!confirm('¿Cancelar la domiciliación de este socio? Mantendrá acceso hasta el fin del periodo que ya pagó.')) return;
   try{
@@ -20341,7 +20405,7 @@ async function loadPackagesForPagoModal(){
     const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
     const { data, error } = await window.supabaseClient
       .from('packages')
-      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, billing_type')
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
@@ -20389,7 +20453,8 @@ function onPackageSelectInModal(){
   if(info){
     info.style.display = 'block';
     const incluye = p.unlimited_classes ? 'Clases ilimitadas' : (p.num_classes ? `${p.num_classes} clases` : 'Sin clases fijas');
-    info.innerHTML = `<strong style="color:var(--accent);">${escapeHtml(p.name)}</strong> · Vigencia ${p.duration_days} día${p.duration_days===1?'':'s'} · ${incluye}${p.allow_discount===false?' · <span style="color:var(--warn);">Sin descuento permitido</span>':''}`;
+    info.innerHTML = `<strong style="color:var(--accent);">${escapeHtml(p.name)}</strong> · Vigencia ${p.duration_days} día${p.duration_days===1?'':'s'} · ${incluye}${p.allow_discount===false?' · <span style="color:var(--warn);">Sin descuento permitido</span>':''}` +
+      (p.billing_type==='recurring' ? `<div style="margin-top:6px;font-size:11px;color:var(--warn);line-height:1.5;">⚠ Plan domiciliado: este registro es solo un <strong>pago manual</strong> (no activa el cobro automático). Para domiciliar la tarjeta del socio, usa <strong>"Domiciliar un socio"</strong> en Paquetes.</div>` : '');
   }
   // Pase-de-día warning
   if(pasediaWarn) pasediaWarn.style.display = (p.duration_days === 1) ? 'block' : 'none';
@@ -23133,7 +23198,7 @@ function generarReporteMensual(){
     ${meta>0?`<div class="kpi-sub">Meta: $${meta.toLocaleString('es-MX')}</div>`:''}
   </div>
   <div class="kpi">
-    <div class="kpi-val" style="color:#00D4FF;">${activos}</div>
+    <div class="kpi-val" style="color:var(--accent);">${activos}</div>
     <div class="kpi-lbl">Clientes Activos</div>
     <div class="kpi-sub">${nuevos} nuevos este mes</div>
   </div>
@@ -24743,7 +24808,7 @@ function vaMarkdown(text){
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
     .replace(/\*(.+?)\*/g,'<em>$1</em>')
     .replace(/`(.+?)`/g,'<code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px;font-size:12px;">$1</code>')
-    .replace(/^## (.+)$/gm,'<div style="font-weight:700;color:#00D4FF;margin:8px 0 4px;">$1</div>')
+    .replace(/^## (.+)$/gm,'<div style="font-weight:700;color:var(--accent);margin:8px 0 4px;">$1</div>')
     .replace(/^- (.+)$/gm,'<div style="padding-left:12px;">• $1</div>')
     .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')
     .replace(/^(.)/,'<p>$1').replace(/(.)$/,'$1</p>');
