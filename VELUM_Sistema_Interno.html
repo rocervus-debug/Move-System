@@ -16217,8 +16217,13 @@ async function renderGymPulso(){
   const hoyb=document.getElementById('gym-hoy-body');
   if(hoyb){
     hoyb.innerHTML=_gymHoyHTML({});
-    const oc=await _gymHoyOcupacion();
-    if(_gymVertical==='gym'){ const hb=document.getElementById('gym-hoy-body'); if(hb) hb.innerHTML=_gymHoyHTML(oc); }
+    // Solo consultar reservas (ocupación) cuando el dashboard es la vista activa — renderDashboard
+    // se llama en ~8 lugares (cada carga de datos); sin este gate haríamos una query extra cada vez.
+    const vd=document.getElementById('v-dashboard');
+    if(vd && vd.classList.contains('active')){
+      const oc=await _gymHoyOcupacion();
+      if(_gymVertical==='gym'){ const hb=document.getElementById('gym-hoy-body'); if(hb) hb.innerHTML=_gymHoyHTML(oc); }
+    }
   }
 }
 
