@@ -3721,6 +3721,7 @@ body::before{
       </div>
       <!-- ══ EL PULSO (solo gym) — Hoy + Transacciones recientes. renderGymPulso() lo muestra/oculta. ══ -->
       <div id="gym-pulso" style="display:none;margin-bottom:18px;">
+        <div id="gym-cumple"></div>
         <div id="gym-pulso-grid" style="display:grid;grid-template-columns:1.35fr 1fr;gap:14px;align-items:start;">
           <div class="card" style="padding:15px 17px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -16103,6 +16104,15 @@ function _gymTxFeed(limit){
   return [...fromPagos,...fromVis].filter(x=>x.ts)
     .sort((a,b)=> new Date(b.ts)-new Date(a.ts)).slice(0, limit||6);
 }
+// Badge de origen del pago: Stripe/en línea resaltado en verde; manual = método real en chip sutil.
+function _txMetodoBadge(metodo){
+  const m=(metodo||'').trim();
+  const online=/stripe|en l[ií]nea|online/i.test(m);
+  const label=online?'En línea':(m||'Manual');
+  const bg=online?'color-mix(in srgb, var(--ok) 16%, transparent)':'rgba(255,255,255,.05)';
+  const fg=online?'var(--ok)':'var(--text4)';
+  return `<span style="flex-shrink:0;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:5px;background:${bg};color:${fg};white-space:nowrap;">${esc(label)}</span>`;
+}
 function _gymTxHTML(){
   const items=_gymTxFeed(6);
   if(!items.length) return `<div style="padding:18px 4px;text-align:center;font-size:12px;color:var(--text3);">Sin transacciones todavía.<br>Los pagos que registres aparecerán aquí en vivo.</div>`;
@@ -16112,7 +16122,10 @@ function _gymTxHTML(){
       <span style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${esc(ini(x.nombre))}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(x.nombre)}</div>
-        <div style="font-size:10.5px;color:var(--text4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(x.detalle)}</div>
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;margin-top:1px;">
+          <span style="font-size:10.5px;color:var(--text4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(x.detalle)}</span>
+          ${_txMetodoBadge(x.metodo)}
+        </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-size:12.5px;font-weight:800;color:var(--ok);">${fmt(x.monto)}</div>
@@ -16172,6 +16185,24 @@ function _gymAnalisisToggle(){
   let open=false; try{ open=localStorage.getItem('velum_gym_analisis')==='1'; localStorage.setItem('velum_gym_analisis',open?'0':'1'); }catch(_){}
   _applyGymAnalisisState();
 }
+// Cumpleaños de hoy: chips con botón Felicitar (WhatsApp). Vacío si no hay. Reusa clientesDB.
+function _gymCumpleHTML(){
+  if(typeof clientesDB==='undefined'||!clientesDB.length) return '';
+  const mmdd=new Date().toISOString().slice(5,10);
+  const cumple=clientesDB.filter(c=>{ if(!c.cumpleanos) return false; return c.cumpleanos.slice(5)===mmdd || c.cumpleanos.slice(0,5)===mmdd; });
+  if(!cumple.length) return '';
+  const chip=c=>{
+    const tel=(c.telefono||'').replace(/\D/g,''); const num=tel.length===10?'52'+tel:tel;
+    const msg=encodeURIComponent(`¡Feliz cumpleaños ${c.nombre}! 🎉 De parte de todo el equipo 💪`);
+    const wa = num.length>=12 ? `<a href="https://wa.me/${num}?text=${msg}" target="_blank" style="color:#25d366;text-decoration:none;font-weight:700;margin-left:5px;">Felicitar</a>` : '';
+    return `<span style="display:inline-flex;align-items:center;font-size:11.5px;color:var(--text);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22);border-radius:8px;padding:3px 9px;">${esc(c.nombre)}${wa}</span>`;
+  };
+  return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:9px 13px;background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.16);border-radius:12px;">
+    <span style="font-size:15px;">🎂</span>
+    <span style="font-size:10px;font-weight:800;color:var(--warn);text-transform:uppercase;letter-spacing:1px;margin-right:2px;">Cumple hoy</span>
+    ${cumple.slice(0,8).map(chip).join('')}
+  </div>`;
+}
 // Muestra/oculta el Pulso por giro y rinde sus columnas. Recovery/studios lo ocultan vía su hide-all.
 async function renderGymPulso(){
   const pulso=document.getElementById('gym-pulso');
@@ -16181,6 +16212,7 @@ async function renderGymPulso(){
   pulso.style.display=''; toggle.style.display='flex';
   const briefing=document.getElementById('dash-briefing-hoy'); if(briefing) briefing.style.display='none';
   _applyGymAnalisisState();
+  const cu=document.getElementById('gym-cumple'); if(cu) cu.innerHTML=_gymCumpleHTML();
   const txb=document.getElementById('gym-tx-body'); if(txb) txb.innerHTML=_gymTxHTML();
   const hoyb=document.getElementById('gym-hoy-body');
   if(hoyb){
