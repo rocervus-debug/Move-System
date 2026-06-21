@@ -23951,6 +23951,7 @@ async function promoverDeWaitlist(waitlistId){
   await window.supabaseClient.from('waitlist').update({ estado:'promovido' }).eq('id', waitlistId);
   toast(`${(w.cliente_nombre||'').split(' ')[0]} promovido a la clase ✓`,'✅');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
+  if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && typeof renderStudiosCal==='function') renderStudiosCal();
 }
 
 // Studios: dashboard boutique bespoke (reemplaza el dashboard genérico de gym).
@@ -24064,7 +24065,7 @@ async function renderStudiosCal(){
     let rQ=window.supabaseClient.from('reservas').select('horario_id,cliente_nombre,spot,estado').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday));
     if(gymId) rQ=rQ.eq('gym_id',gymId);
     let {data:res}=await rQ; res=(res||[]).filter(r=>r.estado!=='cancelado');
-    let wQ=window.supabaseClient.from('waitlist').select('horario_id,cliente_nombre').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday)).eq('estado','espera');
+    let wQ=window.supabaseClient.from('waitlist').select('id,horario_id,cliente_nombre').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday)).eq('estado','espera');
     if(gymId) wQ=wQ.eq('gym_id',gymId);
     let {data:wl}=await wQ; wl=(wl||[]);
     host.innerHTML=_studiosCalHTML(clases,res,wl);
@@ -24109,7 +24110,7 @@ function _studiosClassPanel(c,reservas,waitlist){
   const cap=c.cupo||0; const taken=new Set(reservas.map(r=>r.spot).filter(s=>s!=null));
   let spots=''; for(let i=1;i<=cap;i++){ spots+=`<div class="sc-spot${taken.has(i)?' taken':''}">${i}</div>`; }
   if(!cap) spots='<div class="card-sub" style="color:var(--text3);">Sin cupo definido</div>';
-  const wlHtml = waitlist.length ? waitlist.map((w,i)=>`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${esc(w.cliente_nombre||'—')}</div></div><span class="rc-badge">#${i+1}</span></div>`).join('') : `<div class="card-sub" style="color:var(--text3);padding:6px 0;">Sin lista de espera.</div>`;
+  const wlHtml = waitlist.length ? waitlist.map((w,i)=>`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${esc(w.cliente_nombre||'—')}</div></div>${w.id?`<button onclick="promoverDeWaitlist('${w.id}')" title="Mover al primer lugar libre" style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;background:color-mix(in srgb, var(--ok) 14%, transparent);color:var(--ok);border:1px solid color-mix(in srgb, var(--ok) 30%, transparent);cursor:pointer;margin-right:6px;">Promover</button>`:''}<span class="rc-badge">#${i+1}</span></div>`).join('') : `<div class="card-sub" style="color:var(--text3);padding:6px 0;">Sin lista de espera.</div>`;
   return `<div class="rc-side"><div class="card">
     <div class="rc-side-top"><div class="rc-card-title">${esc(c.tipo||'Clase')}</div><span class="rc-badge">${esc(c.dia||'')} · ${esc(c.hora||'')}</span></div>
     <div class="rc-csub" style="margin-bottom:2px;">${c.coach_nombre?esc(c.coach_nombre)+' · ':''}${reservas.length}/${cap} lugares${reservas.length>=cap&&cap>0?' · <b style="color:var(--danger);">LLENO</b>':''}</div>
