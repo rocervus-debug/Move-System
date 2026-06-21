@@ -24045,6 +24045,19 @@ async function renderStudiosDash(){
   }catch(e){ console.warn('renderStudiosDash',e); strip.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el dashboard.</div>'; }
 }
 
+// Créditos por agotarse para el dashboard de studios (espejo del saldo de recovery).
+function _studiosCreditosHTML(){
+  if(typeof pagos==='undefined'||!Array.isArray(pagos)) return '';
+  const byClient={};
+  pagos.filter(p=>p.clases_totales).forEach(p=>{ const n=(p.cliente||'').trim(); if(!n) return; const rem=p.clases_totales-(p.clases_usadas??0); if(!(n in byClient)||rem>byClient[n]) byClient[n]=rem; });
+  const arr=Object.entries(byClient).map(([n,rem])=>({n,rem})).sort((a,b)=>a.rem-b.rem);
+  if(!arr.length) return '';
+  const low=arr.filter(x=>x.rem<=2);
+  let body;
+  if(!low.length){ body=`<div style="color:var(--text3);font-size:13px;padding:6px 0;">Los ${arr.length} clientes con paquete tienen créditos suficientes ✓</div>`; }
+  else { body=low.slice(0,6).map(x=>{ const col=x.rem<=0?'var(--danger)':'var(--warn)'; const txt=x.rem<=0?'Sin créditos':`${x.rem} crédito${x.rem===1?'':'s'}`; return `<div class="rd-row"><span class="rc-dot" style="background:${col}"></span><div style="flex:1;"><div class="rd-tl-name">${esc(x.n)}</div><div class="rd-tl-sub">Créditos bajos — oportunidad de renovación</div></div><span class="rd-badge" style="background:color-mix(in srgb, ${col} 16%, transparent);color:${col};">${txt}</span></div>`; }).join(''); }
+  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="rc-card-title">◈ Créditos por agotarse</div><a onclick="go('pagos',document.getElementById('nav-pagos'))" style="font-size:12px;color:var(--accent);cursor:pointer;">Ver todos →</a></div><div class="card-sub" style="margin:2px 0 10px;color:var(--text3);">Clientes por renovar</div>${body}</div>`;
+}
 function _studiosDashHTML(d){
   const kpis=`<div class="rd-kpis">
     <div class="rd-kpi"><div class="rd-kpi-label">◷ Ocupación hoy</div><div class="rd-kpi-value">${d.ocup}<span style="font-size:18px;color:var(--text3)">%</span></div><div class="rd-kpi-sub">${d.reservasHoy} de ${d.cupoTotal} lugares</div></div>
@@ -24073,7 +24086,7 @@ function _studiosDashHTML(d){
   const atencion=`<div class="card"><div class="rc-card-title">⚑ Requiere atención</div><div style="margin-top:6px;">${alerts.join('')}</div></div>`;
   const resumen=`<div class="card"><div class="rc-card-title">◷ Ocupación del día</div><div style="font-size:34px;font-weight:800;font-family:var(--font-display,inherit);color:var(--text);margin:8px 0 2px;">${d.ocup}%</div><div class="card-sub" style="color:var(--text3);">${d.reservasHoy} reservas · ${d.cupoTotal} lugares · ${llenas.length} llena${llenas.length===1?'':'s'}</div></div>`;
   return `<div style="display:flex;align-items:baseline;gap:10px;margin:2px 0 16px;"><div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);">Tu día en el studio</div><div style="flex:1;height:1px;background:var(--border);"></div><div style="font-size:11px;color:var(--text3);">${d.numClases} clase${d.numClases===1?'':'s'} hoy</div></div>`
-    + kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${resumen}${atencion}</div></div>`;
+    + kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${resumen}${_studiosCreditosHTML()}${atencion}</div></div>`;
 }
 
 // ════════════════════════════════════════════════════════════════
