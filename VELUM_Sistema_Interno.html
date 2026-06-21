@@ -9359,6 +9359,14 @@ function _verticalizeUI(){
   document.querySelectorAll('#v-coaches strong').forEach(s=>{ if(/^(Coaches|Terapeutas|Instructores) ≠ Clientes/.test(s.textContent.trim())) s.textContent=_cp+' ≠ Clientes.'; });
   const _cmt=document.querySelector('#modal-coach .modal-title'); if(_cmt) _cmt.textContent='Agregar '+_cs.toLowerCase();
   document.querySelectorAll("#modal-coach label,#modal-edit-coach label").forEach(l=>{ if(/^(Clases que imparte|Servicios \/ especialidades)$/.test(l.textContent.trim())) l.textContent = rec?'Servicios / especialidades':'Clases que imparte'; });
+  // Hints de wizards: cuerpos largos por vertical (idempotentes — reusan _term/_pkUnidad).
+  const _u = (typeof _pkUnidad==='function')?_pkUnidad():'clases';
+  const _cpl = (typeof _term==='function')?_term('coaches').toLowerCase():'coaches';
+  document.querySelectorAll('.wzd-hint').forEach(h=>{ const t=h.textContent;
+    if(/equipo interno, separados de los clientes/.test(t)) h.textContent = `Los ${_cpl} son tu equipo interno, separados de los clientes. Solo el nombre es obligatorio.`;
+    if(/se cobra por tiempo o por número de/.test(t)) h.textContent = `Elige cómo funciona. Esto define si se cobra por tiempo o por número de ${_u}.`;
+    if(/Si ya es (socio|cliente), aparecer/.test(t)) h.textContent = `Escribe el nombre del cliente. Si ya es ${(rec||_stu)?'cliente':'socio'}, aparecerá en la lista al escribir.`;
+  });
 }
 
 function applyGymConfig(){
