@@ -2307,6 +2307,7 @@ async function load(){
     // V5: SEO + tracking + animaciones
     injectSEO(data);
     injectTracking(data.gym.meta_pixel_id, data.gym.google_tag_id);
+    _verticalizeStorefront(data.gym && data.gym.vertical);   // recovery: clases→sesiones, reservar→agendar/cita
     showApp();
     // Activar después del showApp para que elementos existan
     requestAnimationFrame(() => {
@@ -2317,6 +2318,39 @@ async function load(){
     console.error('storefront load error:', e);
     showError('Sin conexión. Verifica tu internet y recarga.');
   }
+}
+
+// ── Vocabulario por vertical (recovery habla de sesiones/citas, no clases/reservas) ──
+// Studios mantiene "clases/reservas" (su marketing boutique los usa). Solo recovery traduce.
+const _SF_TERMS = {
+  recovery: [
+    [/Reservar clase gratis/gi, 'Agendar sesión gratis'],
+    [/Reservar clase/gi, 'Agendar sesión'],
+    [/Reserva tu lugar/gi, 'Agenda tu sesión'],
+    [/Clase de prueba/gi, 'Sesión de prueba'],
+    [/[Tt]u primera clase/g, m=>m[0]==='T'?'Tu primera sesión':'tu primera sesión'],
+    [/primera clase/gi, 'primera sesión'],
+    [/Clases que ofrecemos/gi, 'Sesiones que ofrecemos'],
+    [/nuevas clases/gi, 'nuevas sesiones'],
+    [/cómo es una clase/gi, 'cómo es una sesión'],
+    [/\bclases\b/g, 'sesiones'],[/\bClases\b/g, 'Sesiones'],
+    [/\bclase\b/g, 'sesión'],[/\bClase\b/g, 'Sesión'],
+    [/\bReservar\b/g, 'Agendar'],[/\breservar\b/g, 'agendar'],
+    [/\bReservas\b/g, 'Citas'],[/\breservas\b/g, 'citas'],
+    [/\bReserva\b/g, 'Cita'],[/\breserva\b/g, 'cita'],
+  ],
+};
+function _verticalizeStorefront(vertical){
+  const map=_SF_TERMS[vertical]; if(!map) return;
+  const root=document.getElementById('app')||document.body; if(!root) return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+    if(!n.nodeValue||!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+    const tag=n.parentNode&&n.parentNode.nodeName;
+    if(tag==='SCRIPT'||tag==='STYLE'||tag==='NOSCRIPT') return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;
+  }});
+  const nodes=[]; let n; while(n=walker.nextNode()) nodes.push(n);
+  nodes.forEach(node=>{ let v=node.nodeValue; const o=v; for(const [re,rep] of map) v=v.replace(re,rep); if(v!==o) node.nodeValue=v; });
 }
 
 load();
