@@ -23992,6 +23992,7 @@ async function asignarSpot(reservaId, spotVal){
   if(error){ toast('No se pudo asignar el spot ❌','✕'); console.error('asignarSpot',error); return; }
   toast(spot ? `Spot ${spot} asignado ✦` : 'Spot liberado','✦');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
+  if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && typeof renderStudiosCal==='function') renderStudiosCal();
 }
 
 // Studios: agrega a la lista de espera de una clase llena.
@@ -24151,7 +24152,7 @@ async function renderStudiosCal(){
     const sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
     let hQ=window.supabaseClient.from('horarios').select('*'); if(gymId) hQ=hQ.eq('gym_id',gymId);
     let {data:clases}=await hQ; clases=(clases||[]);
-    let rQ=window.supabaseClient.from('reservas').select('horario_id,cliente_nombre,spot,estado').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday));
+    let rQ=window.supabaseClient.from('reservas').select('id,horario_id,cliente_nombre,spot,estado').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday));
     if(gymId) rQ=rQ.eq('gym_id',gymId);
     let {data:res}=await rQ; res=(res||[]).filter(r=>r.estado!=='cancelado');
     let wQ=window.supabaseClient.from('waitlist').select('id,horario_id,cliente_nombre').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday)).eq('estado','espera');
@@ -24196,15 +24197,26 @@ function _studiosCalHTML(clases,res,wl){
 }
 
 function _studiosClassPanel(c,reservas,waitlist){
-  const cap=c.cupo||0; const taken=new Set(reservas.map(r=>r.spot).filter(s=>s!=null));
-  let spots=''; for(let i=1;i<=cap;i++){ spots+=`<div class="sc-spot${taken.has(i)?' taken':''}">${i}</div>`; }
-  if(!cap) spots='<div class="card-sub" style="color:var(--text3);">Sin cupo definido</div>';
+  const cap=c.cupo||0;
+  const bySpot={}; reservas.forEach(r=>{ if(r.spot!=null) bySpot[r.spot]=r; });
+  const sinAsignar=reservas.filter(r=>r.spot==null && r.id);
+  let spots='';
+  for(let i=1;i<=cap;i++){
+    const occ=bySpot[i];
+    if(occ){ const ini=(occ.cliente_nombre||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      spots+=`<div class="sc-spot taken"${occ.id?` onclick="asignarSpot('${occ.id}','')" style="cursor:pointer;"`:''} title="${esc(occ.cliente_nombre||'')}${occ.id?' — clic para liberar':''}">${esc(ini)}</div>`;
+    } else if(sinAsignar.length){
+      spots+=`<div class="sc-spot" onclick="asignarSpot('${sinAsignar[0].id}',${i})" style="cursor:pointer;" title="Sentar a ${esc(sinAsignar[0].cliente_nombre||'cliente')} aquí">${i}</div>`;
+    } else { spots+=`<div class="sc-spot">${i}</div>`; }
+  }
+  const spotHint = sinAsignar.length ? `<div class="card-sub" style="color:var(--warn);font-size:11px;margin-top:6px;">${sinAsignar.length} sin lugar — toca un espacio libre para asignar</div>` : '';
+  if(!cap){ spots='<div class="card-sub" style="color:var(--text3);">Sin cupo definido</div>'; }
   const wlHtml = waitlist.length ? waitlist.map((w,i)=>`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${esc(w.cliente_nombre||'—')}</div></div>${w.id?`<button onclick="promoverDeWaitlist('${w.id}')" title="Mover al primer lugar libre" style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;background:color-mix(in srgb, var(--ok) 14%, transparent);color:var(--ok);border:1px solid color-mix(in srgb, var(--ok) 30%, transparent);cursor:pointer;margin-right:6px;">Promover</button>`:''}<span class="rc-badge">#${i+1}</span></div>`).join('') : `<div class="card-sub" style="color:var(--text3);padding:6px 0;">Sin lista de espera.</div>`;
   return `<div class="rc-side"><div class="card">
     <div class="rc-side-top"><div class="rc-card-title">${esc(c.tipo||'Clase')}</div><span class="rc-badge">${esc(c.dia||'')} · ${esc(c.hora||'')}</span></div>
     <div class="rc-csub" style="margin-bottom:2px;">${c.coach_nombre?esc(c.coach_nombre)+' · ':''}${reservas.length}/${cap} lugares${reservas.length>=cap&&cap>0?' · <b style="color:var(--danger);">LLENO</b>':''}</div>
     <div class="rc-proto-head">◇ Mapa de lugares / reformers</div>
-    <div class="sc-spots">${spots}</div>
+    <div class="sc-spots">${spots}</div>${spotHint}
   </div>
   <div class="card"${waitlist.length?' style="border-color:color-mix(in srgb, var(--warn) 32%, transparent);"':''}><div class="rc-card-title"${waitlist.length?' style="color:var(--warn);"':''}>⏳ Lista de espera (${waitlist.length})</div>${waitlist.length?`<div class="card-sub" style="margin:2px 0 4px;color:var(--text3);">${waitlist.length} esperando un lugar — promuévelos al liberarse</div>`:''}<div style="margin-top:8px;">${wlHtml}</div></div></div>`;
 }
