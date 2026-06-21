@@ -4166,8 +4166,14 @@ body::before{
             <button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button>
           </div>
         </div>
+        <!-- Filtros: colapsados bajo un botón (desplegable) para no saturar la vista -->
+        <button id="pagos-filtros-toggle" onclick="togglePagosFilters()" style="display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 13px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text2);cursor:pointer;margin-bottom:14px;user-select:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span>Filtros</span><span id="pagos-filtros-count" style="display:none;background:var(--accent);color:#06140f;font-size:10px;font-weight:800;padding:0 6px;border-radius:10px;line-height:16px;"></span>
+          <svg id="pagos-filtros-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;margin-left:1px;" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
         <!-- Filters -->
-        <div id="pagos-filters" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 0 14px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">
+        <div id="pagos-filters" style="display:none;flex-wrap:wrap;gap:8px;padding:0 0 14px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;">Estado:</span>
             <button class="pf-btn active" data-filter="estado" data-val="todos" onclick="setPagoFilter('estado','todos',this)">Todos</button>
@@ -21058,6 +21064,21 @@ function setPagoFilter(key, val, btn){
   group.forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderPagos();
+  _updatePagosFilterCount();
+}
+// Filtros de Pagos colapsables: badge con el # de filtros activos (≠ 'todos').
+function _updatePagosFilterCount(){
+  const badge=document.getElementById('pagos-filtros-count'); if(!badge) return;
+  const n=['estado','plan','metodo'].filter(k=>pagoFilter[k] && pagoFilter[k]!=='todos').length;
+  if(n>0){ badge.textContent=n; badge.style.display=''; } else { badge.style.display='none'; }
+}
+function togglePagosFilters(){
+  const f=document.getElementById('pagos-filters'); const chev=document.getElementById('pagos-filtros-chev');
+  if(!f) return;
+  const open = getComputedStyle(f).display!=='none';
+  f.style.display = open ? 'none' : 'flex';
+  if(chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+  _updatePagosFilterCount();
 }
 
 // Genera los botones de filtro de plan desde los planes REALES que aparecen en
@@ -21096,6 +21117,7 @@ function getPagoEstado(p, today, in7){
 function renderPagos(){
   // Filtros de plan dinámicos (planes reales del gym)
   renderPlanFilters();
+  _updatePagosFilterCount();
   // ─── KPIs reales ────────────────────────────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
   const in7   = new Date(today); in7.setDate(today.getDate()+7);
