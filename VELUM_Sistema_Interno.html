@@ -3504,7 +3504,7 @@ body::before{
           <div id="sa-ctx-gym-list" style="max-height:220px;overflow-y:auto;"></div>
         </div>
       </div>
-      <button class="btn btn-primary" id="topBtn" onclick="openModal('lead')">+ Nuevo Lead</button>
+      <button class="btn btn-primary" id="topBtn" style="display:none;"></button>
       <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="notif-dot" id="notif-dot" style="display:none;"></span>
@@ -10259,7 +10259,6 @@ const topTitles = {
   settings:    ['Configuración',             'Apariencia · Usuarios · Mi cuenta'],
 };
 const topBtnLabels = {
-  dashboard:   '+ Nuevo Lead',
   crm:         '+ Nuevo Prospecto',
   pipeline:    '+ Nuevo Lead',
   pagos:       '+ Registrar Pago',
@@ -10287,7 +10286,6 @@ const topBtnLabels = {
   settings:    '+ Nuevo Usuario',
 };
 const topBtnActions = {
-  dashboard:   ()=>openModal('lead'),
   crm:         ()=>openModal('lead'),
   pipeline:    ()=>openModal('lead'),
   coaches:     ()=>openModal('coach'),
@@ -10681,6 +10679,7 @@ function go(id, el){
   topBtn.onclick = topBtnActions[id]||null;
   // Hide + button in settings for non-admins (coaches, marketing, etc.)
   if(id==='settings') topBtn.style.display = (currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) ? 'inline-flex' : 'none';
+  else if(id==='dashboard' || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='pipeline')    renderPipeline();
