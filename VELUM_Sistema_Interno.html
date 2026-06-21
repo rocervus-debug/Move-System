@@ -24076,8 +24076,11 @@ function _studiosCalHTML(clases,res,wl){
       if(!cs.length){ g+=`<div class="sc-cell"></div>`; return; }
       g+=`<div class="sc-cell">`+cs.map(c=>{
         const r=(resBy[c.id]||[]).length, cap=c.cupo||0, full=cap>0&&r>=cap;
+        const wlN=(wlBy[c.id]||[]).length;
+        const pct=cap>0?Math.min(100,Math.round(r/cap*100)):0;
+        const barCol=full?'var(--danger)':(pct>=60?'#fbbf24':'var(--accent)');
         const sel=String(c.id)===String(_scSelId)?' sel':'';
-        return `<div class="sc-cls${full?' full':''}${sel}" onclick="selStudiosClass('${c.id}')"><div class="sc-cls-t">${esc(c.tipo||'Clase')}</div><div class="sc-cls-o">${r}/${cap}${full?' · lleno':''}</div></div>`;
+        return `<div class="sc-cls${full?' full':''}${sel}" onclick="selStudiosClass('${c.id}')"><div class="sc-cls-t">${esc(c.tipo||'Clase')}</div><div class="sc-cls-o">${r}/${cap}${full?' · <b style="color:var(--danger);">LLENO</b>':''}${wlN?` <b style="color:var(--warn);">+${wlN}</b>`:''}</div><div style="height:3px;background:rgba(255,255,255,.09);border-radius:2px;margin-top:4px;"><div style="width:${pct}%;height:100%;background:${barCol};border-radius:2px;transition:width .3s;"></div></div></div>`;
       }).join('')+`</div>`;
     });
   });
@@ -24085,7 +24088,7 @@ function _studiosCalHTML(clases,res,wl){
   const sel=clases.find(c=>String(c.id)===String(_scSelId));
   const panel = sel ? _studiosClassPanel(sel,resBy[sel.id]||[],wlBy[sel.id]||[]) : `<div class="card rc-side-empty"><div class="rc-side-emptyico">◷</div><div class="rc-card-title" style="margin-bottom:4px;">Clase seleccionada</div><div class="card-sub" style="color:var(--text3);">Toca una clase en el calendario para ver su cupo y lista de espera.</div></div>`;
   return `<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 14px;"><div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);">Calendario de clases</div><div style="flex:1;height:1px;background:var(--border);"></div><div style="font-size:11px;color:var(--text3);">Semana actual · ${clases.length} en plantilla</div></div>`
-    + `<div class="sc-layout"><div class="card" style="padding:14px;">${g}<div class="rc-legend" style="margin-top:12px;"><span><span class="rc-dot" style="background:var(--accent)"></span>Con cupo</span><span><span class="rc-dot" style="background:#fbbf24"></span>Lleno</span><span><span class="rc-dot" style="background:var(--accent);box-shadow:var(--glow)"></span>Seleccionada</span></div></div>${panel}</div>`;
+    + `<div class="sc-layout"><div class="card" style="padding:14px;">${g}<div class="rc-legend" style="margin-top:12px;"><span><span class="rc-dot" style="background:var(--accent)"></span>Disponible</span><span><span class="rc-dot" style="background:#fbbf24"></span>Casi lleno</span><span><span class="rc-dot" style="background:var(--danger)"></span>Lleno</span><span><b style="color:var(--warn);">+N</b>&nbsp;en espera</span></div></div>${panel}</div>`;
 }
 
 function _studiosClassPanel(c,reservas,waitlist){
@@ -24095,11 +24098,11 @@ function _studiosClassPanel(c,reservas,waitlist){
   const wlHtml = waitlist.length ? waitlist.map((w,i)=>`<div class="rd-row"><span class="rc-dot" style="background:var(--warn)"></span><div style="flex:1;"><div class="rd-tl-name">${esc(w.cliente_nombre||'—')}</div></div><span class="rc-badge">#${i+1}</span></div>`).join('') : `<div class="card-sub" style="color:var(--text3);padding:6px 0;">Sin lista de espera.</div>`;
   return `<div class="rc-side"><div class="card">
     <div class="rc-side-top"><div class="rc-card-title">${esc(c.tipo||'Clase')}</div><span class="rc-badge">${esc(c.dia||'')} · ${esc(c.hora||'')}</span></div>
-    <div class="rc-csub" style="margin-bottom:2px;">${c.coach_nombre?esc(c.coach_nombre)+' · ':''}${reservas.length}/${cap} lugares${reservas.length>=cap&&cap>0?' · lleno':''}</div>
+    <div class="rc-csub" style="margin-bottom:2px;">${c.coach_nombre?esc(c.coach_nombre)+' · ':''}${reservas.length}/${cap} lugares${reservas.length>=cap&&cap>0?' · <b style="color:var(--danger);">LLENO</b>':''}</div>
     <div class="rc-proto-head">◇ Mapa de lugares / reformers</div>
     <div class="sc-spots">${spots}</div>
   </div>
-  <div class="card"><div class="rc-card-title">⏳ Lista de espera (${waitlist.length})</div><div style="margin-top:8px;">${wlHtml}</div></div></div>`;
+  <div class="card"${waitlist.length?' style="border-color:color-mix(in srgb, var(--warn) 32%, transparent);"':''}><div class="rc-card-title"${waitlist.length?' style="color:var(--warn);"':''}>⏳ Lista de espera (${waitlist.length})</div>${waitlist.length?`<div class="card-sub" style="margin:2px 0 4px;color:var(--text3);">${waitlist.length} esperando un lugar — promuévelos al liberarse</div>`:''}<div style="margin-top:8px;">${wlHtml}</div></div></div>`;
 }
 
 let _asistSearchTimer = null;
