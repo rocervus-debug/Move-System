@@ -9229,6 +9229,7 @@ function applyVertical(vertical){
   if(typeof renderRecoveryDash === 'function') renderRecoveryDash(); // dashboard bespoke recovery
   if(typeof renderStudiosCal === 'function') renderStudiosCal();     // calendario semanal bespoke studios
   if(typeof _verticalizeUI === 'function') _verticalizeUI();         // relabels finos + ocultar lo que no aplica al giro
+  if(typeof _applyDataTerms === 'function') _applyDataTerms();       // traduce elementos [data-term] vía _TERMS
   if(_gymVertical === 'gym') return;   // gym = base: conserva su propio color/acento (cyan por defecto)
   const def = _VERTICAL_DEFAULTS[_gymVertical];
   // Si el gym no eligió un color propio, usar el acento de la vertical.
@@ -9314,6 +9315,19 @@ function applyVerticalModules(vertical){
 }
 
 // Relabels finos in-page + ocultar funciones que no aplican al giro. Idempotente (restaura en gym/studios).
+// ── Diccionario de vocabulario por vertical (fuente única de verdad) ──
+// Centraliza los términos que antes vivían dispersos en ternarios. Úsalo vía _term('clave').
+// Para etiquetas nuevas, marca el elemento con data-term="clave" y _applyDataTerms() lo traduce.
+const _TERMS = {
+  gym:      { coach:'Coach',      coaches:'Coaches',      cliente:'Atleta',  clientes:'Atletas',  reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'clases'   },
+  studios:  { coach:'Instructor', coaches:'Instructores', cliente:'Cliente', clientes:'Clientes', reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'créditos' },
+  recovery: { coach:'Terapeuta',  coaches:'Terapeutas',   cliente:'Cliente', clientes:'Clientes', reserva:'Cita',    reservas:'Citas',    sesion:'Sesión', sesiones:'Sesiones', unidadPaq:'sesiones' },
+};
+function _term(key){ const t=_TERMS[_gymVertical]||_TERMS.gym; return (key in t)?t[key]:(_TERMS.gym[key]||''); }
+// Traduce cualquier elemento con [data-term="clave"] al giro actual (mecanismo a futuro).
+function _applyDataTerms(root){
+  (root||document).querySelectorAll('[data-term]').forEach(el=>{ const v=_term(el.getAttribute('data-term')); if(v) el.textContent=v; });
+}
 function _verticalizeUI(){
   const rec = (_gymVertical==='recovery');
   // Clientes: filtros con vocabulario del giro
@@ -9337,8 +9351,8 @@ function _verticalizeUI(){
   document.querySelectorAll('.settings-section-sub').forEach(e=>{ if(/permiso de notificaciones/.test(e.textContent))
     e.textContent = `Envía un mensaje directo a todos los ${_cliWord?'clientes':'atletas'} de tu gym que tengan el portal instalado y hayan dado permiso de notificaciones.`; });
   // Vista Coaches → Terapeutas (recovery) / Instructores (studios)
-  const _cs = rec?'Terapeuta':(_gymVertical==='studios'?'Instructor':'Coach');
-  const _cp = rec?'Terapeutas':(_gymVertical==='studios'?'Instructores':'Coaches');
+  const _cs = _term('coach');   // Coach / Instructor / Terapeuta
+  const _cp = _term('coaches'); // Coaches / Instructores / Terapeutas
   const _csh=document.querySelector('#v-coaches .sh-title'); if(_csh) _csh.textContent='Equipo de '+_cp;
   document.querySelectorAll('#v-coaches button[onclick="openModal(\'coach\')"]').forEach(b=>{ b.textContent='+ Agregar '+_cs; });
   document.querySelectorAll('#v-coaches .empty-title').forEach(e=>{ if(/^Sin (coaches|terapeutas|instructores) registrad/i.test(e.textContent.trim())) e.textContent='Sin '+_cp.toLowerCase()+' registrados'; });
@@ -20020,8 +20034,8 @@ wizRegister('clase', {
 // CREAR PAQUETE (modal-paquete) — 3 pasos. Inserta en 'packages' con el mismo
 // payload que agregarPlan (no rompe el form inline de Configuración).
 // Tipos de paquete por vertical (el modelo es el mismo; cambia el vocabulario del giro).
-function _pkUnidad(){ return _gymVertical==='recovery' ? 'sesiones' : (_gymVertical==='studios' ? 'créditos' : 'clases'); }
-function _pkUnidadCap(){ return _gymVertical==='recovery' ? 'Sesiones' : (_gymVertical==='studios' ? 'Créditos' : 'Clases'); }
+function _pkUnidad(){ return _term('unidadPaq'); } // clases / créditos / sesiones (desde _TERMS)
+function _pkUnidadCap(){ const u=_term('unidadPaq'); return u.charAt(0).toUpperCase()+u.slice(1); }
 function _paqueteTipos(){
   if(_gymVertical==='recovery') return [
     {v:'ilimitado', ico:'♾️',  name:'Membresía ilimitada', sub:'Acceso libre a los recursos por X días (mensual, trimestral…)', dias:30},
