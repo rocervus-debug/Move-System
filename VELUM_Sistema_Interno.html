@@ -19850,6 +19850,30 @@ async function renderRecoveryDash(){
   }catch(e){ console.warn('renderRecoveryDash:', e); host.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el dashboard.</div>'; }
 }
 
+// Saldos de sesiones para el dashboard de recovery: clientes con paquete por agotarse (renovación).
+function _recoverySaldosHTML(){
+  if(typeof pagos==='undefined' || !Array.isArray(pagos)) return '';
+  const byClient={};
+  pagos.filter(p=>p.clases_totales).forEach(p=>{
+    const n=(p.cliente||'').trim(); if(!n) return;
+    const rem=p.clases_totales-(p.clases_usadas??0);
+    if(!(n in byClient) || rem>byClient[n]) byClient[n]=rem;  // su paquete con más saldo
+  });
+  const arr=Object.entries(byClient).map(([n,rem])=>({n,rem})).sort((a,b)=>a.rem-b.rem);
+  if(!arr.length) return '';  // sin paquetes de sesiones → no mostrar el card
+  const low=arr.filter(x=>x.rem<=2);
+  let body;
+  if(!low.length){
+    body=`<div style="color:var(--text3);font-size:13px;padding:6px 0;">Los ${arr.length} clientes con paquete tienen saldo suficiente ✓</div>`;
+  } else {
+    body=low.slice(0,6).map(x=>{
+      const col=x.rem<=0?'var(--danger)':'var(--warn)';
+      const txt=x.rem<=0?'Agotado':`${x.rem} sesi${x.rem===1?'ón':'ones'}`;
+      return `<div class="rd-row"><span class="rc-dot" style="background:${col}"></span><div style="flex:1;"><div class="rd-tl-name">${esc(x.n)}</div><div class="rd-tl-sub">Saldo bajo — oportunidad de renovación</div></div><span class="rd-badge" style="background:color-mix(in srgb, ${col} 16%, transparent);color:${col};">${txt}</span></div>`;
+    }).join('');
+  }
+  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="rc-card-title">◈ Saldos de sesiones</div><a onclick="go('pagos',document.getElementById('nav-pagos'))" style="font-size:12px;color:var(--accent);cursor:pointer;">Ver todos →</a></div><div class="card-sub" style="margin:2px 0 10px;color:var(--text3);">Clientes por renovar</div>${body}</div>`;
+}
 function _recoveryDashHTML(citas){
   const activos=recursosDB.filter(r=>r.activo);
   const toMin=h=>{const p=(h||'0:0').split(':');return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);};
@@ -19871,14 +19895,22 @@ function _recoveryDashHTML(citas){
   </div>`;
 
   const sorted=[...citas].sort((a,b)=>(a.hora_inicio||'').localeCompare(b.hora_inicio||''));
-  const tl = sorted.length ? sorted.map(c=>{
+  const _row = c=>{
     const rec=recursosDB.find(r=>String(r.id)===String(c.recurso_id));
     const ini=toMin(c.hora_inicio), fin=ini+(c.duracion_min||0);
     const isNow = c.estado==='agendada' && nowMin>=ini && nowMin<fin;
-    const rowCls = c.estado==='completada'?'done':(isNow?'now':'');
+    const rowCls = (c.estado==='completada'||c.estado==='no_show')?'done':(isNow?'now':'');
     const badge = c.estado==='completada'?'<span class="rd-badge rd-b-ok">Completada</span>':c.estado==='no_show'?'<span class="rd-badge rd-b-warn">No-show</span>':isNow?'<span class="rd-badge rd-b-accent">En curso</span>':'<span class="rd-badge rd-b-muted">Agendada</span>';
     return `<div class="rd-tl-row ${rowCls}"><div class="rd-tl-time"><div class="h">${esc(c.hora_inicio||'--:--')}</div><div class="m">${c.duracion_min} min</div></div><div class="rd-tl-line"><span class="rd-tl-dot"></span></div><div class="rd-tl-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><div class="rd-tl-name">${esc(c.cliente_nombre||'—')}</div>${badge}</div><div class="rd-tl-sub">${rec?esc(rec.nombre):'—'}${c.protocolo?' · '+esc(c.protocolo):''}</div></div></div>`;
-  }).join('') : `<div style="color:var(--text3);font-size:13px;padding:16px 0;text-align:center;">Sin citas para hoy. <a onclick="openModal('cita')" style="color:var(--accent);cursor:pointer;">Agendar una →</a></div>`;
+  };
+  const _hdr = t=>`<div style="font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--text4);margin:12px 0 6px;">${t}</div>`;
+  const _upc = sorted.filter(c=>c.estado==='agendada');
+  const _atd = sorted.filter(c=>c.estado==='completada'||c.estado==='no_show');
+  const tl = !sorted.length
+    ? `<div style="color:var(--text3);font-size:13px;padding:16px 0;text-align:center;">Sin citas para hoy. <a onclick="openModal('cita')" style="color:var(--accent);cursor:pointer;">Agendar una →</a></div>`
+    : ( (_upc.length && _atd.length)
+        ? _hdr(`Por venir · ${_upc.length}`) + _upc.map(_row).join('') + _hdr('Atendidas') + _atd.map(_row).join('')
+        : sorted.map(_row).join('') );
   const agenda=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><div class="rc-card-title">▦ Agenda de hoy</div><a onclick="go('citas',document.getElementById('nav-citas'))" style="font-size:12px;color:var(--accent);cursor:pointer;">Ver por recurso →</a></div><div class="card-sub" style="margin-bottom:12px;color:var(--text3);">Citas 1-a-1 · protocolo por sesión</div>${tl}</div>`;
 
   const resHtml = activos.length ? activos.map(r=>{
@@ -19899,7 +19931,7 @@ function _recoveryDashHTML(citas){
   if(!alerts.length) alerts.push(`<div style="color:var(--text3);font-size:13px;padding:8px 0;">Todo en orden ✓ — sin pendientes urgentes.</div>`);
   const atencion=`<div class="card"><div class="rc-card-title">⚑ Requiere atención</div><div style="margin-top:6px;">${alerts.join('')}</div></div>`;
 
-  return kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${recursos}${atencion}</div></div>`;
+  return kpis + `<div class="rd-grid2">${agenda}<div class="rd-side">${recursos}${_recoverySaldosHTML()}${atencion}</div></div>`;
 }
 
 // REGISTRAR VISITA / CHECK-IN (modal-visita) — 3 pasos
