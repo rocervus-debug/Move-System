@@ -23552,7 +23552,8 @@ async function loadReservasHoy(){
     const hids = [...new Set(reservas.map(r=>r.horario_id).filter(Boolean))];
     let cupoMap = {};
     if(hids.length){
-      const { data: hData } = await window.supabaseClient.from('horarios').select('id,cupo').in('id', hids);
+      const { data: hData, error: hErr } = await window.supabaseClient.from('horarios').select('id,cupo').in('id', hids);
+      if(hErr) console.warn('horarios cupo query:', hErr.message);
       (hData||[]).forEach(h=>{ cupoMap[h.id] = h.cupo||0; });
     }
 
@@ -23843,7 +23844,8 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
         .select('id,cliente_nombre,posicion').eq('horario_id',horarioId).eq('fecha',hoyStr).eq('estado','espera')
         .order('posicion',{ascending:true});
       if(gymId) wq = wq.eq('gym_id',gymId);
-      const { data:wl } = await wq;
+      const { data:wl, error:wlErr } = await wq;
+      if(wlErr) console.warn('waitlist query:', wlErr.message);
       if(wl && wl.length){
         waitlistHtml = `
           <div style="font-size:11px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.8px;margin:22px 0 8px;">⏳ Lista de espera · ${wl.length}</div>
