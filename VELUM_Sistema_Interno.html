@@ -19630,6 +19630,14 @@ function _citaProtoPasos(nombre){
 }
 
 // Panel lateral "Cita seleccionada" (con protocolo paso-a-paso), como el mockup.
+// Checklist de protocolo en la cita: el terapeuta marca pasos durante la sesión.
+// Persiste en localStorage por cita (sobrevive recarga, sin tocar esquema).
+function _citaStepsGet(id){ try{ return new Set(JSON.parse(localStorage.getItem('velum_cita_steps_'+id)||'[]')); }catch(_){ return new Set(); } }
+function toggleCitaStep(id, idx){
+  const s=_citaStepsGet(id); s.has(idx)?s.delete(idx):s.add(idx);
+  try{ localStorage.setItem('velum_cita_steps_'+id, JSON.stringify([...s])); }catch(_){}
+  if(typeof renderCitas==='function') renderCitas();
+}
 // Saldo de sesiones del cliente de una cita (recovery): busca su paquete en `pagos` por nombre
 // (mismo modelo name-keyed que usa el dashboard de "paquetes por agotarse"). Vacío si no tiene paquete.
 function _citaSaldoChip(c){
@@ -19654,10 +19662,12 @@ function _citaPanelHTML(c){
   const recurso=recursosDB.find(r=>String(r.id)===String(c.recurso_id));
   const ini=(c.cliente_nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   const pasos=_citaProtoPasos(c.protocolo);
+  const _sd=(typeof _citaStepsGet==='function')?_citaStepsGet(c.id):new Set();
+  const _ndone=pasos.filter((_,i)=>_sd.has(i)).length;
   const protoBlock = c.protocolo
-    ? `<div class="rc-proto-head">❋ Protocolo · ${esc(c.protocolo)}</div>`
+    ? `<div class="rc-proto-head">❋ Protocolo · ${esc(c.protocolo)}${pasos.length?` <span style="color:var(--text3);font-weight:400;">· ${_ndone}/${pasos.length} pasos</span>`:''}</div>`
       + (pasos.length
-          ? pasos.map((p,i)=>`<div class="rc-step"><span class="rc-num">${i+1}</span><div class="rc-step-main"><div class="rc-step-name">${esc(p)}</div></div></div>`).join('')
+          ? pasos.map((p,i)=>{ const dn=_sd.has(i); return `<div class="rc-step" onclick="toggleCitaStep('${c.id}',${i})" style="cursor:pointer;${dn?'opacity:.55;':''}"><span class="rc-num"${dn?' style="background:var(--ok);border-color:var(--ok);color:#06140f;"':''}>${dn?'✓':i+1}</span><div class="rc-step-main"><div class="rc-step-name"${dn?' style="text-decoration:line-through;"':''}>${esc(p)}</div></div></div>`; }).join('')
           : `<div class="card-sub" style="padding:6px 0;color:var(--text3);">Protocolo sin pasos detallados.</div>`)
     : `<div class="card-sub" style="margin:10px 0;color:var(--text3);">Sin protocolo asignado.</div>`;
   const acciones = c.estado==='agendada'
