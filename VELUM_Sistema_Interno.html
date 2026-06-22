@@ -3327,6 +3327,9 @@ body::before{
       <div class="nav-item" id="nav-pagos" onclick="go('pagos',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="nav-label-text nav-lbl-desktop"> Pagos & Renovaciones</span><span class="nav-lbl-mob">Pagos</span>
       </div>
+      <div class="nav-item mob-hidden" id="nav-domiciliados" onclick="go('domiciliados',this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="nav-label-text"> Domiciliados</span>
+      </div>
       <div class="nav-item mob-hidden" id="nav-visitas" onclick="go('visitas',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-label-text"> Visitas del Día</span>
         <span class="nav-badge" id="badge-visitas-hoy" style="display:none;background:#a78bfa;">0</span>
@@ -4124,6 +4127,15 @@ body::before{
     </div>
 
     <!-- ══ PAGOS ══ -->
+    <div class="view" id="v-domiciliados">
+      <div id="domi-root" style="max-width:1080px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text3);line-height:1.5;max-width:560px;">Cobros recurrentes de tus atletas con tarjeta domiciliada. Aquí ves <strong style="color:var(--text2);">cuánto entra, cuándo se cobra y cuándo cae en tu banco</strong>.</div>
+          <button class="btn btn-primary btn-sm" onclick="domiIrADomiciliar()" style="white-space:nowrap;">+ Domiciliar atleta</button>
+        </div>
+        <div id="domi-body"><div class="card" style="text-align:center;color:var(--text3);padding:30px;">Cargando domiciliados…</div></div>
+      </div>
+    </div>
     <div class="view" id="v-pagos">
       <!-- Navegador de mes -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
@@ -10236,6 +10248,7 @@ const topTitles = {
   crm:         ['CRM & Prospectos',          'Gestión comercial de clientes y prospectos'],
   pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
   pagos:       ['Pagos & Renovaciones',      ()=>`Control de ingresos · ${_mesLabel()}`],
+  domiciliados:['Domiciliados',              'Dinero entrante de cobros recurrentes'],
   visitas:     ['Visitas del Día',           ()=>`Pases de día · ${_mesLabel()}`],
   clientes:    ['Clientes',                  'Directorio de socios activos y membresías'],
   asistencia:  ['Asistencia',               ()=>`Registro de asistencia · ${_todayLabel()}`],
@@ -10692,6 +10705,7 @@ function go(id, el){
   if(id==='evaluaciones'){renderEvalSelects(); renderEvalHistory();}
   if(id==='dashboard')   { renderDashboard(); if(typeof renderRecoveryDash==='function') renderRecoveryDash(); }
   if(id==='pagos')       renderPagos();
+  if(id==='domiciliados') renderDomiciliados();
   if(id==='clientes')    renderClientes();
   if(id==='visitas')     renderVisitas();
   if(id==='retencion')       renderRetencion();
@@ -15021,6 +15035,137 @@ async function eliminarPlan(id){
   await loadPackagesFromCatalog();
   renderPlanes();
   toast('Plan eliminado del catálogo ✓', '✅');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DOMICILIADOS — Dinero entrante de cobros recurrentes (Stripe)
+// ═══════════════════════════════════════════════════════════════════
+function _domiMoneyFmt(n){ return '$'+Math.round(+n||0).toLocaleString('es-MX'); }
+function _domiFecha(d){
+  if(!d) return '—';
+  try{ let s=String(d); if(/^\d{4}-\d{2}-\d{2}$/.test(s)) s+='T12:00:00';
+    return new Date(s).toLocaleDateString('es-MX',{day:'numeric',month:'short'}); }
+  catch(_){ return '—'; }
+}
+function _domiMetric(label,val,sub,color){
+  return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:6px;">${label}</div>
+    <div style="font-size:23px;font-weight:800;color:${color};font-variant-numeric:tabular-nums;line-height:1.1;">${val}</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:3px;">${sub}</div>
+  </div>`;
+}
+function _domiBadge(txt,color){
+  return `<span style="font-size:11px;font-weight:700;color:${color};background:color-mix(in srgb,${color} 14%,transparent);padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;">${txt}</span>`;
+}
+function _domiSubRow(s){
+  const monto = s.amount_cents ? _domiMoneyFmt(s.amount_cents/100)+'/mes' : '';
+  const plan  = (s.packages&&s.packages.name)?s.packages.name:'Plan domiciliado';
+  const next  = _domiFecha(s.current_period_end);
+  const ini   = (s.cliente_nombre||'S').trim().split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()||'S';
+  let badge, sub, brd='var(--border)';
+  if(s.cancel_at_period_end){ badge=_domiBadge('Cancela','var(--warn)'); sub='se cancela al fin del periodo'; }
+  else if(s.status==='active'){    badge=_domiBadge('Al corriente','var(--ok)');     sub='próx. cobro '+next; }
+  else if(s.status==='past_due'){  badge=_domiBadge('Cobro falló','var(--danger)');  sub='tarjeta rechazada · reintentando'; brd='color-mix(in srgb,var(--danger) 28%,transparent)'; }
+  else if(s.status==='trialing'){  badge=_domiBadge('Prueba','var(--accent)');       sub='inicia cobro '+next; }
+  else {                            badge=_domiBadge('Por activar','var(--text3)');    sub='falta completar el registro de tarjeta'; }
+  return `<div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid ${brd};border-radius:11px;padding:10px 13px;">
+    <div style="width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${esc(ini)}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;"><span style="font-size:13.5px;font-weight:700;">${esc(s.cliente_nombre||'Socio')}</span><span style="font-size:11.5px;color:var(--accent);font-weight:700;">${monto}</span></div>
+      <div style="font-size:11.5px;color:var(--text3);margin-top:2px;">${esc(plan)} · ${sub}</div>
+    </div>
+    ${badge}
+  </div>`;
+}
+function _domiCobroRow(p){
+  const nombre=p.cliente||p.cliente_nombre||'Suscriptor', plan=p.plan||'Membresía';
+  return `<div style="display:flex;align-items:center;gap:11px;padding:9px 2px;border-bottom:1px solid var(--border);">
+    <span style="color:var(--ok);font-size:14px;flex-shrink:0;">↙</span>
+    <span style="flex:1;font-size:12.5px;color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(nombre)} · ${esc(plan)}</span>
+    <span style="font-size:12.5px;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums;flex-shrink:0;">+${_domiMoneyFmt(p.monto)}</span>
+    <span style="font-size:11px;color:var(--text3);min-width:46px;text-align:right;flex-shrink:0;">${_domiFecha(p.fecha)}</span>
+  </div>`;
+}
+function _domiEmpty(){
+  return `<div class="card" style="text-align:center;padding:34px 20px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Aún no hay atletas domiciliados</div>
+    <div style="font-size:13px;color:var(--text3);line-height:1.6;max-width:440px;margin:0 auto 16px;">Crea un plan <strong>"Mensualidad domiciliada"</strong>, publícalo en tu storefront o genera un link para que tus socios registren su tarjeta. El cobro se hace solo cada mes y aquí lo ves entrar.</div>
+    <button class="btn btn-primary btn-sm" onclick="domiIrADomiciliar()">+ Domiciliar un atleta</button>
+  </div>`;
+}
+function domiIrADomiciliar(){
+  const el=document.getElementById('nav-paquetes'); if(el) go('paquetes',el);
+  setTimeout(()=>{ try{ const f=document.getElementById('domi-form');
+    if(typeof toggleDomiForm==='function' && f && f.style.display==='none') toggleDomiForm();
+    document.getElementById('domiciliaciones-wrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }catch(_){}}, 280);
+}
+async function _domiLoadBanco(){
+  const host=document.getElementById('domi-banco'); if(!host) return;
+  host.innerHTML = `<div style="display:flex;align-items:center;gap:11px;background:color-mix(in srgb,var(--accent) 7%,transparent);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);border-radius:11px;padding:11px 14px;">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+    <div style="font-size:12.5px;color:var(--text2);line-height:1.5;">El dinero de cada cobro cae en tu cuenta <strong style="color:var(--text);">~2 días hábiles después</strong>. Conecta Stripe para ver el saldo exacto y la fecha de cada depósito.</div>
+  </div>`;
+  try{
+    if(!currentUser||!currentUser.jwt) return;
+    const res=await fetch(`${supabaseUrl}/functions/v1/velum-stripe-balance`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
+      body:'{}'
+    });
+    const d=await res.json();
+    if(!d || d.connected===false || d.error) return;  // conserva el fallback informativo
+    host.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+      ${_domiMetric('Disponible en banco', _domiMoneyFmt(d.available_mxn), 'listo para retirar', 'var(--ok)')}
+      ${_domiMetric('En tránsito', _domiMoneyFmt(d.in_transit_mxn), 'rumbo a tu cuenta', 'var(--accent)')}
+      ${_domiMetric('Próximo depósito', d.next_payout?_domiFecha(d.next_payout.arrival_date):'—', d.next_payout?_domiMoneyFmt(d.next_payout.amount_mxn):'sin depósitos en camino', 'var(--text)')}
+    </div>`;
+  }catch(e){ console.warn('domi banco', e); }
+}
+async function renderDomiciliados(){
+  const host=document.getElementById('domi-body'); if(!host) return;
+  const gymId=(typeof MOVE_GYM_ID!=='undefined'&&MOVE_GYM_ID)?MOVE_GYM_ID:((currentUser&&currentUser.gym_id)||1);
+  let subs=[];
+  try{
+    const { data } = await window.supabaseClient
+      .from('member_subscriptions')
+      .select('id, cliente_nombre, status, current_period_end, cancel_at_period_end, amount_cents, stripe_subscription_id, packages(name)')
+      .eq('gym_id', gymId)
+      .in('status',['active','past_due','incomplete','trialing'])
+      .order('current_period_end',{ascending:true});
+    subs=(data||[]).filter(s=>s.stripe_subscription_id);
+  }catch(e){ console.error('renderDomiciliados subs', e); if(typeof _handleSessionError==='function')_handleSessionError(e); }
+
+  const allPagos=(typeof pagos!=='undefined'&&Array.isArray(pagos))?pagos:[];
+  const cobros=allPagos.filter(p=>{ const n=(p.notas||''); const m=(p.metodo||'').toLowerCase();
+    return n.indexOf('[STRIPE-SUB]')>=0 || m==='stripe'; })
+    .sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));
+
+  const mrr        = subs.filter(s=>s.status==='active').reduce((a,s)=>a+((s.amount_cents||0)/100),0);
+  const activos    = subs.filter(s=>s.status==='active').length;
+  const enProceso  = subs.filter(s=>s.status==='past_due').reduce((a,s)=>a+((s.amount_cents||0)/100),0);
+  const enProcesoN = subs.filter(s=>s.status==='past_due').length;
+  const mes        = new Date().toISOString().slice(0,7);
+  const cobradoMes = cobros.filter(p=>String(p.fecha||'').slice(0,7)===mes).reduce((a,p)=>a+(+p.monto||0),0);
+  const cobradoMesN= cobros.filter(p=>String(p.fecha||'').slice(0,7)===mes).length;
+
+  host.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
+      ${_domiMetric('Ingreso mensual', _domiMoneyFmt(mrr), `${activos} atleta${activos===1?'':'s'} activo${activos===1?'':'s'} · /mes`, 'var(--accent)')}
+      ${_domiMetric('Cobrado este mes', _domiMoneyFmt(cobradoMes), `${cobradoMesN} cobro${cobradoMesN===1?'':'s'} exitoso${cobradoMesN===1?'':'s'}`, 'var(--ok)')}
+      ${_domiMetric('En proceso', _domiMoneyFmt(enProceso), enProcesoN?`${enProcesoN} reintentando`:'sin pendientes', 'var(--warn)')}
+    </div>
+    <div id="domi-banco" style="margin-bottom:18px;"></div>
+    ${ subs.length ? `<div class="card">
+        <div class="rc-card-title" style="margin-bottom:2px;">Próximos cobros</div>
+        <div class="card-sub" style="color:var(--text3);margin-bottom:12px;">Ordenado por fecha de cobro</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">${subs.map(_domiSubRow).join('')}</div>
+      </div>` : _domiEmpty() }
+    ${ cobros.length ? `<div class="card" style="margin-top:14px;">
+        <div class="rc-card-title" style="margin-bottom:10px;">Cobros recientes</div>
+        <div>${cobros.slice(0,8).map(_domiCobroRow).join('')}</div>
+      </div>` : '' }
+  `;
+  _domiLoadBanco();
 }
 
 async function loadMemberSubs(){
