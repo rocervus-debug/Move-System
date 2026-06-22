@@ -21069,11 +21069,14 @@ async function saveEditPago(){
   const epEsPaquete = epPlan.includes('Paquete');
   const epClasesTot = epEsPaquete ? (parseInt(document.getElementById('ep-clases-totales')?.value)||null) : null;
   const epClasesUsd = epEsPaquete ? (parseInt(document.getElementById('ep-clases-usadas')?.value)||0)   : 0;
+  // vence es NOT NULL: si quedó vacío, fallback a fecha de pago + 30 días (nunca null).
+  let _epVence = document.getElementById('ep-vence').value;
+  if(!_epVence){ const _d=new Date((fecha||new Date().toISOString().slice(0,10))+'T12:00:00'); _d.setDate(_d.getDate()+30); _epVence=_d.toISOString().slice(0,10); }
   const updates = {
     cliente, monto, fecha,
     plan:      epPlan,
     metodo:    document.getElementById('ep-metodo').value,
-    vence:     document.getElementById('ep-vence').value || null,
+    vence:     _epVence,
     notas:     document.getElementById('ep-notas').value.trim(),
     clases_totales: epClasesTot,
     clases_usadas:  epEsPaquete ? epClasesUsd : 0,
