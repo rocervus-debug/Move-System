@@ -22132,7 +22132,7 @@ async function saveHorarioOverride(){
   const tipo     = document.getElementById('hov-tipo').value;
 
   const cerrado  = coachVal === '__cerrado__';
-  const coachId  = cerrado ? null : (coachVal||null);
+  const coachId  = cerrado ? '' : (coachVal||'');   // coach_id es text NOT NULL → '' nunca null (mismo patrón que saveClase)
   const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)||c.nombre===coachId) : null;
   const coachNom = coachObj ? coachObj.nombre : '';
 
@@ -22158,7 +22158,7 @@ async function saveHorarioOverride(){
     err = r.error;
   }
 
-  if(err){ alert('Error al guardar: '+(err.message||err)); console.error('Error saving override:', err); return; }
+  if(err){ console.error('Error saving override:', err); if(_handleSessionError(err))return; toast('No se pudo guardar: '+(err.message||err),'❌',6000); return; }
 
   await loadHorarioOverridesFromSupabase();
   closeModal('horario-override');
