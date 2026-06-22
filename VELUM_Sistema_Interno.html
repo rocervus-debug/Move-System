@@ -10800,8 +10800,9 @@ function _handleJwtExpiry(){
   currentUser = null;
   toast('Tu sesión expiró. Vuelve a iniciar sesión.','🔒', 4000);
   setTimeout(()=>{
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login-screen').style.display = '';
+    const _aw = document.getElementById('app-wrapper');
+    if(_aw) _aw.style.display = 'none';
+    document.getElementById('login-screen').classList.remove('hidden');
   }, 1200);
 }
 // Detecta errores de sesión/permisos en un guardado y muestra un mensaje claro de "vuelve a
@@ -10813,6 +10814,14 @@ function _handleSessionError(error){
   const code = String(error.code||'');
   const isJwt = txt.includes('jwt') || txt.includes('expired') || txt.includes('invalid claim') || code==='PGRST301';
   const isRls = txt.includes('row-level security') || txt.includes('row level security') || code==='42501';
+  // Persistir TODO error de guardado en error_logs (cliente, sección, mensaje real) para diagnóstico instantáneo
+  try {
+    if(window.logMoveError){
+      const _tipo = isJwt ? 'sesion_expirada' : (isRls ? 'rls_denegado' : 'guardado_fallido');
+      const _det = [error.message, error.details, error.hint].filter(Boolean).join(' | ');
+      window.logMoveError(`${code?code+': ':''}${_det||'error desconocido'}`, '', error.stack||'', _tipo);
+    }
+  } catch(_){}
   if(isJwt){ _handleJwtExpiry(); return true; }
   if(isRls){
     toast('Tu sesión o permisos no permiten guardar esto. Cierra sesión y vuelve a entrar, luego reintenta.','🔒', 7000);
@@ -22914,8 +22923,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       clearSession();
       toast('Tu sesión expiró. Por favor vuelve a iniciar sesión.','🔒', 4000);
       // Skip to login screen — don't load any data
-      document.getElementById('app').style.display = 'none';
-      document.getElementById('login-screen').style.display = '';
+      const _aw = document.getElementById('app-wrapper');
+      if(_aw) _aw.style.display = 'none';
+      document.getElementById('login-screen').classList.remove('hidden');
       return;
     }
     // Restore JWT-authenticated client if we have a stored token
@@ -24536,7 +24546,7 @@ if ('serviceWorker' in navigator) {
   });
 
   // Exponer función para loguear errores de API manualmente
-  window.logMoveError = (msg, section, stack) => logError('api_error', msg, stack);
+  window.logMoveError = (msg, section, stack, type) => logError(type||'api_error', msg, stack);
 
   console.log('[MOVE Monitor] Error tracking activo ✓');
 })();
