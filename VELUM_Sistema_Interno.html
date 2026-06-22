@@ -8952,7 +8952,7 @@ async function saveNewUser(){
   if(pass.length<6){ alert('La contraseña debe tener al menos 6 caracteres.'); return; }
   const pw_hash = await hashPassword(pass);
   const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: pw_hash, rol, activo:true})]);
-  if(error){ toast('Error al crear usuario ❌','✕'); console.error(error); return; }
+  if(error){ toast('Error al crear usuario ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   auditLog('CREAR_USUARIO', 'usuarios', '', `Nuevo usuario: ${email} (${rol})`);
   closeModal('add-user');
   await loadUsuariosFromSupabase();
@@ -8990,7 +8990,7 @@ async function saveEditUser(){
     payload.pw_version = (u?.pw_version || 1) + 1;
   }
   const { error } = await window.supabaseClient.from('usuarios').update(payload).eq('id', id);
-  if(error){ toast('Error al guardar ❌','✕'); return; }
+  if(error){ toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   // update session if editing self
   if(currentUser && String(id)===String(currentUser.id)){
     currentUser = {...currentUser, nombre, email, rol};
@@ -9056,7 +9056,7 @@ async function _saDoResetPassword(userId, userName){
 async function deleteUser(id){
   if(!await confirmDialog('¿Eliminar este usuario? Perderá acceso al sistema.', {title:'Eliminar usuario', icon:'👤'})) return;
   const { error } = await window.supabaseClient.from('usuarios').delete().eq('id', id);
-  if(error){ toast('Error al eliminar ❌','✕'); return; }
+  if(error){ toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   await loadUsuariosFromSupabase();
   renderUsuarios();
   toast('Usuario eliminado','🗑');
@@ -11916,7 +11916,7 @@ async function saveLead(){
   setBtnLoading(_lbtn, true);
   const { data, error } = await window.supabaseClient.from('leads').insert([withGymId(payload)]).select();
   setBtnLoading(_lbtn, false);
-  if(error){ console.error('Error guardando lead:',error); alert('No se pudo guardar el prospecto.'); return; }
+  if(error){ console.error('Error guardando lead:',error); alert('No se pudo guardar el prospecto.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadLeadsFromSupabase();
   closeModal('lead');
   clearLeadForm();
@@ -11936,7 +11936,7 @@ function clearLeadForm(){
 async function deleteLead(id){
   if(!await confirmDialog('¿Eliminar este prospecto permanentemente?', {title:'Eliminar prospecto', icon:'👤'})) return;
   const { error } = await window.supabaseClient.from('leads').delete().eq('id', id);
-  if(error){ console.error('Error eliminando lead:',error); alert('No se pudo eliminar el prospecto.'); return; }
+  if(error){ console.error('Error eliminando lead:',error); alert('No se pudo eliminar el prospecto.'+'\n\n'+(error.message||error.details||'')); return; }
   leads = leads.filter(l=>l.id!==id);
   closeDetail();
   toast('Prospecto eliminado.','🗑');
@@ -12011,7 +12011,7 @@ async function updateLeadEstado(){
   const { error } = await window.supabaseClient.from('leads')
     .update({ status: estado, historial: newHistorial })
     .eq('id', id);
-  if(error){ console.error('Error actualizando estado:',error); alert('No se pudo actualizar el estado.'); return; }
+  if(error){ console.error('Error actualizando estado:',error); alert('No se pudo actualizar el estado.'+'\n\n'+(error.message||error.details||'')); return; }
   l.estado = estado;
   l.historial = newHistorial;
   closeModal('edit-estado');
@@ -12820,7 +12820,7 @@ async function saveCoach(){
   setBtnLoading(_cbtn, true);
   const { error } = await window.supabaseClient.from('coaches').insert([withGymId(payload)]);
   setBtnLoading(_cbtn, false);
-  if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'); return; }
+  if(error){ console.error('Error guardando coach:', error); alert('No se pudo guardar el coach.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCoachesFromSupabase();
   closeModal('coach');
   ['c-nombre','c-tel','c-email','c-rol','c-clases','c-foto'].forEach(id=>document.getElementById(id).value='');
@@ -12839,7 +12839,7 @@ function clearCoachForm(){
 async function deleteCoach(id){
   if(!await confirmDialog('¿Eliminar este coach?', {title:'Eliminar coach', icon:'🏋️'})) return;
   const { error } = await window.supabaseClient.from('coaches').delete().eq('id', id);
-  if(error){ console.error('Error eliminando coach:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando coach:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCoachesFromSupabase(); // reload from source of truth instead of mutating global array
   toast('Coach eliminado.','🗑');
   renderCoaches();
@@ -12871,7 +12871,7 @@ async function saveEditCoach(){
     clases: document.getElementById('ec-clases').value,
   };
   const { error } = await window.supabaseClient.from('coaches').update(updates).eq('id', id);
-  if(error){ console.error('Error actualizando coach:', error); alert('No se pudo actualizar.'); return; }
+  if(error){ console.error('Error actualizando coach:', error); alert('No se pudo actualizar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCoachesFromSupabase(); // reload from source of truth — avoids in-place mutation of global array
   closeModal('edit-coach');
   toast(`Coach "${nombre}" actualizado.`,'✓');
@@ -13086,7 +13086,7 @@ async function deleteEval(id){
   if(!await confirmDialog('¿Eliminar esta evaluación?', {title:'Eliminar evaluación', icon:'📋'})) return;
   const numId = parseInt(id)||id;
   const { error } = await window.supabaseClient.from('evaluaciones').delete().eq('id', numId);
-  if(error){ console.error('Error eliminando evaluación:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando evaluación:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   // Comparar como string para evitar problemas number vs string
   evals = evals.filter(e=>String(e.id)!==String(id));
   const overlay = document.getElementById('eval-detail-overlay');
@@ -18741,7 +18741,7 @@ async function saveProgConfig(){
     }
     if(err){ console.error('Error saving config for', row.tipo, err); anyError = true; }
   }
-  if(anyError){ toast('Error guardando config ❌','✕'); return; }
+  if(anyError){ toast('Error guardando config ❌'+(anyError&&anyError.message?': '+anyError.message:''), '✕'); return; }
   await loadProgConfigFromSupabase();
   closeModal('prog-config');
   // Refresh tabs with new active disciplines
@@ -19156,7 +19156,7 @@ async function moveProgramaToDate(fromFecha, toFecha){
     .update({ fecha: toFecha })
     .eq('id', prog.id)
     .eq('gym_id', MOVE_GYM_ID);
-  if(error){ toast('Error al mover ❌','✕'); console.error(error); return; }
+  if(error){ toast('Error al mover ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   await loadProgramasFromSupabase();
   renderProgramaCalendar();
   toast('Entrenamiento movido ✓','📅');
@@ -19209,7 +19209,7 @@ async function saveEditLead(){
     notes:    document.getElementById('el-notas').value.trim(),
   };
   const { error } = await window.supabaseClient.from('leads').update(updates).eq('id', id);
-  if(error){ console.error('Error actualizando lead:',error); alert('No se pudo actualizar el prospecto.'); return; }
+  if(error){ console.error('Error actualizando lead:',error); alert('No se pudo actualizar el prospecto.'+'\n\n'+(error.message||error.details||'')); return; }
   // Update local object
   l.nombre = nombre;
   l.tel    = updates.phone;
@@ -19461,7 +19461,7 @@ async function saveRecurso(){
   setBtnLoading(_b, true);
   const { error } = await window.supabaseClient.from('recursos').insert([withGymId(payload)]);
   setBtnLoading(_b, false);
-  if(error){ console.error('Error guardando recurso:', error); alert('No se pudo guardar el recurso.'); return; }
+  if(error){ console.error('Error guardando recurso:', error); alert('No se pudo guardar el recurso.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadRecursos();
   closeModal('recurso');
   document.getElementById('rec-nombre').value='';
@@ -19475,7 +19475,7 @@ async function saveRecurso(){
 async function toggleRecursoActivo(id){
   const r = recursosDB.find(x=>x.id===id); if(!r) return;
   const { error } = await window.supabaseClient.from('recursos').update({activo: !r.activo}).eq('id', id);
-  if(error){ console.error('Error actualizando recurso:', error); alert('No se pudo actualizar.'); return; }
+  if(error){ console.error('Error actualizando recurso:', error); alert('No se pudo actualizar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadRecursos();
   renderRecursos();
   toast(r.activo?'Recurso pausado.':'Recurso activado.','✓');
@@ -19484,7 +19484,7 @@ async function toggleRecursoActivo(id){
 async function deleteRecurso(id){
   if(!await confirmDialog('¿Eliminar este recurso? Las citas pasadas que lo usaron conservan su registro.', {title:'Eliminar recurso', icon:'🧖'})) return;
   const { error } = await window.supabaseClient.from('recursos').delete().eq('id', id);
-  if(error){ console.error('Error eliminando recurso:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando recurso:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadRecursos();
   renderRecursos();
   toast('Recurso eliminado.','🗑');
@@ -19584,7 +19584,7 @@ async function saveProtocolo(){
   setBtnLoading(_b, true);
   const { error } = await window.supabaseClient.from('protocolos').insert([withGymId(payload)]);
   setBtnLoading(_b, false);
-  if(error){ console.error('Error guardando protocolo:', error); alert('No se pudo guardar el protocolo.'); return; }
+  if(error){ console.error('Error guardando protocolo:', error); alert('No se pudo guardar el protocolo.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadProtocolos();
   closeModal('protocolo');
   document.getElementById('prot-nombre').value='';
@@ -19597,7 +19597,7 @@ async function saveProtocolo(){
 async function toggleProtocoloActivo(id){
   const p = protocolosDB.find(x=>x.id===id); if(!p) return;
   const { error } = await window.supabaseClient.from('protocolos').update({activo: !p.activo}).eq('id', id);
-  if(error){ console.error('Error actualizando protocolo:', error); alert('No se pudo actualizar.'); return; }
+  if(error){ console.error('Error actualizando protocolo:', error); alert('No se pudo actualizar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadProtocolos();
   renderProtocolos();
   toast(p.activo?'Protocolo pausado.':'Protocolo activado.','✓');
@@ -19606,7 +19606,7 @@ async function toggleProtocoloActivo(id){
 async function deleteProtocolo(id){
   if(!await confirmDialog('¿Eliminar este protocolo? Las citas que ya lo usaron conservan su copia.', {title:'Eliminar protocolo', icon:'📋'})) return;
   const { error } = await window.supabaseClient.from('protocolos').delete().eq('id', id);
-  if(error){ console.error('Error eliminando protocolo:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando protocolo:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadProtocolos();
   renderProtocolos();
   toast('Protocolo eliminado.','🗑');
@@ -19826,7 +19826,7 @@ async function saveCita(){
   setBtnLoading(_b,true);
   const { error } = await window.supabaseClient.from('citas').insert([withGymId(payload)]);
   setBtnLoading(_b,false);
-  if(error){ console.error('Error guardando cita:', error); alert('No se pudo agendar la cita.'); return; }
+  if(error){ console.error('Error guardando cita:', error); alert('No se pudo agendar la cita.'+'\n\n'+(error.message||error.details||'')); return; }
   _citaFecha = fecha;   // saltar al día de la cita recién creada
   await loadCitas();
   closeModal('cita');
@@ -19837,7 +19837,7 @@ async function saveCita(){
 
 async function setCitaEstado(id, estado){
   const { error } = await window.supabaseClient.from('citas').update({estado}).eq('id', id);
-  if(error){ console.error('Error actualizando cita:', error); alert('No se pudo actualizar la cita.'); return; }
+  if(error){ console.error('Error actualizando cita:', error); alert('No se pudo actualizar la cita.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCitas();
   renderCitas();
   const e=_CITA_ESTADOS[estado]||{lbl:estado};
@@ -19847,7 +19847,7 @@ async function setCitaEstado(id, estado){
 async function deleteCita(id){
   if(!await confirmDialog('¿Eliminar esta cita?', {title:'Eliminar cita', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('citas').delete().eq('id', id);
-  if(error){ console.error('Error eliminando cita:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando cita:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCitas();
   renderCitas();
   toast('Cita eliminada.','🗑');
@@ -20866,7 +20866,7 @@ async function toggleCongelarPago(id, esCongelado){
     if(!await confirmDialog(msg,{title:'Congelar membresía ❄️',icon:'❄️'})) return;
     const {error}=await window.supabaseClient.from('pagos')
       .update({congelado:true,congelado_desde:hoy}).eq('id',id);
-    if(error){toast('Error al congelar ❌','✕'); return;}
+    if(error){toast('Error al congelar ❌'+(error&&error.message?': '+error.message:''), '✕'); return;}
     p.congelado=true; p.congelado_desde=hoy;
     toast(`Membresía de ${p.cliente} congelada ❄️`,'❄️');
   } else {
@@ -20882,7 +20882,7 @@ async function toggleCongelarPago(id, esCongelado){
     const totalCongelados=(p.dias_congelados||0)+dias;
     const {error}=await window.supabaseClient.from('pagos')
       .update({congelado:false,congelado_desde:null,dias_congelados:totalCongelados,vence:nuevoVence}).eq('id',id);
-    if(error){toast('Error al descongelar ❌','✕'); return;}
+    if(error){toast('Error al descongelar ❌'+(error&&error.message?': '+error.message:''), '✕'); return;}
     p.congelado=false; p.congelado_desde=null; p.dias_congelados=totalCongelados; p.vence=nuevoVence;
     toast(`Membresía de ${p.cliente} descongelada — vence ${nuevoStr} ☀️`,'☀️');
   }
@@ -20960,7 +20960,7 @@ hr{border:none;border-top:1.5px solid #e5e5e5;margin:20px 0;}
 async function deletePago(id){
   if(!await confirmDialog('¿Eliminar este pago? Esta acción no se puede deshacer.', {title:'Eliminar pago', icon:'💳'})) return;
   const { error } = await window.supabaseClient.from('pagos').delete().eq('id', id);
-  if(error){ console.error('Error eliminando pago:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando pago:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   pagos = pagos.filter(p=>String(p.id)!==String(id));
   toast('Pago eliminado.','🗑');
   renderPagos();
@@ -20979,7 +20979,7 @@ async function deleteCliente(nombre, cliId, e){
   // Eliminar registro de la tabla clientes
   if(cliId){
     const {error:e1} = await window.supabaseClient.from('clientes').delete().eq('id', cliId);
-    if(e1){ toast('Error al eliminar cliente ❌','✕'); return; }
+    if(e1){ toast('Error al eliminar cliente ❌'+(e1&&e1.message?': '+e1.message:''), '✕'); return; }
     clientesDB = clientesDB.filter(c=>String(c.id)!==String(cliId));
   }
 
@@ -20987,7 +20987,7 @@ async function deleteCliente(nombre, cliId, e){
   if(n > 0){
     const ids = pagosDelCliente.map(p=>p.id);
     const {error:e2} = await window.supabaseClient.from('pagos').delete().in('id', ids);
-    if(e2){ toast('Error al eliminar pagos ❌','✕'); return; }
+    if(e2){ toast('Error al eliminar pagos ❌'+(e2&&e2.message?': '+e2.message:''), '✕'); return; }
     pagos = pagos.filter(p=>(p.cliente||'').trim()!==nombre);
   }
 
@@ -21007,7 +21007,7 @@ async function descontarClase(id){
   const { error } = await window.supabaseClient.from('pagos')
     .update({ clases_usadas: nuevasUsadas })
     .eq('id', id);
-  if(error){ toast('No se pudo descontar la clase ❌','✕'); return; }
+  if(error){ toast('No se pudo descontar la clase ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   p.clases_usadas = nuevasUsadas;
   const ahoraRestantes = (p.clases_totales||0) - nuevasUsadas;
   if(ahoraRestantes === 0){
@@ -21082,7 +21082,7 @@ async function saveEditPago(){
     clases_usadas:  epEsPaquete ? epClasesUsd : 0,
   };
   const { error } = await window.supabaseClient.from('pagos').update(updates).eq('id', id);
-  if(error){ console.error('Error actualizando pago:', error); toast('No se pudo actualizar el pago ❌','✕'); return; }
+  if(error){ console.error('Error actualizando pago:', error); toast('No se pudo actualizar el pago ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   closeModal('edit-pago');
   toast(`Pago de ${cliente} actualizado ✓`);
   await loadPagosFromSupabase();
@@ -21372,7 +21372,7 @@ async function saveCampana(){
   setBtnLoading(_cabtn, true);
   const { error } = await window.supabaseClient.from('campanas').insert([withGymId(payload)]);
   setBtnLoading(_cabtn, false);
-  if(error){ console.error('Error guardando campaña:', error); alert('No se pudo guardar la campaña.'); return; }
+  if(error){ console.error('Error guardando campaña:', error); alert('No se pudo guardar la campaña.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCampanasFromSupabase();
   closeModal('campana');
   ['ca-nombre','ca-notas','ca-objetivo'].forEach(id=>document.getElementById(id).value='');
@@ -21386,7 +21386,7 @@ async function saveCampana(){
 async function deleteCampana(id){
   if(!await confirmDialog('¿Eliminar esta campaña?', {title:'Eliminar campaña', icon:'📢'})) return;
   const { error } = await window.supabaseClient.from('campanas').delete().eq('id', id);
-  if(error){ console.error('Error eliminando campaña:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando campaña:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   campanas = campanas.filter(c=>c.id!==id);
   toast('Campaña eliminada.','🗑');
   renderCampanas();
@@ -21427,7 +21427,7 @@ async function saveEditCampana(){
     notas:         document.getElementById('eca-notas').value.trim(),
   };
   const { error } = await window.supabaseClient.from('campanas').update(updates).eq('id', id);
-  if(error){ console.error('Error actualizando campaña:', error); alert('No se pudo actualizar.'); return; }
+  if(error){ console.error('Error actualizando campaña:', error); alert('No se pudo actualizar.'+'\n\n'+(error.message||error.details||'')); return; }
   const c = campanas.find(x=>String(x.id)===String(id));
   if(c) Object.assign(c, {nombre, canal: updates.canal, estado: updates.estado, inicio: updates.inicio, fin: updates.fin, leads: updates.leads_count, conversiones: updates.conversiones, presup: updates.presupuesto, objetivo: updates.objetivo, notas: updates.notas});
   closeModal('edit-campana');
@@ -21490,7 +21490,7 @@ async function saveSolicitud(){
   setBtnLoading(_sbtn, true);
   const { error } = await window.supabaseClient.from('solicitudes').insert([withGymId(payload)]);
   setBtnLoading(_sbtn, false);
-  if(error){ console.error('Error guardando solicitud:', error); alert('No se pudo guardar.'); return; }
+  if(error){ console.error('Error guardando solicitud:', error); alert('No se pudo guardar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadSolicitudesFromSupabase();
   closeModal('solicitud');
   ['s-titulo','s-quien','s-notas'].forEach(id=>document.getElementById(id).value='');
@@ -21512,7 +21512,7 @@ async function updateSolicitudEstado(id, nuevoEstado){
 async function deleteSolicitud(id){
   if(!await confirmDialog('¿Eliminar esta solicitud?', {title:'Eliminar solicitud', icon:'📋'})) return;
   const { error } = await window.supabaseClient.from('solicitudes').delete().eq('id', id);
-  if(error){ console.error('Error eliminando solicitud:', error); alert('No se pudo eliminar.'); return; }
+  if(error){ console.error('Error eliminando solicitud:', error); alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   solicitudes = solicitudes.filter(s=>s.id!==id);
   toast('Solicitud eliminada.','🗑');
   renderSolicitudes();
@@ -22722,7 +22722,7 @@ async function saveEditClase(){
     cupo, notas: notas||''
   };
   const { error } = await window.supabaseClient.from('horarios').update(payload).eq('id', id);
-  if(error){ toast('Error al guardar ❌','✕'); console.error(error); return; }
+  if(error){ toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   closeModal('edit-clase');
   await loadHorarioFromSupabase();
   renderHorario();
@@ -22732,7 +22732,7 @@ async function saveEditClase(){
 async function deleteClase(id){
   if(!await confirmDialog('¿Eliminar esta clase del horario?', {title:'Eliminar clase', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', id);
-  if(error){ toast('Error al eliminar ❌','✕'); return; }
+  if(error){ toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   await loadHorarioFromSupabase();
   renderHorario();
   toast('Clase eliminada','🗑');
@@ -24002,7 +24002,7 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
 async function asignarSpot(reservaId, spotVal){
   const spot = spotVal ? parseInt(spotVal) : null;
   const { error } = await window.supabaseClient.from('reservas').update({ spot }).eq('id', reservaId);
-  if(error){ toast('No se pudo asignar el spot ❌','✕'); console.error('asignarSpot',error); return; }
+  if(error){ toast('No se pudo asignar el spot ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error('asignarSpot',error); return; }
   toast(spot ? `Spot ${spot} asignado ✦` : 'Spot liberado','✦');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
   if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && typeof renderStudiosCal==='function') renderStudiosCal();
@@ -24023,7 +24023,7 @@ async function _agregarAWaitlist(clienteId, nombre, horarioId, hora, tipo, fecha
     cliente_nombre: nombre, fecha, clase_tipo: tipo, clase_hora: hora, clase_dia: diaHoy,
     posicion: pos, estado: 'espera'
   });
-  if(error){ toast('No se pudo agregar a la lista de espera ❌','✕'); console.error('_agregarAWaitlist',error); return; }
+  if(error){ toast('No se pudo agregar a la lista de espera ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error('_agregarAWaitlist',error); return; }
   toast(`${nombre.split(' ')[0]} en lista de espera · #${pos} ⏳`,'⏳');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
 }
@@ -24037,7 +24037,7 @@ async function promoverDeWaitlist(waitlistId){
     cliente_nombre: w.cliente_nombre, fecha: w.fecha, clase_tipo: w.clase_tipo,
     clase_hora: w.clase_hora, clase_dia: w.clase_dia, estado: 'reservado'
   });
-  if(eIns){ toast('No se pudo promover ❌','✕'); console.error('promoverDeWaitlist',eIns); return; }
+  if(eIns){ toast('No se pudo promover ❌'+(eIns&&eIns.message?': '+eIns.message:''), '✕'); console.error('promoverDeWaitlist',eIns); return; }
   await window.supabaseClient.from('waitlist').update({ estado:'promovido' }).eq('id', waitlistId);
   toast(`${(w.cliente_nombre||'').split(' ')[0]} promovido a la clase ✓`,'✅');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
@@ -25472,7 +25472,7 @@ async function loadWaitlistHoy(){
 
 async function notificarWaitlist(id, nombre){
   const {error}=await window.supabaseClient.from('waitlist').update({estado:'notificado'}).eq('id',id);
-  if(error){ toast('Error al notificar ❌','✕'); return; }
+  if(error){ toast('Error al notificar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   toast(`${nombre.split(' ')[0]} notificado — hay lugar 🟢`,'✅');
   loadWaitlistHoy();
 }
@@ -25964,7 +25964,7 @@ async function saveMedidaAdmin(){
     notas,
   };
   const {error} = await window.supabaseClient.from('medidas').insert(payload);
-  if(error){ toast('Error al guardar ❌','✕'); console.error(error); return; }
+  if(error){ toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   toast(`Medición guardada 📏`,'✅');
   // Clear form
   ['med-peso','med-grasa','med-cintura','med-cadera','med-pecho','med-brazo','med-notas']
@@ -25975,7 +25975,7 @@ async function saveMedidaAdmin(){
 async function deleteMedidaAdmin(medId){
   if(!await confirmDialog('¿Eliminar esta medición?',{title:'Eliminar medición',icon:'📏'})) return;
   const {error} = await window.supabaseClient.from('medidas').delete().eq('id', medId);
-  if(error){ toast('Error al eliminar ❌','✕'); return; }
+  if(error){ toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   toast('Medición eliminada','🗑');
   await loadMedidasAdmin(_medCurrentCliId);
 }
