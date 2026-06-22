@@ -9738,6 +9738,7 @@ async function loadPagosFromSupabase(){
   pagos = (data||[]).map(p=>({
     id: p.id, cliente: p.cliente||'', monto: p.monto||0, fecha: p.fecha||'',
     plan: p.plan||'', metodo: p.metodo||'', vence: p.vence||'—', notas: p.notas||'',
+    source:      p.source||'',
     telefono:    p.telefono||'',
     cumpleanos:  p.cumpleanos||'',
     clases_totales: p.clases_totales ?? null,
@@ -15136,8 +15137,9 @@ async function renderDomiciliados(){
   }catch(e){ console.error('renderDomiciliados subs', e); if(typeof _handleSessionError==='function')_handleSessionError(e); }
 
   const allPagos=(typeof pagos!=='undefined'&&Array.isArray(pagos))?pagos:[];
-  const cobros=allPagos.filter(p=>{ const n=(p.notas||''); const m=(p.metodo||'').toLowerCase();
-    return n.indexOf('[STRIPE-SUB]')>=0 || m==='stripe'; })
+  const cobros=allPagos.filter(p=>{ const src=(p.source||'').toLowerCase(); const m=(p.metodo||'').toLowerCase(); const n=(p.notas||'').toLowerCase();
+    // pago de domiciliación real (webhook): source='domiciliacion', metodo 'Stripe (Domiciliación)'.
+    return src==='domiciliacion' || m.indexOf('domiciliaci')>=0 || n.indexOf('[stripe-sub]')>=0; })
     .sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));
 
   const mrr        = subs.filter(s=>s.status==='active').reduce((a,s)=>a+((s.amount_cents||0)/100),0);

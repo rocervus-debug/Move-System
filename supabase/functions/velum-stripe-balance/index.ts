@@ -71,7 +71,8 @@ serve(async (req) => {
 
   const supabaseUrl    = Deno.env.get('SUPABASE_URL')!;
   const serviceKey     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const platformSecret = Deno.env.get('STRIPE_PLATFORM_SECRET_KEY');
+  // El ecosistema Stripe desplegado usa STRIPE_SECRET_KEY (webhook); charge usa el alias PLATFORM.
+  const platformSecret = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_PLATFORM_SECRET_KEY');
   const jwtSecret      = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('MOVE_JWT_SECRET');
 
   if (!jwtSecret) return json({ error: 'Auth no configurada en el servidor.' }, 500);
@@ -98,16 +99,17 @@ serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: config } = await db
-    .from('gym_config')
-    .select('stripe_account_id')
-    .eq('gym_id', gymId)
+  // La cuenta Stripe conectada vive en gyms.stripe_account_id (PK = id), no en gym_config.
+  const { data: gymRow } = await db
+    .from('gyms')
+    .select('stripe_account_id, stripe_payouts_enabled')
+    .eq('id', gymId)
     .maybeSingle();
 
-  if (!config?.stripe_account_id) {
+  if (!gymRow?.stripe_account_id) {
     return json({ connected: false });
   }
-  const acct = config.stripe_account_id;
+  const acct = gymRow.stripe_account_id;
 
   // ── Saldo + payouts en paralelo ──
   try {
