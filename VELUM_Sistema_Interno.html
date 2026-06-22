@@ -20692,6 +20692,16 @@ async function savePago(){
   const btn = document.getElementById('p-save-btn');
   setBtnLoading(btn, true);
 
+  // Vencimiento: la columna es NOT NULL. Si el campo quedó vacío (p.ej. se eligió el
+  // paquete antes de fijar la fecha, o se cambió la fecha después), lo calculamos aquí
+  // desde fecha de pago + vigencia del paquete (fallback 30 días) para nunca mandar null.
+  let vence = document.getElementById('p-vence').value;
+  if(!vence){
+    const _vb = new Date((fecha || new Date().toISOString().slice(0,10)) + 'T12:00:00');
+    _vb.setDate(_vb.getDate() + ((_selectedPackage && _selectedPackage.duration_days) || 30));
+    vence = _vb.toISOString().slice(0,10);
+  }
+
   // Payload v2 (incluye legacy fields para no romper otras partes del admin)
   const payload = {
     cliente,
@@ -20706,7 +20716,7 @@ async function savePago(){
     fecha,
     plan: _selectedPackage.name,
     metodo: document.getElementById('p-metodo').value,
-    vence: document.getElementById('p-vence').value || null,
+    vence,
     notas: document.getElementById('p-notas').value.trim() || '',
     ...(hasClases ? { clases_totales, clases_usadas } : {}),
   };
