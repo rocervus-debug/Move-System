@@ -10731,9 +10731,25 @@ function go(id, el){
 // TOAST
 // ═══════════════════════════════════════════════════════════════════
 let _toastTimer = null;
+const _TOAST_SVG = {
+  ok:  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  err: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+};
+// Toast premium: mapea los emojis de estado a iconos SVG monocromáticos + color por tipo,
+// con borde tintado. Los emojis contextuales (📋 📲 📄 …) pasan tal cual. No toca call-sites.
 function toast(msg, icon='✓', duration=2800){
   const t = document.getElementById('toast');
-  t.innerHTML = `<span>${icon}</span> ${msg}`;
+  const i = String(icon);
+  let type='info', ic=i;
+  if(/[✓✅]|💪|🎉|✦|🚀/.test(i)){ type='ok'; ic=_TOAST_SVG.ok; }
+  else if(/[❌✕✗]|⛔/.test(i)){ type='err'; ic=_TOAST_SVG.err; }
+  else if(/🔒/.test(i)){ type='warn'; ic=_TOAST_SVG.lock; }
+  else if(/⚠/.test(i)){ type='warn'; ic=_TOAST_SVG.warn; }
+  const col = type==='ok'?'var(--ok)':type==='err'?'var(--danger)':type==='warn'?'var(--warn)':'var(--accent)';
+  t.innerHTML = `<span style="color:${col};display:inline-flex;align-items:center;line-height:1;flex-shrink:0;">${ic}</span> ${msg}`;
+  t.style.borderColor = `color-mix(in srgb, ${col} 32%, transparent)`;
   t.classList.add('show');
   if(_toastTimer) clearTimeout(_toastTimer);
   _toastTimer = setTimeout(()=>{ t.classList.remove('show'); _toastTimer=null; }, duration);
