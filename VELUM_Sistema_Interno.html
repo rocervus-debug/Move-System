@@ -8952,7 +8952,7 @@ async function saveNewUser(){
   if(pass.length<6){ alert('La contraseña debe tener al menos 6 caracteres.'); return; }
   const pw_hash = await hashPassword(pass);
   const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: pw_hash, rol, activo:true})]);
-  if(error){ toast('Error al crear usuario ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al crear usuario ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   auditLog('CREAR_USUARIO', 'usuarios', '', `Nuevo usuario: ${email} (${rol})`);
   closeModal('add-user');
   await loadUsuariosFromSupabase();
@@ -8990,7 +8990,7 @@ async function saveEditUser(){
     payload.pw_version = (u?.pw_version || 1) + 1;
   }
   const { error } = await window.supabaseClient.from('usuarios').update(payload).eq('id', id);
-  if(error){ toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   // update session if editing self
   if(currentUser && String(id)===String(currentUser.id)){
     currentUser = {...currentUser, nombre, email, rol};
@@ -9056,7 +9056,7 @@ async function _saDoResetPassword(userId, userName){
 async function deleteUser(id){
   if(!await confirmDialog('¿Eliminar este usuario? Perderá acceso al sistema.', {title:'Eliminar usuario', icon:'👤'})) return;
   const { error } = await window.supabaseClient.from('usuarios').delete().eq('id', id);
-  if(error){ toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   await loadUsuariosFromSupabase();
   renderUsuarios();
   toast('Usuario eliminado','🗑');
@@ -9463,7 +9463,7 @@ async function saveGymConfig(){
     // Upsert using composite unique constraint (key, gym_id)
     const { error } = await window.supabaseClient
       .from('gym_config').upsert(row, { onConflict: 'key,gym_id' });
-    if(error){ toast('Error al guardar ✗','danger'); console.error(error); return; }
+    if(error){ if(_handleSessionError(error))return; toast('Error al guardar ✗','danger'); console.error(error); return; }
     gymConfig[row.key]=row.value;
   }
   localStorage.setItem('move_tagline', tagline);
@@ -12179,7 +12179,7 @@ async function applyBulkEstado(){
   const btn = document.querySelector('#crm-bulk-bar .btn-primary');
   if(btn){ btn.textContent='Aplicando…'; btn.disabled=true; }
   const { error } = await window.supabaseClient.from('leads').update({ status: estado }).in('id', ids);
-  if(error){ toast('Error al actualizar.','❌'); if(btn){btn.textContent='✓ Aplicar';btn.disabled=false;} return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al actualizar.','❌'); if(btn){btn.textContent='✓ Aplicar';btn.disabled=false;} return; }
   ids.forEach(id=>{ const l=leads.find(x=>String(x.id)===String(id)); if(l) l.estado=estado; });
   toast(`${ids.length} leads → ${estado}`,'✓');
   clearCRMSelection();
@@ -15348,7 +15348,7 @@ async function sfToggleEnabled(){
   if(!_storefrontData) return;
   const newVal = !_storefrontData.is_enabled;
   const { error } = await window.supabaseClient.from('gym_storefront').update({is_enabled: newVal}).eq('gym_id', _storefrontData.gym_id);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   _storefrontData.is_enabled = newVal;
   renderStorefrontPanel();
   toast(newVal ? 'Storefront ACTIVADO ✓ Ya es visible públicamente.' : 'Storefront pausado.', newVal?'🌐':'⏸');
@@ -15377,7 +15377,7 @@ async function sfSaveSlug(){
 
 async function sfToggleListing(listingId, isPublic){
   const { error } = await window.supabaseClient.from('storefront_listings').update({is_public: isPublic}).eq('id', listingId);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   const item = _storefrontListings.find(l => l.id === listingId);
   if(item){ item.is_public = isPublic; renderStorefrontPanel(); }
 }
@@ -15615,7 +15615,7 @@ async function sfSetAccent(hex){
   if(hidden) hidden.value = hex;
   const { error } = await window.supabaseClient
     .from('gym_storefront').update({ primary_color: hex }).eq('gym_id', _storefrontData.gym_id);
-  if(error){ toast('Error guardando acento: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error guardando acento: ' + error.message, '❌'); return; }
   _storefrontData.primary_color = hex;
   _sfRenderAccentSwatches();
 }
@@ -15640,7 +15640,7 @@ async function sfAddHighlight(){
   if(!text) return;
   const arr = [...(Array.isArray(_storefrontData.highlights) ? _storefrontData.highlights : []), text];
   const { error } = await window.supabaseClient.from('gym_storefront').update({ highlights: arr }).eq('gym_id', _storefrontData.gym_id);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   _storefrontData.highlights = arr;
   inp.value = '';
   _sfRenderHighlights();
@@ -15649,7 +15649,7 @@ async function sfAddHighlight(){
 async function sfRemoveHighlight(idx){
   const arr = (Array.isArray(_storefrontData.highlights) ? _storefrontData.highlights : []).filter((_, i) => i !== idx);
   const { error } = await window.supabaseClient.from('gym_storefront').update({ highlights: arr }).eq('gym_id', _storefrontData.gym_id);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   _storefrontData.highlights = arr;
   _sfRenderHighlights();
 }
@@ -15681,7 +15681,7 @@ async function sfAddTestimonial(){
   const rating = parseInt(prompt('Rating (1-5):', '5')) || 5;
   const arr = [...(Array.isArray(_storefrontData.testimonials) ? _storefrontData.testimonials : []), {name, text, role, rating}];
   const { error } = await window.supabaseClient.from('gym_storefront').update({ testimonials: arr }).eq('gym_id', _storefrontData.gym_id);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   _storefrontData.testimonials = arr;
   _sfRenderTestimonials();
 }
@@ -15718,7 +15718,7 @@ async function sfAddFaq(){
   if(!answer) return;
   const arr = [...(Array.isArray(_storefrontData.faqs) ? _storefrontData.faqs : []), {question, answer}];
   const { error } = await window.supabaseClient.from('gym_storefront').update({ faqs: arr }).eq('gym_id', _storefrontData.gym_id);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   _storefrontData.faqs = arr;
   _sfRenderFaqs();
 }
@@ -15973,7 +15973,7 @@ async function sfUpdateLeadStatus(leadId, newStatus){
   const updates = { status: newStatus };
   if(newStatus === 'contacted') updates.contacted_at = new Date().toISOString();
   const { error } = await window.supabaseClient.from('storefront_leads').update(updates).eq('id', leadId);
-  if(error){ toast('Error: ' + error.message, '❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '❌'); return; }
   // Update local + re-render
   const lead = _sfLeads.find(l => l.id === leadId);
   if(lead){ Object.assign(lead, updates); }
@@ -17121,7 +17121,7 @@ async function saveVisita(){
   };
   const { error } = await window.supabaseClient.from('visitas').insert([withGymId(payload)]);
   setBtnLoading(btn, false);
-  if(error){ toast('Error al guardar visita: '+error.message,'❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al guardar visita: '+error.message,'❌'); return; }
   await loadVisitasFromSupabase();
   closeModal('visita');
   ['v-nombre','v-monto','v-telefono','v-notas'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
@@ -17133,7 +17133,7 @@ async function saveVisita(){
 async function deleteVisita(id){
   if(!await confirmDialog('¿Eliminar esta visita?',{title:'Eliminar visita',danger:true,confirmText:'Eliminar',icon:'🗑️'})) return;
   const { error } = await window.supabaseClient.from('visitas').delete().eq('id',id);
-  if(error){ toast('Error al eliminar: '+error.message,'❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al eliminar: '+error.message,'❌'); return; }
   await loadVisitasFromSupabase();
   renderVisitas();
   renderPagos(); // actualiza lista y KPI de ingresos
@@ -17477,7 +17477,7 @@ async function saCreateGym(){
     owner_email: email||null,
     subscription_status: subStatus,
   }]).select().single();
-  if(error){ toast('Error al crear gym: '+(error.message||'').slice(0,60),'❌'); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al crear gym: '+(error.message||'').slice(0,60),'❌'); console.error(error); return; }
 
   // Sembrar gym_config con valores por defecto (igual que el webhook de Stripe)
   await window.supabaseClient.from('gym_config').insert([
@@ -17502,7 +17502,7 @@ async function saActivateGym(gymId){
   const { error } = await window.supabaseClient.from('gyms').update({
     subscription_status: 'active', activo: true
   }).eq('id', gymId);
-  if(error){ toast('Error al activar','❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al activar','❌'); return; }
   toast('Gym activado ✅ — acceso habilitado sin pago','✅');
   auditLog('SA_ACTIVATE_GYM','gyms',gymId,'Activación manual sin Stripe');
   renderSuperAdmin();
@@ -17516,7 +17516,7 @@ async function saSetGymOwner(gymId){
   const { error } = await window.supabaseClient.from('gyms').update({
     subscription_status: 'owner', activo: true
   }).eq('id', gymId);
-  if(error){ toast('Error','❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error','❌'); return; }
   toast('Gym marcado como propio 🏠 — nunca se bloquea','🏠');
   renderSuperAdmin();
 }
@@ -17615,7 +17615,7 @@ async function _saDoResetGymPw(gymId, hasAdmin){
 // ── Cambiar plan de un gym ───────────────────────────────────────────
 async function saUpdateGymPlan(gymId, newPlan){
   const { error } = await window.supabaseClient.from('gyms').update({ plan: newPlan }).eq('id', gymId);
-  if(error){ toast('Error al cambiar plan','❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al cambiar plan','❌'); return; }
   toast(`Plan cambiado a ${newPlan.toUpperCase()} ✓`,'📋');
   renderSuperAdmin();
 }
@@ -17624,7 +17624,7 @@ async function saToggleGym(gymId, nuevoEstado){
   const label = nuevoEstado ? 'activar' : 'pausar';
   if(!await confirmDialog(`¿Deseas ${label} este gym?`, {title:`${nuevoEstado?'Activar':'Pausar'} gym`, danger:!nuevoEstado, confirmText:nuevoEstado?'Activar':'Pausar', icon:nuevoEstado?'▶':'⏸'})) return;
   const { error } = await window.supabaseClient.from('gyms').update({activo: nuevoEstado}).eq('id', gymId);
-  if(error){ toast('Error al actualizar gym','❌'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al actualizar gym','❌'); return; }
   toast(nuevoEstado ? 'Gym activado ✓' : 'Gym pausado ✓', nuevoEstado?'▶':'⏸');
   renderSuperAdmin();
 }
@@ -18258,7 +18258,7 @@ async function saveGasto(){
     err = r.error;
   }
   setBtnLoading(_gbtn, false);
-  if(err){ toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
+  if(err){ if(_handleSessionError(err))return; toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
   closeModal('gasto');
   await loadGastosFromSupabase();
   // Navegar al mes del gasto guardado para que sea visible de inmediato
@@ -18276,7 +18276,7 @@ async function saveGasto(){
 async function deleteGasto(id){
   if(!await confirmDialog('¿Eliminar este gasto?', {title:'Eliminar gasto', icon:'💸'})) return;
   const { error } = await window.supabaseClient.from('gastos').delete().eq('id', id);
-  if(error){ toast('Error al eliminar','✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al eliminar','✕'); return; }
   gastos = gastos.filter(g=>String(g.id)!==String(id));
   renderGastos();
   renderDashboard();
@@ -19135,7 +19135,7 @@ async function savePrograma(){
     const r = await window.supabaseClient.from('programas').insert([withGymId(payload)]);
     err = r.error;
   }
-  if(err){ toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
+  if(err){ if(_handleSessionError(err))return; toast('Error ❌: '+(err.message||'').slice(0,60),'✕'); console.error(err); return; }
   closeModal('programa');
   await loadProgramasFromSupabase();
   renderProgramaCalendar();
@@ -19197,7 +19197,7 @@ async function moveProgramaToDate(fromFecha, toFecha){
     .update({ fecha: toFecha })
     .eq('id', prog.id)
     .eq('gym_id', MOVE_GYM_ID);
-  if(error){ toast('Error al mover ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al mover ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   await loadProgramasFromSupabase();
   renderProgramaCalendar();
   toast('Entrenamiento movido ✓','📅');
@@ -19208,7 +19208,7 @@ async function deletePrograma(){
   if(!id) return;
   if(!await confirmDialog('¿Eliminar el entrenamiento de este día?', {title:'Eliminar entrenamiento', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('programas').delete().eq('id', id);
-  if(error){ toast('Error al eliminar','✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al eliminar','✕'); return; }
   programas = programas.filter(p=>String(p.id)!==String(id));
   closeModal('programa');
   renderProgramaCalendar();
@@ -22270,7 +22270,7 @@ async function saveCobertura(){
     err = r.error;
   }
 
-  if(err){ alert('Error al guardar: '+(err.message||err)); console.error(err); return; }
+  if(err){ if(_handleSessionError(err))return; alert('Error al guardar: '+(err.message||err)); console.error(err); return; }
 
   await loadHorarioOverridesFromSupabase();
   closeModal('cobertura');
@@ -22289,7 +22289,7 @@ async function cancelClaseOccurrence(claseId, fechaStr, hora){
   if(gymId) payload.gym_id = gymId;
 
   const { error } = await window.supabaseClient.from('horario_cancelaciones').insert([payload]);
-  if(error){ alert('Error al cancelar: '+(error.message||error)); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; alert('Error al cancelar: '+(error.message||error)); console.error(error); return; }
 
   await loadHorarioCancelaciones();
   renderHorarioMensual();
@@ -22401,7 +22401,7 @@ async function restoreClaseOccurrence(cancelId){
   if(!await confirmDialog('¿Restaurar esta clase?', {title:'Restaurar clase'})) return;
 
   const { error } = await window.supabaseClient.from('horario_cancelaciones').delete().eq('id', cancelId);
-  if(error){ alert('Error al restaurar: '+(error.message||error)); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; alert('Error al restaurar: '+(error.message||error)); console.error(error); return; }
 
   horarioCancelaciones = horarioCancelaciones.filter(c=>String(c.id)!==String(cancelId));
   renderHorarioMensual();
@@ -22763,7 +22763,7 @@ async function saveEditClase(){
     cupo, notas: notas||''
   };
   const { error } = await window.supabaseClient.from('horarios').update(payload).eq('id', id);
-  if(error){ toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   closeModal('edit-clase');
   await loadHorarioFromSupabase();
   renderHorario();
@@ -22773,7 +22773,7 @@ async function saveEditClase(){
 async function deleteClase(id){
   if(!await confirmDialog('¿Eliminar esta clase del horario?', {title:'Eliminar clase', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', id);
-  if(error){ toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   await loadHorarioFromSupabase();
   renderHorario();
   toast('Clase eliminada','🗑');
@@ -24044,7 +24044,7 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
 async function asignarSpot(reservaId, spotVal){
   const spot = spotVal ? parseInt(spotVal) : null;
   const { error } = await window.supabaseClient.from('reservas').update({ spot }).eq('id', reservaId);
-  if(error){ toast('No se pudo asignar el spot ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error('asignarSpot',error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('No se pudo asignar el spot ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error('asignarSpot',error); return; }
   toast(spot ? `Spot ${spot} asignado ✦` : 'Spot liberado','✦');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
   if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && typeof renderStudiosCal==='function') renderStudiosCal();
@@ -24065,7 +24065,7 @@ async function _agregarAWaitlist(clienteId, nombre, horarioId, hora, tipo, fecha
     cliente_nombre: nombre, fecha, clase_tipo: tipo, clase_hora: hora, clase_dia: diaHoy,
     posicion: pos, estado: 'espera'
   });
-  if(error){ toast('No se pudo agregar a la lista de espera ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error('_agregarAWaitlist',error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('No se pudo agregar a la lista de espera ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error('_agregarAWaitlist',error); return; }
   toast(`${nombre.split(' ')[0]} en lista de espera · #${pos} ⏳`,'⏳');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
 }
@@ -24397,7 +24397,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
     clase_dia:       diaHoy,
     estado,
   });
-  if(error){ toast('No se pudo completar la reserva. Intenta de nuevo.','❌'); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('No se pudo completar la reserva. Intenta de nuevo.','❌'); console.error(error); return; }
 
   const label = estado==='checkin' ? 'Check-in registrado ✓' : 'Cliente reservado correctamente.';
   toast(`${clienteNombre} — ${label}`,'✅');
@@ -25514,7 +25514,7 @@ async function loadWaitlistHoy(){
 
 async function notificarWaitlist(id, nombre){
   const {error}=await window.supabaseClient.from('waitlist').update({estado:'notificado'}).eq('id',id);
-  if(error){ toast('Error al notificar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al notificar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   toast(`${nombre.split(' ')[0]} notificado — hay lugar 🟢`,'✅');
   loadWaitlistHoy();
 }
@@ -26006,7 +26006,7 @@ async function saveMedidaAdmin(){
     notas,
   };
   const {error} = await window.supabaseClient.from('medidas').insert(payload);
-  if(error){ toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   toast(`Medición guardada 📏`,'✅');
   // Clear form
   ['med-peso','med-grasa','med-cintura','med-cadera','med-pecho','med-brazo','med-notas']
@@ -26017,7 +26017,7 @@ async function saveMedidaAdmin(){
 async function deleteMedidaAdmin(medId){
   if(!await confirmDialog('¿Eliminar esta medición?',{title:'Eliminar medición',icon:'📏'})) return;
   const {error} = await window.supabaseClient.from('medidas').delete().eq('id', medId);
-  if(error){ toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
+  if(error){ if(_handleSessionError(error))return; toast('Error al eliminar ❌'+(error&&error.message?': '+error.message:''), '✕'); return; }
   toast('Medición eliminada','🗑');
   await loadMedidasAdmin(_medCurrentCliId);
 }
