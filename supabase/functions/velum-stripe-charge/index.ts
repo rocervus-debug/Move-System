@@ -45,7 +45,8 @@ serve(async (req) => {
 
   const supabaseUrl    = Deno.env.get('SUPABASE_URL')!;
   const serviceKey     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const platformSecret = Deno.env.get('STRIPE_PLATFORM_SECRET_KEY');
+  // El ecosistema Stripe desplegado usa STRIPE_SECRET_KEY; PLATFORM queda como alias de respaldo.
+  const platformSecret = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_PLATFORM_SECRET_KEY');
 
   if (!platformSecret) return json({ error: 'Stripe no configurado en el servidor.' }, 500);
 
@@ -71,19 +72,23 @@ serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // La cuenta Stripe conectada vive en gyms.stripe_account_id (PK = id), no en gym_config.
   const { data: config, error: cfgErr } = await db
-    .from('gym_config')
-    .select('stripe_account_id, nombre_gym')
-    .eq('gym_id', gym_id)
+    .from('gyms')
+    .select('stripe_account_id, stripe_charges_enabled, nombre')
+    .eq('id', gym_id)
     .maybeSingle();
 
-  if (cfgErr || !config) return json({ error: 'No se encontró la configuración del gym.' }, 404);
+  if (cfgErr || !config) return json({ error: 'No se encontró el gym.' }, 404);
   if (!config.stripe_account_id) {
     return json({ error: 'Este gym no tiene Stripe conectado. Ve a Configuración → Stripe para conectar tu cuenta.' }, 400);
   }
+  if (!config.stripe_charges_enabled) {
+    return json({ error: 'Tu cuenta de Stripe aún no puede aceptar cobros (completa la verificación en Stripe).' }, 400);
+  }
 
   const stripeAccount = config.stripe_account_id;
-  const gymNombre     = config.nombre_gym || 'Gym';
+  const gymNombre     = config.nombre || 'Gym';
 
   const appFeeAmount = Math.round(monto * 100 * 0.015); // 1.5% platform fee (VELUM)
   const unitAmount   = monto * 100; // cents
