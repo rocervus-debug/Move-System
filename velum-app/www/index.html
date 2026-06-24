@@ -117,7 +117,10 @@ body::before{
 ══════════════════════════════════════ */
 #login-screen{
   display:none;align-items:center;justify-content:center;
-  min-height:100vh;padding:40px 24px;position:relative;z-index:1;overflow:hidden;
+  min-height:100vh;
+  min-height:100dvh;   /* viewport dinámico: evita el salto/descuadre del 1er render en iOS */
+  padding:calc(40px + env(safe-area-inset-top,0px)) 24px calc(40px + env(safe-area-inset-bottom,0px));
+  position:relative;z-index:1;overflow:hidden;
 }
 /* Animated orbs */
 .login-orb{
@@ -3392,6 +3395,30 @@ const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
 const VAPID_PUBLIC_KEY = 'BNQQblmWqQGybB5G7l4V_2aKhT_6z6gSd8jB30hk3ie7Fv1XXt8IBJof4D_3qDFvJlCevlMa9__x2SONOm016YI';
+
+// ── Monitor de errores de la app del atleta → error_logs (antes la app no logueaba nada) ──
+(function(){
+  const _q=[]; let _flushing=false;
+  function _flush(){
+    if(_flushing||!_q.length) return; _flushing=true;
+    const batch=_q.splice(0,10);
+    fetch(`${SUPABASE_URL}/rest/v1/error_logs`,{ method:'POST',
+      headers:{'Content-Type':'application/json','apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY,'Prefer':'return=minimal'},
+      body:JSON.stringify(batch) }).catch(()=>{}).finally(()=>{ _flushing=false; if(_q.length) setTimeout(_flush,2000); });
+  }
+  function _log(type,message,stack){
+    if(/extension|ResizeObserver/i.test(message||'')) return;
+    let pd=null; try{ pd=window.portalData||null; }catch(_){}
+    let section='atleta'; try{ const a=document.querySelector('.view.active'); if(a&&a.id) section=a.id; }catch(_){}
+    _q.push({ gym_id:(pd&&pd.gym&&pd.gym.id)||null, user_email:(pd&&pd.cliente&&pd.cliente.email)||null,
+      error_type:type, message:String(message||'').slice(0,500), stack:String(stack||'').slice(0,1000),
+      section:'app:'+section, url:(location.href||'').slice(0,200), user_agent:(navigator.userAgent||'').slice(0,200) });
+    if(_q.length===1) setTimeout(_flush,1500);
+  }
+  window.addEventListener('error', e=>{ _log('app_js_error', (e.message||'')+' ('+(e.filename||'')+':'+(e.lineno||0)+')', e.error&&e.error.stack||''); });
+  window.addEventListener('unhandledrejection', e=>{ _log('app_promise_rejection', (e.reason&&e.reason.message)||String(e.reason)||'unhandledrejection', e.reason&&e.reason.stack||''); });
+  window.logAtletaError=(msg,stack)=>_log('app_error', msg, stack||'');
+})();
 const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const DIAS_L = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
