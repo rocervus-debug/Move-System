@@ -5072,11 +5072,14 @@ async function doAtletaCheckIn(portalToken){
       if(window.haptic) window.haptic('success');
     }
 
-    // Marcar en caché y re-renderizar botón como "LISTO"
-    if(portalData) portalData._checkedInToday = true;
-    renderNextClassCard();
+    // Check-in YA registrado. El re-render no debe disfrazarse de "sin conexión".
+    try {
+      if(portalData) portalData._checkedInToday = true;
+      renderNextClassCard();
+    } catch(uiErr){ if(window.logAtletaError) window.logAtletaError('checkin render post-éxito: '+(uiErr&&uiErr.message||uiErr), uiErr&&uiErr.stack); }
 
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('checkin: '+(e&&e.name)+' '+(e&&e.message||e), e&&e.stack);
     console.error('[checkin]', e.name, e.message);
     const msg = e.name==='AbortError' ? 'Tiempo de espera agotado. Intenta de nuevo' : 'Sin conexión. Intenta de nuevo';
     toast(msg,'✕',3000);
@@ -5857,6 +5860,7 @@ async function doCheckout(packageId){
     }
     window.location.href=d.checkout_url;
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('doCheckout: '+(e&&e.message||e), e&&e.stack);
     console.error('doCheckout:', e);
     showToast('Error de conexión. Intenta de nuevo.','❌',5000);
     document.querySelectorAll('.plan-btn').forEach(b=>{ b.disabled=false; b.textContent='Renovar / Comprar →'; });
@@ -7128,8 +7132,18 @@ async function doLogin(){
     // V3: obtener JWT autenticado ANTES de showPortal (queries requieren JWT post-hardening).
     await _fetchAtletaAuthJWT({gym_codigo: gym, numero_cliente: parseInt(numero,10), password: pwd})
       .catch(()=>null);
-    showPortal(data);
+    // El login YA tuvo éxito. Si showPortal (render del portal) truena, NO es error de red:
+    // mostrarlo como tal confundía ("No se pudo conectar" con internet OK). Lo aislamos y logueamos.
+    try {
+      showPortal(data);
+    } catch(renderErr){
+      if(window.logAtletaError) window.logAtletaError('login: showPortal falló (render, socio '+(data&&data.cliente&&data.cliente.numero_cliente)+'): '+(renderErr&&renderErr.message||renderErr), renderErr&&renderErr.stack);
+      console.error('showPortal render error:', renderErr);
+      errEl.textContent='Entraste correctamente, pero algo no se pudo mostrar. Cierra y vuelve a abrir la app.';
+      errEl.style.display='block';
+    }
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('doLogin: fallo de red: '+(e&&e.message||e), e&&e.stack);
     console.error('doLogin error:', e);
     errEl.textContent='No se pudo conectar. Revisa tu internet e intenta de nuevo.';
     errEl.style.display='block';
@@ -7692,12 +7706,18 @@ async function saveMedicion(){
       throw new Error(errText || res.statusText);
     }
     const [saved] = await res.json();
-    // Invalidate cache and re-render
-    _medidasLoaded = false;
-    _medidasCache = null;
-    closeSheet('medidas-sheet');
-    await fetchAndRenderMedidas();
+    // La medición YA se guardó. El re-render no debe disfrazarse de "error al guardar".
+    try {
+      _medidasLoaded = false;
+      _medidasCache = null;
+      closeSheet('medidas-sheet');
+      await fetchAndRenderMedidas();
+    } catch(uiErr){
+      if(window.logAtletaError) window.logAtletaError('saveMedicion render post-éxito: '+(uiErr&&uiErr.message||uiErr), uiErr&&uiErr.stack);
+      try{ closeSheet('medidas-sheet'); showToast('Medición guardada ✓','✅'); }catch(_){}
+    }
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('saveMedicion: '+(e&&e.message||e), e&&e.stack);
     console.error('saveMedicion error:', e);
     showToast('Error al guardar. Intenta de nuevo.','❌');
     if(btn){ btn.disabled = false; btn.textContent = 'Guardar medición'; }
