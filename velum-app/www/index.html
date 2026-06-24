@@ -4471,23 +4471,33 @@ async function registerWebPush(portalToken){
 }
 
 /* Llamada desde el tap del banner — el user gesture permite que iOS muestre el diálogo */
+function _markPushDecided(){ try{ localStorage.setItem('velum_push_done','1'); }catch(_){}; _updatePushPromptBanner(); }
+
 async function requestPushPermission(){
-  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   const token = portalData?.cliente?.portal_token;
   if(!token) return;
-
   try{
-    const perm = await Notification.requestPermission();
-    if(perm !== 'granted'){
-      _updatePushPromptBanner(); // puede haber cambiado a 'denied'
+    // NATIVO: el permiso lo maneja el bridge (Capacitor PushNotifications). La API web
+    // Notification.permission NO es confiable en WKWebView -> por eso el banner no se ocultaba.
+    if(window._isNative && typeof window.registerPush === 'function'){
+      await window.registerPush(token, SUPABASE_URL, ANON_KEY);
+      _markPushDecided();            // tras el flujo nativo, ocultar el banner (persistido)
+      toast('Notificaciones activadas ✓','🔔',2500);
       return;
     }
-    _updatePushPromptBanner(); // ocultar banner
-    await _subscribePush(token);
-    toast('Notificaciones activadas ✓','🔔',2500);
+    // WEB / PWA: API estándar
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const perm = await Notification.requestPermission();
+    if(perm === 'default'){ return; }  // no decidió: dejar el banner
+    _markPushDecided();                // granted o denied: ya decidió, ocultar
+    if(perm === 'granted'){
+      await _subscribePush(token);
+      toast('Notificaciones activadas ✓','🔔',2500);
+    }
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('requestPushPermission: '+(e&&e.message||e), e&&e.stack);
     console.error('[PWA] requestPushPermission error:', e);
-    toast('Error al activar notificaciones: '+(e.message||e),'✕',4000);
+    toast('No se pudieron activar las notificaciones. Puedes activarlas desde Ajustes del teléfono.','✕',5000);
   }
 }
 
@@ -4523,6 +4533,14 @@ async function _subscribePush(portalToken){
 function _updatePushPromptBanner(){
   const banner = document.getElementById('push-prompt-banner');
   if(!banner) return;
+  let done=false; try{ done = localStorage.getItem('velum_push_done')==='1'; }catch(_){}
+  if(done){ banner.style.display='none'; return; }   // ya se activó/decidió en este dispositivo
+  if(window._isNative){
+    // En WKWebView Notification.permission no refleja el permiso nativo; mostrar hasta que el
+    // usuario lo active (entonces se persiste el flag y se oculta). Evita el banner "pegado".
+    banner.style.display = 'flex';
+    return;
+  }
   const supported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
   banner.style.display = (supported && Notification.permission === 'default') ? 'flex' : 'none';
 }
@@ -6834,20 +6852,24 @@ async function crearReserva(horarioId, fecha, tipo, hora){
     const newReserva = Array.isArray(data) ? data[0] : data;
     clasesReservas[key] = newReserva;
     clasesCupos[key] = (clasesCupos[key]||0)+1;
-    // Re-render just this card
-    const today = new Date();
-    const dates = [];
-    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); }
-    renderClasesView(dates);
-    renderNextClassCard(); // sync HOME card after new booking
-
-    // Confirmación (sheet + WA reminder)
-    _showReservaConfirmBanner(tipo, hora, fecha);
-    // Notificación local nativa (si corre en Capacitor)
-    if (typeof window.scheduleClassReminder === 'function') {
-      window.scheduleClassReminder(tipo, hora, fecha);
+    // La reserva YA tuvo éxito en el backend. Si algo del render posterior truena,
+    // NO debe mostrarse "error de conexión" (eso confundía: reservaba pero marcaba error).
+    try {
+      const today = new Date();
+      const dates = [];
+      for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); }
+      renderClasesView(dates);
+      renderNextClassCard(); // sync HOME card after new booking
+      _showReservaConfirmBanner(tipo, hora, fecha);
+      if (typeof window.scheduleClassReminder === 'function') {
+        window.scheduleClassReminder(tipo, hora, fecha);
+      }
+    } catch(uiErr) {
+      if(window.logAtletaError) window.logAtletaError('reserva: render post-éxito falló: '+(uiErr&&uiErr.message||uiErr), uiErr&&uiErr.stack);
+      try{ showToast('Clase reservada ✓','✅'); }catch(_){}
     }
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('reserva: fallo de red: '+(e&&e.message||e), e&&e.stack);
     showToast('Error de conexión. Intenta de nuevo.','❌');
     if(btn){ btn.disabled=false; btn.textContent='RESERVAR'; btn.style.opacity=''; }
   }
@@ -6908,21 +6930,27 @@ async function cancelarReserva(reservaId, key){
       body: JSON.stringify({ estado:'cancelado' })
     });
     if(!res.ok && res.status !== 204) throw new Error('patch failed');
-    // Cancelar recordatorio nativo si existe
-    const reserva = clasesReservas[key];
-    if(reserva && typeof window.cancelClassReminder === 'function'){
-      window.cancelClassReminder(reserva.clase_tipo||'', reserva.clase_hora||'', reserva.fecha||'');
+    // La cancelación YA tuvo éxito. El render posterior no debe disfrazarse de "error al cancelar".
+    try {
+      const reserva = clasesReservas[key];
+      if(reserva && typeof window.cancelClassReminder === 'function'){
+        window.cancelClassReminder(reserva.clase_tipo||'', reserva.clase_hora||'', reserva.fecha||'');
+      }
+      delete clasesReservas[key];
+      clasesCupos[key] = Math.max(0,(clasesCupos[key]||1)-1);
+      const today = new Date();
+      const dates = [];
+      for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); }
+      haptic('medium');
+      renderClasesView(dates);
+      renderNextClassCard(); // sync HOME card after cancel
+      try{ closeSheet('class-detail-sheet',null); }catch(_){}
+    } catch(uiErr){
+      if(window.logAtletaError) window.logAtletaError('cancelar: render post-éxito: '+(uiErr&&uiErr.message||uiErr), uiErr&&uiErr.stack);
+      try{ showToast('Reserva cancelada','✅'); }catch(_){}
     }
-    delete clasesReservas[key];
-    clasesCupos[key] = Math.max(0,(clasesCupos[key]||1)-1);
-    const today = new Date();
-    const dates = [];
-    for(let i=0;i<7;i++){ const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); }
-    haptic('medium');
-    renderClasesView(dates);
-    renderNextClassCard(); // sync HOME card after cancel
-    try{ closeSheet('class-detail-sheet',null); }catch(_){}
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('cancelar: fallo de red: '+(e&&e.message||e), e&&e.stack);
     haptic('error');
     showToast('Error al cancelar. Intenta de nuevo.','❌');
     if(btn){ btn.className='cls-btn cancel'; btn.disabled=false; btn.textContent='Cancelar'; }
@@ -7023,15 +7051,22 @@ async function entrarWaitlist(horarioId, fecha, tipo, hora){
     });
     if(!res.ok) throw new Error('insert failed');
     const rows=await res.json();
-    clasesWaitlist[key]=rows[0]||{id:'?',posicion};
-    clasesWaitlistN[key]=(clasesWaitlistN[key]||0)+1;
-    const today=new Date();
-    const dates=[];
-    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)});}
-    haptic('light');
-    renderClasesView(dates);
-    showToast(`Anotado en lista de espera #${posicion}`,'📋');
+    // Anotado YA con éxito. El render posterior no debe disfrazarse de "no se pudo anotar".
+    try {
+      clasesWaitlist[key]=rows[0]||{id:'?',posicion};
+      clasesWaitlistN[key]=(clasesWaitlistN[key]||0)+1;
+      const today=new Date();
+      const dates=[];
+      for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)});}
+      haptic('light');
+      renderClasesView(dates);
+      showToast(`Anotado en lista de espera #${posicion}`,'📋');
+    } catch(uiErr){
+      if(window.logAtletaError) window.logAtletaError('waitlist: render post-éxito: '+(uiErr&&uiErr.message||uiErr), uiErr&&uiErr.stack);
+      try{ showToast('Anotado en lista de espera','📋'); }catch(_){}
+    }
   }catch(e){
+    if(window.logAtletaError) window.logAtletaError('waitlist: fallo de red: '+(e&&e.message||e), e&&e.stack);
     if(btn){ btn.className='cls-btn waitlist'; btn.disabled=false; btn.textContent='📋 Lista de espera'; }
     showToast('No se pudo anotar. Intenta de nuevo.','❌');
   }
@@ -7042,17 +7077,20 @@ async function salirWaitlist(waitlistId, key){
   const btn=document.querySelector(`#cls-card-${key} .cls-btn.in-waitlist`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Saliendo…'; }
   try{
-    await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${waitlistId}`,{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${waitlistId}`,{
       method:'PATCH',
       headers:_sbHeaders(),
       body:JSON.stringify({estado:'cancelado'})
     });
-    delete clasesWaitlist[key];
-    clasesWaitlistN[key]=Math.max(0,(clasesWaitlistN[key]||1)-1);
-    const today=new Date();
-    const dates=[];
-    for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)});}
-    renderClasesView(dates);
+    if(!res.ok && res.status !== 204) throw new Error('patch failed');
+    try {
+      delete clasesWaitlist[key];
+      clasesWaitlistN[key]=Math.max(0,(clasesWaitlistN[key]||1)-1);
+      const today=new Date();
+      const dates=[];
+      for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()+i);dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)});}
+      renderClasesView(dates);
+    } catch(uiErr){ if(window.logAtletaError) window.logAtletaError('salirWaitlist render: '+(uiErr&&uiErr.message||uiErr), uiErr&&uiErr.stack); }
   }catch(_){
     if(btn){ btn.className='cls-btn in-waitlist'; btn.disabled=false; }
     showToast('Error al salir de la lista.','❌');
