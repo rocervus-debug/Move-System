@@ -4482,7 +4482,7 @@ async function requestPushPermission(){
     if(window._isNative && typeof window.registerPush === 'function'){
       await window.registerPush(token, SUPABASE_URL, ANON_KEY);
       _markPushDecided();            // tras el flujo nativo, ocultar el banner (persistido)
-      toast('Notificaciones activadas ✓','🔔',2500);
+      showToast('Notificaciones activadas ✓','🔔',2500);
       return;
     }
     // WEB / PWA: API estándar
@@ -4492,12 +4492,12 @@ async function requestPushPermission(){
     _markPushDecided();                // granted o denied: ya decidió, ocultar
     if(perm === 'granted'){
       await _subscribePush(token);
-      toast('Notificaciones activadas ✓','🔔',2500);
+      showToast('Notificaciones activadas ✓','🔔',2500);
     }
   }catch(e){
     if(window.logAtletaError) window.logAtletaError('requestPushPermission: '+(e&&e.message||e), e&&e.stack);
     console.error('[PWA] requestPushPermission error:', e);
-    toast('No se pudieron activar las notificaciones. Puedes activarlas desde Ajustes del teléfono.','✕',5000);
+    showToast('No se pudieron activar las notificaciones. Puedes activarlas desde Ajustes del teléfono.','✕',5000);
   }
 }
 
@@ -5038,7 +5038,7 @@ function renderNextClassCard(){
 
 // ── Check-in desde app del atleta ────────────────────
 async function doAtletaCheckIn(portalToken){
-  if(!portalToken){ toast('Error: token no disponible','✕'); return; }
+  if(!portalToken){ showToast('Error: token no disponible','✕'); return; }
 
   const btn = document.getElementById('ncc-checkin-btn');
   if(btn){ btn.disabled=true; btn.textContent='…'; }
@@ -5060,15 +5060,15 @@ async function doAtletaCheckIn(portalToken){
     try{ d = await resp.json(); }catch(_){}
 
     if(!resp.ok || d.error){
-      toast(d.error || `Error ${resp.status} al hacer check-in`,'✕',3500);
+      showToast(d.error || `Error ${resp.status} al hacer check-in`,'✕',3500);
       if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
       return;
     }
 
     if(d.already_checked_in){
-      toast('Ya registraste tu entrada hoy ✓','🟢',2500);
+      showToast('Ya registraste tu entrada hoy ✓','🟢',2500);
     } else {
-      toast('¡Check-in registrado! Que buena sesión 💪','✅',3000);
+      showToast('¡Check-in registrado! Que buena sesión 💪','✅',3000);
       if(window.haptic) window.haptic('success');
     }
 
@@ -5082,7 +5082,7 @@ async function doAtletaCheckIn(portalToken){
     if(window.logAtletaError) window.logAtletaError('checkin: '+(e&&e.name)+' '+(e&&e.message||e), e&&e.stack);
     console.error('[checkin]', e.name, e.message);
     const msg = e.name==='AbortError' ? 'Tiempo de espera agotado. Intenta de nuevo' : 'Sin conexión. Intenta de nuevo';
-    toast(msg,'✕',3000);
+    showToast(msg,'✕',3000);
     if(btn){ btn.disabled=false; btn.textContent='CHECK-IN'; }
   }
 }
@@ -6917,7 +6917,7 @@ function _showReservaConfirmBanner(tipo, hora, fechaStr){
   if(ring){ ring.style.animation='none'; requestAnimationFrame(()=>{ ring.style.animation=''; }); }
 
   // Notificación local 1h antes (solo en app nativa)
-  if(window.scheduleClassReminder) window.scheduleClassReminder(tipo, hora, fecha).catch(()=>{});
+  if(window.scheduleClassReminder) window.scheduleClassReminder(tipo, hora, fechaStr).catch(()=>{});
   haptic('success');
   openSheet('booking-confirm-sheet');
 }
