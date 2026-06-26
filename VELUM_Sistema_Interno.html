@@ -10367,7 +10367,7 @@ async function sendPushBroadcast(){
 
     const resp = await fetch(`${window._EDGE_BASE}/velum-web-push`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||''},
+      headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+(currentUser?.jwt||'')},
       body: JSON.stringify(payload),
     });
     const d = await resp.json();
@@ -22535,7 +22535,7 @@ async function showCancelClaseNotifModal(claseId, fechaStr, hora, motivo){
     const edgeBase = window._EDGE_BASE || `${window._SUPABASE_URL||''}/functions/v1`;
     fetch(`${edgeBase}/velum-web-push`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': window._ANON_KEY||'' },
+      headers: { 'Content-Type': 'application/json', 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer '+(currentUser?.jwt||'') },
       body: JSON.stringify({
         portal_tokens: pushTokens,
         titulo: `Clase cancelada: ${claseNombre}`,
