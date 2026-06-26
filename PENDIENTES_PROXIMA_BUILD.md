@@ -1,0 +1,45 @@
+# VELUM — Pendientes para la próxima build de la app
+
+> **Estado:** acumulando cambios. NO compilar todavía (esperando más detalles).
+> **Última actualización:** 2026-06-26
+> **Última subida a tiendas:** iOS 1.0.1 build 5 (aprobada, auto-release). Android: bloqueado en verificación de dispositivo.
+
+Este archivo junta todo lo que requiere **rebuild + resubmit** de la app nativa (Capacitor).
+Los cambios solo-web del panel (`VELUM_Sistema_Interno.html`) y de edge functions NO necesitan esto:
+se despliegan solos y no entran en esta lista.
+
+---
+
+## 1. Cambios de la app ya en código (entran en la próxima build)
+
+| # | Cambio | Archivo(s) | Necesita |
+|---|--------|-----------|----------|
+| 1 | **Domiciliación visible (solo lectura)** — tarjeta "Mensualidad domiciliada" en Planes con estados activa / cobro pendiente / cancela-al-fin | `atleta.html` → `velum-app/www/index.html` | iOS + Android |
+| 2 | **Splash Android 12+ fondo oscuro** — `windowSplashScreenBackground #030A07` (evita flash blanco) | `velum-app/android/.../styles.xml` | Android |
+| 3 | **Splash más rápido** — `launchShowDuration 2500→500` | `velum-app/capacitor.config.ts` | iOS + Android |
+
+> El backend de la domiciliación (`velum-atleta-portal` v30) **ya está desplegado** — solo falta la parte visual de la app.
+
+---
+
+## 2. Por confirmar / pendiente de definir (puede sumar a la build)
+
+- [ ] *(espacio para lo que salga del pulido/auditoría en curso)*
+
+---
+
+## 3. Checklist al momento de compilar (cuando se decida)
+
+1. `cd velum-app && node scripts/build.js` (regenera `www` desde `atleta.html`).
+2. `npx cap copy ios && npx cap copy android` (propaga `www`).
+3. **iOS:** subir versión (`MARKETING_VERSION`) en Xcode antes de archivar — la 1.0.1 ya está cerrada, la próxima sería 1.0.2 o 1.1.0.
+4. **Android:** "Generate Signed App Bundle" (release, NO debug). `versionCode` debe subir de 1.
+5. Probar en TestFlight / Internal testing antes de promover.
+6. Verificar específicamente: la tarjeta de domiciliación aparece para un atleta con `member_subscriptions` activa.
+
+---
+
+## 4. Notas
+
+- Android sigue bloqueado en la verificación de dispositivo de Google Play (requiere un teléfono Android físico que el usuario debe conseguir prestado) + el requisito de 12 testers / 14 días de prueba cerrada para cuentas personales.
+- iOS está al día (1.0.1 en App Store).

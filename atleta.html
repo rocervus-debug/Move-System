@@ -3846,7 +3846,7 @@ async function saveMeta(){
       try{
         await fetch(`${SUPABASE_URL}/rest/v1/clientes?id=eq.${portalData.cliente.id}`,{
           method:'PATCH',
-          headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+          headers:{'Content-Type':'application/json','apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`},
           body:JSON.stringify({meta_semanal:metaPickerValue,...(selectedGoal?{objetivo:selectedGoal}:{})})
         });
       }catch(_){}
@@ -6965,6 +6965,21 @@ async function cancelarReserva(reservaId, key){
   }
 }
 
+// Carga/recarga los datos del portal por token y repinta. Usado por pull-to-refresh
+// y por el refresh al volver del background (ambos viven fuera del scope de tryToken).
+async function loadPortalData(token){
+  if(!token) return;
+  const res=await fetch(`${EDGE_BASE}/velum-atleta-portal?token=${encodeURIComponent(token)}`,{headers:{'apikey':ANON_KEY}});
+  if(!res.ok) throw new Error('invalid');
+  const data=await res.json();
+  if(data.error) throw new Error(data.error);
+  await _fetchAtletaAuthJWT({portal_token: token}).catch(()=>null);
+  await _loadGymPaquetes(data).catch(()=>null);
+  portalData=data;
+  showPortal(data);
+  return data;
+}
+
 // ── Refresh silencioso al volver del background (hook para native bridge) ──
 window._velumRefresh = function(){
   if(portalData) {
@@ -7314,7 +7329,7 @@ async function init(){
             portalData=fresh;
             renderHomeData(fresh);
             renderPlanes();
-            updateQRStatus();
+            renderQR();
             const subEl=$('payment-success-sub');
             if(subEl) subEl.textContent='¡Todo listo! Tu membresía está activa.';
           }catch(_){}

@@ -25,6 +25,14 @@ serve(async (req) => {
     });
   }
 
+  // El token se interpola en un filtro .or() de PostgREST; validamos el formato (alfanumérico,
+  // guion y guion bajo) para que no pueda inyectar condiciones extra (',', '.', '(', ')').
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(String(token))) {
+    return new Response(JSON.stringify({ error: 'Token inválido.' }), {
+      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const db = createClient(supabaseUrl, serviceKey, {

@@ -41,18 +41,44 @@ serve(async (req) => {
     const hoyStr    = hoy.toISOString().slice(0,10);
     const limiteStr = limite.toISOString().slice(0,10);
 
-    // Buscar clientes por vencer
-    let query = db.from('clientes')
-      .select('id, nombre, email, membresia, vence, gym_id')
+    // El vencimiento vive en `pagos` (la tabla `clientes` NO tiene estado/membresia/vence).
+    let pagoQuery = db.from('pagos')
+      .select('cliente, plan, vence, gym_id')
       .gte('vence', hoyStr)
-      .lte('vence', limiteStr)
-      .eq('estado', 'Activo');
-    if (gymId) query = query.eq('gym_id', gymId);
+      .lte('vence', limiteStr);
+    if (gymId) pagoQuery = pagoQuery.eq('gym_id', gymId);
 
-    const { data: clientes, error } = await query;
+    const { data: pagosRows, error } = await pagoQuery;
     if (error) throw error;
 
-    const conEmail = (clientes || []).filter(c => c.email && c.email.includes('@'));
+    // Un cliente puede tener varios pagos en el rango → quedarnos con el vencimiento más reciente.
+    const porCliente = new Map<string, { cliente: string; plan: string; vence: string; gym_id: any }>();
+    for (const p of (pagosRows || [])) {
+      if (!p.vence || !p.cliente) continue;
+      const key = `${p.gym_id}::${p.cliente}`;
+      const prev = porCliente.get(key);
+      if (!prev || p.vence > prev.vence) porCliente.set(key, p as any);
+    }
+    const vencimientos = [...porCliente.values()];
+
+    // El email está en `clientes` — lo resolvemos por nombre + gym_id.
+    const nombres = [...new Set(vencimientos.map(v => v.cliente))];
+    const cliByKey = new Map<string, { nombre: string; email: string; gym_id: any }>();
+    if (nombres.length) {
+      let cliQuery = db.from('clientes').select('nombre, email, gym_id').in('nombre', nombres);
+      if (gymId) cliQuery = cliQuery.eq('gym_id', gymId);
+      const { data: cliRows } = await cliQuery;
+      (cliRows || []).forEach((c: any) => { if (c.email) cliByKey.set(`${c.gym_id}::${c.nombre}`, c); });
+    }
+
+    const conEmail = vencimientos
+      .map(v => {
+        const c = cliByKey.get(`${v.gym_id}::${v.cliente}`);
+        return (c && c.email && c.email.includes('@'))
+          ? { nombre: v.cliente, email: c.email, membresia: v.plan, vence: v.vence }
+          : null;
+      })
+      .filter(Boolean) as Array<{ nombre: string; email: string; membresia: string; vence: string }>;
     let enviados = 0, errores = 0;
 
     for (const cliente of conEmail) {

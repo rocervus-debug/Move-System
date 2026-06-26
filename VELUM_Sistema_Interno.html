@@ -8901,17 +8901,20 @@ async function saveMiCuenta(){
     const { error } = await window.supabaseClient
       .from('usuarios').update(updates).eq('id', currentUser.id);
     if(error){ msgEl.textContent='Error: '+error.message; msgEl.style.color='var(--danger)'; return; }
-    // Update local session + pw_version
-    currentUser.nombre = nombre;
-    if(newPass) currentUser.pw_version = updates.pw_version;
-    const sess = getSession();
-    if(sess){ setSession({...sess, nombre, ...(newPass ? {pw_version: updates.pw_version} : {})}); }
-    updateSidebarUser();
-    if(passEl) passEl.value = '';
+    // Guardado OK → actualizar sesión/UI en bloque aislado para que un fallo de render
+    // no muestre "Error inesperado" y provoque un reintento que vuelva a invalidar sesiones.
+    try{
+      currentUser.nombre = nombre;
+      if(newPass) currentUser.pw_version = updates.pw_version;
+      const sess = getSession();
+      if(sess){ setSession({...sess, nombre, ...(newPass ? {pw_version: updates.pw_version} : {})}); }
+      updateSidebarUser();
+      if(passEl) passEl.value = '';
+      auditLog('UPDATE','usuarios',currentUser.id, newPass ? 'Actualizó perfil y contraseña' : 'Actualizó su perfil');
+    }catch(e){ console.error('saveMiCuenta post-update:', e); }
     msgEl.textContent='✅ Cambios guardados';
     msgEl.style.color='var(--ok)';
     setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 3000);
-    auditLog('UPDATE','usuarios',currentUser.id, newPass ? 'Actualizó perfil y contraseña' : 'Actualizó su perfil');
   } catch(e){
     msgEl.textContent='Error inesperado: '+e.message;
     msgEl.style.color='var(--danger)';
@@ -13026,16 +13029,18 @@ async function saveEval(){
   try {
     const { error } = await window.supabaseClient.from('evaluaciones').insert([withGymId(payload)]);
     if(error){ console.error('Error guardando evaluación:', error); if(_handleSessionError(error))return; alert(`No se pudo guardar la evaluación:\n${error.message||JSON.stringify(error)}`); return; }
-    await loadEvalsFromSupabase();
-    // Reset stars + notes
-    document.querySelectorAll('#eval-criteria .star').forEach(s=>s.classList.remove('on'));
-    document.querySelectorAll('#eval-criteria .star-val').forEach(v=>v.textContent='0/5');
-    document.getElementById('eval-notas').value='';
-    updateEvalScore();
+    // Guardado OK → confirmar antes de repintar, para que un error de render no parezca fallo de guardado.
     toast(`Evaluación guardada: ${total}/40`);
-    renderEvalHistory();
-    renderCoaches();
-    renderDashboard();
+    try{
+      await loadEvalsFromSupabase();
+      document.querySelectorAll('#eval-criteria .star').forEach(s=>s.classList.remove('on'));
+      document.querySelectorAll('#eval-criteria .star-val').forEach(v=>v.textContent='0/5');
+      document.getElementById('eval-notas').value='';
+      updateEvalScore();
+      renderEvalHistory();
+      renderCoaches();
+      renderDashboard();
+    }catch(e){ console.error('saveEval post-render:', e); }
   } catch(e) {
     console.error('saveEval excepción:', e);
     alert(`Error inesperado al guardar evaluación:\n${e.message||e}`);
@@ -17734,7 +17739,7 @@ async function _saDoResetGymPw(gymId, hasAdmin){
         .eq('id', users[0].id);
       if(error) throw error;
       toast('Contraseña actualizada ✓ — el admin debe iniciar sesión de nuevo','🔑',4000);
-      auditLog('SA_RESET_GYM_PW','usuarios',users[0].id,`Reset PW admin gym ${gymId}`);
+      try{ auditLog('SA_RESET_GYM_PW','usuarios',users[0].id,`Reset PW admin gym ${gymId}`); }catch(_){}
     } else {
       // Crear admin nuevo
       const emailEl  = document.getElementById('sa-admin-email');
@@ -17749,10 +17754,10 @@ async function _saDoResetGymPw(gymId, hasAdmin){
       });
       if(error) throw error;
       toast(`Admin creado: ${email} ✓ — ya puede iniciar sesión`,'👤',4000);
-      auditLog('SA_CREATE_GYM_ADMIN','usuarios',null,`Creó admin ${email} para gym ${gymId}`);
+      try{ auditLog('SA_CREATE_GYM_ADMIN','usuarios',null,`Creó admin ${email} para gym ${gymId}`); }catch(_){}
     }
 
-    document.getElementById('sa-reset-pw-modal').remove();
+    try{ document.getElementById('sa-reset-pw-modal')?.remove(); }catch(_){}
   }catch(e){
     errEl.textContent='Error: '+(e.message||'').slice(0,60);
     if(btn){btn.disabled=false;btn.textContent=hasAdmin?'Cambiar':'Crear admin';}
@@ -26140,9 +26145,7 @@ async function saveMedidaAdmin(){
   const hasAny = [peso,grasa,cintura,cadera,pecho,brazo].some(v=>v&&v.trim()!=='');
   if(!hasAny){ toast('Ingresa al menos un valor','📏'); return; }
 
-  const gym_id = gymConfig?.gym_id || currentGymId || null;
-  const payload = {
-    gym_id,
+  const payload = withGymId({
     cliente_id: _medCurrentCliId,
     fecha,
     peso_kg:    peso    ? parseFloat(peso)   : null,
@@ -26152,7 +26155,7 @@ async function saveMedidaAdmin(){
     pecho_cm:   pecho   ? parseFloat(pecho)  : null,
     brazo_cm:   brazo   ? parseFloat(brazo)  : null,
     notas,
-  };
+  });
   const {error} = await window.supabaseClient.from('medidas').insert(payload);
   if(error){ if(_handleSessionError(error))return; toast('Error al guardar ❌'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   toast(`Medición guardada 📏`,'✅');
