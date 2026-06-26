@@ -208,7 +208,8 @@ body::before{
 }
 
 /* ── Topbar (mobile) ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 8px;}
+/* #app ya aplica padding-top:var(--safe-top) (notch); NO volver a sumar env() aquí o se duplica el gap. */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;}
 .topbar-gym{display:flex;align-items:center;gap:9px;}
 .gym-logo-sm{
   width:28px;height:28px;border-radius:8px;
@@ -960,7 +961,7 @@ body::before{
 .greeting-name-sm{font-size:22px;}
 .sheet-title{font-size:17px;font-weight:800;color:#fff;margin-bottom:18px;}
 .bit-search-wrap{padding:0 16px 12px;}
-.bit-search-input{width:100%;padding:10px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color .2s;box-sizing:border-box;}
+.bit-search-input{width:100%;padding:10px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:16px;outline:none;transition:border-color .2s;box-sizing:border-box;}
 .bit-search-input:focus{border-color:var(--accent);}
 .bit-day-group{padding:0 16px;margin-bottom:20px;}
 .bit-day-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
@@ -974,7 +975,7 @@ body::before{
 .bit-meta{font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px;}
 .bit-chip{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--text2);}
 .bit-nota{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.4;font-style:italic;}
-.bit-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px;margin-left:auto;flex-shrink:0;transition:color .15s;}
+.bit-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:auto;flex-shrink:0;transition:color .15s;}
 .bit-del:active{color:var(--danger);}
 .bit-empty{padding:60px 24px;text-align:center;}
 .bit-empty-ico{font-size:40px;margin-bottom:14px;}
@@ -987,7 +988,7 @@ body::before{
 .bit-type-tab.active{background:color-mix(in srgb, var(--accent) 12%, transparent);border-color:var(--border-accent);color:var(--accent-light);}
 .bit-field{margin-bottom:16px;}
 .bit-field label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;}
-.bit-field input,.bit-field textarea,.bit-field select{width:100%;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;-webkit-appearance:none;}
+.bit-field input,.bit-field textarea,.bit-field select{width:100%;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:var(--font);outline:none;-webkit-appearance:none;}
 .bit-field input:focus,.bit-field textarea:focus,.bit-field select:focus{border-color:var(--border-accent);}
 .bit-field textarea{resize:none;line-height:1.5;}
 .bit-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
@@ -2275,7 +2276,7 @@ body::before{
 }
 .chat-input-field::placeholder{color:var(--text3);}
 .chat-send-btn{
-  width:34px;height:34px;border-radius:50%;background:var(--cyan);
+  width:42px;height:42px;border-radius:50%;background:var(--cyan);
   border:none;display:grid;place-items:center;cursor:pointer;flex-shrink:0;
   transition:transform 200ms var(--ease-out);
 }
@@ -3524,7 +3525,7 @@ function showToast(msg, icon='ℹ️', duration=3500){
   if(!t){
     t = document.createElement('div');
     t.id = 'atleta-toast';
-    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;background:rgba(10,26,20,.95);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;backdrop-filter:blur(16px);transition:opacity .25s,transform .25s;opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 40px);';
+    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;background:rgba(10,26,20,.95);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;backdrop-filter:blur(16px);transition:opacity .25s,transform .25s;opacity:0;pointer-events:none;white-space:normal;line-height:1.4;word-break:break-word;max-width:calc(100vw - 40px);';
     document.body.appendChild(t);
   }
   t.innerHTML = '';
@@ -3628,6 +3629,8 @@ function coachIASendInput(){
   coachIASend(inp.value.trim()); inp.value='';
 }
 async function coachIASend(text){
+  if(coachIASend._busy) return; // evita envíos apilados mientras hay uno en vuelo
+  coachIASend._busy = true;
   coachMessages.push({role:'user',text});
   coachMessages.push({role:'typing'});
   renderCoachMessages();
@@ -3671,6 +3674,7 @@ async function coachIASend(text){
     coachMessages = coachMessages.filter(m=>m.role!=='typing');
     coachMessages.push({role:'ai', text:'Error de conexión. Revisa tu red e intenta de nuevo.'});
   }
+  coachIASend._busy = false;
   renderCoachMessages();
 }
 
@@ -4419,7 +4423,8 @@ function _showOfflineBanner(cachedAt){
     banner.style.background = 'rgba(34,197,94,.92)';
     setTimeout(async () => {
       try{
-        if(typeof loadPortalData === 'function'){ await loadPortalData(); banner.remove(); }
+        const _tok = portalData?.cliente?.portal_token;
+        if(_tok && typeof loadPortalData === 'function'){ await loadPortalData(_tok); banner.remove(); }
         else { window.location.reload(); }
       }catch(_){ window.location.reload(); }
     }, 900);
@@ -5482,6 +5487,8 @@ function planCoachSendInput(){
 }
 
 async function planCoachSend(text){
+  if(planCoachSend._busy) return; // evita envíos apilados mientras hay uno en vuelo
+  planCoachSend._busy = true;
   _planCoachMsgs.push({role:'user',text});
   _planCoachMsgs.push({role:'typing'});
   renderPlanCoachMsgs();
@@ -5518,6 +5525,7 @@ async function planCoachSend(text){
     _planCoachMsgs=_planCoachMsgs.filter(m=>m.role!=='typing');
     _planCoachMsgs.push({role:'ai',text:'Ocurrió un error. Verifica tu conexión y vuelve a intentar.'});
   }
+  planCoachSend._busy = false;
   renderPlanCoachMsgs();
 }
 
@@ -6471,63 +6479,63 @@ async function loadClasesData(){
       dates.filter(d=>d.dia===h.dia).forEach(d=>needed.push({hid:h.id,fecha:d.fecha}));
     });
 
-    // 2. Fetch existing reservas by this token (next 7 days)
+    // Pasos 2/3/4/6: solo dependen de lo ya calculado de `horarios` y escriben a globals distintos.
+    // Son independientes entre sí → se lanzan en paralelo (antes corrían en serie: 4 RTT secuenciales).
     const fechaMin = dates[0].fecha;
     const fechaMax = dates[6].fecha;
-    const rRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado`,
-      { headers: _sbHeaders() }
-    );
-    const myReservas = rRes.ok ? await rRes.json() : [];
-    clasesReservas = {};
-    myReservas.forEach(r=>{ clasesReservas[r.horario_id+'_'+r.fecha] = r; });
+    const hids = needed.length ? [...new Set(needed.map(n=>n.hid))] : [];
+    clasesReservas = {}; clasesCupos = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
 
-    // 3. Fetch ALL reservation counts in ONE batch request (instead of N parallel requests)
-    clasesCupos = {};
-    if(needed.length > 0){
-      const hids = [...new Set(needed.map(n=>n.hid))];
-      try{
-        const cRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reservas?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=neq.cancelado&select=horario_id,fecha`,
+    await Promise.all([
+      // 2. Mis reservas (próximos 7 días)
+      (async()=>{
+        const rRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado`,
           { headers: _sbHeaders() }
-        );
-        const allReservas = cRes.ok ? await cRes.json() : [];
-        // Count in JS — no more N parallel requests
-        allReservas.forEach(r=>{ const k=r.horario_id+'_'+r.fecha; clasesCupos[k]=(clasesCupos[k]||0)+1; });
-      }catch(_){ /* fallback to 0 counts */ }
-    }
-
-    // 4. Fetch waitlist for this token (next 7 days) + ALL waitlist counts in ONE batch request
-    clasesWaitlist = {};
-    clasesWaitlistN = {};
-    if(needed.length > 0){
-      const hids = [...new Set(needed.map(n=>n.hid))];
-      const [wMyRes, wAllRes] = await Promise.all([
-        // My waitlist entries
-        fetch(
-          `${SUPABASE_URL}/rest/v1/waitlist?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=id,horario_id,fecha,posicion`,
-          { headers: _sbHeaders() }
-        ).catch(()=>null),
-        // All waitlist counts in one request (instead of N parallel)
-        fetch(
-          `${SUPABASE_URL}/rest/v1/waitlist?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=horario_id,fecha`,
-          { headers: _sbHeaders() }
-        ).catch(()=>null)
-      ]);
-      if(wMyRes?.ok){ const d=await wMyRes.json(); d.forEach(w=>{ clasesWaitlist[w.horario_id+'_'+w.fecha]=w; }); }
-      if(wAllRes?.ok){ const d=await wAllRes.json(); d.forEach(w=>{ const k=w.horario_id+'_'+w.fecha; clasesWaitlistN[k]=(clasesWaitlistN[k]||0)+1; }); }
-    }
-
-    // 6. Fetch single-occurrence cancellations for this 7-day window
-    clasesCancelaciones = {};
-    try{
-      const canRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/horario_cancelaciones?gym_id=eq.${gymId}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&select=horario_id,fecha`,
-        { headers: _sbHeaders() }
-      );
-      const canData = canRes.ok ? await canRes.json() : [];
-      canData.forEach(c=>{ clasesCancelaciones[c.horario_id+'_'+c.fecha] = true; });
-    }catch(_){ /* non-blocking */ }
+        ).catch(()=>null);
+        const myReservas = rRes?.ok ? await rRes.json() : [];
+        myReservas.forEach(r=>{ clasesReservas[r.horario_id+'_'+r.fecha] = r; });
+      })(),
+      // 3. Conteo de cupos en UN batch
+      (async()=>{
+        if(!hids.length) return;
+        try{
+          const cRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/reservas?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=neq.cancelado&select=horario_id,fecha`,
+            { headers: _sbHeaders() }
+          );
+          const allReservas = cRes.ok ? await cRes.json() : [];
+          allReservas.forEach(r=>{ const k=r.horario_id+'_'+r.fecha; clasesCupos[k]=(clasesCupos[k]||0)+1; });
+        }catch(_){ /* fallback to 0 counts */ }
+      })(),
+      // 4. Mi waitlist + conteo de waitlist (ambos en un Promise.all interno)
+      (async()=>{
+        if(!hids.length) return;
+        const [wMyRes, wAllRes] = await Promise.all([
+          fetch(
+            `${SUPABASE_URL}/rest/v1/waitlist?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=id,horario_id,fecha,posicion`,
+            { headers: _sbHeaders() }
+          ).catch(()=>null),
+          fetch(
+            `${SUPABASE_URL}/rest/v1/waitlist?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=horario_id,fecha`,
+            { headers: _sbHeaders() }
+          ).catch(()=>null)
+        ]);
+        if(wMyRes?.ok){ const d=await wMyRes.json(); d.forEach(w=>{ clasesWaitlist[w.horario_id+'_'+w.fecha]=w; }); }
+        if(wAllRes?.ok){ const d=await wAllRes.json(); d.forEach(w=>{ const k=w.horario_id+'_'+w.fecha; clasesWaitlistN[k]=(clasesWaitlistN[k]||0)+1; }); }
+      })(),
+      // 6. Cancelaciones de ocurrencia única en la ventana de 7 días
+      (async()=>{
+        try{
+          const canRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/horario_cancelaciones?gym_id=eq.${gymId}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&select=horario_id,fecha`,
+            { headers: _sbHeaders() }
+          );
+          const canData = canRes.ok ? await canRes.json() : [];
+          canData.forEach(c=>{ clasesCancelaciones[c.horario_id+'_'+c.fecha] = true; });
+        }catch(_){ /* non-blocking */ }
+      })(),
+    ]);
 
     // Build tabs from days that have classes
     const diasConClases = [...new Set(clasesHorarios.map(h=>h.dia))];
@@ -6973,8 +6981,11 @@ async function loadPortalData(token){
   if(!res.ok) throw new Error('invalid');
   const data=await res.json();
   if(data.error) throw new Error(data.error);
-  await _fetchAtletaAuthJWT({portal_token: token}).catch(()=>null);
-  await _loadGymPaquetes(data).catch(()=>null);
+  // Independientes (auth necesita token; paquetes necesitan data.gym.slug) → en paralelo.
+  await Promise.all([
+    _fetchAtletaAuthJWT({portal_token: token}).catch(()=>null),
+    _loadGymPaquetes(data).catch(()=>null),
+  ]);
   portalData=data;
   showPortal(data);
   return data;
@@ -7303,11 +7314,12 @@ async function init(){
     if(!res.ok) throw new Error('invalid');
     const data=await res.json();
     if(data.error) throw new Error(data.error);
-    // V2: obtener JWT autenticado ANTES de seguir, para que las queries (clases, pagos)
-    // pasen RLS post-hardening. Si falla, degrada a anon.
-    await _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null);
-    // V3: cargar paquetes públicos + slug del Storefront para renovación con Connect
-    await _loadGymPaquetes(data).catch(()=>null);
+    // V2: JWT autenticado para que las queries (clases, pagos) pasen RLS; si falla, degrada a anon.
+    // V3: paquetes públicos + slug del Storefront. Independientes → en paralelo (latencia de arranque).
+    await Promise.all([
+      _fetchAtletaAuthJWT({portal_token: tok}).catch(()=>null),
+      _loadGymPaquetes(data).catch(()=>null),
+    ]);
     return data;
   }
 
@@ -7469,14 +7481,23 @@ async function saveBitacoraEntry(){
 async function loadAndRenderBitacora(){
   const token = _bitToken();
   if(!token) return;
+  const _el = $('bitacora-list');
+  // Estado de carga solo si no hay nada cacheado (evita parpadeo al refrescar).
+  if(_el && !(bitacoraData && bitacoraData.length)){
+    _el.innerHTML = '<div class="bit-empty"><div class="bit-empty-ico">⏳</div><div class="bit-empty-ttl">Cargando tu bitácora…</div></div>';
+  }
   try{
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/bitacora_atleta?qr_token=eq.${encodeURIComponent(token)}&order=fecha.desc,created_at.desc&limit=200`,
       { headers: apiHeaders() }
     );
-    if(!res.ok) return;
+    if(!res.ok) throw new Error('http '+res.status);
     bitacoraData = await res.json();
-  } catch(e){ console.error(e); return; }
+  } catch(e){
+    console.error(e);
+    if(_el) _el.innerHTML = '<div class="bit-empty"><div class="bit-empty-ico">⚠️</div><div class="bit-empty-ttl">No se pudo cargar</div><div class="bit-empty-sub">Revisa tu conexión e intenta de nuevo.</div></div>';
+    return;
+  }
   renderBitacora();
 }
 
@@ -7532,12 +7553,20 @@ function renderBitacora(query=''){
 }
 
 async function deleteBitacoraEntry(id){
-  await fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta?id=eq.${id}`, {
-    method: 'DELETE',
-    headers: apiHeaders(),
-  });
-  bitacoraData = bitacoraData.filter(e=>String(e.id)!==String(id));
-  renderBitacora();
+  if(!confirm('¿Borrar esta entrada de tu bitácora?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/bitacora_atleta?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: apiHeaders(),
+    });
+    if(!res.ok) throw new Error('delete failed '+res.status);
+    // Solo mutar el estado local si el borrado realmente pasó (antes desaparecía aunque fallara).
+    bitacoraData = bitacoraData.filter(e=>String(e.id)!==String(id));
+    renderBitacora();
+  }catch(e){
+    if(window.logAtletaError) window.logAtletaError('deleteBitacora: '+(e&&e.message||e), e&&e.stack);
+    showToast('No se pudo borrar. Intenta de nuevo.','❌');
+  }
 }
 
 // ══════════════════════════════════════════════════════
