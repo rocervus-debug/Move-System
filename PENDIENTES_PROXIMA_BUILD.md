@@ -20,6 +20,11 @@ se despliegan solos y no entran en esta lista.
 | 4 | **Fix: meta semanal no se guardaba** — `saveMeta` usaba `SUPABASE_KEY` (indefinido) → `ANON_KEY` | `atleta.html` | iOS + Android |
 | 5 | **Fix: pull-to-refresh / refresh al volver del background rotos** — faltaba definir `loadPortalData()` | `atleta.html` | iOS + Android |
 | 6 | **Fix: mensaje "¡Todo listo!" tras pago no aparecía** — `updateQRStatus()` indefinido → `renderQR()` | `atleta.html` | iOS + Android |
+| 7 | **Perf: arranque/refresh más rápido** — `loadPortalData`/`tryToken` paralelizan auth+paquetes; `loadClasesData` paraleliza 4 fetches | `atleta.html` | iOS + Android |
+| 8 | **Fix: refresh al recuperar conexión** — el banner offline llamaba `loadPortalData()` sin token (no-op) | `atleta.html` | iOS + Android |
+| 9 | **Mobile: doble inset del notch** — `.topbar` duplicaba `env(safe-area-inset-top)` → gap vacío bajo el notch | `atleta.html` | iOS |
+| 10 | **Mobile: zoom de iOS al enfocar** — inputs de bitácora/medidas 14→16px | `atleta.html` | iOS |
+| 11 | **UX: touch targets + toast + borrado de bitácora** — `.bit-del`/`.chat-send-btn` más grandes; toast no corta texto; `deleteBitacoraEntry` con confirm+chequeo; chats con guard anti doble-envío; bitácora con estado de carga/error | `atleta.html` | iOS + Android |
 
 > El backend de la domiciliación (`velum-atleta-portal` v30) **ya está desplegado** — solo falta la parte visual de la app.
 
