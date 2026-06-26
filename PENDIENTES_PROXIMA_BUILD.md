@@ -17,6 +17,9 @@ se despliegan solos y no entran en esta lista.
 | 1 | **Domiciliación visible (solo lectura)** — tarjeta "Mensualidad domiciliada" en Planes con estados activa / cobro pendiente / cancela-al-fin | `atleta.html` → `velum-app/www/index.html` | iOS + Android |
 | 2 | **Splash Android 12+ fondo oscuro** — `windowSplashScreenBackground #030A07` (evita flash blanco) | `velum-app/android/.../styles.xml` | Android |
 | 3 | **Splash más rápido** — `launchShowDuration 2500→500` | `velum-app/capacitor.config.ts` | iOS + Android |
+| 4 | **Fix: meta semanal no se guardaba** — `saveMeta` usaba `SUPABASE_KEY` (indefinido) → `ANON_KEY` | `atleta.html` | iOS + Android |
+| 5 | **Fix: pull-to-refresh / refresh al volver del background rotos** — faltaba definir `loadPortalData()` | `atleta.html` | iOS + Android |
+| 6 | **Fix: mensaje "¡Todo listo!" tras pago no aparecía** — `updateQRStatus()` indefinido → `renderQR()` | `atleta.html` | iOS + Android |
 
 > El backend de la domiciliación (`velum-atleta-portal` v30) **ya está desplegado** — solo falta la parte visual de la app.
 
