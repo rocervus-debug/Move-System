@@ -5732,7 +5732,7 @@ body::before{
               <div class="field"><label>Código postal fiscal</label><input id="fis-cp" class="settings-input" maxlength="5" placeholder="37000"/></div>
               <div class="field"><label>Email para facturas</label><input id="fis-email" type="email" class="settings-input" placeholder="facturas@tugym.com"/></div>
             </div>
-            <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveFiscalData()">Guardar datos fiscales</button>
+            <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveFiscalData(this)">Guardar datos fiscales</button>
             <div id="fis-msg" style="font-size:12px;margin-top:10px;display:none;"></div>
           </div>
         </div>
@@ -7015,7 +7015,7 @@ body::before{
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('contenido')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveContenido()">Agregar</button>
+      <button class="btn btn-primary" onclick="saveContenido(this)">Agregar</button>
     </div>
   </div>
 </div>
@@ -8310,11 +8310,13 @@ async function renderFiscalData(){
   } catch(e){ console.warn('renderFiscalData:', e); }
 }
 
-async function saveFiscalData(){
+async function saveFiscalData(btn){
+  if(btn?.disabled) return;
   const msg = document.getElementById('fis-msg');
   const show = (txt, color) => { if(msg){ msg.style.display='block'; msg.style.color=color; msg.textContent=txt; } };
   const rfc = (document.getElementById('fis-rfc').value||'').trim().toUpperCase();
   if (rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc)) { show('El RFC no parece válido. Revísalo.', 'var(--warn,#fbbf24)'); return; }
+  setBtnLoading(btn, true);
   const { error } = await window.supabaseClient.rpc('update_gym_fiscal_data', {
     p_rfc: rfc,
     p_razon: (document.getElementById('fis-razon').value||'').trim(),
@@ -8323,8 +8325,9 @@ async function saveFiscalData(){
     p_cp: (document.getElementById('fis-cp').value||'').trim(),
     p_email: (document.getElementById('fis-email').value||'').trim(),
   });
-  if (error) { show('Error al guardar: ' + error.message, '#ff8a80'); return; }
+  if (error) { setBtnLoading(btn,false); show('Error al guardar: ' + error.message, '#ff8a80'); return; }
   show('✓ Datos fiscales guardados.', 'var(--ok,#00ff80)');
+  setBtnLoading(btn, false);
 }
 
 async function openBillingPortal(){
@@ -13373,16 +13376,27 @@ function renderClientes(){
   }
 
   // ── Construir lista de clientes con estado y tipo ────────────────
+  // Índices (una sola pasada) para no escanear `pagos`/`clientesDB` por cada cliente del .map de abajo.
+  const _pagosPorCliente = new Map();
+  for(const p of pagos){
+    if(p.notas==='__sin_pago__') continue;
+    const k=(p.cliente||'').trim(); if(!k) continue;
+    let arr=_pagosPorCliente.get(k); if(!arr){ arr=[]; _pagosPorCliente.set(k,arr); }
+    arr.push(p);
+  }
+  const _cliPorNombre = new Map();
+  for(const c of clientesDB){ if(c.nombre && !_cliPorNombre.has(c.nombre)) _cliPorNombre.set(c.nombre, c); }
+
   let clientes = [...nombresSet].map(nombre => {
     // Identidad desde tabla clientes
-    const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
+    const cliRec = _cliPorNombre.get(nombre) || {};
     const telefono     = cliRec.telefono || '';
     const cumpleanos   = cliRec.cumpleanos || null;
     const cliId        = cliRec.id || null;
     const numeroCliente = cliRec.numero_cliente || null;
 
-    // Pagos reales (excluir __sin_pago__)
-    const todosPagos = pagos.filter(p=>(p.cliente||'').trim()===nombre && p.notas!=='__sin_pago__');
+    // Pagos reales (excluir __sin_pago__) — desde el índice pre-construido
+    const todosPagos = _pagosPorCliente.get(nombre) || [];
     const pagosOrd   = [...todosPagos].sort((a,b)=>{
       const av=a.vence||'', bv=b.vence||'';
       if(bv!==av) return bv.localeCompare(av);
@@ -14897,8 +14911,10 @@ function renderMetaMensual(ingresosMes){
   }
 }
 
-// ─── Tasa de retención ─────────────────────────────────────────────
-function renderRetencion(){
+// ─── Tasa de retención (widget del dashboard) ──────────────────────
+// OJO: NO renombrar a renderRetencion — colisiona con la vista completa de Retención
+// (otra función con ese nombre arriba), y la última definición ganaba, rompiendo la vista.
+function renderRetencionWidget(){
   const el  = document.getElementById('dash-ret-body');
   const lbl = document.getElementById('dash-ret-label');
   if(!el) return;
@@ -17067,7 +17083,7 @@ function renderDashboard(){
   if(typeof renderGymPulso==='function') renderGymPulso();
   renderMembresiasAlert();
   renderMetaMensual(ingresosMes);
-  renderRetencion();
+  renderRetencionWidget();
   renderHistIngresos();
   renderCumpleanos();
 
@@ -21916,21 +21932,24 @@ function openContenidoForDay(fecha){
   openModal('contenido');
 }
 
-async function saveContenido(){
+async function saveContenido(btn){
+  if(btn?.disabled) return;
   const titulo = document.getElementById('co-titulo').value.trim();
   const fecha  = document.getElementById('co-fecha').value;
   if(!titulo){ toast('El título es obligatorio.','⚠️'); return; }
   if(!fecha)  { toast('Selecciona una fecha.','⚠️'); return; }
   const dia = parseInt(fecha.slice(8,10), 10);
   const payload = { titulo, fecha, dia, tipo: document.getElementById('co-tipo').value };
+  setBtnLoading(btn, true);
   const { error } = await window.supabaseClient.from('contenidos').insert([withGymId(payload)]);
-  if(error){ console.error('Error guardando contenido:', error); if(_handleSessionError(error))return; toast('No se pudo guardar.','❌'); return; }
+  if(error){ setBtnLoading(btn,false); console.error('Error guardando contenido:', error); if(_handleSessionError(error))return; toast('No se pudo guardar.','❌'); return; }
   await loadContenidosFromSupabase();
   closeModal('contenido');
   document.getElementById('co-titulo').value='';
   document.getElementById('co-fecha').value='';
   toast(`"${titulo}" programado para el ${fecha.split('-').reverse().join('/')}.`,'📅');
   renderCalendario();
+  setBtnLoading(btn, false);
 }
 
 async function deleteContenido(id){
