@@ -282,6 +282,8 @@ body::before{
 /* Foco visible por teclado */
 :focus-visible{ outline:2px solid var(--accent,#00D4FF); outline-offset:2px; border-radius:5px; }
 :focus:not(:focus-visible){ outline:none; }
+/* Íconos SVG inline (reemplazo de emojis): alineación con el texto */
+.vic{vertical-align:-.16em;flex-shrink:0;}
 
 /* ══════════════════════════════════════
    VIEWS
@@ -2502,7 +2504,7 @@ body::before{
 
 <!-- ERROR -->
 <div id="error-screen" style="display:none;flex-direction:column;">
-  <div class="err-icon">🔒</div>
+  <div class="err-icon"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
   <div class="err-title">Portal no disponible</div>
   <div class="err-desc">Este link no es válido o expiró. Solicita a tu gym un nuevo acceso.</div>
 </div>
@@ -2806,7 +2808,7 @@ body::before{
       <!-- Payment success banner (optional) -->
       <div id="payment-success-wrap" style="display:none;">
         <div class="payment-success-banner">
-          <div class="payment-success-ico">🎉</div>
+          <div class="payment-success-ico"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/></svg></div>
           <div>
             <div class="payment-success-title">¡Pago completado!</div>
             <div class="payment-success-sub" id="payment-success-sub">Tu membresía fue activada. Actualizando…</div>
@@ -3218,9 +3220,9 @@ body::before{
 
       <!-- Tipo -->
       <div class="bit-type-tabs">
-        <button class="bit-type-tab active" id="btt-fuerza" onclick="setBitTipo('fuerza')">💪 Fuerza</button>
-        <button class="bit-type-tab" id="btt-cardio" onclick="setBitTipo('cardio')">🏃 Cardio</button>
-        <button class="bit-type-tab" id="btt-otro" onclick="setBitTipo('otro')">⚡ Otro</button>
+        <button class="bit-type-tab active" id="btt-fuerza" onclick="setBitTipo('fuerza')"><svg class="vic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>Fuerza</button>
+        <button class="bit-type-tab" id="btt-cardio" onclick="setBitTipo('cardio')"><svg class="vic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Cardio</button>
+        <button class="bit-type-tab" id="btt-otro" onclick="setBitTipo('otro')"><svg class="vic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>Otro</button>
       </div>
       <input type="hidden" id="bit-tipo" value="fuerza"/>
 
@@ -3374,6 +3376,40 @@ body::before{
 // ════════════════════════════════════
 // XSS-safe HTML escaping
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Set de íconos SVG (estilo Lucide, stroke, hereda color/tamaño) — reemplaza emojis ──
+const VIC_PATHS = {
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  check:'<path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/>',
+  card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  dumbbell:'<path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  alert:'<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+  ruler:'<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+  activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  message:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+  clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+  trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.5 1-1 1.2C7.9 18.8 7 20.2 7 22"/><path d="M14 14.7V17c0 .6.5 1 1 1.2C16.1 18.8 17 20.2 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="m5 5 14 14"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  trending:'<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/>',
+  scale:'<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
+  bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+};
+function vic(name, size=22, sw=1.9){
+  const p = VIC_PATHS[name]; if(!p) return '';
+  return `<svg class="vic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
 const SUPABASE_URL = 'https://savzjanpydyjtrgdkllx.supabase.co';
 const EDGE_BASE    = `${SUPABASE_URL}/functions/v1`;
 const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdnpqYW5weWR5anRyZ2RrbGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTAxNDQsImV4cCI6MjA5MTE2NjE0NH0.j2tHPh78lRRDhWokQyrDE3Jt1BUhvXK1Oqj_Kpy4ZGE';
@@ -5817,7 +5853,7 @@ function renderPlanes(){
     const gymPhone=portalData?.gym?.telefono||portalData?.gym?.whatsapp||'';
     const waLink=gymPhone?`https://wa.me/${gymPhone.replace(/\D/g,'')}`:null;
     cont.innerHTML=domiHtml+`<div class="planes-empty">
-      <div class="planes-empty-ico">💳</div>
+      <div class="planes-empty-ico"><svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
       <div class="planes-empty-title">Pago en recepción</div>
       <div class="planes-empty-sub">${gymName} aún no tiene paquetes en línea activos. Pasa por recepción o contáctanos para renovar.</div>
       ${waLink?`<a href="${waLink}" target="_blank" rel="noopener" class="planes-wa-btn">💬 WhatsApp ${gymName}</a>`:''}
@@ -6444,7 +6480,7 @@ async function loadClasesData(){
   if(!gymId){
     clasesLoading = false;
     const el = $('cls-content');
-    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico">⚠️</div><div class="cls-empty-txt">No se pudo identificar el gimnasio. Contacta a recepción.</div></div>';
+    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="cls-empty-txt">No se pudo identificar el gimnasio. Contacta a recepción.</div></div>';
     return;
   }
 
@@ -6580,7 +6616,7 @@ async function loadClasesData(){
   }catch(e){
     console.error('loadClasesData error',e);
     const el = $('cls-content');
-    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico">⚠️</div><div class="cls-empty-txt">Error al cargar clases.</div><button onclick="loadClasesData()" style="margin-top:14px;padding:9px 22px;border-radius:99px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">↻ Reintentar</button></div>';
+    if(el) el.innerHTML = '<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="cls-empty-txt">Error al cargar clases.</div><button onclick="loadClasesData()" style="margin-top:14px;padding:9px 22px;border-radius:99px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">↻ Reintentar</button></div>';
   }finally{
     clasesLoading = false;
   }
@@ -6629,14 +6665,14 @@ function _fechaForDia(dia){
 function renderClasesView(dates){
   const el = $('cls-content');
   if(!el) return;
-  if(!clasesActiveDia){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">📅</div><div class="cls-empty-txt">No hay clases programadas.</div></div>'; return; }
+  if(!clasesActiveDia){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="cls-empty-txt">No hay clases programadas.</div></div>'; return; }
 
   const membOk = portalData && portalData.cliente.membresiaOk;
   const fecha  = _fechaForDia(clasesActiveDia);
-  if(!fecha){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">📅</div><div class="cls-empty-txt">Sin clases para este día.</div></div>'; return; }
+  if(!fecha){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="cls-empty-txt">Sin clases para este día.</div></div>'; return; }
 
   const clasesDia = clasesHorarios.filter(h=>h.dia===clasesActiveDia);
-  if(!clasesDia.length){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico">🏋️</div><div class="cls-empty-txt">No hay clases programadas para este día.</div></div>'; return; }
+  if(!clasesDia.length){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg></div><div class="cls-empty-txt">No hay clases programadas para este día.</div></div>'; return; }
 
   const nowDate = new Date();
   const today = _localDate(nowDate);
@@ -7500,7 +7536,7 @@ async function loadAndRenderBitacora(){
     bitacoraData = await res.json();
   } catch(e){
     console.error(e);
-    if(_el) _el.innerHTML = '<div class="bit-empty"><div class="bit-empty-ico">⚠️</div><div class="bit-empty-ttl">No se pudo cargar</div><div class="bit-empty-sub">Revisa tu conexión e intenta de nuevo.</div></div>';
+    if(_el) _el.innerHTML = '<div class="bit-empty"><div class="bit-empty-ico"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="bit-empty-ttl">No se pudo cargar</div><div class="bit-empty-sub">Revisa tu conexión e intenta de nuevo.</div></div>';
     return;
   }
   renderBitacora();
@@ -7524,7 +7560,7 @@ function renderBitacora(query=''){
   // Agrupar por fecha
   const byDay = {};
   data.forEach(e=>{ (byDay[e.fecha]=byDay[e.fecha]||[]).push(e); });
-  const TIPO_ICO = { fuerza:'💪', cardio:'🏃', otro:'⚡' };
+  const TIPO_ICO = { fuerza:vic('dumbbell',17), cardio:vic('activity',17), otro:vic('bolt',17) };
   const TIPO_CLS = { fuerza:'fuerza', cardio:'cardio', otro:'otro' };
 
   el.innerHTML = Object.keys(byDay).map(fecha=>{
@@ -7541,7 +7577,7 @@ function renderBitacora(query=''){
       }
       const nota = e.notas ? `<div class="bit-nota">${e.notas}</div>` : '';
       return `<div class="bit-entry">
-        <div class="bit-type-dot ${TIPO_CLS[e.tipo]||'otro'}">${TIPO_ICO[e.tipo]||'⚡'}</div>
+        <div class="bit-type-dot ${TIPO_CLS[e.tipo]||'otro'}">${TIPO_ICO[e.tipo]||vic('bolt',17)}</div>
         <div class="bit-entry-body">
           <div class="bit-ej">${e.ejercicio}</div>
           <div class="bit-meta">${meta}</div>
@@ -7605,7 +7641,7 @@ function renderMedidasView(rows){
   if(!el) return;
   if(!rows || !rows.length){
     el.innerHTML = `<div class="medidas-empty">
-      <div class="medidas-empty-ico">📏</div>
+      <div class="medidas-empty-ico"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/></svg></div>
       <div class="medidas-empty-title">Sin mediciones aún</div>
       <div class="medidas-empty-sub">Registra tu primera medición para comenzar a ver tu progreso.</div>
       <button class="med-add-btn" onclick="openMedicionModal()">＋ Registrar medición</button>
