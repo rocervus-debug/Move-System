@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cargando…</title>
-<meta name="description" id="meta-description" content="Reserva tu lugar — VELUM Storefront">
+<title>VELUM — Reserva tu lugar</title>
+<meta name="description" id="meta-description" content="Reserva clases, conoce los paquetes y únete. Tu gimnasio, en línea con VELUM.">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" id="meta-theme-color" content="#040C14">
 <link rel="canonical" id="link-canonical" href="">
@@ -21,7 +21,13 @@
 <script type="application/ld+json" id="jsonld-business">{}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- preconnect al backend: el fetch de storefront-config gobierna todo el render -->
+<link rel="preconnect" href="https://savzjanpydyjtrgdkllx.supabase.co" crossorigin>
+<!-- Fuentes del tema por defecto (bloqueante, se necesitan siempre) -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Fuentes solo de temas claros (Fraunces/Jost): carga diferida, no bloquea el primer pintado -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 <style>
 :root {
   --bg: #040C14;
@@ -608,7 +614,7 @@ footer { padding: 36px 24px 24px; border-top: 1px solid var(--border-soft); text
   width: 100%; background: var(--bg-input);
   border: 1px solid var(--border-soft); border-radius: 10px;
   padding: 12px 14px; color: var(--text);
-  font-family: 'Inter', sans-serif; font-size: 14px;
+  font-family: 'Inter', sans-serif; font-size: 16px; /* 16px: evita el zoom-on-focus de iOS */
   transition: border 200ms;
 }
 .form-input:focus { outline: none; border-color: var(--cyan); }
@@ -699,7 +705,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 .newsletter-row input {
   flex: 1; background: var(--bg-input); border: 1px solid var(--border-soft);
   border-radius: 10px; padding: 11px 14px;
-  color: var(--text); font-size: 13px;
+  color: var(--text); font-size: 16px; /* 16px: evita el zoom-on-focus de iOS */
 }
 .newsletter-row input:focus { outline: none; border-color: var(--cyan); }
 .newsletter-row button {
@@ -1313,7 +1319,7 @@ function setStorefrontSEO(gym, location){
     const url = window.location.href.split('#')[0].split('?')[0];
     const title = `${gym.nombre} · Reserva tu lugar`;
     const desc = (gym.description || gym.tagline || `Reserva tu lugar en ${gym.nombre}.`).replace(/\s+/g,' ').trim().slice(0,160);
-    const img = gym.hero_image || gym.logo || '';
+    const img = gym.hero_image || gym.logo || 'https://myvelum.app/og-image.png'; // fallback de marca para previews sociales
     const setC = (id,val)=>{ const el=document.getElementById(id); if(el && val!=null) el.setAttribute('content', val); };
     document.title = title;
     setC('meta-description', desc);
@@ -1349,13 +1355,18 @@ function escapeHtml(s){
   if (s == null) return '';
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Seguro para pasar un string como literal JS dentro de un atributo HTML con doble comilla
+// (p.ej. onclick="fn('NOMBRE')"). Primero escapa la cadena JS, luego codifica el atributo —
+// el parser decodifica las entidades y JS recibe el nombre real (sin &#39; literales).
+function jsAttr(s){
+  return String(s == null ? '' : s)
+    .replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\r\n]+/g,' ')
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function scrollToId(id){ document.getElementById(id)?.scrollIntoView({behavior:'smooth'}); }
 
 function renderHero(gym){
-  document.title = `${gym.nombre} · Reserva tu lugar`;
-  document.getElementById('og-title').setAttribute('content', `${gym.nombre} · VELUM`);
-  document.getElementById('og-description').setAttribute('content', gym.description || gym.tagline || '');
-
+  // SEO (title/OG/JSON-LD) lo maneja setStorefrontSEO() de forma única — no pisar aquí.
   document.getElementById('brand-mark').textContent = gym.nombre.charAt(0).toUpperCase();
   document.getElementById('brand-name').textContent = gym.nombre;
   // El gym es dueño de su marca: en el nav solo su tagline (VELUM queda en el footer).
@@ -1467,7 +1478,10 @@ function renderHero(gym){
 function renderPackages(packages){
   const grid = document.getElementById('pkg-grid');
   if (!packages || packages.length === 0){
-    grid.innerHTML = `<div style="text-align:center;color:var(--text-3);font-size:13px;grid-column:1/-1;padding:40px 0;">Este gym todavía no publicó paquetes.</div>`;
+    grid.innerHTML = `<div style="text-align:center;grid-column:1/-1;padding:36px 16px;">
+      <div style="color:var(--text-3);font-size:14px;margin-bottom:14px;line-height:1.5;">Aún no hay paquetes en línea.<br>Escríbenos y te pasamos precios y disponibilidad.</div>
+      <button class="pkg-cta" style="display:inline-block;width:auto;padding:11px 22px;" onclick="openLeadModal('info')">Contáctanos →</button>
+    </div>`;
     return;
   }
   grid.innerHTML = packages.map(p => {
@@ -1491,7 +1505,7 @@ function renderPackages(packages){
         <div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span>${p.recurring ? '<span style="font-size:14px;color:var(--text-3);font-weight:600;margin-left:3px;">/mes</span>' : ''}</div>
         <div class="pkg-meta">${escapeHtml(meta)}${p.recurring ? ' · cobro mensual automático' : ''}</div>
         <ul class="pkg-features">${featuresHtml}</ul>
-        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${escapeHtml(p.name).replace(/'/g,"\\'")}', ${p.recurring?1:0})">${p.recurring ? 'Suscribirme' : 'Comprar ahora'}</button>
+        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${jsAttr(p.name)}', ${p.recurring?1:0})">${p.recurring ? 'Suscribirme' : 'Comprar ahora'}</button>
       </div>`;
   }).join('');
 }
@@ -1615,7 +1629,7 @@ function renderGallery(urls){
   const visibleUrls = urls.slice(0, 8);
   document.getElementById('gallery-grid').innerHTML = visibleUrls.map((u, i) => `
     <div class="gallery-item" onclick="openLightbox(${JSON.stringify(visibleUrls).replace(/"/g,'&quot;')}, ${i})">
-      <img src="${escapeHtml(u)}" alt="" loading="lazy">
+      <img src="${escapeHtml(u)}" alt="${escapeHtml((document.getElementById('brand-name')?.textContent||'Gimnasio'))} — instalaciones ${i+1}" loading="lazy">
     </div>
   `).join('');
 }
@@ -1720,7 +1734,7 @@ function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">${recurring ? 'Suscribirme' : 'Comprar paquete'}</div>
-          <div style="font-size:18px;font-weight:700;line-height:1.3;">${pkgName}</div>
+          <div style="font-size:18px;font-weight:700;line-height:1.3;">${escapeHtml(pkgName)}</div>
           <div style="font-size:13px;color:var(--cyan, #00D4FF);margin-top:6px;font-weight:600;">$${priceMxn.toLocaleString('es-MX')} MXN${recurring ? ' / mes' : ''}</div>
         </div>
         <button onclick="closeCheckoutModal()" style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">×</button>
@@ -1730,15 +1744,15 @@ function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div>
           <label style="font-size:11px;color:rgba(255,255,255,.6);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Nombre completo *</label>
-          <input id="co-name" type="text" placeholder="Juan Pérez" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:14px;font-family:inherit;outline:none;"/>
+          <input id="co-name" type="text" placeholder="Juan Pérez" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:16px;font-family:inherit;outline:none;"/>
         </div>
         <div>
           <label style="font-size:11px;color:rgba(255,255,255,.6);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Email *</label>
-          <input id="co-email" type="email" placeholder="tu@email.com" autocomplete="email" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:14px;font-family:inherit;outline:none;"/>
+          <input id="co-email" type="email" placeholder="tu@email.com" autocomplete="email" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:16px;font-family:inherit;outline:none;"/>
         </div>
         <div>
           <label style="font-size:11px;color:rgba(255,255,255,.6);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">WhatsApp (opcional)</label>
-          <input id="co-phone" type="tel" placeholder="+52 1 234 567 8900" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:14px;font-family:inherit;outline:none;"/>
+          <input id="co-phone" type="tel" placeholder="+52 1 234 567 8900" style="width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:9px;color:#fff;font-size:16px;font-family:inherit;outline:none;"/>
         </div>
         <div id="co-error" style="color:#ff6b6b;font-size:12px;min-height:14px;"></div>
         <button id="co-submit" onclick="submitCheckout(${packageId})" style="background:linear-gradient(135deg,#00D4FF,#0099CC);color:#001828;font-weight:700;padding:13px;border:none;border-radius:10px;cursor:pointer;font-size:14px;letter-spacing:.3px;font-family:inherit;margin-top:4px;">
@@ -1930,84 +1944,38 @@ function _iaHighlightPackage(listingId){
 // SEO + SCHEMA.ORG (JSON-LD)
 // ════════════════════════════════════════════════════════════
 function injectSEO(data){
-  const g = data.gym || {};
-  const loc = data.location || {};
+  // NO toca title/OG/description: eso es responsabilidad única de setStorefrontSEO().
+  // Aquí solo ENRIQUECEMOS el JSON-LD ya escrito (#jsonld-business) con Offers (paquetes) y
+  // FAQPage, reescribiendo ese MISMO bloque como un @graph — nunca se agrega un segundo script.
+  try{
+    const g = data.gym || {};
+    const ldEl = document.getElementById('jsonld-business');
+    let business = {};
+    try{ business = JSON.parse(ldEl?.textContent || '{}'); }catch(_){ business = {}; }
+    if (!business || !business['@type']){
+      business = { "@type": "HealthClub", name: g.nombre, url: window.location.href.split('#')[0].split('?')[0] };
+    }
+    delete business['@context']; // el @context vive en el contenedor del @graph
 
-  // Meta tags básicos
-  const title = `${g.nombre} · Reserva tu lugar`;
-  const desc = g.description || `Entrena en ${g.nombre} con Aura, tu asistente personal. Sin contratos forzados.`;
-  document.title = title;
-  document.querySelector('meta[name="description"]')?.setAttribute('content', desc);
-  document.getElementById('og-title')?.setAttribute('content', title);
-  document.getElementById('og-description')?.setAttribute('content', desc);
-
-  // Schema.org JSON-LD: LocalBusiness + AggregateRating + Service + FAQPage
-  const ld = {
-    "@context": "https://schema.org",
-    "@graph": []
-  };
-
-  // LocalBusiness
-  const business = {
-    "@type": ["HealthAndBeautyBusiness", "SportsActivityLocation"],
-    "@id": location.href,
-    name: g.nombre,
-    description: g.description,
-    url: location.href,
-    image: g.hero_image || undefined,
-    telephone: g.social?.whatsapp || undefined,
-  };
-  if (loc.full_address){
-    business.address = {
-      "@type": "PostalAddress",
-      streetAddress: loc.address,
-      addressLocality: loc.city,
-      addressRegion: loc.state,
-      postalCode: loc.postal_code,
-      addressCountry: loc.country || 'MX',
-    };
-  }
-  if (loc.latitude && loc.longitude){
-    business.geo = { "@type": "GeoCoordinates", latitude: loc.latitude, longitude: loc.longitude };
-  }
-  if (g.google_rating && g.google_reviews){
-    business.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: g.google_rating,
-      reviewCount: g.google_reviews,
-      bestRating: 5,
-    };
-  }
-  ld["@graph"].push(business);
-
-  // Packages como Offers
-  (data.packages || []).forEach(p => {
-    ld["@graph"].push({
-      "@type": "Offer",
-      name: p.name,
-      description: p.description,
-      price: p.price_mxn,
-      priceCurrency: "MXN",
-      availability: "https://schema.org/InStock",
+    const graph = [business];
+    (data.packages || []).forEach(p => {
+      graph.push({
+        "@type": "Offer", name: p.name, description: p.description,
+        price: p.price_mxn, priceCurrency: "MXN", availability: "https://schema.org/InStock",
+      });
     });
-  });
-
-  // FAQs
-  if (Array.isArray(data.faqs) && data.faqs.length){
-    ld["@graph"].push({
-      "@type": "FAQPage",
-      mainEntity: data.faqs.map(f => ({
-        "@type": "Question",
-        name: f.question,
-        acceptedAnswer: { "@type": "Answer", text: f.answer }
-      }))
-    });
-  }
-
-  const script = document.createElement('script');
-  script.type = 'application/ld+json';
-  script.textContent = JSON.stringify(ld);
-  document.head.appendChild(script);
+    if (Array.isArray(data.faqs) && data.faqs.length){
+      graph.push({
+        "@type": "FAQPage",
+        mainEntity: data.faqs.map(f => ({
+          "@type": "Question", name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer }
+        }))
+      });
+    }
+    const out = { "@context": "https://schema.org", "@graph": graph };
+    if (ldEl) ldEl.textContent = JSON.stringify(out);
+  }catch(e){ console.warn('injectSEO:', e); }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2186,6 +2154,8 @@ async function submitLead(){
   if (!phone && !email){ errEl.textContent = 'Necesitamos al menos WhatsApp o email para contactarte.'; errEl.style.display = 'block'; return; }
 
   const btn = document.getElementById('lead-submit');
+  if (submitLead._busy) return; // evita doble-submit antes de que pinte el disabled
+  submitLead._busy = true;
   btn.disabled = true; btn.textContent = 'Enviando…';
   try {
     const type = _leadType === 'trial' ? 'trial_class' : (_leadType === 'info' ? 'more_info' : 'callback');
@@ -2197,7 +2167,7 @@ async function submitLead(){
         preferred_day: day, message, session_id: _iaSessionId
       })
     });
-    btn.disabled = false; btn.textContent = 'Enviar →';
+    btn.disabled = false; btn.textContent = 'Enviar →'; submitLead._busy = false;
     if (!res.ok){
       const data = await res.json().catch(() => ({}));
       errEl.textContent = data.error || 'Hubo un problema. Intenta de nuevo.';
@@ -2209,7 +2179,7 @@ async function submitLead(){
     document.getElementById('lead-success').classList.remove('app-hidden');
     trackEvent('Lead', { type });
   } catch(e){
-    btn.disabled = false; btn.textContent = 'Enviar →';
+    btn.disabled = false; btn.textContent = 'Enviar →'; submitLead._busy = false;
     errEl.textContent = 'Sin conexión. Verifica tu internet.';
     errEl.style.display = 'block';
   }
