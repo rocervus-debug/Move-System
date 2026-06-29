@@ -7914,7 +7914,8 @@ async function doLogin(totpCode){
     Promise.all([
       loadEvalsFromSupabase(), loadProgramasFromSupabase(), loadProgConfigFromSupabase(),
       loadUsuariosFromSupabase(), loadLeadsLandingFromSupabase()
-    ]).catch(e=>console.error('cargas diferidas:', e));
+    ]).then(()=>{ try{ if(typeof updateBadges==='function') updateBadges(); }catch(_){} })
+      .catch(e=>console.error('cargas diferidas:', e));
   } catch(e){ errEl.textContent='Error de conexión.'; errEl.classList.add('show'); console.error(e); }
   btn.textContent = 'ENTRAR'; btn.disabled = false;
 }
@@ -13703,16 +13704,20 @@ async function saveEditarCliente(btn){
     else { toast('Error al guardar: '+msg,'❌'); }
     return;
   }
-  // Show skeleton while reloading
-  const clEl = document.getElementById('clientes-list');
-  if(clEl) clEl.innerHTML = [1,2,3,4,5].map(()=>`<div style="height:56px;border-radius:14px;background:linear-gradient(90deg,var(--card) 25%,rgba(255,255,255,.06) 50%,var(--card) 75%);background-size:600px 100%;animation:skshimmer 1.4s ease-in-out infinite;margin-bottom:8px;"></div>`).join('');
-  await loadClientesFromSupabase();
-  closeModal('editar-cliente');
-  toast(`Datos de ${nombre} actualizados ✅`,'✏️');
-  renderClientes();
-  const panelNombre = document.getElementById('cpanel-nombre').textContent;
-  if(panelNombre === nombre) openClientePanel(nombre);
-  setBtnLoading(btn, false);
+  // Guardado OK → render post-guardado en try/finally para garantizar que el botón
+  // se re-habilite aunque un repintado falle.
+  try {
+    const clEl = document.getElementById('clientes-list');
+    if(clEl) clEl.innerHTML = [1,2,3,4,5].map(()=>`<div style="height:56px;border-radius:14px;background:linear-gradient(90deg,var(--card) 25%,rgba(255,255,255,.06) 50%,var(--card) 75%);background-size:600px 100%;animation:skshimmer 1.4s ease-in-out infinite;margin-bottom:8px;"></div>`).join('');
+    await loadClientesFromSupabase();
+    closeModal('editar-cliente');
+    toast(`Datos de ${nombre} actualizados ✅`,'✏️');
+    renderClientes();
+    const panelNombre = document.getElementById('cpanel-nombre').textContent;
+    if(panelNombre === nombre) openClientePanel(nombre);
+  } finally {
+    setBtnLoading(btn, false);
+  }
 }
 
 // ─── Panel de detalle de cliente ──────────────────────────────────
