@@ -1103,6 +1103,7 @@ body.theme-atelier .btn-primary-lg:hover, body.theme-lumen .btn-primary-lg:hover
       <div class="newsletter-title">Mantente al tanto</div>
       <div class="newsletter-sub">Promos exclusivas, nuevas clases y tips de entrenamiento. Sin spam.</div>
       <form class="newsletter-row" onsubmit="event.preventDefault(); submitNewsletter();">
+        <input type="text" id="nl-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
         <input type="email" id="nl-email" placeholder="tu@email.com" required/>
         <button type="submit" id="nl-btn">Suscribirme</button>
       </form>
@@ -1163,6 +1164,8 @@ body.theme-atelier .btn-primary-lg:hover, body.theme-lumen .btn-primary-lg:hover
         <div class="modal-sub" id="lead-sub">Solo déjanos tus datos y te confirmamos por WhatsApp.</div>
       </div>
       <div class="modal-body" id="lead-body">
+        <!-- Honeypot anti-bots: oculto a humanos; si llega lleno, el servidor lo descarta -->
+        <input type="text" id="lead-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
         <div class="form-field">
           <label class="form-label">Nombre completo</label>
           <input type="text" id="lead-name" class="form-input" placeholder="Daniel Martínez">
@@ -2164,7 +2167,8 @@ async function submitLead(){
       headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
       body: JSON.stringify({
         slug: getSlug(), type, name, phone, email,
-        preferred_day: day, message, session_id: _iaSessionId
+        preferred_day: day, message, session_id: _iaSessionId,
+        hp: document.getElementById('lead-hp')?.value || ''
       })
     });
     btn.disabled = false; btn.textContent = 'Enviar →'; submitLead._busy = false;
@@ -2219,7 +2223,7 @@ async function submitNewsletter(){
     const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-lead`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
-      body: JSON.stringify({ slug: getSlug(), type: 'newsletter', email })
+      body: JSON.stringify({ slug: getSlug(), type: 'newsletter', email, hp: document.getElementById('nl-hp')?.value || '' })
     });
     if (res.ok){
       document.getElementById('nl-email').value = '';
