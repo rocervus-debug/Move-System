@@ -71,6 +71,10 @@ body { background: var(--bg); }
 .boot { min-height: 100vh; display: grid; place-items: center; text-align: center; }
 .boot-spin { width: 48px; height: 48px; border: 3px solid rgba(128,128,128,.22); border-top-color: #9aa0a6; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 18px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* Accesibilidad: respeta "reducir movimiento" del sistema (vestibular/mareo) */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+}
 .boot-text { font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 1px; color: #9aa0a6; }
 .err { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 32px; }
 .err-card { max-width: 420px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 22px; padding: 36px 28px; }
@@ -1156,8 +1160,8 @@ body.theme-atelier .btn-primary-lg:hover, body.theme-lumen .btn-primary-lg:hover
 
   <!-- LEAD MODAL -->
   <div class="modal-overlay" id="lead-modal">
-    <div class="modal">
-      <button class="modal-close-btn" onclick="closeLeadModal()">×</button>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Contáctanos">
+      <button class="modal-close-btn" onclick="closeLeadModal()" aria-label="Cerrar" title="Cerrar">×</button>
       <div class="modal-header">
         <div class="modal-eyebrow" id="lead-eyebrow">RESERVA</div>
         <div class="modal-title" id="lead-title">Clase de prueba GRATIS</div>
@@ -1198,11 +1202,11 @@ body.theme-atelier .btn-primary-lg:hover, body.theme-lumen .btn-primary-lg:hover
   </div>
 
   <!-- LIGHTBOX -->
-  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-    <button class="lightbox-close" onclick="closeLightbox(event)">×</button>
-    <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1, event)">‹</button>
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)" role="dialog" aria-modal="true" aria-label="Galería de fotos">
+    <button class="lightbox-close" onclick="closeLightbox(event)" aria-label="Cerrar" title="Cerrar">×</button>
+    <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1, event)" aria-label="Foto anterior" title="Anterior">‹</button>
     <img id="lightbox-img" src="" alt="">
-    <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1, event)">›</button>
+    <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1, event)" aria-label="Foto siguiente" title="Siguiente">›</button>
     <div class="lightbox-counter" id="lightbox-counter"></div>
   </div>
 
@@ -1734,6 +1738,7 @@ function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
   const modal = document.createElement('div');
   modal.id = 'sf-checkout-modal';
   modal.className = 'modal-overlay open';
+  modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.setAttribute('aria-label', recurring ? 'Suscripción' : 'Compra de paquete');
   modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `
     <div style="background:rgba(8,18,30,.96);border:1px solid rgba(0,212,255,.25);border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:inherit;color:#fff;">
@@ -1743,7 +1748,7 @@ function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
           <div style="font-size:18px;font-weight:700;line-height:1.3;">${escapeHtml(pkgName)}</div>
           <div style="font-size:13px;color:var(--cyan, #00D4FF);margin-top:6px;font-weight:600;">$${priceMxn.toLocaleString('es-MX')} MXN${recurring ? ' / mes' : ''}</div>
         </div>
-        <button onclick="closeCheckoutModal()" style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">×</button>
+        <button onclick="closeCheckoutModal()" aria-label="Cerrar" title="Cerrar" style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">×</button>
       </div>
       <div style="height:1px;background:rgba(255,255,255,.08);margin:6px 0 16px;"></div>
       <p style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.5;">${recurring ? 'Registra tu tarjeta una vez. Se te cobrará automáticamente cada mes y puedes cancelar cuando quieras.' : 'Llena tus datos para continuar al pago seguro con Stripe.'}</p>
