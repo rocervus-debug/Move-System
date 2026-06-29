@@ -1319,7 +1319,10 @@ function applyTheme(gym){
 function setStorefrontSEO(gym, location){
   try{
     location = location || {};
-    const url = window.location.href.split('#')[0].split('?')[0];
+    // Canónico/OG normalizados a la forma limpia /g/slug (evita duplicate-content cuando se
+    // entra por ?slug=X). Si no hay slug, cae a la URL sin query/hash.
+    const _slug = (typeof getSlug === 'function') ? getSlug() : '';
+    const url = _slug ? `${window.location.origin}/g/${_slug}` : window.location.href.split('#')[0].split('?')[0];
     const title = `${gym.nombre} · Reserva tu lugar`;
     const desc = (gym.description || gym.tagline || `Reserva tu lugar en ${gym.nombre}.`).replace(/\s+/g,' ').trim().slice(0,160);
     const img = gym.hero_image || gym.logo || 'https://myvelum.app/og-image.png'; // fallback de marca para previews sociales
