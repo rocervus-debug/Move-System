@@ -80,17 +80,14 @@ serve(async (req) => {
     });
   }
   const gymId = claims.gym_id;
-  const rol   = String(claims.app_rol || '');
   if (!gymId) {
     return new Response(JSON.stringify({ error: 'Token sin gym_id.' }), {
       status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
-  if (!['admin', 'staff', 'superadmin'].includes(rol)) {
-    return new Response(JSON.stringify({ error: 'Sin permiso para enviar notificaciones.' }), {
-      status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  }
+  // Seguridad real: el gym_id sale del JWT verificado y acota el envío (no hay fuga cross-gym).
+  // No restringimos por rol: move-login SOLO emite tokens a usuarios del panel (staff del gym);
+  // los atletas usan otro auth. Exigir un rol exacto rechazaba a dueños con rol distinto.
 
   try {
     const body = await req.json();
