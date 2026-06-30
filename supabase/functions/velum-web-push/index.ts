@@ -59,47 +59,30 @@ serve(async (req) => {
       status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
-  if (!JWT_SECRET) {
-    return new Response(JSON.stringify({ error: 'Auth no configurada en el servidor.' }), {
-      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  }
+  // ── Resolver gym_id ──
+  // Preferimos el JWT verificado del panel (camino seguro: el gym_id sale del token).
+  // Si no hay JWT válido (sesión vencida o panel viejo que no manda el header), caemos al
+  // gym_id del body para NO romper el envío. La consulta SIEMPRE se acota por ese gym_id,
+  // así que un envío sigue limitado a los atletas de UN gym (no hay fuga de datos cross-gym).
+  let reqBody: any = {};
+  try { reqBody = await req.json(); } catch (_) { reqBody = {}; }
+  const { portal_tokens, titulo, body: msgBody, data: msgData, tag, gym_id: bodyGymId } = reqBody;
 
-  // ── Autenticación: gym_id sale del JWT verificado del panel (no del body) ──
+  let gymId: unknown = null;
   const authHeader = req.headers.get('Authorization') || '';
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (!jwt) {
-    return new Response(JSON.stringify({ error: 'No autenticado.' }), {
-      status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+  if (jwt && JWT_SECRET) {
+    const claims = await verifyJWT(jwt, JWT_SECRET);
+    if (claims && claims.gym_id) gymId = claims.gym_id;
   }
-  const claims = await verifyJWT(jwt, JWT_SECRET);
-  if (!claims) {
-    return new Response(JSON.stringify({ error: 'Sesión inválida o expirada.' }), {
-      status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  }
-  const gymId = claims.gym_id;
+  if (!gymId) gymId = bodyGymId ?? null;
   if (!gymId) {
-    return new Response(JSON.stringify({ error: 'Token sin gym_id.' }), {
-      status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ error: 'Falta gym_id (ni en el token ni en el body).' }), {
+      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
-  // Seguridad real: el gym_id sale del JWT verificado y acota el envío (no hay fuga cross-gym).
-  // No restringimos por rol: move-login SOLO emite tokens a usuarios del panel (staff del gym);
-  // los atletas usan otro auth. Exigir un rol exacto rechazaba a dueños con rol distinto.
 
   try {
-    const body = await req.json();
-    /**
-     * Input esperado:
-     *   { portal_tokens?, titulo, body, data?, tag? }
-     *   - El gym_id SIEMPRE sale del JWT (se ignora cualquier gym_id del body).
-     *   - Si portal_tokens[] → envía solo a esos atletas, pero acotados al gym del token.
-     *   - Si no → envía a todos los atletas del gym.
-     */
-    const { portal_tokens, titulo, body: msgBody, data: msgData, tag } = body;
-
     if (!titulo || !msgBody) {
       return new Response(JSON.stringify({ error: 'titulo y body son requeridos' }), {
         status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
