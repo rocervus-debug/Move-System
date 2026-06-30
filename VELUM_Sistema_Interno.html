@@ -10379,6 +10379,12 @@ async function sendPushBroadcast(){
   if(res){ res.style.display='none'; }
 
   try{
+    // El push requiere un JWT válido del panel; si la sesión venció/falta, re-login claro (no error críptico).
+    if(!currentUser?.jwt || isJwtExpired(currentUser.jwt)){
+      if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.textContent='Enviar a todos los atletas'; }
+      _handleJwtExpiry();
+      return;
+    }
     const gymId = MOVE_GYM_ID || null;
     const payload = { titulo, body, tag:'broadcast', data: view ? { view } : {} };
     if(gymId) payload.gym_id = gymId;
