@@ -211,6 +211,28 @@ body.view-oficina .office{display:flex;}
 .statusbar .sb-con{display:flex;align-items:center;gap:6px;color:var(--text2);}
 .statusbar .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);}
 .statusbar .sp{margin-left:auto;}
+/* Departamentos / oficinas por grupo (agrupan a los agentes con orden) */
+.dept{position:absolute;transform:translate(-50%,-50%);z-index:4;pointer-events:auto;
+  background:linear-gradient(180deg,rgba(13,30,46,.72),rgba(8,19,31,.6));
+  border:1px solid var(--line2);border-top:2px solid var(--pc,var(--accent));border-radius:16px;
+  padding:9px 13px 12px;backdrop-filter:blur(3px);
+  box-shadow:0 22px 46px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.03);transition:opacity .3s,box-shadow .3s,border-color .3s;}
+.dept.on{box-shadow:0 22px 50px rgba(0,0,0,.55),0 0 0 1px var(--pc),0 0 26px -6px var(--pc);}
+.dept.dim{opacity:.4;}
+.dept-h{display:flex;align-items:center;gap:7px;justify-content:center;margin-bottom:9px;white-space:nowrap;}
+.dept-h .dd{width:7px;height:7px;border-radius:2px;background:var(--pc,var(--accent));box-shadow:0 0 8px var(--pc,var(--accent));}
+.dept-h .dn{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--pc,var(--text2));}
+.dept-h .ds{font-size:9px;font-weight:600;letter-spacing:.4px;color:var(--text3);text-transform:uppercase;}
+.dept-people{display:flex;gap:9px;justify-content:center;align-items:flex-end;flex-wrap:nowrap;}
+.dept .node{position:relative;left:auto;top:auto;transform:none;width:56px;}
+.dept .node .sh{bottom:-3px;}
+.dept.lead{padding:10px 16px 13px;}
+.dept.lead .dept-people .node{width:74px;}
+.dept.lead .node .head{width:46px;height:46px;font-size:18px;}
+.dept.lead .node .torso{width:54px;height:26px;}
+.dept.lead .node .sh{width:52px;}
+.dept.lead .node .bubble2{bottom:auto;top:calc(100% + 9px);width:250px;}
+.dept.lead .node .bubble2::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#0e2233;}
 @media(max-width:960px){.term-detail{display:none;}.minimap{display:none;}}
 @media(max-width:720px){.viewtabs .vtab{padding:6px 10px;}}
 </style>
@@ -552,15 +574,13 @@ document.getElementById('modeChip').onclick=()=>{
 const isoLayer=document.getElementById('isoLayer');
 const wz=document.querySelector('.workzone');
 const POS={}; // coordenadas de cada agente (para el minimapa)
-// Anclas de zona en % del workzone (layout, no estado de negocio)
-const ZONES={'Plataforma':{x:31,y:40},'Crecimiento':{x:69,y:40},'Marca & Web':{x:66,y:63},'Cliente & Confianza':{x:34,y:63}};
-const PILLS=[
-  {t:'Desk',s:'Cómputo',x:50,y:33,c:POD_COLORS['Coordinación']},
-  {t:'Muro Kanban',s:'Activo',x:23,y:26,c:POD_COLORS['Plataforma']},
-  {t:'Pizarrón',s:'Ideas',x:77,y:26,c:POD_COLORS['Crecimiento']},
-  {t:'Lounge',s:'Idle',x:83,y:74,c:POD_COLORS['Marca & Web']},
-  {t:'Puerta de Seguridad',s:'Control de acceso',x:17,y:73,c:POD_COLORS['Cliente & Confianza']},
-  {t:'Bóveda',s:'Datos',x:50,y:83,c:'#5EC8B0'},
+// Departamentos: cada pod es una oficina con placa (layout, no estado de negocio)
+const DEPTS=[
+  {pod:'Coordinación',      name:'Sala de Mando',        sub:'Núcleo',      x:50, y:23, lead:true},
+  {pod:'Plataforma',        name:'Plataforma',           sub:'Ingeniería',  x:26, y:50},
+  {pod:'Crecimiento',       name:'Crecimiento',          sub:'Growth',      x:75, y:49},
+  {pod:'Cliente & Confianza',name:'Cliente & Confianza', sub:'Seguridad',   x:32, y:79},
+  {pod:'Marca & Web',       name:'Marca & Web',          sub:'Estudio',     x:70, y:79},
 ];
 function nodeEl(a,lead){
   const n=document.createElement('div');
@@ -571,16 +591,18 @@ function nodeEl(a,lead){
   n.addEventListener('click',()=>selectAgent(a.id));
   return n;
 }
-function place(a,x,y,lead){const n=nodeEl(a,lead);n.style.left=x+'%';n.style.top=y+'%';isoLayer.appendChild(n);POS[a.id]={x,y};}
+function deptId(pod){return 'dept-'+pod.replace(/[^a-zA-Z]/g,'');}
 function buildOffice(){
-  isoLayer.querySelectorAll('.node,.pill').forEach(e=>e.remove());
-  place(byId('nucleo'),50,50,true); // NÚCLEO = escritorio central / el que opera
-  Object.entries(ZONES).forEach(([pod,z])=>{
-    const mem=AGENTS.filter(a=>a.pod===pod),n=mem.length;
-    mem.forEach((a,i)=>place(a,z.x+(i-(n-1)/2)*6.6,z.y+((i%2)?4.2:0),false));
+  isoLayer.querySelectorAll('.dept').forEach(e=>e.remove());
+  DEPTS.forEach(d=>{
+    const mem=AGENTS.filter(a=>a.pod===d.pod);if(!mem.length)return;
+    const box=document.createElement('div');box.className='dept'+(d.lead?' lead':'');box.id=deptId(d.pod);
+    box.style.left=d.x+'%';box.style.top=d.y+'%';box.style.setProperty('--pc',POD_COLORS[d.pod]||'#00D4FF');
+    box.innerHTML=`<div class="dept-h"><span class="dd"></span><span class="dn">${d.name}</span><span class="ds">· ${d.sub}</span></div>`;
+    const people=document.createElement('div');people.className='dept-people';
+    mem.forEach((a,i)=>{ people.appendChild(nodeEl(a,d.lead)); POS[a.id]={x:d.x+(i-(mem.length-1)/2)*3.4,y:d.y}; });
+    box.appendChild(people);isoLayer.appendChild(box);
   });
-  PILLS.forEach(p=>{const el=document.createElement('div');el.className='pill';el.style.left=p.x+'%';el.style.top=p.y+'%';el.style.setProperty('--pc',p.c);
-    el.innerHTML=`<span class="pd"></span><span>${p.t}</span><span class="ps">· ${p.s}</span>`;isoLayer.appendChild(el);});
   buildMinimapDots();
 }
 function buildMinimapDots(){
@@ -620,6 +642,13 @@ function updateOfficeState(){
     if(n)n.style.opacity=on?'1':'.4';
     const d=document.getElementById('mm-'+a.id);
     if(d)d.style.opacity=on?'1':'.28';
+  });
+  // Ilumina el departamento con agentes activos; atenúa los que no participan
+  DEPTS.forEach(dep=>{
+    const box=document.getElementById(deptId(dep.pod));if(!box)return;
+    const any=AGENTS.some(a=>a.pod===dep.pod&&active.has(a.id))||dep.pod==='Coordinación';
+    box.classList.toggle('on',tasks.length>0&&any);
+    box.classList.toggle('dim',tasks.length>0&&!any);
   });
   renderDetail();
 }
