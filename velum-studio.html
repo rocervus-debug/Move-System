@@ -103,57 +103,116 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);overflow:hid
 .vtab{font-family:var(--font);font-size:11.5px;font-weight:700;letter-spacing:.3px;color:var(--text2);background:none;border:none;border-radius:7px;padding:6px 14px;cursor:pointer;transition:all .18s;}
 .vtab:hover{color:var(--text);}
 .vtab.active{background:linear-gradient(180deg,rgba(0,212,255,.22),rgba(0,212,255,.10));color:#fff;box-shadow:0 0 14px rgba(0,212,255,.18) inset;}
-/* ═══ Oficina ═══ */
-.office{display:none;flex:1;min-height:0;flex-direction:column;background:
-  radial-gradient(ellipse 60% 50% at 50% 8%,rgba(0,212,255,.07),transparent 60%),
-  radial-gradient(ellipse 90% 60% at 50% 120%,rgba(94,200,176,.05),transparent 60%),var(--bg);}
+/* ═══ Oficina — Workspace isométrico ═══ */
+.office{display:none;flex:1;min-height:0;flex-direction:column;background:var(--bg);}
 body.view-oficina .body{display:none;}
 body.view-oficina .office{display:flex;}
-.floor{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 20px 8px;display:flex;flex-direction:column;align-items:center;}
-.off-caption{font-size:11px;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:22px;text-align:center;}
-.stage{width:100%;max-width:1000px;display:flex;flex-direction:column;align-items:center;gap:64px;padding-bottom:12px;}
-.nucleo-zone{display:flex;justify-content:center;padding:6px 0 2px;position:relative;}
-.nucleo-zone::after{content:'';position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);width:220px;height:22px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,212,255,.18),transparent 70%);}
-.pods{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;width:100%;}
-.podzone{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-top:2px solid var(--pc,var(--accent));border-radius:14px;padding:12px 14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0;}
-.pz-h{font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--pc,var(--text2));margin:0 auto 10px;display:flex;align-items:center;gap:6px;opacity:.9;}
-.pz-h::before{content:'';width:6px;height:6px;border-radius:2px;background:var(--pc,var(--accent));}
-.pz-people{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
-/* Persona */
-.person{position:relative;display:flex;flex-direction:column;align-items:center;width:78px;padding-top:6px;cursor:default;}
-.person .fig{position:relative;display:flex;flex-direction:column;align-items:center;animation:breathe 4s ease-in-out infinite;}
-.person:nth-child(2n) .fig{animation-delay:-1.3s;} .person:nth-child(3n) .fig{animation-delay:-2.5s;}
-@keyframes breathe{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
-.person .head{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 38% 32%,color-mix(in srgb,var(--c) 82%,#fff 30%),var(--c));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#02121a;z-index:2;box-shadow:0 3px 10px rgba(0,0,0,.4);transition:box-shadow .25s,transform .25s;}
-.person .torso{width:46px;height:24px;margin-top:-6px;border-radius:24px 24px 8px 8px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 55%,#0a1826));opacity:.9;z-index:1;box-shadow:0 4px 12px rgba(0,0,0,.35);}
-.person .desk{width:62px;height:9px;margin-top:4px;border-radius:6px;background:linear-gradient(180deg,rgba(120,190,220,.22),rgba(120,190,220,.06));border:1px solid var(--line2);}
-.person .pname{font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--text3);margin-top:7px;transition:color .2s;}
+/* Command palette (reutiliza #offInput) */
+.cmdbar{flex:0 0 auto;padding:10px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--bg2),var(--bg));display:flex;justify-content:center;gap:10px;}
+.cmd-wrap{width:min(680px,92%);display:flex;align-items:center;gap:10px;background:rgba(10,24,38,.92);border:1px solid var(--line2);border-radius:11px;padding:7px 8px 7px 13px;transition:border-color .2s,box-shadow .2s;}
+.cmd-wrap:focus-within{border-color:rgba(0,212,255,.55);box-shadow:0 0 0 3px rgba(0,212,255,.08);}
+.cmd-wrap .ico{color:var(--text3);flex:0 0 auto;display:flex;}
+.cmd-wrap textarea{flex:1;resize:none;height:24px;max-height:90px;border:none;background:none;color:var(--text);font-family:var(--font);font-size:14px;outline:none;line-height:1.55;padding:1px 0;}
+.cmd-wrap textarea::placeholder{color:var(--text3);}
+.kbd{font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--line2);border-radius:6px;padding:2px 7px;flex:0 0 auto;letter-spacing:.5px;}
+.cmd-send{width:32px;height:32px;flex:0 0 auto;border:none;border-radius:9px;background:var(--accent);color:#02121a;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,212,255,.26);transition:opacity .2s;}
+.cmd-send:disabled{opacity:.4;cursor:not-allowed;}
+.cmd-chips{display:none;align-items:center;gap:6px;}
+@media(min-width:1080px){.cmd-chips{display:flex;}}
+.cmd-chip{font-size:11px;color:var(--text2);background:rgba(0,212,255,.05);border:1px solid var(--line2);border-radius:99px;padding:6px 12px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.cmd-chip:hover{border-color:var(--accent);color:var(--text);}
+/* Workzone: sala iso + minimapa */
+.workzone{flex:1;position:relative;overflow:hidden;min-height:0;background:
+  radial-gradient(ellipse 62% 54% at 50% 58%,rgba(0,212,255,.06),transparent 72%),
+  linear-gradient(180deg,#050c14,#04080e);}
+.iso-room{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;perspective:1600px;}
+.iso-stage{position:relative;width:720px;height:500px;transform-style:preserve-3d;transform:scale(var(--iso-zoom,1)) rotateX(56deg) rotateZ(-45deg);transition:transform .25s ease;}
+.iso-floor{position:absolute;inset:0;border-radius:12px;background:
+  linear-gradient(rgba(0,212,255,.09) 1px,transparent 1px) 0 0/48px 48px,
+  linear-gradient(90deg,rgba(0,212,255,.09) 1px,transparent 1px) 0 0/48px 48px,
+  linear-gradient(155deg,#0b1e2f,#07131f);
+  border:1px solid rgba(0,212,255,.22);
+  box-shadow:0 0 0 1px rgba(0,0,0,.45),0 46px 90px rgba(0,0,0,.6),inset 0 0 90px rgba(0,212,255,.05);}
+.iso-floor::after{content:'';position:absolute;inset:0;border-radius:12px;background:radial-gradient(ellipse 40% 34% at 50% 50%,rgba(0,212,255,.10),transparent 70%);}
+/* Capa de agentes (upright, no rota con el piso) */
+.iso-layer{position:absolute;inset:0;pointer-events:none;z-index:4;}
+.node{position:absolute;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:66px;}
+.node .sh{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:34px;height:12px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 72%);transition:box-shadow .25s;}
+.node .fig{position:relative;display:flex;flex-direction:column;align-items:center;animation:floaty 4.2s ease-in-out infinite;}
+.node:nth-child(odd) .fig{animation-delay:-1.7s;} .node:nth-child(3n) .fig{animation-delay:-3s;}
+@keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+.node .head{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 38% 30%,color-mix(in srgb,var(--c) 80%,#fff 34%),var(--c));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#02121a;z-index:2;box-shadow:0 3px 9px rgba(0,0,0,.45);transition:box-shadow .25s,transform .25s;}
+.node .torso{width:40px;height:20px;margin-top:-5px;border-radius:20px 20px 6px 6px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 50%,#0a1826));opacity:.92;z-index:1;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+.node .nm{font-size:9.5px;font-weight:700;letter-spacing:.4px;color:var(--text3);margin-top:5px;transition:color .2s;white-space:nowrap;}
+.node.lead{width:88px;} .node.lead .head{width:46px;height:46px;font-size:18px;} .node.lead .torso{width:54px;height:26px;} .node.lead .nm{font-size:11px;letter-spacing:.8px;}
+.node.lead .sh{width:52px;}
 /* Hablando */
-.person.speaking .head{box-shadow:0 0 0 3px var(--bg2),0 0 20px 3px var(--c);transform:translateY(-2px) scale(1.06);}
-.person.speaking .fig{animation:bob .7s ease-in-out infinite;}
-@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
-.person.speaking .pname{color:var(--c);}
-.speech{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%,6px) scale(.94);width:214px;max-width:44vw;background:#0e2233;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line2));border-radius:12px;padding:10px 12px;font-size:11.5px;line-height:1.5;color:var(--text);text-align:left;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.3);}
-.speech::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#0e2233;}
-/* NÚCLEO habla hacia abajo (arriba está el borde de la escena) */
-.person.lead .speech{bottom:auto;top:calc(100% + 10px);}
-.person.lead .speech::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#0e2233;}
-.speech .who{display:block;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--c);margin-bottom:4px;}
-.person.showsp .speech{opacity:1;transform:translate(-50%,0) scale(1);}
-/* NÚCLEO grande */
-.person.lead{width:120px;}
-.person.lead .head{width:56px;height:56px;font-size:22px;}
-.person.lead .torso{width:66px;height:32px;}
-.person.lead .desk{width:96px;height:11px;}
-.person.lead .pname{font-size:12px;letter-spacing:1px;}
-.person.lead .speech{width:260px;}
-/* Barra de misión de la oficina */
-.off-bar{flex:0 0 auto;border-top:1px solid var(--line);background:var(--bg2);padding:11px 20px 15px;}
-.off-chips{display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap;justify-content:center;}
-.off-inpwrap{display:flex;gap:10px;align-items:flex-end;max-width:820px;margin:0 auto;}
-.off-inpwrap textarea{flex:1;resize:none;height:44px;max-height:110px;border-radius:11px;border:1px solid var(--line2);background:rgba(0,212,255,.04);color:var(--text);font-family:var(--font);font-size:14px;padding:12px 14px;outline:none;line-height:1.4;transition:border-color .2s;}
-.off-inpwrap textarea:focus{border-color:rgba(0,212,255,.5);}
-@media(max-width:720px){.viewtabs .vtab{padding:6px 10px;}.person{width:66px;}}
+.node.speaking .head{box-shadow:0 0 0 3px var(--bg),0 0 20px 4px var(--c);transform:scale(1.08);}
+.node.speaking .fig{animation:bobn .7s ease-in-out infinite;}
+@keyframes bobn{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+.node.speaking .nm{color:var(--c);}
+.node.speaking .sh{box-shadow:0 0 16px 3px color-mix(in srgb,var(--c) 60%,transparent);}
+/* Seleccionado */
+.node.sel .head{box-shadow:0 0 0 2px var(--c),0 0 0 4px var(--bg);}
+.node.sel .nm{color:var(--text);}
+/* Globo */
+.node .bubble2{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%,6px) scale(.94);width:210px;max-width:42vw;background:#0e2233;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line2));border-radius:12px;padding:9px 12px;font-size:11.5px;line-height:1.5;color:var(--text);text-align:left;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:30;box-shadow:0 12px 30px rgba(0,0,0,.7);}
+.node .bubble2::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#0e2233;}
+.node .bubble2 .who{display:block;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--c);margin-bottom:4px;}
+.node.showsp .bubble2{opacity:1;transform:translate(-50%,0) scale(1);}
+/* Pills de zona ancladas a coordenadas */
+.pill{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5;display:flex;align-items:center;gap:7px;background:rgba(8,20,32,.82);border:1px solid var(--pc,var(--line2));border-radius:99px;padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--text);white-space:nowrap;backdrop-filter:blur(4px);box-shadow:0 4px 14px rgba(0,0,0,.4);}
+.pill .pd{width:7px;height:7px;border-radius:50%;background:var(--pc,var(--accent));box-shadow:0 0 8px var(--pc,var(--accent));}
+.pill .ps{font-weight:500;color:var(--text3);font-size:9px;}
+/* Minimapa */
+.minimap{position:absolute;top:14px;right:14px;width:196px;background:rgba(8,20,32,.9);border:1px solid var(--line2);border-radius:12px;padding:10px 12px 9px;z-index:8;backdrop-filter:blur(6px);box-shadow:0 10px 30px rgba(0,0,0,.5);}
+.mm-h{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.mm-scene{position:relative;height:76px;border-radius:8px;background:linear-gradient(155deg,#0a1c2c,#07131f);border:1px solid var(--line);overflow:hidden;}
+.mm-scene .mmdiam{position:absolute;left:50%;top:52%;width:70px;height:70px;transform:translate(-50%,-50%) rotate(45deg);border:1px solid rgba(0,212,255,.25);border-radius:6px;}
+.mm-dot{position:absolute;width:6px;height:6px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px currentColor;}
+.mm-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.mm-count{font-size:11px;color:var(--text);}
+.mm-count b{color:var(--accent);font-size:14px;} .mm-count span{color:var(--text3);font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;}
+.mm-zoom{display:flex;align-items:center;gap:1px;border:1px solid var(--line2);border-radius:8px;overflow:hidden;}
+.mm-zoom button{width:22px;height:22px;border:none;background:none;color:var(--text2);font-size:14px;cursor:pointer;line-height:1;}
+.mm-zoom button:hover{background:rgba(0,212,255,.1);color:var(--text);}
+.mm-zoom .zv{font-size:10px;color:var(--text3);width:34px;text-align:center;font-family:var(--mono);}
+/* Terminal */
+.terminal{flex:0 0 208px;border-top:1px solid var(--line);background:var(--bg2);display:flex;flex-direction:column;min-height:0;}
+.term-tabs{display:flex;gap:2px;padding:6px 10px 0;border-bottom:1px solid var(--line);flex:0 0 auto;}
+.tt{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text3);padding:7px 13px;border-radius:7px 7px 0 0;cursor:pointer;text-transform:uppercase;display:flex;gap:6px;align-items:center;background:none;border:none;font-family:var(--font);}
+.tt:hover{color:var(--text2);}
+.tt.active{color:var(--text);background:var(--panel);}
+.tt .cnt{font-size:9px;font-weight:800;background:rgba(255,92,108,.18);color:#FF7A88;border-radius:99px;padding:0 6px;min-width:16px;text-align:center;}
+.tt .cnt.zero{background:rgba(120,190,220,.12);color:var(--text3);}
+.term-body{flex:1;display:flex;min-height:0;}
+.term-log{flex:1;overflow-y:auto;padding:9px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.75;}
+.term-log .empty-l{color:var(--text3);font-family:var(--font);font-size:12px;padding:6px 0;}
+.log-line{display:flex;gap:9px;align-items:baseline;opacity:0;animation:logIn .3s forwards;}
+@keyframes logIn{to{opacity:1;}}
+.log-line .ts{color:var(--text3);flex:0 0 auto;}
+.log-line .ag{font-weight:700;flex:0 0 auto;}
+.log-line .lv{font-weight:700;flex:0 0 auto;font-size:10px;}
+.lv-INFO{color:var(--accent);} .lv-SUCCESS{color:var(--ok);} .lv-IDLE{color:var(--warn);} .lv-ERROR{color:#FF5C6C;}
+.log-line .tx{color:var(--text2);min-width:0;}
+.term-detail{width:306px;flex:0 0 306px;border-left:1px solid var(--line);padding:12px 14px;overflow-y:auto;}
+.td-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+.td-av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#02121a;}
+.td-name{font-weight:800;font-size:13px;letter-spacing:.5px;} .td-pod{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.td-row{margin-bottom:11px;}
+.td-k{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:3px;}
+.td-v{font-size:12.5px;color:var(--text);line-height:1.45;}
+.td-badge{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:5px;}
+.td-bar{height:6px;border-radius:99px;background:rgba(120,190,220,.12);overflow:hidden;margin-top:5px;}
+.td-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--ok));transition:width .4s;}
+.td-empty{color:var(--text3);font-size:12px;line-height:1.6;padding-top:8px;}
+/* Status bar */
+.statusbar{flex:0 0 26px;display:flex;align-items:center;gap:16px;padding:0 14px;font-size:10.5px;color:var(--text3);border-top:1px solid var(--line);background:var(--bg2);font-family:var(--mono);}
+.statusbar .sb-con{display:flex;align-items:center;gap:6px;color:var(--text2);}
+.statusbar .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);}
+.statusbar .sp{margin-left:auto;}
+@media(max-width:960px){.term-detail{display:none;}.minimap{display:none;}}
+@media(max-width:720px){.viewtabs .vtab{padding:6px 10px;}}
 </style>
 </head>
 <body>
@@ -217,20 +276,55 @@ body.view-oficina .office{display:flex;}
   </div>
 </div>
 
-<!-- ═══ Vista Oficina ═══ -->
+<!-- ═══ Vista Oficina — Workspace isométrico ═══ -->
 <div class="office" id="officeView">
-  <div class="floor" id="floor">
-    <div class="off-caption" id="offCaption">La oficina de VELUM · dale una misión y míralos trabajar</div>
-    <div class="stage" id="offStage"></div>
-  </div>
-  <div class="off-bar">
-    <div class="off-chips" id="offChips"></div>
-    <div class="off-inpwrap">
-      <textarea id="offInput" rows="1" placeholder="Dale una misión al equipo…"></textarea>
-      <button class="send" id="offSend" title="Enviar misión">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  <!-- Command palette (reutiliza #offInput) -->
+  <div class="cmdbar">
+    <div class="cmd-wrap">
+      <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></span>
+      <textarea id="offInput" rows="1" placeholder="Escribe un comando o busca…"></textarea>
+      <span class="kbd">⌘K</span>
+      <button class="cmd-send" id="offSend" title="Enviar misión">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
+    <div class="cmd-chips" id="offChips"></div>
+  </div>
+
+  <!-- Sala isométrica -->
+  <div class="workzone">
+    <div class="iso-room"><div class="iso-stage" id="isoStage"><div class="iso-floor"></div></div></div>
+    <div class="iso-layer" id="isoLayer"></div>
+    <div class="minimap">
+      <div class="mm-h">Vista General del Sistema</div>
+      <div class="mm-scene" id="mmScene"><div class="mmdiam"></div></div>
+      <div class="mm-foot">
+        <div class="mm-count"><b id="mmCount">0</b> <span>Agentes Activos</span></div>
+        <div class="mm-zoom"><button id="zOut" title="Alejar">−</button><span class="zv" id="zVal">100%</span><button id="zIn" title="Acercar">+</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal -->
+  <div class="terminal">
+    <div class="term-tabs">
+      <button class="tt active" data-tab="event">Event Log</button>
+      <button class="tt" data-tab="terminal">Terminal</button>
+      <button class="tt" data-tab="output">Output</button>
+      <button class="tt" data-tab="problems">Problems <span class="cnt zero" id="probCnt">0</span></button>
+    </div>
+    <div class="term-body">
+      <div class="term-log" id="termLog"><div class="empty-l">El registro de eventos aparecerá aquí cuando el equipo trabaje una misión.</div></div>
+      <div class="term-detail" id="termDetail"><div class="td-empty">Selecciona un agente en la sala para ver su tarea, contexto y progreso.</div></div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span class="sb-con"><span class="dot"></span> VELUM: Conectado</span>
+    <span id="offCaption">Sin misión activa</span>
+    <span class="sp"></span>
+    <span id="sbMode">·</span>
   </div>
 </div>
 
@@ -286,10 +380,11 @@ function talk(id,on){
 // Globo de diálogo en la Oficina: muestra el texto del agente que acaba de hablar
 // y lo mantiene visible hasta que otro toma la palabra.
 function officeSpeak(id,text){
-  document.querySelectorAll('.person.showsp').forEach(p=>p.classList.remove('showsp'));
+  document.querySelectorAll('.node.showsp').forEach(p=>p.classList.remove('showsp'));
   const o=document.getElementById('off-'+id);if(!o)return;
-  const sp=o.querySelector('.speech .txt');const a=byId(id);
-  if(sp)sp.textContent=text.replace(/<[^>]+>/g,'').slice(0,240)+(text.replace(/<[^>]+>/g,'').length>240?'…':'');
+  const clean=text.replace(/<[^>]+>/g,'');
+  const sp=o.querySelector('.bubble2 .txt');
+  if(sp)sp.textContent=clean.slice(0,200)+(clean.length>200?'…':'');
   o.classList.add('showsp');
 }
 
@@ -318,6 +413,7 @@ function bubble(agent,text,kind){
     <div class="bubble" style="color:${agent.color}">${tagHtml}<span style="color:var(--text)">${text}</span></div></div>`;
   feed.appendChild(m);scrollFeed();
   officeSpeak(agent.id,text); // refleja el turno en la Oficina
+  pushLog(agent,text,kind); // consume el MISMO turno para el Event Log del terminal
 }
 async function say(agent,text,kind,thinkMs){
   await typing(agent,thinkMs||700+Math.random()*600);
@@ -336,11 +432,13 @@ function renderMission(goal,status){
 function renderTasks(){
   const el=document.getElementById('tasks');
   document.getElementById('taskCount').textContent=tasks.length?tasks.length:'';
+  updateOfficeState(); // minimapa (N activos), anillo de nodos activos y panel derecho — desde `tasks` real
   if(!tasks.length){el.innerHTML='<div class="mp-empty">Las tareas aparecen aquí cuando el equipo arma el plan.</div>';return;}
   el.innerHTML=tasks.map(t=>{const a=byId(t.agent);const stc=t.status==='done'?'st-done':t.status==='work'?'st-work':'st-prop';const stt=t.status==='done'?'Hecho':t.status==='work'?'En curso':'Propuesta';
     return `<div class="task"><div class="tav" style="background:${a.color}">${a.name[0]}</div><div class="tc"><div class="tt">${t.text}</div><div class="tm">${a.name}</div></div><div class="tst ${stc}">${stt}</div></div>`;}).join('');
 }
 function setDecisions(list){
+  decisionsCache=list||[];renderOutput();
   const el=document.getElementById('decisions');
   el.innerHTML=list&&list.length?list.map(d=>`<div class="decis">${d}</div>`).join(''):'<div class="mp-empty">—</div>';
 }
@@ -415,8 +513,9 @@ async function runMission(mission){
   document.getElementById('sendBtn').disabled=true;
   emptyState.style.display='none';
   document.getElementById('convSub').textContent='· '+mission.slice(0,60);
-  document.querySelectorAll('.person.showsp').forEach(p=>p.classList.remove('showsp'));
+  document.querySelectorAll('.node.showsp').forEach(p=>p.classList.remove('showsp'));
   document.getElementById('offCaption').textContent='Misión: '+mission.slice(0,70);
+  resetTerminal(mission); // limpia Event Log / Problems al iniciar (solo UI)
   tasks=[];renderTasks();
   try{
     if(STUDIO.endpoint) await runMissionReal(mission);
@@ -448,31 +547,113 @@ document.getElementById('modeChip').onclick=()=>{
   alert(STUDIO.endpoint?'Conectado a IA real ('+STUDIO.endpoint+').':'Modo Demo (simulado).\n\nPara activar IA real: despliega la edge function velum-studio-room, setea ANTHROPIC_API_KEY y STUDIO_ROOM_KEY, y pon endpoint + roomKey arriba en el bloque STUDIO de este archivo.');
 };
 
-// ── Oficina: construir la escena (NÚCLEO al centro + pods) ──
-function personEl(a,lead){
-  const p=document.createElement('div');
-  p.className='person'+(lead?' lead':'');p.id='off-'+a.id;p.style.setProperty('--c',a.color);
-  p.innerHTML=`<div class="speech"><span class="who">${a.name}</span><span class="txt"></span></div>
+// ══ Oficina — Workspace isométrico (SOLO CAPA DE VISTA) ══
+// Los nodos son presentacionales; se alimentan del estado real (AGENTS + tasks).
+const isoLayer=document.getElementById('isoLayer');
+const wz=document.querySelector('.workzone');
+const POS={}; // coordenadas de cada agente (para el minimapa)
+// Anclas de zona en % del workzone (layout, no estado de negocio)
+const ZONES={'Plataforma':{x:31,y:40},'Crecimiento':{x:69,y:40},'Marca & Web':{x:66,y:63},'Cliente & Confianza':{x:34,y:63}};
+const PILLS=[
+  {t:'Desk',s:'Cómputo',x:50,y:33,c:POD_COLORS['Coordinación']},
+  {t:'Muro Kanban',s:'Activo',x:23,y:26,c:POD_COLORS['Plataforma']},
+  {t:'Pizarrón',s:'Ideas',x:77,y:26,c:POD_COLORS['Crecimiento']},
+  {t:'Lounge',s:'Idle',x:83,y:74,c:POD_COLORS['Marca & Web']},
+  {t:'Puerta de Seguridad',s:'Control de acceso',x:17,y:73,c:POD_COLORS['Cliente & Confianza']},
+  {t:'Bóveda',s:'Datos',x:50,y:83,c:'#5EC8B0'},
+];
+function nodeEl(a,lead){
+  const n=document.createElement('div');
+  n.className='node'+(lead?' lead':'');n.id='off-'+a.id;n.style.setProperty('--c',a.color);
+  n.innerHTML=`<div class="bubble2"><span class="who">${a.name}</span><span class="txt"></span></div>
     <div class="fig"><div class="head">${a.name[0]}</div><div class="torso"></div></div>
-    <div class="desk"></div><div class="pname">${a.name}</div>`;
-  return p;
+    <div class="sh"></div><div class="nm">${a.name}</div>`;
+  n.addEventListener('click',()=>selectAgent(a.id));
+  return n;
 }
+function place(a,x,y,lead){const n=nodeEl(a,lead);n.style.left=x+'%';n.style.top=y+'%';isoLayer.appendChild(n);POS[a.id]={x,y};}
 function buildOffice(){
-  const stage=document.getElementById('offStage');stage.innerHTML='';
-  // NÚCLEO en el centro de mando
-  const nz=document.createElement('div');nz.className='nucleo-zone';
-  nz.appendChild(personEl(byId('nucleo'),true));stage.appendChild(nz);
-  // Pods
-  const pods=document.createElement('div');pods.className='pods';
-  [...new Set(AGENTS.filter(a=>a.pod!=='Coordinación').map(a=>a.pod))].forEach(pod=>{
-    const z=document.createElement('div');z.className='podzone';z.style.setProperty('--pc',POD_COLORS[pod]||'#00D4FF');
-    const h=document.createElement('div');h.className='pz-h';h.textContent=pod;z.appendChild(h);
-    const row=document.createElement('div');row.className='pz-people';
-    AGENTS.filter(a=>a.pod===pod).forEach(a=>row.appendChild(personEl(a,false)));
-    z.appendChild(row);pods.appendChild(z);
+  isoLayer.querySelectorAll('.node,.pill').forEach(e=>e.remove());
+  place(byId('nucleo'),50,50,true); // NÚCLEO = escritorio central / el que opera
+  Object.entries(ZONES).forEach(([pod,z])=>{
+    const mem=AGENTS.filter(a=>a.pod===pod),n=mem.length;
+    mem.forEach((a,i)=>place(a,z.x+(i-(n-1)/2)*6.6,z.y+((i%2)?4.2:0),false));
   });
-  stage.appendChild(pods);
+  PILLS.forEach(p=>{const el=document.createElement('div');el.className='pill';el.style.left=p.x+'%';el.style.top=p.y+'%';el.style.setProperty('--pc',p.c);
+    el.innerHTML=`<span class="pd"></span><span>${p.t}</span><span class="ps">· ${p.s}</span>`;isoLayer.appendChild(el);});
+  buildMinimapDots();
 }
+function buildMinimapDots(){
+  const s=document.getElementById('mmScene');s.querySelectorAll('.mm-dot').forEach(d=>d.remove());
+  AGENTS.forEach(a=>{const p=POS[a.id];if(!p)return;const d=document.createElement('div');d.className='mm-dot';d.id='mm-'+a.id;
+    d.style.left=p.x+'%';d.style.top=p.y+'%';d.style.background=a.color;d.style.color=a.color;s.appendChild(d);});
+}
+
+// ── Selección de agente → panel derecho del terminal (desde `tasks` real) ──
+let selectedAgent=null;
+function selectAgent(id){
+  selectedAgent=id;
+  AGENTS.forEach(a=>{const n=document.getElementById('off-'+a.id);if(n)n.classList.toggle('sel',a.id===id);});
+  renderDetail();
+}
+function renderDetail(){
+  const el=document.getElementById('termDetail');
+  if(!selectedAgent){el.innerHTML='<div class="td-empty">Selecciona un agente en la sala para ver su tarea, contexto y progreso.</div>';return;}
+  const a=byId(selectedAgent),t=tasks.find(x=>x.agent===selectedAgent);
+  const estado=t?(t.status==='done'?'Hecho':t.status==='work'?'En curso':'Propuesta'):'En espera';
+  const badge=t?(t.status==='done'?'st-done':t.status==='work'?'st-work':'st-prop'):'st-prop';
+  const prog=t?(t.status==='done'?100:t.status==='work'?65:t.status==='prop'?20:0):0;
+  el.innerHTML=`<div class="td-head"><div class="td-av" style="background:${a.color}">${a.name[0]}</div>
+      <div><div class="td-name" style="color:${a.color}">${a.name}</div><div class="td-pod">${a.pod}</div></div></div>
+    <div class="td-row"><div class="td-k">Tarea</div><div class="td-v">${t?esc(t.text):'Sin tarea asignada en esta misión.'}</div></div>
+    <div class="td-row"><div class="td-k">Rama / Contexto</div><div class="td-v">${a.pod}</div></div>
+    <div class="td-row"><div class="td-k">Estado</div><div class="td-v"><span class="td-badge ${badge}">${estado}</span></div></div>
+    <div class="td-row"><div class="td-k">Progreso · ${prog}%</div><div class="td-bar"><i style="width:${prog}%"></i></div></div>`;
+}
+// ── Minimapa (N activos) + dim de nodos inactivos — todo desde `tasks` ──
+function updateOfficeState(){
+  const active=new Set(tasks.map(t=>t.agent));
+  document.getElementById('mmCount').textContent=active.size;
+  AGENTS.forEach(a=>{
+    const on=tasks.length===0||active.has(a.id)||a.id==='nucleo'; // NÚCLEO siempre opera
+    const n=document.getElementById('off-'+a.id);
+    if(n)n.style.opacity=on?'1':'.4';
+    const d=document.getElementById('mm-'+a.id);
+    if(d)d.style.opacity=on?'1':'.28';
+  });
+  renderDetail();
+}
+
+// ── Terminal: consume los MISMOS turnos/eventos que ya existen ──
+let currentTab='event',eventLog=[],cmdLog=[],problems=[],decisionsCache=[];
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function logLine(l){return `<div class="log-line"><span class="ts">${l.ts}</span><span class="ag" style="color:${l.color}">${l.ag}</span><span class="lv lv-${l.lvl}">[${l.lvl}]</span><span class="tx">${esc(l.tx)}</span></div>`;}
+function emptyMsg(t){return `<div class="empty-l">${t}</div>`;}
+function logRender(){
+  const el=document.getElementById('termLog');let h='';
+  if(currentTab==='event') h=eventLog.length?eventLog.map(logLine).join(''):emptyMsg('El registro de eventos aparecerá aquí cuando el equipo trabaje una misión.');
+  else if(currentTab==='terminal') h=cmdLog.length?cmdLog.map(c=>`<div class="log-line"><span class="ts">${c.ts}</span><span class="lv lv-INFO">›</span><span class="tx">misión: ${esc(c.cmd)}</span></div>`).join(''):emptyMsg('Escribe una misión arriba y envíala al equipo.');
+  else if(currentTab==='output') h=decisionsCache.length?(`<div class="log-line"><span class="tx" style="color:var(--text)">Decisiones acordadas</span></div>`+decisionsCache.map(d=>`<div class="log-line"><span class="lv lv-SUCCESS">▸</span><span class="tx">${esc(d)}</span></div>`).join('')+`<div class="log-line"><span class="tx" style="color:var(--text3)">Plan: ${tasks.length} tareas asignadas.</span></div>`):emptyMsg('La salida (decisiones y plan) aparece al terminar la misión.');
+  else h=problems.length?problems.map(logLine).join(''):emptyMsg('Sin problemas.');
+  el.innerHTML=h;el.scrollTop=el.scrollHeight;
+}
+function pushLog(agent,text,kind){
+  const clean=text.replace(/<[^>]+>/g,'');
+  const lvl=/^No pude conectar/.test(clean)?'ERROR':(kind==='report'?'SUCCESS':'INFO');
+  const line={ts:now(),ag:agent.name,color:agent.color,lvl,tx:clean};
+  eventLog.push(line);if(lvl==='ERROR')problems.push(line);
+  updateProb();if(currentTab==='event'||currentTab==='problems')logRender();
+}
+function updateProb(){const c=document.getElementById('probCnt');c.textContent=problems.length;c.classList.toggle('zero',problems.length===0);}
+function renderOutput(){if(currentTab==='output')logRender();}
+function resetTerminal(mission){eventLog=[];problems=[];decisionsCache=[];cmdLog.push({ts:now(),cmd:mission});updateProb();logRender();}
+document.querySelectorAll('.tt').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tt').forEach(x=>x.classList.remove('active'));t.classList.add('active');currentTab=t.dataset.tab;logRender();});
+
+// ── Zoom del minimapa (solo escala visual) ──
+let isoZoom=1;
+function setZoom(z){isoZoom=Math.min(1.4,Math.max(.7,Math.round(z*20)/20));wz.style.setProperty('--iso-zoom',isoZoom);isoLayer.style.transform='scale('+isoZoom+')';document.getElementById('zVal').textContent=Math.round(isoZoom*100)+'%';}
+document.getElementById('zIn').onclick=()=>setZoom(isoZoom+.1);
+document.getElementById('zOut').onclick=()=>setZoom(isoZoom-.1);
 
 // ── Toggle de vistas (Sala ⇄ Oficina) ──
 document.querySelectorAll('.vtab').forEach(t=>t.onclick=()=>{
@@ -482,17 +663,22 @@ document.querySelectorAll('.vtab').forEach(t=>t.onclick=()=>{
   document.getElementById('brandSub').textContent=v==='oficina'?'La Oficina':'Sala de Mando';
 });
 
-// ── Composer de la Oficina (mismo motor) ──
+// ── Command palette (REUTILIZA #offInput; mismo motor runMission) ──
 const offInp=document.getElementById('offInput');
-offInp.addEventListener('input',()=>{offInp.style.height='44px';offInp.style.height=Math.min(offInp.scrollHeight,110)+'px';});
+offInp.addEventListener('input',()=>{offInp.style.height='24px';offInp.style.height=Math.min(offInp.scrollHeight,90)+'px';});
 offInp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();offFire();}});
 document.getElementById('offSend').onclick=offFire;
-function offFire(){const v=offInp.value.trim();if(!v)return;offInp.value='';offInp.style.height='44px';runMission(v);}
+function offFire(){const v=offInp.value.trim();if(!v)return;offInp.value='';offInp.style.height='24px';runMission(v);}
 const offChipsEl=document.getElementById('offChips');
-SUGG.slice(0,3).forEach(s=>{const c=document.createElement('div');c.className='chip';c.textContent=s;c.onclick=()=>{offInp.value=s;offFire();};offChipsEl.appendChild(c);});
-// sincroniza disabled del botón de enviar de la oficina con el de la sala
+SUGG.slice(0,2).forEach(s=>{const c=document.createElement('div');c.className='cmd-chip';c.textContent=s;c.onclick=()=>{offInp.value=s;offFire();};offChipsEl.appendChild(c);});
 new MutationObserver(()=>{document.getElementById('offSend').disabled=document.getElementById('sendBtn').disabled;})
   .observe(document.getElementById('sendBtn'),{attributes:true,attributeFilter:['disabled']});
+// ⌘K → enfoca la command palette (abre la Oficina si hace falta)
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();
+  if(!document.body.classList.contains('view-oficina'))document.querySelector('.vtab[data-view=oficina]').click();offInp.focus();}});
+// Estado inicial del terminal + status bar
+document.getElementById('sbMode').textContent=STUDIO.endpoint?'IA real':'Modo Demo';
+logRender();
 
 // ── Init ──
 buildRoster();buildOffice();refreshMode();
