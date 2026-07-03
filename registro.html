@@ -197,8 +197,9 @@ let selectedPlan = 'max';
 
 function selectPlan(plan){
   selectedPlan = plan;
+  if(typeof gtag!=='undefined') gtag('event','plan_selected',{plan:plan});
   document.getElementById('plan-tag').textContent =
-    plan === 'max' ? '⭐ Plan Max — $999 MXN/mes' : 'Plan Pro — $599 MXN/mes';
+    plan === 'max' ? 'Plan Max — $999 MXN/mes' : 'Plan Pro — $599 MXN/mes';
   document.getElementById('step-plans').style.display = 'none';
   document.getElementById('step-form').style.display = 'block';
 }
@@ -212,6 +213,7 @@ async function hashPassword(pass){
 }
 
 async function irAPagar(){
+  if(typeof gtag!=='undefined') gtag('event','signup_submit',{plan:selectedPlan});
   const gymNombre = document.getElementById('f-gym').value.trim();
   const nombre    = document.getElementById('f-nombre').value.trim();
   const email     = document.getElementById('f-email').value.trim().toLowerCase();
@@ -229,6 +231,7 @@ async function irAPagar(){
   btn.innerHTML = '<span style="opacity:.7">Preparando pago seguro...</span>';
   try{
     const pw_hash = await hashPassword(pass);
+    if(typeof gtag!=='undefined') gtag('event','payment_redirect',{plan:selectedPlan});
     const res = await fetch(SUPA_URL + '/functions/v1/velum-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
