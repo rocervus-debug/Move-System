@@ -20028,7 +20028,7 @@ function _citaSaldoChip(c){
   const col = restantes<=0 ? 'var(--danger)' : (restantes<=2 ? 'var(--warn)' : 'var(--accent)');
   const txt = restantes<=0 ? 'Paquete agotado' : `${restantes} ${restantes===1?sing:unidad} ${restantes===1?'restante':'restantes'}`;
   return `<div style="display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb, ${col} 9%, transparent);border:1px solid color-mix(in srgb, ${col} 24%, transparent);">
-    <span style="font-size:14px;color:${col};line-height:1;">◈</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
     <div style="font-size:12px;color:var(--text2);">Paquete · <strong style="color:${col};">${esc(txt)}</strong></div>
   </div>`;
 }
@@ -23981,10 +23981,20 @@ async function loadReservasHoy(){
             </div>
           </div>
           <div style="padding:0 14px 12px;display:flex;flex-wrap:wrap;gap:5px;">
-            ${g.items.map(r=>`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;font-size:11px;background:${r.estado==='checkin'?'rgba(15,223,154,.07)':'rgba(255,255,255,.04)'};border:1px solid ${r.estado==='checkin'?'rgba(15,223,154,.2)':'rgba(255,255,255,.07)'};color:${r.estado==='checkin'?'var(--ok)':'var(--text2)'};">
-              <span>${r.estado==='checkin'?'✓':'⏳'}</span>
-              <span style="font-weight:700;">${esc(r.cliente_nombre||'—')}</span>
-            </div>`).join('')}
+            ${g.items.map(r=>{
+              const done=r.estado==='checkin', ns=r.estado==='ausente';
+              const col=done?'var(--ok)':(ns?'var(--danger)':'var(--text2)');
+              const bg=done?'rgba(15,223,154,.07)':(ns?'rgba(248,113,113,.07)':'rgba(255,255,255,.04)');
+              const bd=done?'rgba(15,223,154,.2)':(ns?'rgba(248,113,113,.22)':'rgba(255,255,255,.07)');
+              const mark=done?'✓':(ns?'✕':'');
+              // Botones solo en reservas pendientes: confirmar llegada o marcar no-show al instante.
+              const acts=(!done&&!ns)?`<button onclick="reservaLlegoHoy('${r.id}','${esc(r.cliente_nombre||'')}')" title="Confirmar llegada" style="border:none;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;background:rgba(15,223,154,.14);color:var(--ok);">Llegó</button><button onclick="reservaNoShowHoy('${r.id}','${esc(r.cliente_nombre||'')}')" title="Marcar no-show" style="border:none;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;background:rgba(248,113,113,.12);color:var(--danger);">✕</button>`:'';
+              return `<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 9px;border-radius:6px;font-size:11px;background:${bg};border:1px solid ${bd};color:${col};">
+                ${mark?`<span>${mark}</span>`:''}
+                <span style="font-weight:700;">${esc(r.cliente_nombre||'—')}</span>
+                ${acts}
+              </div>`;
+            }).join('')}
           </div>
         </div>`;
       }).join('')}
@@ -24712,6 +24722,23 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   toast(`${clienteNombre} — ${label}`,'✓');
   navigator.vibrate?.([50,30,50]);
   await loadDetalleClase(horarioId,hora,tipo,cupo);
+}
+
+// Check-in directo desde el widget "Reservas de hoy" (P1 studios: confirmar asistencia).
+async function reservaLlegoHoy(id,nombre){
+  const {error} = await window.supabaseClient.from('reservas').update({estado:'checkin'}).eq('id',id);
+  if(error){ toast('Error: '+error.message,'✕'); return; }
+  toast(`${nombre} ✓ llegó`,'✓'); navigator.vibrate?.([50,30,50]);
+  loadReservasHoy();
+  if(typeof renderStudiosDash==='function') renderStudiosDash();
+}
+async function reservaNoShowHoy(id,nombre){
+  if(!await confirmDialog(`Marcar a ${nombre} como no-show en esta clase.`, {title:'¿No llegó?', confirmText:'Sí, no-show'})) return;
+  const {error} = await window.supabaseClient.from('reservas').update({estado:'ausente'}).eq('id',id);
+  if(error){ toast('Error: '+error.message,'✕'); return; }
+  toast(`${nombre} — no-show registrado`,'✕'); navigator.vibrate?.([30]);
+  loadReservasHoy();
+  if(typeof renderStudiosDash==='function') renderStudiosDash();
 }
 
 async function marcarPresenteReserva(reservaId,nombre,horarioId,hora,tipo){
