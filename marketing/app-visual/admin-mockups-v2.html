@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VELUM Panel Admin — Propuesta visual v2 por vertical (TRAZO)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#04101a; --card:#0a1c29; --line:rgba(120,200,230,.12); --line2:rgba(120,200,230,.2);
+  --text:#EAF2F7; --text2:#8FB4C4; --text3:#4A6B7C;
+  --cy:#00D4FF; --cy2:#5FE6FF; --ok:#10e8a0; --warn:#fbbf24; --danger:#f87171;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; --mono:'SF Mono',ui-monospace,Menlo,monospace;
+}
+body{font-family:var(--font);background:#020a10;color:var(--text);-webkit-font-smoothing:antialiased;padding:26px 20px 60px;}
+.pagehead{max-width:1520px;margin:0 auto 6px;}
+.pagehead h1{font-size:21px;font-weight:800;letter-spacing:.5px;}
+.pagehead p{font-size:12.5px;color:var(--text2);margin-top:5px;max-width:900px;line-height:1.6;}
+.vrow{max-width:1520px;margin:36px auto 0;}
+.vhead{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.vhead .sw{width:12px;height:12px;border-radius:4px;}
+.vhead h2{font-size:16px;font-weight:800;letter-spacing:.4px;}
+.vhead .vs{font-size:11px;color:var(--text3);}
+.pair{display:flex;gap:18px;align-items:flex-start;}
+.frame{flex:1;min-width:0;border-radius:14px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 22px 54px rgba(0,0,0,.55);position:relative;}
+.frame .flbl{position:absolute;top:7px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;letter-spacing:1.4px;padding:3px 11px;border-radius:99px;z-index:9;}
+.frame.actual .flbl{background:rgba(255,255,255,.09);color:#9db4c4;}
+.frame.prop .flbl{background:rgba(255,255,255,.12);color:var(--fa,#00D4FF);box-shadow:0 0 12px color-mix(in srgb,var(--fa,#00D4FF) 30%,transparent);}
+/* shell del panel dentro del frame */
+.shell{display:flex;min-height:470px;background:var(--pbg);font-size:10px;}
+.snav{width:138px;flex:0 0 138px;background:var(--pnav);border-right:1px solid var(--pline);padding:26px 8px 10px;display:flex;flex-direction:column;gap:1px;}
+.slogo{display:flex;align-items:center;gap:6px;padding:0 6px 8px;}
+.slogo .st{font-weight:800;font-size:10.5px;letter-spacing:2.5px;color:#fff;}
+.vbadge{margin:0 6px 8px;font-size:6.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--pacc);background:color-mix(in srgb,var(--pacc) 12%,transparent);border:1px solid color-mix(in srgb,var(--pacc) 30%,transparent);border-radius:99px;padding:3px 8px;text-align:center;}
+.ngrp{font-size:6.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ptx3);padding:9px 6px 3px;border-top:1px solid var(--pline);margin-top:4px;}
+.ngrp:first-of-type{border-top:none;margin-top:0;}
+.nit{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:7px;font-size:8.5px;font-weight:600;color:var(--ptx2);position:relative;}
+.nit svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto;}
+.nit.on{background:color-mix(in srgb,var(--pacc) 13%,transparent);color:var(--pacc);font-weight:700;}
+.nit.on::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2.5px;border-radius:2px;background:var(--pacc);}
+.nit .cnt{margin-left:auto;font-size:7px;font-weight:700;color:var(--ptx3);background:rgba(255,255,255,.06);border-radius:99px;padding:1px 5px;}
+.smain{flex:1;min-width:0;padding:24px 14px 14px;display:flex;flex-direction:column;gap:9px;overflow:hidden;}
+.pcard{background:var(--pcard);border:1px solid var(--pline);border-radius:11px;padding:9px 11px;}
+.plabel{font-family:var(--mono);font-size:6.4px;letter-spacing:1.1px;color:var(--ptx3);text-transform:uppercase;}
+.notes{max-width:1520px;margin:14px auto 0;display:flex;gap:16px;}
+.ncard{flex:1;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 16px;}
+.ncard .nh{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--cy2);margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+.ncard .nh.fx{color:var(--warn);}
+.ncard ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.ncard li{font-size:12px;color:var(--text2);line-height:1.55;padding-left:15px;position:relative;}
+.ncard li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:2px;background:var(--cy);}
+.ncard .nh.fx + ul li::before{background:var(--warn);}
+.ncard li b{color:var(--text);}
+/* hero actual gym */
+.heroA{position:relative;border-radius:11px;padding:12px;overflow:hidden;background:linear-gradient(135deg,#020c09,#041a12 45%,#030f0c);border:1px solid color-mix(in srgb,var(--pacc) 22%,transparent);}
+.heroA .orb{position:absolute;border-radius:50%;pointer-events:none;}
+.heroA .eyebrow{font-size:6px;font-weight:700;letter-spacing:2px;color:color-mix(in srgb,var(--pacc) 60%,transparent);text-transform:uppercase;}
+.heroA .greet{font-size:8px;color:rgba(200,220,235,.45);margin-top:4px;}
+.heroA .gname{font-size:20px;font-weight:800;color:#fff;letter-spacing:.4px;}
+.heroA .tag{font-size:7px;color:rgba(200,220,235,.42);margin-top:3px;display:flex;align-items:center;gap:4px;}
+.heroA .tag::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);}
+.heroA .hst{display:flex;gap:8px;position:absolute;right:12px;top:14px;}
+.heroA .hbox{text-align:center;padding:6px 10px;background:color-mix(in srgb,var(--pacc) 10%,transparent);border:1px solid color-mix(in srgb,var(--pacc) 20%,transparent);border-radius:8px;}
+.heroA .hbox b{font-size:15px;font-weight:800;color:var(--pacc);display:block;line-height:1;}
+.heroA .hbox span{font-size:5.5px;color:rgba(200,220,235,.4);text-transform:uppercase;letter-spacing:1px;}
+.heroA .qas{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
+.qab{font-size:7px;font-weight:700;border-radius:7px;padding:4px 8px;display:flex;align-items:center;gap:3px;border:1px solid transparent;}
+.qab.p{background:color-mix(in srgb,var(--pacc) 16%,transparent);color:var(--pacc);border-color:color-mix(in srgb,var(--pacc) 30%,transparent);}
+.qab.s{background:rgba(167,139,250,.12);color:#a78bfa;border-color:rgba(167,139,250,.25);}
+.alertA{display:flex;align-items:center;gap:7px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:9px;padding:7px 10px;font-size:8px;color:#fbbf24;}
+.kpi2{display:flex;gap:9px;}
+.kpi2 .pcard{flex:1;position:relative;}
+.kpi2 .kv{font-size:19px;font-weight:800;margin-top:3px;}
+.kpi2 .km{font-size:7px;color:var(--ptx3);margin-top:1px;}
+.spark{position:absolute;right:10px;bottom:8px;opacity:.7;}
+.feedrow{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid color-mix(in srgb,var(--pline) 60%,transparent);font-size:8px;color:var(--ptx2);}
+.feedrow:last-child{border:none;}
+.feedrow .fam{margin-left:auto;font-weight:800;color:var(--ok);font-family:var(--mono);font-size:8px;}
+.fdot{width:16px;height:16px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.fdot svg{width:8px;height:8px;stroke-width:2.4;fill:none;}
+/* propuesta compartida */
+.cmdbarP{display:flex;align-items:center;gap:8px;border-radius:11px;padding:9px 11px;background:var(--pcard);border:1px solid var(--pline);}
+.cmdbarP .gt .g1{font-size:7px;color:var(--ptx3);}
+.cmdbarP .gt .g2{font-size:13px;font-weight:800;color:var(--ptx);}
+.cmdbarP .st{font-size:6.5px;font-weight:700;color:var(--ok);background:rgba(16,232,160,.1);border-radius:99px;padding:2px 7px;display:flex;align-items:center;gap:3px;}
+.cmdbarP .st::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--ok);}
+.cmdbarP .qs{margin-left:auto;display:flex;gap:5px;}
+.kpi4{display:flex;gap:7px;}
+.kpi4 .k{flex:1;background:var(--pcard);border:1px solid var(--pline);border-radius:10px;padding:7px 9px;position:relative;}
+.kpi4 .kv{font-size:14px;font-weight:800;margin-top:2px;color:var(--ptx);}
+.kpi4 .kt{font-size:6.5px;font-weight:700;margin-top:1px;}
+.kpi4 .kt.up{color:var(--ok);} .kpi4 .kt.warn{color:var(--warn);}
+.cols2{display:flex;gap:9px;align-items:flex-start;}
+.cols2 .main2{flex:1.5;min-width:0;} .cols2 .rail{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.ph .t{font-size:9px;font-weight:800;color:var(--ptx);}
+.ph .lk{font-size:7px;color:var(--pacc);font-weight:700;}
+.rrow{display:flex;align-items:center;gap:6px;padding:4.5px 0;border-bottom:1px solid color-mix(in srgb,var(--pline) 55%,transparent);font-size:8px;color:var(--ptx2);}
+.rrow:last-child{border:none;}
+.badge{font-size:6px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;border-radius:5px;padding:2px 6px;margin-left:auto;flex:0 0 auto;}
+.b-ok{background:rgba(16,232,160,.13);color:var(--ok);} .b-warn{background:rgba(251,191,36,.13);color:var(--warn);}
+.b-dan{background:rgba(248,113,113,.13);color:var(--danger);} .b-acc{background:color-mix(in srgb,var(--pacc) 15%,transparent);color:var(--pacc);}
+.bar{height:4px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;flex:1;}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--pacc);}
+.ringy{width:34px;height:34px;flex:0 0 34px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient(var(--pacc) calc(var(--p)*1%),rgba(255,255,255,.08) 0);}
+.ringy::after{content:'';position:absolute;inset:4px;border-radius:50%;background:var(--pcard);}
+.ringy b{position:relative;z-index:1;font-size:7.5px;color:var(--ptx);}
+.spots{display:flex;gap:2.5px;margin-top:4px;}
+.spots i{width:7px;height:7px;border-radius:2.5px;background:rgba(255,255,255,.09);}
+.spots i.on{background:var(--pacc);}
+/* timeline grid recovery propuesta */
+.tgrid{display:grid;grid-template-columns:26px repeat(3,1fr);gap:4px;position:relative;}
+.tgrid .thead{font-size:6.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ptx3);text-align:center;padding-bottom:3px;}
+.tgrid .thr{font-family:var(--mono);font-size:6px;color:var(--ptx3);text-align:right;padding-right:3px;padding-top:1px;}
+.tcell{height:26px;border-radius:5px;background:rgba(255,255,255,.025);border:1px dashed color-mix(in srgb,var(--pline) 80%,transparent);}
+.appt{border-radius:6px;padding:3px 5px;font-size:6.3px;line-height:1.25;border-left:2.5px solid var(--pacc);background:color-mix(in srgb,var(--pacc) 13%,transparent);color:var(--ptx);height:auto;}
+.appt b{display:block;font-size:6.8px;}
+.appt.done{border-left-color:var(--ok);background:rgba(16,232,160,.1);}
+.appt.tall{grid-row:span 2;}
+.nowline{position:absolute;left:26px;right:0;top:58%;height:1.5px;background:var(--danger);opacity:.7;}
+.nowline::before{content:'';position:absolute;left:-3px;top:-2px;width:5px;height:5px;border-radius:50%;background:var(--danger);}
+/* temas por vertical (frame) */
+.t-gym{--pbg:#040C14;--pnav:#050f18;--pcard:#08121E;--pline:rgba(120,200,230,.1);--pacc:#00D4FF;--ptx:#EAF2F7;--ptx2:#8FB4C4;--ptx3:#4A6B7C;}
+.t-stu{--pbg:#0E0A12;--pnav:#0d0911;--pcard:#1B1422;--pline:rgba(201,168,106,.14);--pacc:#C9A86A;--ptx:#F4EEF2;--ptx2:#C9B6C4;--ptx3:#8A7486;}
+.t-rec{--pbg:#070F0E;--pnav:#061110;--pcard:#101D1C;--pline:rgba(94,200,176,.14);--pacc:#5EC8B0;--ptx:#ECF4F2;--ptx2:#A6C2BC;--ptx3:#63827C;}
+.t-stu .gname,.t-stu .g2,.t-stu .ph .t,.t-rec .gname,.t-rec .g2,.t-rec .ph .t{font-family:Georgia,'Times New Roman',serif;}
+.glyph{font-size:8px;color:var(--ptx3);}
+svg{display:block;}
+.sys{max-width:1520px;margin:44px auto 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;}
+.sys h2{font-size:15px;font-weight:800;margin-bottom:12px;}
+.sys .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.sys .g{background:#061621;border:1px solid var(--line);border-radius:12px;padding:13px;}
+.sys .g .t{font-size:12px;font-weight:800;color:var(--cy2);margin-bottom:5px;}
+.sys .g .d{font-size:11.5px;color:var(--text2);line-height:1.6;}
+@media(max-width:1150px){.pair{flex-direction:column;}.notes{flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <h1>VELUM Panel Admin — Propuesta visual v2 · por vertical</h1>
+  <p>El dashboard de cada giro, <b style="color:#9db4c4">ACTUAL</b> vs <b style="color:var(--cy)">PROPUESTA</b>. Cada vertical conserva su alma (gym cyan energético · studios champagne editorial · recovery salvia sereno) pero sube de nivel: jerarquía clara, un héroe por pantalla, glifos → SVG, y el sidebar dice de qué giro eres.</p>
+</div>
+
+<!-- ═══════════════ GYM ═══════════════ -->
+<section class="vrow" id="sec-gym">
+  <div class="vhead"><span class="sw" style="background:#00D4FF"></span><h2>1 · GYM</h2><span class="vs">— performance · cyan · Outfit</span></div>
+  <div class="pair">
+    <!-- ACTUAL -->
+    <div class="frame actual t-gym"><div class="flbl">ACTUAL</div><div class="shell">
+      <div class="snav">
+        <div class="slogo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#00D4FF"/></svg><span class="st">VELUM</span></div>
+        <div class="ngrp">General</div>
+        <div class="nit on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
+        <div class="ngrp">Ventas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Pagos & Renovaciones</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6"/></svg>Visitas del Día</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Clientes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14"/></svg>Domiciliados</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M20.6 13.4L13.4 20.6a2 2 0 01-2.8 0L2 12V2h10z"/></svg>Paquetes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Calendario Venc.</div>
+        <div class="ngrp">Operación</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Horario Semanal</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/></svg>Coaches</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/></svg>Asistencia</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>Gastos</div>
+      </div>
+      <div class="smain">
+        <div class="heroA">
+          <div class="orb" style="top:-30px;left:20px;width:130px;height:130px;background:radial-gradient(circle,rgba(0,212,255,.22),transparent 68%)"></div>
+          <div class="orb" style="bottom:-40px;right:40px;width:110px;height:110px;background:radial-gradient(circle,rgba(192,132,252,.12),transparent 68%)"></div>
+          <div style="position:relative;z-index:1">
+            <div class="eyebrow">VELUM Platform · Mié 2 Jul</div>
+            <div class="greet">Buenas tardes,</div>
+            <div class="gname">IRON TEMPLE</div>
+            <div class="tag">148 activos · membresías al día</div>
+            <div class="hst"><div class="hbox"><b>4</b><span>Coaches</span></div><div class="hbox" style="background:rgba(16,232,160,.07);border-color:rgba(16,232,160,.15)"><b style="color:var(--ok)">22</b><span>Clases/Sem</span></div></div>
+            <div class="qas"><span class="qab p">✓ Check-in</span><span class="qab p">+ Pago</span><span class="qab s">🎫 Visita</span><span class="qab p">+ Cliente</span></div>
+          </div>
+        </div>
+        <div class="alertA">⚠ <b style="font-weight:700">3 membresías vencen hoy</b> · 2 vencieron ayer sin renovar <span style="margin-left:auto;font-weight:800;cursor:pointer">Ver ahora</span></div>
+        <div class="kpi2">
+          <div class="pcard"><div class="plabel">Clientes Activos</div><div class="kv">148</div><div class="km">Membresías vigentes</div>
+            <svg class="spark" width="52" height="16" viewBox="0 0 52 16"><polyline points="0,12 9,10 18,11 27,8 36,9 45,5 52,6" fill="none" stroke="#00D4FF" stroke-width="1.5"/></svg></div>
+          <div class="pcard"><div class="plabel">Ingresos del Mes</div><div class="kv" style="color:var(--warn)">$84,300</div><div class="km">Pagos registrados</div>
+            <svg class="spark" width="52" height="16" viewBox="0 0 52 16"><polyline points="0,13 9,11 18,12 27,9 36,7 45,8 52,4" fill="none" stroke="#fbbf24" stroke-width="1.5"/></svg></div>
+        </div>
+        <div class="pcard">
+          <div class="ph"><span class="t">El Pulso — transacciones recientes</span><span class="lk">Ver todas →</span></div>
+          <div class="feedrow"><div class="fdot" style="background:rgba(16,232,160,.12)"><svg viewBox="0 0 24 24" stroke="#10e8a0"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></div><span><b style="color:var(--ptx)">Ana Torres</b> · Mensual CrossFit</span><span class="fam">+$650</span></div>
+          <div class="feedrow"><div class="fdot" style="background:rgba(0,212,255,.1)"><svg viewBox="0 0 24 24" stroke="#00D4FF"><polyline points="9 11 12 14 22 4"/></svg></div><span><b style="color:var(--ptx)">Luis Mena</b> · Check-in 17:42</span><span class="fam" style="color:var(--ptx3)">visita</span></div>
+          <div class="feedrow"><div class="fdot" style="background:rgba(167,139,250,.12)"><svg viewBox="0 0 24 24" stroke="#a78bfa"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6"/></svg></div><span><b style="color:var(--ptx)">Drop-in</b> · pase de día</span><span class="fam">+$120</span></div>
+          <div class="feedrow"><div class="fdot" style="background:rgba(16,232,160,.12)"><svg viewBox="0 0 24 24" stroke="#10e8a0"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14"/></svg></div><span><b style="color:var(--ptx)">Karla Ríos</b> · Renovación 3 meses</span><span class="fam">+$1,750</span></div>
+        </div>
+      </div>
+    </div></div>
+    <!-- PROPUESTA -->
+    <div class="frame prop t-gym" style="--fa:#00D4FF"><div class="flbl">PROPUESTA</div><div class="shell">
+      <div class="snav">
+        <div class="slogo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#00D4FF"/></svg><span class="st">VELUM</span></div>
+        <div class="vbadge">Gym · Performance</div>
+        <div class="ngrp">Hoy</div>
+        <div class="nit on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>El Pulso</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/></svg>Check-in<span class="cnt">62</span></div>
+        <div class="ngrp">Dinero</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Pagos<span class="cnt b-warn" style="color:var(--warn);background:rgba(251,191,36,.12)">9</span></div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14"/></svg>Domiciliados</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M20.6 13.4L13.4 20.6a2 2 0 01-2.8 0L2 12V2h10z"/></svg>Paquetes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>Gastos</div>
+        <div class="ngrp">Personas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Atletas<span class="cnt">148</span></div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/></svg>Coaches</div>
+        <div class="ngrp">Operación</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Horario</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Configuración</div>
+      </div>
+      <div class="smain">
+        <div class="cmdbarP">
+          <div class="gt"><div class="g1">Buenas tardes · Mié 2 Jul</div><div class="g2">Iron Temple</div></div>
+          <span class="st">Todo en orden</span>
+          <div class="qs">
+            <span class="qab p"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/></svg>Check-in</span>
+            <span class="qab p"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/></svg>Pago</span>
+            <span class="qab s"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6"/></svg>Visita</span>
+            <span class="qab p"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M19 8h4M21 6v4"/></svg>Cliente</span>
+          </div>
+        </div>
+        <div class="kpi4">
+          <div class="k"><div class="plabel">Activos</div><div class="kv">148</div><div class="kt up">▲ +6 este mes</div></div>
+          <div class="k"><div class="plabel">Ingresos del mes</div><div class="kv">$84.3k</div><div class="kt up">▲ 12% vs jun</div></div>
+          <div class="k"><div class="plabel">Check-ins hoy</div><div class="kv">62</div><div class="kt" style="color:var(--ptx3)">pico 18-20h</div></div>
+          <div class="k" style="border-color:rgba(251,191,36,.35)"><div class="plabel">Por vencer · 7d</div><div class="kv" style="color:var(--warn)">9</div><div class="kt warn">$5,850 en juego</div></div>
+        </div>
+        <div class="cols2">
+          <div class="pcard main2">
+            <div class="ph"><span class="t">El Pulso</span><span class="lk">Ver todas →</span></div>
+            <div class="feedrow"><div class="fdot" style="background:rgba(16,232,160,.12)"><svg viewBox="0 0 24 24" stroke="#10e8a0"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></div><span><b style="color:var(--ptx)">Ana Torres</b> renovó Mensual</span><span class="fam">+$650</span></div>
+            <div class="feedrow"><div class="fdot" style="background:rgba(0,212,255,.1)"><svg viewBox="0 0 24 24" stroke="#00D4FF"><polyline points="9 11 12 14 22 4"/></svg></div><span><b style="color:var(--ptx)">Luis Mena</b> entró · 17:42</span><span class="fam" style="color:var(--ptx3)">62º hoy</span></div>
+            <div class="feedrow"><div class="fdot" style="background:rgba(167,139,250,.12)"><svg viewBox="0 0 24 24" stroke="#a78bfa"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6"/></svg></div><span><b style="color:var(--ptx)">Drop-in</b> pase de día</span><span class="fam">+$120</span></div>
+            <div class="feedrow"><div class="fdot" style="background:rgba(16,232,160,.12)"><svg viewBox="0 0 24 24" stroke="#10e8a0"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14"/></svg></div><span><b style="color:var(--ptx)">Karla Ríos</b> renovó 3 meses</span><span class="fam">+$1,750</span></div>
+            <div class="feedrow"><div class="fdot" style="background:rgba(0,212,255,.1)"><svg viewBox="0 0 24 24" stroke="#00D4FF"><polyline points="9 11 12 14 22 4"/></svg></div><span><b style="color:var(--ptx)">Sofía H.</b> entró · 17:31</span><span class="fam" style="color:var(--ptx3)">61º hoy</span></div>
+          </div>
+          <div class="rail">
+            <div class="pcard">
+              <div class="ph"><span class="t">Requiere atención</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span><b style="color:var(--ptx)">3 vencen hoy</b> · cobra antes del cierre</span><span class="badge b-warn">Cobrar</span></div>
+              <div class="rrow"><span style="color:var(--danger)">●</span><span><b style="color:var(--ptx)">2 vencidos</b> ayer sin renovar</span><span class="badge b-dan">Llamar</span></div>
+            </div>
+            <div class="pcard">
+              <div class="ph"><span class="t">Hoy en el gym</span><span class="lk">Horario →</span></div>
+              <div class="rrow"><span class="glyph" style="font-family:var(--mono)">18:00</span><span>CrossFit · Coach Marco</span><span class="badge b-acc">14/16</span></div>
+              <div class="rrow"><span class="glyph" style="font-family:var(--mono)">19:00</span><span>Funcional · Coach Val</span><span class="badge b-acc">9/16</span></div>
+              <div class="rrow"><span class="glyph" style="font-family:var(--mono)">20:00</span><span>Box · Coach Andrés</span><span class="badge b-ok">6/12</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Visual — qué cambia</div><ul>
+      <li><b>El hero gigante (156px + orbes animados) se compacta a una barra de mando</b>: saludo + gym + estado + acciones en una franja. El espacio recuperado lo ocupan los datos.</li>
+      <li><b>De 2 KPIs a 4 accionables</b>, con tendencia (▲ +12%) y el de "Por vencer" con dinero en juego — el número que empuja a actuar.</li>
+      <li><b>El Pulso + rail derecho</b>: feed a la izquierda, "Requiere atención" y "Hoy en el gym" a la derecha. El alert strip amarillo de ancho completo desaparece: las urgencias viven en el rail con CTA.</li>
+      <li><b>Emojis fuera</b>: "🎫 Visita" y "⚠" del strip → SVG (regla de marca que el propio panel viola hoy).</li>
+      <li><b>Sidebar reorganizado por intención</b> (Hoy / Dinero / Personas / Operación) con badge de vertical y contadores vivos.</li>
+    </ul></div>
+    <div class="ncard"><div class="nh fx">Funcional — de la auditoría</div><ul>
+      <li><b>El core de gym está completo</b> (pagos, visitas, asistencia, renovaciones). Sin bloqueadores P0.</li>
+      <li><b>P1 · Churn por cohortes</b>: hay renovaciones pero no analítica de riesgo de salida ("atletas que dejaron de venir hace 10+ días"). ORÁCULO lo definiría.</li>
+      <li><b>P1 · Feed de accesos en vivo</b>: el kiosco registra, pero el dashboard no muestra "quién está entrando ahora".</li>
+      <li><b>P2 · ~48 cyans duros</b> (#00D4FF fijos) que no siguen `--accent` — deuda de theming ya detectada en la auditoría previa.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══════════════ STUDIOS ═══════════════ -->
+<section class="vrow" id="sec-stu">
+  <div class="vhead"><span class="sw" style="background:#C9A86A"></span><h2>2 · STUDIOS</h2><span class="vs">— boutique · champagne · serif editorial</span></div>
+  <div class="pair">
+    <!-- ACTUAL -->
+    <div class="frame actual t-stu"><div class="flbl">ACTUAL</div><div class="shell">
+      <div class="snav">
+        <div class="slogo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#C9A86A"/></svg><span class="st">VELUM</span></div>
+        <div class="ngrp">General</div>
+        <div class="nit on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
+        <div class="ngrp">Ventas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Pagos & Créditos</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6"/></svg>Drop-ins</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Clientes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M20.6 13.4L13.4 20.6a2 2 0 01-2.8 0L2 12V2h10z"/></svg>Paquetes</div>
+        <div class="ngrp">Operación</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Clases & Horario</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/></svg>Instructores</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/></svg>Reservas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>Gastos</div>
+      </div>
+      <div class="smain">
+        <div class="ph" style="margin:0"><span class="t" style="font-size:12px">Tu día en el studio</span><span style="font-size:7px;color:var(--ptx3)">3 clases hoy</span></div>
+        <div class="kpi4">
+          <div class="k"><div class="plabel">◷ Ocupación hoy</div><div class="kv">67<span style="font-size:8px;color:var(--ptx3)">%</span></div><div class="kt" style="color:var(--ptx3)">14 de 21 lugares</div></div>
+          <div class="k"><div class="plabel">▣ Reservas hoy</div><div class="kv">14</div><div class="kt" style="color:var(--ptx3)">en 3 clases</div></div>
+          <div class="k"><div class="plabel">⊘ No-shows · 7d</div><div class="kv">8<span style="font-size:8px;color:var(--ptx3)">%</span></div><div class="kt" style="color:var(--ptx3)">3 de 38 reservas</div></div>
+          <div class="k"><div class="plabel">⏳ Lista de espera</div><div class="kv">2</div><div class="kt" style="color:var(--ptx3)">esperando lugar hoy</div></div>
+        </div>
+        <div class="cols2">
+          <div class="pcard main2">
+            <div class="ph"><span class="t">▦ Clases de hoy</span><span class="lk">Ver horario →</span></div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">08:30</span><span><b style="color:var(--ptx)">Pilates Reformer</b> · Sophia</span><span style="display:flex;align-items:center;gap:4px;flex:0 0 74px"><span class="bar"><i style="width:75%"></i></span><span style="font-size:6.5px;color:var(--ptx3)">6/8</span></span></div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">10:00</span><span><b style="color:var(--ptx)">Yoga Flow</b> · Mariana</span><span style="display:flex;align-items:center;gap:4px;flex:0 0 74px"><span class="bar"><i style="width:100%"></i></span><span class="badge b-warn">LLENO +2</span></span></div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">18:30</span><span><b style="color:var(--ptx)">Barre</b> · Carlos</span><span style="display:flex;align-items:center;gap:4px;flex:0 0 74px"><span class="bar"><i style="width:0%"></i></span><span style="font-size:6.5px;color:var(--ptx3)">0/5</span></span></div>
+          </div>
+          <div class="rail">
+            <div class="pcard" style="text-align:center"><div class="plabel">◷ Ocupación del día</div><div style="font-size:22px;font-weight:800;margin:4px 0 2px">67%</div><div style="font-size:6.5px;color:var(--ptx3)">14 reservas · 21 lugares · 1 llena</div></div>
+            <div class="pcard">
+              <div class="ph"><span class="t">◈ Créditos por agotarse</span><span class="lk">Ver →</span></div>
+              <div class="rrow"><span style="color:var(--danger)">●</span><span><b style="color:var(--ptx)">María López</b></span><span class="badge b-dan">Sin créditos</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span><b style="color:var(--ptx)">Ana García</b></span><span class="badge b-warn">2 créditos</span></div>
+            </div>
+            <div class="pcard">
+              <div class="ph"><span class="t">⚑ Requiere atención</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span>1 clase con lista de espera</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <!-- PROPUESTA -->
+    <div class="frame prop t-stu" style="--fa:#C9A86A"><div class="flbl">PROPUESTA</div><div class="shell">
+      <div class="snav">
+        <div class="slogo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#C9A86A"/></svg><span class="st">VELUM</span></div>
+        <div class="vbadge">Studio · Boutique</div>
+        <div class="ngrp">Hoy</div>
+        <div class="nit on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Mi studio</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Clases & Reservas<span class="cnt">14</span></div>
+        <div class="ngrp">Dinero</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Pagos & Créditos<span class="cnt b-warn" style="color:var(--warn);background:rgba(251,191,36,.12)">2</span></div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M20.6 13.4L13.4 20.6a2 2 0 01-2.8 0L2 12V2h10z"/></svg>Paquetes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>Gastos</div>
+        <div class="ngrp">Personas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Clientes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/></svg>Instructores</div>
+        <div class="nit" style="margin-top:auto"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Configuración</div>
+      </div>
+      <div class="smain">
+        <div class="cmdbarP">
+          <div class="gt"><div class="g1">Miércoles 2 de julio</div><div class="g2">Casa Flow Pilates</div></div>
+          <span class="st" style="color:var(--pacc);background:color-mix(in srgb,var(--pacc) 12%,transparent)">3 clases hoy</span>
+          <div class="qs"><span class="qab p">+ Reserva</span><span class="qab p">+ Pago</span><span class="qab s" style="background:color-mix(in srgb,var(--pacc) 10%,transparent);color:var(--pacc);border-color:color-mix(in srgb,var(--pacc) 25%,transparent)">Abrir horario</span></div>
+        </div>
+        <div class="kpi4">
+          <div class="k" style="display:flex;gap:7px;align-items:center"><div class="ringy" style="--p:67"><b>67%</b></div><div><div class="plabel">Ocupación</div><div class="kt" style="color:var(--ptx3)">14 de 21 lugares</div></div></div>
+          <div class="k"><div class="plabel">Reservas hoy</div><div class="kv">14</div><div class="kt up">▲ mejor mié del mes</div></div>
+          <div class="k"><div class="plabel">No-shows · 7d</div><div class="kv">8%</div><div class="kt" style="color:var(--ptx3)">3 de 38</div></div>
+          <div class="k" style="border-color:color-mix(in srgb,var(--pacc) 35%,transparent)"><div class="plabel">Lista de espera</div><div class="kv" style="color:var(--pacc)">2</div><div class="kt" style="color:var(--pacc)">1 lugar por liberar</div></div>
+        </div>
+        <div class="cols2">
+          <div class="main2" style="display:flex;flex-direction:column;gap:7px">
+            <div class="pcard" style="border-left:2.5px solid var(--pacc)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="ringy" style="--p:75"><b>6/8</b></div>
+                <div style="flex:1"><div class="ph" style="margin:0"><span class="t">08:30 · Pilates Reformer</span><span class="badge b-ok">Abierta</span></div>
+                  <div style="font-size:7px;color:var(--ptx3);margin-top:1px">Sophia · 55 min</div>
+                  <div class="spots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+                </div>
+              </div>
+            </div>
+            <div class="pcard" style="border-left:2.5px solid var(--warn)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="ringy" style="--p:100;background:conic-gradient(var(--warn) 100%,rgba(255,255,255,.08) 0)"><b>8/8</b></div>
+                <div style="flex:1"><div class="ph" style="margin:0"><span class="t">10:00 · Yoga Flow</span><span class="badge b-warn">Llena · 2 en espera</span></div>
+                  <div style="font-size:7px;color:var(--ptx3);margin-top:1px">Mariana · 60 min · <b style="color:var(--pacc)">Promover de la lista →</b></div>
+                  <div class="spots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+                </div>
+              </div>
+            </div>
+            <div class="pcard" style="border-left:2.5px solid rgba(255,255,255,.12)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="ringy" style="--p:0"><b>0/5</b></div>
+                <div style="flex:1"><div class="ph" style="margin:0"><span class="t">18:30 · Barre</span><span class="badge" style="background:rgba(255,255,255,.07);color:var(--ptx3)">Sin reservas</span></div>
+                  <div style="font-size:7px;color:var(--ptx3);margin-top:1px">Carlos · 50 min · <b style="color:var(--pacc)">Avisar a clientes frecuentes →</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rail">
+            <div class="pcard">
+              <div class="ph"><span class="t">Semana</span><span class="lk">Calendario →</span></div>
+              <div style="display:flex;gap:3px;align-items:flex-end;height:30px">
+                <div style="flex:1;background:color-mix(in srgb,var(--pacc) 55%,transparent);height:60%;border-radius:3px 3px 0 0"></div>
+                <div style="flex:1;background:color-mix(in srgb,var(--pacc) 75%,transparent);height:82%;border-radius:3px 3px 0 0"></div>
+                <div style="flex:1;background:var(--pacc);height:67%;border-radius:3px 3px 0 0;box-shadow:0 0 8px color-mix(in srgb,var(--pacc) 50%,transparent)"></div>
+                <div style="flex:1;background:rgba(255,255,255,.1);height:40%;border-radius:3px 3px 0 0"></div>
+                <div style="flex:1;background:rgba(255,255,255,.1);height:74%;border-radius:3px 3px 0 0"></div>
+                <div style="flex:1;background:rgba(255,255,255,.1);height:30%;border-radius:3px 3px 0 0"></div>
+              </div>
+              <div style="display:flex;gap:3px;font-size:5.5px;color:var(--ptx3);text-align:center;margin-top:2px"><span style="flex:1">L</span><span style="flex:1">M</span><span style="flex:1;color:var(--pacc);font-weight:800">X</span><span style="flex:1">J</span><span style="flex:1">V</span><span style="flex:1">S</span></div>
+            </div>
+            <div class="pcard">
+              <div class="ph"><span class="t">Créditos por agotarse</span><span class="lk">Ver →</span></div>
+              <div class="rrow"><span style="color:var(--danger)">●</span><span><b style="color:var(--ptx)">María López</b></span><span class="badge b-acc">Renovar</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span><b style="color:var(--ptx)">Ana García</b> · 2</span><span class="badge b-acc">Recordar</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Visual — qué cambia</div><ul>
+      <li><b>Las clases se vuelven tarjetas con anillo de ocupación y mapa de spots</b> (los puntitos = reformers) — el dato que el dueño boutique mira 20 veces al día, visible sin abrir la clase.</li>
+      <li><b>Cada estado sugiere una acción</b>: llena → "Promover de la lista"; vacía → "Avisar a clientes frecuentes". El dashboard vende, no solo informa.</li>
+      <li><b>Mini-gráfica de la semana</b> en el rail: ocupación por día de un vistazo, con hoy resaltado.</li>
+      <li><b>Glifos de texto (◷ ▣ ⊘ ⏳ ⚑ ◈) → SVG</b>: el ⏳ es literalmente un emoji; en boutique el detalle tipográfico importa doble.</li>
+      <li><b>Créditos por agotarse con CTA directo</b> ("Renovar" / "Recordar") en champagne — cada fila es dinero recuperable.</li>
+    </ul></div>
+    <div class="ncard"><div class="nh fx">Funcional — de la auditoría</div><ul>
+      <li><b>El core boutique está completo y es sorprendentemente profundo</b>: waitlist con promoción, mapa de spots asignables, créditos, calendario semanal bespoke. Sin P0.</li>
+      <li><b>P1 · Check-in de reserva</b>: se registra la reserva pero no hay botón "Llegó" — el no-show se infiere, no se confirma. (~3h de trabajo.)</li>
+      <li><b>P2 · No-show automático</b>: regla "si no llegó a los 15 min → no-show" (hoy manual).</li>
+      <li><b>P2 · Nómina por clase</b>: instructores cobran por clase impartida y no hay desglose.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══════════════ RECOVERY ═══════════════ -->
+<section class="vrow" id="sec-rec">
+  <div class="vhead"><span class="sw" style="background:#5EC8B0"></span><h2>3 · RECOVERY</h2><span class="vs">— wellness · salvia · calma clínica</span></div>
+  <div class="pair">
+    <!-- ACTUAL -->
+    <div class="frame actual t-rec"><div class="flbl">ACTUAL</div><div class="shell">
+      <div class="snav">
+        <div class="slogo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#5EC8B0"/></svg><span class="st">VELUM</span></div>
+        <div class="ngrp">General</div>
+        <div class="nit on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
+        <div class="ngrp">Ventas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Pagos & Paquetes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Clientes</div>
+        <div class="ngrp">Operación</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Citas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M12 7V3"/></svg>Recursos</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>Protocolos</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/></svg>Terapeutas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>Gastos</div>
+      </div>
+      <div class="smain">
+        <div class="kpi4">
+          <div class="k"><div class="plabel">▦ Citas de hoy</div><div class="kv">5</div><div class="kt" style="color:var(--ptx3)">2 completadas · 3 por venir</div></div>
+          <div class="k"><div class="plabel">◷ Ocupación recursos</div><div class="kv">42<span style="font-size:8px;color:var(--ptx3)">%</span></div><div class="kt" style="color:var(--ptx3)">3 recursos activos</div></div>
+          <div class="k"><div class="plabel">⊘ No-shows hoy</div><div class="kv">0<span style="font-size:8px;color:var(--ptx3)">%</span></div><div class="kt" style="color:var(--ptx3)">0 de 5 citas</div></div>
+          <div class="k"><div class="plabel">❋ Protocolos</div><div class="kv">8</div><div class="kt" style="color:var(--ptx3)">plantillas de sesión</div></div>
+        </div>
+        <div class="cols2">
+          <div class="pcard main2">
+            <div class="ph"><span class="t">▦ Agenda de hoy</span><span class="lk">Ver por recurso →</span></div>
+            <div style="font-size:6.5px;color:var(--ptx3);text-transform:uppercase;letter-spacing:1px;padding:2px 0 4px">Por venir · 3</div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">09:30</span><span><b style="color:var(--ptx)">María López</b> · 30 min · Sauna · Relajación</span><span class="badge" style="background:rgba(255,255,255,.07);color:var(--ptx3)">Agendada</span></div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">10:30</span><span><b style="color:var(--ptx)">Carlos Sánchez</b> · 20 min · Masaje · Recuperación</span><span class="badge" style="background:rgba(255,255,255,.07);color:var(--ptx3)">Agendada</span></div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">11:15</span><span><b style="color:var(--ptx)">Ana García</b> · 25 min · Fisio · Lesión lumbar</span><span class="badge" style="background:rgba(255,255,255,.07);color:var(--ptx3)">Agendada</span></div>
+            <div style="font-size:6.5px;color:var(--ptx3);text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px">Atendidas</div>
+            <div class="rrow"><span class="glyph" style="font-family:var(--mono)">08:00</span><span><b style="color:var(--ptx)">Juan Pérez</b> · 15 min · Crioterapia · Post-entreno</span><span class="badge b-ok">Completada</span></div>
+          </div>
+          <div class="rail">
+            <div class="pcard">
+              <div class="ph"><span class="t">◇ Estado de recursos</span><span class="lk">Agregar →</span></div>
+              <div class="rrow"><span>Sauna</span><span class="badge b-warn">Ocupado</span></div>
+              <div class="rrow"><span>Masaje</span><span class="badge b-ok">Libre</span></div>
+              <div class="rrow"><span>Fisio</span><span class="badge b-ok">Libre</span></div>
+            </div>
+            <div class="pcard">
+              <div class="ph"><span class="t">◈ Saldos de sesiones</span><span class="lk">Ver →</span></div>
+              <div class="rrow"><span style="color:var(--danger)">●</span><span><b style="color:var(--ptx)">Paula Ramírez</b></span><span class="badge b-dan">Agotado</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span><b style="color:var(--ptx)">Elena Díaz</b></span><span class="badge b-warn">2 sesiones</span></div>
+            </div>
+            <div class="pcard"><div class="ph"><span class="t">⚑ Requiere atención</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span>3 citas por venir hoy</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <!-- PROPUESTA -->
+    <div class="frame prop t-rec" style="--fa:#5EC8B0"><div class="flbl">PROPUESTA</div><div class="shell">
+      <div class="snav">
+        <div class="slogo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#5EC8B0"/></svg><span class="st">VELUM</span></div>
+        <div class="vbadge">Recovery · Wellness</div>
+        <div class="ngrp">Hoy</div>
+        <div class="nit on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Mi centro</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Agenda<span class="cnt">5</span></div>
+        <div class="ngrp">Dinero</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Pagos & Paquetes<span class="cnt b-warn" style="color:var(--warn);background:rgba(251,191,36,.12)">2</span></div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>Gastos</div>
+        <div class="ngrp">Personas</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Clientes</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/></svg>Terapeutas</div>
+        <div class="ngrp">Servicio</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M12 7V3"/></svg>Recursos</div>
+        <div class="nit"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>Protocolos</div>
+      </div>
+      <div class="smain">
+        <div class="cmdbarP">
+          <div class="gt"><div class="g1">Miércoles 2 de julio</div><div class="g2">Ritual Recovery</div></div>
+          <span class="st">Día tranquilo · 5 citas</span>
+          <div class="qs"><span class="qab p">+ Cita</span><span class="qab p">+ Pago</span><span class="qab s" style="background:color-mix(in srgb,var(--pacc) 10%,transparent);color:var(--pacc);border-color:color-mix(in srgb,var(--pacc) 25%,transparent)">Cobrar sesión</span></div>
+        </div>
+        <div class="kpi4">
+          <div class="k"><div class="plabel">Citas hoy</div><div class="kv">5</div><div class="kt" style="color:var(--ptx3)">2 hechas · 3 por venir</div></div>
+          <div class="k" style="display:flex;gap:7px;align-items:center"><div class="ringy" style="--p:42"><b>42%</b></div><div><div class="plabel">Recursos</div><div class="kt" style="color:var(--ptx3)">3 activos</div></div></div>
+          <div class="k"><div class="plabel">No-shows</div><div class="kv" style="color:var(--ok)">0</div><div class="kt up">semana limpia</div></div>
+          <div class="k" style="border-color:rgba(251,191,36,.35)"><div class="plabel">Por renovar</div><div class="kv" style="color:var(--warn)">2</div><div class="kt warn">Paula · Elena</div></div>
+        </div>
+        <div class="cols2">
+          <div class="pcard main2">
+            <div class="ph"><span class="t">Agenda por recurso</span><span class="lk">Día completo →</span></div>
+            <div class="tgrid">
+              <div></div><div class="thead">Crioterapia</div><div class="thead">Sauna</div><div class="thead">Camilla 1</div>
+              <div class="thr">08:00</div><div class="appt done"><b>Juan Pérez</b>Post-entreno · 15'</div><div class="tcell"></div><div class="tcell"></div>
+              <div class="thr">09:30</div><div class="tcell"></div><div class="appt"><b>María López</b>Relajación · 30'</div><div class="tcell"></div>
+              <div class="thr">10:30</div><div class="tcell"></div><div class="tcell"></div><div class="appt"><b>Carlos S.</b>Recuperación · 20'</div>
+              <div class="thr">11:15</div><div class="tcell"></div><div class="tcell"></div><div class="appt"><b>Ana García</b>Lesión lumbar · 25' <span style="color:var(--warn);font-weight:800">· saldo 1</span></div>
+              <div class="nowline"></div>
+            </div>
+          </div>
+          <div class="rail">
+            <div class="pcard">
+              <div class="ph"><span class="t">Siguiente cita · 09:30</span></div>
+              <div style="font-size:8.5px;color:var(--ptx)"><b>María López</b> · Sauna · Relajación</div>
+              <div style="font-size:7px;color:var(--ptx3);margin-top:2px">Paquete: <b style="color:var(--pacc)">6 sesiones restantes</b> · 4ª visita del mes</div>
+              <div style="display:flex;gap:4px;margin-top:6px"><span class="qab p" style="font-size:6.5px">Llegó</span><span class="qab s" style="font-size:6.5px;background:rgba(248,113,113,.1);color:var(--danger);border-color:rgba(248,113,113,.25)">No-show</span></div>
+            </div>
+            <div class="pcard">
+              <div class="ph"><span class="t">Por renovar</span><span class="lk">Ver →</span></div>
+              <div class="rrow"><span style="color:var(--danger)">●</span><span><b style="color:var(--ptx)">Paula Ramírez</b> · agotado</span><span class="badge b-acc">Agendar + cobrar</span></div>
+              <div class="rrow"><span style="color:var(--warn)">●</span><span><b style="color:var(--ptx)">Elena Díaz</b> · 2 sesiones</span><span class="badge b-acc">Recordar</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Visual — qué cambia</div><ul>
+      <li><b>La agenda pasa de lista a grid temporal por recurso</b> (columnas = Crioterapia / Sauna / Camilla) con la línea de "ahora" — el dueño ve huecos y empalmes de un vistazo, como un quirófano bien llevado.</li>
+      <li><b>Tarjeta "Siguiente cita" con el saldo del cliente visible</b> y botones Llegó / No-show — une tres fricciones de la auditoría en un solo lugar.</li>
+      <li><b>El saldo aparece EN la cita</b> ("Ana García · saldo 1" en ámbar): la oportunidad de renovación se ve en el momento exacto en que la clienta está en el local.</li>
+      <li><b>KPI "Por renovar" reemplaza al de "Protocolos"</b> (un conteo de plantillas no es un KPI de negocio; dinero por renovar sí).</li>
+      <li><b>Serif + salvia + más aire</b>: calma clínica premium, sin glifos de texto (❋ ◇ ⊘ → SVG).</li>
+    </ul></div>
+    <div class="ncard"><div class="nh fx">Funcional — de la auditoría</div><ul>
+      <li><b>El core wellness está completo</b>: citas con grid por recurso, recursos CRUD, protocolos, paquetes de sesiones. Sin P0.</li>
+      <li><b>P1 · Saldo de sesiones en la cita</b> (~2h): hoy solo se ve en el dashboard, no al agendar/atender. El mockup ya lo integra.</li>
+      <li><b>P1 · Bitácora del cliente</b>: historial de sesiones + notas de progreso en la ficha (fisio lo necesita para dar continuidad).</li>
+      <li><b>P2 · Protocolos con pasos estructurados</b> (duración por paso) y <b>P2 · intake forms</b> (contraindicaciones) — hoy texto libre/manual.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══════════════ Sistema ═══════════════ -->
+<div class="sys">
+  <h2>Mejoras de sistema (las 3 verticales)</h2>
+  <div class="grid">
+    <div class="g"><div class="t">El sidebar dice quién eres</div><div class="d">Badge de vertical bajo el logo (Gym · Performance / Studio · Boutique / Recovery · Wellness) y grupos por intención (Hoy / Dinero / Personas / Operación) en vez de la taxonomía interna (Ventas/Marketing). Contadores vivos en los items que piden acción.</div></div>
+    <div class="g"><div class="t">Glifos y emojis → SVG</div><div class="d">El panel viola su propia regla: 🎫 en el hero, ⚠ en alertas, ⏳❄️🧖♾️ en widgets, y glifos tipográficos (◷▣⊘◈⚑❋) como íconos. Un solo set SVG (el mismo de la app del atleta) para que las 3 apps se sientan UNA marca.</div></div>
+    <div class="g"><div class="t">KPIs que empujan a actuar</div><div class="d">Regla: todo KPI lleva tendencia o consecuencia ("9 por vencer · $5,850 en juego"), y los ceros se celebran ("semana limpia") en vez de mostrarse como dato muerto. Anillos de ocupación en studios/recovery.</div></div>
+    <div class="g"><div class="t">Urgencias con CTA, no banners</div><div class="d">El alert strip de ancho completo se sustituye por el rail "Requiere atención" donde cada alerta trae su acción (Cobrar / Llamar / Promover / Recordar). Menos ruido, más conversión.</div></div>
+    <div class="g"><div class="t">Deuda de theming</div><div class="d">~48 #00D4FF duros que no siguen --accent (detectados en la auditoría previa). Barrido único para que studios/recovery no tengan destellos cyan fuera de lugar.</div></div>
+    <div class="g"><div class="t">App del atleta: default por vertical</div><div class="d">La app ya toma el color configurado del gym y el vocabulario de recovery. Falta el fallback: si el gym no configuró color, caer al acento de su vertical (champagne/salvia) en lugar de cyan. Cambio pequeño, coherencia total.</div></div>
+  </div>
+</div>
+
+</body>
+</html>

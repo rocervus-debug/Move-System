@@ -206,6 +206,10 @@ body.view-oficina .office{display:flex;}
 .td-bar{height:6px;border-radius:99px;background:rgba(120,190,220,.12);overflow:hidden;margin-top:5px;}
 .td-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--ok));transition:width .4s;}
 .td-empty{color:var(--text3);font-size:12px;line-height:1.6;padding-top:8px;}
+/* Orden de trabajo (puente Studio → Claude Code) */
+.wo-btn{font-family:var(--font);font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:7px;padding:4px 9px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.wo-btn:hover{background:rgba(0,212,255,.16);}
+.wo-btn.sb{text-transform:none;letter-spacing:.2px;font-size:10px;padding:2px 9px;}
 /* Status bar */
 .statusbar{flex:0 0 26px;display:flex;align-items:center;gap:16px;padding:0 14px;font-size:10.5px;color:var(--text3);border-top:1px solid var(--line);background:var(--bg2);font-family:var(--mono);}
 .statusbar .sb-con{display:flex;align-items:center;gap:6px;color:var(--text2);}
@@ -292,7 +296,7 @@ body.view-oficina .office{display:flex;}
       <div id="tasks"><div class="mp-empty">Las tareas aparecen aquí cuando el equipo arma el plan.</div></div>
     </div>
     <div class="mp-sec">
-      <div class="mp-h">Decisiones</div>
+      <div class="mp-h"><span>Decisiones</span><button class="wo-btn" id="woBtn1" title="Copia el plan como brief para ejecutarlo en Claude Code bajo VELUM-OS">Exportar orden</button></div>
       <div id="decisions"><div class="mp-empty">—</div></div>
     </div>
   </div>
@@ -346,6 +350,7 @@ body.view-oficina .office{display:flex;}
     <span class="sb-con"><span class="dot"></span> VELUM: Conectado</span>
     <span id="offCaption">Sin misión activa</span>
     <span class="sp"></span>
+    <button class="wo-btn sb" id="woBtn2" title="Copia el plan como brief para ejecutarlo en Claude Code bajo VELUM-OS">Exportar orden de trabajo</button>
     <span id="sbMode">·</span>
   </div>
 </div>
@@ -705,6 +710,47 @@ new MutationObserver(()=>{document.getElementById('offSend').disabled=document.g
 // ⌘K → enfoca la command palette (abre la Oficina si hace falta)
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();
   if(!document.body.classList.contains('view-oficina'))document.querySelector('.vtab[data-view=oficina]').click();offInp.focus();}});
+// ── Orden de trabajo: puente Studio → Claude Code (VELUM-OS). Solo lee estado existente. ──
+function buildWorkOrder(){
+  const goalEl=document.getElementById('mGoal');
+  const mission=goalEl.classList.contains('none')?'':goalEl.textContent.trim();
+  if(!mission||!tasks.length)return null;
+  const L=[];
+  L.push('# ORDEN DE TRABAJO — VELUM Studio');
+  L.push('');
+  L.push('**Misión**: '+mission);
+  L.push('**Motor**: '+(STUDIO.endpoint?'IA real':'Demo')+' · **Hora**: '+now());
+  L.push('');
+  L.push('## Plan del equipo ('+tasks.length+' tareas)');
+  tasks.forEach((t,i)=>{const a=byId(t.agent);L.push((i+1)+'. **'+a.name+'** ('+a.pod+') — '+t.text);});
+  L.push('');
+  L.push('## Decisiones acordadas');
+  (decisionsCache.length?decisionsCache:['(sin decisiones registradas)']).forEach(d=>L.push('- '+d));
+  L.push('');
+  L.push('## Instrucciones de ejecución (VELUM-OS)');
+  L.push('Trata este brief como INTENT + PLAN del pipeline. Antes de construir, pásalo por el');
+  L.push('gate `/spec` (criterios de aceptación, riesgos, preguntas) y espera mi "va".');
+  L.push('Nada a producción sin VERIFY (CENTINELA/ESCUDO/code-review) ni sin mi OK.');
+  L.push('Reglas duras: `CLAUDE.md`. Al terminar: RECORD en memoria y ofrecer git push.');
+  return L.join('\n');
+}
+async function exportWorkOrder(btn){
+  const md=buildWorkOrder();
+  if(!md){alert('Aún no hay un plan que exportar — dale una misión al equipo primero.');return;}
+  let ok=false;
+  try{await navigator.clipboard.writeText(md);ok=true;}
+  catch(e){
+    try{const ta=document.createElement('textarea');ta.value=md;document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove();}catch(e2){}
+  }
+  if(!ok){ // último recurso: descarga como .md
+    const blob=new Blob([md],{type:'text/markdown'});const u=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=u;a.download='orden-de-trabajo-velum.md';a.click();URL.revokeObjectURL(u);
+  }
+  if(btn){const t=btn.textContent;btn.textContent=ok?'Copiada — pégala en Claude Code':'Descargada (.md)';setTimeout(()=>{btn.textContent=t;},2600);}
+}
+document.getElementById('woBtn1').onclick=e=>exportWorkOrder(e.target);
+document.getElementById('woBtn2').onclick=e=>exportWorkOrder(e.target);
+
 // Estado inicial del terminal + status bar
 document.getElementById('sbMode').textContent=STUDIO.endpoint?'IA real':'Modo Demo';
 logRender();

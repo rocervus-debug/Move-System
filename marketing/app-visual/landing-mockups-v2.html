@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VELUM Landing — Propuesta v2 (VITRINA+TRAZO)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#04101a; --card:#0a1c29; --line:rgba(120,200,230,.12); --line2:rgba(120,200,230,.2);
+  --text:#EAF2F7; --text2:#8FB4C4; --text3:#4A6B7C;
+  --cy:#00D4FF; --cy2:#5FE6FF; --ok:#10e8a0; --warn:#fbbf24;
+  --stu:#C9A86A; --rec:#5EC8B0;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; --mono:'SF Mono',ui-monospace,Menlo,monospace;
+}
+body{font-family:var(--font);background:#020a10;color:var(--text);-webkit-font-smoothing:antialiased;padding:26px 20px 60px;}
+.pagehead{max-width:1520px;margin:0 auto 6px;}
+.pagehead h1{font-size:21px;font-weight:800;}
+.pagehead p{font-size:12.5px;color:var(--text2);margin-top:5px;max-width:920px;line-height:1.6;}
+.vrow{max-width:1520px;margin:36px auto 0;}
+.vhead{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.vhead .sw{width:12px;height:12px;border-radius:4px;background:var(--cy);}
+.vhead h2{font-size:16px;font-weight:800;}
+.vhead .vs{font-size:11px;color:var(--text3);}
+.pair{display:flex;gap:18px;align-items:stretch;}
+.frame{flex:1;min-width:0;border-radius:14px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 22px 54px rgba(0,0,0,.55);position:relative;background:#050f16;}
+.frame .flbl{position:absolute;top:7px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;letter-spacing:1.4px;padding:3px 11px;border-radius:99px;z-index:9;}
+.frame.actual .flbl{background:rgba(255,255,255,.09);color:#9db4c4;}
+.frame.prop .flbl{background:rgba(0,212,255,.16);color:var(--cy);box-shadow:0 0 12px rgba(0,212,255,.3);}
+.web{min-height:430px;font-size:10px;padding-top:22px;}
+.notes{max-width:1520px;margin:14px auto 0;display:flex;gap:16px;}
+.ncard{flex:1;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 16px;}
+.ncard .nh{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--cy2);margin-bottom:9px;}
+.ncard ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.ncard li{font-size:12px;color:var(--text2);line-height:1.55;padding-left:15px;position:relative;}
+.ncard li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:2px;background:var(--cy);}
+.ncard li b{color:var(--text);}
+/* nav de la landing */
+.lnav{display:flex;align-items:center;gap:13px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:#03130f;}
+.lnav .logo{display:flex;align-items:center;gap:6px;font-weight:800;letter-spacing:2.5px;font-size:11px;}
+.lnav .lk{font-size:8.5px;color:var(--text2);}
+.lnav .sp{flex:1;}
+.demochip{display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:700;border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:3px 8px;color:var(--cy2);}
+.navbtn-act{font-size:8.5px;font-weight:700;border-radius:8px;padding:4px 10px;background:rgba(120,225,255,.16);color:rgba(150,225,250,.35);}
+.navbtn-prop{font-size:8.5px;font-weight:800;border-radius:8px;padding:4px 11px;background:linear-gradient(135deg,#5FE6FF,#00b7e0);color:#04252e;box-shadow:0 0 14px rgba(0,212,255,.35);}
+/* hero */
+.hero{padding:26px 20px 20px;text-align:center;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(0,212,255,.06),transparent 65%);}
+.hbadge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:6.5px;letter-spacing:1.6px;color:var(--cy2);border:1px solid rgba(0,212,255,.3);border-radius:99px;padding:4px 11px;text-transform:uppercase;}
+.h1{font-size:26px;font-weight:900;line-height:1.06;margin-top:12px;letter-spacing:-.5px;}
+.h1 .c{color:#54d9ff;}
+.hsub{font-size:9.5px;color:var(--text2);margin-top:9px;line-height:1.55;}
+.hsub b{color:var(--text);}
+.ctas{display:flex;gap:8px;justify-content:center;margin-top:13px;}
+.cta1{font-size:9.5px;font-weight:800;border-radius:10px;padding:8px 14px;background:linear-gradient(135deg,#5FE6FF,#00b7e0);color:#04252e;box-shadow:0 0 22px rgba(0,212,255,.3);}
+.cta2{font-size:9.5px;font-weight:700;border-radius:10px;padding:8px 14px;border:1px solid rgba(255,255,255,.2);color:var(--text);}
+.micro{font-size:7.5px;color:var(--text3);margin-top:8px;}
+.proofbar{display:flex;gap:14px;justify-content:center;margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.05);}
+.proof{text-align:center;}
+.proof b{font-size:11px;font-weight:800;color:var(--cy2);display:block;}
+.proof span{font-size:6.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;}
+.trustchips{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+.tchip{display:flex;align-items:center;gap:4px;font-size:7.5px;font-weight:600;color:var(--text2);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:4px 9px;}
+.tchip svg{width:8px;height:8px;stroke:var(--ok);stroke-width:2.5;fill:none;}
+/* verticales */
+.vertgrid{display:flex;gap:9px;padding:16px;}
+.vcard{flex:1;border-radius:13px;padding:13px 12px;background:var(--card);border:1px solid var(--line);border-top:2.5px solid var(--vc);}
+.vcard .vt{font-size:11px;font-weight:800;color:var(--vc);}
+.vcard .vd{font-size:8.5px;color:var(--text2);line-height:1.5;margin-top:5px;}
+.vcard .vf{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.vcard .vf span{font-size:7.5px;color:var(--text3);display:flex;gap:5px;align-items:center;}
+.vcard .vf svg{width:7px;height:7px;stroke:var(--vc);stroke-width:2.6;fill:none;flex:0 0 auto;}
+.vcard .vlink{display:inline-block;margin-top:9px;font-size:8px;font-weight:700;color:var(--vc);}
+/* phone frames (mobile) */
+.phone{width:250px;flex:0 0 250px;border-radius:26px;background:var(--bg);border:1px solid var(--line2);box-shadow:0 22px 54px rgba(0,0,0,.55);overflow:hidden;position:relative;}
+.phone .flbl{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:800;letter-spacing:1.2px;padding:2px 9px;border-radius:99px;z-index:9;}
+.phone.actual .flbl{background:rgba(255,255,255,.09);color:#9db4c4;}
+.phone.prop .flbl{background:rgba(0,212,255,.16);color:var(--cy);}
+.pscr{padding:26px 13px 12px;min-height:430px;display:flex;flex-direction:column;position:relative;font-size:9px;}
+.stickycta{position:absolute;bottom:0;left:0;right:0;background:rgba(3,16,22,.96);border-top:1px solid rgba(0,212,255,.25);padding:8px 10px;display:flex;gap:7px;align-items:center;backdrop-filter:blur(6px);}
+.stickycta .p{font-size:8px;color:var(--text2);line-height:1.3;}
+.stickycta .p b{color:var(--text);display:block;font-size:9px;}
+.stickycta .go{margin-left:auto;font-size:8.5px;font-weight:800;border-radius:9px;padding:7px 12px;background:linear-gradient(135deg,#5FE6FF,#00b7e0);color:#04252e;white-space:nowrap;}
+/* footer */
+.foot-act{padding:18px 16px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.foot-act .lg{font-weight:800;letter-spacing:2px;font-size:10px;}
+.foot-act .l{font-size:7.5px;color:var(--text3);}
+.foot-prop{padding:16px;border-top:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1.3fr 1fr 1fr 1.2fr;gap:14px;}
+.fcol .ft{font-size:7px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);margin-bottom:7px;}
+.fcol a{display:block;font-size:8px;color:var(--text2);margin-bottom:4px;}
+.fcol .desc{font-size:8px;color:var(--text2);line-height:1.55;}
+.fbadges{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+.fbadge{font-size:6.5px;font-weight:700;color:var(--text2);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:3px 7px;display:flex;gap:4px;align-items:center;}
+.fbadge svg{width:7px;height:7px;stroke:var(--ok);stroke-width:2.4;fill:none;}
+.legalrow{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.05);padding-top:9px;display:flex;gap:12px;font-size:7px;color:var(--text3);}
+svg{display:inline-block;vertical-align:-1px;}
+.sys{max-width:1520px;margin:44px auto 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;}
+.sys h2{font-size:15px;font-weight:800;margin-bottom:4px;}
+.sys .sub{font-size:12px;color:var(--text2);margin-bottom:14px;}
+.sys .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.sys .g{background:#061621;border:1px solid var(--line);border-radius:12px;padding:13px;}
+.sys .g .t{font-size:12px;font-weight:800;color:var(--cy2);margin-bottom:5px;}
+.sys .g .t .pz{font-size:8px;font-weight:800;border-radius:5px;padding:2px 6px;margin-right:6px;vertical-align:1px;}
+.p0{background:rgba(248,113,113,.15);color:#f87171;} .p1{background:rgba(251,191,36,.15);color:var(--warn);}
+.sys .g .d{font-size:11.5px;color:var(--text2);line-height:1.6;}
+@media(max-width:1150px){.pair{flex-direction:column;}.notes{flex-direction:column;}.phone{width:100%;}}
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <h1>VELUM Landing — Propuesta visual v2</h1>
+  <p>Lo que cambia a la vista, <b style="color:#9db4c4">ACTUAL</b> vs <b style="color:var(--cy)">PROPUESTA</b>. Los fixes invisibles (sitemap, JSON-LD, GA4, WhatsApp del 404, favicon) van listados al final — no necesitan mockup pero entran en el mismo paquete.</p>
+</div>
+
+<!-- ═══ 1. NAV + HERO ═══ -->
+<section class="vrow">
+  <div class="vhead"><span class="sw"></span><h2>1 · Nav + Hero</h2><span class="vs">— primera impresión y confianza</span></div>
+  <div class="pair">
+    <div class="frame actual"><div class="flbl">ACTUAL</div><div class="web">
+      <div class="lnav">
+        <div class="logo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#00D4FF"/></svg>VELUM</div>
+        <div class="sp"></div>
+        <span class="lk">Funciones</span><span class="lk">¿Por qué VELUM?</span>
+        <span class="demochip">⚡ Demo IA</span>
+        <span class="lk">Precios</span><span class="lk">FAQ</span><span class="lk">Iniciar sesión</span>
+        <span class="navbtn-act">Ver planes →</span>
+      </div>
+      <div class="hero">
+        <span class="hbadge">✦ El sistema que los gyms serios ya usan</span>
+        <div class="h1">Tu gym corre solo.<br><span class="c">Tú, a entrenar gente.</span></div>
+        <div class="hsub"><b>Excel para los pagos. WhatsApp para cobrar. Papel para el check-in.</b><br>VELUM pone todo eso en piloto automático — con app para tus atletas y una IA que conoce tu operación.</div>
+        <div class="ctas"><span class="cta1">Empieza con Max — $999/mes →</span><span class="cta2">Plan Pro desde $599/mes</span></div>
+        <div class="micro">Sin instalación · Configurado en minutos · Cancela cuando quieras</div>
+        <div class="proofbar">
+          <div class="proof"><b>&lt;10 min</b><span>Setup</span></div>
+          <div class="proof"><b>iOS+Android</b><span>App atletas</span></div>
+          <div class="proof"><b>0</b><span>Excel</span></div>
+          <div class="proof"><b>Multi-gym</b><span>Sucursales</span></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="frame prop"><div class="flbl">PROPUESTA</div><div class="web">
+      <div class="lnav">
+        <div class="logo"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#00D4FF"/></svg>VELUM</div>
+        <div class="sp"></div>
+        <span class="lk">Funciones</span><span class="lk">¿Por qué VELUM?</span>
+        <span class="demochip"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Demo IA</span>
+        <span class="lk">Precios</span><span class="lk">FAQ</span><span class="lk">Iniciar sesión</span>
+        <span class="navbtn-prop">Prueba 7 días gratis →</span>
+      </div>
+      <div class="hero">
+        <span class="hbadge"><svg width="7" height="7" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#5FE6FF"/></svg> Para gyms, estudios boutique y centros de recovery</span>
+        <div class="h1">Tu gym corre solo.<br><span class="c">Tú, a entrenar gente.</span></div>
+        <div class="hsub"><b>Excel para los pagos. WhatsApp para cobrar. Papel para el check-in.</b><br>VELUM pone todo eso en piloto automático — con app para tus atletas y una IA que conoce tu operación.</div>
+        <div class="ctas"><span class="cta1">Prueba 7 días gratis →</span><span class="cta2">Ver precios</span></div>
+        <div class="micro">Sin tarjeta los primeros 7 días · Sin contrato anual · Configurado en &lt;10 min</div>
+        <div class="trustchips">
+          <span class="tchip"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pagos con Stripe</span>
+          <span class="tchip"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Hecho en México</span>
+          <span class="tchip"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Soporte por WhatsApp</span>
+          <span class="tchip"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Tus datos son tuyos</span>
+        </div>
+        <div class="proofbar">
+          <div class="proof"><b>&lt;10 min</b><span>Setup</span></div>
+          <div class="proof"><b>iOS+Android</b><span>App atletas</span></div>
+          <div class="proof"><b>3 giros</b><span>Gym·Studio·Recovery</span></div>
+          <div class="proof"><b>Multi-gym</b><span>Sucursales</span></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Qué cambia</div><ul>
+      <li><b>El botón del nav por fin se ve</b> — hoy "Ver planes" está tan lavado que parece deshabilitado (lo viste en la captura). Pasa a sólido cyan y cambia el copy a <b>"Prueba 7 días gratis →"</b>: el trial es tu mejor gancho y hoy no aparece hasta abajo.</li>
+      <li><b>CTA del hero orientado a riesgo-cero</b>: "Empieza con Max — $999/mes" pide compromiso de precio en el primer contacto; "Prueba 7 días gratis" convierte más y el plan se elige en el registro (el funnel ya lo soporta con ?plan=).</li>
+      <li><b>⚡ y ✦ fuera</b>: rayo SVG en Demo IA; la estrella del badge pasa a tu logo SVG (36 emojis en total se van de la landing).</li>
+      <li><b>Chips de confianza</b> bajo el CTA (Stripe · Hecho en México · Soporte WhatsApp · Tus datos son tuyos) — confianza honesta sin inventar números.</li>
+      <li><b>El badge ahora nombra los 3 giros</b> — primer paso del SEO de verticales.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══ 2. SECCIÓN VERTICALES (NUEVA) ═══ -->
+<section class="vrow">
+  <div class="vhead"><span class="sw" style="background:linear-gradient(90deg,#00D4FF,#C9A86A,#5EC8B0)"></span><h2>2 · Sección "Para tu tipo de negocio"</h2><span class="vs">— NUEVA · no existe hoy</span></div>
+  <div class="pair">
+    <div class="frame actual"><div class="flbl">ACTUAL</div><div class="web" style="display:flex;align-items:center;justify-content:center;min-height:300px;">
+      <div style="text-align:center;color:var(--text3);font-size:11px;max-width:340px;line-height:1.7;">La landing solo habla de "gym".<br>Un dueño de estudio de pilates o de un centro de crioterapia <b style="color:var(--text2)">no se ve reflejado</b> — y Google no te encuentra para "software para estudio de pilates" o "sistema para centro de recuperación".</div>
+    </div></div>
+    <div class="frame prop"><div class="flbl">PROPUESTA</div><div class="web" style="min-height:300px;">
+      <div style="text-align:center;padding:14px 16px 0;">
+        <div style="font-family:var(--mono);font-size:6.5px;letter-spacing:1.6px;color:var(--cy2);text-transform:uppercase;">Un sistema · tres giros</div>
+        <div style="font-size:16px;font-weight:900;margin-top:5px;">VELUM habla el idioma de tu negocio</div>
+        <div style="font-size:8.5px;color:var(--text2);margin-top:4px;">El mismo poder, con el vocabulario, el flujo y hasta el color de tu giro.</div>
+      </div>
+      <div class="vertgrid">
+        <div class="vcard" style="--vc:#00D4FF">
+          <div class="vt">Gym & Box</div>
+          <div class="vd">Membresías, check-in QR, visitas y renovaciones que se cobran solas.</div>
+          <div class="vf">
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Control de accesos con kiosco</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Calendario de vencimientos</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>App para tus atletas</span>
+          </div>
+          <span class="vlink">Ver cómo funciona →</span>
+        </div>
+        <div class="vcard" style="--vc:#C9A86A">
+          <div class="vt">Estudios boutique</div>
+          <div class="vd">Pilates, yoga, barre, cycling — reservas con cupo, créditos y lista de espera.</div>
+          <div class="vf">
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Mapa de reformers y spots</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Paquetes de créditos</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Waitlist con promoción</span>
+          </div>
+          <span class="vlink">Ver cómo funciona →</span>
+        </div>
+        <div class="vcard" style="--vc:#5EC8B0">
+          <div class="vt">Recovery & Wellness</div>
+          <div class="vd">Crioterapia, sauna, masaje, fisio — citas 1:1 por recurso con protocolos.</div>
+          <div class="vf">
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Agenda por cabina/recurso</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Paquetes de sesiones</span>
+            <span><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Protocolos por sesión</span>
+          </div>
+          <span class="vlink">Ver cómo funciona →</span>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Por qué importa</div><ul>
+      <li><b>Ya construiste las 3 verticales en el producto</b> (dashboards bespoke, taxonomías, theming) — pero la landing no lo cuenta. Esta sección alinea la web con tu estrategia de segmentación.</li>
+      <li><b>SEO de nicho:</b> "software para estudio de pilates", "sistema para centro de crioterapia" tienen MUCHA menos competencia que "software para gimnasios" — y hoy no apareces en ninguna.</li>
+      <li><b>Cada card usa el acento de su vertical</b> (cyan/champagne/salvia) — la misma coherencia de marca que ya vive en el panel y la app.</li>
+      <li>Se coloca después de los features, antes del pricing — el visitante boutique/recovery llega al precio ya sabiendo que VELUM es para él.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══ 3. MÓVIL: STICKY CTA ═══ -->
+<section class="vrow">
+  <div class="vhead"><span class="sw"></span><h2>3 · Móvil — sticky CTA</h2><span class="vs">— el 70%+ de tu tráfico</span></div>
+  <div class="pair" style="justify-content:center;gap:26px;">
+    <div class="phone actual"><div class="flbl">ACTUAL</div><div class="pscr">
+      <div style="font-size:15px;font-weight:900;line-height:1.15;">Tu gym corre solo.<br><span style="color:#54d9ff">Tú, a entrenar gente.</span></div>
+      <div style="font-size:8px;color:var(--text2);margin-top:7px;line-height:1.5;">Excel para los pagos. WhatsApp para cobrar…</div>
+      <div style="margin-top:10px;"><span class="cta1" style="display:block;text-align:center;">Empieza con Max — $999/mes →</span></div>
+      <div style="margin-top:6px;"><span class="cta2" style="display:block;text-align:center;">Plan Pro desde $599/mes</span></div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:8.5px;text-align:center;line-height:1.7;">…al hacer scroll por features,<br>comparativa, IA, precios…<br><b style="color:var(--text2)">el CTA desaparece.</b><br>Para registrarse hay que<br>volver a subir o llegar al final.</div>
+      <div style="width:34px;height:34px;border-radius:50%;background:#22c55e;position:absolute;bottom:12px;left:12px;display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M17.5 14.4l-2.1-1c-.3-.14-.6-.1-.8.14l-1 1.2c-1.6-.8-3.2-2.3-4-4l1.2-1c.24-.2.3-.5.15-.8l-1-2.1c-.15-.34-.5-.5-.86-.44-1.2.24-2.1 1.3-2.1 2.5 0 4.3 3.5 7.8 7.8 7.8 1.2 0 2.3-.9 2.5-2.1.06-.35-.1-.7-.44-.85z"/></svg></div>
+    </div></div>
+    <div class="phone prop"><div class="flbl">PROPUESTA</div><div class="pscr">
+      <div style="font-size:15px;font-weight:900;line-height:1.15;">Tu gym corre solo.<br><span style="color:#54d9ff">Tú, a entrenar gente.</span></div>
+      <div style="font-size:8px;color:var(--text2);margin-top:7px;line-height:1.5;">Excel para los pagos. WhatsApp para cobrar…</div>
+      <div style="margin-top:10px;"><span class="cta1" style="display:block;text-align:center;">Prueba 7 días gratis →</span></div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:8.5px;text-align:center;line-height:1.7;">…haces scroll por toda la página<br>y la barra de abajo<br><b style="color:var(--cy2)">te acompaña siempre</b><br>(aparece tras pasar el hero,<br>convive con el botón de WhatsApp).</div>
+      <div class="stickycta">
+        <div class="p"><b>7 días gratis</b>Sin contrato · Cancela cuando quieras</div>
+        <span class="go">Empezar →</span>
+      </div>
+      <div style="width:30px;height:30px;border-radius:50%;background:#22c55e;position:absolute;bottom:52px;left:12px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M17.5 14.4l-2.1-1c-.3-.14-.6-.1-.8.14l-1 1.2c-1.6-.8-3.2-2.3-4-4l1.2-1c.24-.2.3-.5.15-.8l-1-2.1c-.15-.34-.5-.5-.86-.44-1.2.24-2.1 1.3-2.1 2.5 0 4.3 3.5 7.8 7.8 7.8 1.2 0 2.3-.9 2.5-2.1.06-.35-.1-.7-.44-.85z"/></svg></div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Qué cambia</div><ul>
+      <li><b>Barra sticky inferior en móvil</b> con el trial + "Empezar →" — aparece al pasar el hero y vive en toda la página. Típicamente +5-10% de conversión móvil.</li>
+      <li><b>Convive con el botón de WhatsApp</b> (se reacomoda arriba de la barra, no se encima).</li>
+      <li>Respeta <b>safe-area-inset-bottom</b> (iPhone) y desaparece si el usuario ya está en la sección de precios (evita redundancia).</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══ 4. FOOTER ═══ -->
+<section class="vrow">
+  <div class="vhead"><span class="sw"></span><h2>4 · Footer</h2><span class="vs">— confianza y datos de empresa</span></div>
+  <div class="pair">
+    <div class="frame actual"><div class="flbl">ACTUAL</div><div class="web" style="min-height:170px;display:flex;align-items:flex-end;">
+      <div class="foot-act" style="width:100%;">
+        <span class="lg">✦ VELUM © 2026</span>
+        <span class="l">Funciones</span><span class="l">¿Por qué VELUM?</span><span class="l">Precios</span><span class="l">Términos</span><span class="l">Privacidad</span><span class="l">Portal Atleta</span><span class="l">Iniciar sesión</span><span class="l">Registrarse</span>
+      </div>
+    </div></div>
+    <div class="frame prop"><div class="flbl">PROPUESTA</div><div class="web" style="min-height:170px;">
+      <div class="foot-prop">
+        <div class="fcol">
+          <div style="display:flex;align-items:center;gap:6px;font-weight:800;letter-spacing:2px;font-size:10px;"><svg width="11" height="11" viewBox="0 0 100 100"><polygon points="50,5 59.5,40.5 95,50 59.5,59.5 50,95 40.5,59.5 5,50 40.5,40.5" fill="#00D4FF"/></svg>VELUM</div>
+          <div class="desc" style="margin-top:6px;">El sistema de gestión para gyms, estudios boutique y centros de recovery. Hecho en México.</div>
+          <div class="fbadges">
+            <span class="fbadge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pagos vía Stripe</span>
+            <span class="fbadge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Datos cifrados</span>
+          </div>
+        </div>
+        <div class="fcol"><div class="ft">Producto</div><a>Funciones</a><a>Precios</a><a>Demo IA</a><a>Para estudios</a><a>Para recovery</a></div>
+        <div class="fcol"><div class="ft">Cuenta</div><a>Prueba gratis</a><a>Iniciar sesión</a><a>Portal del atleta</a></div>
+        <div class="fcol"><div class="ft">Contacto</div>
+          <a>WhatsApp: +52 56 6607 3955</a><a>hola@myvelum.app</a>
+          <div class="desc" style="margin-top:6px;color:var(--text3);">Soporte L-S · 9:00–19:00 (CDMX)</div>
+        </div>
+        <div class="legalrow"><span>© 2026 VELUM · México</span><span>Términos</span><span>Privacidad</span><span>Cookies</span><span style="margin-left:auto;">Aviso: los pagos se procesan con Stripe; VELUM no almacena tarjetas.</span></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="ncard"><div class="nh">Qué cambia</div><ul>
+      <li><b>De una línea de links a un footer real</b>: columnas Producto / Cuenta / Contacto + descripción de marca. Es la sección que los compradores B2B revisan antes de pagar.</li>
+      <li><b>Contacto visible</b> (WhatsApp oficial 56 6607 3955 + email + horario) — hoy no hay forma de contactar desde el footer.</li>
+      <li><b>Links a las páginas de verticales</b> (Para estudios / Para recovery) — refuerzan el SEO interno.</li>
+      <li><b>"Iniciar sesión" deja de apuntar al archivo del panel</b> (VELUM_Sistema_Interno.html) y va a una ruta limpia /login.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ═══ Fixes invisibles ═══ -->
+<div class="sys">
+  <h2>Los fixes invisibles (mismo paquete, sin mockup)</h2>
+  <div class="sub">No cambian pixeles pero mueven ranking, medición y confianza:</div>
+  <div class="grid">
+    <div class="g"><div class="t"><span class="pz p0">P0</span>WhatsApp del 404</div><div class="d">El 404.html manda a tu número personal (461…). Se unifica al oficial de VELUM (56 6607 3955) — confirmado por ti.</div></div>
+    <div class="g"><div class="t"><span class="pz p0">P0</span>sitemap.xml</div><div class="d">robots.txt lo referencia pero no existe (Google recibe 404). Se crea con /, /terminos y /privacidad.</div></div>
+    <div class="g"><div class="t"><span class="pz p1">P1</span>JSON-LD Schema</div><div class="d">SoftwareApplication (con precios Pro/Max), FAQPage (tus 8 FAQs) y Organization → rich snippets en Google = más CTR con el mismo ranking.</div></div>
+    <div class="g"><div class="t"><span class="pz p1">P1</span>Eventos GA4 del funnel</div><div class="d">registro.html sin eventos: selección de plan, submit del form, inicio de pago. Sin esto no sabes dónde se caen los leads.</div></div>
+    <div class="g"><div class="t"><span class="pz p1">P1</span>Favicon + manifest</div><div class="d">Los PNGs existen pero el head no los declara (icon, apple-touch-icon, manifest.json). Pestaña y home-screen con marca.</div></div>
+    <div class="g"><div class="t"><span class="pz p1">P1</span>Metas menores</div><div class="d">og:image:width/height (previews de WhatsApp/Facebook), theme-color, títulos de sección como &lt;h2&gt; reales, 3 FAQs nuevas (datos al cancelar, migración desde otras plataformas, marca propia).</div></div>
+  </div>
+</div>
+
+</body>
+</html>

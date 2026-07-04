@@ -1,8 +1,8 @@
 # VELUM — Pendientes para la próxima build de la app
 
 > **Estado:** acumulando cambios. NO compilar todavía (esperando más detalles).
-> **Última actualización:** 2026-06-26
-> **Última subida a tiendas:** iOS 1.0.1 build 5 (aprobada, auto-release). Android: bloqueado en verificación de dispositivo.
+> **Última actualización:** 2026-07-02
+> **Última subida a tiendas:** iOS 1.0.1 build 5 (aprobada, auto-release). Android: 1.0.2 versionCode 4 en prueba cerrada de Google Play (juntando 12 testers).
 
 Este archivo junta todo lo que requiere **rebuild + resubmit** de la app nativa (Capacitor).
 Los cambios solo-web del panel (`VELUM_Sistema_Interno.html`) y de edge functions NO necesitan esto:
@@ -32,7 +32,20 @@ se despliegan solos y no entran en esta lista.
 
 ## 2. Por confirmar / pendiente de definir (puede sumar a la build)
 
-- [ ] *(espacio para lo que salga del pulido/auditoría en curso)*
+**De la auditoría iOS (2026-07-02):**
+
+- [ ] **PrivacyInfo.xcprivacy** — crear el privacy manifest a nivel app (`velum-app/ios/App/App/PrivacyInfo.xcprivacy`). Requisito de Apple desde 2024; Capacitor 6 trae manifests en sus pods pero el de la app reduce riesgo de rechazo. ~15 min. **Hacer antes del próximo submit iOS.**
+- [ ] **Sincronizar versión iOS** — 1.0.1(5) → 1.0.2 para paridad con Android (ya contemplado en checklist §3).
+- [ ] **PUSH_ENABLED sigue en false** — para encender push se necesita: Firebase/`google-services.json` (Android) + APNs AuthKey .p8 (iOS). Sprint aparte; mientras, la app no crashea (fix v4).
+- [ ] **QR lib desde CDN** (`qrcodejs` de cdnjs, sin SRI) — empaquetarla local en el build: quita dependencia de red para el QR de check-in (beneficio offline real) y elimina el riesgo de CDN. ~30 min en `build.js`.
+- [ ] **`/cookie-banner.js` 404 dentro de la app** — el tag apunta a raíz del servidor; en la app nativa no existe. Strip del tag en `build.js`. ~10 min.
+- [ ] **Barrido XSS con `esc()`** — auditar los `innerHTML` de `atleta.html` que interpolan datos del backend sin escapar (ej. nombre del gym). Riesgo bajo (datos del propio gym) pero es higiene. CENTINELA+ESCUDO.
+- [ ] **(v1.1, no urgente)** subir deployment target iOS 13 → 14; hash-at-rest del `portal_password` (hoy texto plano en `gym_config`, es código compartido por gym, no credencial individual); pre-commit hook que regenere `www` si cambió `atleta.html`.
+
+**Verificado que NO son problema (contra reporte del agente):**
+- El AppIcon usa el formato single-size moderno de Xcode 14+ (universal 1024×1024) — **válido para App Store**, no es bloqueador.
+- El `ANON_KEY` en el HTML es público **por diseño** (arquitectura estándar de Supabase); la seguridad vive en RLS (ya endurecida). No hay que "rotarla". Acción real: audit periódico de ESCUDO sobre lo accesible con rol `anon`.
+- `www/` está sincronizado con `atleta.html` (build del 29-jun posterior a la última edición).
 
 ---
 
