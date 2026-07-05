@@ -78,6 +78,20 @@ quedó registrado.
 - `git push`: agregar SOLO archivos del cambio (nunca PDFs/marketing/`.temp`/locks).
 - Honestidad sobre el estado: si algo falla, decirlo con la evidencia; nunca maquillar.
 
+## Sistemas de flujo
+
+**Antes de ejecutar cualquier tarea de VELUM, consulta `VELUM_FLUJOS.md` y sigue el pipeline
+correspondiente. NÚCLEO es el punto de entrada de toda sesión.** Los 8 flujos:
+
+1. **Desarrollo** — idea/bug → triage NÚCLEO → /spec → build → gate ESCUDO → VERIFY → deploy con OK de Roy → RECORD.
+2. **Seguridad** — auditoría semanal de ESCUDO (advisors/policies/logs) + gate por evento en migraciones RLS; protocolo de fuga entre gyms.
+3. **Onboarding de gym** — gym creado → bienvenida <24h → activación 48h (≥10 clientes+1 pago) → checkpoints día 7 y 30.
+4. **Venta** — lead SIEMPRE registrado → contacto <24h → demo 15min sobre su dolor → trial acompañado → cierre → handoff a APOYO.
+5. **Soporte** — clasificar (bug→FORJA / duda→APOYO / dinero→CAUDAL / datos→ESCUDO) → SLA por severidad → documentar.
+6. **Release de app** — acumular en PENDIENTES → build.js (nunca editar www) → bump versión → device real → checklist tienda → submit SEÑAL.
+7. **Contenido** — calendario semanal VOZ → batch → publicar con CTA → medir GA4 → 1 aprendizaje por ciclo.
+8. **Sesión de trabajo (meta)** — NÚCLEO lee flujos+tablero+auditoría → recap → reparte por flujos → cierra con tablero/memoria/push.
+
 ## Agentes (skills reales, no roleplay)
 
 NÚCLEO coordina. Áreas: FORJA (panel/backend), CAUDAL (pagos/Stripe/facturación),
