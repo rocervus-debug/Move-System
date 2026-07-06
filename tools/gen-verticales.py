@@ -1,14 +1,90 @@
-<!DOCTYPE html>
+#!/usr/bin/env python3
+# Generador de las páginas por vertical (para-estudios.html / para-recovery.html)
+# con el design system v3 "Sala de Máquinas" del index.html.
+#
+# Uso: python3 tools/gen-verticales.py   (desde la raíz del repo)
+# El copy y SEO viven en tools/verticales.json — editar ahí, NUNCA los HTML a mano.
+import json, os
+from string import Template
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = json.load(open(os.path.join(ROOT, 'tools/verticales.json')))
+
+# Parámetros de diseño por vertical (theming aditivo: mismo sistema, otro acento)
+DESIGN = {
+ 'estudios': {
+   'accent': '#C9A86A',
+   'accent_ink': 'oklch(0.2 0.035 85)',
+   'bg':  'oklch(0.15 0.012 80)', 'bg2': 'oklch(0.18 0.014 80)',
+   'paper': 'oklch(0.95 0.006 90)',
+   'theme': '#15110A',
+   'proof': [('&lt;10','MIN','De registro a operar'),('0','% COMISIÓN','En tus cobros'),
+             ('12/12','SPOTS','Clases llenas con waitlist'),('iOS','+ANDROID','App con tu marca')],
+ },
+ 'recovery': {
+   'accent': '#5EC8B0',
+   'accent_ink': 'oklch(0.19 0.045 175)',
+   'bg':  'oklch(0.15 0.015 185)', 'bg2': 'oklch(0.18 0.017 185)',
+   'paper': 'oklch(0.95 0.006 180)',
+   'theme': '#0C1512',
+   'proof': [('&lt;10','MIN','De registro a operar'),('0','% COMISIÓN','En tus cobros'),
+             ('1:1','CITAS','Agenda por cabina y recurso'),('iOS','+ANDROID','App con tu marca')],
+ },
+}
+
+# Panel de instrumento del hero, por vertical
+READOUT = {
+ 'estudios': '''<div class="readout" data-reveal aria-label="Mapa de spots de una clase, datos de ejemplo">
+    <div class="readout-row"><span class="lbl">Clase 7:00 PM · Reformer</span><span class="live"><i></i>9/12 OCUPADO</span></div>
+    <div class="spots" aria-hidden="true">
+      <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i>
+      <i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i>
+    </div>
+    <div class="readout-foot">
+      <div><span class="lbl">Lista de espera</span><b>3 alumnas</b></div>
+      <div><span class="lbl">Créditos por vencer</span><b>5 paquetes</b></div>
+    </div>
+  </div>''',
+ 'recovery': '''<div class="readout" data-reveal aria-label="Agenda de cabinas del día, datos de ejemplo">
+    <div class="readout-row"><span class="lbl">Agenda de hoy · Cabinas</span><span class="live"><i></i>EN VIVO</span></div>
+    <div class="agenda" aria-hidden="true">
+      <div class="cita"><span class="mono">10:00</span><span>Crio 01</span><b class="on">OCUPADA</b></div>
+      <div class="cita"><span class="mono">10:30</span><span>Sauna 02</span><b class="on">OCUPADA</b></div>
+      <div class="cita"><span class="mono">11:15</span><span>Masaje 01</span><b>LIBRE</b></div>
+      <div class="cita"><span class="mono">11:45</span><span>Crio 02</span><b class="on">OCUPADA</b></div>
+    </div>
+    <div class="readout-foot">
+      <div><span class="lbl">Sesiones hoy</span><b>14</b></div>
+      <div><span class="lbl">Ocupación</span><b>82%</b></div>
+    </div>
+  </div>''',
+}
+
+# CSS extra por vertical (el readout difiere)
+READOUT_CSS = {
+ 'estudios': '''.spots{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+.spots i{aspect-ratio:1;border-radius:7px;border:1px solid var(--line);}
+.spots i.on{background:var(--accent);border-color:var(--accent);}''',
+ 'recovery': '''.agenda{display:flex;flex-direction:column;}
+.cita{display:flex;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.cita:last-child{border-bottom:none;}
+.cita .mono{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.05em;}
+.cita span:nth-child(2){flex:1;font-weight:600;}
+.cita b{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--faint);}
+.cita b.on{color:var(--accent);}''',
+}
+
+TPL = Template(r'''<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Software para estudios de pilates, yoga y barre en México | VELUM Studios</title>
-<meta name="description" content="Software para estudios de pilates, yoga, barre y cycling en México: reservas con cupo, mapa de reformers, paquetes de créditos, lista de espera y cobros con Stripe. $999 MXN/mes todo incluido."/>
+<title>${TITLE}</title>
+<meta name="description" content="${DESC}"/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="https://myvelum.app/para-estudios"/>
-<meta property="og:title" content="Software para estudios de pilates, yoga y barre en México | VELUM Studios"/>
-<meta property="og:description" content="Software para estudios de pilates, yoga, barre y cycling en México: reservas con cupo, mapa de reformers, paquetes de créditos, lista de espera y cobros con Stripe. $999 MXN/mes todo incluido."/>
+<meta property="og:url" content="${OG_URL}"/>
+<meta property="og:title" content="${TITLE}"/>
+<meta property="og:description" content="${DESC}"/>
 <meta property="og:image" content="https://myvelum.app/og-image.png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
@@ -16,11 +92,11 @@
 <meta property="og:locale" content="es_MX"/>
 <meta property="og:site_name" content="VELUM"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="Software para estudios de pilates, yoga y barre en México | VELUM Studios"/>
-<meta name="twitter:description" content="Software para estudios de pilates, yoga, barre y cycling en México: reservas con cupo, mapa de reformers, paquetes de créditos, lista de espera y cobros con Stripe. $999 MXN/mes todo incluido."/>
+<meta name="twitter:title" content="${TITLE}"/>
+<meta name="twitter:description" content="${DESC}"/>
 <meta name="twitter:image" content="https://myvelum.app/og-image.png"/>
-<link rel="canonical" href="https://myvelum.app/para-estudios"/>
-<meta name="theme-color" content="#15110A"/>
+<link rel="canonical" href="${OG_URL}"/>
+<meta name="theme-color" content="${THEME}"/>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
 <link rel="apple-touch-icon" href="/move-icon-192.png"/>
@@ -31,20 +107,18 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KVWQ7L8SS3"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-KVWQ7L8SS3');</script>
 <script src="/cookie-banner.js" defer></script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "VELUM Studios", "operatingSystem": "Web, iOS, Android", "applicationCategory": "BusinessApplication", "description": "Software para estudios de pilates, yoga, barre y cycling en México: reservas con cupo, mapa de reformers, paquetes de créditos, lista de espera y cobros con Stripe. $999 MXN/mes todo incluido.", "url": "https://myvelum.app/para-estudios", "inLanguage": "es-MX", "offers": {"@type": "Offer", "name": "Plan Max", "price": "999", "priceCurrency": "MXN"}, "publisher": {"@type": "Organization", "name": "VELUM", "url": "https://myvelum.app/", "logo": "https://myvelum.app/move-icon-512.png"}}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "¿Sirve para pilates, yoga, barre y cycling?", "acceptedAnswer": {"@type": "Answer", "text": "Sí — VELUM Studios está hecho para clases con cupo limitado. Defines tus clases, el cupo de cada una (reformers, mats, bicis) y tus alumnas reservan su lugar desde su celular. Funciona igual para pilates reformer que para yoga, barre, cycling o cualquier disciplina boutique."}}, {"@type": "Question", "name": "¿Cómo funcionan los paquetes de créditos?", "acceptedAnswer": {"@type": "Answer", "text": "Vendes paquetes de 4, 8, 12 clases o los que definas. Cada reserva descuenta un crédito automáticamente, y cuando a una alumna le quedan pocas clases el sistema te avisa para que le ofrezcas renovar antes de que se quede sin créditos."}}, {"@type": "Question", "name": "¿Qué pasa cuando una clase se llena?", "acceptedAnswer": {"@type": "Answer", "text": "Se abre lista de espera automática. Si alguien cancela, VELUM promueve a la primera persona de la lista y le avisa — tú no mueves un dedo y la clase se queda llena."}}, {"@type": "Question", "name": "¿Mis alumnas necesitan instalar una app?", "acceptedAnswer": {"@type": "Answer", "text": "No es obligatorio. Pueden reservar desde el navegador de su celular con tu página de reservas. Si quieres, también existe la app con tu logo y tu color de marca para iOS y Android."}}, {"@type": "Question", "name": "Vengo de Mindbody, Glofox o Excel, ¿me ayudan a migrar?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Importamos tu lista de alumnas y paquetes desde CSV/Excel en minutos, y nuestro equipo te acompaña por WhatsApp durante la migración sin costo extra. La mayoría de los estudios quedan operando el mismo día."}}]}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "VELUM", "item": "https://myvelum.app/"}, {"@type": "ListItem", "position": 2, "name": "Para estudios boutique", "item": "https://myvelum.app/para-estudios"}]}</script>
+${JSONLD}
 <style>
-/* ============ SALA DE MÁQUINAS — vertical para-estudios ============ */
+/* ============ SALA DE MÁQUINAS — vertical ${SLUG} ============ */
 :root{
-  --bg:      oklch(0.15 0.012 80);
-  --bg2:     oklch(0.18 0.014 80);
-  --paper:   oklch(0.95 0.006 90);
-  --dim:     oklch(0.95 0.006 90 / .64);
-  --faint:   oklch(0.95 0.006 90 / .38);
-  --line:    oklch(0.95 0.006 90 / .1);
-  --accent:  #C9A86A;
-  --accent-ink: oklch(0.2 0.035 85);
+  --bg:      ${BG};
+  --bg2:     ${BG2};
+  --paper:   ${PAPER};
+  --dim:     ${PAPER_DIM};
+  --faint:   ${PAPER_FAINT};
+  --line:    ${PAPER_LINE};
+  --accent:  ${ACCENT};
+  --accent-ink: ${ACCENT_INK};
   --sans:'Instrument Sans',system-ui,-apple-system,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,'SF Mono',monospace;
   --ease:cubic-bezier(.16,1,.3,1);
@@ -63,7 +137,7 @@ img,svg{max-width:100%;display:block;}
 .wrap{max-width:1280px;margin:0 auto;padding:0 clamp(20px,4vw,56px);}
 .wrap-text{max-width:720px;}
 
-.nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(20px,4vw,56px);border-bottom:1px solid var(--line);background:oklch(0.15 0.012 80 / .88);backdrop-filter:blur(12px);}
+.nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(20px,4vw,56px);border-bottom:1px solid var(--line);background:${BG_NAV};backdrop-filter:blur(12px);}
 .nav-logo{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:.14em;font-size:15px;text-decoration:none;}
 .nav-sub{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);border-left:1px solid var(--line);padding-left:10px;}
 .nav-links{display:flex;gap:clamp(14px,2.5vw,32px);font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.1em;}
@@ -93,9 +167,7 @@ img,svg{max-width:100%;display:block;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
 .readout-foot{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-top:1px solid var(--line);padding-top:18px;}
 .readout-foot div b{display:block;font-size:19px;font-weight:640;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--paper);}
-.spots{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
-.spots i{aspect-ratio:1;border-radius:7px;border:1px solid var(--line);}
-.spots i.on{background:var(--accent);border-color:var(--accent);}
+${READOUT_CSS}
 
 .proof{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
 .proof div{padding:26px clamp(14px,2vw,28px);border-left:1px solid var(--line);}
@@ -116,14 +188,14 @@ img,svg{max-width:100%;display:block;}
 
 .pricing{background:var(--accent);color:var(--accent-ink);padding-block:var(--s6);}
 .pricing ::selection{background:var(--accent-ink);color:var(--accent);}
-.pricing .lbl{color:oklch(0.2 0.035 85 / .55);}
+.pricing .lbl{color:${INK_55};}
 .pricing-grid{display:grid;grid-template-columns:7fr 5fr;gap:var(--s5);align-items:start;margin-top:26px;}
 .price-big{font-size:clamp(5rem,15vw,13rem);font-weight:660;letter-spacing:-.05em;line-height:.9;font-variant-numeric:tabular-nums;}
 .price-big span{font-family:var(--mono);font-size:.14em;font-weight:600;letter-spacing:.1em;vertical-align:super;margin-left:clamp(10px,1.4vw,24px);}
 .price-sub{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.05em;margin-top:20px;line-height:2;}
 .price-note{font-size:15px;line-height:1.65;max-width:26em;margin-top:22px;font-weight:500;}
 .plan-feats{list-style:none;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.02em;line-height:1.5;display:flex;flex-direction:column;}
-.plan-feats li{padding:11px 0;border-bottom:1px solid oklch(0.2 0.035 85 / .18);}
+.plan-feats li{padding:11px 0;border-bottom:1px solid ${INK_18};}
 .plan-feats li::before{content:'+ ';}
 .btn-ink{background:var(--accent-ink);color:var(--accent);margin-top:26px;}
 .btn-ink:hover{filter:brightness(1.35);transform:translateY(-2px);}
@@ -162,7 +234,7 @@ footer{border-top:1px solid var(--line);}
 #sticky-cta{display:none;}
 @media(max-width:768px){
   #sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;align-items:center;gap:12px;
-    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:oklch(0.15 0.012 80 / .88);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:${BG_NAV};
     border-top:1px solid var(--line);backdrop-filter:blur(10px);
     transform:translateY(110%);transition:transform .3s var(--ease);}
   #sticky-cta.show{transform:translateY(0);}
@@ -208,8 +280,8 @@ footer{border-top:1px solid var(--line);}
 
 <header class="nav">
   <a class="nav-logo" href="/">
-    <svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#C9A86A"/></svg>
-    VELUM <span class="nav-sub">STUDIOS</span>
+    <svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="${ACCENT}"/></svg>
+    VELUM <span class="nav-sub">${SUB}</span>
   </a>
   <nav class="nav-links" aria-label="Secciones">
     <a href="#funciones"><i>01</i>FUNCIONES</a>
@@ -217,53 +289,43 @@ footer{border-top:1px solid var(--line);}
     <a href="#faq"><i>03</i>FAQ</a>
     <a href="/">VELUM PARA GYMS</a>
   </nav>
-  <a class="nav-cta" href="registro.html" onclick="typeof gtag!=='undefined'&&gtag('event','nav_cta_click',{page:'para-estudios'})">Prueba gratis</a>
+  <a class="nav-cta" href="registro.html" onclick="typeof gtag!=='undefined'&&gtag('event','nav_cta_click',{page:'${SLUG}'})">Prueba gratis</a>
 </header>
 
 <main>
 <section class="wrap hero">
   <div data-reveal>
-    <p class="lbl">Para estudios boutique · Pilates · Yoga · Barre · Cycling</p>
-    <h1>Tu estudio lleno,<br/><span class="dim">sin vivir en WhatsApp</span></h1>
-    <p class="hero-pain">Reservas con cupo, mapa de reformers, paquetes de créditos y lista de espera que se maneja sola. <strong>Tú das la clase; VELUM lleva la agenda.</strong></p>
+    <p class="lbl">${BADGE}</p>
+    <h1>${H1}</h1>
+    <p class="hero-pain">${PAIN}</p>
     <div class="hero-actions">
-      <a href="registro.html" class="btn btn-main" onclick="typeof gtag!=='undefined'&&gtag('event','hero_cta_click',{page:'para-estudios'})">Prueba 7 días gratis</a>
+      <a href="registro.html" class="btn btn-main" onclick="typeof gtag!=='undefined'&&gtag('event','hero_cta_click',{page:'${SLUG}'})">Prueba 7 días gratis</a>
       <a href="#pricing" class="txt-link">Ver el precio ↓</a>
     </div>
-    <div class="hero-meta"><span>PILATES</span><span>YOGA</span><span>BARRE</span><span>CYCLING</span><span>DANCE</span><span>FUNCIONAL BOUTIQUE</span></div>
+    <div class="hero-meta">${DISCS}</div>
   </div>
-  <div class="readout" data-reveal aria-label="Mapa de spots de una clase, datos de ejemplo">
-    <div class="readout-row"><span class="lbl">Clase 7:00 PM · Reformer</span><span class="live"><i></i>9/12 OCUPADO</span></div>
-    <div class="spots" aria-hidden="true">
-      <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i>
-      <i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i>
-    </div>
-    <div class="readout-foot">
-      <div><span class="lbl">Lista de espera</span><b>3 alumnas</b></div>
-      <div><span class="lbl">Créditos por vencer</span><b>5 paquetes</b></div>
-    </div>
-  </div>
+  ${READOUT}
 </section>
 
 <section class="wrap" data-reveal>
-  <div class="proof"><div><b>&lt;10<span>MIN</span></b><span class="lbl">De registro a operar</span></div><div><b>0<span>% COMISIÓN</span></b><span class="lbl">En tus cobros</span></div><div><b>12/12<span>SPOTS</span></b><span class="lbl">Clases llenas con waitlist</span></div><div><b>iOS<span>+ANDROID</span></b><span class="lbl">App con tu marca</span></div></div>
+  <div class="proof">${PROOF}</div>
 </section>
 
 <section class="wrap section">
   <div class="section-head" data-reveal>
-    <h2>El estudio crece y la agenda te come</h2>
+    <h2>${PAINS_H2}</h2>
     <p class="lbl">¿Te suena familiar?</p>
   </div>
-  <div class="rows"><div class="row" data-reveal><span class="n">01</span><h3>"Las reservas viven en WhatsApp"</h3><p>Mensajes a las 11pm, lugares duplicados y tú de agenda humana. Cada clase es un hilo de 40 mensajes.</p></div><div class="row" data-reveal><span class="n">02</span><h3>"Los no-shows nadie los cobra"</h3><p>Reservan, no llegan, y el lugar se perdió. Sin política de cancelación aplicada, el cupo vacío es dinero tirado.</p></div><div class="row" data-reveal><span class="n">03</span><h3>"Los créditos en una libreta"</h3><p>¿Cuántas clases le quedan a cada alumna? Si la respuesta vive en una libreta o un Excel, ya se te fue alguien con clases de más.</p></div></div>
-  <p class="hero-pain" style="margin-top:var(--s4);" data-reveal><strong>VELUM Studios convierte reservas, créditos y listas de espera en un sistema que se maneja solo — con tu marca y tu color.</strong></p>
+  <div class="rows">${PAINS_ROWS}</div>
+  <p class="hero-pain" style="margin-top:var(--s4);" data-reveal><strong>${BRIDGE}</strong></p>
 </section>
 
 <section class="wrap section" id="funciones">
   <div class="section-head" data-reveal>
-    <h2>Hecho para clases con cupo. Nada adaptado.</h2>
+    <h2>${FEAT_H2}</h2>
     <p class="lbl">01 · Funciones</p>
   </div>
-  <div class="rows"><div class="row" data-reveal><span class="n">01</span><h3>Reservas con cupo real</h3><p>Publicas tu horario, defines el cupo de cada clase y tus alumnas reservan su lugar desde el celular. Se acabaron los hilos de WhatsApp.<span class="res">→ Tu recepción deja de ser agenda humana</span></p></div><div class="row" data-reveal><span class="n">02</span><h3>Mapa de reformers y spots</h3><p>Cada alumna elige su reformer, su mat o su bici al reservar — como elegir asiento en el cine. Tú ves el mapa de la clase en tiempo real.<span class="res">→ Cero lugares duplicados</span></p></div><div class="row" data-reveal><span class="n">03</span><h3>Paquetes de créditos</h3><p>Vendes paquetes de 4, 8 o 12 clases. Cada reserva descuenta sola, y el sistema te avisa cuando alguien está por quedarse sin créditos.<span class="res">→ Renovaciones antes de que se enfríen</span></p></div><div class="row" data-reveal><span class="n">04</span><h3>Lista de espera automática</h3><p>Clase llena = lista de espera. Alguien cancela y VELUM promueve al siguiente y le avisa. La clase se queda llena sin que muevas un dedo.<span class="res">→ Cupos llenos, siempre</span></p></div><div class="row" data-reveal><span class="n">05</span><h3>Cobros con Stripe</h3><p>Links de pago o cargos recurrentes para tus paquetes y mensualidades. El dinero va directo a tu cuenta — sin terminal, sin perseguir a nadie.<span class="res">→ Te pagan antes de pisar el estudio</span></p></div><div class="row" data-reveal><span class="n">06</span><h3>Ocupación por clase y coach</h3><p>Qué horarios se llenan, qué coach retiene más, qué clase conviene duplicar. Decisiones con datos, no corazonadas.<span class="res">→ Tu horario deja de ser una apuesta</span></p></div></div>
+  <div class="rows">${FEAT_ROWS}</div>
 </section>
 
 <section class="pricing" id="pricing">
@@ -271,33 +333,33 @@ footer{border-top:1px solid var(--line);}
     <p class="lbl">02 · Precio — plan único, todo incluido</p>
     <div class="pricing-grid">
       <div data-reveal>
-        <div class="price-big">$999<span>MXN/MES</span></div>
-        <p class="price-sub">~$33 AL DÍA · TODO VELUM, SIN RECORTES<br/>SIN CONTRATO ANUAL · CANCELA CUANDO QUIERAS</p>
-        <p class="price-note">Se cobra al día 8 solo si te quedas. ¿Quieres verlo antes de decidir? <a href="https://wa.me/525666073955?text=Hola%21+Tengo+un+estudio+boutique+y+quiero+ver+el+demo+en+video+de+VELUM+Studios" target="_blank" rel="noopener" style="font-weight:650;color:inherit;">Ver demo en video →</a></p>
-        <a href="registro.html?plan=max" class="btn btn-ink" onclick="typeof gtag!=='undefined'&&gtag('event','pricing_cta_click',{page:'para-estudios'})">Empezar con Max — 7 días gratis</a>
-        <p class="chains">¿Cadena o multi-sucursal? <a href="https://wa.me/525666073955?text=Hola%21+Tengo+varias+ubicaciones+y+me+interesa+VELUM.+%C2%BFPodemos+hablar%3F" target="_blank" rel="noopener">Hablemos — precio por volumen →</a></p>
+        <div class="price-big">$$999<span>MXN/MES</span></div>
+        <p class="price-sub">~$$33 AL DÍA · TODO VELUM, SIN RECORTES<br/>SIN CONTRATO ANUAL · CANCELA CUANDO QUIERAS</p>
+        <p class="price-note">Se cobra al día 8 solo si te quedas. ¿Quieres verlo antes de decidir? <a href="${WA_DEMO}" target="_blank" rel="noopener" style="font-weight:650;color:inherit;">Ver demo en video →</a></p>
+        <a href="registro.html?plan=max" class="btn btn-ink" onclick="typeof gtag!=='undefined'&&gtag('event','pricing_cta_click',{page:'${SLUG}'})">Empezar con Max — 7 días gratis</a>
+        <p class="chains">¿Cadena o multi-sucursal? <a href="${WA_CADENAS}" target="_blank" rel="noopener">Hablemos — precio por volumen →</a></p>
       </div>
-      <ul class="plan-feats" data-reveal></ul>
+      <ul class="plan-feats" data-reveal>${PLAN_FEATS}</ul>
     </div>
   </div>
 </section>
 
 <section class="wrap wrap-text section" id="faq">
   <div class="section-head" data-reveal>
-    <h2>Lo que preguntan los estudios</h2>
+    <h2>${FAQ_H2}</h2>
     <p class="lbl">03 · FAQ</p>
   </div>
-  <div class="faq" data-reveal><details><summary>¿Sirve para pilates, yoga, barre y cycling?</summary><p>Sí — VELUM Studios está hecho para clases con cupo limitado. Defines tus clases, el cupo de cada una (reformers, mats, bicis) y tus alumnas reservan su lugar desde su celular. Funciona igual para pilates reformer que para yoga, barre, cycling o cualquier disciplina boutique.</p></details><details><summary>¿Cómo funcionan los paquetes de créditos?</summary><p>Vendes paquetes de 4, 8, 12 clases o los que definas. Cada reserva descuenta un crédito automáticamente, y cuando a una alumna le quedan pocas clases el sistema te avisa para que le ofrezcas renovar antes de que se quede sin créditos.</p></details><details><summary>¿Qué pasa cuando una clase se llena?</summary><p>Se abre lista de espera automática. Si alguien cancela, VELUM promueve a la primera persona de la lista y le avisa — tú no mueves un dedo y la clase se queda llena.</p></details><details><summary>¿Mis alumnas necesitan instalar una app?</summary><p>No es obligatorio. Pueden reservar desde el navegador de su celular con tu página de reservas. Si quieres, también existe la app con tu logo y tu color de marca para iOS y Android.</p></details><details><summary>Vengo de Mindbody, Glofox o Excel, ¿me ayudan a migrar?</summary><p>Sí. Importamos tu lista de alumnas y paquetes desde CSV/Excel en minutos, y nuestro equipo te acompaña por WhatsApp durante la migración sin costo extra. La mayoría de los estudios quedan operando el mismo día.</p></details></div>
+  <div class="faq" data-reveal>${FAQ_ITEMS}</div>
 </section>
 
 <section class="wrap final">
   <div data-reveal>
     <p class="lbl">Última llamada</p>
-    <h2>Tu estudio merece verse<br/>tan bien <span class="dim">por dentro</span> como por fuera</h2>
-    <p>Cada clase que se gestiona por WhatsApp es tiempo que no dedicas a tus alumnas. VELUM Studios pone la operación en piloto automático.</p>
+    <h2>${CTA_H2}</h2>
+    <p>${CTA_P}</p>
     <div class="hero-actions">
-      <a href="registro.html?plan=max" class="btn btn-main" onclick="typeof gtag!=='undefined'&&gtag('event','bottom_cta_click',{page:'para-estudios'})">Prueba 7 días gratis</a>
-      <a href="https://wa.me/525666073955?text=Hola%21+Tengo+un+estudio+boutique+y+me+interesa+VELUM+Studios.+%C2%BFPueden+darme+m%C3%A1s+informaci%C3%B3n%3F" target="_blank" rel="noopener" class="txt-link">Hablar por WhatsApp</a>
+      <a href="registro.html?plan=max" class="btn btn-main" onclick="typeof gtag!=='undefined'&&gtag('event','bottom_cta_click',{page:'${SLUG}'})">Prueba 7 días gratis</a>
+      <a href="${WA_BOTTOM}" target="_blank" rel="noopener" class="txt-link">Hablar por WhatsApp</a>
     </div>
   </div>
 </section>
@@ -306,7 +368,7 @@ footer{border-top:1px solid var(--line);}
 <footer>
   <div class="wrap foot-grid">
     <div class="foot-brand">
-      <span class="nav-logo"><svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#C9A86A"/></svg> VELUM <span class="nav-sub">STUDIOS</span></span>
+      <span class="nav-logo"><svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="${ACCENT}"/></svg> VELUM <span class="nav-sub">${SUB}</span></span>
       <p>El sistema de gestión para gyms, estudios boutique y centros de recovery. Hecho en México.</p>
     </div>
     <div class="foot-col">
@@ -314,13 +376,13 @@ footer{border-top:1px solid var(--line);}
       <a href="#funciones">Funciones</a>
       <a href="#pricing">Precios</a>
       <a href="/">VELUM para gyms</a>
-      <a href="para-recovery.html">Para recovery</a>
+      <a href="${OTRA_URL}">${OTRA_LABEL}</a>
     </div>
     <div class="foot-col">
       <span class="lbl">Cuenta</span>
       <a href="registro.html">Prueba gratis</a>
       <a href="login.html">Iniciar sesión</a>
-      <a href="/atleta">Portal de alumnas</a>
+      <a href="/atleta">${PORTAL}</a>
     </div>
     <div class="foot-col">
       <span class="lbl">Contacto</span>
@@ -338,13 +400,13 @@ footer{border-top:1px solid var(--line);}
   </div>
 </footer>
 
-<a class="wa-float" href="https://wa.me/525666073955?text=Hola%21+Vi+VELUM+Studios+en+myvelum.app+y+me+interesa+para+mi+estudio.+%C2%BFPueden+darme+m%C3%A1s+informaci%C3%B3n%3F" target="_blank" rel="noopener" title="Hablar por WhatsApp" aria-label="Hablar por WhatsApp" onclick="typeof gtag!=='undefined'&&gtag('event','wa_float_click',{page:'para-estudios'})">
+<a class="wa-float" href="${WA_FLOAT}" target="_blank" rel="noopener" title="Hablar por WhatsApp" aria-label="Hablar por WhatsApp" onclick="typeof gtag!=='undefined'&&gtag('event','wa_float_click',{page:'${SLUG}'})">
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
 </a>
 
 <div id="sticky-cta" aria-hidden="true">
   <div class="sc-txt"><b>7 días gratis</b><span>Sin contrato · Cancela cuando quieras</span></div>
-  <a href="registro.html" class="sc-btn" onclick="typeof gtag!=='undefined'&&gtag('event','sticky_cta_click',{page:'para-estudios'})">Empezar →</a>
+  <a href="registro.html" class="sc-btn" onclick="typeof gtag!=='undefined'&&gtag('event','sticky_cta_click',{page:'${SLUG}'})">Empezar →</a>
 </div>
 
 <script>
@@ -371,3 +433,55 @@ footer{border-top:1px solid var(--line);}
 </script>
 </body>
 </html>
+''')
+
+TITULOS = {
+ 'estudios': {'pains_h2': 'El estudio crece y la agenda te come',
+              'feat_h2': 'Hecho para clases con cupo. Nada adaptado.',
+              'faq_h2': 'Lo que preguntan los estudios'},
+ 'recovery': {'pains_h2': 'Más cabinas no significa más control',
+              'feat_h2': 'Hecho para citas 1:1 por recurso. Nada adaptado.',
+              'faq_h2': 'Lo que preguntan los centros de recovery'},
+}
+
+def alpha(base, a):
+    # deriva un token con alpha desde un oklch(...) base
+    return base[:-1] + f' / {a})'
+
+for key, d in DATA.items():
+    dz = DESIGN[key]
+    otra = 'recovery' if key == 'estudios' else 'estudios'
+    proof = ''.join(f'<div><b>{n}<span>{u}</span></b><span class="lbl">{l}</span></div>'
+                    for n, u, l in dz['proof'])
+    pains_rows = ''.join(
+        f'<div class="row" data-reveal><span class="n">0{i+1}</span><h3>{p["t"]}</h3><p>{p["x"].strip()}</p></div>'
+        for i, p in enumerate(d['pains']))
+    feat_rows = ''.join(
+        f'<div class="row" data-reveal><span class="n">0{i+1}</span><h3>{f["t"]}</h3>'
+        f'<p>{f["x"]}<span class="res">→ {f["r"]}</span></p></div>'
+        for i, f in enumerate(d['features']))
+    plan_feats = ''.join(f'<li>{x.upper()}</li>' for x in d['plan_feats'])
+    faq_items = ''.join(f'<details><summary>{f["q"]}</summary><p>{f["a"]}</p></details>' for f in d['faq'])
+    discs = ''.join(f'<span>{x.upper()}</span>' for x in d['discs'])
+
+    html = TPL.substitute(
+        TITLE=d['title'], DESC=d['desc'], OG_URL=d['og_url'], THEME=dz['theme'],
+        JSONLD='\n'.join(d['jsonld']), SLUG=d['slug'], SUB=d['sub'].upper(),
+        ACCENT=dz['accent'], ACCENT_INK=dz['accent_ink'],
+        BG=dz['bg'], BG2=dz['bg2'], PAPER=dz['paper'],
+        PAPER_DIM=alpha(dz['paper'], '.64'), PAPER_FAINT=alpha(dz['paper'], '.38'),
+        PAPER_LINE=alpha(dz['paper'], '.1'), BG_NAV=alpha(dz['bg'], '.88'),
+        INK_55=alpha(dz['accent_ink'], '.55'), INK_18=alpha(dz['accent_ink'], '.18'),
+        BADGE=d['badge'], H1=d['h1'], PAIN=d['pain'], DISCS=discs,
+        READOUT=READOUT[key], READOUT_CSS=READOUT_CSS[key], PROOF=proof,
+        PAINS_H2=TITULOS[key]['pains_h2'], PAINS_ROWS=pains_rows, BRIDGE=d['bridge'],
+        FEAT_H2=TITULOS[key]['feat_h2'], FEAT_ROWS=feat_rows,
+        PLAN_FEATS=plan_feats, FAQ_H2=TITULOS[key]['faq_h2'], FAQ_ITEMS=faq_items,
+        CTA_H2=d['cta_h2'], CTA_P=d['cta_p'],
+        WA_DEMO=d['wa_demo'], WA_CADENAS=d['wa_cadenas'], WA_BOTTOM=d['wa_bottom'],
+        WA_FLOAT=d['wa_float'], PORTAL=d['portal'],
+        OTRA_URL=f'para-{otra}.html', OTRA_LABEL=f'Para {otra}',
+    )
+    out = os.path.join(ROOT, f'para-{key}.html')
+    open(out, 'w').write(html)
+    print(f'{out}: {len(html.splitlines())} líneas')
