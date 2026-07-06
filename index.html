@@ -1052,12 +1052,23 @@ const DEMO_URL = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/velum-as
 let demoBusy = false;
 let demoUsed = false;
 
+// Renderer seguro para respuestas de la IA: escapa todo el HTML y solo
+// reconstruye negritas **texto** y saltos de línea (los encabezados # se limpian)
+function demoFmt(text){
+  const esc = String(text)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc
+    .replace(/^#{1,6}\s*/gm,'')
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
 function demoAddMsg(role, text){
   const c = document.getElementById('chat-msgs');
   if(!c) return;
   const d = document.createElement('div');
   d.className = 'msg ' + (role === 'user' ? 'q' : 'a');
-  d.textContent = text;
+  if(role === 'user'){ d.textContent = text; } else { d.innerHTML = demoFmt(text); }
   c.appendChild(d);
   c.scrollTop = c.scrollHeight;
   return d;
