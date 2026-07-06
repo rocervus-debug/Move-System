@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>VELUM HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+/* ════════════════════════════════════════════════════════════════
+   VELUM HQ — F1 · Pipeline (CRM de superadmin)
+   Tokens heredados del panel (VELUM_Sistema_Interno.html :root)
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  /* ── Base VELUM ── */
+  --bg:#040C14;
+  --bg-card:#08121E;
+  --bg-elevated:#0D1B2A;
+  --card:#08121E;
+  --card2:#0D1B2A;
+  --text:#E8EDF5;
+  --text2:#7ABFCC;
+  --text3:#687E8A;
+  --accent:#00D4FF;
+  --accent-light:#66E8FF;
+  --accent-bg:color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-bg2:color-mix(in srgb, var(--accent) 18%, transparent);
+  --border:color-mix(in srgb, var(--accent) 8%, transparent);
+  --border2:color-mix(in srgb, var(--accent) 18%, transparent);
+  --surface:rgba(255,255,255,.036);
+  --surface2:rgba(255,255,255,.055);
+  --ok:#10e8a0;       --ok-bg:rgba(16,232,160,.1);
+  --warn:#fbbf24;     --warn-bg:rgba(251,191,36,.1);
+  --danger:#f87171;   --danger-bg:rgba(248,113,113,.1);
+  --radius:20px;
+  --radius-sm:12px;
+  --shadow:0 1px 8px rgba(0,0,0,.5);
+  --shadow-md:0 4px 24px rgba(0,0,0,.55);
+  --shadow-lg:0 12px 48px rgba(0,0,0,.65);
+  --glow:0 0 24px color-mix(in srgb, var(--accent) 22%, transparent);
+  --font:'Inter',system-ui,sans-serif;
+  --font-display:'Outfit',system-ui,sans-serif;
+  --fm:'Geist Mono',monospace;
+  /* ── Colores por vertical ── */
+  --v-gym:#00D4FF;
+  --v-studios:#C9A86A;
+  --v-recovery:#5EC8B0;
+  --sidebar:216px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{ font-family:inherit; cursor:pointer; }
+input,select,textarea{ font-family:inherit; font-size:13px; }
+[hidden]{ display:none !important; }
+::selection{ background:var(--accent-bg2); }
+::-webkit-scrollbar{ height:8px; width:8px; }
+::-webkit-scrollbar-thumb{ background:var(--border2); border-radius:8px; }
+::-webkit-scrollbar-track{ background:transparent; }
+
+/* ════════ LOGIN ════════ */
+#login-screen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in srgb, var(--accent) 7%, transparent), transparent),
+    var(--bg);
+  padding:20px;
+}
+.login-box{
+  width:100%; max-width:380px; background:var(--bg-card);
+  border:1px solid var(--border2); border-radius:var(--radius);
+  padding:36px 32px; box-shadow:var(--shadow-lg);
+}
+.login-logo{
+  font-family:var(--font-display); font-weight:800; font-size:26px;
+  letter-spacing:.14em; text-align:center; margin-bottom:4px;
+}
+.login-logo span{ color:var(--accent); }
+.login-sub{
+  text-align:center; color:var(--text3); font-size:12px;
+  letter-spacing:.22em; text-transform:uppercase; margin-bottom:28px;
+}
+.login-field{ margin-bottom:14px; }
+.login-field label{
+  display:block; font-size:11px; color:var(--text2); letter-spacing:.08em;
+  text-transform:uppercase; margin-bottom:6px;
+}
+.login-field input{
+  width:100%; padding:12px 14px; border-radius:var(--radius-sm);
+  background:var(--surface); border:1px solid var(--border2);
+  color:var(--text); outline:none; transition:border .15s;
+}
+.login-field input:focus{ border-color:var(--accent); box-shadow:var(--glow); }
+.login-btn{
+  width:100%; margin-top:8px; padding:13px; border:none; border-radius:var(--radius-sm);
+  background:var(--accent); color:#02141C; font-weight:700; font-size:14px;
+  letter-spacing:.08em; transition:opacity .15s;
+}
+.login-btn:hover{ opacity:.88; }
+.login-btn:disabled{ opacity:.5; cursor:default; }
+.login-error{
+  display:none; margin-top:12px; padding:10px 12px; border-radius:var(--radius-sm);
+  background:var(--danger-bg); color:var(--danger); font-size:12.5px; text-align:center;
+}
+.login-error.show{ display:block; }
+#totp-row{ margin-top:14px; }
+
+/* ════════ SHELL ════════ */
+#app{ display:flex; min-height:100vh; }
+.hq-sidebar{
+  width:var(--sidebar); flex-shrink:0; background:var(--bg);
+  border-right:1px solid var(--border); padding:20px 12px;
+  display:flex; flex-direction:column; gap:2px;
+  position:sticky; top:0; height:100vh;
+}
+.hq-brand{
+  font-family:var(--font-display); font-weight:800; font-size:18px;
+  letter-spacing:.14em; padding:6px 12px 20px; display:flex; align-items:center; gap:8px;
+}
+.hq-brand svg{ flex-shrink:0; }
+.hq-brand em{ font-style:normal; color:var(--accent); }
+.nav-item{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:10px 12px; border:none; border-radius:var(--radius-sm);
+  background:transparent; color:rgba(200,215,235,.6);
+  font-size:13.5px; font-weight:500; text-align:left; transition:background .12s,color .12s;
+}
+.nav-item svg{ flex-shrink:0; opacity:.8; }
+.nav-item:hover{ background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--text); }
+.nav-item.active{
+  background:color-mix(in srgb, var(--accent) 16%, transparent); color:#fff;
+}
+.nav-item.disabled{ opacity:.38; cursor:default; }
+.nav-item.disabled:hover{ background:transparent; color:rgba(200,215,235,.6); }
+.nav-tag{
+  margin-left:auto; font-size:9.5px; font-family:var(--fm); letter-spacing:.06em;
+  padding:2px 6px; border-radius:6px; background:var(--surface2); color:var(--text3);
+}
+.nav-foot{ margin-top:auto; padding:8px 4px 0; border-top:1px solid var(--border); }
+.nav-user{ font-size:11.5px; color:var(--text3); padding:8px 8px 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.btn-logout{
+  display:flex; align-items:center; gap:8px; width:100%; padding:9px 12px;
+  border:none; border-radius:var(--radius-sm); background:transparent;
+  color:var(--text3); font-size:12.5px; transition:color .12s,background .12s;
+}
+.btn-logout:hover{ color:var(--danger); background:var(--danger-bg); }
+
+.hq-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.hq-header{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:18px 28px; border-bottom:1px solid var(--border);
+  position:sticky; top:0; background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(12px); z-index:20;
+}
+.hq-title{ font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:.02em; }
+.hq-header-actions{ display:flex; align-items:center; gap:10px; }
+.hq-content{ padding:22px 28px 60px; flex:1; }
+
+/* ════════ BOTONES ════════ */
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:9px 16px;
+  border-radius:var(--radius-sm); border:1px solid var(--border2);
+  background:var(--surface); color:var(--text); font-size:13px; font-weight:600;
+  transition:background .12s,border-color .12s;
+}
+.btn:hover{ background:var(--surface2); border-color:var(--accent); }
+.btn-primary{
+  background:var(--accent); border-color:var(--accent); color:#02141C;
+}
+.btn-primary:hover{ background:var(--accent-light); border-color:var(--accent-light); }
+.btn-danger{ background:var(--danger-bg); border-color:transparent; color:var(--danger); }
+.btn-danger:hover{ border-color:var(--danger); background:var(--danger-bg); }
+.btn:disabled{ opacity:.5; cursor:default; }
+.btn-sm{ padding:6px 11px; font-size:12px; }
+
+/* ════════ FILTROS ════════ */
+.filters-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:18px; margin-bottom:18px; }
+.filter-group{ display:flex; align-items:center; gap:6px; }
+.filter-label{ font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.1em; margin-right:2px; }
+.chip{
+  padding:5px 12px; border-radius:999px; border:1px solid var(--border2);
+  background:transparent; color:var(--text2); font-size:12px; font-weight:600;
+  transition:all .12s;
+}
+.chip:hover{ border-color:var(--accent); color:var(--text); }
+.chip.on{ background:var(--accent-bg2); border-color:var(--accent); color:var(--accent-light); }
+.chip .vdot{ margin-right:5px; }
+
+/* ════════ HOY TOCA ════════ */
+.hoy-bar{
+  margin-bottom:18px; border:1px solid var(--border2); border-radius:var(--radius);
+  background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--bg-card)), var(--bg-card));
+  padding:14px 18px;
+}
+.hoy-head{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+.hoy-head svg{ color:var(--accent); }
+.hoy-head h3{ font-family:var(--font-display); font-size:14px; font-weight:700; letter-spacing:.04em; }
+.hoy-head .hoy-count{
+  font-family:var(--fm); font-size:11px; color:var(--accent-light);
+  background:var(--accent-bg); padding:2px 8px; border-radius:999px;
+}
+.hoy-list{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+.hoy-item{
+  flex-shrink:0; min-width:210px; max-width:270px; padding:10px 13px;
+  border-radius:var(--radius-sm); background:var(--surface); border:1px solid var(--border);
+  cursor:pointer; transition:border-color .12s,background .12s;
+}
+.hoy-item:hover{ border-color:var(--accent); background:var(--surface2); }
+.hoy-item.vencida{ border-color:color-mix(in srgb, var(--danger) 45%, transparent); }
+.hoy-item .h-emp{ font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; }
+.hoy-item .h-acc{ font-size:12px; color:var(--text2); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hoy-item .h-meta{ display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text3); margin-top:5px; font-family:var(--fm); }
+.hoy-item .h-meta .venc{ color:var(--danger); font-weight:700; }
+.hoy-empty{ font-size:12.5px; color:var(--text3); padding:2px 0 4px; }
+
+/* ════════ KANBAN ════════ */
+.kanban-wrap{ overflow-x:auto; padding-bottom:14px; }
+.kanban{ display:flex; gap:14px; align-items:flex-start; min-width:max-content; }
+.kcol{
+  width:262px; flex-shrink:0; background:var(--bg-card);
+  border:1px solid var(--border); border-radius:var(--radius);
+  display:flex; flex-direction:column; max-height:calc(100vh - 300px); min-height:120px;
+}
+.kcol-head{
+  display:flex; align-items:center; gap:8px; padding:12px 14px;
+  border-bottom:1px solid var(--border); position:sticky; top:0;
+  background:var(--bg-card); border-radius:var(--radius) var(--radius) 0 0; z-index:2;
+}
+.kcol-head h4{
+  font-family:var(--font-display); font-size:12.5px; font-weight:700;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--text2);
+}
+.kcol-head .kcount{
+  margin-left:auto; font-family:var(--fm); font-size:11px; color:var(--text3);
+  background:var(--surface2); padding:1px 8px; border-radius:999px;
+}
+.kcol-head .kdot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.kcol-body{ padding:10px; display:flex; flex-direction:column; gap:9px; overflow-y:auto; }
+.kcol-empty{ font-size:11.5px; color:var(--text3); text-align:center; padding:14px 6px 18px; }
+
+.kcard{
+  background:var(--card2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:11px 12px; cursor:pointer; transition:border-color .12s, box-shadow .12s;
+  position:relative;
+}
+.kcard:hover{ border-color:var(--border2); box-shadow:var(--shadow); }
+.kcard-top{ display:flex; align-items:flex-start; gap:8px; }
+.kcard-emp{ font-weight:700; font-size:13.5px; line-height:1.3; flex:1; word-break:break-word; }
+.tier-badge{
+  flex-shrink:0; font-family:var(--fm); font-size:10.5px; font-weight:700;
+  padding:1px 7px; border-radius:6px; letter-spacing:.04em;
+}
+.tier-A{ background:var(--accent-bg2); color:var(--accent-light); }
+.tier-B{ background:var(--warn-bg); color:var(--warn); }
+.tier-C{ background:var(--surface2); color:var(--text3); }
+.kcard-meta{ display:flex; align-items:center; gap:8px; margin-top:6px; font-size:11.5px; color:var(--text3); flex-wrap:wrap; }
+.vdot{ display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.v-gym{ background:var(--v-gym); }
+.v-studios{ background:var(--v-studios); }
+.v-recovery{ background:var(--v-recovery); }
+.vlabel{ display:inline-flex; align-items:center; gap:5px; }
+.kcard-accion{
+  margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);
+  font-size:11.5px; color:var(--text2); display:flex; align-items:center; gap:6px;
+}
+.kcard-accion .fecha{ font-family:var(--fm); font-size:10.5px; color:var(--text3); margin-left:auto; flex-shrink:0; }
+.kcard-accion.vencida .fecha{ color:var(--danger); font-weight:700; }
+.dot-venc{
+  position:absolute; top:-4px; right:-4px; width:11px; height:11px; border-radius:50%;
+  background:var(--danger); border:2px solid var(--bg-card);
+  box-shadow:0 0 10px rgba(248,113,113,.6);
+}
+.kcard-move{
+  display:flex; justify-content:space-between; margin-top:9px; gap:6px;
+}
+.mv-btn{
+  flex:1; display:flex; align-items:center; justify-content:center; padding:5px 0;
+  border:1px solid var(--border); border-radius:8px; background:var(--surface);
+  color:var(--text2); transition:all .12s;
+}
+.mv-btn:hover{ border-color:var(--accent); color:var(--accent-light); background:var(--accent-bg); }
+.mv-btn.ghost{ visibility:hidden; }
+
+/* ════════ ESTADOS DE CARGA / VACÍO ════════ */
+.state-box{
+  padding:60px 24px; text-align:center; color:var(--text3);
+  border:1px dashed var(--border2); border-radius:var(--radius); background:var(--bg-card);
+}
+.state-box h3{ font-family:var(--font-display); color:var(--text2); font-size:16px; margin:14px 0 6px; }
+.state-box p{ font-size:13px; max-width:420px; margin:0 auto; }
+.state-box svg{ color:var(--text3); }
+.spinner{
+  width:26px; height:26px; margin:0 auto; border-radius:50%;
+  border:3px solid var(--border2); border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* ════════ DRAWER (FICHA DE LEAD) ════════ */
+.drawer-overlay{
+  position:fixed; inset:0; background:rgba(2,8,14,.65); backdrop-filter:blur(3px);
+  z-index:80; display:none;
+}
+.drawer-overlay.open{ display:block; }
+.drawer{
+  position:fixed; top:0; right:0; bottom:0; width:min(480px, 100vw);
+  background:var(--bg-card); border-left:1px solid var(--border2);
+  box-shadow:var(--shadow-lg); z-index:90; display:none;
+  flex-direction:column; overflow:hidden;
+}
+.drawer.open{ display:flex; }
+.drawer-head{
+  display:flex; align-items:center; gap:12px; padding:18px 22px;
+  border-bottom:1px solid var(--border);
+}
+.drawer-head h3{ font-family:var(--font-display); font-size:17px; font-weight:700; flex:1; word-break:break-word; }
+.drawer-close{
+  border:none; background:var(--surface); color:var(--text2); width:32px; height:32px;
+  border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.drawer-close:hover{ color:var(--text); background:var(--surface2); }
+.drawer-body{ flex:1; overflow-y:auto; padding:20px 22px 30px; }
+.etapa-pill{
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--fm); font-size:11px;
+  padding:3px 10px; border-radius:999px; background:var(--accent-bg);
+  color:var(--accent-light); letter-spacing:.05em; text-transform:uppercase;
+}
+.etapa-pill.perdido{ background:var(--danger-bg); color:var(--danger); }
+.etapa-pill.pagando{ background:var(--ok-bg); color:var(--ok); }
+
+.f-section{ margin-bottom:22px; }
+.f-section > h4{
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3);
+  margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:7px;
+}
+.f-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.f-field{ display:flex; flex-direction:column; gap:4px; }
+.f-field.full{ grid-column:1 / -1; }
+.f-field label{ font-size:10.5px; color:var(--text3); letter-spacing:.07em; text-transform:uppercase; }
+.f-field input, .f-field select, .f-field textarea{
+  width:100%; padding:9px 11px; border-radius:9px; background:var(--surface);
+  border:1px solid var(--border2); color:var(--text); outline:none; transition:border .12s;
+}
+.f-field textarea{ resize:vertical; min-height:56px; }
+.f-field input:focus, .f-field select:focus, .f-field textarea:focus{ border-color:var(--accent); }
+.f-field select option{ background:var(--bg-elevated); color:var(--text); }
+.f-motivo{
+  margin-top:10px; padding:10px 12px; border-radius:var(--radius-sm);
+  background:var(--danger-bg); color:var(--danger); font-size:12.5px;
+}
+
+/* ── Bitácora ── */
+.bit-form{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.bit-form-row{ display:flex; gap:8px; }
+.bit-form select{ width:130px; flex-shrink:0; }
+.bit-form textarea{ flex:1; min-height:44px; }
+.bit-list{ display:flex; flex-direction:column; gap:0; }
+.bit-item{ display:flex; gap:12px; position:relative; padding-bottom:16px; }
+.bit-item:last-child{ padding-bottom:0; }
+.bit-rail{ display:flex; flex-direction:column; align-items:center; flex-shrink:0; width:26px; }
+.bit-ico{
+  width:26px; height:26px; border-radius:50%; background:var(--surface2);
+  border:1px solid var(--border2); display:flex; align-items:center; justify-content:center;
+  color:var(--text2); flex-shrink:0;
+}
+.bit-item.t-etapa .bit-ico{ background:var(--accent-bg); color:var(--accent-light); border-color:transparent; }
+.bit-line{ flex:1; width:1px; background:var(--border); margin-top:4px; }
+.bit-item:last-child .bit-line{ display:none; }
+.bit-content{ flex:1; padding-top:2px; min-width:0; }
+.bit-tipo{ font-size:10.5px; font-family:var(--fm); letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
+.bit-detalle{ font-size:13px; color:var(--text); margin-top:2px; white-space:pre-wrap; word-break:break-word; }
+.bit-fecha{ font-size:10.5px; font-family:var(--fm); color:var(--text3); margin-top:3px; }
+.bit-empty{ font-size:12.5px; color:var(--text3); padding:8px 0; }
+
+.drawer-foot{
+  padding:14px 22px; border-top:1px solid var(--border); display:flex; gap:10px;
+  background:var(--bg-card);
+}
+.drawer-foot .btn{ flex:1; justify-content:center; }
+
+/* ════════ MODALES ════════ */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(2,8,14,.7); backdrop-filter:blur(3px);
+  z-index:100; display:none; align-items:center; justify-content:center; padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal{
+  width:100%; max-width:440px; background:var(--bg-card); border:1px solid var(--border2);
+  border-radius:var(--radius); box-shadow:var(--shadow-lg); overflow:hidden;
+  max-height:90vh; display:flex; flex-direction:column;
+}
+.modal-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+}
+.modal-head h3{ font-family:var(--font-display); font-size:16px; font-weight:700; }
+.modal-body{ padding:18px 20px; overflow-y:auto; }
+.modal-foot{ padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+
+/* ════════ TOASTS ════════ */
+#toast-zone{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center;
+  pointer-events:none;
+}
+.toast{
+  display:flex; align-items:center; gap:9px; padding:11px 18px;
+  border-radius:var(--radius-sm); background:var(--bg-elevated);
+  border:1px solid var(--border2); color:var(--text); font-size:13px; font-weight:500;
+  box-shadow:var(--shadow-md); animation:toastIn .2s ease;
+  max-width:min(480px, 90vw);
+}
+.toast svg{ flex-shrink:0; }
+.toast.ok svg{ color:var(--ok); }
+.toast.err{ border-color:color-mix(in srgb, var(--danger) 45%, transparent); }
+.toast.err svg{ color:var(--danger); }
+@keyframes toastIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+/* ════════ VISTAS PLACEHOLDER ════════ */
+.placeholder-view{ max-width:520px; margin:60px auto 0; }
+
+@media (max-width: 860px){
+  .hq-sidebar{ width:64px; padding:16px 8px; }
+  .hq-sidebar .nav-label, .hq-sidebar .nav-tag, .hq-brand em, .hq-brand b, .nav-user{ display:none; }
+  .nav-item{ justify-content:center; padding:10px 0; }
+  .hq-brand{ justify-content:center; padding-bottom:16px; }
+  .btn-logout{ justify-content:center; }
+  .btn-logout .nav-label{ display:none; }
+  .hq-content{ padding:16px 14px 60px; }
+  .hq-header{ padding:14px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOGIN — mismo contrato que el panel: move-login → JWT custom.
+     El gate app_rol==='superadmin' es UX; la seguridad real es RLS.
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">VELUM <span>HQ</span></div>
+    <div class="login-sub">Operación · solo superadmin</div>
+    <form id="login-form" onsubmit="doLogin(event)">
+      <div class="login-field">
+        <label for="login-email">Correo</label>
+        <input id="login-email" type="email" autocomplete="username" required/>
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Contraseña</label>
+        <input id="login-pass" type="password" autocomplete="current-password" required/>
+      </div>
+      <div class="login-field" id="totp-row" hidden>
+        <label for="login-totp">Código 2FA</label>
+        <input id="login-totp" type="text" inputmode="numeric" autocomplete="one-time-code"
+               maxlength="11" placeholder="000000" style="font-family:var(--fm);letter-spacing:4px;text-align:center;"/>
+      </div>
+      <button type="submit" class="login-btn" id="login-btn">ENTRAR</button>
+      <div class="login-error" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SHELL — header + nav lateral. Solo Pipeline es funcional en F1.
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="app" hidden>
+  <aside class="hq-sidebar">
+    <div class="hq-brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4l9 16L21 4"/></svg>
+      <b>VELUM</b> <em>HQ</em>
+    </div>
+
+    <button class="nav-item disabled" onclick="showView('cockpit')" title="Cockpit — llega en F2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+      <span class="nav-label">Cockpit</span><span class="nav-tag">F2</span>
+    </button>
+    <button class="nav-item active" id="nav-pipeline" onclick="showView('pipeline')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="7" rx="1"/></svg>
+      <span class="nav-label">Pipeline</span>
+    </button>
+    <button class="nav-item disabled" onclick="showView('cuentas')" title="Cuentas — llega en F2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="nav-label">Cuentas</span><span class="nav-tag">F2</span>
+    </button>
+    <button class="nav-item disabled" onclick="showView('salud')" title="Salud — llega en F3">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span class="nav-label">Salud</span><span class="nav-tag">F3</span>
+    </button>
+    <button class="nav-item disabled" onclick="showView('tareas')" title="Tareas — llega en F3">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span class="nav-label">Tareas</span><span class="nav-tag">F3</span>
+    </button>
+
+    <div class="nav-foot">
+      <div class="nav-user" id="nav-user"></div>
+      <button class="btn-logout" onclick="logout()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        <span class="nav-label">Salir</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="hq-main">
+    <header class="hq-header">
+      <div class="hq-title" id="view-title">Pipeline</div>
+      <div class="hq-header-actions">
+        <button class="btn btn-primary" id="btn-nuevo-lead" onclick="openNuevoLead()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo lead
+        </button>
+      </div>
+    </header>
+
+    <main class="hq-content">
+      <!-- ─── VISTA: PIPELINE ─── -->
+      <section id="view-pipeline">
+        <div id="hoy-bar"></div>
+        <div class="filters-bar" id="filters-bar"></div>
+        <div id="pipeline-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando pipeline…</h3></div>
+        </div>
+      </section>
+
+      <!-- ─── VISTAS FUTURAS (F2/F3) ─── -->
+      <section id="view-cockpit" hidden>
+        <div class="state-box placeholder-view">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          <h3>Cockpit — F2</h3>
+          <p>Los 3 números del negocio, gráfica MRR/GMV y feed de eventos llegan en la fase 2.</p>
+        </div>
+      </section>
+      <section id="view-cuentas" hidden>
+        <div class="state-box placeholder-view">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <h3>Cuentas — F2</h3>
+          <p>Estado por gym, plan, próximo cobro y acciones de Stripe llegan en la fase 2.</p>
+        </div>
+      </section>
+      <section id="view-salud" hidden>
+        <div class="state-box placeholder-view">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <h3>Salud — F3</h3>
+          <p>Semáforo por gym con uso real de 30 días llega en la fase 3.</p>
+        </div>
+      </section>
+      <section id="view-tareas" hidden>
+        <div class="state-box placeholder-view">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <h3>Tareas — F3</h3>
+          <p>La agenda auto-generada del founder llega en la fase 3.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ DRAWER: FICHA DE LEAD ═══ -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeFicha()"></div>
+<div class="drawer" id="drawer" role="dialog" aria-label="Ficha de lead">
+  <div class="drawer-head">
+    <h3 id="drawer-title"></h3>
+    <span class="etapa-pill" id="drawer-etapa"></span>
+    <button class="drawer-close" onclick="closeFicha()" aria-label="Cerrar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-foot">
+    <button class="btn" onclick="closeFicha()">Cerrar</button>
+    <button class="btn btn-primary" id="btn-guardar-ficha" onclick="guardarFicha()">Guardar cambios</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: NUEVO LEAD ═══ -->
+<div class="modal-overlay" id="modal-nuevo">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Nuevo lead</h3>
+      <button class="drawer-close" onclick="closeNuevoLead()" aria-label="Cerrar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="f-grid">
+        <div class="f-field full">
+          <label for="nl-empresa">Empresa *</label>
+          <input id="nl-empresa" type="text" placeholder="Nombre del gym / estudio"/>
+        </div>
+        <div class="f-field">
+          <label for="nl-vertical">Vertical</label>
+          <select id="nl-vertical">
+            <option value="gym">Gym</option>
+            <option value="studios">Studios</option>
+            <option value="recovery">Recovery</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label for="nl-tier">Tier</label>
+          <select id="nl-tier">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C" selected>C</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label for="nl-ciudad">Ciudad</label>
+          <input id="nl-ciudad" type="text" placeholder="León, Gto."/>
+        </div>
+        <div class="f-field">
+          <label for="nl-canal">Canal</label>
+          <select id="nl-canal">
+            <option value="manual" selected>Manual</option>
+            <option value="prospeccion-bajio">Prospección Bajío</option>
+            <option value="landing">Landing</option>
+            <option value="referido">Referido</option>
+            <option value="meta-ads">Meta Ads</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label for="nl-tel">Teléfono</label>
+          <input id="nl-tel" type="tel" placeholder="477 000 0000"/>
+        </div>
+        <div class="f-field">
+          <label for="nl-mail">Email</label>
+          <input id="nl-mail" type="email" placeholder="dueno@gym.mx"/>
+        </div>
+        <div class="f-field full">
+          <label for="nl-accion">Próxima acción</label>
+          <input id="nl-accion" type="text" placeholder="Mandar mensaje de apertura"/>
+        </div>
+        <div class="f-field">
+          <label for="nl-fecha">Fecha próxima acción</label>
+          <input id="nl-fecha" type="date"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeNuevoLead()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-crear-lead" onclick="crearLead()">Crear lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: MOTIVO PERDIDO ═══ -->
+<div class="modal-overlay" id="modal-perdido">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Marcar como perdido</h3>
+      <button class="drawer-close" onclick="closePerdido()" aria-label="Cerrar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="f-field">
+        <label for="perdido-motivo" id="perdido-label">Motivo</label>
+        <textarea id="perdido-motivo" placeholder="Ej. Ya firmó con otro sistema, precio, no contesta…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closePerdido()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-perdido" onclick="confirmarPerdido()">Marcar perdido</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-zone"></div>
+
+<!-- ═══ SUPABASE SDK ═══ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// VELUM HQ · F1 — Pipeline (CRM de superadmin)
+// Mismo proyecto Supabase que el panel; auth vía move-login (JWT
+// custom HS256 con claims app_rol + gym_id). RLS con is_superadmin()
+// gobierna saas_leads / saas_lead_events — el gate del cliente es UX.
+// ════════════════════════════════════════════════════════════════
+
+// ── Config (idéntica al panel) ──
+const SUPABASE_URL  = 'https://savzjanpydyjtrgdkllx.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
+const EDGE_LOGIN_URL = `${SUPABASE_URL}/functions/v1/move-login`;
+const SESSION_KEY = 'velum_hq_session'; // clave propia — no pisa move_session del panel
+
+let sb = null;          // cliente Supabase autenticado (JWT en Authorization)
+let HQ_USER = null;     // sesión activa {email, jwt, claims}
+
+// ── Catálogo de etapas (orden = flujo 4 de venta) ──
+const ETAPAS = ['lead','contactado','calificado','demo','trial','pagando','perdido','nurture'];
+const ETAPA_LABEL = {
+  lead:'Lead', contactado:'Contactado', calificado:'Calificado', demo:'Demo',
+  trial:'Trial', pagando:'Pagando', perdido:'Perdido', nurture:'Nurture'
+};
+// Color del punto de cada columna (semántico, no por vertical)
+const ETAPA_COLOR = {
+  lead:'#687E8A', contactado:'#7ABFCC', calificado:'#66E8FF', demo:'#00D4FF',
+  trial:'#C9A86A', pagando:'#10e8a0', perdido:'#f87171', nurture:'#c084fc'
+};
+// Etapas terminales: no aparecen en "Hoy toca"
+const ETAPAS_TERMINALES = ['pagando','perdido'];
+
+const VERTICAL_LABEL = { gym:'Gym', studios:'Studios', recovery:'Recovery' };
+const CANALES = ['manual','prospeccion-bajio','landing','referido','meta-ads'];
+const CANAL_LABEL = {
+  'manual':'Manual', 'prospeccion-bajio':'Prospección Bajío', 'landing':'Landing',
+  'referido':'Referido', 'meta-ads':'Meta Ads'
+};
+const TIPOS_EVENTO = ['mensaje','llamada','demo','nota']; // 'etapa' solo lo escribe el sistema
+
+// ── Estado de la vista ──
+let LEADS = [];                                   // cache de saas_leads
+let FILTROS = { vertical:'todos', tier:'todos' }; // filtros del kanban
+let fichaLeadId = null;                           // lead abierto en el drawer
+let perdidoLeadId = null;                         // lead pendiente de motivo_perdido
+
+// ════════════════════════════════════════════════════════════════
+// UTILIDADES
+// ════════════════════════════════════════════════════════════════
+
+// Escapar HTML — todo dato de DB pasa por aquí antes de innerHTML
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+// Fecha local de hoy en ISO (YYYY-MM-DD) — sin sorpresas de UTC
+function hoyISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// "2026-07-06" → "6 jul" (o "6 jul 25" si es otro año)
+function fmtFecha(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const base = `${d} ${meses[(m||1)-1]}`;
+  return y === new Date().getFullYear() ? base : `${base} ${String(y).slice(-2)}`;
+}
+
+// timestamptz → "6 jul · 14:32"
+function fmtTimestamp(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  if(isNaN(d)) return '';
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const y = d.getFullYear() === new Date().getFullYear() ? '' : ` ${d.getFullYear()}`;
+  return `${d.getDate()} ${meses[d.getMonth()]}${y} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// SHA-256 del password (mismo contrato que el panel con move-login)
+async function hashPassword(pass){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// Decodificar payload de JWT — base64url → UTF-8 seguro (acentos/ñ en claims)
+function decodeJwt(jwt){
+  try{
+    const b64 = jwt.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const bin = atob(b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '='));
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }catch(e){ return null; }
+}
+
+// Toast — única vía de feedback; ningún error de query se queda en silencio
+function toast(msg, kind){
+  const zone = document.getElementById('toast-zone');
+  const el = document.createElement('div');
+  el.className = `toast ${kind === 'err' ? 'err' : 'ok'}`;
+  const icon = kind === 'err'
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+    : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  el.innerHTML = `${icon}<span>${esc(msg)}</span>`;
+  zone.appendChild(el);
+  setTimeout(() => el.remove(), kind === 'err' ? 5000 : 3200);
+}
+
+// ════════════════════════════════════════════════════════════════
+// AUTH — login / sesión / gate superadmin
+// ════════════════════════════════════════════════════════════════
+
+function getSession(){
+  try{ return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+  catch(e){ return null; }
+}
+function setSession(s){ localStorage.setItem(SESSION_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+// Cliente Supabase con el JWT custom en Authorization → RLS activo
+function initAuthClient(jwt){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth:   { persistSession:false, autoRefreshToken:false }
+  });
+}
+
+function showLoginError(msg){
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+async function doLogin(ev){
+  if(ev) ev.preventDefault();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  const totp  = document.getElementById('login-totp').value.trim();
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.classList.remove('show');
+  if(!email || !pass){ showLoginError('Completa todos los campos.'); return; }
+
+  btn.textContent = 'Verificando…'; btn.disabled = true;
+  try{
+    const pw_hash = await hashPassword(pass);
+    const reqBody = { email, pw_hash };
+    if(totp) reqBody.totp_code = totp;
+
+    const res = await fetch(EDGE_LOGIN_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(reqBody)
+    });
+    const result = await res.json();
+
+    // 2FA: si el usuario lo tiene activo, pedimos el código en la misma pantalla
+    if(result.requires_2fa){
+      document.getElementById('totp-row').hidden = false;
+      document.getElementById('login-totp').focus();
+      showLoginError(result.error || 'Escribe tu código de 6 dígitos.');
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      return;
+    }
+    if(result.requires_2fa_enrollment){
+      showLoginError('Tu cuenta requiere configurar 2FA — hazlo desde el panel primero.');
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      return;
+    }
+    if(!res.ok || !result.token){
+      showLoginError(result.error || 'Correo o contraseña incorrectos.');
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      return;
+    }
+
+    // ── Gate UX: solo superadmin entra a HQ (la defensa real es RLS) ──
+    const claims = decodeJwt(result.token);
+    if(!claims || claims.app_rol !== 'superadmin'){
+      showLoginError('Solo superadmin puede entrar a VELUM HQ.');
+      clearSession();
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      return;
+    }
+
+    const session = { email, jwt: result.token, claims, user: result.user || null };
+    setSession(session);
+    HQ_USER = session;
+    initAuthClient(result.token);
+    entrarApp();
+  }catch(e){
+    console.error(e);
+    showLoginError('Error de conexión.');
+  }
+  btn.textContent = 'ENTRAR'; btn.disabled = false;
+}
+
+function logout(){
+  clearSession();
+  HQ_USER = null; sb = null; LEADS = [];
+  document.getElementById('app').hidden = true;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-totp').value = '';
+  document.getElementById('totp-row').hidden = true;
+}
+
+// Mostrar shell y disparar la carga inicial del pipeline
+function entrarApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').hidden = false;
+  document.getElementById('nav-user').textContent = HQ_USER.email || '';
+  showView('pipeline');
+  loadLeads();
+}
+
+// Al abrir la página: restaurar sesión si el JWT sigue vigente y es superadmin
+function boot(){
+  const s = getSession();
+  if(s && s.jwt){
+    const claims = decodeJwt(s.jwt);
+    const vigente = claims && (!claims.exp || claims.exp * 1000 > Date.now());
+    if(vigente && claims.app_rol === 'superadmin'){
+      HQ_USER = { ...s, claims };
+      initAuthClient(s.jwt);
+      entrarApp();
+      return;
+    }
+    clearSession(); // expirado o rol inválido → login limpio
+  }
+}
+document.addEventListener('DOMContentLoaded', boot);
+
+// ════════════════════════════════════════════════════════════════
+// NAVEGACIÓN — solo Pipeline funcional en F1
+// ════════════════════════════════════════════════════════════════
+
+const VIEW_TITLES = {
+  pipeline:'Pipeline', cockpit:'Cockpit', cuentas:'Cuentas', salud:'Salud', tareas:'Tareas'
+};
+
+function showView(name){
+  ['pipeline','cockpit','cuentas','salud','tareas'].forEach(v => {
+    const el = document.getElementById(`view-${v}`);
+    if(el) el.hidden = (v !== name);
+  });
+  document.getElementById('view-title').textContent = VIEW_TITLES[name] || name;
+  document.getElementById('btn-nuevo-lead').hidden = (name !== 'pipeline');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.querySelector(`.nav-item[onclick="showView('${name}')"]`);
+  if(activeBtn) activeBtn.classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════════
+// DATOS — carga de leads + helper de eventos
+// ════════════════════════════════════════════════════════════════
+
+async function loadLeads(){
+  const zone = document.getElementById('pipeline-zone');
+  zone.innerHTML = '<div class="state-box"><div class="spinner"></div><h3>Cargando pipeline…</h3></div>';
+  const { data, error } = await sb
+    .from('saas_leads')
+    .select('*')
+    .order('proxima_accion_fecha', { ascending:true, nullsFirst:false })
+    .order('updated_at', { ascending:false });
+  if(error){
+    console.error(error);
+    zone.innerHTML = `
+      <div class="state-box">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <h3>No se pudo cargar el pipeline</h3>
+        <p>${esc(error.message || 'Error de conexión')}</p>
+        <p style="margin-top:14px;"><button class="btn" onclick="loadLeads()">Reintentar</button></p>
+      </div>`;
+    toast('Error al cargar leads: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  LEADS = data || [];
+  renderPipeline();
+}
+
+// Registrar un evento en la bitácora (saas_lead_events)
+async function registrarEvento(leadId, tipo, detalle){
+  const { error } = await sb.from('saas_lead_events').insert({
+    lead_id: leadId, tipo, detalle
+  });
+  if(error){
+    console.error(error);
+    toast('Error al registrar evento: ' + (error.message || 'desconocido'), 'err');
+    return false;
+  }
+  return true;
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER — filtros + "Hoy toca" + kanban
+// ════════════════════════════════════════════════════════════════
+
+function setFiltro(campo, valor){
+  FILTROS[campo] = valor;
+  renderPipeline();
+}
+
+function leadsFiltrados(){
+  return LEADS.filter(l =>
+    (FILTROS.vertical === 'todos' || l.vertical === FILTROS.vertical) &&
+    (FILTROS.tier === 'todos' || l.tier === FILTROS.tier)
+  );
+}
+
+function renderPipeline(){
+  renderFiltros();
+  renderHoyToca();
+  renderKanban();
+}
+
+function renderFiltros(){
+  const chip = (campo, valor, label, extra) => `
+    <button class="chip ${FILTROS[campo] === valor ? 'on' : ''}"
+            onclick="setFiltro('${campo}','${valor}')">${extra || ''}${label}</button>`;
+  document.getElementById('filters-bar').innerHTML = `
+    <div class="filter-group">
+      <span class="filter-label">Vertical</span>
+      ${chip('vertical','todos','Todos')}
+      ${chip('vertical','gym','Gym','<span class="vdot v-gym"></span>')}
+      ${chip('vertical','studios','Studios','<span class="vdot v-studios"></span>')}
+      ${chip('vertical','recovery','Recovery','<span class="vdot v-recovery"></span>')}
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Tier</span>
+      ${chip('tier','todos','Todos')}
+      ${chip('tier','A','A')}
+      ${chip('tier','B','B')}
+      ${chip('tier','C','C')}
+    </div>`;
+}
+
+// Barra "Hoy toca": la lista de llamadas del día — proxima_accion_fecha <= hoy
+// en etapas no terminales, ordenadas por fecha (las más vencidas primero)
+function renderHoyToca(){
+  const hoy = hoyISO();
+  const pendientes = LEADS
+    .filter(l => l.proxima_accion_fecha && l.proxima_accion_fecha <= hoy
+              && !ETAPAS_TERMINALES.includes(l.etapa))
+    .sort((a,b) => a.proxima_accion_fecha.localeCompare(b.proxima_accion_fecha));
+
+  const items = pendientes.length === 0
+    ? '<div class="hoy-empty">Nada pendiente para hoy — agenda la próxima acción de tus leads activos.</div>'
+    : `<div class="hoy-list">${pendientes.map(l => {
+        const vencida = l.proxima_accion_fecha < hoy;
+        return `
+        <div class="hoy-item ${vencida ? 'vencida' : ''}" onclick="openFicha(${l.id})">
+          <div class="h-emp"><span class="vdot v-${esc(l.vertical)}"></span>${esc(l.empresa)}</div>
+          <div class="h-acc">${esc(l.proxima_accion || 'Sin acción definida')}</div>
+          <div class="h-meta">
+            <span class="${vencida ? 'venc' : ''}">${vencida ? 'Vencida · ' : ''}${fmtFecha(l.proxima_accion_fecha)}</span>
+            <span>${esc(ETAPA_LABEL[l.etapa] || l.etapa)}</span>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+
+  document.getElementById('hoy-bar').innerHTML = `
+    <div class="hoy-bar">
+      <div class="hoy-head">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <h3>Hoy toca</h3>
+        <span class="hoy-count">${pendientes.length}</span>
+      </div>
+      ${items}
+    </div>`;
+}
+
+function renderKanban(){
+  const zone = document.getElementById('pipeline-zone');
+  const filtrados = leadsFiltrados();
+
+  // Estado vacío global: pipeline sin un solo lead
+  if(LEADS.length === 0){
+    zone.innerHTML = `
+      <div class="state-box">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="7" rx="1"/></svg>
+        <h3>El pipeline está vacío</h3>
+        <p>Importa tus 36 leads del Bajío — pídeselo a Claude. O captura el primero con "Nuevo lead".</p>
+        <p style="margin-top:14px;"><button class="btn btn-primary" onclick="openNuevoLead()">Nuevo lead</button></p>
+      </div>`;
+    return;
+  }
+
+  const cols = ETAPAS.map(etapa => {
+    const leads = filtrados.filter(l => l.etapa === etapa);
+    const cards = leads.length === 0
+      ? '<div class="kcol-empty">Sin leads</div>'
+      : leads.map(cardHTML).join('');
+    return `
+      <div class="kcol">
+        <div class="kcol-head">
+          <span class="kdot" style="background:${ETAPA_COLOR[etapa]}"></span>
+          <h4>${ETAPA_LABEL[etapa]}</h4>
+          <span class="kcount">${leads.length}</span>
+        </div>
+        <div class="kcol-body">${cards}</div>
+      </div>`;
+  }).join('');
+
+  zone.innerHTML = `<div class="kanban-wrap"><div class="kanban">${cols}</div></div>`;
+}
+
+function cardHTML(l){
+  const hoy = hoyISO();
+  const vencida = l.proxima_accion_fecha && l.proxima_accion_fecha < hoy;
+  const idx = ETAPAS.indexOf(l.etapa);
+  const flechaIzq = idx > 0
+    ? `<button class="mv-btn" onclick="event.stopPropagation();moverEtapa(${l.id},-1)" title="Mover a ${ETAPA_LABEL[ETAPAS[idx-1]]}" aria-label="Etapa anterior">
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+       </button>`
+    : '<button class="mv-btn ghost" tabindex="-1"></button>';
+  const flechaDer = idx < ETAPAS.length - 1
+    ? `<button class="mv-btn" onclick="event.stopPropagation();moverEtapa(${l.id},1)" title="Mover a ${ETAPA_LABEL[ETAPAS[idx+1]]}" aria-label="Etapa siguiente">
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+       </button>`
+    : '<button class="mv-btn ghost" tabindex="-1"></button>';
+
+  const accion = l.proxima_accion || l.proxima_accion_fecha
+    ? `<div class="kcard-accion ${vencida ? 'vencida' : ''}">
+         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.proxima_accion || 'Acción sin describir')}</span>
+         ${l.proxima_accion_fecha ? `<span class="fecha">${fmtFecha(l.proxima_accion_fecha)}</span>` : ''}
+       </div>`
+    : '';
+
+  return `
+    <div class="kcard" onclick="openFicha(${l.id})">
+      ${vencida ? '<span class="dot-venc" title="Próxima acción vencida"></span>' : ''}
+      <div class="kcard-top">
+        <div class="kcard-emp">${esc(l.empresa)}</div>
+        <span class="tier-badge tier-${esc(l.tier)}">${esc(l.tier)}</span>
+      </div>
+      <div class="kcard-meta">
+        <span class="vlabel"><span class="vdot v-${esc(l.vertical)}"></span>${esc(VERTICAL_LABEL[l.vertical] || l.vertical)}</span>
+        ${l.ciudad ? `<span>· ${esc(l.ciudad)}</span>` : ''}
+      </div>
+      ${accion}
+      <div class="kcard-move">${flechaIzq}${flechaDer}</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// MOVER DE ETAPA — UPDATE + evento 'etapa' automático en la bitácora
+// ════════════════════════════════════════════════════════════════
+
+async function moverEtapa(id, dir){
+  const lead = LEADS.find(l => l.id === id);
+  if(!lead) return;
+  const idx = ETAPAS.indexOf(lead.etapa);
+  const nuevoIdx = idx + dir;
+  if(nuevoIdx < 0 || nuevoIdx >= ETAPAS.length) return;
+  const nueva = ETAPAS[nuevoIdx];
+
+  // Mover a 'perdido' exige motivo — se resuelve en el modal
+  if(nueva === 'perdido'){
+    perdidoLeadId = id;
+    document.getElementById('perdido-motivo').value = '';
+    document.getElementById('perdido-label').textContent = `Motivo — ${lead.empresa}`;
+    document.getElementById('modal-perdido').classList.add('open');
+    setTimeout(() => document.getElementById('perdido-motivo').focus(), 60);
+    return;
+  }
+  await aplicarCambioEtapa(id, nueva, null);
+}
+
+function closePerdido(){
+  perdidoLeadId = null;
+  document.getElementById('modal-perdido').classList.remove('open');
+}
+
+async function confirmarPerdido(){
+  const motivo = document.getElementById('perdido-motivo').value.trim();
+  if(!motivo){ toast('Escribe el motivo — es el aprendizaje del pipeline.', 'err'); return; }
+  if(perdidoLeadId == null) return;
+  const id = perdidoLeadId;
+  const btn = document.getElementById('btn-confirmar-perdido');
+  btn.disabled = true;
+  await aplicarCambioEtapa(id, 'perdido', motivo);
+  btn.disabled = false;
+  closePerdido();
+}
+
+// UPDATE de etapa (+motivo si aplica) e INSERT del evento tipo 'etapa'
+async function aplicarCambioEtapa(id, nueva, motivo){
+  const lead = LEADS.find(l => l.id === id);
+  if(!lead) return;
+  const anterior = lead.etapa;
+
+  const patch = { etapa: nueva };
+  if(nueva === 'perdido') patch.motivo_perdido = motivo;
+
+  const { error } = await sb.from('saas_leads').update(patch).eq('id', id);
+  if(error){
+    console.error(error);
+    toast('Error al mover etapa: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+
+  // Bitácora automática del cambio de etapa
+  let detalle = `${ETAPA_LABEL[anterior] || anterior} → ${ETAPA_LABEL[nueva] || nueva}`;
+  if(motivo) detalle += ` · Motivo: ${motivo}`;
+  await registrarEvento(id, 'etapa', detalle);
+
+  // Actualizar cache local y repintar
+  lead.etapa = nueva;
+  if(nueva === 'perdido') lead.motivo_perdido = motivo;
+  renderPipeline();
+  toast(`${lead.empresa} → ${ETAPA_LABEL[nueva]}`);
+  // Si la ficha está abierta sobre este lead, refrescar bitácora y pill
+  if(fichaLeadId === id){
+    pintarEtapaPill(lead);
+    loadEventos(id);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// FICHA DE LEAD — drawer con campos editables + bitácora
+// ════════════════════════════════════════════════════════════════
+
+function openFicha(id){
+  const lead = LEADS.find(l => l.id === id);
+  if(!lead) return;
+  fichaLeadId = id;
+
+  document.getElementById('drawer-title').textContent = lead.empresa;
+  pintarEtapaPill(lead);
+
+  const c = lead.contacto || {};
+  const opts = (arr, sel, labels) => arr.map(v =>
+    `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(labels ? (labels[v] || v) : v)}</option>`).join('');
+
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+        Datos del lead
+      </h4>
+      <div class="f-grid">
+        <div class="f-field full">
+          <label for="fl-empresa">Empresa</label>
+          <input id="fl-empresa" type="text" value="${esc(lead.empresa)}"/>
+        </div>
+        <div class="f-field">
+          <label for="fl-vertical">Vertical</label>
+          <select id="fl-vertical">${opts(['gym','studios','recovery'], lead.vertical, VERTICAL_LABEL)}</select>
+        </div>
+        <div class="f-field">
+          <label for="fl-tier">Tier</label>
+          <select id="fl-tier">${opts(['A','B','C'], lead.tier)}</select>
+        </div>
+        <div class="f-field">
+          <label for="fl-ciudad">Ciudad</label>
+          <input id="fl-ciudad" type="text" value="${esc(lead.ciudad || '')}"/>
+        </div>
+        <div class="f-field">
+          <label for="fl-canal">Canal</label>
+          <select id="fl-canal">${opts(CANALES, lead.canal, CANAL_LABEL)}</select>
+        </div>
+        <div class="f-field full">
+          <label for="fl-sistema">Sistema actual</label>
+          <input id="fl-sistema" type="text" value="${esc(lead.sistema_actual || '')}" placeholder="Excel, cuaderno, otro software…"/>
+        </div>
+        <div class="f-field full">
+          <label for="fl-angulo">Ángulo de venta</label>
+          <textarea id="fl-angulo" placeholder="El dolor que abre la puerta">${esc(lead.angulo || '')}</textarea>
+        </div>
+      </div>
+      ${lead.etapa === 'perdido' && lead.motivo_perdido
+        ? `<div class="f-motivo"><strong>Perdido:</strong> ${esc(lead.motivo_perdido)}</div>` : ''}
+    </div>
+
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Contacto
+      </h4>
+      <div class="f-grid">
+        <div class="f-field">
+          <label for="fl-tel">Teléfono</label>
+          <input id="fl-tel" type="tel" value="${esc(c.tel || '')}"/>
+        </div>
+        <div class="f-field">
+          <label for="fl-mail">Email</label>
+          <input id="fl-mail" type="email" value="${esc(c.mail || '')}"/>
+        </div>
+        <div class="f-field">
+          <label for="fl-webig">Web / Instagram</label>
+          <input id="fl-webig" type="text" value="${esc(c.web_ig || '')}"/>
+        </div>
+        <div class="f-field">
+          <label for="fl-dm">Decision maker</label>
+          <input id="fl-dm" type="text" value="${esc(c.decision_maker || '')}"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Próxima acción
+      </h4>
+      <div class="f-grid">
+        <div class="f-field full">
+          <label for="fl-accion">Qué sigue</label>
+          <input id="fl-accion" type="text" value="${esc(lead.proxima_accion || '')}" placeholder="Llamar para agendar demo"/>
+        </div>
+        <div class="f-field">
+          <label for="fl-fecha">Fecha</label>
+          <input id="fl-fecha" type="date" value="${esc(lead.proxima_accion_fecha || '')}"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Bitácora
+      </h4>
+      <div class="bit-form">
+        <div class="bit-form-row">
+          <select id="ev-tipo">
+            <option value="mensaje">Mensaje</option>
+            <option value="llamada">Llamada</option>
+            <option value="demo">Demo</option>
+            <option value="nota">Nota</option>
+          </select>
+          <textarea id="ev-detalle" placeholder="Qué pasó — cada contacto queda registrado"></textarea>
+        </div>
+        <button class="btn btn-sm" style="align-self:flex-end" onclick="agregarEvento()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Agregar
+        </button>
+      </div>
+      <div id="bitacora"><div class="spinner" style="margin:10px auto"></div></div>
+    </div>`;
+
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  loadEventos(id);
+}
+
+function pintarEtapaPill(lead){
+  const pill = document.getElementById('drawer-etapa');
+  pill.textContent = ETAPA_LABEL[lead.etapa] || lead.etapa;
+  pill.className = 'etapa-pill' +
+    (lead.etapa === 'perdido' ? ' perdido' : lead.etapa === 'pagando' ? ' pagando' : '');
+}
+
+function closeFicha(){
+  fichaLeadId = null;
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// Bitácora: eventos del lead en orden descendente
+async function loadEventos(leadId){
+  const cont = document.getElementById('bitacora');
+  if(!cont) return;
+  const { data, error } = await sb
+    .from('saas_lead_events')
+    .select('*')
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending:false });
+  if(error){
+    console.error(error);
+    cont.innerHTML = '<div class="bit-empty">Error al cargar la bitácora.</div>';
+    toast('Error al cargar bitácora: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  if(!data || data.length === 0){
+    cont.innerHTML = '<div class="bit-empty">Sin eventos todavía — registra el primer contacto arriba.</div>';
+    return;
+  }
+  cont.innerHTML = `<div class="bit-list">${data.map(ev => `
+    <div class="bit-item t-${esc(ev.tipo)}">
+      <div class="bit-rail">
+        <div class="bit-ico">${iconoEvento(ev.tipo)}</div>
+        <div class="bit-line"></div>
+      </div>
+      <div class="bit-content">
+        <div class="bit-tipo">${esc(ev.tipo)}</div>
+        <div class="bit-detalle">${esc(ev.detalle)}</div>
+        <div class="bit-fecha">${fmtTimestamp(ev.created_at)}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+// Ícono SVG por tipo de evento
+function iconoEvento(tipo){
+  const svgs = {
+    mensaje: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+    llamada: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>',
+    demo: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    nota: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>',
+    etapa: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+  };
+  return svgs[tipo] || svgs.nota;
+}
+
+// Agregar evento manual (mensaje/llamada/demo/nota) desde la ficha
+async function agregarEvento(){
+  if(fichaLeadId == null) return;
+  const tipo = document.getElementById('ev-tipo').value;
+  const detalle = document.getElementById('ev-detalle').value.trim();
+  if(!TIPOS_EVENTO.includes(tipo)){ toast('Tipo de evento inválido.', 'err'); return; }
+  if(!detalle){ toast('Escribe el detalle del evento.', 'err'); return; }
+  const ok = await registrarEvento(fichaLeadId, tipo, detalle);
+  if(ok){
+    document.getElementById('ev-detalle').value = '';
+    toast('Evento registrado');
+    loadEventos(fichaLeadId);
+  }
+}
+
+// Guardar todos los campos editables de la ficha
+async function guardarFicha(){
+  if(fichaLeadId == null) return;
+  const id = fichaLeadId;
+  const empresa = document.getElementById('fl-empresa').value.trim();
+  if(!empresa){ toast('La empresa no puede quedar vacía.', 'err'); return; }
+
+  const patch = {
+    empresa,
+    vertical: document.getElementById('fl-vertical').value,
+    tier: document.getElementById('fl-tier').value,
+    ciudad: document.getElementById('fl-ciudad').value.trim() || null,
+    canal: document.getElementById('fl-canal').value,
+    sistema_actual: document.getElementById('fl-sistema').value.trim() || null,
+    angulo: document.getElementById('fl-angulo').value.trim() || null,
+    proxima_accion: document.getElementById('fl-accion').value.trim() || null,
+    proxima_accion_fecha: document.getElementById('fl-fecha').value || null,
+    contacto: {
+      tel: document.getElementById('fl-tel').value.trim(),
+      mail: document.getElementById('fl-mail').value.trim(),
+      web_ig: document.getElementById('fl-webig').value.trim(),
+      decision_maker: document.getElementById('fl-dm').value.trim()
+    }
+  };
+
+  const btn = document.getElementById('btn-guardar-ficha');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const { error } = await sb.from('saas_leads').update(patch).eq('id', id);
+  btn.disabled = false; btn.textContent = 'Guardar cambios';
+
+  if(error){
+    console.error(error);
+    toast('Error al guardar: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  // Sincronizar cache local y repintar
+  const lead = LEADS.find(l => l.id === id);
+  if(lead) Object.assign(lead, patch);
+  document.getElementById('drawer-title').textContent = empresa;
+  renderPipeline();
+  toast('Lead guardado');
+}
+
+// ════════════════════════════════════════════════════════════════
+// NUEVO LEAD
+// ════════════════════════════════════════════════════════════════
+
+function openNuevoLead(){
+  ['nl-empresa','nl-ciudad','nl-tel','nl-mail','nl-accion','nl-fecha'].forEach(i =>
+    document.getElementById(i).value = '');
+  document.getElementById('nl-vertical').value = 'gym';
+  document.getElementById('nl-tier').value = 'C';
+  document.getElementById('nl-canal').value = 'manual';
+  document.getElementById('modal-nuevo').classList.add('open');
+  setTimeout(() => document.getElementById('nl-empresa').focus(), 60);
+}
+
+function closeNuevoLead(){
+  document.getElementById('modal-nuevo').classList.remove('open');
+}
+
+async function crearLead(){
+  const empresa = document.getElementById('nl-empresa').value.trim();
+  if(!empresa){ toast('El nombre de la empresa es obligatorio.', 'err'); return; }
+
+  const nuevo = {
+    empresa,
+    vertical: document.getElementById('nl-vertical').value,
+    tier: document.getElementById('nl-tier').value,
+    ciudad: document.getElementById('nl-ciudad').value.trim() || null,
+    canal: document.getElementById('nl-canal').value,
+    etapa: 'lead',
+    proxima_accion: document.getElementById('nl-accion').value.trim() || null,
+    proxima_accion_fecha: document.getElementById('nl-fecha').value || null,
+    contacto: {
+      tel: document.getElementById('nl-tel').value.trim(),
+      mail: document.getElementById('nl-mail').value.trim()
+    }
+  };
+
+  const btn = document.getElementById('btn-crear-lead');
+  btn.disabled = true; btn.textContent = 'Creando…';
+  const { data, error } = await sb.from('saas_leads').insert(nuevo).select().single();
+  btn.disabled = false; btn.textContent = 'Crear lead';
+
+  if(error){
+    console.error(error);
+    toast('Error al crear lead: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  LEADS.unshift(data);
+  closeNuevoLead();
+  renderPipeline();
+  toast(`Lead creado: ${data.empresa}`);
+  openFicha(data.id); // directo a la ficha para completar contacto/ángulo
+}
+
+// ── Cerrar drawer/modales con Escape ──
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(document.getElementById('modal-perdido').classList.contains('open')) closePerdido();
+  else if(document.getElementById('modal-nuevo').classList.contains('open')) closeNuevoLead();
+  else if(document.getElementById('drawer').classList.contains('open')) closeFicha();
+});
+</script>
+</body>
+</html>
