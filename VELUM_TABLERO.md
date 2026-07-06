@@ -1,5 +1,5 @@
 # VELUM — Tablero de seguimiento
-Última actualización: 2026-07-06 · Lo mantiene: NÚCLEO
+Última actualización: 2026-07-06 (2ª pasada) · Lo mantiene: NÚCLEO
 
 > Reconciliado contra git log + estado de sesión (el tablero anterior estaba al 17-jun).
 > Nota: el MCP de Supabase está desconectado en esta sesión — lo que requiera verificar
@@ -10,19 +10,11 @@
       · flujo: 4 · agente: IMPULSO + Roy · nota: todo listo en `marketing/prospeccion/propuesta-founder-krajo.md` + caso de éxito en `marketing/casos/caso-krajo.html`
 
 ## [P1/P2] Por hacer
-- [ ] Verificar landing v3 post-rediseño: que JSON-LD/OG/GA4, demo IA y lead-capture de la v2
-      hayan sobrevivido el cambio de territorio (la memoria dice que faltaba portarlos)
-      · flujo: 1 · agente: CENTINELA + VITRINA · prioridad: P1
 - [ ] Prueba social en landing (testimonio Krajo — depende de su permiso en la llamada)
       · flujo: 7 · agente: VITRINA + APOYO · prioridad: P1
-- [ ] Kit de demos Bajío: guion 15 min + objeciones + mensajes por prospecto del Excel
-      · flujo: 4 · agente: IMPULSO · prioridad: P1
 - [ ] Reporte semanal de activación/churn automatizado (velum-saas-metrics, lunes)
       · flujo: 1 · agente: ORÁCULO · prioridad: P2
 - [ ] Dunning de pagos fallidos gym→VELUM (reintentos + aviso) · flujo: 1 · agente: CAUDAL · prioridad: P2
-- [ ] Briefs de pauta Meta por vertical (cuando Roy defina presupuesto) · flujo: 7 · agente: VOZ · prioridad: P2
-- [ ] Quitar/noindex páginas *_MOCKUP del deploy · flujo: 1 · agente: VITRINA · prioridad: P2
-- [ ] Barrido final de ~264 emojis inline del panel · flujo: 1 · agente: TRAZO + FORJA · prioridad: P2
 
 ## [EN CURSO]
 - [~] (nada activo de agentes en este momento)
@@ -38,6 +30,11 @@
 - [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
 ## [HECHO] (reciente)
+- [x] Panel: migración de emojis 100% (77 tratados, motor de tokens intacto, gates verdes) · FORJA+TRAZO · 06 jul
+- [x] Briefs de pauta Meta por vertical (2x2 ABO, umbrales día 7, checklist bloqueante) · VOZ+META · 06 jul
+- [x] Kit de demos Bajío: guion + 10 objeciones + 14 mensajes Tier A personalizados · IMPULSO · 06 jul
+- [x] noindex a las 5 páginas *_MOCKUP expuestas · VITRINA · 06 jul
+- [x] Landing v3 verificada: SEO/GA4/demo IA/lead-capture portados, 0 errores, 0 enlaces rotos · CENTINELA · 06 jul
 - [x] Landing v3 "Sala de Máquinas" aplicada (index + verticales por plantilla) · LIENZO/VITRINA · 05-06 jul
 - [x] Upgrade de los 31 agentes (auditoría 8 dimensiones + reescritura + CHANGELOG + mapa) · 05 jul
 - [x] VELUM_FLUJOS.md: 8 pipelines operativos + índice en CLAUDE.md + NÚCLEO los lee · 05 jul
