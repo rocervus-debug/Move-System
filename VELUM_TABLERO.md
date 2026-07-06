@@ -1,49 +1,51 @@
 # VELUM — Tablero de seguimiento
+Última actualización: 2026-07-06 · Lo mantiene: NÚCLEO
 
-**Última actualización:** 17 jun 2026 · **Lo mantiene:** NÚCLEO (VELUM Studio)
+> Reconciliado contra git log + estado de sesión (el tablero anterior estaba al 17-jun).
+> Nota: el MCP de Supabase está desconectado en esta sesión — lo que requiera verificar
+> producción (deploys, DB) queda marcado y se confirma al reconectar.
 
-> Fuente de prioridades: `VELUM_AUDITORIA_MAESTRA.md`. Marca `[x]` lo hecho, `[~]` lo que está en curso.
+## [P0] Por hacer — bloquea vender/cobrar
+- [ ] Cerrar el PRIMER cliente pagando: llamada a Krajo con propuesta founder ($999 congelado)
+      · flujo: 4 · agente: IMPULSO + Roy · nota: todo listo en `marketing/prospeccion/propuesta-founder-krajo.md` + caso de éxito en `marketing/casos/caso-krajo.html`
 
-## 🔴 Por hacer — P0 (bloquea empezar a vender)
-- [x] **Funnel self-serve de gyms** ✅ VERIFICADO EN VIVO (7 jun): registro → trial 7d → pago Live → gym creado → login aislado y limpio. Stripe Live, price IDs y eventos del webhook confirmados. Aislamiento multi-gym probado (gym nuevo ve 0 datos de otros). VELUM puede vender solo. · IMPULSO + FORJA
-- [ ] **Activar emails (Resend)**: crear cuenta, verificar dominio, poner secrets `RESEND_API_KEY` + `EMAIL_FROM` · área: Producto · agente: FORJA (acción de Roy)
-- [x] **Pricing público + CTA de registro en el landing** ✅ HECHO (index.html: sección #pricing, tabla comparativa, CTAs a registro.html?plan=pro/max) · VITRINA + IMPULSO
-- [~] **Publicar la app — iOS ✅ ENVIADA A REVISIÓN (17 jun):** Build 3 (limpio, sin "MOVE") subido, 5 capturas 6.9", ficha completa, Age Ratings 9+, App Privacy publicada, Content Rights, Pricing (Free), cuenta del revisor (PULSE/4/VelumDemo2026) + notas Stripe. Estado: **Waiting for Review** (~24-48h). **Android:** ❌ DUNS YA NO ES NECESARIO (Roy es persona física → **cuenta Personal de Google Play, sin DUNS**, $25 USD único + verificación INE). Falta: crear la cuenta Personal → subir `.aab` + capturas + feature graphic → submit. · área: App · agente: SEÑAL
-- [ ] **Facturación CFDI (Facturapi)**: cuenta + CSD + cablear timbrado · área: Pagos · agente: FORJA (cuenta: Roy)
+## [P1/P2] Por hacer
+- [ ] Verificar landing v3 post-rediseño: que JSON-LD/OG/GA4, demo IA y lead-capture de la v2
+      hayan sobrevivido el cambio de territorio (la memoria dice que faltaba portarlos)
+      · flujo: 1 · agente: CENTINELA + VITRINA · prioridad: P1
+- [ ] Prueba social en landing (testimonio Krajo — depende de su permiso en la llamada)
+      · flujo: 7 · agente: VITRINA + APOYO · prioridad: P1
+- [ ] Kit de demos Bajío: guion 15 min + objeciones + mensajes por prospecto del Excel
+      · flujo: 4 · agente: IMPULSO · prioridad: P1
+- [ ] Reporte semanal de activación/churn automatizado (velum-saas-metrics, lunes)
+      · flujo: 1 · agente: ORÁCULO · prioridad: P2
+- [ ] Dunning de pagos fallidos gym→VELUM (reintentos + aviso) · flujo: 1 · agente: CAUDAL · prioridad: P2
+- [ ] Briefs de pauta Meta por vertical (cuando Roy defina presupuesto) · flujo: 7 · agente: VOZ · prioridad: P2
+- [ ] Quitar/noindex páginas *_MOCKUP del deploy · flujo: 1 · agente: VITRINA · prioridad: P2
+- [ ] Barrido final de ~264 emojis inline del panel · flujo: 1 · agente: TRAZO + FORJA · prioridad: P2
 
-## 🟡 Por hacer — P1 / P2
-- [ ] Prueba social en landing (testimonios/logos de los 4 gyms) · P1 · VITRINA
-- [ ] Endurecer seguridad: kiosco_lookup, bucket storefront-assets, error_logs · P1 · ESCUDO
-- [ ] Presencia viva en redes + cadencia de publicación · P1 · VOZ
-- [ ] Definir trial (14 días) + primer canal de adquisición · P1 · IMPULSO
-- [ ] Canal de soporte formal + onboarding asistido del 1er gym de paga · P1 · APOYO
-- [ ] ToS/contrato SaaS + aviso de privacidad MX (LFPDPPP) · P1 · (legal, coordina NÚCLEO)
-- [ ] noindex/quitar páginas *_MOCKUP del deploy · P2 · VITRINA
-- [ ] Base de conocimiento pública (las 15 guías) · P2 · APOYO + VITRINA
-- [ ] Programa de referidos · P2 · IMPULSO
-- [ ] Dominio propio por gym (subdominio o dominio 100% propio) · P2 · FORJA + VITRINA
+## [EN CURSO]
+- [~] (nada activo de agentes en este momento)
 
-## 🔵 En curso
-- [~] **Submit de iOS a revisión** · SEÑAL · 17 jun — Build 3 subiéndose; tomando las 5 capturas (iPhone 6.9", del portal de Ana en Pulse Studio); luego seleccionar build + cuenta del revisor + Submit. Es el P0 "publicar app".
-- [~] **Verticales Fase A — A.6 Recovery UI** · FORJA · 17 jun — pulido fino opcional pendiente; lo grueso terminado y verificado (ver Hecho).
+## [ESPERANDO A ROY]
+- [ ] OK para desplegar `velum-trial-nurture` + cron diario (código listo y commiteado; además
+      requiere reconectar el MCP de Supabase) · desde 03-jul
+- [ ] La llamada a Krajo (el P0 de arriba — 20 minutos, todo preparado) · desde 03-jul
+- [ ] 12 testers de Google Play (los 14 días de closed testing no arrancan sin ellos)
+- [ ] Submit de iOS (estado exacto en App Store Connect por confirmar; PrivacyInfo ~15 min de prep)
+- [ ] Desinstalar plugin `lazo-meta` duplicado (2 clics, instrucciones en AGENTES_CHANGELOG)
+- [ ] STRIPE_PLATFORM_SECRET_KEY para que Domiciliados muestre dinero real
+- [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
-## 🟢 Hecho (reciente — junio 2026)
-- [x] **Verticales A.6 — Recovery UI completa** (3 bloques, recovery-gated): **Recursos** (sauna/crio/masaje/compresión), **Protocolos** (plantillas de sesión), **Agenda de citas 1-a-1 por recurso** (navegación por día, agrupado por recurso, estados completada/no-show, wizard 3 pasos con duración auto + datalist de clientes). Verificado: esquema coincide, **RLS round-trip real (INSERT/SELECT/UPDATE/DELETE) como admin de Origin** OK, UI offline (nav reversible, renders, wizards). Cero riesgo a velum/studios. · FORJA · 17 jun
-- [x] **iOS — preparación completa para Submit** (17 jun): cuenta Apple Developer activa, Bundle ID `app.myvelum.platform`, archive+upload, **fix Info.plist** (NSCamera/NSPhotoLibrary + ITSAppUsesNonExemptEncryption=false → resuelve ITMS-90683 y export compliance), Age Ratings 9+, **App Privacy** (7 datos: Name/Email/Phone/Fitness/User ID/Purchases/Product Interaction), ficha/keywords/categoría Health & Fitness · SEÑAL
-- [x] **App atleta — eliminado el branding "MOVE"** (defaults, título, meta, banner, placeholders → todo "VELUM"/neutral). White-label limpio. · FORJA · 17 jun
-- [x] **Gym demo "Pulse Studio" poblado** para capturas y revisión: portal_codigo PULSE + password, 17 clases recurrentes, programa de la semana, 12 check-ins de Ana, reserva activa, membresía Ilimitada. Cuenta del revisor: PULSE/4/VelumDemo2026 · FORJA · 17 jun
-- [x] **Feature graphic Google Play** (1024×500, diseño original on-brand: estrella, glow cyan, wordmark Outfit) → `VELUM_ASSETS/store/feature-graphic.png` · SEÑAL · 16 jun
-- [x] **App atleta — fix login crash de socios con paquete de clases** (querySelector a nodo inexistente tumbaba showPortal → "No se pudo conectar"). Verificado en vivo + auditoría de null-derefs (sin más bombas). · FORJA · 16 jun
-- [x] **App atleta — render fiel del programa manual** (texto libre por renglones, sin reformatear) · FORJA · 16 jun
-- [x] **Fix check-in del kiosko** (kiosco_lookup STABLE→VOLATILE; formato de hora 24h) · FORJA · jun
-- [x] **Panel admin — sistema de wizards guiados** (.wzd-*): pago, cliente, coach, clase, visita, paquete, lead, campaña, gasto, solicitud convertidos a paso a paso · FORJA · jun
-- [x] **Verticales Fase A — fundación** (gyms.vertical + RLS, puente de tema, módulos por giro, Studios funcional) · FORJA · 14 jun
-- [x] Aislamiento multi-gym auditado y verificado · ESCUDO
-- [x] Bug de borrar paquetes (RLS) corregido · FORJA/ESCUDO
-- [x] Analítica del negocio en el dashboard · FORJA
-- [x] Centro de ayuda (15 guías) · APOYO
-- [x] Métricas SaaS en panel Super Admin · FORJA
-- [x] SEO del storefront (meta/OG/JSON-LD/sitemap/robots) · VITRINA
-- [x] Modo claro retirado · FORJA
-- [x] Emails transaccionales cableados (falta activar Resend) · FORJA
-- [x] Auditoría maestra de comercialización · NÚCLEO
+## [HECHO] (reciente)
+- [x] Landing v3 "Sala de Máquinas" aplicada (index + verticales por plantilla) · LIENZO/VITRINA · 05-06 jul
+- [x] Upgrade de los 31 agentes (auditoría 8 dimensiones + reescritura + CHANGELOG + mapa) · 05 jul
+- [x] VELUM_FLUJOS.md: 8 pipelines operativos + índice en CLAUDE.md + NÚCLEO los lee · 05 jul
+- [x] Paquete primer cliente: caso Krajo + propuesta founder + secuencia trial-nurture (código) · 03 jul
+- [x] Candado `update_gym_fiscal_data` (solo admin/superadmin; advisor resuelto) · 03 jul
+- [x] Comisión 0% oficial (decisión Roy) — FAQ/JSON-LD/tarjetas dicen la verdad del código · 03 jul
+- [x] Pricing plan único Max $999 — Pro desactivado en DB + toda la superficie pública · 03 jul
+- [x] Organigrama y plan de equipo por disparadores + auditoría de lanzamiento con datos reales · 03 jul
+- [x] Landing v2 (3 olas: SEO invisible, visibles, páginas por vertical) + login.html · 03 jul
+- [x] Panel v2 (sidebar por intención, dashboards por vertical, check-in de reservas studios, saldo recovery) · 02 jul
+- [x] VELUM Studio nivel 2 (sala IA real) + oficina isométrica + puente orden de trabajo · 01 jul
