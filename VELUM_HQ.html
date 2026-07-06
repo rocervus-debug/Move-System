@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
 /* ════════════════════════════════════════════════════════════════
-   VELUM HQ — F1 · Pipeline (CRM de superadmin)
+   VELUM HQ — F1 Pipeline · F2 Cockpit/Cuentas · F3 Salud/Tareas · Referidos
    Tokens heredados del panel (VELUM_Sistema_Interno.html :root)
    ════════════════════════════════════════════════════════════════ */
 :root{
@@ -427,6 +427,139 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
 /* ════════ VISTAS PLACEHOLDER ════════ */
 .placeholder-view{ max-width:520px; margin:60px auto 0; }
 
+/* ════════════════════════════════════════════════════════════════
+   F2/F3 + REFERIDOS — métricas, tablas, salud, tareas, ledger
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Cockpit: métricas ── */
+.metric-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:14px; }
+.metric-card{ background:var(--bg-card); border:1px solid var(--border2); border-radius:var(--radius); padding:18px 20px; }
+.metric-label{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3); }
+.metric-val{ font-family:var(--font-display); font-weight:800; font-size:30px; margin-top:6px; letter-spacing:.01em; }
+.metric-val.accent{ color:var(--accent-light); }
+.metric-sub{ font-size:11.5px; color:var(--text3); margin-top:4px; }
+.metric-mini{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; }
+.mini-metric{
+  flex:1; min-width:170px; display:flex; align-items:baseline; gap:10px;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 16px; cursor:pointer; transition:border-color .12s;
+}
+.mini-metric:hover{ border-color:var(--accent); }
+.mini-metric b{ font-family:var(--font-display); font-size:19px; font-weight:800; }
+.mini-metric span{ font-size:12px; color:var(--text3); }
+
+/* ── Cockpit: gráfica GMV (barras CSS puras) ── */
+.chart-card{ background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; }
+.chart-title{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3); margin-bottom:16px; }
+.chart-bars{ display:flex; align-items:flex-end; gap:14px; height:160px; }
+.chart-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; min-width:0; }
+.chart-bar{
+  width:100%; max-width:64px; border-radius:8px 8px 3px 3px; min-height:3px;
+  background:linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+}
+.chart-col.cero .chart-bar{ background:var(--surface2); }
+.chart-val{ font-family:var(--fm); font-size:10.5px; color:var(--text2); white-space:nowrap; }
+.chart-x{ font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; }
+
+/* ── Tablas (Cuentas / Salud / Referidos) ── */
+.tbl-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-card); }
+table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
+.tbl th{
+  text-align:left; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text3); padding:12px 14px; border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.tbl td{ padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+.tbl tbody tr{ cursor:pointer; transition:background .12s; }
+.tbl tbody tr:hover{ background:var(--surface); }
+.tbl tbody tr:last-child td{ border-bottom:none; }
+.td-mono{ font-family:var(--fm); font-size:12px; color:var(--text2); white-space:nowrap; }
+.td-num{ font-family:var(--fm); font-size:12.5px; white-space:nowrap; }
+
+/* ── Pills de estado de cuenta ── */
+.estado-pill{
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--fm); font-size:11px;
+  padding:3px 10px; border-radius:999px; letter-spacing:.04em; white-space:nowrap;
+}
+.estado-pill.ok{ background:var(--ok-bg); color:var(--ok); }
+.estado-pill.warn{ background:var(--warn-bg); color:var(--warn); }
+.estado-pill.danger{ background:var(--danger-bg); color:var(--danger); }
+.estado-pill.neutral{ background:var(--surface2); color:var(--text2); }
+
+/* ── Salud: semáforo ── */
+.sem-dot{ display:inline-block; width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.sem-verde{ background:var(--ok); box-shadow:0 0 10px rgba(16,232,160,.5); }
+.sem-amarillo{ background:var(--warn); box-shadow:0 0 10px rgba(251,191,36,.5); }
+.sem-rojo{ background:var(--danger); box-shadow:0 0 10px rgba(248,113,113,.5); }
+
+/* ── Tareas ── */
+.task-form{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.task-form input{
+  padding:9px 11px; border-radius:9px; background:var(--surface);
+  border:1px solid var(--border2); color:var(--text); outline:none; transition:border .12s;
+}
+.task-form input:focus{ border-color:var(--accent); }
+.task-form input[type=text]{ flex:1; min-width:200px; }
+.task-list{ display:flex; flex-direction:column; gap:9px; margin-top:16px; }
+.task-item{
+  display:flex; gap:12px; align-items:flex-start; background:var(--bg-card);
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px;
+}
+.task-item.vencida{ border-color:color-mix(in srgb, var(--danger) 40%, transparent); }
+.task-check{
+  width:24px; height:24px; border-radius:8px; border:1px solid var(--border2);
+  background:var(--surface); color:transparent; display:flex; align-items:center;
+  justify-content:center; flex-shrink:0; transition:all .12s;
+}
+.task-check:hover{ border-color:var(--ok); color:var(--ok); background:var(--ok-bg); }
+.task-main{ flex:1; min-width:0; }
+.task-titulo{ font-weight:600; font-size:13.5px; word-break:break-word; }
+.task-meta{ display:flex; flex-wrap:wrap; gap:8px; font-size:11.5px; color:var(--text3); margin-top:3px; align-items:center; }
+.task-tipo{
+  font-family:var(--fm); font-size:10px; padding:1px 7px; border-radius:6px;
+  background:var(--surface2); color:var(--text3); letter-spacing:.05em;
+}
+.task-tipo.auto{ background:var(--accent-bg); color:var(--accent-light); }
+.task-due.venc{ color:var(--danger); font-weight:700; }
+
+/* ── Referidos ── */
+.ref-tag{
+  font-family:var(--fm); font-size:9.5px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; padding:1px 6px; border-radius:6px;
+  background:color-mix(in srgb, #c084fc 16%, transparent); color:#c084fc;
+}
+
+/* ── Secciones / detalle en drawer secundario ── */
+.sec-card{ background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; }
+.sec-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.sec-title{ font-family:var(--font-display); font-size:14px; font-weight:700; letter-spacing:.04em; display:flex; align-items:center; gap:8px; }
+.sec-title svg{ color:var(--accent); }
+.mini-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mini-stat{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 14px; display:flex; flex-direction:column; gap:2px;
+}
+.mini-stat b{ font-family:var(--font-display); font-size:20px; font-weight:800; }
+.mini-stat span{ font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; }
+.kv-grid{ display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; }
+.kv-grid dt{ color:var(--text3); font-size:11px; text-transform:uppercase; letter-spacing:.08em; padding-top:2px; white-space:nowrap; }
+.kv-grid dd{ margin:0; word-break:break-word; }
+.nota-item{ padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); margin-bottom:8px; }
+.nota-texto{ font-size:13px; white-space:pre-wrap; word-break:break-word; }
+.nota-fecha{ font-family:var(--fm); font-size:10.5px; color:var(--text3); margin-top:4px; }
+.pay-row{
+  display:flex; align-items:center; gap:10px; padding:10px 12px; flex-wrap:wrap;
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); margin-bottom:8px;
+}
+.pay-info{ flex:1; min-width:140px; }
+.pay-concepto{ font-size:13px; font-weight:600; }
+.pay-periodo{ font-family:var(--fm); font-size:11px; color:var(--text3); }
+.pay-monto{ font-family:var(--fm); font-size:13.5px; font-weight:700; white-space:nowrap; }
+.f-field .chk{
+  display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text);
+  cursor:pointer; text-transform:none; letter-spacing:0;
+}
+.chk input{ width:15px; height:15px; accent-color:var(--accent); }
+
 @media (max-width: 860px){
   .hq-sidebar{ width:64px; padding:16px 8px; }
   .hq-sidebar .nav-label, .hq-sidebar .nav-tag, .hq-brand em, .hq-brand b, .nav-user{ display:none; }
@@ -479,25 +612,29 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
       <b>VELUM</b> <em>HQ</em>
     </div>
 
-    <button class="nav-item disabled" onclick="showView('cockpit')" title="Cockpit — llega en F2">
+    <button class="nav-item" onclick="showView('cockpit')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
-      <span class="nav-label">Cockpit</span><span class="nav-tag">F2</span>
+      <span class="nav-label">Cockpit</span>
     </button>
     <button class="nav-item active" id="nav-pipeline" onclick="showView('pipeline')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="7" rx="1"/></svg>
       <span class="nav-label">Pipeline</span>
     </button>
-    <button class="nav-item disabled" onclick="showView('cuentas')" title="Cuentas — llega en F2">
+    <button class="nav-item" onclick="showView('cuentas')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      <span class="nav-label">Cuentas</span><span class="nav-tag">F2</span>
+      <span class="nav-label">Cuentas</span>
     </button>
-    <button class="nav-item disabled" onclick="showView('salud')" title="Salud — llega en F3">
+    <button class="nav-item" onclick="showView('salud')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      <span class="nav-label">Salud</span><span class="nav-tag">F3</span>
+      <span class="nav-label">Salud</span>
     </button>
-    <button class="nav-item disabled" onclick="showView('tareas')" title="Tareas — llega en F3">
+    <button class="nav-item" onclick="showView('tareas')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      <span class="nav-label">Tareas</span><span class="nav-tag">F3</span>
+      <span class="nav-label">Tareas</span>
+    </button>
+    <button class="nav-item" onclick="showView('referidos')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+      <span class="nav-label">Referidos</span>
     </button>
 
     <div class="nav-foot">
@@ -517,6 +654,10 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Nuevo lead
         </button>
+        <button class="btn btn-primary" id="btn-nuevo-ref" onclick="openRefModal()" hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo referenciador
+        </button>
       </div>
     </header>
 
@@ -530,33 +671,38 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
         </div>
       </section>
 
-      <!-- ─── VISTAS FUTURAS (F2/F3) ─── -->
+      <!-- ─── VISTA: COCKPIT (F2a) ─── -->
       <section id="view-cockpit" hidden>
-        <div class="state-box placeholder-view">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
-          <h3>Cockpit — F2</h3>
-          <p>Los 3 números del negocio, gráfica MRR/GMV y feed de eventos llegan en la fase 2.</p>
+        <div id="cockpit-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando cockpit…</h3></div>
         </div>
       </section>
+
+      <!-- ─── VISTA: CUENTAS (F2b) ─── -->
       <section id="view-cuentas" hidden>
-        <div class="state-box placeholder-view">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          <h3>Cuentas — F2</h3>
-          <p>Estado por gym, plan, próximo cobro y acciones de Stripe llegan en la fase 2.</p>
+        <div id="cuentas-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando cuentas…</h3></div>
         </div>
       </section>
+
+      <!-- ─── VISTA: SALUD (F3) ─── -->
       <section id="view-salud" hidden>
-        <div class="state-box placeholder-view">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          <h3>Salud — F3</h3>
-          <p>Semáforo por gym con uso real de 30 días llega en la fase 3.</p>
+        <div id="salud-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando salud…</h3></div>
         </div>
       </section>
+
+      <!-- ─── VISTA: TAREAS (F3) ─── -->
       <section id="view-tareas" hidden>
-        <div class="state-box placeholder-view">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          <h3>Tareas — F3</h3>
-          <p>La agenda auto-generada del founder llega en la fase 3.</p>
+        <div id="tareas-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando tareas…</h3></div>
+        </div>
+      </section>
+
+      <!-- ─── VISTA: REFERIDOS ─── -->
+      <section id="view-referidos" hidden>
+        <div id="referidos-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando referidos…</h3></div>
         </div>
       </section>
     </main>
@@ -672,6 +818,80 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
   </div>
 </div>
 
+<!-- ═══ DRAWER SECUNDARIO: DETALLE DE GYM / FICHA DE REFERENCIADOR ═══ -->
+<div class="drawer-overlay" id="drawer2-overlay" onclick="closeDrawer2()"></div>
+<div class="drawer" id="drawer2" role="dialog" aria-label="Detalle">
+  <div class="drawer-head">
+    <h3 id="drawer2-title"></h3>
+    <span class="estado-pill neutral" id="drawer2-pill" hidden></span>
+    <button class="drawer-close" onclick="closeDrawer2()" aria-label="Cerrar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer2-body"></div>
+</div>
+
+<!-- ═══ MODAL: NUEVO / EDITAR REFERENCIADOR ═══ -->
+<div class="modal-overlay" id="modal-ref">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-ref-title">Nuevo referenciador</h3>
+      <button class="drawer-close" onclick="closeRefModal()" aria-label="Cerrar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="f-grid">
+        <div class="f-field full">
+          <label for="rf-nombre">Nombre *</label>
+          <input id="rf-nombre" type="text" placeholder="Persona o negocio que refiere"/>
+        </div>
+        <div class="f-field">
+          <label for="rf-tipo">Tipo</label>
+          <select id="rf-tipo">
+            <option value="persona">Persona</option>
+            <option value="negocio">Negocio</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label for="rf-pct">% comisión mensual</label>
+          <input id="rf-pct" type="number" min="0" max="100" step="0.5" value="20"/>
+        </div>
+        <div class="f-field">
+          <label for="rf-tel">Teléfono</label>
+          <input id="rf-tel" type="tel" placeholder="477 000 0000"/>
+        </div>
+        <div class="f-field">
+          <label for="rf-mail">Email</label>
+          <input id="rf-mail" type="email" placeholder="correo@dominio.mx"/>
+        </div>
+        <div class="f-field">
+          <label for="rf-ig">Instagram</label>
+          <input id="rf-ig" type="text" placeholder="@usuario"/>
+        </div>
+        <div class="f-field">
+          <label for="rf-clabe">CLABE</label>
+          <input id="rf-clabe" type="text" inputmode="numeric" placeholder="18 dígitos" style="font-family:var(--fm);"/>
+        </div>
+        <div class="f-field full">
+          <label class="chk"><input id="rf-bono" type="checkbox" checked/> Bono de primera mensualidad (100% del plan)</label>
+        </div>
+        <div class="f-field full">
+          <label class="chk"><input id="rf-activo" type="checkbox" checked/> Activo</label>
+        </div>
+        <div class="f-field full">
+          <label for="rf-notas">Notas</label>
+          <textarea id="rf-notas" placeholder="Acuerdo, contexto, cómo se conocieron…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeRefModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-ref" onclick="guardarRef()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-zone"></div>
 
 <!-- ═══ SUPABASE SDK ═══ -->
@@ -679,10 +899,11 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
 
 <script>
 // ════════════════════════════════════════════════════════════════
-// VELUM HQ · F1 — Pipeline (CRM de superadmin)
+// VELUM HQ — CRM + operación de superadmin
+// F1 Pipeline · F2 Cockpit/Cuentas · F3 Salud/Tareas · Referidos
 // Mismo proyecto Supabase que el panel; auth vía move-login (JWT
 // custom HS256 con claims app_rol + gym_id). RLS con is_superadmin()
-// gobierna saas_leads / saas_lead_events — el gate del cliente es UX.
+// gobierna las tablas saas_* — el gate del cliente es solo UX.
 // ════════════════════════════════════════════════════════════════
 
 // ── Config (idéntica al panel) ──
@@ -885,12 +1106,13 @@ function logout(){
   document.getElementById('totp-row').hidden = true;
 }
 
-// Mostrar shell y disparar la carga inicial del pipeline
+// Mostrar shell: se entra por el Cockpit (F2a) y el pipeline se
+// precarga en segundo plano para que "Hoy toca" esté listo al cambiar
 function entrarApp(){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').hidden = false;
   document.getElementById('nav-user').textContent = HQ_USER.email || '';
-  showView('pipeline');
+  showView('cockpit');
   loadLeads();
 }
 
@@ -912,23 +1134,33 @@ function boot(){
 document.addEventListener('DOMContentLoaded', boot);
 
 // ════════════════════════════════════════════════════════════════
-// NAVEGACIÓN — solo Pipeline funcional en F1
+// NAVEGACIÓN — todas las vistas activas (F1: Pipeline · F2: Cockpit
+// y Cuentas · F3: Salud y Tareas · Referidos)
 // ════════════════════════════════════════════════════════════════
 
 const VIEW_TITLES = {
-  pipeline:'Pipeline', cockpit:'Cockpit', cuentas:'Cuentas', salud:'Salud', tareas:'Tareas'
+  pipeline:'Pipeline', cockpit:'Cockpit', cuentas:'Cuentas',
+  salud:'Salud', tareas:'Tareas', referidos:'Referidos'
+};
+// Cada vista refresca sus datos al abrirse (pipeline conserva su carga de F1)
+const VIEW_LOADERS = {
+  cockpit:'loadCockpit', cuentas:'loadCuentas', salud:'loadSalud',
+  tareas:'loadTareas', referidos:'loadReferidos'
 };
 
 function showView(name){
-  ['pipeline','cockpit','cuentas','salud','tareas'].forEach(v => {
+  Object.keys(VIEW_TITLES).forEach(v => {
     const el = document.getElementById(`view-${v}`);
     if(el) el.hidden = (v !== name);
   });
   document.getElementById('view-title').textContent = VIEW_TITLES[name] || name;
   document.getElementById('btn-nuevo-lead').hidden = (name !== 'pipeline');
+  document.getElementById('btn-nuevo-ref').hidden = (name !== 'referidos');
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   const activeBtn = document.querySelector(`.nav-item[onclick="showView('${name}')"]`);
   if(activeBtn) activeBtn.classList.add('active');
+  const loader = VIEW_LOADERS[name];
+  if(loader && typeof window[loader] === 'function') window[loader]();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1118,6 +1350,7 @@ function cardHTML(l){
       <div class="kcard-meta">
         <span class="vlabel"><span class="vdot v-${esc(l.vertical)}"></span>${esc(VERTICAL_LABEL[l.vertical] || l.vertical)}</span>
         ${l.ciudad ? `<span>· ${esc(l.ciudad)}</span>` : ''}
+        ${l.referrer_id ? '<span class="ref-tag" title="Lead referido">ref</span>' : ''}
       </div>
       ${accion}
       <div class="kcard-move">${flechaIzq}${flechaDer}</div>
@@ -1242,6 +1475,10 @@ function openFicha(id){
           <select id="fl-canal">${opts(CANALES, lead.canal, CANAL_LABEL)}</select>
         </div>
         <div class="f-field full">
+          <label for="fl-referrer">Referido por</label>
+          <select id="fl-referrer"><option value="">— Sin referido —</option></select>
+        </div>
+        <div class="f-field full">
           <label for="fl-sistema">Sistema actual</label>
           <input id="fl-sistema" type="text" value="${esc(lead.sistema_actual || '')}" placeholder="Excel, cuaderno, otro software…"/>
         </div>
@@ -1321,6 +1558,7 @@ function openFicha(id){
 
   document.getElementById('drawer-overlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
+  poblarReferrerSelect(lead.referrer_id); // llena el select de "Referido por" (async)
   loadEventos(id);
 }
 
@@ -1410,6 +1648,8 @@ async function guardarFicha(){
     tier: document.getElementById('fl-tier').value,
     ciudad: document.getElementById('fl-ciudad').value.trim() || null,
     canal: document.getElementById('fl-canal').value,
+    referrer_id: document.getElementById('fl-referrer').value
+      ? Number(document.getElementById('fl-referrer').value) : null,
     sistema_actual: document.getElementById('fl-sistema').value.trim() || null,
     angulo: document.getElementById('fl-angulo').value.trim() || null,
     proxima_accion: document.getElementById('fl-accion').value.trim() || null,
@@ -1493,6 +1733,1137 @@ async function crearLead(){
   toast(`Lead creado: ${data.empresa}`);
   openFicha(data.id); // directo a la ficha para completar contacto/ángulo
 }
+
+// ════════════════════════════════════════════════════════════════
+// F2/F3 + REFERIDOS — estado y utilidades compartidas
+// ════════════════════════════════════════════════════════════════
+
+let GYMS = [];            // cache de gyms (se refresca al cargar cada vista)
+let PLANES = null;        // map id de plan → price_mxn (velum_saas_plans)
+let REFERRERS = null;     // cache de referenciadores activos (para selects)
+let REF_DATA = { refs:[], leads:[], payouts:[] }; // estado de la vista Referidos
+let TAREAS = [];          // cache de tareas abiertas
+let gymDetalleId = null;  // gym abierto en el drawer secundario
+let refFichaId = null;    // referenciador abierto en el drawer secundario
+let refEditId = null;     // referenciador en edición en el modal (null = nuevo)
+
+const MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const ETAPAS_ABIERTAS_EXCL = ['perdido','pagando','nurture']; // "lead abierto" = etapa fuera de estas
+
+function fmtMoney(n){
+  return '$' + (Number(n) || 0).toLocaleString('es-MX', { maximumFractionDigits:0 });
+}
+// timestamp ISO de hace N días (para filtros gte sobre timestamptz)
+function isoDiasAtras(n){ return new Date(Date.now() - n * 86400000).toISOString(); }
+// Primer día del mes actual en local — el "periodo" del ledger de comisiones
+function primerDiaMes(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+}
+// Días completos transcurridos desde un timestamptz
+function diasDesde(ts){ return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000); }
+// '2026-07-01' → 'jul 2026'
+function fmtPeriodo(iso){
+  if(!iso) return '';
+  const [y,m] = String(iso).split('-').map(Number);
+  return `${MESES_CORTOS[(m||1)-1]} ${y}`;
+}
+
+// Estados de carga / error reutilizables para las zonas de vista
+function stateLoading(zone, texto){
+  zone.innerHTML = `<div class="state-box"><div class="spinner"></div><h3>${esc(texto)}</h3></div>`;
+}
+function stateError(zone, msg, retryFn){
+  zone.innerHTML = `
+    <div class="state-box">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <h3>No se pudo cargar</h3>
+      <p>${esc(msg || 'Error de conexión')}</p>
+      <p style="margin-top:14px;"><button class="btn" onclick="${retryFn}()">Reintentar</button></p>
+    </div>`;
+}
+
+// Copiar al portapapeles con fallback (file:// no siempre da clipboard API)
+async function copiarTexto(txt){
+  if(!txt){ toast('Nada que copiar.', 'err'); return; }
+  try{
+    await navigator.clipboard.writeText(txt);
+    toast('Copiado: ' + txt);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('Copiado: ' + txt); }
+    catch(e2){ toast('No se pudo copiar.', 'err'); }
+    ta.remove();
+  }
+}
+
+// ── Planes y gyms ──
+async function fetchPlanes(){
+  if(PLANES) return PLANES;
+  const { data, error } = await sb.from('velum_saas_plans').select('id,price_mxn,is_active');
+  if(error){
+    console.error(error);
+    toast('Error al cargar planes: ' + (error.message || 'desconocido'), 'err');
+    return {}; // sin cachear — reintenta en la próxima carga; precioPlan cae al default 999
+  }
+  PLANES = {};
+  (data || []).forEach(p => { PLANES[p.id] = p.price_mxn; });
+  return PLANES;
+}
+// Precio mensual del plan de un gym; si no matchea el catálogo → 999 (plan Max)
+function precioPlan(plan){
+  return (PLANES && PLANES[plan] != null) ? Number(PLANES[plan]) : 999;
+}
+
+async function fetchGyms(){
+  const { data, error } = await sb.from('gyms')
+    .select('id,nombre,vertical,activo,plan,subscription_status,plan_expires_at,created_at,owner_email')
+    .order('created_at', { ascending:false });
+  if(error) throw error;
+  GYMS = data || [];
+  return GYMS;
+}
+
+// Estado legible de la cuenta de un gym.
+// En producción los gyms de cortesía viven con subscription_status='owner'.
+function estadoGym(g){
+  const st = g.subscription_status || '';
+  if(st === 'owner' || (g.plan || '').toLowerCase() === 'owner')
+    return { label:'Owner · cortesía', cls:'neutral' };
+  if(st === 'trialing'){
+    const dia = Math.max(diasDesde(g.created_at) + 1, 1);
+    return { label:`Trial · día ${dia}`, cls:'warn' };
+  }
+  if(st === 'active')   return { label:'Activo', cls:'ok' };
+  if(st === 'past_due') return { label:'Moroso', cls:'danger' };
+  if(st === 'canceled' || st === 'cancelled' || g.activo === false)
+    return { label:'Cancelado', cls:'danger' };
+  return { label: st || 'Sin estado', cls:'neutral' };
+}
+// Gym que cuenta para "pagando"/MRR: suscripción activa (owner/cortesía queda fuera
+// solo porque su status es 'owner', nunca 'active')
+function esGymPagando(g){ return g.subscription_status === 'active'; }
+
+// ════════════════════════════════════════════════════════════════
+// F2a — COCKPIT: 3 métricas + fila secundaria + GMV por mes
+// ════════════════════════════════════════════════════════════════
+
+async function loadCockpit(){
+  const zone = document.getElementById('cockpit-zone');
+  stateLoading(zone, 'Cargando cockpit…');
+  try{
+    const d = new Date();
+    const inicio6m = new Date(d.getFullYear(), d.getMonth() - 5, 1).toISOString();
+    const [gyms, _planes, pagosRes, leadsRes, payoutsRes] = await Promise.all([
+      fetchGyms(),
+      fetchPlanes(),
+      sb.from('pagos').select('monto,created_at').gte('created_at', inicio6m).limit(10000),
+      sb.from('saas_leads').select('id', { count:'exact', head:true })
+        .not('etapa', 'in', '(perdido,pagando,nurture)'),
+      sb.from('saas_referral_payouts').select('monto').eq('estado', 'pendiente')
+    ]);
+    if(pagosRes.error) throw pagosRes.error;
+    if(leadsRes.error) throw leadsRes.error;
+    if(payoutsRes.error) throw payoutsRes.error;
+
+    const pagos = pagosRes.data || [];
+    const pagando = gyms.filter(esGymPagando);
+    const mrr = pagando.reduce((s,g) => s + precioPlan(g.plan), 0);
+    const trials = gyms.filter(g => g.subscription_status === 'trialing').length;
+    const leadsAbiertos = leadsRes.count || 0;
+    const comisionesPend = (payoutsRes.data || []).reduce((s,p) => s + (Number(p.monto) || 0), 0);
+
+    // GMV 30 días (todos los gyms) — se filtra en JS del set de 6 meses
+    const corte30 = Date.now() - 30 * 86400000;
+    const gmv30 = pagos.reduce((s,p) =>
+      new Date(p.created_at).getTime() >= corte30 ? s + (Number(p.monto) || 0) : s, 0);
+
+    // GMV agrupado por mes — últimos 6 meses
+    const mesesChart = [];
+    for(let i = 5; i >= 0; i--){
+      const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      mesesChart.push({
+        key:`${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}`,
+        label: MESES_CORTOS[m.getMonth()], total:0
+      });
+    }
+    pagos.forEach(p => {
+      const dt = new Date(p.created_at);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      const mc = mesesChart.find(x => x.key === key);
+      if(mc) mc.total += Number(p.monto) || 0;
+    });
+    const maxMes = Math.max(...mesesChart.map(m => m.total), 1);
+    const barras = mesesChart.map(m => {
+      const pct = Math.max(Math.round(m.total / maxMes * 100), 2);
+      return `
+        <div class="chart-col ${m.total === 0 ? 'cero' : ''}">
+          <span class="chart-val">${m.total > 0 ? fmtMoney(m.total) : '·'}</span>
+          <div class="chart-bar" style="height:${pct}%"></div>
+          <span class="chart-x">${esc(m.label)}</span>
+        </div>`;
+    }).join('');
+
+    zone.innerHTML = `
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Gyms pagando</div>
+          <div class="metric-val">${pagando.length}</div>
+          <div class="metric-sub">suscripción activa — owner/cortesía no cuentan</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">MRR</div>
+          <div class="metric-val accent">${fmtMoney(mrr)}</div>
+          <div class="metric-sub">MXN / mes según plan de cada gym activo</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">GMV · 30 días</div>
+          <div class="metric-val">${fmtMoney(gmv30)}</div>
+          <div class="metric-sub">pagos registrados en todos los gyms</div>
+        </div>
+      </div>
+      <div class="metric-mini">
+        <div class="mini-metric" onclick="showView('cuentas')" title="Ver cuentas">
+          <b>${trials}</b><span>trials activos</span>
+        </div>
+        <div class="mini-metric" onclick="showView('pipeline')" title="Ir al pipeline">
+          <b>${leadsAbiertos}</b><span>leads abiertos</span>
+        </div>
+        <div class="mini-metric" onclick="showView('referidos')" title="Ver referidos">
+          <b>${fmtMoney(comisionesPend)}</b><span>comisiones pendientes</span>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">GMV por mes — últimos 6 meses</div>
+        <div class="chart-bars">${barras}</div>
+      </div>`;
+  }catch(e){
+    console.error(e);
+    stateError(zone, e.message, 'loadCockpit');
+    toast('Error al cargar cockpit: ' + (e.message || 'desconocido'), 'err');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// F2b — CUENTAS: tabla de gyms + detalle con números 30d y notas
+// ════════════════════════════════════════════════════════════════
+
+async function loadCuentas(){
+  const zone = document.getElementById('cuentas-zone');
+  stateLoading(zone, 'Cargando cuentas…');
+  try{
+    const [gyms] = await Promise.all([fetchGyms(), fetchPlanes()]);
+    if(gyms.length === 0){
+      zone.innerHTML = `
+        <div class="state-box">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <h3>Sin gyms todavía</h3>
+          <p>Cuando el primer gym se registre, aparece aquí con su estado de cuenta.</p>
+        </div>`;
+      return;
+    }
+    const rows = gyms.map(g => {
+      const est = estadoGym(g);
+      return `
+        <tr onclick="openGymDetalle(${g.id})">
+          <td><strong>${esc(g.nombre)}</strong></td>
+          <td><span class="vlabel"><span class="vdot v-${esc(g.vertical)}"></span>${esc(VERTICAL_LABEL[g.vertical] || g.vertical || '—')}</span></td>
+          <td><span class="estado-pill ${est.cls}">${esc(est.label)}</span></td>
+          <td class="td-mono">${esc(g.plan || '—')}</td>
+          <td class="td-mono">${fmtFecha(String(g.created_at || '').slice(0,10))}</td>
+          <td class="td-mono">${esc(g.owner_email || '—')}</td>
+        </tr>`;
+    }).join('');
+    zone.innerHTML = `
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>Gym</th><th>Vertical</th><th>Estado</th><th>Plan</th><th>Alta</th><th>Owner</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }catch(e){
+    console.error(e);
+    stateError(zone, e.message, 'loadCuentas');
+    toast('Error al cargar cuentas: ' + (e.message || 'desconocido'), 'err');
+  }
+}
+
+// Drawer secundario (compartido entre detalle de gym y ficha de referenciador)
+function openDrawer2(titulo, pillText, pillCls){
+  document.getElementById('drawer2-title').textContent = titulo;
+  const pill = document.getElementById('drawer2-pill');
+  if(pillText){
+    pill.hidden = false;
+    pill.textContent = pillText;
+    pill.className = 'estado-pill ' + (pillCls || 'neutral');
+  }else{
+    pill.hidden = true;
+  }
+  document.getElementById('drawer2-overlay').classList.add('open');
+  document.getElementById('drawer2').classList.add('open');
+}
+function closeDrawer2(){
+  gymDetalleId = null; refFichaId = null;
+  document.getElementById('drawer2-overlay').classList.remove('open');
+  document.getElementById('drawer2').classList.remove('open');
+}
+
+async function openGymDetalle(id){
+  const g = GYMS.find(x => x.id === id);
+  if(!g) return;
+  gymDetalleId = id; refFichaId = null;
+  const est = estadoGym(g);
+  openDrawer2(g.nombre, est.label, est.cls);
+  const body = document.getElementById('drawer2-body');
+  body.innerHTML = '<div class="spinner" style="margin:30px auto"></div>';
+
+  const corte30 = isoDiasAtras(30);
+  const [cli, pag, asi, notas] = await Promise.all([
+    sb.from('clientes').select('*', { count:'exact', head:true }).eq('gym_id', id),
+    sb.from('pagos').select('monto').eq('gym_id', id).gte('created_at', corte30).limit(10000),
+    sb.from('asistencias').select('*', { count:'exact', head:true }).eq('gym_id', id).gte('created_at', corte30),
+    sb.from('gym_notes').select('*').eq('gym_id', id).order('created_at', { ascending:false })
+  ]);
+  if(gymDetalleId !== id) return; // se cerró o cambió el detalle mientras cargaba
+  const err = cli.error || pag.error || asi.error || notas.error;
+  if(err){
+    console.error(err);
+    body.innerHTML = `<div class="bit-empty">Error al cargar el detalle: ${esc(err.message || 'desconocido')}</div>`;
+    toast('Error al cargar detalle del gym: ' + (err.message || 'desconocido'), 'err');
+    return;
+  }
+  const pagos30 = pag.data || [];
+  const cobrado30 = pagos30.reduce((s,p) => s + (Number(p.monto) || 0), 0);
+
+  body.innerHTML = `
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+        Números · 30 días
+      </h4>
+      <div class="mini-grid">
+        <div class="mini-stat"><b>${cli.count || 0}</b><span>clientes totales</span></div>
+        <div class="mini-stat"><b>${pagos30.length}</b><span>pagos 30d</span></div>
+        <div class="mini-stat"><b>${fmtMoney(cobrado30)}</b><span>cobrado 30d</span></div>
+        <div class="mini-stat"><b>${asi.count || 0}</b><span>asistencias 30d</span></div>
+      </div>
+    </div>
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Cuenta
+      </h4>
+      <dl class="kv-grid">
+        <dt>Plan</dt><dd>${esc(g.plan || '—')}${g.plan ? ` · ${fmtMoney(precioPlan(g.plan))}/mes` : ''}</dd>
+        <dt>Estado</dt><dd><span class="estado-pill ${est.cls}">${esc(est.label)}</span></dd>
+        <dt>Alta</dt><dd>${fmtFecha(String(g.created_at || '').slice(0,10)) || '—'}</dd>
+        ${g.plan_expires_at ? `<dt>Vence</dt><dd>${fmtFecha(String(g.plan_expires_at).slice(0,10))}</dd>` : ''}
+        <dt>Owner</dt>
+        <dd style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>${esc(g.owner_email || '—')}</span>
+          ${g.owner_email ? `
+          <button class="btn btn-sm" onclick="copiarEmailGym()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copiar email
+          </button>` : ''}
+        </dd>
+      </dl>
+    </div>
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
+        Notas
+      </h4>
+      <div class="bit-form">
+        <textarea id="gn-nota" placeholder="Nota interna del gym — acuerdos, contexto, seguimiento…"></textarea>
+        <button class="btn btn-sm" style="align-self:flex-end" onclick="agregarNotaGym()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Agregar
+        </button>
+      </div>
+      <div id="gym-notas">${renderNotasGym(notas.data || [])}</div>
+    </div>`;
+}
+
+function renderNotasGym(notas){
+  if(!notas || notas.length === 0)
+    return '<div class="bit-empty">Sin notas todavía — deja aquí el contexto de la cuenta.</div>';
+  return notas.map(n => `
+    <div class="nota-item">
+      <div class="nota-texto">${esc(n.nota)}</div>
+      <div class="nota-fecha">${fmtTimestamp(n.created_at)}</div>
+    </div>`).join('');
+}
+
+async function agregarNotaGym(){
+  if(gymDetalleId == null) return;
+  const id = gymDetalleId;
+  const ta = document.getElementById('gn-nota');
+  const nota = ta ? ta.value.trim() : '';
+  if(!nota){ toast('Escribe la nota antes de agregar.', 'err'); return; }
+  const { error } = await sb.from('gym_notes').insert({ gym_id: id, nota });
+  if(error){
+    console.error(error);
+    toast('Error al guardar nota: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  if(ta) ta.value = '';
+  toast('Nota guardada');
+  // Refrescar solo la lista de notas
+  const { data, error: e2 } = await sb.from('gym_notes').select('*')
+    .eq('gym_id', id).order('created_at', { ascending:false });
+  const cont = document.getElementById('gym-notas');
+  if(!e2 && cont && gymDetalleId === id) cont.innerHTML = renderNotasGym(data || []);
+}
+
+function copiarEmailGym(){
+  const g = GYMS.find(x => x.id === gymDetalleId);
+  copiarTexto(g ? g.owner_email : '');
+}
+
+// ════════════════════════════════════════════════════════════════
+// F3 — SALUD: semáforo por gym con agregados de uso (una query por
+// tabla, agrupación en JS — nunca una query por gym)
+// ════════════════════════════════════════════════════════════════
+
+async function fetchSaludAgg(){
+  const corte30 = isoDiasAtras(30);
+  const corte14ms = Date.now() - 14 * 86400000;
+  const [pag, asi, cli] = await Promise.all([
+    sb.from('pagos').select('gym_id,created_at').gte('created_at', corte30).limit(10000),
+    sb.from('asistencias').select('gym_id,created_at').gte('created_at', corte30).limit(10000),
+    sb.from('clientes').select('gym_id').limit(10000)
+  ]);
+  const err = pag.error || asi.error || cli.error;
+  if(err) throw err;
+  const agg = {};
+  const bump = (gid, campo) => {
+    if(gid == null) return;
+    agg[gid] = agg[gid] || { p14:0, p30:0, a14:0, a30:0, cli:0 };
+    agg[gid][campo]++;
+  };
+  (pag.data || []).forEach(r => {
+    bump(r.gym_id, 'p30');
+    if(new Date(r.created_at).getTime() >= corte14ms) bump(r.gym_id, 'p14');
+  });
+  (asi.data || []).forEach(r => {
+    bump(r.gym_id, 'a30');
+    if(new Date(r.created_at).getTime() >= corte14ms) bump(r.gym_id, 'a14');
+  });
+  (cli.data || []).forEach(r => bump(r.gym_id, 'cli'));
+  return agg;
+}
+
+// verde = pagos Y asistencias en 14d · amarillo = actividad en 30d sin
+// cumplir verde · rojo = cero actividad 30d, o trial sin un solo cliente
+function semaforoGym(g, a){
+  const x = a || { p14:0, p30:0, a14:0, a30:0, cli:0 };
+  if(g.subscription_status === 'trialing' && x.cli === 0) return 'rojo';
+  if(x.p30 + x.a30 === 0) return 'rojo';
+  if(x.p14 > 0 && x.a14 > 0) return 'verde';
+  return 'amarillo';
+}
+
+async function loadSalud(){
+  const zone = document.getElementById('salud-zone');
+  stateLoading(zone, 'Cargando salud…');
+  try{
+    const [gyms, agg] = await Promise.all([fetchGyms(), fetchSaludAgg()]);
+    if(gyms.length === 0){
+      zone.innerHTML = `
+        <div class="state-box">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <h3>Sin gyms que medir</h3>
+          <p>El semáforo de uso aparece cuando exista el primer gym.</p>
+        </div>`;
+      return;
+    }
+    const orden = { rojo:0, amarillo:1, verde:2 };
+    const filas = gyms
+      .map(g => ({ g, a: agg[g.id] || { p14:0, p30:0, a14:0, a30:0, cli:0 }, sem: semaforoGym(g, agg[g.id]) }))
+      .sort((x,y) => (orden[x.sem] - orden[y.sem]) || x.g.nombre.localeCompare(y.g.nombre));
+
+    const rows = filas.map(({ g, a, sem }) => {
+      const est = estadoGym(g);
+      return `
+        <tr onclick="openGymDetalle(${g.id})">
+          <td><span class="sem-dot sem-${sem}" title="${sem}"></span></td>
+          <td><strong>${esc(g.nombre)}</strong></td>
+          <td><span class="estado-pill ${est.cls}">${esc(est.label)}</span></td>
+          <td class="td-num">${a.p14} / ${a.p30}</td>
+          <td class="td-num">${a.a14} / ${a.a30}</td>
+          <td class="td-num">${a.cli}</td>
+        </tr>`;
+    }).join('');
+    const resumen = { rojo:0, amarillo:0, verde:0 };
+    filas.forEach(f => resumen[f.sem]++);
+
+    zone.innerHTML = `
+      <div class="metric-mini">
+        <div class="mini-metric"><span class="sem-dot sem-rojo"></span><b>${resumen.rojo}</b><span>en rojo</span></div>
+        <div class="mini-metric"><span class="sem-dot sem-amarillo"></span><b>${resumen.amarillo}</b><span>en amarillo</span></div>
+        <div class="mini-metric"><span class="sem-dot sem-verde"></span><b>${resumen.verde}</b><span>en verde</span></div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th></th><th>Gym</th><th>Estado</th><th>Pagos 14d / 30d</th><th>Asist. 14d / 30d</th><th>Clientes</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }catch(e){
+    console.error(e);
+    stateError(zone, e.message, 'loadSalud');
+    toast('Error al cargar salud: ' + (e.message || 'desconocido'), 'err');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// F3 — TAREAS: lista abierta + alta manual + generador de reglas
+// ════════════════════════════════════════════════════════════════
+
+async function loadTareas(){
+  const zone = document.getElementById('tareas-zone');
+  stateLoading(zone, 'Cargando tareas…');
+  try{
+    const [tRes, gRes] = await Promise.all([
+      sb.from('saas_tasks').select('*').is('done_at', null)
+        .order('due_date', { ascending:true, nullsFirst:false }),
+      sb.from('gyms').select('id,nombre')
+    ]);
+    if(tRes.error) throw tRes.error;
+    TAREAS = tRes.data || [];
+    const gymNombre = {};
+    (gRes.data || []).forEach(g => { gymNombre[g.id] = g.nombre; });
+
+    const hoy = hoyISO();
+    const items = TAREAS.length === 0
+      ? `<div class="state-box" style="margin-top:16px;">
+           <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+           <h3>Sin tareas abiertas</h3>
+           <p>Agrega una manual arriba, o pulsa "Generar tareas de hoy" para que las reglas revisen leads y gyms.</p>
+         </div>`
+      : `<div class="task-list">${TAREAS.map(t => {
+          const vencida = t.due_date && t.due_date < hoy;
+          let ctx = '';
+          if(t.lead_id != null){
+            const l = LEADS.find(x => x.id === t.lead_id);
+            ctx = l ? l.empresa : `lead #${t.lead_id}`;
+          }else if(t.gym_id != null){
+            ctx = gymNombre[t.gym_id] || `gym #${t.gym_id}`;
+          }
+          return `
+          <div class="task-item ${vencida ? 'vencida' : ''}">
+            <button class="task-check" onclick="completarTarea(${t.id})" title="Marcar como hecha" aria-label="Completar tarea">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+            <div class="task-main">
+              <div class="task-titulo">${esc(t.titulo)}</div>
+              <div class="task-meta">
+                <span class="task-tipo ${t.tipo === 'auto' ? 'auto' : ''}">${esc(t.tipo === 'auto' ? (t.regla_origen || 'auto') : 'manual')}</span>
+                ${ctx ? `<span>· ${esc(ctx)}</span>` : ''}
+                ${t.due_date ? `<span class="task-due ${vencida ? 'venc' : ''}">${vencida ? 'Vencida · ' : ''}${fmtFecha(t.due_date)}</span>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}</div>`;
+
+    zone.innerHTML = `
+      <div class="sec-card">
+        <div class="task-form">
+          <input id="tk-titulo" type="text" placeholder="Nueva tarea manual — qué hay que hacer…"/>
+          <input id="tk-fecha" type="date" value="${hoy}"/>
+          <button class="btn" onclick="crearTareaManual()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Agregar
+          </button>
+          <button class="btn btn-primary" id="btn-gen-tareas" onclick="generarTareasHoy()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Generar tareas de hoy
+          </button>
+        </div>
+      </div>
+      ${items}`;
+  }catch(e){
+    console.error(e);
+    stateError(zone, e.message, 'loadTareas');
+    toast('Error al cargar tareas: ' + (e.message || 'desconocido'), 'err');
+  }
+}
+
+async function crearTareaManual(){
+  const inp = document.getElementById('tk-titulo');
+  const titulo = inp ? inp.value.trim() : '';
+  if(!titulo){ toast('Escribe el título de la tarea.', 'err'); return; }
+  const fecha = document.getElementById('tk-fecha').value || null;
+  const { error } = await sb.from('saas_tasks').insert({ titulo, tipo:'manual', due_date: fecha });
+  if(error){
+    console.error(error);
+    toast('Error al crear tarea: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  toast('Tarea creada');
+  loadTareas();
+}
+
+async function completarTarea(id){
+  const { error } = await sb.from('saas_tasks')
+    .update({ done_at: new Date().toISOString() }).eq('id', id);
+  if(error){
+    console.error(error);
+    toast('Error al completar tarea: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  toast('Tarea completada');
+  loadTareas();
+}
+
+// Reglas del generador (todas insertan tipo='auto' con su regla_origen):
+//   1. lead-vencido  — próxima acción del lead con fecha <= hoy
+//   2. lead-frio     — etapa contactado sin evento en 4+ días
+//   3. trial-muerto  — gym en trial con 0 clientes
+//   4. churn-riesgo  — gym en rojo de salud (si no cayó ya en trial-muerto)
+// Dedupe: no se inserta si ya hay tarea abierta con misma regla + lead/gym.
+async function generarTareasHoy(){
+  const btn = document.getElementById('btn-gen-tareas');
+  if(btn){ btn.disabled = true; }
+  try{
+    const hoy = hoyISO();
+    const abRes = await sb.from('saas_tasks')
+      .select('regla_origen,lead_id,gym_id').is('done_at', null);
+    if(abRes.error) throw abRes.error;
+    const existentes = new Set((abRes.data || []).map(t =>
+      `${t.regla_origen || ''}|${t.lead_id || ''}|${t.gym_id || ''}`));
+
+    const leadsRes = await sb.from('saas_leads')
+      .select('id,empresa,etapa,proxima_accion_fecha,created_at,updated_at');
+    if(leadsRes.error) throw leadsRes.error;
+    const leads = leadsRes.data || [];
+
+    // Último evento por lead contactado (para la regla lead-frio)
+    const contactados = leads.filter(l => l.etapa === 'contactado');
+    const ultimoEvento = {};
+    if(contactados.length > 0){
+      const evRes = await sb.from('saas_lead_events')
+        .select('lead_id,created_at').in('lead_id', contactados.map(l => l.id));
+      if(evRes.error) throw evRes.error;
+      (evRes.data || []).forEach(e => {
+        const t = new Date(e.created_at).getTime();
+        if(!ultimoEvento[e.lead_id] || t > ultimoEvento[e.lead_id]) ultimoEvento[e.lead_id] = t;
+      });
+    }
+
+    const [gyms, agg] = await Promise.all([fetchGyms(), fetchSaludAgg()]);
+
+    const candidatas = [];
+    // 1) lead-vencido
+    leads
+      .filter(l => !ETAPAS_TERMINALES.includes(l.etapa)
+                && l.proxima_accion_fecha && l.proxima_accion_fecha <= hoy)
+      .forEach(l => candidatas.push({
+        titulo:`Follow-up: ${l.empresa}`, regla_origen:'lead-vencido', lead_id:l.id, gym_id:null
+      }));
+    // 2) lead-frio (sin eventos: cuenta desde su última actualización)
+    contactados.forEach(l => {
+      const ultimo = ultimoEvento[l.id] || new Date(l.updated_at || l.created_at).getTime();
+      if(Date.now() - ultimo >= 4 * 86400000){
+        candidatas.push({
+          titulo:`Re-contactar ${l.empresa}`, regla_origen:'lead-frio', lead_id:l.id, gym_id:null
+        });
+      }
+    });
+    // 3) trial-muerto y 4) churn-riesgo
+    gyms.forEach(g => {
+      const a = agg[g.id] || { p14:0, p30:0, a14:0, a30:0, cli:0 };
+      if(g.subscription_status === 'trialing' && a.cli === 0){
+        candidatas.push({
+          titulo:`Rescate trial: ${g.nombre}`, regla_origen:'trial-muerto', lead_id:null, gym_id:g.id
+        });
+      }else if(semaforoGym(g, a) === 'rojo'
+            && g.subscription_status !== 'canceled' && g.subscription_status !== 'cancelled'
+            && g.activo !== false){
+        candidatas.push({
+          titulo:`Llamar a ${g.nombre} (sin uso)`, regla_origen:'churn-riesgo', lead_id:null, gym_id:g.id
+        });
+      }
+    });
+
+    const nuevas = candidatas
+      .filter(c => !existentes.has(`${c.regla_origen}|${c.lead_id || ''}|${c.gym_id || ''}`))
+      .map(c => ({ ...c, tipo:'auto', due_date: hoy }));
+    const omitidas = candidatas.length - nuevas.length;
+
+    if(nuevas.length > 0){
+      const { error } = await sb.from('saas_tasks').insert(nuevas);
+      if(error) throw error;
+    }
+    if(nuevas.length > 0){
+      toast(`${nuevas.length} tarea(s) generadas${omitidas > 0 ? ` · ${omitidas} ya estaban abiertas` : ''}`);
+    }else{
+      toast(candidatas.length > 0
+        ? 'Todo lo detectado ya estaba en la lista — nada nuevo.'
+        : 'Sin pendientes que generar hoy — pipeline y gyms al día.');
+    }
+    loadTareas();
+  }catch(e){
+    console.error(e);
+    toast('Error al generar tareas: ' + (e.message || 'desconocido'), 'err');
+    const b = document.getElementById('btn-gen-tareas');
+    if(b) b.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// REFERIDOS — referenciadores, atribución y ledger de comisiones
+// ════════════════════════════════════════════════════════════════
+
+// Cache de referenciadores activos para el select "Referido por" de la ficha
+async function ensureReferrers(){
+  if(REFERRERS) return REFERRERS;
+  const { data, error } = await sb.from('saas_referrers')
+    .select('id,nombre').eq('activo', true).order('nombre');
+  if(error){
+    console.error(error);
+    toast('Error al cargar referenciadores: ' + (error.message || 'desconocido'), 'err');
+    return [];
+  }
+  REFERRERS = data || [];
+  return REFERRERS;
+}
+
+// Llena el select #fl-referrer de la ficha de lead (F1 lo invoca al abrir)
+async function poblarReferrerSelect(actual){
+  const refs = await ensureReferrers();
+  const sel = document.getElementById('fl-referrer');
+  if(!sel) return; // la ficha se cerró mientras cargaba
+  const actualId = actual != null ? Number(actual) : null;
+  let html = '<option value="">— Sin referido —</option>' + refs.map(r =>
+    `<option value="${r.id}" ${actualId === r.id ? 'selected' : ''}>${esc(r.nombre)}</option>`).join('');
+  // Referenciador inactivo o borrado del cache: no perder la atribución existente
+  if(actualId != null && !refs.some(r => r.id === actualId)){
+    html += `<option value="${actualId}" selected>Referenciador #${actualId}</option>`;
+  }
+  sel.innerHTML = html;
+}
+
+async function loadReferidos(){
+  const zone = document.getElementById('referidos-zone');
+  stateLoading(zone, 'Cargando referidos…');
+  try{
+    const [refsRes, leadsRes, payRes] = await Promise.all([
+      sb.from('saas_referrers').select('*').order('created_at', { ascending:false }),
+      sb.from('saas_leads').select('id,empresa,etapa,referrer_id,gym_id').not('referrer_id', 'is', null),
+      sb.from('saas_referral_payouts').select('id,referrer_id,monto,estado')
+    ]);
+    if(refsRes.error) throw refsRes.error;
+    if(leadsRes.error) throw leadsRes.error;
+    if(payRes.error) throw payRes.error;
+    REF_DATA = { refs: refsRes.data || [], leads: leadsRes.data || [], payouts: payRes.data || [] };
+    // Refrescar también el cache del select de la ficha de lead
+    REFERRERS = REF_DATA.refs.filter(r => r.activo).map(r => ({ id:r.id, nombre:r.nombre }));
+    renderReferidos();
+  }catch(e){
+    console.error(e);
+    stateError(zone, e.message, 'loadReferidos');
+    toast('Error al cargar referidos: ' + (e.message || 'desconocido'), 'err');
+  }
+}
+
+// Números de un referenciador a partir del estado cargado en REF_DATA
+function statsReferrer(rid){
+  const leads = REF_DATA.leads.filter(l => l.referrer_id === rid);
+  const gymsTraidos = leads.filter(l => l.gym_id != null).length;
+  const abiertos = leads.filter(l => !ETAPAS_ABIERTAS_EXCL.includes(l.etapa)).length;
+  let pend = 0, pag = 0;
+  REF_DATA.payouts.filter(p => p.referrer_id === rid).forEach(p => {
+    if(p.estado === 'pagado') pag += Number(p.monto) || 0;
+    else pend += Number(p.monto) || 0;
+  });
+  return { leads, gymsTraidos, abiertos, pend, pag };
+}
+
+function renderReferidos(){
+  const zone = document.getElementById('referidos-zone');
+  const refs = REF_DATA.refs;
+  const totalPend = REF_DATA.payouts
+    .filter(p => p.estado === 'pendiente')
+    .reduce((s,p) => s + (Number(p.monto) || 0), 0);
+
+  const header = `
+    <div class="sec-card">
+      <div class="sec-head" style="margin-bottom:0;">
+        <div class="sec-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+          Comisiones pendientes: ${fmtMoney(totalPend)}
+        </div>
+        <button class="btn btn-primary" id="btn-gen-com" onclick="generarComisiones()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          Generar comisiones del mes
+        </button>
+      </div>
+    </div>`;
+
+  if(refs.length === 0){
+    zone.innerHTML = header + `
+      <div class="state-box">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+        <h3>Sin referenciadores</h3>
+        <p>Registra a la primera persona o negocio que te trae gyms — cada lead suyo queda atribuido y sus comisiones se calculan solas.</p>
+        <p style="margin-top:14px;"><button class="btn btn-primary" onclick="openRefModal()">Nuevo referenciador</button></p>
+      </div>`;
+    return;
+  }
+
+  const rows = refs.map(r => {
+    const s = statsReferrer(r.id);
+    return `
+      <tr onclick="openRefFicha(${r.id})" style="${r.activo ? '' : 'opacity:.5;'}">
+        <td><strong>${esc(r.nombre)}</strong>${r.activo ? '' : ' <span class="estado-pill danger">inactivo</span>'}</td>
+        <td>${esc(r.tipo === 'negocio' ? 'Negocio' : 'Persona')}</td>
+        <td class="td-num">${s.gymsTraidos}</td>
+        <td class="td-num">${s.abiertos}</td>
+        <td class="td-num">${fmtMoney(s.pend)}</td>
+        <td class="td-num">${fmtMoney(s.pag)}</td>
+        <td>
+          <button class="btn btn-sm" onclick="event.stopPropagation();openRefModal(${r.id})" title="Editar" aria-label="Editar referenciador">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  zone.innerHTML = header + `
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr>
+          <th>Referenciador</th><th>Tipo</th><th>Gyms traídos</th><th>Leads activos</th><th>Pendiente</th><th>Pagado</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── Modal crear/editar referenciador ──
+function openRefModal(id){
+  refEditId = id != null ? id : null;
+  const r = refEditId != null ? REF_DATA.refs.find(x => x.id === refEditId) : null;
+  const c = (r && r.contacto) || {};
+  document.getElementById('modal-ref-title').textContent = r ? 'Editar referenciador' : 'Nuevo referenciador';
+  document.getElementById('rf-nombre').value = r ? r.nombre : '';
+  document.getElementById('rf-tipo').value = r ? r.tipo : 'persona';
+  document.getElementById('rf-pct').value = r ? r.pct_comision : 20;
+  document.getElementById('rf-tel').value = c.tel || '';
+  document.getElementById('rf-mail').value = c.mail || '';
+  document.getElementById('rf-ig').value = c.ig || '';
+  document.getElementById('rf-clabe').value = c.clabe || '';
+  document.getElementById('rf-bono').checked = r ? !!r.bono_primera_mensualidad : true;
+  document.getElementById('rf-activo').checked = r ? !!r.activo : true;
+  document.getElementById('rf-notas').value = (r && r.notas) || '';
+  document.getElementById('modal-ref').classList.add('open');
+  setTimeout(() => document.getElementById('rf-nombre').focus(), 60);
+}
+
+function closeRefModal(){
+  refEditId = null;
+  document.getElementById('modal-ref').classList.remove('open');
+}
+
+async function guardarRef(){
+  const nombre = document.getElementById('rf-nombre').value.trim();
+  if(!nombre){ toast('El nombre es obligatorio.', 'err'); return; }
+  const pct = parseFloat(document.getElementById('rf-pct').value);
+  if(isNaN(pct) || pct < 0 || pct > 100){
+    toast('El % de comisión debe estar entre 0 y 100.', 'err'); return;
+  }
+  const payload = {
+    nombre,
+    tipo: document.getElementById('rf-tipo').value,
+    contacto: {
+      tel: document.getElementById('rf-tel').value.trim(),
+      mail: document.getElementById('rf-mail').value.trim(),
+      ig: document.getElementById('rf-ig').value.trim(),
+      clabe: document.getElementById('rf-clabe').value.trim()
+    },
+    pct_comision: pct,
+    bono_primera_mensualidad: document.getElementById('rf-bono').checked,
+    notas: document.getElementById('rf-notas').value.trim() || null,
+    activo: document.getElementById('rf-activo').checked
+  };
+
+  const btn = document.getElementById('btn-guardar-ref');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const q = refEditId != null
+    ? sb.from('saas_referrers').update(payload).eq('id', refEditId)
+    : sb.from('saas_referrers').insert(payload);
+  const { error } = await q;
+  btn.disabled = false; btn.textContent = 'Guardar';
+
+  if(error){
+    console.error(error);
+    toast('Error al guardar referenciador: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  toast(refEditId != null ? 'Referenciador actualizado' : `Referenciador creado: ${nombre}`);
+  closeRefModal();
+  REFERRERS = null; // invalidar cache del select de la ficha de lead
+  loadReferidos();
+}
+
+// ── Ficha del referenciador: leads, gyms convertidos y ledger ──
+async function openRefFicha(id){
+  const r = REF_DATA.refs.find(x => x.id === id);
+  if(!r) return;
+  refFichaId = id; gymDetalleId = null;
+  openDrawer2(
+    r.nombre,
+    r.activo ? (r.tipo === 'negocio' ? 'Negocio' : 'Persona') : 'Inactivo',
+    r.activo ? 'neutral' : 'danger'
+  );
+  const body = document.getElementById('drawer2-body');
+  body.innerHTML = '<div class="spinner" style="margin:30px auto"></div>';
+
+  const s = statsReferrer(id);
+  const gymIds = [...new Set(s.leads.filter(l => l.gym_id != null).map(l => l.gym_id))];
+  const [gymsRes, ledgerRes] = await Promise.all([
+    gymIds.length > 0
+      ? sb.from('gyms').select('id,nombre,plan,subscription_status,activo,created_at').in('id', gymIds)
+      : Promise.resolve({ data: [], error: null }),
+    sb.from('saas_referral_payouts').select('*').eq('referrer_id', id)
+      .order('periodo', { ascending:false }).order('created_at', { ascending:false })
+  ]);
+  if(refFichaId !== id) return; // se cerró mientras cargaba
+  const err = gymsRes.error || ledgerRes.error;
+  if(err){
+    console.error(err);
+    body.innerHTML = `<div class="bit-empty">Error al cargar la ficha: ${esc(err.message || 'desconocido')}</div>`;
+    toast('Error al cargar ficha: ' + (err.message || 'desconocido'), 'err');
+    return;
+  }
+
+  const c = r.contacto || {};
+  const CONCEPTO_LABEL = {
+    primera_mensualidad:'Primera mensualidad', comision_mensual:'Comisión mensual', ajuste:'Ajuste'
+  };
+
+  const leadsHTML = s.leads.length === 0
+    ? '<div class="bit-empty">Sin leads atribuidos — asigna "Referido por" en la ficha del lead.</div>'
+    : s.leads.map(l => `
+        <div class="pay-row">
+          <div class="pay-info"><div class="pay-concepto">${esc(l.empresa)}</div></div>
+          <span class="etapa-pill ${l.etapa === 'perdido' ? 'perdido' : l.etapa === 'pagando' ? 'pagando' : ''}">${esc(ETAPA_LABEL[l.etapa] || l.etapa)}</span>
+        </div>`).join('');
+
+  const gymsConv = gymsRes.data || [];
+  const gymsHTML = gymsConv.length === 0
+    ? '<div class="bit-empty">Todavía ninguno de sus leads se convirtió en gym.</div>'
+    : gymsConv.map(g => {
+        const est = estadoGym(g);
+        return `
+        <div class="pay-row">
+          <div class="pay-info">
+            <div class="pay-concepto">${esc(g.nombre)}</div>
+            <div class="pay-periodo">alta ${fmtFecha(String(g.created_at || '').slice(0,10))}</div>
+          </div>
+          <span class="estado-pill ${est.cls}">${esc(est.label)}</span>
+        </div>`;
+      }).join('');
+
+  const ledger = ledgerRes.data || [];
+  const ledgerHTML = ledger.length === 0
+    ? '<div class="bit-empty">Ledger vacío — usa "Generar comisiones del mes" cuando tenga gyms activos.</div>'
+    : ledger.map(p => `
+        <div class="pay-row">
+          <div class="pay-info">
+            <div class="pay-concepto">${esc(CONCEPTO_LABEL[p.concepto] || p.concepto)}</div>
+            <div class="pay-periodo">${esc(fmtPeriodo(p.periodo))}${p.nota ? ` · ${esc(p.nota)}` : ''}</div>
+          </div>
+          <span class="pay-monto">${fmtMoney(p.monto)}</span>
+          ${p.estado === 'pagado'
+            ? `<span class="estado-pill ok" title="${p.pagado_at ? esc(fmtTimestamp(p.pagado_at)) : ''}">Pagado</span>`
+            : `<button class="btn btn-sm" onclick="marcarPagado(${p.id})">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                 Marcar pagado
+               </button>`}
+        </div>`).join('');
+
+  body.innerHTML = `
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Acuerdo y contacto
+      </h4>
+      <dl class="kv-grid">
+        <dt>Comisión</dt><dd>${esc(String(r.pct_comision))}% mensual</dd>
+        <dt>Bono 1a mens.</dt><dd>${r.bono_primera_mensualidad ? 'Sí — 100% del plan' : 'No'}</dd>
+        ${c.tel ? `<dt>Teléfono</dt><dd>${esc(c.tel)}</dd>` : ''}
+        ${c.mail ? `<dt>Email</dt><dd>${esc(c.mail)}</dd>` : ''}
+        ${c.ig ? `<dt>Instagram</dt><dd>${esc(c.ig)}</dd>` : ''}
+        ${c.clabe ? `
+        <dt>CLABE</dt>
+        <dd style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-family:var(--fm);">${esc(c.clabe)}</span>
+          <button class="btn btn-sm" onclick="copiarClabeRef()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copiar
+          </button>
+        </dd>` : ''}
+      </dl>
+      ${r.notas ? `<div class="nota-item" style="margin-top:10px;"><div class="nota-texto">${esc(r.notas)}</div></div>` : ''}
+      <p style="margin-top:12px;">
+        <button class="btn btn-sm" onclick="openRefModal(${r.id})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
+          Editar datos
+        </button>
+      </p>
+    </div>
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="7" rx="1"/></svg>
+        Sus leads (${s.leads.length})
+      </h4>
+      ${leadsHTML}
+    </div>
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+        Gyms convertidos (${gymsConv.length})
+      </h4>
+      ${gymsHTML}
+    </div>
+    <div class="f-section">
+      <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Ledger — pendiente ${fmtMoney(s.pend)} · pagado ${fmtMoney(s.pag)}
+      </h4>
+      ${ledgerHTML}
+    </div>`;
+}
+
+function copiarClabeRef(){
+  const r = REF_DATA.refs.find(x => x.id === refFichaId);
+  copiarTexto(r && r.contacto ? r.contacto.clabe : '');
+}
+
+async function marcarPagado(payoutId){
+  const { error } = await sb.from('saas_referral_payouts')
+    .update({ estado:'pagado', pagado_at: new Date().toISOString() })
+    .eq('id', payoutId);
+  if(error){
+    console.error(error);
+    toast('Error al marcar pagado: ' + (error.message || 'desconocido'), 'err');
+    return;
+  }
+  toast('Comisión marcada como pagada');
+  const id = refFichaId;
+  await loadReferidos();       // refresca tabla y REF_DATA
+  if(id != null) openRefFicha(id); // repinta la ficha con el ledger al día
+}
+
+// ── Generar comisiones del mes ──
+// Por cada gym ACTIVO atribuido a un referenciador:
+//   · alta en el mes actual + bono activo → 'primera_mensualidad' = precio del plan
+//   · si no → 'comision_mensual' = precio × pct_comision / 100
+// El UNIQUE(referrer_id,gym_id,concepto,periodo) hace la operación idempotente:
+// el 23505 se tolera y cuenta como "ya generada".
+async function generarComisiones(){
+  const btn = document.getElementById('btn-gen-com');
+  if(btn){ btn.disabled = true; }
+  try{
+    await fetchPlanes();
+    const [leadsRes, refsRes] = await Promise.all([
+      sb.from('saas_leads').select('referrer_id,gym_id')
+        .not('referrer_id', 'is', null).not('gym_id', 'is', null),
+      sb.from('saas_referrers').select('id,nombre,pct_comision,bono_primera_mensualidad')
+    ]);
+    if(leadsRes.error) throw leadsRes.error;
+    if(refsRes.error) throw refsRes.error;
+
+    const refMap = {};
+    (refsRes.data || []).forEach(r => { refMap[r.id] = r; });
+
+    // Pares únicos referenciador↔gym (varios leads pueden apuntar al mismo gym)
+    const pares = [];
+    const vistos = new Set();
+    (leadsRes.data || []).forEach(l => {
+      const k = `${l.referrer_id}|${l.gym_id}`;
+      if(!vistos.has(k)){ vistos.add(k); pares.push(l); }
+    });
+
+    if(pares.length === 0){
+      toast('Ningún gym atribuido a un referenciador — asigna "Referido por" en los leads convertidos.');
+      if(btn) btn.disabled = false;
+      return;
+    }
+
+    const gymIds = [...new Set(pares.map(p => p.gym_id))];
+    const gymsRes = await sb.from('gyms')
+      .select('id,nombre,plan,subscription_status,created_at').in('id', gymIds);
+    if(gymsRes.error) throw gymsRes.error;
+    const gymMap = {};
+    (gymsRes.data || []).forEach(g => { gymMap[g.id] = g; });
+
+    const periodo = primerDiaMes();
+    const mesActual = periodo.slice(0, 7);
+    let generadas = 0, yaGeneradas = 0, noActivos = 0, fallidas = 0;
+    let totalGenerado = 0;
+
+    for(const par of pares){
+      const gym = gymMap[par.gym_id];
+      const ref = refMap[par.referrer_id];
+      if(!gym || !ref) continue;
+      if(gym.subscription_status !== 'active'){ noActivos++; continue; }
+
+      const precio = precioPlan(gym.plan);
+      const esPrimerMes = String(gym.created_at || '').slice(0, 7) === mesActual;
+      let concepto, monto;
+      if(esPrimerMes && ref.bono_primera_mensualidad){
+        concepto = 'primera_mensualidad';
+        monto = precio;
+      }else{
+        concepto = 'comision_mensual';
+        monto = Math.round(precio * (Number(ref.pct_comision) || 0)) / 100;
+      }
+
+      const { error } = await sb.from('saas_referral_payouts').insert({
+        referrer_id: par.referrer_id, gym_id: par.gym_id, concepto, periodo, monto
+      });
+      if(!error){
+        generadas++; totalGenerado += monto;
+      }else if(error.code === '23505' || /duplicate|23505|conflict/i.test(error.message || '')){
+        yaGeneradas++; // ya se generó este concepto para este gym en este periodo
+      }else{
+        fallidas++;
+        console.error(error);
+      }
+    }
+
+    const resumen = [
+      generadas > 0 ? `${generadas} generadas (${fmtMoney(totalGenerado)})` : null,
+      yaGeneradas > 0 ? `${yaGeneradas} ya existían` : null,
+      noActivos > 0 ? `${noActivos} gym(s) sin suscripción activa` : null,
+      fallidas > 0 ? `${fallidas} fallidas` : null
+    ].filter(Boolean).join(' · ');
+    toast(`Comisiones de ${fmtPeriodo(periodo)}: ${resumen || 'nada que generar'}`, fallidas > 0 ? 'err' : 'ok');
+    loadReferidos();
+  }catch(e){
+    console.error(e);
+    toast('Error al generar comisiones: ' + (e.message || 'desconocido'), 'err');
+    const b = document.getElementById('btn-gen-com');
+    if(b) b.disabled = false;
+  }
+}
+
+// ── Escape también cierra el modal de referenciador y el drawer secundario ──
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(document.getElementById('modal-ref').classList.contains('open')) closeRefModal();
+  else if(document.getElementById('drawer2').classList.contains('open')) closeDrawer2();
+});
 
 // ── Cerrar drawer/modales con Escape ──
 document.addEventListener('keydown', e => {
