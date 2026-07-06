@@ -20,6 +20,8 @@
 - [~] (nada activo de agentes en este momento)
 
 ## [ESPERANDO A ROY]
+- [ ] OK para desplegar velum-payment v16 + stripe-webhook v15 (activan la atribución del
+      link de referido; fuentes en supabase/functions/, cambios quirúrgicos a prueba de fallos) · desde 06-jul
 - [ ] OK para desplegar `velum-trial-nurture` + cron diario (código listo y commiteado; además
       requiere reconectar el MCP de Supabase) · desde 03-jul
 - [ ] La llamada a Krajo (el P0 de arriba — 20 minutos, todo preparado) · desde 03-jul
@@ -30,6 +32,8 @@
 - [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
 ## [HECHO] (reciente)
+- [x] HQ v2: vista Hoy + palette ⌘K + Referidos Pro (agregar/quitar/link con código) + funnel + feed + badges + WhatsApp 1-clic · FORJA+TRAZO · 06 jul
+- [x] Ciclo de referidos end-to-end en código (registro ?ref → metadata → webhook atribuye) — deploy pendiente de OK · CAUDAL · 06 jul
 - [x] VELUM HQ COMPLETO: Cockpit + Cuentas + Salud + Tareas auto + Referidos (bono 1a mensualidad + 20% recurrente, ledger idempotente) · FORJA · 06 jul
 - [x] VELUM HQ F1 vivo: CRM superadmin + migración con RLS verificada (3 roles) + 36 leads Bajío sembrados + puente landing→pipeline · FORJA+ESCUDO · 06 jul
 - [x] Panel: migración de emojis 100% (77 tratados, motor de tokens intacto, gates verdes) · FORJA+TRAZO · 06 jul
