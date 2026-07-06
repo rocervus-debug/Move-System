@@ -189,6 +189,10 @@ function selectPlan(plan){
   document.getElementById('step-form').style.display = 'block';
 }
 
+// Código de referido (?ref=CODIGO) — se guarda y viaja con el registro
+const urlRef = new URLSearchParams(window.location.search).get('ref');
+if(urlRef && /^[a-z0-9-]{3,60}$/i.test(urlRef)) localStorage.setItem('velum_ref', urlRef.toLowerCase());
+
 const urlPlan = new URLSearchParams(window.location.search).get('plan');
 if(urlPlan) selectPlan('max');
 
@@ -220,7 +224,7 @@ async function irAPagar(){
     const res = await fetch(SUPA_URL + '/functions/v1/velum-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: selectedPlan, gym_nombre: gymNombre, email, pw_hash, nombre_admin: nombre, tel_whatsapp: tel })
+      body: JSON.stringify({ plan: selectedPlan, gym_nombre: gymNombre, email, pw_hash, nombre_admin: nombre, tel_whatsapp: tel , ref: localStorage.getItem('velum_ref') || undefined })
     });
     const data = await res.json();
     if(!res.ok || !data.url){
