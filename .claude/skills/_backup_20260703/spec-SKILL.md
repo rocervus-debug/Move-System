@@ -15,7 +15,6 @@ Functions Deno). Auth custom JWT HS256 (no Supabase Auth). 3 apps vanilla: panel
 `VELUM_Sistema_Interno.html`, atleta `atleta.html`→Capacitor (www es artefacto de
 build.js), `storefront.html`. 3 verticales por `gyms.vertical` (theming aditivo).
 Stripe Connect (gym = merchant, VELUM cobra fee). Reglas duras en `CLAUDE.md`.
-Este gate es el **paso 2 del Flujo 1 de `VELUM_FLUJOS.md`** — toda tarea no-trivial pasa por aquí.
 
 ## Tu proceso (siempre igual)
 
@@ -60,39 +59,6 @@ Este gate es el **paso 2 del Flujo 1 de `VELUM_FLUJOS.md`** — toda tarea no-tr
 - ... (si no hay, dilo explícitamente: "la idea está completa")
 
 **Estimación**: S / M / L · **Verificación**: <qué gate de VERIFY aplica>
-```
-
-## Ejemplo de spec llena (referencia de tamaño y tono)
-
-```
-# SPEC: Botón "Llegó" en reservas de studios
-
-**Qué**: botón por reserva en el panel para marcar que la atleta llegó a clase.
-**Por qué / problema real**: las dueñas de estudios pasan lista en papel porque el
-check-in QR les estorba en clases chicas; los no-shows no quedan registrados.
-
-**Criterios de aceptación** (medibles):
-1. Clic en "Llegó" crea 1 fila en `asistencias` con el `gym_id` de la reserva (y solo ése).
-2. Segundo clic sobre la misma reserva no duplica la asistencia (idempotente en UI y DB).
-3. El botón solo aparece en gyms con `vertical='studios'` vía theming aditivo — cero
-   cambios visibles para gym/recovery.
-
-**Alcance**
-- SÍ incluye: botón en la vista de reservas del panel + registro de asistencia.
-- NO incluye: cambios en la app del atleta ni en el flujo QR (siguen intactos).
-
-**Toca**: `VELUM_Sistema_Interno.html` (vista reservas), tabla `asistencias` (verificada).
-**Agentes**: FORJA construye · CENTINELA verifica.
-
-**Riesgos y cómo se mitigan**:
-- Doble clic duplica asistencia → constraint único (reserva, fecha) + tolerar 23505.
-
-**Preguntas / cosas que no cuadran en la idea original**:
-- Roy pidió "que cuente como check-in QR": el QR valida membresía vigente y este botón
-  no — ¿debe validar membresía antes de marcar, o registrar aunque esté vencida?
-
-**Estimación**: S · **Verificación**: node --check + preview con evidencia + claims del
-gym B (no ve el botón ni la asistencia).
 ```
 
 ## Reglas de oro
