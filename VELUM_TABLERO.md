@@ -17,7 +17,7 @@
 - [ ] Dunning de pagos fallidos gym→VELUM (reintentos + aviso) · flujo: 1 · agente: CAUDAL · prioridad: P2
 
 ## [EN CURSO]
-- [~] (nada activo de agentes en este momento)
+- [~] VELUM HQ: F2 (Cockpit + Cuentas) y F3 (Salud + Tareas auto) — pendientes de arrancar · FORJA · plan en VELUM_HQ_ARQUITECTURA.md
 
 ## [ESPERANDO A ROY]
 - [ ] OK para desplegar `velum-trial-nurture` + cron diario (código listo y commiteado; además
@@ -30,6 +30,7 @@
 - [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
 ## [HECHO] (reciente)
+- [x] VELUM HQ F1 vivo: CRM superadmin + migración con RLS verificada (3 roles) + 36 leads Bajío sembrados + puente landing→pipeline · FORJA+ESCUDO · 06 jul
 - [x] Panel: migración de emojis 100% (77 tratados, motor de tokens intacto, gates verdes) · FORJA+TRAZO · 06 jul
 - [x] Briefs de pauta Meta por vertical (2x2 ABO, umbrales día 7, checklist bloqueante) · VOZ+META · 06 jul
 - [x] Kit de demos Bajío: guion + 10 objeciones + 14 mensajes Tier A personalizados · IMPULSO · 06 jul
