@@ -1,8 +1,47 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado:** acumulando cambios. NO compilar todavía (esperando más detalles).
-> **Última actualización:** 2026-07-02
-> **Última subida a tiendas:** iOS 1.0.1 build 5 (aprobada, auto-release). Android: 1.0.2 versionCode 4 en prueba cerrada de Google Play (juntando 12 testers).
+> **Estado:** ✅ BUILD GENERADO (2026-07-06) — `www` regenerado + `cap copy` a iOS y Android hechos. Falta que Roy genere los binarios firmados y los suba.
+> **Última actualización:** 2026-07-06
+> **Versiones de este build:** Android `versionCode 5 / 1.0.3` · iOS `build 6 / 1.0.3`.
+> **Última subida a tiendas:** iOS 1.0.1 build 5 (aprobada). Android: v3 (versionCode 3, **con el crash de login**) publicada en prueba cerrada Alpha — **este build v5 la reemplaza; subirlo ANTES de reclutar testers.**
+
+---
+
+## 0. BUILD 2026-07-06 — listo para subir a testers
+
+**Incluido en este build (además de todo lo de la §1):**
+- **Fix del crash de login en Android** (`PUSH_ENABLED = false` en `bridge.js`) — el v3 que está en Alpha crashea al iniciar sesión; este build lo arregla.
+- **Feature nueva "Mis Marcas"** — progresión de fuerza por ejercicio en Progreso (récord histórico + sparkline + Δkg). Deriva de `bitacora_atleta`, sin cambio de esquema. Verificada en preview (poblado + vacío).
+- **Limpieza de emojis** — UI 100% sin emojis pictográficos (verificado: `body.innerText` sin un solo emoji). Chat de Aura, racha, check-in, chips de membresía → texto/SVG. Mapa `EMOJIS` muerto eliminado, `data-emoji` quitados.
+- **Verificado que el bug PGRST303 de Clases NO se reproduce** — `horarios` responde 200 con cuenta con acento (Juan Pérez); el fix UTF-8 del JWT ya está aplicado. No requirió cambio.
+
+**PARA SUBIR — pasos exactos (los binarios los generas tú por los secretos de firma):**
+
+**Android — generar AAB firmado y subir a Alpha:**
+1. Rellena las credenciales de firma (una sola vez):
+   ```
+   cd velum-app/android
+   cp keystore.properties.template keystore.properties
+   # edita keystore.properties → storePassword, keyAlias, keyPassword
+   # (storeFile ya apunta a ~/velum-release.jks)
+   ```
+2. Genera el bundle firmado:
+   ```
+   cd velum-app/android && ./gradlew bundleRelease
+   # sale en: app/build/outputs/bundle/release/app-release.aab
+   ```
+   (o Android Studio → Build → Generate Signed Bundle, eligiendo velum-release.jks)
+3. Play Console → Prueba cerrada **Alpha** → Crear versión → sube el `.aab` (versionCode 5) → Revisar → Lanzar. Esto reemplaza la v3 (que crashea).
+
+**iOS — archivar y subir a TestFlight:**
+1. `cd velum-app && npm run open:ios` (Xcode).
+2. Selecciona "Any iOS Device", Product → Archive (build 6 / 1.0.3).
+3. Distribute App → App Store Connect → Upload → TestFlight.
+   - Opcional (reduce riesgo de rechazo, no bloquea TestFlight): crear `PrivacyInfo.xcprivacy` (§2). App aprobada antes sin él.
+
+**Después:** con v5 en Alpha, reclutar 12+ testers Android → arranca el reloj de 14 días → luego "Solicitar acceso a producción".
+
+---
 
 Este archivo junta todo lo que requiere **rebuild + resubmit** de la app nativa (Capacitor).
 Los cambios solo-web del panel (`VELUM_Sistema_Interno.html`) y de edge functions NO necesitan esto:
