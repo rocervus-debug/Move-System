@@ -6,6 +6,11 @@
 > producción (deploys, DB) queda marcado y se confirma al reconectar.
 
 ## [P0] Por hacer — bloquea vender/cobrar
+- [ ] COBROS Fase A: matar P0s de velum-stripe-charge (sin auth + fee 1.5% vs 0% prometido)
+      + P1s (idempotencia member-subscription, cliente_id, exp en verifyJWT, saas-setup)
+      · flujo: 1 · agente: CAUDAL+FORJA · nota: detalle en VELUM_AUDITORIA_COBROS.md
+- [ ] COBROS Fase B: certificar los 5 rieles con tarjeta real (~$50 MXN) — storefront,
+      domiciliación, SaaS d8, link manual, dunning · flujo: 1 · agente: Roy + CENTINELA
 - [ ] Cerrar el PRIMER cliente pagando: llamada a Krajo con propuesta founder ($999 congelado)
       · flujo: 4 · agente: IMPULSO + Roy · nota: todo listo en `marketing/prospeccion/propuesta-founder-krajo.md` + caso de éxito en `marketing/casos/caso-krajo.html`
 
