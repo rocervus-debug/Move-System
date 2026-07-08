@@ -287,7 +287,7 @@ footer{border-top:1px solid var(--line);}
     <a href="#funciones"><i>01</i>FUNCIONES</a>
     <a href="#pricing"><i>02</i>PRECIO</a>
     <a href="#faq"><i>03</i>FAQ</a>
-    <a href="/">VELUM PARA GYMS</a>
+    <a href="/">VELUM CORE</a>
   </nav>
   <a class="nav-cta" href="registro.html" onclick="typeof gtag!=='undefined'&&gtag('event','nav_cta_click',{page:'${SLUG}'})">Prueba gratis</a>
 </header>
@@ -369,13 +369,13 @@ footer{border-top:1px solid var(--line);}
   <div class="wrap foot-grid">
     <div class="foot-brand">
       <span class="nav-logo"><svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="${ACCENT}"/></svg> VELUM <span class="nav-sub">${SUB}</span></span>
-      <p>El sistema de gestión para gyms, estudios boutique y centros de recovery. Hecho en México.</p>
+      <p>El sistema de gestión para gimnasios, clubes deportivos, estudios boutique y centros de recovery. Hecho en México.</p>
     </div>
     <div class="foot-col">
       <span class="lbl">Producto</span>
       <a href="#funciones">Funciones</a>
       <a href="#pricing">Precios</a>
-      <a href="/">VELUM para gyms</a>
+      <a href="/">VELUM Core</a>
       <a href="${OTRA_URL}">${OTRA_LABEL}</a>
     </div>
     <div class="foot-col">
