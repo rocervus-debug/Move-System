@@ -110,6 +110,19 @@ Deno.serve(async (req: Request) => {
           if (pago) {
             const { data: g } = await db.from('gyms').select('nombre').eq('id', pago.gym_id).maybeSingle();
             const { data: sf } = await db.from('gym_storefront').select('slug').eq('gym_id', pago.gym_id).maybeSingle();
+            // Portal del atleta: el link manual registra el pago por nombre (no cliente_id),
+            // así que resolvemos la ficha por gym_id + nombre para devolver su portal.
+            let cliente: { nombre: string; email: string | null; numero_cliente: number | null; portal_link: string | null } | null = null;
+            if (pago.cliente) {
+              const { data: c } = await db.from('clientes')
+                .select('nombre, email, numero_cliente, portal_token')
+                .eq('gym_id', pago.gym_id).eq('nombre', pago.cliente)
+                .order('id', { ascending: true }).limit(1).maybeSingle();
+              if (c) cliente = {
+                nombre: c.nombre, email: c.email, numero_cliente: c.numero_cliente,
+                portal_link: c.portal_token ? `https://myvelum.app/atleta?token=${c.portal_token}` : null,
+              };
+            }
             return json({
               ok: true,
               status: 'paid',
@@ -117,8 +130,8 @@ Deno.serve(async (req: Request) => {
               gym: g ? { nombre: g.nombre, slug: sf?.slug } : null,
               package: pago.plan ? { name: pago.plan } : null,
               amount_mxn: Number(pago.monto) || (session.amount_total || 0) / 100,
-              customer: { email: session.customer_email || '', name: pago.cliente || '' },
-              cliente: null,
+              customer: { email: session.customer_email || cliente?.email || '', name: pago.cliente || '' },
+              cliente,
             });
           }
           // Pagada en Stripe pero el webhook aún no registró el pago: aún "procesando".
