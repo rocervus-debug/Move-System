@@ -6,9 +6,6 @@
 > producción (deploys, DB) queda marcado y se confirma al reconectar.
 
 ## [P0] Por hacer — bloquea vender/cobrar
-- [ ] COBROS Fase A: matar P0s de velum-stripe-charge (sin auth + fee 1.5% vs 0% prometido)
-      + P1s (idempotencia member-subscription, cliente_id, exp en verifyJWT, saas-setup)
-      · flujo: 1 · agente: CAUDAL+FORJA · nota: detalle en VELUM_AUDITORIA_COBROS.md
 - [ ] COBROS Fase B: certificar los 5 rieles con tarjeta real (~$50 MXN) — storefront,
       domiciliación, SaaS d8, link manual, dunning · flujo: 1 · agente: Roy + CENTINELA
 - [ ] Cerrar el PRIMER cliente pagando: llamada a Krajo con propuesta founder ($999 congelado)
@@ -35,6 +32,7 @@
 - [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
 ## [HECHO] (reciente)
+- [x] COBROS Fase A DESPLEGADA con OK de Roy: 6 funciones blindadas (charge v16 con auth+fee 0%/2%+registro vía webhook, member-sub v5 idempotente, saas-setup con candado, exp en 4 verifyJWT) + smoke tests 401/403 verdes + limpieza (2 huérfanas fuera, pago $10 conciliado) · CAUDAL+FORJA · 07 jul
 - [x] DESPLEGADO con OK de Roy: velum-payment v17 + stripe-webhook v15 — el link de referido atribuye solo (smoke tests 400/401 correctos) · CAUDAL · 06 jul
 - [x] HQ v2: vista Hoy + palette ⌘K + Referidos Pro (agregar/quitar/link con código) + funnel + feed + badges + WhatsApp 1-clic · FORJA+TRAZO · 06 jul
 - [x] Ciclo de referidos end-to-end en código (registro ?ref → metadata → webhook atribuye) — deploy pendiente de OK · CAUDAL · 06 jul
