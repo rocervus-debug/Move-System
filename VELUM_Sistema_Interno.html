@@ -15458,7 +15458,12 @@ function _pvNotaDepositos(){
     <span style="font-size:12px;color:var(--text2);line-height:1.5;">Los depósitos llegan automáticamente <strong style="color:var(--text);">cada viernes</strong> a tu cuenta bancaria. Sin comisión de VELUM en plan Max.</span>
   </div>`;
 }
-// Héroe: 4 tarjetas de resumen (cobrado del mes + saldo Stripe + próximo depósito)
+// Dinero con 2 decimales cuando no es entero (comisión/neto de Stripe son exactos al centavo)
+function _pvMoney2(n){
+  const v=+n||0;
+  return '$'+v.toLocaleString('es-MX',{minimumFractionDigits: Number.isInteger(v)?0:2, maximumFractionDigits:2});
+}
+// Héroe: cobrado bruto → comisión de Stripe → NETO a depositar (montos reales de Stripe) + próximo depósito
 function _pvHero(cobradoMes, cobradoMesN, stripe){
   const mesLabel = new Date().toLocaleDateString('es-MX',{month:'long'});
   const cardA = _domiMetric('Cobrado este mes vía VELUM', _domiMoneyFmt(cobradoMes), `${cobradoMesN} pago${cobradoMesN===1?'':'s'} en línea · ${mesLabel}`, 'var(--accent)');
@@ -15481,12 +15486,29 @@ function _pvHero(cobradoMes, cobradoMesN, stripe){
   const proxSub = stripe.next_payout ? `${_domiMoneyFmt(stripe.next_payout.amount_mxn)} ${banco}` : banco;
   const warnPayouts = stripe.payouts_enabled===false
     ? `<div style="margin-top:10px;font-size:12px;color:var(--warn);">Stripe aún no habilita depósitos en tu cuenta — completa los datos pendientes en Ajustes → Stripe.</div>` : '';
+  const ms = stripe.month_summary;
+  // Línea secundaria con el saldo actual (siempre neto real del balance de Stripe)
+  const saldoLinea = err ? '' : `<div style="font-size:12px;color:var(--text3);margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;">
+      <span>Disponible ahora: <strong style="color:var(--ok);">${_domiMoneyFmt(stripe.available_mxn)}</strong></span>
+      <span>En camino: <strong style="color:var(--text2);">${_domiMoneyFmt(enCamino)}</strong> <span style="color:var(--text3);">(en tránsito + por liberar)</span></span>
+    </div>`;
+  if(ms && !err){
+    // Con datos reales de Stripe: bruto → comisión → neto (los tres cuadran porque salen de balance_transactions)
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
+        ${_domiMetric('Cobrado este mes (bruto)', _pvMoney2(ms.gross_mxn), `${ms.count} pago${ms.count===1?'':'s'} · antes de comisión`, 'var(--accent)')}
+        ${_domiMetric('Comisión de Stripe', '−'+_pvMoney2(ms.fee_mxn), 'procesamiento de tarjeta', 'var(--warn)')}
+        ${_domiMetric('Neto a depositar', _pvMoney2(ms.net_mxn), 'esto llega a tu banco', 'var(--ok)')}
+        ${_domiMetric('Próximo depósito', proxVal, proxSub, 'var(--text)')}
+      </div>${saldoLinea}${warnPayouts}`;
+  }
+  // Sin resumen de Stripe (error al leer transacciones): mostramos bruto de pagos + aviso honesto del neto
   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
       ${cardA}
-      ${_domiMetric('Disponible en Stripe', err?'—':_domiMoneyFmt(stripe.available_mxn), err?'no se pudo leer el saldo':'listo para depositarse', 'var(--ok)')}
+      ${_domiMetric('Disponible en Stripe', err?'—':_domiMoneyFmt(stripe.available_mxn), err?'no se pudo leer el saldo':'neto, listo para depositarse', 'var(--ok)')}
       ${_domiMetric('En camino', err?'—':_domiMoneyFmt(enCamino), 'en tránsito + por liberar', 'var(--text)')}
       ${_domiMetric('Próximo depósito', err?'—':proxVal, err?'reintenta más tarde':proxSub, 'var(--text)')}
-    </div>${warnPayouts}`;
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text3);">El "cobrado" es bruto; al depositarse se descuenta la comisión de Stripe (~3.6% + $3 por pago). Tu saldo <strong>Disponible</strong> ya es neto.</div>${warnPayouts}`;
 }
 async function renderDomiciliados(){
   // "Panel VELUM" (Cobros VELUM): héroe de saldo/depósitos + canales del mes + subsección Domiciliación
@@ -15542,7 +15564,7 @@ async function renderDomiciliados(){
     ${ (stripe && stripe.connected) ? _pvNotaDepositos() : '<div style="margin-bottom:18px;"></div>' }
     <div class="card" style="margin-bottom:14px;">
       <div class="rc-card-title" style="margin-bottom:2px;">Cobros del mes por canal</div>
-      <div class="card-sub" style="color:var(--text3);margin-bottom:10px;">Storefront público, app del atleta, domiciliación y links de pago</div>
+      <div class="card-sub" style="color:var(--text3);margin-bottom:10px;">Storefront público, app del atleta, domiciliación y links de pago · montos brutos (antes de comisión)</div>
       ${ pagosMes.length
         ? Object.values(canales).map(c=>_pvCanalRow(c.label, c.monto, c.n, maxCanal)).join('')
         : `<div style="font-size:12px;color:var(--text3);padding:4px 0;">Aún no hay cobros en línea este mes. Publica tus paquetes en el storefront o genera un link de pago para empezar.</div>` }

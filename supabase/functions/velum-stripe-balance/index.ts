@@ -78,6 +78,37 @@ function sumMxn(arr: Array<{ amount: number; currency: string }> | undefined): n
     .reduce((acc, b) => acc + (b.amount || 0), 0) / 100;
 }
 
+// ── Resumen NETO del mes en curso desde balance_transactions de la cuenta conectada.
+// Cada transacción de cobro trae el `fee` REAL de Stripe y el `net` que se depositará
+// (con on_behalf_of=gym, la comisión la absorbe el gym). Así el panel muestra el monto
+// real a depositar, no el bruto — evita el conflicto "no me depositaron lo que dice".
+async function monthNetSummary(secretKey: string, acct: string) {
+  // Inicio del mes en hora de México (UTC-6) → unix segundos.
+  const now = new Date();
+  const mx = new Date(now.getTime() - 6 * 3600 * 1000);
+  const firstUtc = Date.UTC(mx.getUTCFullYear(), mx.getUTCMonth(), 1, 6, 0, 0); // 00:00 CDMX
+  const gte = Math.floor(firstUtc / 1000);
+  let gross = 0, fee = 0, net = 0, count = 0;
+  let starting_after = '';
+  // Paginación con tope de seguridad (10 páginas = 1000 cobros/mes).
+  for (let page = 0; page < 10; page++) {
+    const q = `balance_transactions?type=charge&limit=100&created[gte]=${gte}` +
+      (starting_after ? `&starting_after=${starting_after}` : '');
+    const res = await stripeGet(q, secretKey, acct);
+    const data = Array.isArray(res?.data) ? res.data : [];
+    for (const t of data) {
+      if ((t.currency || '').toLowerCase() !== 'mxn') continue;
+      gross += (t.amount || 0);
+      fee   += (t.fee || 0);
+      net   += (t.net || 0);
+      count += 1;
+    }
+    if (!res?.has_more || !data.length) break;
+    starting_after = data[data.length - 1].id;
+  }
+  return { gross_mxn: gross / 100, fee_mxn: fee / 100, net_mxn: net / 100, count };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -126,10 +157,11 @@ Deno.serve(async (req: Request) => {
 
   // ── Saldo + payouts + cuenta (schedule y banco) en paralelo ──
   try {
-    const [balance, payouts, account] = await Promise.all([
+    const [balance, payouts, account, monthSummary] = await Promise.all([
       stripeGet('balance', platformSecret, acct),
       stripeGet('payouts?limit=12', platformSecret, acct),
       stripeGet(`accounts/${acct}`, platformSecret), // llamada de plataforma, sin header
+      monthNetSummary(platformSecret, acct).catch((e) => { console.error('monthNetSummary', e); return null; }),
     ]);
 
     if (balance?.error || payouts?.error) {
@@ -199,6 +231,8 @@ Deno.serve(async (req: Request) => {
       schedule_updated,
       bank,
       payouts_enabled: account?.payouts_enabled ?? gymRow.stripe_payouts_enabled ?? null,
+      // Resumen del mes con montos REALES de Stripe (bruto / comisión / neto a depositar).
+      month_summary: monthSummary,
     });
   } catch (e) {
     console.error('velum-stripe-balance', e);
