@@ -228,7 +228,9 @@ Deno.serve(async (req: Request) => {
         },
       }],
       payment_intent_data: paymentIntentData,
-      success_url: `${APP_URL}/success-payment?session_id={CHECKOUT_SESSION_ID}`,
+      // /storefront-success → success-storefront.html: confirma el pago consultando
+      // storefront-order-status (NO /success-payment, que es la bienvenida de registro de gym).
+      success_url: `${APP_URL}/storefront-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_URL}/app`,
       metadata: meta,
       locale: 'es',

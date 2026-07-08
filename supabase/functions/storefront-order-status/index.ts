@@ -99,7 +99,31 @@ Deno.serve(async (req: Request) => {
             } : null,
           });
         }
-        // Sesión de pago único que aún no aterriza en storefront_orders: el webhook va en camino
+        // Pago único SIN orden de storefront: puede ser un LINK DE COBRO manual
+        // (source='manual_link') — no crea storefront_orders, el webhook lo registra
+        // directo en `pagos` por stripe_session_id. Si la sesión está pagada, buscamos ahí.
+        const paidPay = session.payment_status === 'paid' || session.status === 'complete';
+        if (paidPay) {
+          const { data: pago } = await db.from('pagos')
+            .select('gym_id, cliente, monto, plan')
+            .eq('stripe_session_id', sessionId).maybeSingle();
+          if (pago) {
+            const { data: g } = await db.from('gyms').select('nombre').eq('id', pago.gym_id).maybeSingle();
+            const { data: sf } = await db.from('gym_storefront').select('slug').eq('gym_id', pago.gym_id).maybeSingle();
+            return json({
+              ok: true,
+              status: 'paid',
+              paid: true,
+              gym: g ? { nombre: g.nombre, slug: sf?.slug } : null,
+              package: pago.plan ? { name: pago.plan } : null,
+              amount_mxn: Number(pago.monto) || (session.amount_total || 0) / 100,
+              customer: { email: session.customer_email || '', name: pago.cliente || '' },
+              cliente: null,
+            });
+          }
+          // Pagada en Stripe pero el webhook aún no registró el pago: aún "procesando".
+        }
+        // Sesión de pago único que aún no aterriza: el webhook va en camino.
         return json({ ok: true, status: 'pending', paid: false });
       }
     }
