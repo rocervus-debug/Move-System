@@ -4936,11 +4936,13 @@ body::before{
               <div id="domiciliaciones-lista" style="display:flex;flex-direction:column;gap:8px;"></div>
               <button class="btn btn-sm btn-outline" onclick="toggleDomiForm()" style="margin-top:10px;font-size:12px;">+ Domiciliar un socio (generar link)</button>
               <div id="domi-form" style="display:none;margin-top:12px;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
-                <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Genera un link de Stripe para que el socio registre su tarjeta. Cuando la registre, queda domiciliado con cobro automático cada mes.</div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Elige un socio existente (se autocompletan sus datos) o escribe un nombre nuevo para darlo de alta. Genera un link de Stripe para que registre su tarjeta y quede domiciliado con cobro automático cada mes.</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-                  <input id="domi-nombre" class="settings-input" placeholder="Nombre del socio" style="flex:1;min-width:140px;"/>
+                  <input id="domi-nombre" class="settings-input" list="domi-cliente-list" oninput="_domiClienteSel()" placeholder="Socio existente o nombre nuevo" style="flex:1;min-width:140px;"/>
+                  <datalist id="domi-cliente-list"></datalist>
                   <input id="domi-email" type="email" class="settings-input" placeholder="Email del socio" style="flex:1;min-width:140px;"/>
                 </div>
+                <div id="domi-cliente-hint" style="display:none;font-size:11px;margin-bottom:8px;"></div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
                   <input id="domi-wa" class="settings-input" placeholder="WhatsApp (opcional, ej. 5214611234567)" style="flex:1;min-width:140px;"/>
                   <select id="domi-pkg" class="settings-input" style="flex:1;min-width:140px;"></select>
@@ -15621,7 +15623,31 @@ function toggleDomiForm(){
   const f=document.getElementById('domi-form'); if(!f) return;
   const show = f.style.display==='none';
   f.style.display = show ? 'block' : 'none';
-  if(show) _fillDomiPkgs();
+  if(show){
+    _fillDomiPkgs();
+    // Datalist con los socios ya cargados: elegir uno autocompleta email/WhatsApp.
+    const dl=document.getElementById('domi-cliente-list');
+    if(dl && typeof clientesDB!=='undefined'){
+      dl.innerHTML = clientesDB.slice(0,500).map(c=>`<option value="${esc(c.nombre||'')}"></option>`).join('');
+    }
+  }
+}
+
+// Si el nombre coincide con un socio existente, autocompleta su email y teléfono
+// (para que el backend lo CONECTE por email en vez de crear un duplicado). Si es
+// un nombre nuevo, deja los campos como están: se dará de alta al registrar la tarjeta.
+function _domiClienteSel(){
+  const nombre=(document.getElementById('domi-nombre').value||'').trim();
+  const hint=document.getElementById('domi-cliente-hint');
+  const emailEl=document.getElementById('domi-email'), waEl=document.getElementById('domi-wa');
+  const cli=(typeof clientesDB!=='undefined'?clientesDB:[]).find(c=>(c.nombre||'').trim().toLowerCase()===nombre.toLowerCase());
+  if(cli){
+    if(emailEl && cli.email) emailEl.value=cli.email;
+    if(waEl && cli.telefono && !waEl.value.trim()) waEl.value=String(cli.telefono).replace(/\D/g,'');
+    if(hint){ hint.textContent='Socio existente — se conectará a su ficha (no se duplica).'; hint.style.color='var(--ok)'; hint.style.display='block'; }
+  } else if(nombre){
+    if(hint){ hint.textContent='Socio nuevo — se dará de alta al registrar su tarjeta.'; hint.style.color='var(--text3)'; hint.style.display='block'; }
+  } else if(hint){ hint.style.display='none'; }
 }
 async function generarLinkDomiciliacion(){
   const nombre=(document.getElementById('domi-nombre').value||'').trim();
