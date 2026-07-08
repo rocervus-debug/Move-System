@@ -21,9 +21,16 @@ panel; Roy aporta lo que ve en Stripe y su correo.
   desde balance_transactions) + depósitos automáticos los viernes.
 
 ## Pendientes de cierre
-- Configurar Resend (RESEND_API_KEY + EMAIL_FROM) → activa todos los correos (recibos, dunning).
-- Borrar paquetes PRUEBA #28/#29 y limpiar clientes duplicados de prueba (ej. "Rodrigo Mendez" 85/163).
-- Confirmar Smart Retries en Stripe (Billing → Manage failed payments).
+- Configurar Resend (RESEND_API_KEY) → activa todos los correos (recibos, dunning). [Roy en curso]
+- Confirmar Smart Retries en Stripe (Billing → Manage failed payments). [pendiente juntos]
+
+## Limpieza hecha (08-jul)
+- Datos de prueba BORRADOS de MOVE: fichas "Rodrigo Mendez" (85/163) + sus reservas/asistencias/
+  medidas/órdenes, la domiciliación de prueba (sub id 4, ya cancel_at_period_end en Stripe),
+  todos los pagos de la certificación y los paquetes PRUEBA #28/#29. MOVE = 82 clientes reales, 0 de prueba.
+- Duplicados reales fusionados (variación de acentos de migración vieja): Alejandra Rodríguez
+  Arriaga (id 5), América Rodríguez (id 8), Raúl Zárate (id 48) — sin perder pagos. 0 duplicados restantes.
+- Fix: membresías que vencen HOY ya no se marcan vencidas (parseo de fecha con T12:00:00 en 4 sitios).
 
 ---
 ## Anexo: pasos originales (referencia)
