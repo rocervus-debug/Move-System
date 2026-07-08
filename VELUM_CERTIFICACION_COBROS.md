@@ -1,8 +1,33 @@
 # Certificación de cobros con dinero real — checklist ejecutable
-**Estado:** Fase A desplegada (07-jul) · paquetes demo $10 creados en MOVE (#28 único, #29
-recurrente) · **costo total de las pruebas: ~$40-50 MXN** (a tu propio gym, recuperable).
+**Estado (08-jul): CERTIFICADO (condicional a Resend).** P1-P5 en verde con dinero real;
+P6 verificado en código. Paquetes demo $10 (#28 único, #29 recurrente) — borrar al cerrar.
 **Regla de oro:** una prueba pasa solo con sus evidencias completas. Claude verifica DB y
-panel; Roy aporta lo que ve en Stripe y su correo. Se hacen EN ORDEN y se marca cada una.
+panel; Roy aporta lo que ve en Stripe y su correo.
+
+## Resultado (08-jul-2026)
+- **P1 Storefront pago único** ✓ — orden→pago con mismo stripe_session_id, comisión $0.
+- **P2 Link manual** ✓ — modo Monto libre (pago #503) y modo Paquete (pago #505: package_id
+  28, vigencia extendida a sep, clases). Fee 0% (plan max). Fix: la success page ahora es
+  la de compra (no la de registro de gym) y muestra el portal del atleta.
+- **P3 App / renovación** ✓ — source atleta_renewal, membresía extendida.
+- **P4 Domiciliación** ✓ — alta + primer cobro (cliente_id poblado) + cancelación (botón en
+  Cobros VELUM → cancel_at_period_end). Domiciliar conecta socio existente o crea nuevo.
+- **P5 SaaS gym→VELUM** ✓ — Roy confirmó (registro con cupón → trial → cobro → cancelación).
+- **P6 Dunning** ✓ verificado en código — invoice.payment_failed → past_due + email
+  pago_fallido con hosted_invoice_url; subscription.updated/deleted sincronizan estado;
+  recuperación vía payment_succeeded. CONDICIONES: el email no sale hasta configurar Resend
+  (la marca "Cobro falló" sí funciona); confirmar Smart Retries ON en el dashboard de Stripe.
+- **Cobros VELUM** ✓ muestra bruto → comisión de Stripe → neto real a depositar (month_summary
+  desde balance_transactions) + depósitos automáticos los viernes.
+
+## Pendientes de cierre
+- Configurar Resend (RESEND_API_KEY + EMAIL_FROM) → activa todos los correos (recibos, dunning).
+- Borrar paquetes PRUEBA #28/#29 y limpiar clientes duplicados de prueba (ej. "Rodrigo Mendez" 85/163).
+- Confirmar Smart Retries en Stripe (Billing → Manage failed payments).
+
+---
+## Anexo: pasos originales (referencia)
+**Regla de oro:** una prueba pasa solo con sus evidencias completas. Se hacen EN ORDEN y se marca cada una.
 
 ---
 
