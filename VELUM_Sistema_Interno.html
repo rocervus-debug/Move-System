@@ -25634,10 +25634,11 @@ async function generarStripeLink(){
   document.getElementById('sc-link-result').style.display = 'none';
 
   try{
+    // v16: la función exige JWT y toma el gym de los claims (nunca del body)
     const res = await fetch(SUPA_STRIPE_CHARGE, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ gym_id: gymId, tipo, monto, descripcion: desc,
+      headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({ tipo, monto, descripcion: desc,
         cliente_nombre: cliente, cliente_email: email || undefined, intervalo }),
     });
     const data = await res.json();
