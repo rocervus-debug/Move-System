@@ -6284,19 +6284,42 @@ body::before{
         </div>
       </div>
 
-      <!-- PASO 2 — ¿Cuánto y por qué? -->
+      <!-- PASO 2 — ¿Qué le vas a cobrar? (paquete del catálogo o monto libre) -->
       <div class="wzd-step" data-step="2">
-        <div class="wzd-q">¿Cuánto y por qué concepto?</div>
-        <div class="wzd-hint">El cliente verá el concepto en la página de pago de Stripe. Monto mínimo: $10 MXN.</div>
-        <div class="field">
-          <label>Monto (MXN) *</label>
-          <input id="cbl-monto" type="number" min="10" step="0.01" placeholder="Ej: 650"/>
-          <span class="field-err" id="cbl-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        <div class="wzd-q">¿Qué le vas a cobrar?</div>
+        <div class="wzd-hint">Liga el cobro a un paquete para que la membresía se extienda sola, o cobra un monto libre.</div>
+        <!-- Segmento paquete vs monto libre -->
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <button type="button" id="cbl-modo-pkg" class="btn btn-primary btn-sm" onclick="cblSetModo('paquete')" style="flex:1;">Paquete o membresía</button>
+          <button type="button" id="cbl-modo-libre" class="btn btn-outline btn-sm" onclick="cblSetModo('libre')" style="flex:1;">Monto libre</button>
         </div>
-        <div class="field">
-          <label>Concepto *</label>
-          <input id="cbl-concepto" type="text" placeholder="Ej: Membresía — Daniela Ríos"/>
-          <span class="field-err" id="cbl-concepto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        <div id="cbl-aviso-sinpkg" style="display:none;font-size:11px;color:var(--warn);margin-bottom:8px;line-height:1.5;">No tienes paquetes de pago único activos — el cobro será con monto libre. Crea paquetes en <strong>Paquetes &amp; Servicios</strong> para ligar cobros a membresías.</div>
+        <!-- Modo PAQUETE: el precio lo pone el servidor con el paquete elegido -->
+        <div id="cbl-grupo-paquete">
+          <div class="field">
+            <label>Paquete *</label>
+            <select id="cbl-paquete" onchange="cblPkgChanged()"></select>
+            <span class="field-err" id="cbl-paquete-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+          <div class="field">
+            <label>Precio <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(del paquete — lo fija el servidor)</span></label>
+            <input id="cbl-pkg-precio" type="text" readonly value="—" style="opacity:.8;cursor:default;"/>
+          </div>
+          <div class="wzd-hint" style="margin-top:2px;">El pago quedará ligado al paquete y extenderá la vigencia del cliente.</div>
+        </div>
+        <!-- Modo MONTO LIBRE: cobro suelto (comportamiento original) -->
+        <div id="cbl-grupo-libre" style="display:none;">
+          <div class="field">
+            <label>Monto (MXN) *</label>
+            <input id="cbl-monto" type="number" min="10" step="0.01" placeholder="Ej: 650"/>
+            <span class="field-err" id="cbl-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+          <div class="field">
+            <label>Concepto *</label>
+            <input id="cbl-concepto" type="text" placeholder="Ej: Membresía — Daniela Ríos"/>
+            <span class="field-err" id="cbl-concepto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          </div>
+          <div class="wzd-hint" style="margin-top:2px;">Cobro suelto: no modifica la membresía del cliente.</div>
         </div>
         <div class="field">
           <label>Correo del cliente <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional — Stripe le manda el recibo)</span></label>
@@ -15290,11 +15313,21 @@ function _domiSubRow(s){
   const next  = _domiFecha(s.current_period_end);
   const ini   = (s.cliente_nombre||'S').trim().split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()||'S';
   let badge, sub, brd='var(--border)';
-  if(s.cancel_at_period_end){ badge=_domiBadge('Cancela','var(--warn)'); sub='se cancela al fin del periodo'; }
+  if(s.cancel_at_period_end){ badge=_domiBadge('Cancela al final del periodo','var(--warn)'); sub='conserva acceso hasta '+next; }
   else if(s.status==='active'){    badge=_domiBadge('Al corriente','var(--ok)');     sub='próx. cobro '+next; }
   else if(s.status==='past_due'){  badge=_domiBadge('Cobro falló','var(--danger)');  sub='tarjeta rechazada · reintentando'; brd='color-mix(in srgb,var(--danger) 28%,transparent)'; }
   else if(s.status==='trialing'){  badge=_domiBadge('Prueba','var(--accent)');       sub='inicia cobro '+next; }
   else {                            badge=_domiBadge('Por activar','var(--text3)');    sub='falta completar el registro de tarjeta'; }
+  // Acciones por fila: cancelar (active/past_due) o reactivar (ya marcada para cancelar).
+  // El sub id de Stripe (sub_...) es seguro para interpolar en el onclick.
+  let accion='';
+  if(s.stripe_subscription_id){
+    if(s.cancel_at_period_end){
+      accion=`<button class="btn btn-outline btn-sm" onclick="domiReactivarSub('${s.stripe_subscription_id}')" style="font-size:11px;flex-shrink:0;">Reactivar</button>`;
+    } else if(s.status==='active'||s.status==='past_due'){
+      accion=`<button class="btn btn-ghost btn-sm" onclick="domiCancelarSub('${s.stripe_subscription_id}')" style="font-size:11px;flex-shrink:0;color:var(--text3);">Cancelar</button>`;
+    }
+  }
   return `<div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid ${brd};border-radius:11px;padding:10px 13px;">
     <div style="width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${esc(ini)}</div>
     <div style="flex:1;min-width:0;">
@@ -15302,7 +15335,31 @@ function _domiSubRow(s){
       <div style="font-size:11.5px;color:var(--text3);margin-top:2px;">${esc(plan)} · ${sub}</div>
     </div>
     ${badge}
+    ${accion}
   </div>`;
+}
+// ── Cancelar / reactivar domiciliación desde Cobros VELUM (misma edge function que loadMemberSubs) ──
+async function _domiSubAction(subId, action, okMsg){
+  try{
+    const res=await fetch(`${supabaseUrl}/functions/v1/velum-member-subscription`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+(currentUser&&currentUser.jwt||'')},
+      body: JSON.stringify({ action, subscription_id: subId })
+    });
+    const d=await res.json();
+    if(!res.ok || d.error) throw new Error(d.error||'No se pudo completar la operación.');
+    toast(okMsg,'✓');
+    renderDomiciliados(); // re-render con el estado nuevo
+  }catch(e){ console.error('domi sub '+action, e); toast('Error: '+(e.message||e),'✕'); }
+}
+async function domiCancelarSub(subId){
+  const ok = await confirmDialog('El atleta conserva su acceso hasta el final del periodo que ya pagó y no se le volverá a cobrar.',
+    { title:'¿Cancelar la domiciliación?', danger:true, confirmText:'Sí, cancelar', icon:'' });
+  if(!ok) return;
+  await _domiSubAction(subId, 'cancel', 'Se cancelará al final del periodo');
+}
+async function domiReactivarSub(subId){
+  await _domiSubAction(subId, 'reactivate', 'Domiciliación reactivada — el cobro mensual continúa');
 }
 function _domiCobroRow(p){
   const nombre=p.cliente||p.cliente_nombre||'Suscriptor', plan=p.plan||'Membresía';
@@ -25913,6 +25970,56 @@ function _syncCobrarUI(){
   if(qa) qa.style.display = on ? 'inline-flex' : 'none';
 }
 
+// ── Modo del paso 2: 'paquete' (liga el cobro a un paquete) o 'libre' (cobro suelto) ──
+let _cblModo = 'paquete';
+
+// Paquetes cobrables con link: pago único (no domiciliados) y activos, del cache global
+function _cblPkgsUnicos(){
+  return (typeof _packagesDB!=='undefined'?(_packagesDB||[]):[])
+    .filter(p=>p.billing_type!=='recurring' && p.is_active!==false);
+}
+
+// Cambia el segmento paquete/libre y muestra el grupo de campos correspondiente
+function cblSetModo(m){
+  _cblModo = m;
+  const pkg=document.getElementById('cbl-grupo-paquete'), libre=document.getElementById('cbl-grupo-libre');
+  if(pkg)   pkg.style.display   = m==='paquete' ? 'block' : 'none';
+  if(libre) libre.style.display = m==='libre'   ? 'block' : 'none';
+  const bp=document.getElementById('cbl-modo-pkg'), bl=document.getElementById('cbl-modo-libre');
+  if(bp) bp.className = 'btn btn-sm ' + (m==='paquete' ? 'btn-primary' : 'btn-outline');
+  if(bl) bl.className = 'btn btn-sm ' + (m==='libre'   ? 'btn-primary' : 'btn-outline');
+  ['cbl-paquete','cbl-monto','cbl-concepto'].forEach(f=>wzdFieldErr(f,''));
+}
+
+// Refleja el precio (solo lectura) del paquete elegido
+function cblPkgChanged(){
+  const sel=document.getElementById('cbl-paquete');
+  const p=_cblPkgsUnicos().find(x=>String(x.id)===String(sel?sel.value:''));
+  const precio=document.getElementById('cbl-pkg-precio');
+  if(precio) precio.value = p ? `$${(+p.price_mxn||0).toLocaleString('es-MX')} MXN` : '—';
+}
+
+// Llena el select de paquetes; sin paquetes de pago único → cae a monto libre con aviso
+function _cblFillPaquetes(){
+  const sel=document.getElementById('cbl-paquete'); if(!sel) return;
+  const pkgs=_cblPkgsUnicos();
+  const aviso=document.getElementById('cbl-aviso-sinpkg');
+  const bp=document.getElementById('cbl-modo-pkg');
+  if(!pkgs.length){
+    sel.innerHTML='<option value="">— Sin paquetes de pago único —</option>';
+    if(aviso) aviso.style.display='block';
+    if(bp) bp.disabled=true;
+    cblSetModo('libre');
+  } else {
+    sel.innerHTML='<option value="">— Elige un paquete —</option>'+
+      pkgs.map(p=>`<option value="${p.id}">${esc(p.name)} · $${(+p.price_mxn||0).toLocaleString('es-MX')}</option>`).join('');
+    if(aviso) aviso.style.display='none';
+    if(bp) bp.disabled=false;
+    cblSetModo('paquete');
+  }
+  cblPkgChanged();
+}
+
 // Punto de entrada del wizard. `nombre` opcional = cliente preseleccionado.
 function openCobrarLink(nombre=''){
   // Datalist con los clientes ya cargados (mismo patrón que el wizard de cita)
@@ -25923,10 +26030,15 @@ function openCobrarLink(nombre=''){
   // Reset completo de campos y estado
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v; };
   set('cbl-cliente', nombre||''); set('cbl-monto',''); set('cbl-concepto',''); set('cbl-email',''); set('cbl-link-url','');
-  ['cbl-cliente','cbl-monto','cbl-concepto','cbl-email'].forEach(f=>wzdFieldErr(f,''));
+  ['cbl-cliente','cbl-paquete','cbl-monto','cbl-concepto','cbl-email'].forEach(f=>wzdFieldErr(f,''));
   const err=document.getElementById('cbl-err'); if(err){ err.textContent=''; err.style.display='none'; }
   const res=document.getElementById('cbl-result'); if(res) res.style.display='none';
   const btn=document.getElementById('cbl-btn'); if(btn){ btn.disabled=false; btn.textContent='Generar link'; }
+  _cblFillPaquetes(); // default: modo paquete si el gym tiene paquetes de pago único
+  // La cache de paquetes se carga lazy (vista Paquetes) — si está vacía, cargarla y rellenar
+  if(!_cblPkgsUnicos().length && typeof loadPackagesFromCatalog==='function'){
+    loadPackagesFromCatalog().then(()=>_cblFillPaquetes()).catch(()=>{});
+  }
   openModal('cobrar-link');
   if(typeof wizInit==='function') wizInit('cobrar-link');
 }
@@ -25940,12 +26052,18 @@ wizRegister('cobrar-link', {
       wzdFieldErr('cbl-cliente',''); return true;
     }
     if(n===2){
-      const monto=parseFloat(document.getElementById('cbl-monto').value);
-      const desc=(document.getElementById('cbl-concepto').value||'').trim();
       const email=(document.getElementById('cbl-email').value||'').trim();
       let ok=true;
-      if(!monto || monto<10){ wzdFieldErr('cbl-monto','Monto mínimo: $10 MXN.'); ok=false; } else wzdFieldErr('cbl-monto','');
-      if(!desc){ wzdFieldErr('cbl-concepto','Escribe el concepto del cobro.'); ok=false; } else wzdFieldErr('cbl-concepto','');
+      if(_cblModo==='paquete'){
+        // Modo paquete: solo se exige elegir uno — el precio lo pone el servidor
+        const pkgId=document.getElementById('cbl-paquete').value;
+        if(!pkgId){ wzdFieldErr('cbl-paquete','Elige el paquete que vas a cobrar.'); ok=false; } else wzdFieldErr('cbl-paquete','');
+      } else {
+        const monto=parseFloat(document.getElementById('cbl-monto').value);
+        const desc=(document.getElementById('cbl-concepto').value||'').trim();
+        if(!monto || monto<10){ wzdFieldErr('cbl-monto','Monto mínimo: $10 MXN.'); ok=false; } else wzdFieldErr('cbl-monto','');
+        if(!desc){ wzdFieldErr('cbl-concepto','Escribe el concepto del cobro.'); ok=false; } else wzdFieldErr('cbl-concepto','');
+      }
       if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ wzdFieldErr('cbl-email','Ese correo no se ve válido.'); ok=false; } else wzdFieldErr('cbl-email','');
       return ok;
     }
@@ -25955,21 +26073,35 @@ wizRegister('cobrar-link', {
     const nombre=(document.getElementById('cbl-cliente').value||'').trim();
     const cli=_cblCliente(nombre);
     if(n===2){
-      // Defaults: concepto "Membresía — {nombre}" y correo precargado del cliente (editable)
+      // Defaults: concepto "Membresía — {nombre}" (solo modo libre) y correo precargado del cliente
       const conc=document.getElementById('cbl-concepto');
       if(conc && !conc.value.trim() && nombre) conc.value=`Membresía — ${nombre}`;
       const em=document.getElementById('cbl-email');
       if(em && !em.value.trim() && cli && cli.email) em.value=cli.email;
     }
     if(n===3){
-      const monto=parseFloat(document.getElementById('cbl-monto').value)||0;
-      const desc=(document.getElementById('cbl-concepto').value||'').trim();
       const email=(document.getElementById('cbl-email').value||'').trim();
       const tel=(cli && cli.telefono ? cli.telefono : '').replace(/\D/g,'');
+      let cobroRows;
+      if(_cblModo==='paquete'){
+        const p=_cblPkgsUnicos().find(x=>String(x.id)===String(document.getElementById('cbl-paquete').value));
+        cobroRows=[
+          _wzdRow('Paquete', p?esc(p.name):'—'),
+          _wzdRow('Precio', p?`$${(+p.price_mxn||0).toLocaleString('es-MX')} MXN`:'—'),
+          _wzdRow('Membresía', 'Se extiende al confirmarse el pago'),
+        ];
+      } else {
+        const monto=parseFloat(document.getElementById('cbl-monto').value)||0;
+        const desc=(document.getElementById('cbl-concepto').value||'').trim();
+        cobroRows=[
+          _wzdRow('Monto', `$${monto.toLocaleString('es-MX')} MXN`),
+          _wzdRow('Concepto', esc(desc)),
+          _wzdRow('Membresía', 'Cobro suelto — no la modifica'),
+        ];
+      }
       const rows=[
         _wzdRow('Cliente', esc(nombre)),
-        _wzdRow('Monto', `$${monto.toLocaleString('es-MX')} MXN`),
-        _wzdRow('Concepto', esc(desc)),
+        ...cobroRows,
         _wzdRow('Correo', email?esc(email):'—'),
         _wzdRow('WhatsApp', tel?esc(cli.telefono):'Sin teléfono — el link se comparte manual'),
       ];
@@ -25983,15 +26115,29 @@ wizRegister('cobrar-link', {
 // JWT del panel en Authorization; la función saca el gym de los claims, nunca del body.
 async function generarCobrarLink(){
   const cliente=(document.getElementById('cbl-cliente').value||'').trim();
-  const monto=parseFloat(document.getElementById('cbl-monto').value);
-  const desc=(document.getElementById('cbl-concepto').value||'').trim();
   const email=(document.getElementById('cbl-email').value||'').trim();
   const errEl=document.getElementById('cbl-err');
   errEl.textContent=''; errEl.style.display='none';
-  if(!cliente || !monto || monto<10 || !desc){
-    errEl.textContent='Faltan datos: revisa cliente, monto (mínimo $10) y concepto.';
-    errEl.style.display='block';
-    return;
+  // Body según el modo: con package_id el servidor fija el precio (ignora monto/descripcion)
+  // y el webhook registra el pago CON paquete + extiende la membresía. Sin él: cobro libre.
+  let body;
+  if(_cblModo==='paquete'){
+    const pkgId=parseInt(document.getElementById('cbl-paquete').value,10);
+    if(!cliente || !pkgId){
+      errEl.textContent='Faltan datos: revisa cliente y paquete.';
+      errEl.style.display='block';
+      return;
+    }
+    body={ tipo:'pago_unico', package_id:pkgId, cliente_nombre:cliente, cliente_email: email||undefined };
+  } else {
+    const monto=parseFloat(document.getElementById('cbl-monto').value);
+    const desc=(document.getElementById('cbl-concepto').value||'').trim();
+    if(!cliente || !monto || monto<10 || !desc){
+      errEl.textContent='Faltan datos: revisa cliente, monto (mínimo $10) y concepto.';
+      errEl.style.display='block';
+      return;
+    }
+    body={ tipo:'pago_unico', monto, descripcion:desc, cliente_nombre:cliente, cliente_email: email||undefined };
   }
   const btn=document.getElementById('cbl-btn');
   if(btn){ btn.disabled=true; btn.textContent='Generando…'; }
@@ -25999,7 +26145,7 @@ async function generarCobrarLink(){
     const res=await fetch(SUPA_STRIPE_CHARGE,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
-      body: JSON.stringify({ tipo:'pago_unico', monto, descripcion:desc, cliente_nombre:cliente, cliente_email: email||undefined }),
+      body: JSON.stringify(body),
     });
     const data=await res.json();
     if(!res.ok || !data.ok){
@@ -26033,8 +26179,15 @@ function waCobrarLink(){
   const url=(document.getElementById('cbl-link-url').value||'').trim();
   if(!url) return;
   const nombre=(document.getElementById('cbl-cliente').value||'').trim();
-  const monto=parseFloat(document.getElementById('cbl-monto').value)||0;
-  const desc=(document.getElementById('cbl-concepto').value||'').trim();
+  // Concepto y monto según el modo del cobro (paquete del catálogo o monto libre)
+  let monto, desc;
+  if(_cblModo==='paquete'){
+    const p=_cblPkgsUnicos().find(x=>String(x.id)===String(document.getElementById('cbl-paquete').value));
+    monto=p?(+p.price_mxn||0):0; desc=p?p.name:'tu paquete';
+  } else {
+    monto=parseFloat(document.getElementById('cbl-monto').value)||0;
+    desc=(document.getElementById('cbl-concepto').value||'').trim();
+  }
   const msg=encodeURIComponent(`Hola ${nombre}! Aquí está tu link de pago de ${desc} por $${monto.toLocaleString('es-MX')}: ${url}`);
   const cli=_cblCliente(nombre);
   const tel=(cli && cli.telefono ? cli.telefono : '').replace(/\D/g,'');
