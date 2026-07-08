@@ -122,7 +122,8 @@ Deno.serve(async (req: Request) => {
         },
         metadata: { gym_id: String(gymId), velum_platform: 'true' },
         settings: {
-          payouts: { schedule: { interval: 'daily' } },
+          // Política VELUM: depósito automático semanal los VIERNES ("todos los viernes cae").
+          payouts: { schedule: { interval: 'weekly', weekly_anchor: 'friday' } },
         },
       }, stripeSecret) as { id: string };
       accountId = account.id;

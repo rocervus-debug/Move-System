@@ -1,9 +1,10 @@
-// velum-stripe-balance — Saldo y depósitos (payouts) de la cuenta Stripe conectada del gym.
-// Devuelve: Disponible / Pendiente / En tránsito + lista de payouts con estado y fecha estimada.
+// velum-stripe-balance — v2: Saldo, depósitos y CONFIGURACIÓN de payout de la cuenta conectada.
+// Devuelve: Disponible / Pendiente / En tránsito + payouts + horario de depósito + banco (last4).
+// Política VELUM (decisión Roy 08-jul): depósito automático SEMANAL los VIERNES para todos los
+// gyms — esta función lo AUTO-CORRIGE si la cuenta tiene otro horario (self-healing, idempotente).
 // Seguridad: el gym_id sale del JWT verificado del panel (no del body) → un gym solo ve lo suyo.
+// Migrado a Deno.serve nativo (deno.land/std provoca timeouts de bundling al desplegar).
 // deploy: supabase functions deploy velum-stripe-balance --no-verify-jwt
-
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
@@ -49,11 +50,23 @@ async function verifyJWT(token: string, secret: string): Promise<Record<string, 
   } catch { return null; }
 }
 
-// ── Stripe REST helper (cuenta conectada vía header Stripe-Account) ──
-async function stripeGet(path: string, secretKey: string, stripeAccount: string) {
+// ── Stripe REST helpers ──────────────────────────────────────────────
+// GET con Stripe-Account (recursos DE la cuenta conectada: balance, payouts)
+async function stripeGet(path: string, secretKey: string, stripeAccount?: string) {
+  const headers: Record<string, string> = { 'Authorization': `Bearer ${secretKey}` };
+  if (stripeAccount) headers['Stripe-Account'] = stripeAccount;
+  const res = await fetch(`https://api.stripe.com/v1/${path}`, { method: 'GET', headers });
+  return res.json();
+}
+// POST form-encoded como plataforma (actualizar settings de la cuenta conectada)
+async function stripePost(path: string, secretKey: string, form: Record<string, string>) {
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${secretKey}`, 'Stripe-Account': stripeAccount },
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${secretKey}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(form).toString(),
   });
   return res.json();
 }
@@ -65,7 +78,7 @@ function sumMxn(arr: Array<{ amount: number; currency: string }> | undefined): n
     .reduce((acc, b) => acc + (b.amount || 0), 0) / 100;
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -111,11 +124,12 @@ serve(async (req) => {
   }
   const acct = gymRow.stripe_account_id;
 
-  // ── Saldo + payouts en paralelo ──
+  // ── Saldo + payouts + cuenta (schedule y banco) en paralelo ──
   try {
-    const [balance, payouts] = await Promise.all([
+    const [balance, payouts, account] = await Promise.all([
       stripeGet('balance', platformSecret, acct),
       stripeGet('payouts?limit=12', platformSecret, acct),
+      stripeGet(`accounts/${acct}`, platformSecret), // llamada de plataforma, sin header
     ]);
 
     if (balance?.error || payouts?.error) {
@@ -143,6 +157,32 @@ serve(async (req) => {
       .filter((p) => p.status === 'in_transit' || p.status === 'pending')
       .sort((a, b) => String(a.arrival_date).localeCompare(String(b.arrival_date)))[0] || null;
 
+    // ── Horario de depósito: política = semanal los viernes. Auto-corregir si difiere. ──
+    let schedule = account?.settings?.payouts?.schedule || null;
+    let schedule_updated = false;
+    if (!account?.error && schedule &&
+        (schedule.interval !== 'weekly' || schedule.weekly_anchor !== 'friday')) {
+      const upd = await stripePost(`accounts/${acct}`, platformSecret, {
+        'settings[payouts][schedule][interval]': 'weekly',
+        'settings[payouts][schedule][weekly_anchor]': 'friday',
+      });
+      if (upd?.error) {
+        // No romper la respuesta: reportar el horario actual y dejar log para revisar.
+        console.error('velum-stripe-balance: no se pudo fijar payout semanal', acct, upd.error);
+      } else {
+        schedule = upd?.settings?.payouts?.schedule || schedule;
+        schedule_updated = true;
+      }
+    }
+
+    // ── Banco destino (last4 + nombre) para mostrar "depósito a ****1234" ──
+    let bank: { last4: string; bank_name: string | null } | null = null;
+    const ext = account?.external_accounts?.data;
+    if (Array.isArray(ext) && ext.length) {
+      const ba = ext.find((e: { object: string }) => e.object === 'bank_account') || ext[0];
+      if (ba) bank = { last4: String(ba.last4 || ''), bank_name: ba.bank_name || null };
+    }
+
     return json({
       connected: true,
       currency: 'mxn',
@@ -151,6 +191,14 @@ serve(async (req) => {
       in_transit_mxn,
       next_payout: next,
       payouts: payoutsOut,
+      payout_schedule: schedule ? {
+        interval: schedule.interval,               // weekly = política VELUM
+        weekly_anchor: schedule.weekly_anchor ?? null,
+        delay_days: schedule.delay_days ?? null,
+      } : null,
+      schedule_updated,
+      bank,
+      payouts_enabled: account?.payouts_enabled ?? gymRow.stripe_payouts_enabled ?? null,
     });
   } catch (e) {
     console.error('velum-stripe-balance', e);

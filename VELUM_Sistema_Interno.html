@@ -3346,7 +3346,7 @@ body::before{
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="nav-label-text nav-lbl-desktop"> Pagos & Renovaciones</span><span class="nav-lbl-mob">Pagos</span>
       </div>
       <div class="nav-item mob-hidden" id="nav-domiciliados" onclick="go('domiciliados',this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="nav-label-text"> Domiciliados</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="nav-label-text"> Cobros VELUM</span>
       </div>
       <div class="nav-item" id="nav-paquetes" onclick="go('paquetes',this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="nav-label-text"> Paquetes</span>
@@ -4145,10 +4145,10 @@ body::before{
     <div class="view" id="v-domiciliados">
       <div id="domi-root" style="max-width:1080px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-          <div style="font-size:13px;color:var(--text3);line-height:1.5;max-width:560px;">Cobros recurrentes de tus atletas con tarjeta domiciliada. Aquí ves <strong style="color:var(--text2);">cuánto entra, cuándo se cobra y cuándo cae en tu banco</strong>.</div>
+          <div style="font-size:13px;color:var(--text3);line-height:1.5;max-width:560px;">Todo lo que cobras en línea con VELUM — storefront, app, domiciliación y links de pago — y <strong style="color:var(--text2);">los depósitos semanales a tu banco</strong>.</div>
           <button class="btn btn-primary btn-sm" onclick="domiIrADomiciliar()" style="white-space:nowrap;">+ Domiciliar atleta</button>
         </div>
-        <div id="domi-body"><div class="card" style="text-align:center;color:var(--text3);padding:30px;">Cargando domiciliados…</div></div>
+        <div id="domi-body"><div class="card" style="text-align:center;color:var(--text3);padding:30px;">Cargando cobros…</div></div>
       </div>
     </div>
     <div class="view" id="v-pagos">
@@ -10367,7 +10367,7 @@ const topTitles = {
   crm:         ['CRM & Prospectos',          'Gestión comercial de clientes y prospectos'],
   pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
   pagos:       ['Pagos & Renovaciones',      ()=>`Control de ingresos · ${_mesLabel()}`],
-  domiciliados:['Domiciliados',              'Dinero entrante de cobros recurrentes'],
+  domiciliados:['Cobros VELUM',              'Lo que cobras en línea y tus depósitos semanales'],
   visitas:     ['Visitas del Día',           ()=>`Pases de día · ${_mesLabel()}`],
   clientes:    ['Clientes',                  'Directorio de socios activos y membresías'],
   asistencia:  ['Asistencia',               ()=>`Registro de asistencia · ${_todayLabel()}`],
@@ -15326,42 +15326,144 @@ function domiIrADomiciliar(){
     if(typeof toggleDomiForm==='function' && f && f.style.display==='none') toggleDomiForm();
     document.getElementById('domiciliaciones-wrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }catch(_){}}, 280);
 }
-async function _domiLoadBanco(){
-  const host=document.getElementById('domi-banco'); if(!host) return;
-  host.innerHTML = `<div style="display:flex;align-items:center;gap:11px;background:color-mix(in srgb,var(--accent) 7%,transparent);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);border-radius:11px;padding:11px 14px;">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
-    <div style="font-size:12.5px;color:var(--text2);line-height:1.5;">El dinero de cada cobro cae en tu cuenta <strong style="color:var(--text);">~2 días hábiles después</strong>. Conecta Stripe para ver el saldo exacto y la fecha de cada depósito.</div>
-  </div>`;
+// ── Panel VELUM: saldo/depósitos desde velum-stripe-balance (una sola llamada) ──
+async function _pvStripeData(){
   try{
-    if(!currentUser||!currentUser.jwt) return;
+    if(!currentUser||!currentUser.jwt) return null;
     const res=await fetch(`${supabaseUrl}/functions/v1/velum-stripe-balance`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
       body:'{}'
     });
-    const d=await res.json();
-    if(!d || d.connected===false || d.error) return;  // conserva el fallback informativo
-    host.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
-      ${_domiMetric('Disponible en banco', _domiMoneyFmt(d.available_mxn), 'listo para retirar', 'var(--ok)')}
-      ${_domiMetric('En tránsito', _domiMoneyFmt(d.in_transit_mxn), 'rumbo a tu cuenta', 'var(--accent)')}
-      ${_domiMetric('Próximo depósito', d.next_payout?_domiFecha(d.next_payout.arrival_date):'—', d.next_payout?_domiMoneyFmt(d.next_payout.amount_mxn):'sin depósitos en camino', 'var(--text)')}
-    </div>`;
-  }catch(e){ console.warn('domi banco', e); }
+    return await res.json();
+  }catch(e){ console.warn('pv stripe', e); return null; }
+}
+// Pagos en línea (metodo Stripe%) del mes en curso — query directa, no depende del cache global
+async function _pvPagosMes(){
+  try{
+    const hoy=new Date();
+    const ini=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    // límite exclusivo = día 1 del mes siguiente (nunca hardcodear día 31)
+    const sig=new Date(hoy.getFullYear(), hoy.getMonth()+1, 1);
+    const fin=`${sig.getFullYear()}-${String(sig.getMonth()+1).padStart(2,'0')}-01`;
+    const { data, error } = await gf(window.supabaseClient
+      .from('pagos')
+      .select('monto, metodo, source, fecha'))
+      .ilike('metodo','Stripe%')
+      .gte('fecha', ini)
+      .lt('fecha', fin)
+      .limit(2000);
+    if(error) throw error;
+    return data||[];
+  }catch(e){ console.error('pv pagos mes', e); if(typeof _handleSessionError==='function')_handleSessionError(e); return []; }
+}
+// Canal del pago en línea: Domiciliación / Links / App / Storefront
+function _pvCanal(p){
+  const m=(p.metodo||'').toLowerCase();
+  if(m.indexOf('domiciliaci')>=0) return 'domiciliacion';
+  if(m.indexOf('link')>=0) return 'links';
+  if((p.source||'').toLowerCase()==='atleta_renewal') return 'app';
+  return 'storefront';
+}
+// Estados de payout de Stripe traducidos para el gym
+const _PV_PAYOUT_STATUS = {
+  paid:       ['Depositado','var(--ok)'],
+  in_transit: ['En camino','var(--accent)'],
+  pending:    ['Programado','var(--text3)'],
+  failed:     ['Falló','var(--danger)'],
+  canceled:   ['Cancelado','var(--warn)'],
+};
+function _pvPayoutRow(p){
+  const st=_PV_PAYOUT_STATUS[p.status]||[String(p.status||'—'),'var(--text3)'];
+  return `<div style="display:flex;align-items:center;gap:11px;padding:9px 2px;border-bottom:1px solid var(--border);">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--text3)" stroke-width="2" style="flex-shrink:0;"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+    <span style="flex:1;font-size:12.5px;color:var(--text2);">${_domiFecha(p.arrival_date||p.created)}</span>
+    <span style="font-size:12.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">${_domiMoneyFmt(p.amount_mxn)}</span>
+    ${_domiBadge(st[0],st[1])}
+  </div>`;
+}
+// Fila de canal con barra proporcional al monto
+function _pvCanalRow(label, monto, n, max){
+  const pct = max>0 ? Math.max(3, Math.round(monto/max*100)) : 0;
+  return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;">
+    <span style="width:104px;flex-shrink:0;font-size:12px;color:var(--text2);font-weight:600;">${label}</span>
+    <div style="flex:1;height:7px;background:var(--card2);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;"></div></div>
+    <span style="font-size:12.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;flex-shrink:0;">${_domiMoneyFmt(monto)}</span>
+    <span style="font-size:11px;color:var(--text3);min-width:56px;text-align:right;flex-shrink:0;">${n} pago${n===1?'':'s'}</span>
+  </div>`;
+}
+// Nota fija de política de depósitos (viernes, sin comisión en Max)
+function _pvNotaDepositos(){
+  return `<div style="display:flex;align-items:center;gap:9px;margin:12px 0 18px;padding:9px 13px;background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px solid color-mix(in srgb,var(--accent) 16%,transparent);border-radius:10px;">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    <span style="font-size:12px;color:var(--text2);line-height:1.5;">Los depósitos llegan automáticamente <strong style="color:var(--text);">cada viernes</strong> a tu cuenta bancaria. Sin comisión de VELUM en plan Max.</span>
+  </div>`;
+}
+// Héroe: 4 tarjetas de resumen (cobrado del mes + saldo Stripe + próximo depósito)
+function _pvHero(cobradoMes, cobradoMesN, stripe){
+  const mesLabel = new Date().toLocaleDateString('es-MX',{month:'long'});
+  const cardA = _domiMetric('Cobrado este mes vía VELUM', _domiMoneyFmt(cobradoMes), `${cobradoMesN} pago${cobradoMesN===1?'':'s'} en línea · ${mesLabel}`, 'var(--accent)');
+  if(!stripe || stripe.connected===false){
+    // Estado vacío: sin cuenta Stripe conectada → CTA (reúsa el flujo conectarStripe existente)
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:4px;">${cardA}</div>
+      <div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:13.5px;font-weight:700;margin-bottom:3px;">Conecta Stripe para recibir tu dinero</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.5;">Con Stripe conectado, aquí ves tu saldo, tus depósitos semanales de cada viernes y el banco al que llegan.</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="conectarStripe()" style="white-space:nowrap;">Conectar Stripe</button>
+      </div>`;
+  }
+  const err = !!stripe.error;
+  const enCamino = (+stripe.in_transit_mxn||0)+(+stripe.pending_mxn||0);
+  const banco = stripe.bank && stripe.bank.last4 ? `a tu cuenta ****${esc(stripe.bank.last4)}` : 'depósito semanal automático';
+  const proxVal = stripe.next_payout ? _domiFecha(stripe.next_payout.arrival_date) : 'Viernes';
+  const proxSub = stripe.next_payout ? `${_domiMoneyFmt(stripe.next_payout.amount_mxn)} ${banco}` : banco;
+  const warnPayouts = stripe.payouts_enabled===false
+    ? `<div style="margin-top:10px;font-size:12px;color:var(--warn);">Stripe aún no habilita depósitos en tu cuenta — completa los datos pendientes en Ajustes → Stripe.</div>` : '';
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+      ${cardA}
+      ${_domiMetric('Disponible en Stripe', err?'—':_domiMoneyFmt(stripe.available_mxn), err?'no se pudo leer el saldo':'listo para depositarse', 'var(--ok)')}
+      ${_domiMetric('En camino', err?'—':_domiMoneyFmt(enCamino), 'en tránsito + por liberar', 'var(--text)')}
+      ${_domiMetric('Próximo depósito', err?'—':proxVal, err?'reintenta más tarde':proxSub, 'var(--text)')}
+    </div>${warnPayouts}`;
 }
 async function renderDomiciliados(){
+  // "Panel VELUM" (Cobros VELUM): héroe de saldo/depósitos + canales del mes + subsección Domiciliación
   const host=document.getElementById('domi-body'); if(!host) return;
   const gymId=(typeof MOVE_GYM_ID!=='undefined'&&MOVE_GYM_ID)?MOVE_GYM_ID:((currentUser&&currentUser.gym_id)||1);
   let subs=[];
+  const subsQ = window.supabaseClient
+    .from('member_subscriptions')
+    .select('id, cliente_nombre, status, current_period_end, cancel_at_period_end, amount_cents, stripe_subscription_id, packages(name)')
+    .eq('gym_id', gymId)
+    .in('status',['active','past_due','incomplete','trialing'])
+    .order('current_period_end',{ascending:true});
+  // Las 3 fuentes en paralelo: suscripciones, pagos en línea del mes y saldo Stripe
+  const [subsRes, pagosMes, stripe] = await Promise.all([
+    subsQ.then(r=>r).catch(e=>({error:e})),
+    _pvPagosMes(),
+    _pvStripeData()
+  ]);
   try{
-    const { data } = await window.supabaseClient
-      .from('member_subscriptions')
-      .select('id, cliente_nombre, status, current_period_end, cancel_at_period_end, amount_cents, stripe_subscription_id, packages(name)')
-      .eq('gym_id', gymId)
-      .in('status',['active','past_due','incomplete','trialing'])
-      .order('current_period_end',{ascending:true});
-    subs=(data||[]).filter(s=>s.stripe_subscription_id);
+    if(subsRes && subsRes.error) throw subsRes.error;
+    subs=((subsRes&&subsRes.data)||[]).filter(s=>s.stripe_subscription_id);
   }catch(e){ console.error('renderDomiciliados subs', e); if(typeof _handleSessionError==='function')_handleSessionError(e); }
 
+  // ── Héroe: cobrado del mes (todos los canales en línea) ──
+  const cobradoMesTotal = pagosMes.reduce((a,p)=>a+(+p.monto||0),0);
+
+  // ── Desglose por canal del mes ──
+  const canales={ storefront:{label:'Storefront',monto:0,n:0}, app:{label:'App',monto:0,n:0},
+                  domiciliacion:{label:'Domiciliación',monto:0,n:0}, links:{label:'Links de pago',monto:0,n:0} };
+  pagosMes.forEach(p=>{ const c=canales[_pvCanal(p)]; c.monto+=(+p.monto||0); c.n++; });
+  const maxCanal = Math.max(...Object.values(canales).map(c=>c.monto));
+
+  // ── Depósitos (payouts) de Stripe ──
+  const payouts = (stripe && stripe.connected && Array.isArray(stripe.payouts)) ? stripe.payouts : [];
+
+  // ── Subsección Domiciliación (funcionalidad previa, se conserva) ──
   const allPagos=(typeof pagos!=='undefined'&&Array.isArray(pagos))?pagos:[];
   const cobros=allPagos.filter(p=>{ const src=(p.source||'').toLowerCase(); const m=(p.metodo||'').toLowerCase(); const n=(p.notas||'').toLowerCase();
     // pago de domiciliación real (webhook): source='domiciliacion', metodo 'Stripe (Domiciliación)'.
@@ -15377,12 +15479,27 @@ async function renderDomiciliados(){
   const cobradoMesN= cobros.filter(p=>String(p.fecha||'').slice(0,7)===mes).length;
 
   host.innerHTML = `
+    ${_pvHero(cobradoMesTotal, pagosMes.length, stripe)}
+    ${ (stripe && stripe.connected) ? _pvNotaDepositos() : '<div style="margin-bottom:18px;"></div>' }
+    <div class="card" style="margin-bottom:14px;">
+      <div class="rc-card-title" style="margin-bottom:2px;">Cobros del mes por canal</div>
+      <div class="card-sub" style="color:var(--text3);margin-bottom:10px;">Storefront público, app del atleta, domiciliación y links de pago</div>
+      ${ pagosMes.length
+        ? Object.values(canales).map(c=>_pvCanalRow(c.label, c.monto, c.n, maxCanal)).join('')
+        : `<div style="font-size:12px;color:var(--text3);padding:4px 0;">Aún no hay cobros en línea este mes. Publica tus paquetes en el storefront o genera un link de pago para empezar.</div>` }
+    </div>
+    ${ (stripe && stripe.connected) ? `<div class="card" style="margin-bottom:14px;">
+        <div class="rc-card-title" style="margin-bottom:2px;">Depósitos</div>
+        <div class="card-sub" style="color:var(--text3);margin-bottom:8px;">Lo que Stripe manda a tu banco, del más reciente al más antiguo</div>
+        ${ payouts.length ? payouts.map(_pvPayoutRow).join('')
+          : `<div style="font-size:12px;color:var(--text3);padding:4px 0;">Todavía no hay depósitos. En cuanto cobres, el dinero sale a tu banco el viernes siguiente.</div>` }
+      </div>` : '' }
+    <div class="rc-card-title" style="margin:4px 0 10px;">Domiciliación</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
       ${_domiMetric('Ingreso mensual', _domiMoneyFmt(mrr), `${activos} atleta${activos===1?'':'s'} activo${activos===1?'':'s'} · /mes`, 'var(--accent)')}
       ${_domiMetric('Cobrado este mes', _domiMoneyFmt(cobradoMes), `${cobradoMesN} cobro${cobradoMesN===1?'':'s'} exitoso${cobradoMesN===1?'':'s'}`, 'var(--ok)')}
       ${_domiMetric('En proceso', _domiMoneyFmt(enProceso), enProcesoN?`${enProcesoN} reintentando`:'sin pendientes', 'var(--warn)')}
     </div>
-    <div id="domi-banco" style="margin-bottom:18px;"></div>
     ${ subs.length ? `<div class="card">
         <div class="rc-card-title" style="margin-bottom:2px;">Próximos cobros</div>
         <div class="card-sub" style="color:var(--text3);margin-bottom:12px;">Ordenado por fecha de cobro</div>
@@ -15393,7 +15510,6 @@ async function renderDomiciliados(){
         <div>${cobros.slice(0,8).map(_domiCobroRow).join('')}</div>
       </div>` : '' }
   `;
-  _domiLoadBanco();
 }
 
 async function loadMemberSubs(){
@@ -18687,7 +18803,7 @@ const VELUM_NAV_CATALOG = [
   { id:'pipeline',       label:'Pipeline de Ventas',      emoji:'' },
   { id:'pagos',          label:'Pagos & Renovaciones',    emoji:'' },
   { id:'clientes',       label:'Clientes',                emoji:'' },
-  { id:'domiciliados',   label:'Domiciliados',            emoji:'' },
+  { id:'domiciliados',   label:'Cobros VELUM',            emoji:'' },
   { id:'paquetes',       label:'Paquetes & Servicios',    emoji:'◈' },
   { id:'retencion',      label:'Retención & Churn',       emoji:'' },
   { id:'calendario-venc',label:'Calendario Vencimientos', emoji:'' },
