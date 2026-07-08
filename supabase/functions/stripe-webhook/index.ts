@@ -1,4 +1,4 @@
-// stripe-webhook — v15: + atribución de referidos (metadata.ref → saas_leads con referrer_id) en el signup SaaS.
+// stripe-webhook — v16: DOS fixes P0 cazados en certificación: (1) recordMemberPago manda package_id (check pago_requires_package), (2) clases_usadas siempre 0 — con null (paquetes ilimitados) el insert violaba NOT NULL y el pago cobrado no se registraba (la causa de las ventas fantasma de mayo). v15: + atribución de referidos (metadata.ref → saas_leads con referrer_id) en el signup SaaS.
 // v13/v14: idempotencia DB (pagos únicos por stripe_session_id), monto real en renovaciones,
 // upsert de member_subscriptions, dunning, anti-replay. Deno.serve nativo (sin deno.land/std).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -68,8 +68,8 @@ Deno.serve(async (req: Request) => {
     return { id: nc?.id ?? null, nombre: clienteNombre, isNew: true };
   }
 
-  async function recordMemberPago(opts: { gymId:number, clienteNombre:string, phone:string|null, pkgName:string, durationDays:number, clasesTotales:number|null, montoMxn:number, feePct:number, feeMxn?:number, subId:string, invoiceId:string }) {
-    const { gymId, clienteNombre, phone, pkgName, durationDays, clasesTotales, montoMxn, feePct, feeMxn, subId, invoiceId } = opts;
+  async function recordMemberPago(opts: { gymId:number, clienteNombre:string, phone:string|null, pkgName:string, packageId:number|null, durationDays:number, clasesTotales:number|null, montoMxn:number, feePct:number, feeMxn?:number, subId:string, invoiceId:string }) {
+    const { gymId, clienteNombre, phone, pkgName, packageId, durationDays, clasesTotales, montoMxn, feePct, feeMxn, subId, invoiceId } = opts;
     if (invoiceId) {
       const { data: dup } = await db.from('pagos').select('id').eq('gym_id', gymId).eq('stripe_session_id', invoiceId).maybeSingle();
       if (dup) return;
@@ -79,13 +79,16 @@ Deno.serve(async (req: Request) => {
     if (lastPago?.vence) { const cur = new Date(lastPago.vence + 'T12:00:00'); if (cur.getTime() > baseDate.getTime()) baseDate = cur; }
     const venceDate = new Date(baseDate); venceDate.setDate(venceDate.getDate() + (durationDays || 30));
     const comm = (feeMxn != null && Number.isFinite(feeMxn)) ? Math.round(feeMxn) : Math.round(montoMxn * feePct);
+    // package_id es OBLIGATORIO por el check pago_requires_package — sin él, el insert
+    // fallaba silencioso y la mensualidad cobrada no aparecía en los libros (bug cazado 08-jul)
     const { error: pErr } = await db.from('pagos').insert({
       gym_id: gymId, cliente: clienteNombre, monto: montoMxn, fecha: new Date().toISOString().slice(0,10), plan: pkgName,
+      package_id: packageId,
       metodo: 'Stripe (Domiciliación)', vence: venceDate.toISOString().slice(0,10), telefono: phone,
       applied_price_mxn: Math.round(montoMxn), list_price_mxn: Math.round(montoMxn), source: 'domiciliacion',
       velum_commission_mxn: comm, net_to_gym_mxn: Math.round(montoMxn - comm),
       stripe_session_id: invoiceId || null, stripe_sub_id: subId, stripe_status: 'active',
-      notas: 'Mensualidad domiciliada', clases_totales: clasesTotales, clases_usadas: clasesTotales ? 0 : null,
+      notas: 'Mensualidad domiciliada', clases_totales: clasesTotales, clases_usadas: 0,
     });
     if (pErr && !isDupErr(pErr)) console.error('domiciliacion pago insert err:', pErr);
     return venceDate.toISOString().slice(0,10);
@@ -201,7 +204,7 @@ Deno.serve(async (req: Request) => {
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
           const invoiceId = (sub?.latest_invoice && typeof sub.latest_invoice==='string') ? sub.latest_invoice : (session.invoice as string)||'';
           if (cli.id) {
-            const vence = await recordMemberPago({ gymId, clienteNombre: cli.nombre, phone: md.customer_phone || null, pkgName: pkg.name, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: Number(pkg.price_mxn), feePct, subId, invoiceId });
+            const vence = await recordMemberPago({ gymId, clienteNombre: cli.nombre, phone: md.customer_phone || null, pkgName: pkg.name, packageId, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: Number(pkg.price_mxn), feePct, subId, invoiceId });
             if (email) {
               await sendEmail(email, 'recibo', { gym: gym.nombre, monto: String(Math.round(Number(pkg.price_mxn))), plan: pkg.name + ' (mensual)', vence: vence || '' });
               if (cli.isNew) {
@@ -256,7 +259,7 @@ Deno.serve(async (req: Request) => {
           const monto = Number(pkg.price_mxn);
           const comm = Math.round((order.application_fee_cents || 0) / 100);
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
-          const { error: pErr } = await db.from('pagos').insert({ gym_id: gymId, cliente: clienteNombre, monto, fecha: new Date().toISOString().slice(0,10), plan: pkg.name, metodo: 'Stripe (Storefront)', vence: venceDate.toISOString().slice(0,10), telefono: order.customer_phone || null, package_id: packageId, applied_price_mxn: Math.round(monto), list_price_mxn: Math.round(monto), source: 'storefront', velum_commission_mxn: comm, net_to_gym_mxn: Math.round(monto-comm), stripe_session_id: session.id, notas: `Compra online — ${order.customer_email}`, clases_totales: clasesTotales, clases_usadas: clasesTotales ? 0 : null });
+          const { error: pErr } = await db.from('pagos').insert({ gym_id: gymId, cliente: clienteNombre, monto, fecha: new Date().toISOString().slice(0,10), plan: pkg.name, metodo: 'Stripe (Storefront)', vence: venceDate.toISOString().slice(0,10), telefono: order.customer_phone || null, package_id: packageId, applied_price_mxn: Math.round(monto), list_price_mxn: Math.round(monto), source: 'storefront', velum_commission_mxn: comm, net_to_gym_mxn: Math.round(monto-comm), stripe_session_id: session.id, notas: `Compra online — ${order.customer_email}`, clases_totales: clasesTotales, clases_usadas: 0 });
           if (pErr && !isDupErr(pErr)) console.error('pago insert err:', pErr);
           if (order.customer_email) {
             await sendEmail(order.customer_email, 'recibo', { gym: gym.nombre, monto: String(Math.round(monto)), plan: pkg.name, vence: venceDate.toISOString().slice(0,10) });
@@ -287,7 +290,7 @@ Deno.serve(async (req: Request) => {
               const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
               const realMonto = (typeof inv.amount_paid === 'number' ? inv.amount_paid : Math.round(Number(pkg.price_mxn)*100)) / 100;
               const realFee = (typeof inv.application_fee_amount === 'number') ? inv.application_fee_amount/100 : undefined;
-              await recordMemberPago({ gymId: ms.gym_id, clienteNombre: ms.cliente_nombre, phone: null, pkgName: pkg.name, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: realMonto, feePct: Number(ms.application_fee_pct||0), feeMxn: realFee, subId, invoiceId: inv.id });
+              await recordMemberPago({ gymId: ms.gym_id, clienteNombre: ms.cliente_nombre, phone: null, pkgName: pkg.name, packageId: ms.package_id, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: realMonto, feePct: Number(ms.application_fee_pct||0), feeMxn: realFee, subId, invoiceId: inv.id });
             }
           }
           break;

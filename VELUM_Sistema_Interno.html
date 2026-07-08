@@ -3688,6 +3688,10 @@ body::before{
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             + Pago
           </button>
+          <button class="qa-btn qa-secondary" id="qa-cobrar-btn" onclick="openCobrarLink()" style="display:none;" title="Generar link de pago Stripe y enviarlo al cliente">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Cobrar
+          </button>
           <button class="qa-btn qa-secondary" onclick="openModal('visita')" style="background:rgba(167,139,250,.12);color:#a78bfa;border-color:rgba(167,139,250,.25);">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 9a3 3 0 0 1 0 6v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-3a3 3 0 0 1 0-6V6a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg>
             Visita
@@ -6251,6 +6255,84 @@ body::before{
       <button class="btn btn-outline wzd-back" onclick="wizBack('cita')" style="display:none;">← Atrás</button>
       <button class="btn btn-primary wzd-next" onclick="wizNext('cita')">Siguiente →</button>
       <button class="btn btn-primary wzd-save" onclick="saveCita()" style="display:none;">Agendar cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cobrar con link (Stripe) — wizard 3 pasos -->
+<div class="modal-overlay" id="modal-cobrar-link">
+  <div class="modal" style="width:480px;">
+    <div class="modal-head">
+      <div class="modal-title">Cobrar con link</div>
+      <button class="modal-close" onclick="closeModal('cobrar-link')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — ¿A quién? -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿A quién le vas a cobrar?</div>
+        <div class="wzd-hint">Escribe el nombre del cliente. Si ya es socio, aparecerá en la lista al escribir.</div>
+        <div class="field">
+          <label>Cliente *</label>
+          <input id="cbl-cliente" type="text" list="cbl-cliente-list" placeholder="Ej: Daniela Ríos" autocomplete="off"/>
+          <datalist id="cbl-cliente-list"></datalist>
+          <span class="field-err" id="cbl-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+      </div>
+
+      <!-- PASO 2 — ¿Cuánto y por qué? -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">¿Cuánto y por qué concepto?</div>
+        <div class="wzd-hint">El cliente verá el concepto en la página de pago de Stripe. Monto mínimo: $10 MXN.</div>
+        <div class="field">
+          <label>Monto (MXN) *</label>
+          <input id="cbl-monto" type="number" min="10" step="0.01" placeholder="Ej: 650"/>
+          <span class="field-err" id="cbl-monto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Concepto *</label>
+          <input id="cbl-concepto" type="text" placeholder="Ej: Membresía — Daniela Ríos"/>
+          <span class="field-err" id="cbl-concepto-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Correo del cliente <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional — Stripe le manda el recibo)</span></label>
+          <input id="cbl-email" type="email" placeholder="cliente@correo.com"/>
+          <span class="field-err" id="cbl-email-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+      </div>
+
+      <!-- PASO 3 — Generar y enviar -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Genera el link y envíalo</div>
+        <div class="wzd-hint">Stripe crea una página de pago segura. Copia el link o mándalo directo por WhatsApp.</div>
+        <div id="cbl-confirm"></div>
+        <div id="cbl-err" style="display:none;font-size:12px;color:var(--danger);margin-top:10px;"></div>
+        <div id="cbl-result" style="display:none;margin-top:14px;padding:12px;background:var(--card2);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);border-radius:10px;">
+          <label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;">Link de pago</label>
+          <input id="cbl-link-url" type="text" readonly onclick="this.select()" style="width:100%;margin-top:6px;padding:9px 11px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--accent);font-size:12px;font-family:var(--fm);"/>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="copyCobrarLink()" style="display:inline-flex;align-items:center;gap:5px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copiar
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="waCobrarLink()" style="display:inline-flex;align-items:center;gap:5px;border-color:rgba(37,211,102,.4);color:#25d366;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+              Enviar por WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cobrar-link')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('cobrar-link')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('cobrar-link')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" id="cbl-btn" onclick="generarCobrarLink()" style="display:none;">Generar link</button>
     </div>
   </div>
 </div>
@@ -9157,9 +9239,16 @@ async function loadConfigFromSupabase(){
     });
   }
   // Fase A: leer la vertical del gym y aplicar su tema. Default/fallo = 'velum' (sin cambio).
+  // FIX gymStripeId: la columna viva es gyms.stripe_account_id (NO existe en gym_config),
+  // así que se copia aquí a gymConfig al cargar los datos del gym. Antes nadie la poblaba
+  // y los botones "Cobrar" condicionados a gymConfig.stripe_account_id jamás aparecían.
   if(MOVE_GYM_ID && window.supabaseClient){
-    window.supabaseClient.from('gyms').select('vertical').eq('id', MOVE_GYM_ID).single()
-      .then(({data:g})=>{ if(typeof applyVertical==='function') applyVertical(g && g.vertical ? g.vertical : 'gym'); })
+    window.supabaseClient.from('gyms').select('vertical,stripe_account_id').eq('id', MOVE_GYM_ID).single()
+      .then(({data:g})=>{
+        if(typeof applyVertical==='function') applyVertical(g && g.vertical ? g.vertical : 'gym');
+        gymConfig.stripe_account_id = (g && g.stripe_account_id) ? g.stripe_account_id : '';
+        if(typeof _syncCobrarUI==='function') _syncCobrarUI();
+      })
       .catch(()=>{ if(typeof applyVertical==='function') applyVertical('gym'); });
   }
   applyGymConfig();
@@ -13588,6 +13677,9 @@ function renderClientes(){
     pagos.filter(p=>p.congelado&&!esPaseDia(p.plan)).map(p=>(p.cliente||'').trim())
   );
 
+  // Cobrar con link: solo si el gym tiene Stripe conectado (poblado en loadConfigFromSupabase)
+  const _cliStripeId = gymConfig?.stripe_account_id || null;
+
   listEl.innerHTML = paginated.map(c => {
     const cfg = esCfg[c.estado] || esCfg['sin-fecha'];
 
@@ -13653,13 +13745,23 @@ function renderClientes(){
                 border-radius:8px;background:rgba(139,92,246,.08);color:#a78bfa;font-size:15px;
                 border:1px solid rgba(139,92,246,.22);cursor:pointer;flex-shrink:0;transition:background .15s;"
          onmouseenter="this.style.background='rgba(139,92,246,.18)'" onmouseleave="this.style.background='rgba(139,92,246,.08)'"></button>` : '';
+    // Botón "Cobrar" — abre el wizard Cobrar con link con este cliente preseleccionado
+    const cobrarBtn = _cliStripeId
+      ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openCobrarLink('${esc(c.nombre)}')"
+           title="Cobrar con link de pago (Stripe)"
+           style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
+                  background:color-mix(in srgb, var(--accent) 8%, transparent);color:var(--accent);
+                  font-size:12px;font-weight:700;border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+                  cursor:pointer;white-space:nowrap;flex-shrink:0;">
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Cobrar</button>`
+      : '';
     const waBtn = numWA.length >= 12
       ? `<div style="display:flex;gap:6px;align-items:center;">
            <a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
               style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
                      background:rgba(37,211,102,.15);color:#25d366;font-size:12px;font-weight:700;
                      text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;">${WA_SVG} WhatsApp</a>
-           ${editBtn}${qrBtn}${medBtn}${delBtn}
+           ${cobrarBtn}${editBtn}${qrBtn}${medBtn}${delBtn}
          </div>`
       : `<div style="display:flex;gap:6px;align-items:center;">
            <button onclick="abrirEditarTelefono('${esc(c.nombre)}')"
@@ -13667,7 +13769,7 @@ function renderClientes(){
                       background:var(--card2);color:var(--text3);font-size:12px;font-weight:600;
                       border:1px dashed var(--border);cursor:pointer;white-space:nowrap;">
              Agregar número</button>
-           ${qrBtn}${medBtn}${delBtn}
+           ${cobrarBtn}${qrBtn}${medBtn}${delBtn}
          </div>`;
 
     return `<div onclick="openClientePanel('${esc(c.nombre)}')"
@@ -25674,6 +25776,155 @@ function whatsAppStripeLink(){
   const msg = encodeURIComponent(`Hola ${document.getElementById('sc-cliente').value}! Te comparto el link para tu pago de $${monto} MXN: ${document.getElementById('sc-link-url').value}`);
   const tel = clientesDB.find(c=>c.nombre===document.getElementById('sc-cliente').value)?.telefono||'';
   window.open(`https://wa.me/${tel.replace(/\D/g,'')}?text=${msg}`,'_blank');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WIZARD "COBRAR CON LINK" (modal-cobrar-link) — camino nuevo de cobro
+// Usa el controlador genérico .wzd-* y el mismo patrón de fetch a
+// velum-stripe-charge que generarStripeLink (el gym sale de los claims).
+// ══════════════════════════════════════════════════════════════════
+
+// Busca el registro del cliente por nombre (case-insensitive) en la lista ya cargada
+function _cblCliente(nombre){
+  return (typeof clientesDB!=='undefined'?clientesDB:[])
+    .find(c=>(c.nombre||'').trim().toLowerCase()===String(nombre||'').trim().toLowerCase()) || null;
+}
+
+// Muestra u oculta los accesos "Cobrar" según haya Stripe conectado (gymConfig.stripe_account_id)
+function _syncCobrarUI(){
+  const on = !!(typeof gymConfig!=='undefined' && gymConfig && gymConfig.stripe_account_id);
+  const qa = document.getElementById('qa-cobrar-btn');
+  if(qa) qa.style.display = on ? 'inline-flex' : 'none';
+}
+
+// Punto de entrada del wizard. `nombre` opcional = cliente preseleccionado.
+function openCobrarLink(nombre=''){
+  // Datalist con los clientes ya cargados (mismo patrón que el wizard de cita)
+  const dl = document.getElementById('cbl-cliente-list');
+  if(dl && typeof clientesDB!=='undefined'){
+    dl.innerHTML = clientesDB.slice(0,500).map(c=>`<option value="${esc(c.nombre||'')}"></option>`).join('');
+  }
+  // Reset completo de campos y estado
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v; };
+  set('cbl-cliente', nombre||''); set('cbl-monto',''); set('cbl-concepto',''); set('cbl-email',''); set('cbl-link-url','');
+  ['cbl-cliente','cbl-monto','cbl-concepto','cbl-email'].forEach(f=>wzdFieldErr(f,''));
+  const err=document.getElementById('cbl-err'); if(err){ err.textContent=''; err.style.display='none'; }
+  const res=document.getElementById('cbl-result'); if(res) res.style.display='none';
+  const btn=document.getElementById('cbl-btn'); if(btn){ btn.disabled=false; btn.textContent='Generar link'; }
+  openModal('cobrar-link');
+  if(typeof wizInit==='function') wizInit('cobrar-link');
+}
+
+wizRegister('cobrar-link', {
+  labels: {1:'Cliente', 2:'Cobro', 3:'Generar y enviar'},
+  validate(n){
+    if(n===1){
+      const nom=(document.getElementById('cbl-cliente').value||'').trim();
+      if(!nom){ wzdFieldErr('cbl-cliente','Escribe el nombre del cliente.'); return false; }
+      wzdFieldErr('cbl-cliente',''); return true;
+    }
+    if(n===2){
+      const monto=parseFloat(document.getElementById('cbl-monto').value);
+      const desc=(document.getElementById('cbl-concepto').value||'').trim();
+      const email=(document.getElementById('cbl-email').value||'').trim();
+      let ok=true;
+      if(!monto || monto<10){ wzdFieldErr('cbl-monto','Monto mínimo: $10 MXN.'); ok=false; } else wzdFieldErr('cbl-monto','');
+      if(!desc){ wzdFieldErr('cbl-concepto','Escribe el concepto del cobro.'); ok=false; } else wzdFieldErr('cbl-concepto','');
+      if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ wzdFieldErr('cbl-email','Ese correo no se ve válido.'); ok=false; } else wzdFieldErr('cbl-email','');
+      return ok;
+    }
+    return true;
+  },
+  onStep(n){
+    const nombre=(document.getElementById('cbl-cliente').value||'').trim();
+    const cli=_cblCliente(nombre);
+    if(n===2){
+      // Defaults: concepto "Membresía — {nombre}" y correo precargado del cliente (editable)
+      const conc=document.getElementById('cbl-concepto');
+      if(conc && !conc.value.trim() && nombre) conc.value=`Membresía — ${nombre}`;
+      const em=document.getElementById('cbl-email');
+      if(em && !em.value.trim() && cli && cli.email) em.value=cli.email;
+    }
+    if(n===3){
+      const monto=parseFloat(document.getElementById('cbl-monto').value)||0;
+      const desc=(document.getElementById('cbl-concepto').value||'').trim();
+      const email=(document.getElementById('cbl-email').value||'').trim();
+      const tel=(cli && cli.telefono ? cli.telefono : '').replace(/\D/g,'');
+      const rows=[
+        _wzdRow('Cliente', esc(nombre)),
+        _wzdRow('Monto', `$${monto.toLocaleString('es-MX')} MXN`),
+        _wzdRow('Concepto', esc(desc)),
+        _wzdRow('Correo', email?esc(email):'—'),
+        _wzdRow('WhatsApp', tel?esc(cli.telefono):'Sin teléfono — el link se comparte manual'),
+      ];
+      document.getElementById('cbl-confirm').innerHTML=rows.join('');
+      const err=document.getElementById('cbl-err'); if(err){ err.textContent=''; err.style.display='none'; }
+    }
+  }
+});
+
+// Genera el link llamando a velum-stripe-charge — MISMO patrón que generarStripeLink:
+// JWT del panel en Authorization; la función saca el gym de los claims, nunca del body.
+async function generarCobrarLink(){
+  const cliente=(document.getElementById('cbl-cliente').value||'').trim();
+  const monto=parseFloat(document.getElementById('cbl-monto').value);
+  const desc=(document.getElementById('cbl-concepto').value||'').trim();
+  const email=(document.getElementById('cbl-email').value||'').trim();
+  const errEl=document.getElementById('cbl-err');
+  errEl.textContent=''; errEl.style.display='none';
+  if(!cliente || !monto || monto<10 || !desc){
+    errEl.textContent='Faltan datos: revisa cliente, monto (mínimo $10) y concepto.';
+    errEl.style.display='block';
+    return;
+  }
+  const btn=document.getElementById('cbl-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Generando…'; }
+  try{
+    const res=await fetch(SUPA_STRIPE_CHARGE,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({ tipo:'pago_unico', monto, descripcion:desc, cliente_nombre:cliente, cliente_email: email||undefined }),
+    });
+    const data=await res.json();
+    if(!res.ok || !data.ok){
+      const msg=data.error||'Error al generar el link.';
+      errEl.textContent=msg; errEl.style.display='block';
+      toast(msg,'✕');
+      if(btn){ btn.disabled=false; btn.textContent='Generar link'; }
+      return;
+    }
+    document.getElementById('cbl-link-url').value=data.url;
+    document.getElementById('cbl-result').style.display='block';
+    if(btn){ btn.disabled=false; btn.textContent='Generar nuevo link'; }
+    toast(`Link generado para ${cliente}`,'✓');
+  }catch(e){
+    errEl.textContent='Error de conexión. Verifica tu internet.'; errEl.style.display='block';
+    toast('Error de conexión al generar el link','✕');
+    if(btn){ btn.disabled=false; btn.textContent='Generar link'; }
+  }
+}
+
+function copyCobrarLink(){
+  const inp=document.getElementById('cbl-link-url');
+  const url=inp?inp.value:'';
+  if(!url) return;
+  navigator.clipboard.writeText(url).then(()=>toast('Link copiado al portapapeles','✓')).catch(()=>{
+    inp.select(); document.execCommand('copy'); toast('Link copiado','✓');
+  });
+}
+
+function waCobrarLink(){
+  const url=(document.getElementById('cbl-link-url').value||'').trim();
+  if(!url) return;
+  const nombre=(document.getElementById('cbl-cliente').value||'').trim();
+  const monto=parseFloat(document.getElementById('cbl-monto').value)||0;
+  const desc=(document.getElementById('cbl-concepto').value||'').trim();
+  const msg=encodeURIComponent(`Hola ${nombre}! Aquí está tu link de pago de ${desc} por $${monto.toLocaleString('es-MX')}: ${url}`);
+  const cli=_cblCliente(nombre);
+  const tel=(cli && cli.telefono ? cli.telefono : '').replace(/\D/g,'');
+  const num=tel.length===10?'52'+tel:tel;
+  // Con teléfono → chat directo; sin teléfono → wa.me abre el selector de contacto con el texto listo
+  window.open(num.length>=12?`https://wa.me/${num}?text=${msg}`:`https://wa.me/?text=${msg}`,'_blank');
 }
 
 // Hook renderStripeSettings into settings tab
