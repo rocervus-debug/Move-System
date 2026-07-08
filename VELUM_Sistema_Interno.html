@@ -11538,7 +11538,7 @@ function buildNotifAlerts(){
   const alerts = [];
 
   // ── Membresías vencidas (excluir pases de día — se usan el mismo día) ──
-  const vencidas = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now && p.notas!=='__sin_pago__' && !esPaseDia(p.plan));
+  const vencidas = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence+'T12:00:00')<now && p.notas!=='__sin_pago__' && !esPaseDia(p.plan));
   if(vencidas.length){
     alerts.push({
       type:'danger', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>', iconCls:'notif-icon-danger',
@@ -17247,11 +17247,11 @@ function renderDashboard(){
     if(!tieneAntes) clientesNuevos.add(p.cliente);
   });
   // Membresías vencidas (excluir pases de día)
-  const vencidasCount = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence)<now&&!esPaseDia(p.plan)).length;
+  const vencidasCount = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence+'T12:00:00')<now&&!esPaseDia(p.plan)).length;
   // Por vencer en 30 días (excluir pases de día)
   const porVencer30 = pagos.filter(p=>{
     if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false;
-    const v = new Date(p.vence); return v>=now && v<=in30;
+    const v = new Date(p.vence+'T12:00:00'); return v>=now && v<=in30;
   });
 
   // ─── Mes anterior (para trends) ───
@@ -21816,7 +21816,7 @@ function renderPlanFilters(){
 
 function getPagoEstado(p, today, in7){
   if(!p.vence||p.vence==='—') return 'sin_fecha';
-  const v = new Date(p.vence);
+  const v = new Date(p.vence+'T12:00:00');
   if(v < today) return 'vencido';
   if(v <= in7) return 'por_vencer';
   return 'vigente';
@@ -21944,8 +21944,8 @@ function renderPagos(){
       return;
     }
     const esPaquete = (p.plan||'').includes('Paquete');
-    const vencido = p.vence&&p.vence!=='—'&&new Date(p.vence)<new Date();
-    const porVenc = p.vence&&p.vence!=='—'&&new Date(p.vence)<=in7&&new Date(p.vence)>=today;
+    const vencido = p.vence&&p.vence!=='—'&&new Date(p.vence+'T12:00:00')<today;
+    const porVenc = p.vence&&p.vence!=='—'&&new Date(p.vence+'T12:00:00')<=in7&&new Date(p.vence+'T12:00:00')>=today;
     const vBadge  = vencido?'<span class="badge b-danger">Vencido</span>':porVenc?'<span class="badge b-warn">Por vencer</span>':p.vence&&p.vence!=='—'?'<span class="badge b-ok">Vigente</span>':'—';
     const fechaFmt = p.fecha ? fmtDate(p.fecha) : '—';
     const venceFmt = p.vence&&p.vence!=='—' ? fmtDate(p.vence) : '—';
