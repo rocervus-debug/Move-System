@@ -32,6 +32,7 @@
 - [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
 ## [HECHO] (reciente)
+- [x] Panel VELUM DESPLEGADO con OK de Roy: sección "Cobros VELUM" (cobrado del mes por canal + saldo + depósitos) + payouts automáticos los VIERNES (decisión Roy: fijo, sin botón; balance v2 self-healing + onboard v9) · CAUDAL+FORJA · 08 jul
 - [x] COBROS Fase A DESPLEGADA con OK de Roy: 6 funciones blindadas (charge v16 con auth+fee 0%/2%+registro vía webhook, member-sub v5 idempotente, saas-setup con candado, exp en 4 verifyJWT) + smoke tests 401/403 verdes + limpieza (2 huérfanas fuera, pago $10 conciliado) · CAUDAL+FORJA · 07 jul
 - [x] DESPLEGADO con OK de Roy: velum-payment v17 + stripe-webhook v15 — el link de referido atribuye solo (smoke tests 400/401 correctos) · CAUDAL · 06 jul
 - [x] HQ v2: vista Hoy + palette ⌘K + Referidos Pro (agregar/quitar/link con código) + funnel + feed + badges + WhatsApp 1-clic · FORJA+TRAZO · 06 jul
