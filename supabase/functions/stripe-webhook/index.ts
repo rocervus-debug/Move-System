@@ -228,9 +228,40 @@ Deno.serve(async (req: Request) => {
           const mgPlan = (mgGym?.subscription_plan || '').toLowerCase();
           const feePct = (mgPlan === 'max' || mgPlan === 'owner') ? 0 : 0.02;
           const commission = Math.round(amount * feePct);
+          // Si el link se generó con un PAQUETE del gym, el pago extiende membresía
+          // (vence con stacking + clases) igual que una compra de storefront.
+          // Sin paquete (cobro libre): is_legacy=true satisface el CHECK
+          // pago_requires_package y vence=hoy (un cobro suelto no extiende membresía).
+          const mlPkgId = parseInt(md.package_id || '0', 10) || null;
+          let mlPlan = md.descripcion || 'Pago';
+          let mlVence = new Date().toISOString().slice(0,10);
+          let mlClases: number | null = null;
+          if (mlPkgId) {
+            const { data: mlPkg } = await db.from('packages')
+              .select('name, num_classes, unlimited_classes, duration_days')
+              .eq('id', mlPkgId).eq('gym_id', mgGymId).maybeSingle();
+            if (mlPkg) {
+              mlPlan = mlPkg.name;
+              mlClases = mlPkg.unlimited_classes ? null : (mlPkg.num_classes || null);
+              // Stacking: si el cliente aún tiene vigencia, el paquete extiende desde ahí.
+              let baseDate = new Date();
+              const { data: lastPago } = await db.from('pagos').select('vence')
+                .eq('gym_id', mgGymId).eq('cliente', md.cliente || '')
+                .neq('notas','__sin_pago__').order('fecha',{ascending:false}).limit(1).maybeSingle();
+              if (lastPago?.vence) {
+                const cur = new Date(lastPago.vence + 'T12:00:00');
+                if (cur.getTime() > baseDate.getTime()) baseDate = cur;
+              }
+              const venceDate = new Date(baseDate);
+              venceDate.setDate(venceDate.getDate() + (mlPkg.duration_days || 30));
+              mlVence = venceDate.toISOString().slice(0,10);
+            }
+          }
           const { error: mlErr } = await db.from('pagos').insert({
             gym_id: mgGymId, cliente: md.cliente || 'Cliente', monto: amount,
-            fecha: new Date().toISOString().slice(0,10), plan: md.descripcion || 'Pago', metodo: 'Stripe (Link)',
+            fecha: new Date().toISOString().slice(0,10), plan: mlPlan, metodo: 'Stripe (Link)',
+            vence: mlVence, package_id: mlPkgId, is_legacy: !mlPkgId,
+            clases_totales: mlClases, clases_usadas: 0,
             applied_price_mxn: Math.round(amount), list_price_mxn: Math.round(amount), source: 'manual_link',
             velum_commission_mxn: commission, net_to_gym_mxn: Math.round(amount - commission),
             stripe_session_id: session.id, notas: `Link de pago manual${md.cliente ? ' — ' + md.cliente : ''}`,

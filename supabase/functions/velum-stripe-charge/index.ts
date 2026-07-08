@@ -118,14 +118,15 @@ Deno.serve(async (req: Request) => {
     // ── Body ─────────────────────────────────────────────────────────────────
     let body: {
       tipo?: string;
-      monto?: number | string;   // MXN (ej: 999 o 999.50)
-      descripcion?: string;      // ej: "Mensualidad Mayo"
+      monto?: number | string;   // MXN (ej: 999 o 999.50) — se ignora si viene package_id
+      descripcion?: string;      // ej: "Mensualidad Mayo" — se ignora si viene package_id
+      package_id?: number | string; // cobrar un PAQUETE del gym: precio del servidor + extiende membresía
       cliente_nombre?: string;
       cliente_email?: string;
     };
     try { body = await req.json(); } catch { return json({ error: 'Body inválido.' }, 400); }
 
-    const { tipo = 'pago_unico', monto, descripcion, cliente_nombre, cliente_email } = body;
+    const { tipo = 'pago_unico', monto, descripcion, package_id, cliente_nombre, cliente_email } = body;
 
     if (tipo === 'suscripcion') {
       // El modo suscripción se retiró de esta función: sin package_id el webhook no puede
@@ -133,11 +134,19 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'El cobro recurrente se genera desde Domiciliación (paquete de mensualidad), no desde link manual.' }, 400);
     }
 
-    const montoNum = Number(monto);
-    if (!Number.isFinite(montoNum) || montoNum <= 0) return json({ error: 'Monto inválido.' }, 400);
-    const amountCents = Math.round(montoNum * 100);
-    if (amountCents < 1000) return json({ error: 'Monto mínimo $10 MXN.' }, 400);
-    if (!descripcion || !String(descripcion).trim()) return json({ error: 'Descripción requerida.' }, 400);
+    // Con paquete: el precio y la descripción salen del SERVIDOR (nunca del cliente).
+    // Sin paquete: cobro libre — monto/descripción del body, validados.
+    const pkgId = parseInt(String(package_id || '0'), 10) || 0;
+    let amountCents = 0;
+    let desc = '';
+    if (!pkgId) {
+      const montoNum = Number(monto);
+      if (!Number.isFinite(montoNum) || montoNum <= 0) return json({ error: 'Monto inválido.' }, 400);
+      amountCents = Math.round(montoNum * 100);
+      if (amountCents < 1000) return json({ error: 'Monto mínimo $10 MXN.' }, 400);
+      if (!descripcion || !String(descripcion).trim()) return json({ error: 'Descripción requerida.' }, 400);
+      desc = String(descripcion).trim();
+    }
 
     // ── Gym: cuenta conectada + plan (para el fee) ───────────────────────────
     const db = createClient(supabaseUrl, serviceKey, {
@@ -157,6 +166,26 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Tu cuenta de Stripe aún no puede aceptar cobros (completa la verificación en Stripe).' }, 400);
     }
 
+    // ── Paquete (opcional): validar que sea DEL GYM, activo y de pago único ──
+    if (pkgId) {
+      const { data: pkg } = await db
+        .from('packages')
+        .select('id, name, price_mxn, billing_type, is_active')
+        .eq('id', pkgId)
+        .eq('gym_id', gymId)   // aislamiento multi-tenant: nunca un paquete de otro gym
+        .maybeSingle();
+      if (!pkg) return json({ error: 'Paquete no encontrado en este gym.' }, 404);
+      if (pkg.is_active === false) return json({ error: 'Ese paquete está inactivo.' }, 400);
+      if (pkg.billing_type === 'recurring') {
+        return json({ error: 'Ese paquete es de domiciliación (cobro recurrente). Genera su link desde Domiciliación.' }, 400);
+      }
+      amountCents = Math.round(Number(pkg.price_mxn) * 100);
+      if (!Number.isFinite(amountCents) || amountCents < 1000) {
+        return json({ error: 'El precio del paquete es inválido o menor a $10 MXN.' }, 400);
+      }
+      desc = pkg.name;
+    }
+
     // Fee por plan, idéntico a stripe-checkout-create: max/owner → 0, resto → 2%.
     const plan = (gym.subscription_plan || '').toLowerCase();
     const feePct = ZERO_FEE_PLANS.has(plan) ? 0 : VELUM_FEE_PCT;
@@ -166,14 +195,16 @@ Deno.serve(async (req: Request) => {
     const descriptor = sanitizeDescriptor(gymNombre);
 
     // ── Sesión de checkout a NIVEL PLATAFORMA (transfer al gym) ──────────────
-    // metadata.source='manual_link' + gym_id + cliente + descripcion → la rama
-    // manual_link de stripe-webhook v15 registra el pago en `pagos` sola.
-    const meta = {
+    // metadata.source='manual_link' + gym_id + cliente + descripcion (+ package_id si el
+    // cobro es de un paquete) → la rama manual_link de stripe-webhook registra el pago
+    // en `pagos`; con paquete además extiende la membresía (vence + clases).
+    const meta: Record<string, string> = {
       source: 'manual_link',
       gym_id: String(gymId),
       cliente: cliente_nombre || 'Cliente',
-      descripcion: String(descripcion).trim(),
+      descripcion: desc,
     };
+    if (pkgId) meta.package_id = String(pkgId);
     const paymentIntentData: Record<string, unknown> = {
       transfer_data: { destination: gym.stripe_account_id },
       on_behalf_of: gym.stripe_account_id,
@@ -191,7 +222,7 @@ Deno.serve(async (req: Request) => {
           currency: 'mxn',
           unit_amount: amountCents,
           product_data: {
-            name: String(descripcion).trim(),
+            name: desc,
             description: `${gymNombre} — ${cliente_nombre || 'Cliente'}`,
           },
         },
