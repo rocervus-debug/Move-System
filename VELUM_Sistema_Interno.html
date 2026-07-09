@@ -6143,6 +6143,86 @@ body::before{
   </div>
 </div>
 
+<!-- Modal: Crear gym (Super Admin) — wizard 3 pasos: negocio → acceso → confirmar -->
+<div class="modal-overlay" id="modal-crear-gym">
+  <div class="modal" style="width:460px;">
+    <div class="modal-head">
+      <div class="modal-title">Crear nuevo gym</div>
+      <button class="modal-close" onclick="closeModal('crear-gym')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — El negocio -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">¿Qué negocio vas a dar de alta?</div>
+        <div class="wzd-hint">El nombre y el identificador (slug) son obligatorios. El slug se usa en la URL pública del storefront.</div>
+        <div class="field">
+          <label>Nombre del negocio *</label>
+          <input id="cg-nombre" type="text" placeholder="Ej: CrossFit Monterrey" oninput="_cgAutoSlug()"/>
+          <span class="field-err" id="cg-nombre-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Slug (identificador para la URL) *</label>
+          <input id="cg-slug" type="text" placeholder="crossfit-mty"/>
+          <span class="field-err" id="cg-slug-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Tipo de acceso</label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--text2);">
+              <input type="radio" name="cg-status" value="active" checked style="accent-color:var(--accent);cursor:pointer;"/>
+              <span><strong style="color:var(--text);">Cliente activo</strong> — acceso habilitado sin Stripe</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--text2);">
+              <input type="radio" name="cg-status" value="owner" style="accent-color:#c084fc;cursor:pointer;"/>
+              <span><strong style="color:#c084fc;">Gym propio</strong> — siempre activo, nunca se bloquea</span>
+            </label>
+          </div>
+        </div>
+        <div class="wzd-hint" style="margin-top:8px;">Plan <strong>Max — $999/mes</strong> (plan único).</div>
+      </div>
+
+      <!-- PASO 2 — El acceso del dueño -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Crea el acceso del dueño</div>
+        <div class="wzd-hint">Con este correo y contraseña el dueño entra a su panel. La defines tú aquí — sin esto el gym quedaría sin acceso.</div>
+        <div class="field">
+          <label>Email del admin *</label>
+          <input id="cg-admin-email" type="email" placeholder="admin@negocio.com"/>
+          <span class="field-err" id="cg-admin-email-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>Nombre del admin <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+          <input id="cg-admin-nombre" type="text" placeholder="Nombre del dueño"/>
+        </div>
+        <div class="field">
+          <label>Contraseña *</label>
+          <input id="cg-pass" type="password" placeholder="Mínimo 8 caracteres" oninput="wzdFieldErr('cg-pass','')"/>
+          <span class="field-err" id="cg-pass-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+      </div>
+
+      <!-- PASO 3 — Confirmar -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Confirma y crea</div>
+        <div class="wzd-hint">Revisa los datos. Puedes regresar a corregir lo que quieras.</div>
+        <div id="cg-confirm"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('crear-gym')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('crear-gym')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('crear-gym')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="saCreateGymWizard()" style="display:none;">Crear gym y acceso</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Agregar recurso (Recovery) — wizard 2 pasos -->
 <div class="modal-overlay" id="modal-recurso">
   <div class="modal" style="width:440px;">
@@ -17930,7 +18010,7 @@ async function renderSuperAdmin(){
   if(headerActionsEl){
     headerActionsEl.innerHTML = `
       <span class="card-sub">${allGyms.length} gym${allGyms.length!==1?'s':''}</span>
-      <button class="btn btn-sm" onclick="saToggleCreateForm()" style="font-size:11px;padding:5px 14px;">+ Nuevo Gym</button>`;
+      <button class="btn btn-sm" onclick="openCrearGym()" style="font-size:11px;padding:5px 14px;">+ Nuevo Gym</button>`;
   }
 
   document.getElementById('sa-gyms-list').innerHTML = `
@@ -18129,6 +18209,107 @@ async function saSetGymOwner(gymId){
   if(error){ if(_handleSessionError(error))return; toast('Error','✕'); return; }
   toast('Gym marcado como propio — nunca se bloquea','🏠');
   renderSuperAdmin();
+}
+
+// ── Wizard "Crear gym" (Super Admin): negocio → acceso del admin → confirmar ──
+// Sustituye el form inline por un flujo guiado que SIEMPRE crea el login del gym
+// (antes saCreateGym no creaba usuario admin → el gym quedaba sin acceso).
+function _cgSlugify(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+let _cgSlugTouched = false;
+function _cgAutoSlug(){
+  if(_cgSlugTouched) return;
+  const slug=document.getElementById('cg-slug');
+  if(slug) slug.value=_cgSlugify(document.getElementById('cg-nombre').value);
+}
+function openCrearGym(){
+  ['cg-nombre','cg-slug','cg-admin-email','cg-admin-nombre','cg-pass'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  ['cg-nombre','cg-slug','cg-admin-email','cg-pass'].forEach(f=>wzdFieldErr(f,''));
+  const st=document.querySelector('input[name="cg-status"][value="active"]'); if(st) st.checked=true;
+  _cgSlugTouched=false;
+  const slug=document.getElementById('cg-slug');
+  if(slug) slug.oninput=()=>{ _cgSlugTouched=true; };
+  openModal('crear-gym');
+  if(typeof wizInit==='function') wizInit('crear-gym');
+}
+wizRegister('crear-gym', {
+  labels:{1:'El negocio', 2:'El acceso', 3:'Confirmar'},
+  validate(n){
+    if(n===1){
+      const nom=(document.getElementById('cg-nombre').value||'').trim();
+      if(!nom){ wzdFieldErr('cg-nombre','Escribe el nombre del negocio.'); return false; } wzdFieldErr('cg-nombre','');
+      let slug=(document.getElementById('cg-slug').value||'').trim();
+      if(!slug) slug=_cgSlugify(nom);
+      slug=_cgSlugify(slug); document.getElementById('cg-slug').value=slug;
+      if(!slug){ wzdFieldErr('cg-slug','El slug no puede quedar vacío.'); return false; } wzdFieldErr('cg-slug','');
+      return true;
+    }
+    if(n===2){
+      const email=(document.getElementById('cg-admin-email').value||'').trim();
+      let ok=true;
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ wzdFieldErr('cg-admin-email','Correo del admin inválido.'); ok=false; } else wzdFieldErr('cg-admin-email','');
+      if((document.getElementById('cg-pass').value||'').length<8){ wzdFieldErr('cg-pass','Mínimo 8 caracteres.'); ok=false; } else wzdFieldErr('cg-pass','');
+      return ok;
+    }
+    return true;
+  },
+  onStep(n){
+    if(n===3){
+      const nom=(document.getElementById('cg-nombre').value||'').trim();
+      const slug=(document.getElementById('cg-slug').value||'').trim();
+      const email=(document.getElementById('cg-admin-email').value||'').trim();
+      const status=(document.querySelector('input[name="cg-status"]:checked')||{}).value||'active';
+      document.getElementById('cg-confirm').innerHTML=[
+        _wzdRow('Negocio', esc(nom)),
+        _wzdRow('Slug (URL)', esc(slug)),
+        _wzdRow('Plan', 'Max — $999/mes'),
+        _wzdRow('Acceso', status==='owner'?'Gym propio (siempre activo)':'Cliente activo'),
+        _wzdRow('Admin', esc(email)),
+        _wzdRow('Contraseña', '•••••••• (definida)'),
+      ].join('');
+    }
+  }
+});
+// Submit del wizard: crea gym + gym_config + usuario admin en secuencia. Si el admin
+// falla, revierte el gym para no dejar un gym huérfano sin acceso.
+async function saCreateGymWizard(){
+  const nombre=(document.getElementById('cg-nombre').value||'').trim();
+  const slug=_cgSlugify((document.getElementById('cg-slug').value||'').trim());
+  const email=(document.getElementById('cg-admin-email').value||'').trim().toLowerCase();
+  const nombreAdmin=(document.getElementById('cg-admin-nombre').value||'').trim() || email.split('@')[0];
+  const pass=(document.getElementById('cg-pass').value||'');
+  const status=(document.querySelector('input[name="cg-status"]:checked')||{}).value||'active';
+  if(!nombre||!slug||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||pass.length<8){ toast('Revisa los datos del wizard.','✕'); return; }
+  const btn=document.querySelector('#modal-crear-gym .wzd-save');
+  if(btn){ btn.disabled=true; btn.textContent='Creando…'; }
+  try{
+    const pw_hash=await hashPassword(pass);
+    const { data:g, error:ge } = await window.supabaseClient.from('gyms').insert([{
+      nombre, slug, activo:true, plan:'max', owner_email:email||null, subscription_status:status,
+    }]).select().single();
+    if(ge) throw ge;
+    await window.supabaseClient.from('gym_config').insert([
+      { gym_id:g.id, key:'gym_nombre',  value:nombre },
+      { gym_id:g.id, key:'gym_tagline', value:'Fitness Center' },
+      { gym_id:g.id, key:'gym_color',   value:'#00D4FF' },
+      { gym_id:g.id, key:'gym_theme',   value:'teal' },
+      { gym_id:g.id, key:'meta_mensual',value:'0' },
+    ]).then(({error:e})=>{ if(e) console.warn('gym_config seed:', e.message); });
+    const { error:ue } = await window.supabaseClient.from('usuarios').insert({
+      gym_id:g.id, nombre:nombreAdmin, email, pw_hash, password:pw_hash, rol:'admin', activo:true, pw_version:1,
+    });
+    if(ue){ try{ await window.supabaseClient.from('gyms').delete().eq('id', g.id); }catch(_){}; throw ue; }
+    try{ auditLog('SA_CREATE_GYM','gyms',g.id,`Creó gym ${nombre} (${slug}) + admin ${email}`); }catch(_){}
+    toast(`Gym "${nombre}" creado con acceso para ${email} ✓`,'🏋️',4500);
+    closeModal('crear-gym');
+    renderSuperAdmin();
+  }catch(e){
+    const msg=(e.message||'').toLowerCase();
+    let friendly='Error al crear: '+(e.message||'').slice(0,70);
+    if(msg.includes('duplicate')||msg.includes('unique')){ friendly = msg.includes('slug')?'Ese slug ya existe — elige otro.':(msg.includes('email')||msg.includes('usuarios')?'Ese email de admin ya está en uso.':'Ya existe un registro con esos datos.'); }
+    toast(friendly,'✕',4500);
+    console.error('saCreateGymWizard:', e);
+    if(btn){ btn.disabled=false; btn.textContent='Crear gym y acceso'; }
+  }
 }
 
 // ── Reset/crear contraseña del admin de un gym ───────────────────────
