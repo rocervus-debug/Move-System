@@ -17902,10 +17902,9 @@ async function renderSuperAdmin(){
       </td>
       <td style="padding:11px 12px;">
         <div style="display:flex;flex-direction:column;gap:3px;">
-          <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;display:inline-block;">${(g.plan||'pro').toUpperCase()}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;display:inline-block;">${(g.plan||'max').toUpperCase()}</span>
           <select onchange="saUpdateGymPlan(${g.id},this.value)" style="font-size:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;color:var(--text3);padding:2px 4px;cursor:pointer;font-family:var(--font);">
-            <option value="pro" ${(g.plan||'pro')==='pro'?'selected':''}>Pro $599</option>
-            <option value="max" ${g.plan==='max'?'selected':''}>Max $999</option>
+            <option value="max" selected>Max $999</option>
           </select>
         </div>
       </td>
@@ -17946,8 +17945,7 @@ async function renderSuperAdmin(){
           <input id="sa-g-email" type="email" placeholder="admin@gym.com" class="form-input"></div>
         <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">PLAN</label>
           <select id="sa-g-plan" class="form-input">
-            <option value="pro">Pro — $599/mes</option>
-            <option value="max">Max — $999/mes</option>
+            <option value="max" selected>Max — $999/mes</option>
           </select></div>
       </div>
       <!-- Tipo de acceso -->
@@ -18076,7 +18074,7 @@ async function saCreateGym(){
   const nombre = (document.getElementById('sa-g-nombre').value||'').trim();
   const slug   = (document.getElementById('sa-g-slug').value||'').trim().toLowerCase().replace(/\s+/g,'-');
   const email  = (document.getElementById('sa-g-email').value||'').trim().toLowerCase();
-  const plan   = document.getElementById('sa-g-plan').value || 'pro';
+  const plan   = document.getElementById('sa-g-plan').value || 'max';
   if(!nombre){ toast('El nombre del gym es obligatorio.','⚠️'); return; }
   if(!slug){ toast('El slug es obligatorio.','⚠️'); return; }
   const statusEl = document.querySelector('input[name="sa-g-status"]:checked');
@@ -18097,10 +18095,13 @@ async function saCreateGym(){
     { gym_id: data.id, key: 'meta_mensual',value: '0' },
   ]).then(({error:e})=>{ if(e) console.warn('gym_config seed error:', e.message); });
 
-  toast(`Gym "${nombre}" creado con ID ${data.id} ✓`,'🏋️');
+  toast(`Gym "${nombre}" creado ✓ — ahora crea su acceso`,'🏋️');
   ['sa-g-nombre','sa-g-slug','sa-g-email'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   saToggleCreateForm();
   renderSuperAdmin();
+  // Crear el gym NO crea login: abrir de inmediato el modal para dar de alta al admin
+  // con su contraseña (reutiliza saResetGymPassword). Sin esto el gym queda sin acceso.
+  try{ saResetGymPassword(data.id, email); }catch(e){ console.warn('abrir modal admin:', e); }
 }
 
 // ── Activar gym manualmente (sin Stripe) ─────────────────────────────

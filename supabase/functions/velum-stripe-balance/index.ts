@@ -90,14 +90,20 @@ async function monthNetSummary(secretKey: string, acct: string) {
   const gte = Math.floor(firstUtc / 1000);
   let gross = 0, fee = 0, net = 0, count = 0;
   let starting_after = '';
-  // Paginación con tope de seguridad (10 páginas = 1000 cobros/mes).
+  // Cobros entrantes = type 'charge' (cargos directos) o 'payment' (destination charges con
+  // on_behalf_of=gym: en la cuenta conectada el ingreso llega como 'payment', NO 'charge').
+  // NO filtramos por type en la URL para no perder ninguno; se filtra abajo. Se excluyen
+  // 'transfer'/'payout'/'refund'/etc. para no doble-contar ni restar depósitos.
+  const COBROS = new Set(['charge', 'payment']);
+  // Paginación con tope de seguridad (10 páginas = 1000 movimientos/mes).
   for (let page = 0; page < 10; page++) {
-    const q = `balance_transactions?type=charge&limit=100&created[gte]=${gte}` +
+    const q = `balance_transactions?limit=100&created[gte]=${gte}` +
       (starting_after ? `&starting_after=${starting_after}` : '');
     const res = await stripeGet(q, secretKey, acct);
     const data = Array.isArray(res?.data) ? res.data : [];
     for (const t of data) {
       if ((t.currency || '').toLowerCase() !== 'mxn') continue;
+      if (!COBROS.has(t.type)) continue;
       gross += (t.amount || 0);
       fee   += (t.fee || 0);
       net   += (t.net || 0);
