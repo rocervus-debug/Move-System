@@ -37,7 +37,9 @@
 1. `cd velum-app && npm run open:ios` (Xcode).
 2. Selecciona "Any iOS Device", Product → Archive (build 6 / 1.0.3).
 3. Distribute App → App Store Connect → Upload → TestFlight.
-   - Opcional (reduce riesgo de rechazo, no bloquea TestFlight): crear `PrivacyInfo.xcprivacy` (§2). App aprobada antes sin él.
+   - **`PrivacyInfo.xcprivacy` YA CREADO** (2026-07-09) en `velum-app/ios/App/App/PrivacyInfo.xcprivacy`.
+     **Falta agregarlo al target en Xcode:** File → Add Files to "App"… → selecciónalo → marca el
+     target **App** → Add. Sin esto Xcode no lo empaqueta. Reduce riesgo de rechazo por privacy manifest.
 
 **Después:** con v5 en Alpha, reclutar 12+ testers Android → arranca el reloj de 14 días → luego "Solicitar acceso a producción".
 
