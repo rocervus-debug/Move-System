@@ -15467,10 +15467,29 @@ function domiIrADomiciliar(){
     if(typeof toggleDomiForm==='function' && f && f.style.display==='none') toggleDomiForm();
     document.getElementById('domiciliaciones-wrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }catch(_){}}, 280);
 }
+// gym_id REAL de la sesión (leído del JWT firmado). NO cambia cuando el superadmin
+// "cambia de contexto" a otro gym — por eso sirve para detectar impersonación.
+function _jwtGymId(){
+  try{
+    const p=JSON.parse(atob(currentUser.jwt.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return p.gym_id!=null ? Number(p.gym_id) : null;
+  }catch(_){ return null; }
+}
+// ¿El superadmin está viendo un gym distinto al de su sesión? (contexto impersonado)
+// En ese caso las edge functions que verifican el JWT (saldo/cobros Stripe) operan sobre
+// la sesión REAL, no sobre el gym visto → hay que evitar mostrar/actuar con ese dato.
+function _pvImpersonando(){
+  const j=_jwtGymId();
+  return j!=null && typeof MOVE_GYM_ID!=='undefined' && MOVE_GYM_ID!=null && Number(MOVE_GYM_ID)!==j;
+}
 // ── Panel VELUM: saldo/depósitos desde velum-stripe-balance (una sola llamada) ──
 async function _pvStripeData(){
   try{
     if(!currentUser||!currentUser.jwt) return null;
+    // Modo superadmin viendo OTRO gym: el JWT sigue siendo el de tu sesión, así que el
+    // saldo de Stripe sería el TUYO (no el de este gym). No lo pedimos: evita confusión y
+    // el riesgo de operar sobre el gym equivocado.
+    if(_pvImpersonando()) return { connected:false, impersonating:true };
     const res=await fetch(`${supabaseUrl}/functions/v1/velum-stripe-balance`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
@@ -15549,6 +15568,16 @@ function _pvMoney2(n){
 function _pvHero(cobradoMes, cobradoMesN, stripe){
   const mesLabel = new Date().toLocaleDateString('es-MX',{month:'long'});
   const cardA = _domiMetric('Cobrado este mes vía VELUM', _domiMoneyFmt(cobradoMes), `${cobradoMesN} pago${cobradoMesN===1?'':'s'} en línea · ${mesLabel}`, 'var(--accent)');
+  if(stripe && stripe.impersonating){
+    // Superadmin viendo otro gym: NO mostramos saldo de Stripe (sería el de tu sesión, no el de este gym).
+    return `<div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-color:color-mix(in srgb,var(--warn) 32%,transparent);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:13.5px;font-weight:700;margin-bottom:3px;">Modo superadmin — estás viendo otro gym</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.5;">El saldo de Stripe, los depósitos y los cobros con link operan sobre <strong>tu sesión real</strong>, no sobre este gym. Vuelve a tu propio contexto para gestionarlos. El saldo mostrado NO corresponde a este negocio.</div>
+        </div>
+      </div>`;
+  }
   if(!stripe || stripe.connected===false){
     // Estado vacío: sin cuenta Stripe conectada → CTA (reúsa el flujo conectarStripe existente)
     return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:4px;">${cardA}</div>
