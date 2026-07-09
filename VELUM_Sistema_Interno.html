@@ -18231,44 +18231,9 @@ function openCrearGym(){
   openModal('crear-gym');
   if(typeof wizInit==='function') wizInit('crear-gym');
 }
-wizRegister('crear-gym', {
-  labels:{1:'El negocio', 2:'El acceso', 3:'Confirmar'},
-  validate(n){
-    if(n===1){
-      const nom=(document.getElementById('cg-nombre').value||'').trim();
-      if(!nom){ wzdFieldErr('cg-nombre','Escribe el nombre del negocio.'); return false; } wzdFieldErr('cg-nombre','');
-      let slug=(document.getElementById('cg-slug').value||'').trim();
-      if(!slug) slug=_cgSlugify(nom);
-      slug=_cgSlugify(slug); document.getElementById('cg-slug').value=slug;
-      if(!slug){ wzdFieldErr('cg-slug','El slug no puede quedar vacío.'); return false; } wzdFieldErr('cg-slug','');
-      return true;
-    }
-    if(n===2){
-      const email=(document.getElementById('cg-admin-email').value||'').trim();
-      let ok=true;
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ wzdFieldErr('cg-admin-email','Correo del admin inválido.'); ok=false; } else wzdFieldErr('cg-admin-email','');
-      if((document.getElementById('cg-pass').value||'').length<8){ wzdFieldErr('cg-pass','Mínimo 8 caracteres.'); ok=false; } else wzdFieldErr('cg-pass','');
-      return ok;
-    }
-    return true;
-  },
-  onStep(n){
-    if(n===3){
-      const nom=(document.getElementById('cg-nombre').value||'').trim();
-      const slug=(document.getElementById('cg-slug').value||'').trim();
-      const email=(document.getElementById('cg-admin-email').value||'').trim();
-      const status=(document.querySelector('input[name="cg-status"]:checked')||{}).value||'active';
-      document.getElementById('cg-confirm').innerHTML=[
-        _wzdRow('Negocio', esc(nom)),
-        _wzdRow('Slug (URL)', esc(slug)),
-        _wzdRow('Plan', 'Max — $999/mes'),
-        _wzdRow('Acceso', status==='owner'?'Gym propio (siempre activo)':'Cliente activo'),
-        _wzdRow('Admin', esc(email)),
-        _wzdRow('Contraseña', '•••••••• (definida)'),
-      ].join('');
-    }
-  }
-});
+// (El wizRegister('crear-gym') se ejecuta más abajo, junto a los demás wizards, DESPUÉS
+//  de que se define el motor wzd — si se registrara aquí arriba chocaría con el TDZ de
+//  los const _wzd* y reventaría todo el script.)
 // Submit del wizard: crea gym + gym_config + usuario admin en secuencia. Si el admin
 // falla, revierte el gym para no dejar un gym huérfano sin acceso.
 async function saCreateGymWizard(){
@@ -20190,6 +20155,44 @@ function _wzdRow(k, v){ return `<div class="wzd-crow"><span class="wzd-ck">${k}<
 
 // ── Registro de los wizards de Fase 1 (presentación; el save* no cambia) ──
 // CLIENTE NUEVO (modal-solo-cliente) — 2 pasos
+wizRegister('crear-gym', {
+  labels:{1:'El negocio', 2:'El acceso', 3:'Confirmar'},
+  validate(n){
+    if(n===1){
+      const nom=(document.getElementById('cg-nombre').value||'').trim();
+      if(!nom){ wzdFieldErr('cg-nombre','Escribe el nombre del negocio.'); return false; } wzdFieldErr('cg-nombre','');
+      let slug=(document.getElementById('cg-slug').value||'').trim();
+      if(!slug) slug=_cgSlugify(nom);
+      slug=_cgSlugify(slug); document.getElementById('cg-slug').value=slug;
+      if(!slug){ wzdFieldErr('cg-slug','El slug no puede quedar vacío.'); return false; } wzdFieldErr('cg-slug','');
+      return true;
+    }
+    if(n===2){
+      const email=(document.getElementById('cg-admin-email').value||'').trim();
+      let ok=true;
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ wzdFieldErr('cg-admin-email','Correo del admin inválido.'); ok=false; } else wzdFieldErr('cg-admin-email','');
+      if((document.getElementById('cg-pass').value||'').length<8){ wzdFieldErr('cg-pass','Mínimo 8 caracteres.'); ok=false; } else wzdFieldErr('cg-pass','');
+      return ok;
+    }
+    return true;
+  },
+  onStep(n){
+    if(n===3){
+      const nom=(document.getElementById('cg-nombre').value||'').trim();
+      const slug=(document.getElementById('cg-slug').value||'').trim();
+      const email=(document.getElementById('cg-admin-email').value||'').trim();
+      const status=(document.querySelector('input[name="cg-status"]:checked')||{}).value||'active';
+      document.getElementById('cg-confirm').innerHTML=[
+        _wzdRow('Negocio', esc(nom)),
+        _wzdRow('Slug (URL)', esc(slug)),
+        _wzdRow('Plan', 'Max — $999/mes'),
+        _wzdRow('Acceso', status==='owner'?'Gym propio (siempre activo)':'Cliente activo'),
+        _wzdRow('Admin', esc(email)),
+        _wzdRow('Contraseña', '•••••••• (definida)'),
+      ].join('');
+    }
+  }
+});
 wizRegister('solo-cliente', {
   labels: {1:'Datos del cliente', 2:'Confirma'},
   validate(n){
