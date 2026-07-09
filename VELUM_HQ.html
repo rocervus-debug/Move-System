@@ -498,6 +498,17 @@ table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
 .sis-ts{ margin-left:auto; font-family:var(--fm); font-size:10.5px; color:var(--text3); }
 .sis-desc{ font-size:12.5px; color:var(--text2); margin-top:8px; line-height:1.5; }
 .sis-sub-head{ font-family:var(--fm); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); margin:2px 0 12px; }
+.sis-flags{ display:flex; flex-direction:column; gap:7px; margin-top:12px; }
+.sis-flag{ font-size:12.5px; line-height:1.45; color:var(--warn); background:var(--warn-bg); border:1px solid color-mix(in srgb, var(--warn) 30%, transparent); border-radius:9px; padding:9px 12px; }
+.sis-flag.crit{ color:var(--danger); background:var(--danger-bg); border-color:color-mix(in srgb, var(--danger) 35%, transparent); }
+#sis-err-detail{ border-top:1px solid var(--border); margin-top:14px; padding-top:6px; }
+.sis-err-row{ display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border); }
+.sis-err-row:last-child{ border-bottom:none; }
+.sis-err-cnt{ font-family:var(--fm); font-weight:700; font-size:13px; color:var(--warn); flex-shrink:0; min-width:34px; }
+.sis-err-cnt.hot{ color:var(--danger); }
+.sis-err-msg{ font-size:12.5px; color:var(--text); line-height:1.4; word-break:break-word; }
+.sis-err-meta{ font-family:var(--fm); font-size:10px; color:var(--text3); margin-top:3px; letter-spacing:.02em; }
+.sis-err-empty{ text-align:center; color:var(--text2); font-size:12.5px; padding:14px 0; }
 
 /* ── Tareas ── */
 .task-form{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
@@ -2555,20 +2566,37 @@ function sistemaSaludHTML(h){
   const [sem, pill, word] = MAP[h.status] || ['rojo','danger', h.status || '—'];
   const s = h.summary || {};
   const ts = h.timestamp ? new Date(h.timestamp).toLocaleString('es-MX') : '';
+  const nErr = s.total_errors ?? 0;
   const mini = (b,l,alert) => `<div class="mini-metric"><b${alert?' style="color:var(--danger)"':''}>${b}</b><span>${l}</span></div>`;
+  // banderas de dinero (dunning, onboarding atorado…)
+  const flagsRows = (h.flags || []).map(f => `<div class="sis-flag${f.level==='crit'?' crit':''}">${esc(f.msg)}</div>`).join('');
+  // detalle de errores (colapsable)
+  const errRows = (h.top_errors && h.top_errors.length)
+    ? h.top_errors.map(e => {
+        const last = e.last_seen ? new Date(e.last_seen).toLocaleString('es-MX',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+        const meta = [esc(e.error_type||''), e.section?esc(e.section):'', last, e.affected_users?e.affected_users+' usuario(s)':''].filter(Boolean).join(' · ');
+        return `<div class="sis-err-row"><span class="sis-err-cnt${e.count>=5?' hot':''}">${e.count}×</span><div><div class="sis-err-msg">${esc(e.message||e.error_type||'—')}</div><div class="sis-err-meta">${meta}</div></div></div>`;
+      }).join('')
+    : '<div class="sis-err-empty">Sin errores en la ventana — sistema limpio.</div>';
   return `<div class="sis-salud">
     <div class="sis-head">
       <span class="sem-dot sem-${sem}"></span><b>Salud del sistema</b>
       <span class="estado-pill ${pill}">${word} · ${h.health_score}/100</span>
       <span class="sis-ts">rev. ${ts}</span>
     </div>
+    ${flagsRows ? `<div class="sis-flags">${flagsRows}</div>` : ''}
     <div class="metric-mini" style="margin-top:12px;margin-bottom:0;">
-      ${mini(s.total_errors ?? 0, 'errores 24h', (s.total_errors||0) > 0)}
+      <div class="mini-metric" onclick="toggleSisErr()" style="cursor:pointer" title="Ver los errores"><b${nErr>0?' style="color:var(--danger)"':''}>${nErr}</b><span>errores 24h &nbsp;›</span></div>
       ${mini(s.unique_error_types ?? 0, 'tipos distintos')}
       ${mini(s.critical_errors ?? 0, 'críticos ≥5', (s.critical_errors||0) > 0)}
       ${mini(s.checkins_today ?? 0, 'check-ins hoy')}
     </div>
+    <div id="sis-err-detail" style="display:none;">${errRows}</div>
   </div>`;
+}
+function toggleSisErr(){
+  const d = document.getElementById('sis-err-detail');
+  if(d) d.style.display = (d.style.display === 'none' || !d.style.display) ? 'block' : 'none';
 }
 
 async function loadSalud(){
