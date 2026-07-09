@@ -7973,6 +7973,18 @@ let _realJwt = null, _realGymId = null;
 // qb() — convenience alias for supabaseClient.from()
 function qb(table){ return window.supabaseClient.from(table); }
 
+// ── Registros del wizard genérico (.wzd-*) ──────────────────────────
+// Se declaran AQUÍ, al inicio del bloque, para que estén inicializados
+// antes de que cualquier función wiz* (hoisted) pueda ejecutarse. Si se
+// declaran junto al controlador (más abajo) quedan en "temporal dead zone"
+// hasta que corre esa línea, y una llamada temprana truena con
+// "Cannot access '_wzdLabels' before initialization". El controlador vive
+// en la sección "CONTROLADOR DE WIZARD GENÉRICO".
+const _wzdState = {};       // key -> {step, total}
+const _wzdLabels = {};      // key -> {1:'…', 2:'…'}
+const _wzdValidators = {};  // key -> (step)=>bool  (false = no avanza)
+const _wzdOnStep = {};      // key -> (step)=>void  (al entrar a un paso)
+
 // gf(query) — applies gym_id filter to a query that has called .select() / .delete()
 // Usage: gf(qb('pagos').select('*')).order(...)
 function gf(query){
@@ -20145,10 +20157,8 @@ function _clearPagoErrors(){
 //   wizInit(key)   — al abrir el modal (resetea al paso 1)
 //   wizNext/wizBack(key) — navegación (validate bloquea el avance)
 // ══════════════════════════════════════════════════════════════════
-const _wzdState = {};       // key -> {step, total}
-const _wzdLabels = {};      // key -> {1:'…', 2:'…'}
-const _wzdValidators = {};  // key -> (step)=>bool  (false = no avanza)
-const _wzdOnStep = {};      // key -> (step)=>void  (al entrar a un paso)
+// Los registros _wzdState/_wzdLabels/_wzdValidators/_wzdOnStep se declaran
+// al INICIO del bloque <script> (junto a qb()) para evitar TDZ — ver ahí.
 
 function wizRegister(key, {labels={}, validate=null, onStep=null}={}){
   _wzdLabels[key] = labels;
