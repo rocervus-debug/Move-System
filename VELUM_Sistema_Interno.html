@@ -7966,6 +7966,9 @@ body::before{
 const MT_ENABLED = true; // Multi-tenant active — DB schema includes gym_id columns
 
 let MOVE_GYM_ID = null; // Set from currentUser.gym_id after login
+// Sesión REAL del superadmin (ancla): al "cambiar de contexto" a otro gym se pide un JWT
+// de ese gym, y para VOLVER a lo propio se restaura este. No cambia al impersonar.
+let _realJwt = null, _realGymId = null;
 
 // qb() — convenience alias for supabaseClient.from()
 function qb(table){ return window.supabaseClient.from(table); }
@@ -8076,6 +8079,7 @@ async function doLogin(totpCode){
     setSession(session);
     currentUser = session;
     MOVE_GYM_ID = session.gym_id;
+    _realJwt = session.jwt; _realGymId = session.gym_id;   // ancla de la sesión real (contexto)
     auditLog('LOGIN','usuarios', session.id, `Login desde ${navigator.platform||'web'}`);
     // Guard: verify gym_id is present before firing queries (prevents data bleed on misconfigured sessions)
     if(!MOVE_GYM_ID){ errEl.textContent='Error: sesión sin gym_id — contacta soporte.'; errEl.classList.add('show'); currentUser=null; MOVE_GYM_ID=null; clearSession(); btn.textContent='ENTRAR'; btn.disabled=false; return; }
@@ -18418,11 +18422,10 @@ async function saToggleGym(gymId, nuevoEstado){
 
 async function saContextSwitch(gymId){
   if(gymId === MOVE_GYM_ID){ toast('Ya estás en ese gym.','ℹ️'); closeSaCtxDropdown(); return; }
-  MOVE_GYM_ID = gymId;
-  if(currentUser) currentUser.gym_id = gymId;
-  const session = { ...getSession(), gym_id: gymId };
-  setSession(session);
   closeSaCtxDropdown();
+  // El cambio de gym + JWT de contexto se hace DENTRO del try (tras obtener el token de
+  // velum-sa-impersonate), para que las edge functions operen sobre el gym correcto y no
+  // el de la sesión. El contexto es efímero: NO se persiste (al recargar vuelves a tu gym).
 
   // Loading overlay mientras cambia el contexto
   const ov = document.createElement('div');
@@ -18440,6 +18443,25 @@ async function saContextSwitch(gymId){
   }, 12000);
 
   try {
+    // ── JWT de CONTEXTO: si vuelves a tu gym real restauras tu sesión; si vas a otro,
+    //    pides a velum-sa-impersonate un token con ESE gym (solo superadmin) para que las
+    //    edge functions (saldo Stripe, cobros, depósitos) operen sobre el gym correcto. ──
+    if(_realGymId!=null && Number(gymId)===Number(_realGymId)){
+      currentUser.jwt = _realJwt;
+    } else {
+      const _imp = await fetch(`${supabaseUrl}/functions/v1/velum-sa-impersonate`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+(_realJwt||currentUser.jwt||'')},
+        body: JSON.stringify({ target_gym_id: gymId })
+      });
+      const _impD = await _imp.json();
+      if(!_imp.ok || !_impD.token) throw new Error(_impD.error||'No se pudo cambiar de contexto.');
+      currentUser.jwt = _impD.token;
+    }
+    if(typeof initAuthClient==='function') initAuthClient(currentUser.jwt);
+    MOVE_GYM_ID = gymId;
+    if(currentUser) currentUser.gym_id = gymId;
+
     await Promise.all([
       loadConfigFromSupabase(),
       loadLeadsFromSupabase(), loadCoachesFromSupabase(), loadEvalsFromSupabase(),
@@ -23790,6 +23812,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
           setSession(updated);
           currentUser = updated;
           MOVE_GYM_ID = updated.gym_id;
+          _realJwt = updated.jwt; _realGymId = updated.gym_id;   // ancla de la sesión real (contexto)
         }
       } else {
         clearSession();
@@ -23799,6 +23822,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       // DB unreachable — fall back to cached session
       currentUser = session;
       MOVE_GYM_ID = session.gym_id || 1;
+      _realJwt = session.jwt; _realGymId = session.gym_id || 1;
     }
   }
 
