@@ -491,6 +491,14 @@ table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
 .sem-amarillo{ background:var(--warn); box-shadow:0 0 10px rgba(251,191,36,.5); }
 .sem-rojo{ background:var(--danger); box-shadow:0 0 10px rgba(248,113,113,.5); }
 
+/* ── Salud del sistema (franja superior) ── */
+.sis-salud{ background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:18px; }
+.sis-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.sis-head b{ font-size:14px; }
+.sis-ts{ margin-left:auto; font-family:var(--fm); font-size:10.5px; color:var(--text3); }
+.sis-desc{ font-size:12.5px; color:var(--text2); margin-top:8px; line-height:1.5; }
+.sis-sub-head{ font-family:var(--fm); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); margin:2px 0 12px; }
+
 /* ── Tareas ── */
 .task-form{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
 .task-form input{
@@ -2523,13 +2531,55 @@ function semaforoGym(g, a){
   return 'amarillo';
 }
 
+// ── Salud del SISTEMA (técnica): consume el edge move-health-check ──
+// verify_jwt=false → GET simple sin headers (su CORS solo permite Authorization, no apikey)
+async function fetchSistemaSalud(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/move-health-check?mode=status&hours=24`);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if(d.status === 'error') throw new Error(d.error || 'health-check error');
+    return d;
+  }catch(e){ return { _fail:true, _err: e.message }; }
+}
+
+function sistemaSaludHTML(h){
+  if(h._fail){
+    return `<div class="sis-salud">
+      <div class="sis-head"><span class="sem-dot sem-rojo"></span><b>Salud del sistema</b>
+        <span class="estado-pill danger">Sin respuesta</span></div>
+      <p class="sis-desc">El chequeo de salud (move-health-check) no respondió: ${esc(h._err)}. Si esto persiste, el sistema podría estar caído — eso ya es una señal para revisar.</p>
+    </div>`;
+  }
+  const MAP = { healthy:['verde','ok','Operativo'], degraded:['amarillo','warn','Atención'], critical:['rojo','danger','Crítico'] };
+  const [sem, pill, word] = MAP[h.status] || ['rojo','danger', h.status || '—'];
+  const s = h.summary || {};
+  const ts = h.timestamp ? new Date(h.timestamp).toLocaleString('es-MX') : '';
+  const mini = (b,l,alert) => `<div class="mini-metric"><b${alert?' style="color:var(--danger)"':''}>${b}</b><span>${l}</span></div>`;
+  return `<div class="sis-salud">
+    <div class="sis-head">
+      <span class="sem-dot sem-${sem}"></span><b>Salud del sistema</b>
+      <span class="estado-pill ${pill}">${word} · ${h.health_score}/100</span>
+      <span class="sis-ts">rev. ${ts}</span>
+    </div>
+    <div class="metric-mini" style="margin-top:12px;margin-bottom:0;">
+      ${mini(s.total_errors ?? 0, 'errores 24h', (s.total_errors||0) > 0)}
+      ${mini(s.unique_error_types ?? 0, 'tipos distintos')}
+      ${mini(s.critical_errors ?? 0, 'críticos ≥5', (s.critical_errors||0) > 0)}
+      ${mini(s.checkins_today ?? 0, 'check-ins hoy')}
+    </div>
+  </div>`;
+}
+
 async function loadSalud(){
   const zone = document.getElementById('salud-zone');
   stateLoading(zone, 'Cargando salud…');
   try{
-    const [gyms, agg] = await Promise.all([fetchGyms(), fetchSaludAgg()]);
+    const [gyms, agg, sis] = await Promise.all([fetchGyms(), fetchSaludAgg(), fetchSistemaSalud()]);
+    const sisHTML = sistemaSaludHTML(sis);
     if(gyms.length === 0){
-      zone.innerHTML = `
+      zone.innerHTML = sisHTML + `
+        <div class="sis-sub-head">Salud de los gyms</div>
         <div class="state-box">
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <h3>Sin gyms que medir</h3>
@@ -2557,7 +2607,8 @@ async function loadSalud(){
     const resumen = { rojo:0, amarillo:0, verde:0 };
     filas.forEach(f => resumen[f.sem]++);
 
-    zone.innerHTML = `
+    zone.innerHTML = sisHTML + `
+      <div class="sis-sub-head">Salud de los gyms</div>
       <div class="metric-mini">
         <div class="mini-metric"><span class="sem-dot sem-rojo"></span><b>${resumen.rojo}</b><span>en rojo</span></div>
         <div class="mini-metric"><span class="sem-dot sem-amarillo"></span><b>${resumen.amarillo}</b><span>en amarillo</span></div>
