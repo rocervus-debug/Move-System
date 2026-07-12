@@ -1,9 +1,19 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado:** ✅ BUILD GENERADO (2026-07-06) — `www` regenerado + `cap copy` a iOS y Android hechos. Falta que Roy genere los binarios firmados y los suba.
-> **Última actualización:** 2026-07-06
-> **Versiones de este build:** Android `versionCode 5 / 1.0.3` · iOS `build 6 / 1.0.3`.
-> **Última subida a tiendas:** iOS 1.0.1 build 5 (aprobada). Android: v3 (versionCode 3, **con el crash de login**) publicada en prueba cerrada Alpha — **este build v5 la reemplaza; subirlo ANTES de reclutar testers.**
+> **Estado (2026-07-09):**
+> - **iOS 1.0.3 (build 6): ✅ ENVIADO A REVIEW de Apple.** Archivado + subido desde Xcode +
+>   ficha 1.0.3 completa en App Store Connect (build adjunto, novedades, cuenta demo PULSE/4/
+>   VelumDemo2026, nota anti-IAP guía 3.1.3). Release automático al aprobar. Espera ≤48h.
+> - **Android: ⏳ BLOQUEADO por la clave de subida.** Roy no recuerda la contraseña del
+>   `velum-release.jks`. Como la app usa **Play App Signing**, se solicitó **cambio de clave de
+>   subida** en Play Console (motivo: "olvidé la contraseña"). Se generó un keystore NUEVO
+>   `~/velum-upload-new.jks` (alias `velum`, contraseña que Roy SÍ anotó) y se subió su cert
+>   `~/velum-upload-cert.pem`. **Google confirma en 1–2 días hábiles por correo.**
+>   Al confirmar: actualizar `velum-app/android/keystore.properties` (storeFile=~/velum-upload-new.jks,
+>   keyAlias=velum, storePassword/keyPassword = la nueva) → `./gradlew bundleRelease` → subir el
+>   `.aab` (versionCode 5) a Prueba cerrada Alpha → reclutar 12 testers (14 días).
+> - Versiones: Android `versionCode 5 / 1.0.3` · iOS `build 6 / 1.0.3`.
+> - `www` regenerado + `cap copy` hechos (06-jul). PrivacyInfo.xcprivacy creado (agregar al target en Xcode).
 
 ---
 
@@ -105,3 +115,9 @@ se despliegan solos y no entran en esta lista.
 
 - Android sigue bloqueado en la verificación de dispositivo de Google Play (requiere un teléfono Android físico que el usuario debe conseguir prestado) + el requisito de 12 testers / 14 días de prueba cerrada para cuentas personales.
 - iOS está al día (1.0.1 en App Store).
+
+## BUILD SIGUIENTE (post-v5) — feedback de Krajo 2026-07-10
+- **App: botón "Registrar marca" en Progreso** (`atleta.html:2802`) — abre `openBitacoraSheet()`
+  (default fuerza: ejercicio/series/reps/peso) que alimenta "Mis Marcas". Antes solo existía el
+  botón de medición corporal; el registro de PR/score vivía escondido en otra pestaña. iOS+Android.
+  (Los bugs de panel de Krajo — pase-de-día y teléfono con prefijo — NO requieren build: ya en git.)
