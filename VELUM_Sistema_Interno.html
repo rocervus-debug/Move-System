@@ -9191,6 +9191,18 @@ async function saveEditUser(){
   const rol    = document.getElementById('eu-rol').value;
   const activo = document.getElementById('eu-activo').value === 'true';
   if(!nombre||!email){ alert('Nombre y correo son obligatorios.'); return; }
+  // Confirmar cambios sensibles de acceso: desactivar a alguien o cambiarle el rol.
+  const _uPrev = usuarios.find(x=>String(x.id)===String(id));
+  const _willDeactivate = (activo===false) && (_uPrev?.activo!==false);
+  const _rolChanged = _uPrev && _uPrev.rol!==rol;
+  if(_willDeactivate || _rolChanged){
+    let _msgU;
+    if(_willDeactivate && _rolChanged) _msgU = `Vas a cambiar el rol de ${nombre} a "${rol}" y desactivar su acceso: no podrá entrar al panel hasta reactivarlo.`;
+    else if(_willDeactivate)          _msgU = `Vas a desactivar a ${nombre}: no podrá entrar al panel hasta que lo reactives.`;
+    else                              _msgU = `Vas a cambiar el rol de ${nombre} a "${rol}". Esto cambia lo que puede ver y hacer en el panel.`;
+    const _okU = await confirmDialog(_msgU, { title:'Confirmar cambio de acceso', icon:'👤', danger:_willDeactivate, confirmText:'Sí, aplicar', cancelText:'Cancelar' });
+    if(!_okU) return;
+  }
   const payload = {nombre, email, rol, activo};
   if(pass){
     if(pass.length<6){ alert('Contraseña mínimo 6 caracteres.'); return; }
@@ -12478,6 +12490,14 @@ async function applyBulkEstado(){
   if(!estado){ toast('Selecciona un estado primero.','⚠️'); return; }
   const ids = [...document.querySelectorAll('.crm-row-check:checked')].map(c=>c.dataset.id);
   if(!ids.length) return;
+  // Confirmación de acción masiva: aplica a TODOS los seleccionados de un golpe.
+  const _selEst = document.getElementById('crm-bulk-estado');
+  const _estLabel = _selEst?.options[_selEst.selectedIndex]?.text || estado;
+  const _ok = await confirmDialog(
+    `Vas a mover ${ids.length} prospecto${ids.length!==1?'s':''} a "${_estLabel}". Se aplica a todos los seleccionados a la vez.`,
+    { title:'Cambiar estado en lote', icon:'📋', danger:false, confirmText:`Sí, mover ${ids.length}`, cancelText:'Cancelar' }
+  );
+  if(!_ok) return;
   const btn = document.querySelector('#crm-bulk-bar .btn-primary');
   if(btn){ btn.textContent='Aplicando…'; btn.disabled=true; }
   const { error } = await window.supabaseClient.from('leads').update({ status: estado }).in('id', ids);
@@ -15033,6 +15053,15 @@ async function savePortalConfig(){
   const gym_id  = session?.gym_id || session?.id || '';
   if(!gym_id){ toast('Error: no se encontró gym_id','✕'); return; }
 
+  // Confirmar cambio de contraseña: TODOS los socios usan la misma clave para entrar al portal.
+  if(password && password !== (gymConfig.portal_password||'')){
+    const _okP = await confirmDialog(
+      `Vas a cambiar la contraseña del portal. Todos tus socios usan esta misma clave para entrar, así que tendrás que compartirles la nueva.`,
+      { title:'Cambiar contraseña del portal', icon:'👤', danger:true, confirmText:'Sí, cambiarla', cancelText:'Cancelar' }
+    );
+    if(!_okP) return;
+  }
+
   const rows = [
     { gym_id, key: 'portal_codigo',   value: codigo },
     { gym_id, key: 'portal_password', value: password },
@@ -15107,16 +15136,25 @@ async function generarPortalesPendientes(){
 }
 
 // ─── PIN Kiosco ────────────────────────────────────────────────────
-function saveKioscoPin(){
+async function saveKioscoPin(){
   const val = (document.getElementById('cfg-kiosco-pin').value||'').trim();
   if(val && (val.length < 4 || !/^\d+$/.test(val))){
     toast('El PIN debe ser de 4–6 dígitos numéricos','⚠️'); return;
+  }
+  // Guardar vacío equivale a quitar el candado: confirmar si ya había un PIN.
+  if(!val && getKioscoPin()){
+    const _okK = await confirmDialog('Vas a dejar el kiosco de check-in SIN PIN: cualquiera podrá abrirlo sin clave.', { title:'Quitar PIN del kiosco', icon:'⚠', danger:true, confirmText:'Sí, quitar PIN', cancelText:'Cancelar' });
+    if(!_okK) return;
   }
   localStorage.setItem('move_kiosco_pin', val);
   document.getElementById('cfg-kiosco-pin').value = '';
   toast(val ? `PIN del kiosco guardado (${val.length} dígitos)` : 'PIN eliminado','🔐');
 }
-function clearKioscoPin(){
+async function clearKioscoPin(){
+  if(getKioscoPin()){
+    const _okK = await confirmDialog('Vas a quitar el PIN del kiosco de check-in: cualquiera podrá abrirlo sin clave.', { title:'Quitar PIN del kiosco', icon:'⚠', danger:true, confirmText:'Sí, quitar PIN', cancelText:'Cancelar' });
+    if(!_okK) return;
+  }
   localStorage.removeItem('move_kiosco_pin');
   document.getElementById('cfg-kiosco-pin').value = '';
   toast('PIN del kiosco eliminado','🔓');
@@ -15451,6 +15489,9 @@ async function domiCancelarSub(subId){
   await _domiSubAction(subId, 'cancel', 'Se cancelará al final del periodo');
 }
 async function domiReactivarSub(subId){
+  const ok = await confirmDialog('Vas a reactivar la domiciliación: el cobro mensual automático continúa desde el próximo periodo.',
+    { title:'¿Reactivar la domiciliación?', icon:'🔄', danger:false, confirmText:'Sí, reactivar', cancelText:'Cancelar' });
+  if(!ok) return;
   await _domiSubAction(subId, 'reactivate', 'Domiciliación reactivada — el cobro mensual continúa');
 }
 function _domiCobroRow(p){
@@ -15826,7 +15867,9 @@ async function generarLinkDomiciliacion(){
 }
 
 async function cancelMemberSub(subId){
-  if(!confirm('¿Cancelar la domiciliación de este socio? Mantendrá acceso hasta el fin del periodo que ya pagó.')) return;
+  const _okC = await confirmDialog('El socio conserva su acceso hasta el final del periodo que ya pagó y no se le volverá a cobrar.',
+    { title:'¿Cancelar la domiciliación?', danger:true, confirmText:'Sí, cancelar', cancelText:'Cancelar', icon:'💳' });
+  if(!_okC) return;
   try{
     const res = await fetch(`${supabaseUrl}/functions/v1/velum-member-subscription`, {
       method:'POST',
@@ -21902,6 +21945,12 @@ async function descontarClase(id, btn){
   if(!p){ toast('Paquete no encontrado ✕','✕'); return; }
   const restantes = (p.clases_totales||0) - (p.clases_usadas||0);
   if(restantes <= 0){ toast('Este paquete ya no tiene clases disponibles.','⚠️'); return; }
+  // Confirmar: resta algo que el cliente pagó — evita el tap accidental en la lista de pagos.
+  const _okDesc = await confirmDialog(
+    `Vas a descontar 1 clase del paquete de ${p.cliente}. Quedarán ${restantes-1} de ${p.clases_totales||0}. Hazlo cuando el cliente asista.`,
+    { title:'Descontar una clase', icon:'📋', danger:false, confirmText:'Sí, descontar 1', cancelText:'Cancelar' }
+  );
+  if(!_okDesc) return;
   if(btn) btn.disabled = true;
   const nuevasUsadas = (p.clases_usadas||0) + 1;
   const { error } = await window.supabaseClient.from('pagos')
@@ -23010,6 +23059,13 @@ async function saveHorarioOverride(){
   const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)||c.nombre===coachId) : null;
   const coachNom = coachObj ? coachObj.nombre : '';
 
+  // Cerrar el gym ese día afecta a los atletas: confirmar antes.
+  if(cerrado){
+    const _dispFecha = fechaStr ? new Date(fechaStr+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}) : 'ese día';
+    const _okC = await confirmDialog(`Vas a marcar CERRADO el ${_dispFecha}${hora?` a las ${hora}`:''}. Los atletas verán que no hay clase ese día.`, { title:'Cerrar este día', icon:'⚠', danger:true, confirmText:'Sí, cerrar', cancelText:'Cancelar' });
+    if(!_okC) return;
+  }
+
   // CERRADO stored as tipo='CERRADO' — no cerrado bool column needed
   const payload = {
     fecha:        fechaStr,
@@ -23146,22 +23202,29 @@ async function saveCobertura(){
 
 /* ── Cancelaciones de clase (ocurrencia individual) ── */
 async function cancelClaseOccurrence(claseId, fechaStr, hora){
-  const motivo = prompt(`Motivo de cancelación (${fechaStr} · ${formatHoraDisplay(hora)})\nDeja en blanco si no aplica:`);
-  if(motivo === null) return; // user pressed Cancel on prompt
+  // Confirmación clara (reemplaza el prompt() nativo del navegador) — avisa el alcance:
+  // afecta a los atletas anotados de ESA fecha. Tras cancelar, el modal de aviso permite notificarlos.
+  const claseNombre  = (horario||[]).find(h=>String(h.id)===String(claseId))?.tipo || 'esta clase';
+  const displayFecha = new Date(fechaStr+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const ok = await confirmDialog(
+    `Se cancelará "${claseNombre}" del ${displayFecha} a las ${formatHoraDisplay(hora)}. Solo esa fecha; el resto del horario no cambia. Los atletas anotados verán la cancelación y podrás avisarles enseguida.`,
+    { title:'Cancelar esta clase', icon:'🗓', confirmText:'Sí, cancelar clase', cancelText:'No, dejarla' }
+  );
+  if(!ok) return;
 
   const gymId = MOVE_GYM_ID||null;
-  const payload = { horario_id: claseId, fecha: fechaStr, motivo: motivo.trim()||null };
+  const payload = { horario_id: claseId, fecha: fechaStr, motivo: null };
   if(gymId) payload.gym_id = gymId;
 
   const { error } = await window.supabaseClient.from('horario_cancelaciones').insert([payload]);
-  if(error){ if(_handleSessionError(error))return; alert('Error al cancelar: '+(error.message||error)); console.error(error); return; }
+  if(error){ if(_handleSessionError(error))return; toast('No se pudo cancelar: '+(error.message||error),'✕'); console.error(error); return; }
 
   await loadHorarioCancelaciones();
   renderHorarioMensual();
   toast('Clase cancelada para esta fecha','🚫');
 
   // Show notification modal with athletes who had reservations
-  showCancelClaseNotifModal(claseId, fechaStr, hora, motivo.trim());
+  showCancelClaseNotifModal(claseId, fechaStr, hora, '');
 }
 
 async function showCancelClaseNotifModal(claseId, fechaStr, hora, motivo){
@@ -23278,6 +23341,10 @@ async function removeCobertura(){
   const hora     = document.getElementById('cob-hora').value;
   const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
   if(!existing){ closeModal('cobertura'); return; }
+
+  // Quitar cobertura reasigna a quién se le paga esa clase: confirmar.
+  const _okCob = await confirmDialog('Vas a quitar la cobertura de esta clase. Volverá al coach original del horario y cambia a quién se le paga.', { title:'Quitar cobertura', icon:'🏋', danger:true, confirmText:'Sí, quitar', cancelText:'Cancelar' });
+  if(!_okCob) return;
 
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', existing.id);
   if(error){ console.error('Error removing coverage:', error); if(_handleSessionError(error))return; return; }
