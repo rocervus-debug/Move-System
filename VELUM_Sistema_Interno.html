@@ -13208,7 +13208,8 @@ function clearCoachForm(){
 }
 
 async function deleteCoach(id){
-  if(!await confirmDialog('¿Eliminar este coach?', {title:'Eliminar coach', icon:'🏋️'})) return;
+  const _cNom = (coaches||[]).find(x=>String(x.id)===String(id))?.nombre || 'este coach';
+  if(!await confirmDialog(`Se eliminará a ${_cNom}. Sus clases del horario quedarán sin coach asignado hasta que las reasignes.`, {title:'Eliminar coach', icon:'🏋'})) return;
   const { error } = await window.supabaseClient.from('coaches').delete().eq('id', id);
   if(error){ console.error('Error eliminando coach:', error); if(_handleSessionError(error))return; alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCoachesFromSupabase(); // reload from source of truth instead of mutating global array
@@ -23709,7 +23710,7 @@ async function saveEditClase(btn){
 }
 
 async function deleteClase(id){
-  if(!await confirmDialog('¿Eliminar esta clase del horario?', {title:'Eliminar clase', icon:'🗓'})) return;
+  if(!await confirmDialog('Se quitará esta clase de la plantilla para TODAS las fechas futuras (no solo un día). Para cerrar solo una fecha, usa "cancelar" en el calendario.', {title:'Eliminar clase del horario', icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', id);
   if(error){ if(_handleSessionError(error))return; toast('Error al eliminar ✕'+(error&&error.message?': '+error.message:''), '✕'); return; }
   await loadHorarioFromSupabase();
