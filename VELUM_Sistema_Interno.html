@@ -5047,6 +5047,18 @@ body::before{
               <div id="sf-slug-err" style="display:none;font-size:11px;color:var(--danger);margin-top:6px;"></div>
             </div>
 
+            <!-- ════ WIZARD: Personaliza tu página (v2) ════ -->
+            <div style="display:flex;align-items:center;gap:14px;background:var(--card2);border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);border-radius:14px;padding:16px 18px;margin-top:18px;flex-wrap:wrap;">
+              <div style="width:38px;height:38px;border-radius:10px;background:color-mix(in srgb, var(--accent) 14%, transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </div>
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:13px;font-weight:700;color:var(--text);">Personaliza tu página</div>
+                <div style="font-size:11.5px;color:var(--text3);margin-top:2px;">Fotos, estilo, color y textos en 6 pasos guiados. Sin tecnicismos.</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openSfWizard()">Personalizar →</button>
+            </div>
+
             <!-- ════ SECCIONES COLAPSABLES ════ -->
             <div id="sf-sections" style="margin-top:22px;">
 
@@ -5057,7 +5069,16 @@ body::before{
                   <div class="field">
                     <label>Estilo visual del Storefront</label>
                     <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Elige la estética que va con tu estudio. Cambia colores, tipografía y personalidad de tu página pública.</div>
-                    <div id="sf-theme-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    <div id="sf-theme-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+                      <div class="sf-theme-card" data-theme="claro" onclick="sfSetTheme('claro')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                        <div style="height:54px;background:#F7F9FA;display:flex;align-items:center;justify-content:center;">
+                          <div style="width:20px;height:20px;border-radius:6px;background:#00A8CC;"></div>
+                        </div>
+                        <div style="padding:7px 8px;background:var(--card2);">
+                          <div style="font-size:11px;font-weight:700;color:var(--text);">Claro</div>
+                          <div style="font-size:9px;color:var(--text3);">Limpio · Para todos (default)</div>
+                        </div>
+                      </div>
                       <div class="sf-theme-card" data-theme="pulse" onclick="sfSetTheme('pulse')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
                         <div style="height:54px;background:#050D14;position:relative;display:flex;align-items:center;justify-content:center;">
                           <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 50% 0%,color-mix(in srgb, var(--accent) 25%, transparent),transparent);"></div>
@@ -6340,6 +6361,109 @@ body::before{
       <button class="btn btn-outline wzd-back" onclick="wizBack('cita')" style="display:none;">← Atrás</button>
       <button class="btn btn-primary wzd-next" onclick="wizNext('cita')">Siguiente →</button>
       <button class="btn btn-primary wzd-save" onclick="saveCita()" style="display:none;">Agendar cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Personaliza tu página (Storefront v2) — wizard 6 pasos -->
+<div class="modal-overlay" id="modal-sf-wizard">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head">
+      <div class="modal-title">Personaliza tu página</div>
+      <button class="modal-close" onclick="closeModal('sf-wizard')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel"></div>
+      <div class="wzd-segs"><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div><div class="wzd-seg"></div></div>
+    </div>
+    <div class="modal-body" style="padding-top:18px;">
+
+      <!-- PASO 1 — Fotos -->
+      <div class="wzd-step" data-step="1">
+        <div class="wzd-q">Sube fotos de tu espacio</div>
+        <div class="wzd-hint">De 1 a 4 fotos. La primera es la principal de tu página. Se comprimen solas, no te preocupes por el peso. <strong>Puedes saltar este paso</strong> y agregarlas después.</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="sfWizPickFotos()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Elegir fotos
+          </button>
+          <span id="sf-wiz-fotos-status" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div id="sf-wiz-fotos-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+      </div>
+
+      <!-- PASO 2 — Estilo -->
+      <div class="wzd-step" data-step="2">
+        <div class="wzd-q">Elige el estilo de tu página</div>
+        <div class="wzd-hint">Cada estilo cambia colores y tipografía. Claro es el más limpio y funciona para todos; los demás tienen más personalidad.</div>
+        <div id="sf-wiz-theme-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;"></div>
+      </div>
+
+      <!-- PASO 3 — Tu color -->
+      <div class="wzd-step" data-step="3">
+        <div class="wzd-q">Elige tu color</div>
+        <div class="wzd-hint">Es el color de tus botones y acentos. Elige uno que combine o escribe el código exacto de tu marca (ej. #00A8CC). El contraste del texto se ajusta solo.</div>
+        <div id="sf-wiz-color-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;"></div>
+        <div class="field" style="max-width:220px;">
+          <label>Código exacto (opcional)</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="sf-wiz-color-hex" type="text" placeholder="#00A8CC" maxlength="7" oninput="sfWizHexInput(this.value)"/>
+            <span id="sf-wiz-color-dot" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--accent);flex-shrink:0;"></span>
+          </div>
+          <span class="field-err" id="sf-wiz-color-hex-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+        </div>
+      </div>
+
+      <!-- PASO 4 — Textos -->
+      <div class="wzd-step" data-step="4">
+        <div class="wzd-q">Los textos de tu página</div>
+        <div class="wzd-hint">Una línea que diga qué haces y para quién, y el botón principal que verá la gente.</div>
+        <div class="field">
+          <label>Descripción en una línea</label>
+          <input id="sf-wiz-desc" type="text" maxlength="140" placeholder="Ej: Entrena distinto: coaching, comunidad y tu propia app."/>
+        </div>
+        <div class="field">
+          <label>Botón principal de tu página</label>
+          <div class="wzd-opt-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="wzd-opt" id="sf-wiz-cta-prueba" role="button" tabindex="0" onclick="sfWizPickCta('prueba')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sfWizPickCta('prueba');}">
+              <div class="wzd-opt-name">Clase de prueba gratis</div>
+              <div class="wzd-opt-sub">Para atraer gente nueva</div>
+            </div>
+            <div class="wzd-opt" id="sf-wiz-cta-reservar" role="button" tabindex="0" onclick="sfWizPickCta('reservar')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sfWizPickCta('reservar');}">
+              <div class="wzd-opt-name">Reservar clase</div>
+              <div class="wzd-opt-sub">Si no ofreces prueba gratis</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 5 — Paquete recomendado -->
+      <div class="wzd-step" data-step="5">
+        <div class="wzd-q">¿Qué paquete quieres recomendar?</div>
+        <div class="wzd-hint">Se muestra resaltado con un listón "Recomendado" en tu página. Elige el que más te conviene vender.</div>
+        <div id="sf-wiz-pkg-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <!-- PASO 6 — Vista previa y publicar -->
+      <div class="wzd-step" data-step="6">
+        <div class="wzd-q">Así queda tu página</div>
+        <div class="wzd-hint">Revisa el resumen. Al publicar, los cambios se ven de inmediato en tu página pública.</div>
+        <div id="sf-wiz-resumen" style="margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+          <a id="sf-wiz-preview-link" href="#" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Abrir vista previa ↗</a>
+          <span style="font-size:11px;color:var(--text3);">La vista previa muestra lo publicado hasta ahora.</span>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+          <input type="checkbox" id="sf-wiz-descubre" checked style="width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:var(--accent);"/>
+          <span style="font-size:12px;color:var(--text2);line-height:1.5;"><strong style="color:var(--text);">Aparecer en Descubre</strong> — el directorio público de VELUM que trae visitas gratis a tu página. Sin costo ni comisión; tu página nunca muestra competidores.</span>
+        </label>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('sf-wizard')" style="margin-right:auto;padding:8px 12px;">Cancelar</button>
+      <button class="btn btn-outline wzd-back" onclick="wizBack('sf-wizard')" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary wzd-next" onclick="wizNext('sf-wizard')">Siguiente →</button>
+      <button class="btn btn-primary wzd-save" onclick="sfWizPublish()" style="display:none;">Publicar cambios</button>
     </div>
   </div>
 </div>
@@ -15979,7 +16103,8 @@ async function loadStorefrontPanel(){
       gym_id: gymId,
       slug: defaultSlug,
       is_enabled: false,
-      mode: 'public'
+      mode: 'public',
+      theme: 'claro'   // v2: Claro es el default para gyms nuevos (Pulse queda como opción)
     }).select().single();
     if(error){
       toast('Error creando storefront: ' + (error.message||''), '✕');
@@ -16299,7 +16424,7 @@ async function sfSaveField(field, value){
 // ─── THEME / ESTÉTICA ───
 async function sfSetTheme(theme){
   if(!_storefrontData) return;
-  const valid = ['pulse','atelier','lumen'];
+  const valid = ['claro','pulse','atelier','lumen'];
   if(!valid.includes(theme)) return;
   if(_storefrontData.theme === theme){ _sfHighlightTheme(theme); return; }
   const { error } = await window.supabaseClient
@@ -16317,7 +16442,7 @@ async function sfSetTheme(theme){
   } else if(typeof _sfRenderAccentSwatches === 'function'){
     _sfRenderAccentSwatches();
   }
-  const names = { pulse:'Pulse', atelier:'Atelier', lumen:'Lumen' };
+  const names = { claro:'Claro', pulse:'Pulse', atelier:'Atelier', lumen:'Lumen' };
   toast('Estética ' + (names[theme]||theme) + ' aplicada ✓', '🎨');
 }
 
@@ -16333,6 +16458,14 @@ function _sfHighlightTheme(theme){
 // ─── SWATCHES DE ACENTO POR TEMA ───
 // Cada tema ofrece colores curados que combinan con su estética. El primero es el default.
 const SF_ACCENTS = {
+  claro: [
+    {name:'Cyan',      hex:'#00A8CC'},
+    {name:'Cyan vivo', hex:'#00D4FF'},
+    {name:'Champagne', hex:'#C9A86A'},
+    {name:'Salvia',    hex:'#5EC8B0'},
+    {name:'Naranja',   hex:'#F0663C'},
+    {name:'Tinta',     hex:'#0B1520'},
+  ],
   pulse: [
     {name:'Cyan',     hex:'#00D4FF'},
     {name:'Lava',     hex:'#FF5A3C'},
@@ -21021,6 +21154,327 @@ wizRegister('visita', {
     if(g('v-telefono')) rows.push(_wzdRow('WhatsApp', esc(g('v-telefono'))));
     if(g('v-notas'))    rows.push(_wzdRow('Notas', esc(g('v-notas'))));
     document.getElementById('v-confirm').innerHTML = rows.join('');
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// WIZARD "PERSONALIZA TU PÁGINA" (Storefront v2) — 6 pasos guiados
+// Fotos → Estilo → Color → Textos → Paquete recomendado → Publicar.
+// Guarda en gym_config (llaves sf_*, canónicas para v2) y en gym_storefront
+// (theme/color/descripción, que la página pública ya lee hoy). Re-entrable.
+// ══════════════════════════════════════════════════════════════════
+const _sfWiz = { fotos: [], theme: 'claro', color: '#00A8CC', cta: 'prueba', pkgRec: null, subiendo: false };
+
+const _SF_WIZ_THEMES = [
+  { id:'claro',   nombre:'Claro',   sub:'Limpio · para todos', bg:'#F7F9FA', dot:'#00A8CC', ink:'#0B1520' },
+  { id:'pulse',   nombre:'Pulse',   sub:'Oscuro · energía',    bg:'#050D14', dot:'#00D4FF', ink:'#E8EDF5' },
+  { id:'atelier', nombre:'Atelier', sub:'Boutique · editorial',bg:'#F6F2EC', dot:'#6B2737', ink:'#2A2521' },
+  { id:'lumen',   nombre:'Lumen',   sub:'Cálido · wellness',   bg:'#F0E9DD', dot:'#7A8B6F', ink:'#3D3528' },
+];
+
+async function openSfWizard(){
+  if(!_storefrontData){ await loadStorefrontPanel(); }
+  if(!_storefrontData){ toast('No se pudo cargar tu Storefront. Intenta de nuevo.', '✕'); return; }
+  // Estado inicial re-entrable: parte de lo ya configurado
+  _sfWiz.theme = _storefrontData.theme || 'claro';
+  const paleta = SF_ACCENTS[_sfWiz.theme] || SF_ACCENTS.claro;
+  _sfWiz.color = (_storefrontData.primary_color || paleta[0].hex).toUpperCase();
+  _sfWiz.fotos = [];
+  _sfWiz.cta = _storefrontData.trial_class_enabled ? 'prueba' : 'reservar';
+  _sfWiz.pkgRec = null;
+  // Llaves sf_* previas (si ya usó el wizard antes)
+  try {
+    const { data: rows } = await window.supabaseClient.from('gym_config')
+      .select('key,value').eq('gym_id', _storefrontData.gym_id)
+      .in('key', ['sf_fotos','sf_cta','sf_pkg_rec','sf_descubre_optin']);
+    const cfg = {}; (rows||[]).forEach(r => cfg[r.key] = r.value);
+    if(cfg.sf_fotos){ try{ const a = JSON.parse(cfg.sf_fotos); if(Array.isArray(a)) _sfWiz.fotos = a.slice(0,4); }catch(_){} }
+    if(cfg.sf_cta === 'prueba' || cfg.sf_cta === 'reservar') _sfWiz.cta = cfg.sf_cta;
+    if(cfg.sf_pkg_rec) _sfWiz.pkgRec = cfg.sf_pkg_rec;
+    const chk = document.getElementById('sf-wiz-descubre');
+    if(chk) chk.checked = cfg.sf_descubre_optin !== 'false';
+  } catch(_){}
+  // Si no hay recomendado guardado, parte del destacado actual del panel
+  if(!_sfWiz.pkgRec){
+    const feat = (_storefrontListings||[]).find(l => l.is_featured);
+    if(feat) _sfWiz.pkgRec = String(feat.package_id);
+  }
+  const desc = document.getElementById('sf-wiz-desc');
+  if(desc) desc.value = _storefrontData.description || '';
+  _sfWizRenderFotos(); _sfWizRenderThemes(); _sfWizRenderColores(); _sfWizPaintCta(); _sfWizRenderPkgs();
+  openModal('sf-wizard');
+  if(typeof wizInit === 'function') wizInit('sf-wizard');
+}
+
+// ── Paso 1: fotos (compresión client-side canvas → JPEG ≤400KB, sube a Storage) ──
+function _sfWizRenderFotos(){
+  const grid = document.getElementById('sf-wiz-fotos-grid');
+  if(!grid) return;
+  grid.innerHTML = _sfWiz.fotos.map((u, i) => `
+    <div style="position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+      <img src="${esc(u)}" style="width:100%;height:100%;object-fit:cover;" alt="Foto ${i+1}"/>
+      ${i===0 ? '<span style="position:absolute;bottom:4px;left:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,.55);color:#fff;padding:2px 7px;border-radius:6px;letter-spacing:.4px;">PRINCIPAL</span>' : ''}
+      <button type="button" onclick="sfWizQuitarFoto(${i})" title="Quitar" aria-label="Quitar foto"
+        style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:12px;line-height:1;">✕</button>
+    </div>`).join('')
+    + (_sfWiz.fotos.length < 4 ? `
+    <div role="button" tabindex="0" onclick="sfWizPickFotos()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sfWizPickFotos();}"
+      style="aspect-ratio:4/3;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>` : '');
+}
+function sfWizQuitarFoto(i){ _sfWiz.fotos.splice(i, 1); _sfWizRenderFotos(); }
+
+function sfWizPickFotos(){
+  if(_sfWiz.subiendo) return;
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/png,image/jpeg,image/jpg,image/webp';
+  inp.multiple = true;
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])].slice(0, 4 - _sfWiz.fotos.length);
+    inp.remove();
+    if(!files.length) return;
+    const status = document.getElementById('sf-wiz-fotos-status');
+    _sfWiz.subiendo = true;
+    for(let i = 0; i < files.length; i++){
+      if(status) status.textContent = `Procesando foto ${i+1} de ${files.length}…`;
+      try {
+        const comprimida = await _sfWizComprimir(files[i]);
+        const r = await uploadStorefrontImage(comprimida, 'gallery');
+        if(!r.ok){ toast(r.error || 'No se pudo subir una foto.', '✕'); continue; }
+        _sfWiz.fotos.push(r.url);
+        _sfWizRenderFotos();
+      } catch(err){
+        console.error('sfWizComprimir:', err);
+        toast('Una foto no se pudo procesar. Prueba con otra.', '✕');
+      }
+    }
+    _sfWiz.subiendo = false;
+    if(status) status.textContent = _sfWiz.fotos.length ? '✓ Fotos listas.' : '';
+    setTimeout(() => { if(status) status.textContent = ''; }, 2500);
+  });
+  inp.click();
+}
+
+// Comprime en el navegador: máx 1600px por lado, JPEG bajando calidad hasta ≤400KB
+async function _sfWizComprimir(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const MAX = 1600;
+    const escala = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * escala));
+    const h = Math.max(1, Math.round(img.naturalHeight * escala));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    let calidad = 0.82, blob = null;
+    for(let i = 0; i < 5; i++){
+      blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', calidad));
+      if(blob && blob.size <= 400 * 1024) break;
+      calidad -= 0.12;
+      if(calidad < 0.4) break;
+    }
+    if(!blob) throw new Error('canvas.toBlob falló');
+    const nombre = (file.name.replace(/\.[^.]+$/, '') || 'foto').slice(0, 40) + '.jpg';
+    return new File([blob], nombre, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// ── Paso 2: estilo (4 presets con miniatura) ──
+function _sfWizRenderThemes(){
+  const grid = document.getElementById('sf-wiz-theme-grid');
+  if(!grid) return;
+  grid.innerHTML = _SF_WIZ_THEMES.map(t => `
+    <div class="wzd-opt${t.id === _sfWiz.theme ? ' sel' : ''}" role="button" tabindex="0"
+      onclick="sfWizPickTheme('${t.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sfWizPickTheme('${t.id}');}">
+      <div style="height:44px;border-radius:8px;background:${t.bg};border:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;">
+        <span style="width:14px;height:14px;border-radius:4px;background:${t.dot};"></span>
+        <span style="width:26px;height:5px;border-radius:3px;background:${t.ink};opacity:.6;"></span>
+      </div>
+      <div class="wzd-opt-name">${t.nombre}</div>
+      <div class="wzd-opt-sub">${t.sub}</div>
+    </div>`).join('');
+}
+function sfWizPickTheme(id){
+  _sfWiz.theme = id;
+  // Si el color actual no combina con el nuevo tema, sugerir el primero de su paleta
+  const paleta = (SF_ACCENTS[id] || SF_ACCENTS.claro).map(s => s.hex.toUpperCase());
+  if(!paleta.includes(_sfWiz.color)) _sfWiz.color = paleta[0];
+  _sfWizRenderThemes(); _sfWizRenderColores();
+}
+
+// ── Paso 3: color (swatches del tema + hex libre) ──
+function _sfWizRenderColores(){
+  const wrap = document.getElementById('sf-wiz-color-swatches');
+  if(!wrap) return;
+  const swatches = SF_ACCENTS[_sfWiz.theme] || SF_ACCENTS.claro;
+  wrap.innerHTML = swatches.map(sw => {
+    const sel = sw.hex.toUpperCase() === _sfWiz.color;
+    return `<button type="button" title="${sw.name}" onclick="sfWizPickColor('${sw.hex}')"
+      style="width:38px;height:38px;border-radius:50%;cursor:pointer;background:${sw.hex};
+      border:2px solid ${sel ? 'var(--text)' : 'var(--border)'};
+      box-shadow:${sel ? '0 0 0 2px var(--card),0 0 0 4px var(--text)' : 'none'};"></button>`;
+  }).join('');
+  const dot = document.getElementById('sf-wiz-color-dot');
+  if(dot) dot.style.background = _sfWiz.color;
+  const hexInp = document.getElementById('sf-wiz-color-hex');
+  if(hexInp && document.activeElement !== hexInp) hexInp.value = _sfWiz.color;
+}
+function sfWizPickColor(hex){
+  _sfWiz.color = String(hex).toUpperCase();
+  const err = document.getElementById('sf-wiz-color-hex-err'); if(err) err.style.display = 'none';
+  _sfWizRenderColores();
+}
+function sfWizHexInput(v){
+  v = String(v || '').trim();
+  if(v && !v.startsWith('#')) v = '#' + v;
+  if(/^#[0-9A-Fa-f]{6}$/.test(v)){
+    _sfWiz.color = v.toUpperCase();
+    const dot = document.getElementById('sf-wiz-color-dot'); if(dot) dot.style.background = _sfWiz.color;
+    const err = document.getElementById('sf-wiz-color-hex-err'); if(err) err.style.display = 'none';
+    _sfWizRenderColores();
+  }
+}
+
+// ── Paso 4: CTA ──
+function sfWizPickCta(v){ _sfWiz.cta = v; _sfWizPaintCta(); }
+function _sfWizPaintCta(){
+  const a = document.getElementById('sf-wiz-cta-prueba');
+  const b = document.getElementById('sf-wiz-cta-reservar');
+  if(a) a.classList.toggle('sel', _sfWiz.cta === 'prueba');
+  if(b) b.classList.toggle('sel', _sfWiz.cta === 'reservar');
+}
+
+// ── Paso 5: paquete recomendado ──
+function _sfWizRenderPkgs(){
+  const list = document.getElementById('sf-wiz-pkg-list');
+  if(!list) return;
+  const publicos = (_storefrontListings || []).filter(l => l.is_public);
+  if(!publicos.length){
+    list.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0;">No tienes paquetes públicos todavía. Publica al menos uno en la sección Paquetes públicos y vuelve a este paso.</div>';
+    return;
+  }
+  const fila = (val, nombre, sub) => `
+    <div class="wzd-opt${String(_sfWiz.pkgRec ?? '') === String(val ?? '') ? ' sel' : ''}" role="button" tabindex="0" style="text-align:left;display:flex;align-items:center;gap:12px;"
+      onclick="sfWizPickPkg(${val === null ? 'null' : `'${val}'`})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sfWizPickPkg(${val === null ? 'null' : `'${val}'`});}">
+      <div style="flex:1;min-width:0;">
+        <div class="wzd-opt-name">${nombre}</div>
+        ${sub ? `<div class="wzd-opt-sub">${sub}</div>` : ''}
+      </div>
+    </div>`;
+  list.innerHTML = publicos.map(l => {
+    const p = l.packages || {};
+    const meta = p.unlimited_classes ? 'Ilimitado' : (p.num_classes ? `${p.num_classes} clases` : '');
+    return fila(String(l.package_id), esc(p.name || 'Paquete'), `$${(p.price_mxn || 0).toLocaleString('es-MX')}${meta ? ' · ' + meta : ''}`);
+  }).join('') + fila(null, 'Ninguno', 'Sin listón de recomendado');
+}
+function sfWizPickPkg(v){ _sfWiz.pkgRec = v; _sfWizRenderPkgs(); }
+
+// ── Publicar: gym_config sf_* + gym_storefront + listado destacado ──
+async function sfWizPublish(){
+  if(!_storefrontData) return;
+  const btn = document.querySelector('#modal-sf-wizard .wzd-save');
+  if(btn){ btn.disabled = true; btn.textContent = 'Publicando…'; }
+  const done = (ok, msg) => {
+    if(btn){ btn.disabled = false; btn.textContent = 'Publicar cambios'; }
+    if(msg) toast(msg, ok ? '✓' : '✕');
+  };
+  try {
+    const gymId = _storefrontData.gym_id;
+    const desc = (document.getElementById('sf-wiz-desc')?.value || '').trim();
+    const optin = document.getElementById('sf-wiz-descubre')?.checked !== false;
+
+    // 1) Llaves sf_* en gym_config (upsert por gym_id+key, patrón del panel)
+    const rows = [
+      { key: 'sf_theme',          value: _sfWiz.theme,                        gym_id: gymId },
+      { key: 'sf_fotos',          value: JSON.stringify(_sfWiz.fotos),        gym_id: gymId },
+      { key: 'sf_cta',            value: _sfWiz.cta,                          gym_id: gymId },
+      { key: 'sf_pkg_rec',        value: _sfWiz.pkgRec ? String(_sfWiz.pkgRec) : '', gym_id: gymId },
+      { key: 'sf_descubre_optin', value: optin ? 'true' : 'false',            gym_id: gymId },
+    ];
+    for(const row of rows){
+      const { error } = await window.supabaseClient.from('gym_config').upsert(row, { onConflict: 'key,gym_id' });
+      if(error){ if(_handleSessionError(error)) return done(false); return done(false, 'Error guardando configuración: ' + error.message); }
+    }
+
+    // 2) gym_storefront: lo que la página pública ya lee hoy (tema, color, descripción)
+    const { error: e2 } = await window.supabaseClient.from('gym_storefront')
+      .update({ theme: _sfWiz.theme, primary_color: _sfWiz.color, description: desc || null })
+      .eq('gym_id', gymId);
+    if(e2){ return done(false, 'Error guardando estilo: ' + e2.message); }
+    _storefrontData.theme = _sfWiz.theme;
+    _storefrontData.primary_color = _sfWiz.color;
+    _storefrontData.description = desc || null;
+
+    // 3) Fotos del wizard también a la galería pública (sin duplicar), para que
+    //    el hero las muestre hoy mismo aunque sf_fotos aún no sea público vía RLS
+    if(_sfWiz.fotos.length){
+      const gal = Array.isArray(_storefrontData.gallery_urls) ? [..._storefrontData.gallery_urls] : [];
+      const nuevas = _sfWiz.fotos.filter(u => !gal.includes(u));
+      if(nuevas.length){
+        const arr = [..._sfWiz.fotos, ...gal.filter(u => !_sfWiz.fotos.includes(u))];
+        const { error: e3 } = await window.supabaseClient.from('gym_storefront')
+          .update({ gallery_urls: arr }).eq('gym_id', gymId);
+        if(!e3) _storefrontData.gallery_urls = arr;
+      }
+    }
+
+    // 4) Paquete recomendado → destacado del listado (el ribbon público sale de aquí hoy)
+    if(_sfWiz.pkgRec){
+      const listing = (_storefrontListings || []).find(l => String(l.package_id) === String(_sfWiz.pkgRec));
+      if(listing){
+        await window.supabaseClient.from('storefront_listings').update({ is_featured: false, badge_text: null }).eq('gym_id', gymId);
+        await window.supabaseClient.from('storefront_listings').update({ is_featured: true, badge_text: 'Recomendado' }).eq('id', listing.id);
+      }
+    } else {
+      await window.supabaseClient.from('storefront_listings').update({ is_featured: false, badge_text: null }).eq('gym_id', gymId);
+    }
+
+    done(true, 'Tu página quedó publicada con los cambios.');
+    closeModal('sf-wizard');
+    loadStorefrontPanel();
+  } catch(err){
+    console.error('sfWizPublish:', err);
+    done(false, 'Algo falló al publicar. Revisa tu conexión e intenta de nuevo.');
+  }
+}
+
+wizRegister('sf-wizard', {
+  labels: {1:'Fotos', 2:'Estilo', 3:'Tu color', 4:'Textos', 5:'Recomendado', 6:'Publicar'},
+  validate(n){
+    if(n === 1 && _sfWiz.subiendo){ toast('Espera a que terminen de subir tus fotos.', '⏳'); return false; }
+    if(n === 3){
+      const v = (document.getElementById('sf-wiz-color-hex')?.value || '').trim();
+      if(v && !/^#?[0-9A-Fa-f]{6}$/.test(v.replace('#',''))){
+        wzdFieldErr('sf-wiz-color-hex', 'El código debe ser de 6 dígitos, ej. #00A8CC.');
+        return false;
+      }
+      wzdFieldErr('sf-wiz-color-hex', '');
+    }
+    return true;
+  },
+  onStep(n){
+    if(n !== 6) return;
+    const temaNombre = (_SF_WIZ_THEMES.find(t => t.id === _sfWiz.theme) || {}).nombre || _sfWiz.theme;
+    const pkg = (_storefrontListings || []).find(l => String(l.package_id) === String(_sfWiz.pkgRec));
+    const desc = (document.getElementById('sf-wiz-desc')?.value || '').trim();
+    const rows = [
+      _wzdRow('Fotos', _sfWiz.fotos.length ? `${_sfWiz.fotos.length} foto${_sfWiz.fotos.length === 1 ? '' : 's'}` : 'Sin fotos (usa tu color de marca)'),
+      _wzdRow('Estilo', esc(temaNombre)),
+      _wzdRow('Color', `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${_sfWiz.color};vertical-align:-1px;margin-right:6px;border:1px solid var(--border);"></span>${esc(_sfWiz.color)}`),
+      _wzdRow('Descripción', desc ? esc(desc) : 'Sin descripción'),
+      _wzdRow('Botón principal', _sfWiz.cta === 'prueba' ? 'Clase de prueba gratis' : 'Reservar clase'),
+      _wzdRow('Recomendado', pkg ? esc(pkg.packages?.name || 'Paquete') : 'Ninguno'),
+    ];
+    document.getElementById('sf-wiz-resumen').innerHTML = rows.join('');
+    const link = document.getElementById('sf-wiz-preview-link');
+    if(link && _storefrontData) link.href = STOREFRONT_PUBLIC_BASE + _storefrontData.slug;
   }
 });
 
