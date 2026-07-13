@@ -22014,9 +22014,9 @@ async function saveEditPago(btn){
   const cliente = document.getElementById('ep-cliente').value.trim();
   const monto   = parseFloat(document.getElementById('ep-monto').value);
   const fecha   = document.getElementById('ep-fecha').value;
-  if(!cliente){ alert('El nombre del cliente es obligatorio.'); return; }
-  if(!monto||monto<=0){ alert('Ingresa un monto válido.'); return; }
-  if(!fecha){ alert('La fecha de pago es obligatoria.'); return; }
+  if(!cliente){ toast('El nombre del cliente es obligatorio.','⚠️'); return; }
+  if(!monto||monto<=0){ toast('Ingresa un monto válido.','⚠️'); return; }
+  if(!fecha){ toast('La fecha de pago es obligatoria.','⚠️'); return; }
   const epPlan = document.getElementById('ep-plan').value;
   const epEsPaquete = epPlan.includes('Paquete');
   const epClasesTot = epEsPaquete ? (parseInt(document.getElementById('ep-clases-totales')?.value)||null) : null;
@@ -22033,6 +22033,19 @@ async function saveEditPago(btn){
     clases_totales: epClasesTot,
     clases_usadas:  epEsPaquete ? epClasesUsd : 0,
   };
+  // Confirmar si el cambio toca dinero (monto) o acceso (vencimiento) — evita ediciones accidentales.
+  const _orig = (pagos||[]).find(x=>String(x.id)===String(id));
+  if(_orig){
+    const _montoChg = Number(_orig.monto) !== Number(monto);
+    const _venceChg = (_orig.vence||'') !== (_epVence||'');
+    if(_montoChg || _venceChg){
+      const _chgs = [];
+      if(_montoChg) _chgs.push(`monto $${Number(_orig.monto||0).toLocaleString('es-MX')} → $${Number(monto).toLocaleString('es-MX')}`);
+      if(_venceChg) _chgs.push(`vencimiento ${_orig.vence||'—'} → ${_epVence}`);
+      const _ok = await confirmDialog(`Vas a cambiar en el pago de ${cliente}: ${_chgs.join(' y ')}.`, { title:'Confirmar cambios del pago', icon:'💳', danger:false, confirmText:'Sí, guardar cambios', cancelText:'Cancelar' });
+      if(!_ok) return;
+    }
+  }
   setBtnLoading(btn, true);
   const { error } = await window.supabaseClient.from('pagos').update(updates).eq('id', id);
   if(error){ setBtnLoading(btn,false); console.error('Error actualizando pago:', error); if(_handleSessionError(error))return; toast('No se pudo actualizar el pago ✕'+(error&&error.message?': '+error.message:''), '✕'); return; }
