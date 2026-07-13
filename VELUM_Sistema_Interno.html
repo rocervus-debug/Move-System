@@ -7937,6 +7937,15 @@ body::before{
     </div>
     <!-- Contenido ocupa todo el espacio disponible -->
     <div style="flex:1;min-height:0;padding:16px 24px;display:flex;flex-direction:column;gap:10px;">
+      <!-- Barra de plantillas: convierte la hoja en blanco en "rellena los bloques". -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+        <span style="font-size:11px;color:var(--text3);margin-right:2px;">Insertar bloque:</span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_progInsertBlock('warm')">Calentamiento</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_progInsertBlock('main')">Bloque principal</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_progInsertBlock('finisher')">Finalizador</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_progInsertBlock('cool')">Enfriamiento</button>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="_progFillTemplate()">Plantilla completa</button>
+      </div>
       <textarea id="prog-contenido"
         placeholder="WARM UP (10 min):&#10;[Activación dinámica, movilidad]&#10;&#10;BLOQUE PRINCIPAL:&#10;[Ejercicio principal: series × reps @ carga / %1RM]&#10;[Accesorio 1: series × reps]&#10;[Accesorio 2: series × reps]&#10;&#10;FINALIZADOR (10-12 min):&#10;[AMRAP / EMOM / For Time — descripción]&#10;&#10;COOL DOWN:&#10;[Estiramientos estáticos]"
         style="flex:1;min-height:0;font-family:var(--fm);font-size:13px;line-height:1.7;resize:none;width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);outline:none;"></textarea>
@@ -19947,6 +19956,35 @@ async function generateSemanaActual(){
   } finally {
     if(btn){ btn.disabled=false; btn.textContent='Generar Semana'; }
   }
+}
+
+// Bloques de plantilla para el editor de programa — resuelven la "hoja en blanco".
+const _PROG_BLOCKS = {
+  warm:     'CALENTAMIENTO (10 min)\n- Movilidad articular\n- Activacion dinamica\n\n',
+  main:     'BLOQUE PRINCIPAL\n- Ejercicio principal: 4 x 8 @ carga\n- Accesorio 1: 3 x 12\n- Accesorio 2: 3 x 12\n\n',
+  finisher: 'FINALIZADOR (10-12 min)\n- AMRAP / EMOM / For Time (describe aqui)\n\n',
+  cool:     'ENFRIAMIENTO\n- Estiramientos estaticos\n- Respiracion\n\n',
+};
+function _progInsertBlock(k){
+  const ta = document.getElementById('prog-contenido');
+  if(!ta) return;
+  const txt = _PROG_BLOCKS[k] || '';
+  const start = (ta.selectionStart!=null) ? ta.selectionStart : ta.value.length;
+  const end   = (ta.selectionEnd!=null)   ? ta.selectionEnd   : ta.value.length;
+  ta.value = ta.value.slice(0,start) + txt + ta.value.slice(end);
+  const pos = start + txt.length;
+  ta.focus(); try{ ta.setSelectionRange(pos,pos); }catch(e){}
+}
+async function _progFillTemplate(){
+  const ta = document.getElementById('prog-contenido');
+  if(!ta) return;
+  const full = _PROG_BLOCKS.warm + _PROG_BLOCKS.main + _PROG_BLOCKS.finisher + _PROG_BLOCKS.cool;
+  if(ta.value.trim()){
+    const ok = await confirmDialog('Ya hay contenido en el editor. ¿Reemplazarlo con la plantilla completa?', { title:'Usar plantilla completa', icon:'📄', danger:true, confirmText:'Sí, reemplazar', cancelText:'Cancelar' });
+    if(!ok) return;
+  }
+  ta.value = full;
+  ta.focus();
 }
 
 function openProgramaModal(fechaStr){
