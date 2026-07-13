@@ -2,204 +2,172 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>VELUM — Check-in</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
-  --bg:#080d1a;
   --accent:#00D4FF;
-  --ok:#10b981;
-  --danger:#ef4444;
-  --warn:#f59e0b;
-  --text:#e8edf5;
-  --text2:#94a3b8;
-  --font:'Inter',system-ui,sans-serif;
+  --accent-ink:#003544;
+  --ok:#34C759;
+  --warn:#FF9F0A;
+  --danger:#FF3B30;
+  --bg:#F5F5F7;
+  --surface:#FFFFFF;
+  --ink:#1D1D1F;
+  --ink2:#6E6E73;
+  --ink3:#AEAEB2;
+  --hair:rgba(0,0,0,.07);
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 12px 40px rgba(0,0,0,.08);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.06);
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Inter',system-ui,sans-serif;
 }
+html,body{height:100%;}
 body{
-  font-family:var(--font);
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  background-image:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(0,212,255,.15),transparent);
+  font-family:var(--font);background:var(--bg);color:var(--ink);
+  min-height:100dvh;display:flex;flex-direction:column;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow:hidden;
+  background-image:
+    radial-gradient(1200px 700px at 50% -20%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
 }
-.container{width:100%;max-width:460px;text-align:center;}
-.logo{display:flex;align-items:center;justify-content:center;gap:8px;font-size:22px;font-weight:900;letter-spacing:4px;color:#fff;margin-bottom:4px;}
-.logo-sub{font-size:11px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px;}
+/* Brand bar */
+.brandbar{
+  position:fixed;top:0;left:0;right:0;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:clamp(16px,3.5vh,30px) clamp(20px,4vw,46px);
+  padding-top:calc(clamp(16px,3.5vh,30px) + env(safe-area-inset-top,0px));
+}
+.brand{display:flex;align-items:center;gap:11px;min-width:0;}
+.brand-mark{
+  width:38px;height:38px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ink);color:#fff;font-weight:800;font-size:17px;letter-spacing:-.5px;
+  box-shadow:var(--shadow-sm);overflow:hidden;
+}
+.brand-mark img{width:100%;height:100%;object-fit:cover;}
+.brand-name{font-size:17px;font-weight:700;letter-spacing:.2px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.brand-right{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums;}
+.brand-right .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 18%,transparent);}
+
+/* Stage */
+.stage{flex:1;display:flex;align-items:center;justify-content:center;padding:clamp(80px,12vh,120px) 20px 40px;width:100%;}
+.screen{width:100%;max-width:460px;animation:rise .5s cubic-bezier(.16,1,.3,1);}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.99);}to{opacity:1;transform:none;}}
+
+/* ── Idle / kiosco ── */
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.3px;color:var(--ink3);text-align:center;margin-bottom:8px;}
+.headline{font-size:clamp(30px,5vw,42px);font-weight:800;letter-spacing:-1.2px;line-height:1.04;text-align:center;color:var(--ink);margin-bottom:6px;}
+.subhead{font-size:15px;color:var(--ink2);text-align:center;margin-bottom:clamp(22px,4vh,34px);line-height:1.45;}
+.num-display{
+  height:74px;border-radius:20px;background:var(--surface);box-shadow:var(--shadow-sm);
+  display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:16px;position:relative;
+  font-size:34px;font-weight:700;letter-spacing:6px;color:var(--ink);font-variant-numeric:tabular-nums;
+  transition:box-shadow .2s;
+}
+.num-display.filled{box-shadow:0 0 0 2px var(--accent),var(--shadow-sm);}
+.num-display .ph{color:var(--ink3);font-weight:600;letter-spacing:.2px;font-size:17px;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(9px,1.6vh,13px);margin-bottom:16px;}
+.key{
+  height:clamp(58px,8.2vh,72px);border-radius:18px;border:none;
+  background:var(--surface);box-shadow:var(--shadow-sm);
+  font-family:var(--font);font-size:26px;font-weight:600;color:var(--ink);
+  cursor:pointer;transition:transform .09s ease,background .12s;user-select:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.key:active{transform:scale(.95);background:#fff;}
+.key.tint:active{background:color-mix(in srgb,var(--accent) 12%,#fff);}
+.key svg{width:26px;height:26px;stroke:var(--ink2);}
+.key-0{grid-column:2;}
+.cta{
+  width:100%;height:60px;border-radius:18px;border:none;cursor:pointer;
+  background:var(--accent);color:var(--accent-ink);
+  font-family:var(--font);font-size:17px;font-weight:700;letter-spacing:.2px;
+  box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 34%,transparent);
+  transition:transform .12s,filter .2s,opacity .2s;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+}
+.cta:active{transform:scale(.985);filter:brightness(.97);}
+.cta:disabled{opacity:.55;box-shadow:none;cursor:default;}
+.cta svg{width:20px;height:20px;stroke:currentColor;}
+.qr-hint{margin-top:22px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:13px;color:var(--ink3);}
+.qr-hint svg{width:18px;height:18px;stroke:var(--ink3);flex-shrink:0;}
+.inline-err{
+  font-size:13.5px;font-weight:600;color:var(--danger);text-align:center;
+  margin:-4px 0 14px;height:0;overflow:hidden;opacity:0;transition:opacity .2s,height .2s;
+}
+.inline-err.show{height:auto;opacity:1;margin:2px 0 14px;}
+
+/* ── Result ── */
+.result{text-align:center;}
+.medallion{
+  width:clamp(104px,17vh,132px);height:clamp(104px,17vh,132px);border-radius:50%;
+  margin:0 auto 26px;display:flex;align-items:center;justify-content:center;position:relative;
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.medallion::after{
+  content:'';position:absolute;inset:-9px;border-radius:50%;
+  border:2px solid var(--rc,var(--ok));opacity:.22;
+}
+.medallion svg{width:52%;height:52%;stroke:var(--rc,var(--ok));stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.medallion .draw{stroke-dasharray:48;stroke-dashoffset:0;animation:draw .6s .1s cubic-bezier(.65,0,.35,1);}
+@keyframes draw{from{stroke-dashoffset:48;}to{stroke-dashoffset:0;}}
+.medallion.pop{animation:pop .5s cubic-bezier(.16,1.3,.4,1);}
+@keyframes pop{from{transform:scale(.86);opacity:0;}to{transform:none;opacity:1;}}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border-radius:50px;
+  font-size:13px;font-weight:700;letter-spacing:.2px;margin-bottom:16px;
+  background:color-mix(in srgb,var(--rc,var(--ok)) 12%,transparent);color:var(--rc,var(--ok));
+}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+.member{font-size:clamp(30px,5.2vw,44px);font-weight:800;letter-spacing:-1.3px;line-height:1.02;color:var(--ink);margin-bottom:6px;}
+.member-sub{font-size:15px;color:var(--ink2);margin-bottom:clamp(20px,3.6vh,30px);}
+.facts{background:var(--surface);border-radius:20px;box-shadow:var(--shadow-sm);padding:6px 18px;text-align:left;}
+.fact{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--hair);}
+.fact:last-child{border-bottom:none;}
+.fact-k{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink2);}
+.fact-k svg{width:18px;height:18px;stroke:var(--ink3);flex-shrink:0;}
+.fact-v{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;}
+.visits{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px;justify-content:center;}
+.visit{display:inline-flex;align-items:center;gap:6px;background:var(--surface);box-shadow:var(--shadow-sm);border-radius:10px;padding:7px 11px;font-size:12px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;}
+.visit svg{width:13px;height:13px;stroke:var(--ink3);}
+.resetbar{margin-top:26px;height:4px;border-radius:99px;background:var(--hair);overflow:hidden;}
+.resetfill{height:100%;width:100%;border-radius:99px;background:var(--rc,var(--accent));}
+.reset-note{font-size:12px;color:var(--ink3);margin-top:10px;}
 
 /* ── Loading ── */
-.loading{display:flex;flex-direction:column;align-items:center;gap:16px;}
-.spinner{width:48px;height:48px;border:3px solid rgba(0,212,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+.loading{display:flex;flex-direction:column;align-items:center;gap:18px;}
+.spinner{width:44px;height:44px;border-radius:50%;border:3px solid var(--hair);border-top-color:var(--accent);animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+.loading .lt{font-size:15px;color:var(--ink2);font-weight:500;}
 
-/* ── Card base ── */
-.card{
-  background:rgba(15,23,42,.97);
-  border:1px solid rgba(255,255,255,.07);
-  border-radius:20px;
-  padding:32px 28px;
-  position:relative;
-  overflow:hidden;
+/* Dark auto (por si el gym usa pantalla oscura) — opcional, respeta preferencia del dispositivo */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000;--surface:#1C1C1E;--ink:#F5F5F7;--ink2:#98989F;--ink3:#636366;
+    --hair:rgba(255,255,255,.09);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 44px rgba(0,0,0,.5);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+  }
+  .key:active{background:#2C2C2E;}
 }
-.card::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 80% 40% at 50% 0%,var(--glow,rgba(0,212,255,.08)),transparent);
-  pointer-events:none;
-}
-.status-ring{
-  width:100px;height:100px;border-radius:50%;
-  border:4px solid var(--ring-color,var(--accent));
-  display:flex;align-items:center;justify-content:center;
-  margin:0 auto 20px;font-size:42px;
-  background:var(--ring-bg,rgba(0,212,255,.08));
-  box-shadow:0 0 40px var(--ring-glow,rgba(0,212,255,.2));
-  animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%,100%{box-shadow:0 0 30px var(--ring-glow,rgba(0,212,255,.2));}
-  50%{box-shadow:0 0 60px var(--ring-glow,rgba(0,212,255,.35));}
-}
-.status-badge{
-  display:inline-block;padding:5px 14px;border-radius:50px;
-  font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;
-}
-.badge-ok   {background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.25);}
-.badge-warn {background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.25);}
-.badge-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25);}
-.client-name{font-size:26px;font-weight:800;color:#fff;margin-bottom:4px;letter-spacing:.5px;}
-.client-plan{font-size:13px;color:var(--text2);margin-bottom:24px;}
-.info-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);}
-.info-row:last-child{border-bottom:none;}
-.info-label{font-size:12px;color:var(--text2);}
-.info-value{font-size:13px;font-weight:600;color:var(--text);}
-.historial{margin-top:20px;text-align:left;}
-.historial-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
-.visit-chip{
-  display:inline-flex;align-items:center;gap:6px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-  border-radius:8px;padding:6px 10px;font-size:11px;color:var(--text2);margin:3px;
-}
-
-/* ── Error card ── */
-.error-card{
-  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
-  border-radius:20px;padding:32px 28px;text-align:center;
-}
-.error-icon{font-size:48px;margin-bottom:16px;}
-.error-title{font-size:18px;font-weight:700;color:#f87171;margin-bottom:8px;}
-.error-msg{font-size:13px;color:rgba(248,113,113,.7);line-height:1.6;}
-
-/* ── Kiosco ── */
-.kiosco-card{
-  background:rgba(15,23,42,.97);border:1px solid rgba(255,255,255,.07);
-  border-radius:20px;padding:32px 28px;position:relative;overflow:hidden;
-}
-.kiosco-card::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(0,212,255,.07),transparent);
-  pointer-events:none;
-}
-.kiosco-icon{font-size:52px;margin-bottom:16px;line-height:1;}
-.kiosco-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
-.kiosco-sub{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.5;}
-.kiosco-divider{
-  display:flex;align-items:center;gap:12px;margin:24px 0;
-}
-.kiosco-divider::before,.kiosco-divider::after{
-  content:'';flex:1;height:1px;background:rgba(255,255,255,.07);
-}
-.kiosco-divider span{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
-
-/* Number input */
-.num-input-wrap{position:relative;margin-bottom:12px;}
-.num-input{
-  width:100%;background:rgba(255,255,255,.05);
-  border:1.5px solid rgba(255,255,255,.1);border-radius:14px;
-  padding:16px 50px 16px 18px;
-  font-size:22px;font-weight:700;color:#fff;
-  font-family:var(--font);outline:none;text-align:center;letter-spacing:2px;
-  transition:border-color .2s,background .2s,box-shadow .2s;
-  -moz-appearance:textfield;
-}
-.num-input::-webkit-outer-spin-button,
-.num-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-.num-input:focus{
-  border-color:var(--accent);background:rgba(255,255,255,.07);
-  box-shadow:0 0 0 3px rgba(0,212,255,.15);
-}
-.num-input::placeholder{color:rgba(255,255,255,.18);font-size:15px;letter-spacing:0;}
-.num-clear{
-  position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;
-  padding:4px;opacity:.5;transition:opacity .15s;
-}
-.num-clear:hover{opacity:1;}
-
-/* Numpad */
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
-.np-btn{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
-  border-radius:12px;padding:16px 8px;font-size:20px;font-weight:700;
-  color:#fff;cursor:pointer;font-family:var(--font);
-  transition:background .12s,transform .08s;user-select:none;
-}
-.np-btn:active{background:rgba(0,212,255,.15);transform:scale(.94);}
-.np-btn.np-0{grid-column:2;}
-.np-btn.np-del{
-  background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);
-  color:#f87171;font-size:16px;
-}
-.np-btn.np-del:active{background:rgba(239,68,68,.15);}
-
-/* Go button */
-.checkin-btn{
-  width:100%;padding:17px;background:var(--accent);color:#001828;border:none;
-  border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;
-  font-family:var(--font);letter-spacing:.3px;
-  box-shadow:0 6px 24px rgba(0,212,255,.4),0 1px 0 rgba(255,255,255,.15) inset;
-  transition:all .2s;position:relative;
-}
-.checkin-btn:hover{background:#22b886;transform:translateY(-1px);}
-.checkin-btn:active{transform:scale(.98);}
-.checkin-btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}
-
-/* Error inline */
-.num-err{
-  font-size:12px;color:#f87171;margin:-4px 0 12px;
-  background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);
-  border-radius:8px;padding:8px 12px;display:none;
-}
-
-/* Reset bar */
-.reset-bar{
-  margin-top:20px;height:3px;background:rgba(255,255,255,.06);
-  border-radius:99px;overflow:hidden;
-}
-.reset-fill{
-  height:100%;background:var(--accent);border-radius:99px;
-  width:100%;transition:width linear;
-}
-.reset-hint{font-size:11px;color:rgba(255,255,255,.2);margin-top:8px;}
 </style>
 <script src="/cookie-banner.js" defer></script>
 </head>
 <body>
-<div class="container">
-  <div class="logo">
-    <svg width="14" height="14" viewBox="0 0 100 100">
-  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
-</svg>
-    VELUM
+  <div class="brandbar">
+    <div class="brand">
+      <div class="brand-mark" id="brand-mark">V</div>
+      <div class="brand-name" id="brand-name">VELUM</div>
+    </div>
+    <div class="brand-right"><span class="dot"></span><span id="clock">--:--</span></div>
   </div>
-  <div class="logo-sub" id="gym-sub">Check-in</div>
-  <div id="root">
-    <div class="loading"><div class="spinner"></div><div style="font-size:13px;color:var(--text2);">Verificando…</div></div>
+
+  <div class="stage">
+    <div class="screen" id="root">
+      <div class="loading"><div class="spinner"></div><div class="lt">Preparando…</div></div>
+    </div>
   </div>
-</div>
 
 <script>
 const CHECKIN_URL  = 'https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move-checkin';
@@ -208,299 +176,192 @@ const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let resetTimer  = null;
 let kioscoGymId = null;
-let gymBrand    = { nombre:'VELUM', color:'#00D4FF', logo:'' }; // default
+let gymBrand    = { nombre:'VELUM', color:'#00D4FF', logo:'' };
+
+/* ── SVG icons (sin emojis) ── */
+const IC = {
+  check:'<path class="draw" d="M20 6 9 17l-5-5"/>',
+  warn:'<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  denied:'<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  box:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  qr:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01"/>',
+  del:'<path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><path d="m18 9-6 6M12 9l6 6"/>',
+  arrow:'<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>'
+};
+function svg(name, cls){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls?` class="${cls}"`:''}>${IC[name]}</svg>`; }
 
 /* ── Helpers ── */
-function fmt(dateStr){
-  if(!dateStr) return '—';
-  const d = new Date(dateStr+'T12:00:00');
-  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
-}
-function fmtTime(t){
-  if(!t) return '';
-  const s = t.toLowerCase();
-  if(s.includes('am')||s.includes('pm')) return t.toUpperCase();
-  const [h,m] = t.split(':');
-  const hr = parseInt(h);
-  return `${hr>12?hr-12:hr||12}:${m} ${hr>=12?'PM':'AM'}`;
-}
-function daysUntil(dateStr){
-  if(!dateStr) return null;
-  const d = new Date(dateStr+'T12:00:00');
-  return Math.round((d-new Date())/(1000*60*60*24));
-}
+function fmt(dateStr){ if(!dateStr) return '—'; const d=new Date(dateStr+'T12:00:00'); return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtTime(t){ if(!t) return ''; const s=t.toLowerCase(); if(s.includes('am')||s.includes('pm')) return t.toUpperCase(); const [h,m]=t.split(':'); const hr=parseInt(h); return `${hr>12?hr-12:hr||12}:${m} ${hr>=12?'PM':'AM'}`; }
+function daysUntil(dateStr){ if(!dateStr) return null; const d=new Date(dateStr+'T12:00:00'); return Math.round((d-new Date())/(1000*60*60*24)); }
+function firstName(n){ return (n||'').trim().split(/\s+/)[0]||n||''; }
+
+/* ── Reloj ambiental ── */
+function tickClock(){ const el=document.getElementById('clock'); if(el){ const d=new Date(); el.textContent=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase(); } }
+setInterval(tickClock,1000); tickClock();
 
 /* ── Gym brand loader ── */
 async function loadGymBrand(gymId){
   if(!gymId) return;
   try{
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&select=key,value`,
-      { headers:{ 'apikey':ANON_KEY, 'Authorization':'Bearer '+ANON_KEY } }
-    );
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/gym_config?gym_id=eq.${gymId}&select=key,value`,{ headers:{ 'apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY } });
     if(!res.ok) return;
-    const rows = await res.json();
-    if(!rows.length) return;
-    const cfg = {};
-    rows.forEach(r=>cfg[r.key]=r.value);
-
-    gymBrand.nombre = cfg.gym_nombre  || gymBrand.nombre;
-    gymBrand.color  = cfg.gym_color   || gymBrand.color;
+    const rows = await res.json(); if(!rows.length) return;
+    const cfg = {}; rows.forEach(r=>cfg[r.key]=r.value);
+    gymBrand.nombre = cfg.gym_nombre || gymBrand.nombre;
+    gymBrand.color  = cfg.gym_color  || gymBrand.color;
     gymBrand.logo   = cfg.gym_logo_url|| '';
-
-    // Apply brand color as CSS variable
-    const hex = gymBrand.color;
-    const r=parseInt(hex.slice(1,3),16)||29, g=parseInt(hex.slice(3,5),16)||158, b=parseInt(hex.slice(5,7),16)||117;
-    document.documentElement.style.setProperty('--accent', hex);
-    document.documentElement.style.setProperty('--ok', hex);
-
-    // Update header: show gym logo or initial instead of VELUM
-    const logoEl  = document.querySelector('.logo');
-    const subEl   = document.getElementById('gym-sub');
-    if(logoEl){
-      const initial = gymBrand.nombre[0].toUpperCase();
-      if(gymBrand.logo){
-        logoEl.innerHTML = `<img src="${gymBrand.logo}" style="height:32px;width:32px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.12);"/> <span style="letter-spacing:3px;">${gymBrand.nombre.toUpperCase()}</span>`;
-      } else {
-        logoEl.innerHTML = `<span style="width:28px;height:28px;border-radius:8px;background:${hex};display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;">${initial}</span> <span style="letter-spacing:3px;">${gymBrand.nombre.toUpperCase()}</span>`;
-      }
-    }
-    if(subEl) subEl.textContent = 'Kiosco · Check-in';
+    document.documentElement.style.setProperty('--accent', gymBrand.color);
+    // Ink de contraste para texto sobre el botón de acento
+    document.documentElement.style.setProperty('--accent-ink', _contrastInk(gymBrand.color));
+    const mark = document.getElementById('brand-mark');
+    const nameEl = document.getElementById('brand-name');
+    if(mark){ mark.innerHTML = gymBrand.logo ? `<img src="${gymBrand.logo}" alt=""/>` : (gymBrand.nombre[0]||'V').toUpperCase(); if(gymBrand.logo) mark.style.background='transparent'; }
+    if(nameEl) nameEl.textContent = gymBrand.nombre;
     document.title = `${gymBrand.nombre} — Check-in`;
-  }catch(e){
-    // Silently fail — kiosk still works with default VELUM branding
-  }
+  }catch(e){}
+}
+function _contrastInk(hex){
+  try{ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    const L=(0.299*r+0.587*g+0.114*b)/255; return L>0.62 ? '#08313d' : '#ffffff'; }catch(e){ return '#003544'; }
 }
 
 /* ── QR check-in (token mode) ── */
 async function doCheckin(token){
-  try{
-    const res = await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`);
-    const data = await res.json();
-    if(!res.ok || !data.ok){ renderError(data.error||'QR inválido'); return; }
-    renderSuccess(data);
-  } catch(e){
-    renderError('Error de conexión. Intenta de nuevo.');
-  }
+  try{ const res=await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`); const data=await res.json();
+    if(!res.ok||!data.ok){ renderError(data.error||'QR inválido'); return; } renderSuccess(data);
+  }catch(e){ renderError('Error de conexión. Intenta de nuevo.'); }
 }
 
 /* ── Number check-in (kiosco mode) ── */
 async function doCheckinByNumero(numero){
+  numero=(numero||'').trim();
   if(!numero){ showNumErr('Ingresa tu número de cliente.'); return; }
-  const btn = document.getElementById('checkin-btn');
-  if(btn){ btn.disabled=true; btn.textContent='Verificando…'; }
+  const btn=document.getElementById('cta'); if(btn){ btn.disabled=true; btn.innerHTML='Verificando…'; }
   hideNumErr();
   try{
-    // 1. Look up qr_token (and portal_token as fallback) by numero_cliente
-    //    Uses SECURITY DEFINER RPC instead of direct SELECT — anon ya no tiene SELECT en clientes.
-    if(!kioscoGymId){
-      showNumErr('Kiosco sin gym_id configurado.');
-      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
-      return;
-    }
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/kiosco_lookup`,
-      {
-        method:'POST',
-        headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'},
-        body: JSON.stringify({ p_gym_id: Number(kioscoGymId), p_numero: Number(numero) })
-      }
-    );
-    if(!res.ok){
-      showNumErr('Error al consultar. Intenta de nuevo.');
-      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
-      return;
-    }
-    const rows = await res.json();
-    if(!Array.isArray(rows) || !rows.length){
-      showNumErr('Número de cliente no encontrado.');
-      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
-      return;
-    }
-    // Usa qr_token (token de check-in). portal_token ya NO se expone por seguridad.
-    const token = rows[0].qr_token;
-    if(!token){
-      showNumErr('Este cliente no tiene token de acceso configurado.');
-      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
-      return;
-    }
-    // 2. Call check-in edge function with token
-    const cRes = await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`);
-    const data  = await cRes.json();
-    if(!cRes.ok || !data.ok){
-      // Show inline error in kiosk, not the full error card
-      const msg = data.error || 'No se pudo registrar el acceso.';
-      if(msg.includes('no encontrado') || msg.includes('no válido')){
-        showNumErr('Cliente no encontrado. Verifica el número.');
-      } else {
-        showNumErr(msg);
-      }
-      if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
-      return;
-    }
-    renderSuccess(data, true); // true = kiosco mode → auto-reset
-  } catch(e){
-    showNumErr('Error de conexión. Intenta de nuevo.');
-    if(btn){ btn.disabled=false; btn.textContent='Registrar entrada'; }
-  }
+    if(!kioscoGymId){ showNumErr('Kiosco sin gym configurado.'); resetCta(); return; }
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/rpc/kiosco_lookup`,{ method:'POST', headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'}, body:JSON.stringify({ p_gym_id:Number(kioscoGymId), p_numero:Number(numero) }) });
+    if(!res.ok){ showNumErr('Error al consultar. Intenta de nuevo.'); resetCta(); return; }
+    const rows=await res.json();
+    if(!Array.isArray(rows)||!rows.length){ showNumErr('Número no encontrado. Verifícalo.'); resetCta(); return; }
+    const token=rows[0].qr_token;
+    if(!token){ showNumErr('Este cliente no tiene acceso configurado.'); resetCta(); return; }
+    const cRes=await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`); const data=await cRes.json();
+    if(!cRes.ok||!data.ok){ const msg=data.error||'No se pudo registrar el acceso.'; showNumErr((msg.includes('no encontrado')||msg.includes('no válido'))?'Cliente no encontrado. Verifica el número.':msg); resetCta(); return; }
+    renderSuccess(data, true);
+  }catch(e){ showNumErr('Error de conexión. Intenta de nuevo.'); resetCta(); }
 }
+function resetCta(){ const btn=document.getElementById('cta'); if(btn){ btn.disabled=false; btn.innerHTML=`Registrar entrada ${svg('arrow')}`; } }
+function showNumErr(msg){ const e=document.getElementById('num-err'); if(e){ e.textContent=msg; e.classList.add('show'); } }
+function hideNumErr(){ const e=document.getElementById('num-err'); if(e) e.classList.remove('show'); }
 
-function showNumErr(msg){ const e=document.getElementById('num-err'); if(e){e.textContent=msg;e.style.display='block';} }
-function hideNumErr(){ const e=document.getElementById('num-err'); if(e) e.style.display='none'; }
-
-/* ── Render: success result ── */
+/* ── Render: success ── */
 function renderSuccess(data, autoReset=false){
   const { cliente, membership_ok, already_checked_in, check_in_time, historial, paquete } = data;
   const dias = daysUntil(cliente.vence);
-  const root = document.getElementById('root');
+  let icon, rc, pill, hello;
+  if(membership_ok && already_checked_in){ icon='check'; rc='var(--ok)'; pill='Ya registrado hoy'; hello=`Hola de nuevo, ${firstName(cliente.nombre)}`; }
+  else if(membership_ok){ icon='check'; rc='var(--ok)'; pill='Acceso permitido'; hello=`¡Adentro, ${firstName(cliente.nombre)}!`; }
+  else if(dias!==null && dias>=0 && dias<=3){ icon='warn'; rc='var(--warn)'; pill=`Vence en ${dias} día${dias!==1?'s':''}`; hello=`${firstName(cliente.nombre)}, renueva pronto`; }
+  else { icon='denied'; rc='var(--danger)'; pill='Membresía vencida'; hello='Pasa a recepción'; }
 
-  let statusIcon, badgeClass, badgeText, glow, ringColor, ringBg;
-  if(membership_ok && already_checked_in){
-    statusIcon='✅'; badgeClass='badge-ok'; badgeText='Ya registrado hoy';
-    glow='rgba(16,185,129,.25)'; ringColor='var(--ok)'; ringBg='rgba(16,185,129,.08)';
-  } else if(membership_ok){
-    statusIcon='🏋️'; badgeClass='badge-ok'; badgeText='Acceso permitido';
-    glow='rgba(16,185,129,.25)'; ringColor='var(--ok)'; ringBg='rgba(16,185,129,.08)';
-  } else if(dias !== null && dias >= 0 && dias <= 3){
-    statusIcon='⚠️'; badgeClass='badge-warn'; badgeText=`Vence en ${dias} día${dias!==1?'s':''}`;
-    glow='rgba(245,158,11,.25)'; ringColor='var(--warn)'; ringBg='rgba(245,158,11,.08)';
-  } else {
-    statusIcon='🚫'; badgeClass='badge-danger'; badgeText='Membresía vencida';
-    glow='rgba(239,68,68,.25)'; ringColor='var(--danger)'; ringBg='rgba(239,68,68,.08)';
-  }
+  const facts = [];
+  facts.push(`<div class="fact"><span class="fact-k">${svg('cal')} Vencimiento</span><span class="fact-v" style="color:${dias!==null&&dias<0?'var(--danger)':dias!==null&&dias<=7?'var(--warn)':'var(--ink)'};">${fmt(cliente.vence)}</span></div>`);
+  if(check_in_time) facts.push(`<div class="fact"><span class="fact-k">${svg('clock')} Entrada de hoy</span><span class="fact-v" style="color:var(--ok);">${fmtTime(check_in_time)}</span></div>`);
+  if(paquete) facts.push(`<div class="fact"><span class="fact-k">${svg('box')} Clases restantes</span><span class="fact-v" style="color:${paquete.agotado?'var(--danger)':paquete.clases_restantes<=Math.ceil(paquete.clases_totales*.2)?'var(--warn)':'var(--ink)'};">${paquete.agotado?'Agotado':paquete.clases_restantes+' de '+paquete.clases_totales}</span></div>`);
 
-  const histHTML = historial&&historial.length ? `
-    <div class="historial">
-      <div class="historial-title">Últimas visitas</div>
-      ${historial.map(v=>`<span class="visit-chip">📅 ${fmt(v.fecha)} <span style="font-size:10px;">${fmtTime(v.hora||'')}</span></span>`).join('')}
-    </div>` : '';
+  const visits = (historial&&historial.length) ? `<div class="visits">${historial.slice(0,4).map(v=>`<span class="visit">${svg('cal')} ${fmt(v.fecha)}</span>`).join('')}</div>` : '';
+  const reset = autoReset ? `<div class="resetbar"><div class="resetfill" id="reset-fill"></div></div><div class="reset-note">Listo para el siguiente</div>` : '';
 
-  const resetHTML = autoReset ? `
-    <div class="reset-bar"><div class="reset-fill" id="reset-fill"></div></div>
-    <div class="reset-hint">Volviendo al inicio…</div>` : '';
-
-  root.innerHTML = `
-    <div class="card" style="--glow:${glow};">
-      <div class="status-ring" style="--ring-color:${ringColor};--ring-bg:${ringBg};--ring-glow:${glow};">${statusIcon}</div>
-      <span class="status-badge ${badgeClass}">${badgeText}</span>
-      <div class="client-name">${cliente.nombre}</div>
-      <div class="client-plan">${cliente.membresia||'Membresía'}</div>
-      <div>
-        <div class="info-row">
-          <span class="info-label">Vencimiento</span>
-          <span class="info-value" style="color:${dias!==null&&dias<0?'var(--danger)':dias!==null&&dias<=7?'var(--warn)':'var(--text)'};">${fmt(cliente.vence)}</span>
-        </div>
-        ${check_in_time ? `<div class="info-row">
-          <span class="info-label">Check-in hoy</span>
-          <span class="info-value" style="color:var(--ok);">⏱ ${fmtTime(check_in_time)}</span>
-        </div>` : ''}
-        <div class="info-row">
-          <span class="info-label">Total visitas</span>
-          <span class="info-value">${historial&&historial.length > 0 ? historial.length + (historial.length === 5 ? '+' : '') : '0'}</span>
-        </div>
-        ${paquete ? `<div class="info-row">
-          <span class="info-label">📦 Clases restantes</span>
-          <span class="info-value" style="color:${paquete.agotado?'var(--danger)':paquete.clases_restantes<=Math.ceil(paquete.clases_totales*.2)?'var(--warn)':'var(--ok)'};">
-            ${paquete.agotado ? '0 — agotado' : paquete.clases_restantes+' de '+paquete.clases_totales}
-          </span>
-        </div>` : ''}
-      </div>
-      ${histHTML}
-      ${resetHTML}
+  document.getElementById('root').innerHTML = `
+    <div class="result" style="--rc:${rc};">
+      <div class="medallion pop">${svg(icon)}</div>
+      <span class="pill"><span class="dot"></span>${pill}</span>
+      <div class="member">${hello}</div>
+      <div class="member-sub">${cliente.membresia||cliente.nombre||'Membresía'}</div>
+      <div class="facts">${facts.join('')}</div>
+      ${visits}
+      ${reset}
     </div>`;
 
-  if(autoReset){
-    const DELAY = 5000;
-    const fill = document.getElementById('reset-fill');
+  if(autoReset){ const DELAY=5000; const fill=document.getElementById('reset-fill');
     if(fill){ fill.style.transition=`width ${DELAY}ms linear`; requestAnimationFrame(()=>{ fill.style.width='0%'; }); }
-    if(resetTimer) clearTimeout(resetTimer);
-    resetTimer = setTimeout(renderKiosco, DELAY);
+    if(resetTimer) clearTimeout(resetTimer); resetTimer=setTimeout(renderKiosco,DELAY);
   }
 }
 
 /* ── Render: error ── */
 function renderError(msg, autoReset=false){
   document.getElementById('root').innerHTML = `
-    <div class="error-card">
-      <div class="error-icon">❌</div>
-      <div class="error-title">Acceso no válido</div>
-      <div class="error-msg">${msg}</div>
-      ${autoReset ? `<div class="reset-bar" style="margin-top:20px;"><div class="reset-fill" id="reset-fill"></div></div><div class="reset-hint" style="font-size:11px;color:rgba(255,255,255,.2);margin-top:8px;">Volviendo al inicio…</div>` : ''}
+    <div class="result" style="--rc:var(--danger);">
+      <div class="medallion pop">${svg('denied')}</div>
+      <span class="pill"><span class="dot"></span>Acceso no válido</span>
+      <div class="member" style="font-size:clamp(24px,4vw,32px);">Escanea tu QR personal</div>
+      <div class="member-sub">${msg}</div>
+      ${autoReset?`<div class="resetbar"><div class="resetfill" id="reset-fill"></div></div><div class="reset-note">Volviendo…</div>`:''}
     </div>`;
-  if(autoReset){
-    const DELAY = 4000;
-    const fill = document.getElementById('reset-fill');
+  if(autoReset){ const DELAY=4000; const fill=document.getElementById('reset-fill');
     if(fill){ fill.style.transition=`width ${DELAY}ms linear`; requestAnimationFrame(()=>{ fill.style.width='0%'; }); }
-    if(resetTimer) clearTimeout(resetTimer);
-    resetTimer = setTimeout(renderKiosco, DELAY);
+    if(resetTimer) clearTimeout(resetTimer); resetTimer=setTimeout(renderKiosco,DELAY);
   }
 }
 
-/* ── Render: kiosco waiting screen with numpad ── */
+/* ── Render: idle / kiosco ── */
 function renderKiosco(){
   if(resetTimer){ clearTimeout(resetTimer); resetTimer=null; }
   document.getElementById('root').innerHTML = `
-    <div class="kiosco-card">
-      <div class="kiosco-icon">🏋️</div>
-      <div class="kiosco-title">Bienvenido a ${gymBrand.nombre}</div>
-      <div class="kiosco-sub">Ingresa tu número de cliente para registrar tu entrada</div>
+    <div class="eyebrow">Bienvenido a ${gymBrand.nombre}</div>
+    <div class="headline">Registra tu entrada</div>
+    <div class="subhead">Ingresa tu número de cliente</div>
 
-      <div class="num-input-wrap">
-        <input id="num-input" class="num-input" type="number" inputmode="numeric"
-               placeholder="Ej: 42" autocomplete="off" autocorrect="off"
-               onkeydown="if(event.key==='Enter') doCheckinByNumero(this.value.trim())"
-               oninput="hideNumErr()"/>
-        <button class="num-clear" onclick="document.getElementById('num-input').value='';hideNumErr();">✕</button>
-      </div>
-      <div id="num-err" class="num-err"></div>
+    <div class="num-display" id="num-display"><span class="ph" id="num-ph">— — —</span></div>
+    <div id="num-err" class="inline-err"></div>
 
-      <div class="numpad">
-        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="np-btn" onclick="npPress('${n}')">${n}</button>`).join('')}
-        <button class="np-btn np-del" onclick="npDel()">⌫</button>
-        <button class="np-btn np-0" onclick="npPress('0')">0</button>
-      </div>
+    <div class="numpad">
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="key" onclick="npPress('${n}')">${n}</button>`).join('')}
+      <button class="key tint" onclick="npDel()" aria-label="Borrar">${svg('del')}</button>
+      <button class="key key-0" onclick="npPress('0')">0</button>
+    </div>
 
-      <button id="checkin-btn" class="checkin-btn"
-              onclick="doCheckinByNumero(document.getElementById('num-input').value.trim())">
-        Registrar entrada
-      </button>
+    <button id="cta" class="cta" onclick="doCheckinByNumero(numValue())">Registrar entrada ${svg('arrow')}</button>
 
-      <div class="kiosco-divider"><span>o escanea tu QR</span></div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5;">
-        Abre el portal VELUM → toca <strong style="color:#fff;">Check-in</strong><br>y muestra tu código QR al staff.
-      </div>
-    </div>`;
-  // Focus input on desktop
-  setTimeout(()=>{ const i=document.getElementById('num-input'); if(i) i.focus(); },100);
+    <div class="qr-hint">${svg('qr')} O abre tu portal VELUM y muestra tu código QR</div>`;
 }
 
-function npPress(digit){
-  const inp = document.getElementById('num-input');
-  if(!inp) return;
-  if(inp.value.length >= 6) return; // max 6 digits
-  inp.value += digit;
-  hideNumErr();
+/* ── Numpad state ── */
+let _num='';
+function numValue(){ return _num; }
+function _renderNum(){
+  const disp=document.getElementById('num-display'); const ph=document.getElementById('num-ph');
+  if(!disp) return;
+  if(!_num){ disp.classList.remove('filled'); disp.innerHTML='<span class="ph" id="num-ph">— — —</span>'; }
+  else{ disp.classList.add('filled'); disp.textContent=_num; }
 }
-function npDel(){
-  const inp = document.getElementById('num-input');
-  if(!inp) return;
-  inp.value = inp.value.slice(0,-1);
-}
+function npPress(d){ if(_num.length>=6) return; _num+=d; hideNumErr(); _renderNum(); }
+function npDel(){ _num=_num.slice(0,-1); _renderNum(); }
+// Reinicia el buffer cada vez que se muestra el kiosco
+const _origKiosco=renderKiosco;
+renderKiosco=function(){ _num=''; _origKiosco(); };
+// Soporte de teclado físico (monitor de PC con teclado numérico)
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('num-display')) return;
+  if(/^[0-9]$/.test(e.key)) npPress(e.key);
+  else if(e.key==='Backspace') npDel();
+  else if(e.key==='Enter') doCheckinByNumero(_num);
+});
 
 /* ── Init ── */
-const params  = new URLSearchParams(window.location.search);
-const token   = params.get('token');
-const kiosco  = params.get('kiosko') || params.get('kiosco');
-kioscoGymId   = params.get('gym_id') || params.get('gym') || null;
+const params = new URLSearchParams(window.location.search);
+const token  = params.get('token');
+const kiosco = params.get('kiosko') || params.get('kiosco');
+kioscoGymId  = params.get('gym_id') || params.get('gym') || null;
 
-if(token){
-  doCheckin(token);
-} else if(kiosco){
-  // Load gym brand first (if gym_id given), then show kiosk
-  loadGymBrand(kioscoGymId).then(renderKiosco);
-} else {
-  renderError('QR inválido. Escanea tu código QR personal.');
-}
+if(token){ doCheckin(token); }
+else if(kiosco){ loadGymBrand(kioscoGymId).then(renderKiosco); }
+else { renderError('QR inválido. Escanea tu código QR personal.'); }
 </script>
 </body>
 </html>
