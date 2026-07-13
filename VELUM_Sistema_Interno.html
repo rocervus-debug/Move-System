@@ -23712,6 +23712,12 @@ async function saveEditClase(btn){
     coach_nombre: coachObj ? coachObj.nombre : '',
     cupo, notas: notas||''
   };
+  // Confirmar si cambia día u hora: mueve la clase en el horario para TODAS las semanas futuras.
+  const _origCl = (horario||[]).find(x=>String(x.id)===String(id));
+  if(_origCl && ((_origCl.dia||'')!==(dia||'') || (_origCl.hora||'')!==(hora||''))){
+    const _ok = await confirmDialog(`Vas a mover "${tipo}" a ${dia} ${hora}. El cambio aplica al horario de todas las semanas futuras, no solo esta.`, { title:'Mover esta clase', icon:'🗓', danger:false, confirmText:'Sí, mover', cancelText:'Cancelar' });
+    if(!_ok) return;
+  }
   setBtnLoading(btn, true);
   const { error } = await window.supabaseClient.from('horarios').update(payload).eq('id', id);
   if(error){ setBtnLoading(btn,false); if(_handleSessionError(error))return; toast('Error al guardar ✕'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
