@@ -13220,8 +13220,9 @@ function clearCoachForm(){
 }
 
 async function deleteCoach(id){
-  const _cNom = (coaches||[]).find(x=>String(x.id)===String(id))?.nombre || 'este coach';
-  if(!await confirmDialog(`Se eliminará a ${_cNom}. Sus clases del horario quedarán sin coach asignado hasta que las reasignes.`, {title:'Eliminar coach', icon:'🏋'})) return;
+  const _coachW = _term('coach').toLowerCase();
+  const _cNom = (coaches||[]).find(x=>String(x.id)===String(id))?.nombre || `este ${_coachW}`;
+  if(!await confirmDialog(`Se eliminará a ${_cNom}. Sus ${_term('sesiones').toLowerCase()} del horario quedarán sin ${_coachW} asignado hasta que las reasignes.`, {title:`Eliminar ${_coachW}`, icon:'🏋'})) return;
   const { error } = await window.supabaseClient.from('coaches').delete().eq('id', id);
   if(error){ console.error('Error eliminando coach:', error); if(_handleSessionError(error))return; alert('No se pudo eliminar.'+'\n\n'+(error.message||error.details||'')); return; }
   await loadCoachesFromSupabase(); // reload from source of truth instead of mutating global array
@@ -15070,7 +15071,7 @@ async function savePortalConfig(){
   // Confirmar cambio de contraseña: TODOS los socios usan la misma clave para entrar al portal.
   if(password && password !== (gymConfig.portal_password||'')){
     const _okP = await confirmDialog(
-      `Vas a cambiar la contraseña del portal. Todos tus socios usan esta misma clave para entrar, así que tendrás que compartirles la nueva.`,
+      `Vas a cambiar la contraseña del portal. Todos tus ${_term('clientes').toLowerCase()} usan esta misma clave para entrar, así que tendrás que compartirles la nueva.`,
       { title:'Cambiar contraseña del portal', icon:'👤', danger:true, confirmText:'Sí, cambiarla', cancelText:'Cancelar' }
     );
     if(!_okP) return;
@@ -15497,7 +15498,7 @@ async function _domiSubAction(subId, action, okMsg){
   }catch(e){ console.error('domi sub '+action, e); toast('Error: '+(e.message||e),'✕'); }
 }
 async function domiCancelarSub(subId){
-  const ok = await confirmDialog('El atleta conserva su acceso hasta el final del periodo que ya pagó y no se le volverá a cobrar.',
+  const ok = await confirmDialog(`${_term('cliente')} conserva su acceso hasta el final del periodo que ya pagó y no se le volverá a cobrar.`,
     { title:'¿Cancelar la domiciliación?', danger:true, confirmText:'Sí, cancelar', icon:'' });
   if(!ok) return;
   await _domiSubAction(subId, 'cancel', 'Se cancelará al final del periodo');
@@ -15881,7 +15882,7 @@ async function generarLinkDomiciliacion(){
 }
 
 async function cancelMemberSub(subId){
-  const _okC = await confirmDialog('El socio conserva su acceso hasta el final del periodo que ya pagó y no se le volverá a cobrar.',
+  const _okC = await confirmDialog(`${_term('cliente')} conserva su acceso hasta el final del periodo que ya pagó y no se le volverá a cobrar.`,
     { title:'¿Cancelar la domiciliación?', danger:true, confirmText:'Sí, cancelar', cancelText:'Cancelar', icon:'💳' });
   if(!_okC) return;
   try{
@@ -21989,9 +21990,10 @@ async function descontarClase(id, btn){
   const restantes = (p.clases_totales||0) - (p.clases_usadas||0);
   if(restantes <= 0){ toast('Este paquete ya no tiene clases disponibles.','⚠️'); return; }
   // Confirmar: resta algo que el cliente pagó — evita el tap accidental en la lista de pagos.
+  const _uSes = _term('sesion').toLowerCase();
   const _okDesc = await confirmDialog(
-    `Vas a descontar 1 clase del paquete de ${p.cliente}. Quedarán ${restantes-1} de ${p.clases_totales||0}. Hazlo cuando el cliente asista.`,
-    { title:'Descontar una clase', icon:'📋', danger:false, confirmText:'Sí, descontar 1', cancelText:'Cancelar' }
+    `Vas a descontar 1 ${_uSes} del paquete de ${p.cliente}. Quedarán ${restantes-1} de ${p.clases_totales||0}. Hazlo cuando ${_term('cliente').toLowerCase()==='atleta'?'el atleta':'el cliente'} asista.`,
+    { title:`Descontar una ${_uSes}`, icon:'📋', danger:false, confirmText:'Sí, descontar 1', cancelText:'Cancelar' }
   );
   if(!_okDesc) return;
   if(btn) btn.disabled = true;
@@ -23119,7 +23121,7 @@ async function saveHorarioOverride(){
   // Cerrar el gym ese día afecta a los atletas: confirmar antes.
   if(cerrado){
     const _dispFecha = fechaStr ? new Date(fechaStr+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}) : 'ese día';
-    const _okC = await confirmDialog(`Vas a marcar CERRADO el ${_dispFecha}${hora?` a las ${hora}`:''}. Los atletas verán que no hay clase ese día.`, { title:'Cerrar este día', icon:'⚠', danger:true, confirmText:'Sí, cerrar', cancelText:'Cancelar' });
+    const _okC = await confirmDialog(`Vas a marcar CERRADO el ${_dispFecha}${hora?` a las ${hora}`:''}. Los ${_term('clientes').toLowerCase()} verán que no hay ${_term('sesion').toLowerCase()} ese día.`, { title:'Cerrar este día', icon:'⚠', danger:true, confirmText:'Sí, cerrar', cancelText:'Cancelar' });
     if(!_okC) return;
   }
 
@@ -23263,9 +23265,10 @@ async function cancelClaseOccurrence(claseId, fechaStr, hora){
   // afecta a los atletas anotados de ESA fecha. Tras cancelar, el modal de aviso permite notificarlos.
   const claseNombre  = (horario||[]).find(h=>String(h.id)===String(claseId))?.tipo || 'esta clase';
   const displayFecha = new Date(fechaStr+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const _ses = _term('sesion').toLowerCase();
   const ok = await confirmDialog(
-    `Se cancelará "${claseNombre}" del ${displayFecha} a las ${formatHoraDisplay(hora)}. Solo esa fecha; el resto del horario no cambia. Los atletas anotados verán la cancelación y podrás avisarles enseguida.`,
-    { title:'Cancelar esta clase', icon:'🗓', confirmText:'Sí, cancelar clase', cancelText:'No, dejarla' }
+    `Se cancelará "${claseNombre}" del ${displayFecha} a las ${formatHoraDisplay(hora)}. Solo esa fecha; el resto del horario no cambia. Los ${_term('clientes').toLowerCase()} anotados verán la cancelación y podrás avisarles enseguida.`,
+    { title:`Cancelar esta ${_ses}`, icon:'🗓', confirmText:`Sí, cancelar ${_ses}`, cancelText:'No, dejarla' }
   );
   if(!ok) return;
 
@@ -23400,7 +23403,7 @@ async function removeCobertura(){
   if(!existing){ closeModal('cobertura'); return; }
 
   // Quitar cobertura reasigna a quién se le paga esa clase: confirmar.
-  const _okCob = await confirmDialog('Vas a quitar la cobertura de esta clase. Volverá al coach original del horario y cambia a quién se le paga.', { title:'Quitar cobertura', icon:'🏋', danger:true, confirmText:'Sí, quitar', cancelText:'Cancelar' });
+  const _okCob = await confirmDialog(`Vas a quitar la cobertura de esta ${_term('sesion').toLowerCase()}. Volverá al ${_term('coach').toLowerCase()} original del horario y cambia a quién se le paga.`, { title:'Quitar cobertura', icon:'🏋', danger:true, confirmText:'Sí, quitar', cancelText:'Cancelar' });
   if(!_okCob) return;
 
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', existing.id);
@@ -23756,7 +23759,7 @@ async function saveEditClase(btn){
   // Confirmar si cambia día u hora: mueve la clase en el horario para TODAS las semanas futuras.
   const _origCl = (horario||[]).find(x=>String(x.id)===String(id));
   if(_origCl && ((_origCl.dia||'')!==(dia||'') || (_origCl.hora||'')!==(hora||''))){
-    const _ok = await confirmDialog(`Vas a mover "${tipo}" a ${dia} ${hora}. El cambio aplica al horario de todas las semanas futuras, no solo esta.`, { title:'Mover esta clase', icon:'🗓', danger:false, confirmText:'Sí, mover', cancelText:'Cancelar' });
+    const _ok = await confirmDialog(`Vas a mover "${tipo}" a ${dia} ${hora}. El cambio aplica al horario de todas las semanas futuras, no solo esta.`, { title:`Mover esta ${_term('sesion').toLowerCase()}`, icon:'🗓', danger:false, confirmText:'Sí, mover', cancelText:'Cancelar' });
     if(!_ok) return;
   }
   setBtnLoading(btn, true);
@@ -23770,7 +23773,7 @@ async function saveEditClase(btn){
 }
 
 async function deleteClase(id){
-  if(!await confirmDialog('Se quitará esta clase de la plantilla para TODAS las fechas futuras (no solo un día). Para cerrar solo una fecha, usa "cancelar" en el calendario.', {title:'Eliminar clase del horario', icon:'🗓'})) return;
+  if(!await confirmDialog(`Se quitará esta ${_term('sesion').toLowerCase()} de la plantilla para TODAS las fechas futuras (no solo un día). Para cerrar solo una fecha, usa "cancelar" en el calendario.`, {title:`Eliminar ${_term('sesion').toLowerCase()} del horario`, icon:'🗓'})) return;
   const { error } = await window.supabaseClient.from('horarios').delete().eq('id', id);
   if(error){ if(_handleSessionError(error))return; toast('Error al eliminar ✕'+(error&&error.message?': '+error.message:''), '✕'); return; }
   await loadHorarioFromSupabase();
