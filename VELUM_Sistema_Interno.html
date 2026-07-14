@@ -3078,6 +3078,9 @@ select option{background:#08121E;color:var(--text);}
   margin:22px 0 6px 4px;
 }
 .cfg-group-label:first-child{ margin-top:4px; }
+/* Ajustes avanzados de IA plegables (Configurar IA): oculta el marcador nativo y rota el chevron */
+.cfg-adv-details > summary::-webkit-details-marker{ display:none; }
+.cfg-adv-details[open] > summary > svg{ transform:rotate(90deg); }
 .cfg-menu-group{
   background:var(--card);border:1px solid var(--border);
   border-radius:14px;overflow:hidden;
@@ -19691,39 +19694,48 @@ function renderDisciplinaCatalog(){
               </label>`).join('')}
             </div>
           </div>
-          <!-- Objetivo + Bloque/Nivel -->
-          <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <div class="field" style="flex:1;margin:0;">
-              <label style="font-size:10px;">Bloque actual</label>
-              <select id="cfg-bloque-${disc.id}" style="font-size:12px;padding:4px 6px;">
-                ${['Base','Acumulación','Hipertrofia','Fuerza','Intensificación','Pico','Deload'].map(b=>`<option ${bloqueVal===b?'selected':''}>${b}</option>`).join('')}
-              </select>
-            </div>
-            <div class="field" style="flex:1;margin:0;">
-              <label style="font-size:10px;">Nivel</label>
-              <select id="cfg-nivel-${disc.id}" style="font-size:12px;padding:4px 6px;">
-                ${['Principiante','Intermedio','Avanzado','Mixto'].map(n=>`<option ${nivelVal===n?'selected':''}>${n}</option>`).join('')}
-              </select>
-            </div>
-          </div>
-          <div class="field" style="margin:0 0 6px;">
-            <label style="font-size:10px;">Objetivo del programa</label>
-            <textarea id="cfg-obj-${disc.id}" rows="2" style="font-size:12px;" placeholder="Ej: Desarrollar fuerza funcional, progresión lineal de cargas...">${objVal}</textarea>
-          </div>
-          <div class="field" style="margin:0 0 6px;">
-            <label style="font-size:10px;">Notas para el asistente IA</label>
-            <textarea id="cfg-notas-${disc.id}" rows="1" style="font-size:12px;" placeholder="Ej: Sesiones de máx 60 min. Evitar movimientos olímpicos...">${notasVal}</textarea>
-          </div>
-          <div class="field" style="margin:0;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <label style="font-size:10px;margin:0;">Programa de ejemplo (la IA copiará este formato)</label>
-              <div style="display:flex;gap:4px;">
-                <button type="button" onclick="usarPlantillaEjemplo('${disc.id}')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;line-height:1.4;">Usar como plantilla</button>
-                <button type="button" onclick="document.getElementById('cfg-plantilla-${disc.id}').value=''" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;line-height:1.4;">Restablecer</button>
+          <!-- Ajustes avanzados de IA: plegados por default para que la config base sea
+               solo "elige disciplina + días". El dueño no técnico no ve el schema crudo. -->
+          <details class="cfg-adv-details" style="margin-top:2px;">
+            <summary style="list-style:none;cursor:pointer;font-size:11px;font-weight:700;color:var(--accent);display:inline-flex;align-items:center;gap:5px;user-select:none;padding:4px 0;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .18s;"><polyline points="9 6 15 12 9 18"/></svg>
+              Ajustes avanzados para la IA <span style="font-weight:400;color:var(--text3);">(opcional)</span>
+            </summary>
+            <div style="padding-top:8px;">
+              <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <div class="field" style="flex:1;margin:0;">
+                  <label style="font-size:10px;">Bloque actual</label>
+                  <select id="cfg-bloque-${disc.id}" style="font-size:12px;padding:4px 6px;">
+                    ${['Base','Acumulación','Hipertrofia','Fuerza','Intensificación','Pico','Deload'].map(b=>`<option ${bloqueVal===b?'selected':''}>${b}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="field" style="flex:1;margin:0;">
+                  <label style="font-size:10px;">Nivel</label>
+                  <select id="cfg-nivel-${disc.id}" style="font-size:12px;padding:4px 6px;">
+                    ${['Principiante','Intermedio','Avanzado','Mixto'].map(n=>`<option ${nivelVal===n?'selected':''}>${n}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin:0 0 6px;">
+                <label style="font-size:10px;">Objetivo del programa</label>
+                <textarea id="cfg-obj-${disc.id}" rows="2" style="font-size:12px;" placeholder="Ej: Desarrollar fuerza funcional, progresión lineal de cargas...">${objVal}</textarea>
+              </div>
+              <div class="field" style="margin:0 0 6px;">
+                <label style="font-size:10px;">Notas para el asistente IA</label>
+                <textarea id="cfg-notas-${disc.id}" rows="1" style="font-size:12px;" placeholder="Ej: Sesiones de máx 60 min. Evitar movimientos olímpicos...">${notasVal}</textarea>
+              </div>
+              <div class="field" style="margin:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                  <label style="font-size:10px;margin:0;">Programa de ejemplo (la IA copiará este formato)</label>
+                  <div style="display:flex;gap:4px;">
+                    <button type="button" onclick="usarPlantillaEjemplo('${disc.id}')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;line-height:1.4;">Usar como plantilla</button>
+                    <button type="button" onclick="document.getElementById('cfg-plantilla-${disc.id}').value=''" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;line-height:1.4;">Restablecer</button>
+                  </div>
+                </div>
+                <textarea id="cfg-plantilla-${disc.id}" rows="6" style="font-size:11px;font-family:var(--fm);letter-spacing:.01em;line-height:1.5;" placeholder="Pega aquí un ejemplo de sesión bien formateada. La IA detectará la estructura (secciones, orden) y la replicará en cada día generado...">${plantillaVal}</textarea>
               </div>
             </div>
-            <textarea id="cfg-plantilla-${disc.id}" rows="6" style="font-size:11px;font-family:var(--fm);letter-spacing:.01em;line-height:1.5;" placeholder="Pega aquí un ejemplo de sesión bien formateada. La IA detectará la estructura (secciones, emojis, orden) y la replicará en cada día generado...">${plantillaVal}</textarea>
-          </div>
+          </details>
         </div>
       </div>`;
     });
