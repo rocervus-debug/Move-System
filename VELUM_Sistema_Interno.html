@@ -3078,6 +3078,13 @@ select option{background:#08121E;color:var(--text);}
   margin:22px 0 6px 4px;
 }
 .cfg-group-label:first-child{ margin-top:4px; }
+/* Picker de equipo de coaches por clase (multi-coach) */
+.coach-team-box{ display:flex;flex-wrap:wrap;gap:6px;max-height:132px;overflow-y:auto;padding:2px; }
+.coach-team-box .coach-chip{ display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:6px 12px;cursor:pointer;transition:all .14s;user-select:none; }
+.coach-team-box .coach-chip:hover{ border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
+.coach-team-box .coach-chip input{ display:none; }
+.coach-team-box .coach-chip.on{ background:color-mix(in srgb, var(--accent) 13%, transparent);border-color:var(--accent);color:var(--accent); }
+.coach-team-box .ct-empty{ font-size:12px;color:var(--text3);padding:6px 2px; }
 /* Ajustes avanzados de IA plegables (Configurar IA): oculta el marcador nativo y rota el chevron */
 .cfg-adv-details > summary::-webkit-details-marker{ display:none; }
 .cfg-adv-details[open] > summary > svg{ transform:rotate(90deg); }
@@ -7745,13 +7752,15 @@ body::before{
         </select>
         <div id="cl-tipo-grid" class="wzd-opt-grid"></div>
       </div>
-      <div class="field-grid">
-        <div class="field"><label>Coach <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
-          <select id="cl-coach"><option value="">Sin asignar</option></select>
-        </div>
-        <div class="field"><label>Cupo máximo</label><input id="cl-cupo" type="number" min="1" value="15"/></div>
+      <div class="field">
+        <label>Coach(es) <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional · marca a todo el equipo que da la clase)</span></label>
+        <!-- Picker de equipo: 1 a N coaches. En la nómina cada uno cobra la clase completa a su tarifa. -->
+        <div id="cl-coaches-box" class="coach-team-box"></div>
       </div>
-      <div class="field"><label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="cl-notas" type="text" placeholder="Opcional…"/></div>
+      <div class="field-grid">
+        <div class="field"><label>Cupo máximo</label><input id="cl-cupo" type="number" min="1" value="15"/></div>
+        <div class="field"><label>Notas <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label><input id="cl-notas" type="text" placeholder="Opcional…"/></div>
+      </div>
       </div><!-- /paso 2 -->
 
       <!-- PASO 3 — Confirma -->
@@ -7822,8 +7831,8 @@ body::before{
             <option value="Otro">Otro</option>
           </select>
         </div>
-        <div class="field"><label>Coach</label>
-          <select id="ecl-coach"><option value="">Sin asignar</option></select>
+        <div class="field" style="grid-column:1/-1;"><label>Coach(es) <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;">(equipo que da la clase)</span></label>
+          <div id="ecl-coaches-box" class="coach-team-box"></div>
         </div>
       </div>
       <div class="field-grid">
@@ -21576,13 +21585,14 @@ wizRegister('clase', {
     if(n===2){ _renderClaseTipoCards(); return; }
     if(n!==3) return;
     const dias=[...document.querySelectorAll('.cl-dia-chk:checked')].map(c=>c.value);
-    const cidSel=document.getElementById('cl-coach');
-    const coachTxt=cidSel && cidSel.value ? (cidSel.options[cidSel.selectedIndex]?.text||'') : 'Sin asignar';
+    const _teamIds=[...document.querySelectorAll('#cl-coaches-box input:checked')].map(i=>i.value);
+    const _teamNoms=_teamIds.map(id=>{ const co=coaches.find(c=>String(c.id)===String(id)); return co?co.nombre:''; }).filter(Boolean);
+    const coachTxt=_teamNoms.length ? _teamNoms.join(', ') : 'Sin asignar';
     const rows=[
       _wzdRow('Días', dias.length ? dias.join(', ') : '—'),
       _wzdRow('Hora', document.getElementById('cl-hora').value||'—'),
       _wzdRow('Tipo', document.getElementById('cl-tipo').value||'—'),
-      _wzdRow('Coach', esc(coachTxt)),
+      _wzdRow(_teamNoms.length>1?'Equipo':'Coach', esc(coachTxt)),
       _wzdRow('Cupo', (document.getElementById('cl-cupo').value||'15')+' personas'),
     ];
     const notas=(document.getElementById('cl-notas').value||'').trim();
@@ -23991,6 +24001,13 @@ function renderQuincenaKPI(){
   const daysInMonth = new Date(hvYear, hvMonth+1, 0).getDate();
   const q1End = 15, q2End = daysInMonth;
 
+  // Cuenta las clases-hora de un coach: cuenta si es el principal O está en el equipo
+  // (coaches_extra). Multi-coach: cada integrante cobra la clase completa a su tarifa.
+  function coachEnClase(c, coachId, coachNom){
+    if(String(c.coach_id)===String(coachId) || c.coach_nombre===coachNom) return true;
+    const extra = Array.isArray(c.coaches_extra) ? c.coaches_extra : [];
+    return extra.some(x=> x && (String(x.id)===String(coachId) || x.nombre===coachNom));
+  }
   function countForCoach(coachId, coachNom, from, to){
     let cnt = 0;
     for(let d=from; d<=to; d++){
@@ -24000,7 +24017,7 @@ function renderQuincenaKPI(){
       allHoras.forEach(hora=>{
         const c = getEffectiveClase(fStr, hora);
         if(!c||c.cerrado) return;
-        if(String(c.coach_id)===String(coachId)||c.coach_nombre===coachNom) cnt++;
+        if(coachEnClase(c, coachId, coachNom)) cnt++;
       });
     }
     return cnt;
@@ -24141,8 +24158,10 @@ function renderHorario(){
       clases.forEach(c=>{
         const tc = tipoClass(c.tipo);
         const cn = resolveCoachName(c.coach_id, c.coach_nombre);
+        const _nExtra = Array.isArray(c.coaches_extra) ? c.coaches_extra.length : 0;
+        const _coachLbl = cn ? (esc(cn) + (_nExtra ? ` <span style="opacity:.6;font-weight:600;">+${_nExtra}</span>` : '')) : '<em style="opacity:.4;font-size:10px">Sin coach</em>';
         html += `<div class="hor-clase ${tc}" onclick="openEditClase('${c.id}')">
-          <div class="hor-clase-coach">${cn ? esc(cn) : '<em style="opacity:.4;font-size:10px">Sin coach</em>'}</div>
+          <div class="hor-clase-coach">${_coachLbl}</div>
           <div class="hor-clase-name">${esc(c.tipo)}</div>
           ${c.cupo ? `<div style="font-size:9px;opacity:.55;margin-top:2px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Cupo: ${c.cupo}</div>` : ''}
           <div class="hor-clase-actions">
@@ -24184,11 +24203,34 @@ function toggleDayPreset(preset){
   });
 }
 
+// ── Picker de equipo de coaches (multi-coach por clase) ──
+// Pinta un chip por coach; selectedIds = ids ya marcados. Se usa en alta y edición.
+function renderCoachTeamPicker(boxId, selectedIds){
+  const box = document.getElementById(boxId);
+  if(!box) return;
+  const sel = new Set((selectedIds||[]).map(String));
+  if(!coaches.length){ box.innerHTML = '<span class="ct-empty">Aún no tienes coaches. Agrégalos en la vista Coaches.</span>'; return; }
+  box.innerHTML = coaches.map(c=>{
+    const on = sel.has(String(c.id));
+    return `<label class="coach-chip${on?' on':''}" onclick="this.classList.toggle('on', this.querySelector('input').checked)">
+      <input type="checkbox" value="${c.id}" ${on?'checked':''} onchange="this.closest('.coach-chip').classList.toggle('on', this.checked)">
+      ${esc(c.nombre)}</label>`;
+  }).join('');
+}
+// Lee el equipo elegido → { cid, cnombre (principal), extra:[{id,nombre}] }.
+// El principal es el primero marcado (ancla de compatibilidad); los demás van a coaches_extra.
+function readCoachTeam(boxId){
+  const box = document.getElementById(boxId);
+  const ids = box ? [...box.querySelectorAll('input:checked')].map(i=>i.value) : [];
+  const objs = ids.map(id=>coaches.find(c=>String(c.id)===String(id))).filter(Boolean);
+  const principal = objs[0] || null;
+  const extra = objs.slice(1).map(c=>({ id:c.id, nombre:c.nombre }));
+  return { cid: principal? String(principal.id):'', cnombre: principal? principal.nombre:'', extra };
+}
+
 function openAddClaseModal(dia, hora){
-  // populate coach dropdown
-  const sel = document.getElementById('cl-coach');
-  sel.innerHTML = '<option value="">Sin asignar</option>';
-  coaches.forEach(c=>{ sel.innerHTML += `<option value="${c.id}">${esc(c.nombre)}</option>`; });
+  // picker de equipo de coaches (multi)
+  renderCoachTeamPicker('cl-coaches-box', []);
 
   // Reset all day checkboxes
   toggleDayPreset('none');
@@ -24218,7 +24260,7 @@ async function saveClase(){
   const dias  = [...document.querySelectorAll('.cl-dia-chk:checked')].map(c=>c.value);
   const hora  = document.getElementById('cl-hora').value;
   const tipo  = document.getElementById('cl-tipo').value;
-  const cid   = document.getElementById('cl-coach').value;
+  const team  = readCoachTeam('cl-coaches-box');   // { cid, cnombre, extra:[...] }
   const cupo  = parseInt(document.getElementById('cl-cupo').value)||15;
   const notas = document.getElementById('cl-notas').value.trim();
 
@@ -24229,14 +24271,14 @@ async function saveClase(){
     return;
   }
 
-  const coachObj = coaches.find(c=>String(c.id)===String(cid));
   // Build one payload per day; fecha='' marks it as base template (not a specific date override)
-  // coach_id/coach_nombre son text NOT NULL en la BD → usar '' cuando no hay coach asignado
+  // coach_id/coach_nombre son text NOT NULL → principal (o '' sin equipo); coaches_extra = el resto
   const payloads = dias.map(dia=>withGymId({
     dia, hora, tipo,
     fecha:        '',             // empty string = base template (avoids PK null violation)
-    coach_id:     cid||'',
-    coach_nombre: coachObj ? coachObj.nombre : '',
+    coach_id:     team.cid||'',
+    coach_nombre: team.cnombre||'',
+    coaches_extra: team.extra.length ? team.extra : null,
     cupo, notas: notas||''
   }));
 
@@ -24264,16 +24306,16 @@ function openEditClase(id){
   document.getElementById('ecl-cupo').value  = c.cupo;
   document.getElementById('ecl-notas').value = c.notas;
 
-  // populate coach dropdown
-  const sel = document.getElementById('ecl-coach');
-  sel.innerHTML = '<option value="">Sin asignar</option>';
-  coaches.forEach(co=>{ sel.innerHTML += `<option value="${co.id}">${esc(co.nombre)}</option>`; });
+  // Picker de equipo: principal (coach_id) + coaches_extra ya guardados
+  const _sel = [];
+  if(c.coach_id) _sel.push(c.coach_id);
+  (Array.isArray(c.coaches_extra)?c.coaches_extra:[]).forEach(x=>{ if(x && x.id!=null) _sel.push(x.id); });
+  renderCoachTeamPicker('ecl-coaches-box', _sel);
 
   // set selects
   for(let o of document.getElementById('ecl-dia').options)  { o.selected = (o.value===c.dia);  }
   for(let o of document.getElementById('ecl-hora').options) { o.selected = (o.value===c.hora); }
   for(let o of document.getElementById('ecl-tipo').options) { o.selected = (o.value===c.tipo); }
-  for(let o of sel.options){ o.selected = (o.value===c.coach_id); }
 
   openModal('edit-clase');
 }
@@ -24284,16 +24326,16 @@ async function saveEditClase(btn){
   const dia   = document.getElementById('ecl-dia').value;
   const hora  = document.getElementById('ecl-hora').value;
   const tipo  = document.getElementById('ecl-tipo').value;
-  const cid   = document.getElementById('ecl-coach').value;
+  const team  = readCoachTeam('ecl-coaches-box');
   const cupo  = parseInt(document.getElementById('ecl-cupo').value)||15;
   const notas = document.getElementById('ecl-notas').value.trim();
-  const coachObj = coaches.find(c=>String(c.id)===String(cid));
-  // coach_id/coach_nombre son text NOT NULL → '' cuando no hay coach
+  // coach_id/coach_nombre son text NOT NULL → principal; el resto va a coaches_extra
   const payload = {
     dia, hora, tipo,
     fecha:        '',   // keep as base template
-    coach_id:     cid||'',
-    coach_nombre: coachObj ? coachObj.nombre : '',
+    coach_id:     team.cid||'',
+    coach_nombre: team.cnombre||'',
+    coaches_extra: team.extra.length ? team.extra : null,
     cupo, notas: notas||''
   };
   // Confirmar si cambia día u hora: mueve la clase en el horario para TODAS las semanas futuras.
