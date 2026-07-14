@@ -6939,6 +6939,13 @@ async function crearReserva(horarioId, fecha, tipo, hora){
   const key = horarioId+'_'+fecha;
   const btn = document.querySelector(`#cls-card-${key} .cls-btn, #cls-card-${key} .cls-reserve-btn`);
 
+  // ── Guard 0: membresía vigente ── (el banner ya lo avisaba pero la reserva
+  // se creaba igual; un vencido podía reservar sin límite)
+  if(!portalData.cliente?.membresiaOk){
+    showToast('Tu membresía está vencida. Renueva para reservar clases.','⚠️');
+    return;
+  }
+
   // ── Guard 1: clase ya pasó ──
   const ahora = new Date();
   const hoy   = _localDate(ahora);

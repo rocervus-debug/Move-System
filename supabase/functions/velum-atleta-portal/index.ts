@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
@@ -72,9 +71,13 @@ serve(async (req) => {
     }
 
     const gym_id = cliente.gym_id;
-    const today  = new Date().toISOString().slice(0, 10);
+    // "Hoy" en hora de México — Deno corre en UTC: a partir de las 18:00 la fecha
+    // UTC ya es mañana (programa del día, semana y vigencia se corrían de día).
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
 
-    const todayDate     = new Date();
+    const todayDate     = new Date(today + 'T12:00:00');
     const dow           = todayDate.getDay();
     const mondayOffset  = dow === 0 ? -6 : 1 - dow;
     const monday        = new Date(todayDate);
@@ -103,13 +106,28 @@ serve(async (req) => {
 
     const pagosList     = pagos || [];
     const pagoReciente  = pagosList[0] || null;
-    const paqueteActivo = pagosList.find((p: any) => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales);
+
+    // Regla canónica de vigencia (fix 2026-07-14, misma que move-checkin v23):
+    //   · paquete de clases: quedan clases Y (sin vence O vence >= hoy)
+    //   · membresía por tiempo (sin clases_totales): vence >= hoy
+    // Antes, clases sin usar marcaban ACTIVO aunque la fecha ya hubiera vencido.
+    const todayD    = new Date(today + 'T12:00:00');
+    const noVencido = (p: any) => {
+      if (!p.vence) return true;
+      const d = new Date(p.vence + 'T12:00:00');
+      return !isNaN(d.getTime()) && d >= todayD;
+    };
+    const paqueteActivo = pagosList.find(
+      (p: any) => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales && noVencido(p)
+    );
+    const membresiaVigente = pagosList.some(
+      (p: any) => !p.clases_totales && p.vence && noVencido(p)
+    );
+    const membresiaOk = !!paqueteActivo || membresiaVigente;
 
     const vence         = pagoReciente?.vence || null;
     const venceDate     = vence ? new Date(vence + 'T12:00:00') : null;
-    const todayD        = new Date(today + 'T12:00:00');
     const diasRestantes = venceDate ? Math.max(0, Math.ceil((venceDate.getTime() - todayD.getTime()) / (1000 * 60 * 60 * 24))) : null;
-    const membresiaOk   = paqueteActivo ? true : (venceDate ? venceDate >= todayD : false);
 
     const { data: programasSemana } = await supabase
       .from('programas').select('tipo, contenido, notas, fecha').eq('gym_id', gym_id)

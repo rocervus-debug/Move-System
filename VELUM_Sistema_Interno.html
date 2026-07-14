@@ -14620,7 +14620,7 @@ function abrirRenovacionMasiva(){
     if(diff > 14) return; // only expired or expiring within 14 days
     const estado = diff < 0 ? 'vencido' : 'por-vencer';
     const cliRec = clientesDB.find(c=>c.nombre===nombre)||{};
-    candidatos.push({nombre, vence:ult.vence, plan:ult.plan, diff, estado, telefono:cliRec.telefono||ult.telefono||''});
+    candidatos.push({nombre, vence:ult.vence, plan:ult.plan, diff, estado, telefono:cliRec.telefono||ult.telefono||'', clases_totales:ult.clases_totales??null});
   });
 
   candidatos.sort((a,b)=>a.diff-b.diff);
@@ -14689,22 +14689,31 @@ async function ejecutarRenovacionMasiva(){
   const confirmMsg = `¿Renovar ${seleccionados.length} cliente${seleccionados.length!==1?'s':''} con el plan "${plan}" por $${monto.toLocaleString('es-MX')} cada uno?\n\nTotal: $${(seleccionados.length*monto).toLocaleString('es-MX')}`;
   if(!await confirmDialog(confirmMsg, {title:'Confirmar renovación masiva',danger:false,confirmText:'Renovar todos',icon:'🔄'})) return;
 
-  // Compute vencimiento based on plan
-  const newVence = calcVencimiento(fecha, plan);
-
   const btn = document.getElementById('rm-exec-btn');
   if(btn){ btn.disabled=true; btn.textContent='Renovando...'; }
 
-  const inserts = seleccionados.map(c=>withGymId({
-    cliente:   c.nombre,
-    monto:     monto,
-    fecha:     fecha,
-    plan:      plan,
-    metodo:    metodo,
-    vence:     newVence,
-    telefono:  (c.telefono||'').replace(/\D/g,''),
-    notas:     'Renovación masiva'
-  }));
+  // Fix 2026-07-14: antes el insert no mandaba is_legacy ni paquete/precios y SIEMPRE
+  // chocaba con los CHECKs de pagos (pago_requires_package / prices_required) — la
+  // renovación masiva nunca guardó nada. Se registra como pago manual (is_legacy) y:
+  //  · stacking: si al cliente aún le quedan días, la renovación arranca donde termina
+  //    su vigencia actual (mismo criterio que stripe-webhook) — no pierde días pagados
+  //  · conserva el tope de clases de su plan anterior (contador reiniciado en 0)
+  const inserts = seleccionados.map(c=>{
+    const base = (c.vence && c.vence > fecha) ? c.vence : fecha;
+    return withGymId({
+      cliente:   c.nombre,
+      monto:     monto,
+      fecha:     fecha,
+      plan:      plan,
+      metodo:    metodo,
+      vence:     calcVencimiento(base, plan),
+      telefono:  (c.telefono||'').replace(/\D/g,''),
+      notas:     'Renovación masiva',
+      is_legacy: true,
+      clases_totales: c.clases_totales ?? null,
+      clases_usadas:  0
+    });
+  });
 
   const { error } = await window.supabaseClient.from('pagos').insert(inserts);
   if(error){ console.error('Error renovación masiva:', error); if(_handleSessionError(error))return; toast('Error al guardar pagos.','✕'); if(btn){btn.disabled=false;btn.textContent='Renovar Seleccionados';} return; }
@@ -14719,17 +14728,27 @@ async function ejecutarRenovacionMasiva(){
 }
 
 // Helper: calculate vencimiento date from plan string + start date
+// Suma meses con tope de fin de mes: 31-ene + 1 mes = 28/29-feb (setMonth desborda
+// al 3-mar y regalaba ~3 días en cada pago de día 29/30/31).
+function _addMonthsClamped(d, n){
+  const dia = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+n);
+  const ultimoDia = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(dia, ultimoDia));
+  return d;
+}
 function calcVencimiento(fecha, plan){
   if(!fecha) return null;
   const d = new Date(fecha+'T12:00:00');
   const planL = (plan||'').toLowerCase();
   if(planL.includes('quincenal') || planL.includes('15')) d.setDate(d.getDate()+15);
-  else if(planL.includes('trimestral') || planL.includes('3 mes')) d.setMonth(d.getMonth()+3);
-  else if(planL.includes('semestral') || planL.includes('6 mes')) d.setMonth(d.getMonth()+6);
-  else if(planL.includes('anual') || planL.includes('12 mes')) d.setFullYear(d.getFullYear()+1);
+  else if(planL.includes('trimestral') || planL.includes('3 mes')) _addMonthsClamped(d,3);
+  else if(planL.includes('semestral') || planL.includes('6 mes')) _addMonthsClamped(d,6);
+  else if(planL.includes('anual') || planL.includes('12 mes')) _addMonthsClamped(d,12);
   else if(planL.includes('semanal') || planL.includes('7 d')) d.setDate(d.getDate()+7);
   else if(planL.includes('pase') || planL.includes('día') || planL.includes('dia')) d.setDate(d.getDate()+1);
-  else d.setMonth(d.getMonth()+1); // default mensual
+  else _addMonthsClamped(d,1); // default mensual
   return d.toISOString().slice(0,10);
 }
 
@@ -22471,8 +22490,10 @@ function openEditPago(id){
   document.getElementById('ep-notas').value    = p.notas||'';
   setSelectVal('ep-plan',   p.plan   || 'Mensual');
   setSelectVal('ep-metodo', p.metodo || 'Transferencia');
-  // Mostrar/ocultar campos de paquete
-  const esPaquete = (p.plan||'').includes('Paquete');
+  // Mostrar/ocultar campos de paquete — un pago ES paquete si tiene contadores,
+  // no por el nombre del plan (118/123 paquetes reales no dicen "Paquete"; el nombre
+  // como criterio borraba los contadores al editar cualquier otro campo).
+  const esPaquete = p.clases_totales != null;
   const epClasesRow = document.getElementById('ep-clases-row');
   if(epClasesRow) epClasesRow.style.display = esPaquete ? 'block' : 'none';
   if(esPaquete){
@@ -22494,9 +22515,15 @@ async function saveEditPago(btn){
   if(!monto||monto<=0){ toast('Ingresa un monto válido.','⚠️'); return; }
   if(!fecha){ toast('La fecha de pago es obligatoria.','⚠️'); return; }
   const epPlan = document.getElementById('ep-plan').value;
-  const epEsPaquete = epPlan.includes('Paquete');
+  // Paquete = el pago original tiene contadores (nunca decidir por el nombre del plan)
+  const _origPago = (pagos||[]).find(x=>String(x.id)===String(id));
+  const epEsPaquete = _origPago ? _origPago.clases_totales != null : epPlan.includes('Paquete');
   const epClasesTot = epEsPaquete ? (parseInt(document.getElementById('ep-clases-totales')?.value)||null) : null;
   const epClasesUsd = epEsPaquete ? (parseInt(document.getElementById('ep-clases-usadas')?.value)||0)   : 0;
+  if(epEsPaquete){
+    if(!epClasesTot || epClasesTot < 1){ toast('Las clases totales del paquete deben ser al menos 1.','⚠️'); return; }
+    if(epClasesUsd < 0 || epClasesUsd > epClasesTot){ toast(`Las clases usadas deben estar entre 0 y ${epClasesTot}.`,'⚠️'); return; }
+  }
   // vence es NOT NULL: si quedó vacío, fallback a fecha de pago + 30 días (nunca null).
   let _epVence = document.getElementById('ep-vence').value;
   if(!_epVence){ const _d=new Date((fecha||new Date().toISOString().slice(0,10))+'T12:00:00'); _d.setDate(_d.getDate()+30); _epVence=_d.toISOString().slice(0,10); }
@@ -24611,14 +24638,13 @@ async function enviarEmailsVencimiento(){
   const btn = document.getElementById('btn-send-emails');
   if(btn){ btn.textContent='Enviando...'; btn.disabled=true; }
   try{
+    // v17: la función exige el JWT del panel (gym sale de los claims; nombre, de la DB)
     const res = await fetch('https://savzjanpydyjtrgdkllx.supabase.co/functions/v1/move-email-reminder', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(currentUser?.jwt||'')},
       body: JSON.stringify({
         gym_id: MOVE_GYM_ID,
-        dias: 30,
-        gym_nombre: gymConfig.gym_nombre || 'Tu Gym',
-        from_email: gymConfig.gym_email || 'noreply@myvelum.app'
+        dias: 30
       })
     });
     const data = await res.json();

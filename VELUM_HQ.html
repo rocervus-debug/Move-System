@@ -266,6 +266,9 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
 .v-studios{ background:var(--v-studios); }
 .v-recovery{ background:var(--v-recovery); }
 .vlabel{ display:inline-flex; align-items:center; gap:5px; }
+/* Selector de vertical inline en la tabla de Cuentas (escribe gyms.vertical) */
+.vert-sel{ font:inherit; font-size:12px; color:var(--text); background:transparent; border:1px solid transparent; border-radius:7px; padding:2px 4px; cursor:pointer; }
+.vert-sel:hover, .vert-sel:focus{ border-color:var(--border); background:var(--card); outline:none; }
 .kcard-accion{
   margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);
   font-size:11.5px; color:var(--text2); display:flex; align-items:center; gap:6px;
@@ -2324,6 +2327,29 @@ function iconoFeed(tipo){
 // F2b — CUENTAS: tabla de gyms + detalle con números 30d y notas
 // ════════════════════════════════════════════════════════════════
 
+// Cambia gyms.vertical (define tema del gym + etiqueta/filtro en Descubre).
+// Antes NO existía ningún control que escribiera esta columna: todo gym nuevo
+// se quedaba en 'gym' para siempre y salía mal etiquetado en el directorio.
+async function cambiarVertical(gymId, sel){
+  const vertical = sel.value;
+  const gym = (GYMS||[]).find(g=>g.id===gymId);
+  const antes = gym ? (gym.vertical||'gym') : 'gym';
+  if(vertical === antes) return;
+  sel.disabled = true;
+  const { error } = await sb.from('gyms').update({ vertical }).eq('id', gymId);
+  sel.disabled = false;
+  if(error){
+    console.error('cambiarVertical', error);
+    sel.value = antes;
+    toast('No se pudo cambiar la vertical: ' + (error.message||'desconocido'), 'err');
+    return;
+  }
+  if(gym) gym.vertical = vertical;
+  const dot = sel.parentElement?.querySelector('.vdot');
+  if(dot) dot.className = 'vdot v-' + vertical;
+  toast(`${gym ? gym.nombre : 'Gym'} → ${VERTICAL_LABEL[vertical]}. Se refleja en Descubre y su tema al recargar.`);
+}
+
 async function loadCuentas(){
   const zone = document.getElementById('cuentas-zone');
   stateLoading(zone, 'Cargando cuentas…');
@@ -2343,7 +2369,9 @@ async function loadCuentas(){
       return `
         <tr onclick="openGymDetalle(${g.id})">
           <td><strong>${esc(g.nombre)}</strong></td>
-          <td><span class="vlabel"><span class="vdot v-${esc(g.vertical)}"></span>${esc(VERTICAL_LABEL[g.vertical] || g.vertical || '—')}</span></td>
+          <td onclick="event.stopPropagation()">
+            <span class="vlabel"><span class="vdot v-${esc(g.vertical || 'gym')}"></span><select class="vert-sel" onchange="cambiarVertical(${g.id}, this)" title="Define el tema del gym y su etiqueta en Descubre">${['gym','studios','recovery'].map(v=>`<option value="${v}" ${((g.vertical||'gym')===v)?'selected':''}>${VERTICAL_LABEL[v]}</option>`).join('')}</select></span>
+          </td>
           <td><span class="estado-pill ${est.cls}">${esc(est.label)}</span></td>
           <td class="td-mono">${esc(g.plan || '—')}</td>
           <td class="td-mono">${fmtFecha(String(g.created_at || '').slice(0,10))}</td>

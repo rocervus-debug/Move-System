@@ -121,3 +121,9 @@ se despliegan solos y no entran en esta lista.
   (default fuerza: ejercicio/series/reps/peso) que alimenta "Mis Marcas". Antes solo existía el
   botón de medición corporal; el registro de PR/score vivía escondido en otra pestaña. iOS+Android.
   (Los bugs de panel de Krajo — pase-de-día y teléfono con prefijo — NO requieren build: ya en git.)
+- **App: gate de membresía al reservar** (auditoría 2026-07-14, `crearReserva` en atleta.html) —
+  un atleta vencido podía reservar clases sin límite (el banner avisaba pero no bloqueaba).
+  Guard 0 agregado: vencido → toast "Renueva para reservar". Ya vive en atleta.html (la web
+  lo tiene desde el push); la app nativa lo toma en esta build vía build.js. iOS+Android.
+- **Smart App Banner iOS** (`apple-itunes-app` id6780286384 en el head) — solo afecta Safari
+  web; Capacitor lo ignora. Ya en atleta.html; entra solo con el build.
