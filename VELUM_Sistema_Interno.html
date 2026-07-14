@@ -1997,15 +1997,18 @@ select option{background:#08121E;color:var(--text);}
 .day-chip-lbl span{ padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;background:var(--card2);border:1px solid var(--border);color:var(--text3);transition:all .15s;user-select:none; }
 .day-chip-lbl:hover span{ border-color:var(--accent);color:var(--accent); }
 .day-chip-lbl.selected span{ background:color-mix(in srgb, var(--accent) 18%, transparent);border-color:var(--accent);color:var(--accent); }
-.hor-month-tbl{ width:100%;border-collapse:collapse;font-size:12px; }
-.hor-month-tbl .hor-wdate-th{ background:var(--card2);color:var(--text2);font-size:10px;font-weight:700;text-align:center;padding:6px 4px;border:1px solid var(--border);min-width:90px;line-height:1.3; }
-.hor-month-tbl .hor-wdate-th.hor-today-col{ background:color-mix(in srgb, var(--accent) 14%, transparent);color:var(--accent);border-color:color-mix(in srgb, var(--accent) 40%, transparent); }
-.hor-month-tbl .hor-time-th{ background:var(--card2);color:var(--text3);font-size:10px;font-weight:700;padding:6px 10px;border:1px solid var(--border);white-space:nowrap;min-width:72px; }
-.hor-month-tbl .hor-clase-td{ border:1px solid var(--border);padding:4px 5px;cursor:pointer;transition:filter .12s;text-align:center;vertical-align:middle;min-width:90px; }
-.hor-month-tbl .hor-clase-td:hover{ filter:brightness(1.18); }
-.hor-month-tbl .hor-clase-td.hor-filled{ padding:0 !important; }
-.hor-month-tbl .hor-clase-td.hor-filled:hover{ filter:brightness(1.22); }
-.hor-month-tbl .hor-empty-col{ background:rgba(0,0,0,.12);border:1px solid var(--border); }
+/* Calendario mensual — look moderno: celdas separadas y redondeadas (no hoja de cálculo) */
+.hor-month-tbl{ width:100%;border-collapse:separate;border-spacing:5px;font-size:12px; }
+.hor-month-tbl .hor-wdate-th{ background:transparent;color:var(--text3);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;text-align:center;padding:4px 4px 7px;border:none;min-width:90px;line-height:1.35; }
+.hor-month-tbl .hor-wdate-th.hor-today-col{ color:var(--accent); }
+.hor-month-tbl .hor-time-th{ background:transparent;color:var(--text3);font-size:10px;font-weight:800;padding:6px 10px;border:none;white-space:nowrap;min-width:64px;text-align:right;font-variant-numeric:tabular-nums; }
+.hor-month-tbl .hor-clase-td{ background:color-mix(in srgb, var(--text) 3%, transparent);border:1px solid var(--border);border-radius:11px;padding:4px 5px;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;text-align:center;vertical-align:middle;min-width:90px;overflow:hidden; }
+.hor-month-tbl .hor-clase-td:hover{ border-color:color-mix(in srgb, var(--accent) 45%, transparent);box-shadow:0 4px 14px -6px rgba(0,0,0,.4); }
+.hor-month-tbl .hor-clase-td.hor-filled{ padding:0 !important;border-color:transparent; }
+.hor-month-tbl .hor-clase-td.hor-filled:hover{ transform:translateY(-2px);box-shadow:0 8px 20px -8px rgba(0,0,0,.5); }
+.hor-month-tbl .hor-wdate-th.hor-today-col{ position:relative; }
+.hor-month-tbl .hor-clase-td.hor-today-cell{ box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
+.hor-month-tbl .hor-empty-col{ background:transparent;border:none; }
 /* Full-cell coach block */
 .hor-cell-block{ display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;padding:6px 4px;width:100%;box-sizing:border-box;position:relative;gap:2px; }
 .hor-cell-coach{ color:#fff;font-size:11px;font-weight:900;text-align:center;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px; }
@@ -2033,7 +2036,8 @@ select option{background:#08121E;color:var(--text);}
 .hor-coach-chip{ display:inline-flex;flex-direction:column;align-items:center;padding:4px 8px;border-radius:8px;border:1px solid transparent;max-width:110px;cursor:pointer; }
 .hor-chip-name{ font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;line-height:1.2; }
 .hor-chip-tipo{ font-size:9px;font-weight:500;opacity:.65;white-space:nowrap;line-height:1.2;margin-top:1px; }
-.hor-week-sep-row td{ background:color-mix(in srgb, var(--accent) 4%, transparent);border-top:2px solid color-mix(in srgb, var(--accent) 18%, transparent); }
+.hor-week-sep-row td{ background:transparent;padding-top:12px; }
+.hor-month-tbl .hor-cell-block{ border-radius:11px; }
 .hor-legend-item{
   font-size:11px;padding:3px 10px;
   border-radius:99px;font-weight:700;cursor:default;
@@ -23569,14 +23573,17 @@ function renderHorarioMensual(){
         const mm2 = String(hvMonth+1).padStart(2,'0');
         const dd2 = String(di.day).padStart(2,'0');
         const fStr = `${hvYear}-${mm2}-${dd2}`;
+        const _tc = (di.day===todayDay) ? ' hor-today-cell' : '';   // resalte de hoy por celda
         const clase = getEffectiveClase(fStr, hora);
         const isOv  = clase && clase._isOverride;
         if(!clase){
-          html += `<td class="hor-clase-td" onclick="openEditClaseCell('${fStr}','${hora}')"><span class="hor-plus-chip">＋</span></td>`;
+          html += `<td class="hor-clase-td${_tc}" onclick="openEditClaseCell('${fStr}','${hora}')"><span class="hor-plus-chip">＋</span></td>`;
         } else if(clase.cerrado || clase.tipo==='CERRADO'){
-          html += `<td class="hor-clase-td hor-cerrado-td" onclick="openEditClaseCell('${fStr}','${hora}')"><span class="hor-cerrado-chip">CERRADO</span></td>`;
+          html += `<td class="hor-clase-td hor-cerrado-td${_tc}" onclick="openEditClaseCell('${fStr}','${hora}')"><span class="hor-cerrado-chip">CERRADO</span></td>`;
         } else {
           const cn    = resolveCoachName(clase.coach_id||'', clase.coach_nombre||'');
+          const _nEx  = Array.isArray(clase.coaches_extra) ? clase.coaches_extra.length : 0;
+          const cnLabel = cn ? (esc(cn) + (_nEx ? ` <span style="opacity:.7;font-weight:700;">+${_nEx}</span>` : '')) : '';   // equipo: "Rebe +2"
           const tipo  = clase.tipo || '';
           const cIdx  = coachColorIdx(clase.coach_id||'', cn);
           const baseColor = COACH_COLORS[cIdx % COACH_COLORS.length];
@@ -23591,7 +23598,7 @@ function renderHorarioMensual(){
           const cancelInfo = isCancelada(clase.id, fStr);
           if(cancelInfo){
             // Cancelled occurrence — show greyed-out cell with restore option
-            html += `<td class="hor-clase-td hor-cancelada-td" onclick="openEditClaseCell('${fStr}','${hora}')">
+            html += `<td class="hor-clase-td hor-cancelada-td${_tc}" onclick="openEditClaseCell('${fStr}','${hora}')">
               <div class="hor-cell-block">
                 <span class="hor-cancelada-badge">✕ Cancelada</span>
                 <span class="hor-cell-coach" style="text-decoration:line-through;opacity:.55;">${cn ? esc(cn) : esc(tipo)}</span>
@@ -23601,10 +23608,10 @@ function renderHorarioMensual(){
             </td>`;
           } else {
             const cancelBtn = `<span class="hor-cancel-btn" onclick="event.stopPropagation();cancelClaseOccurrence('${clase.id}','${fStr}','${hora}')" title="Cancelar esta clase">✕ Cancelar</span>`;
-            html += `<td class="hor-clase-td hor-filled" style="background:${color};border-color:${color};" onclick="openEditClaseCell('${fStr}','${hora}')">
+            html += `<td class="hor-clase-td hor-filled${_tc}" style="background:${color};border-color:${color};" onclick="openEditClaseCell('${fStr}','${hora}')">
               <div class="hor-cell-block">
                 ${subBadge}
-                <span class="hor-cell-coach">${cn ? esc(cn) : esc(tipo)}</span>
+                <span class="hor-cell-coach">${cn ? cnLabel : esc(tipo)}</span>
                 ${cn && tipo ? `<span class="hor-cell-tipo">${esc(tipo)}</span>` : ''}
                 ${!cn ? `<span class="hor-cell-tipo" style="opacity:.5;">Sin coach</span>` : ''}
                 ${coberBtn}
