@@ -8752,7 +8752,7 @@ function initRealtimeSubscriptions(){
         table: 'asistencias',
         filter: `gym_id=eq.${MOVE_GYM_ID}`
       }, payload => {
-        const today = new Date().toISOString().slice(0,10);
+        const today = _hoyMX();
         if(payload.new?.fecha === today){
           const el = document.getElementById('checkins-hoy-count');
           if(el){
@@ -9991,7 +9991,7 @@ function exportLandingLeadsCSV(){
   const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = `VELUM_Leads_Landing_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `VELUM_Leads_Landing_${_hoyMX()}.csv`;
   a.click();
   toast(`${leadsLanding.length} leads exportados ✓`,'📥');
 }
@@ -11288,7 +11288,7 @@ function openModal(id){
     const dd = document.getElementById('p-cliente-dropdown');
     if(dd) dd.style.display = 'none';
     // Default fecha de pago = hoy, bloquear fechas futuras
-    const hoy = new Date().toISOString().slice(0,10);
+    const hoy = _hoyMX();
     const pf = document.getElementById('p-fecha');
     if(pf){ pf.value = hoy; pf.max = hoy; }
     // V2: cargar paquetes desde catálogo + reset campos del schema v2
@@ -11306,7 +11306,7 @@ function openModal(id){
     if(typeof _pagoWizGoto === 'function') _pagoWizGoto(1);
   }
   if(id==='visita'){
-    const hoy = new Date().toISOString().slice(0,10);
+    const hoy = _hoyMX();
     const vf = document.getElementById('v-fecha'); if(vf) vf.value=hoy;
     ['v-nombre','v-monto','v-telefono','v-notas'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
     const vm = document.getElementById('v-metodo'); if(vm) vm.selectedIndex=0;
@@ -12110,7 +12110,7 @@ function exportRetencionCSV(){
   const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download = `clientes_en_riesgo_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `clientes_en_riesgo_${_hoyMX()}.csv`;
   a.click();
   toast('CSV exportado', '📥');
 }
@@ -13767,6 +13767,13 @@ function esPaseDia(plan){
       || /pase|diario|day ?pass|1 clase|clase suelta|clase individual|sesi[oó]n suelta|sesion suelta/.test(p);
 }
 
+// "Hoy" en hora de México (YYYY-MM-DD). El panel corre en la laptop del gym pero
+// algunas comparaciones usaban toISOString()=UTC → después de las 6pm "hoy" saltaba
+// al día siguiente. Usar SIEMPRE _hoyMX() para el "hoy" de comparaciones/badges.
+function _hoyMX(){
+  return new Intl.DateTimeFormat('en-CA', { timeZone:'America/Mexico_City', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+}
+
 // ── Estado de membresía POR CLIENTE (no por fila de pago) ──────────────────
 // Regla canónica de acceso (misma que move-checkin v23 / velum-atleta-portal v33):
 //   · paquete (clases_totales): quedan clases Y (sin vence O vence >= hoy)
@@ -14424,7 +14431,7 @@ function openClientePanel(nombreCliente){
     </div>`;
 
   // Cargar notas de seguimiento
-  const hoyStr = new Date().toISOString().slice(0,10);
+  const hoyStr = _hoyMX();
   const notaFechaEl = document.getElementById('cpanel-nota-fecha');
   if(notaFechaEl) notaFechaEl.value = hoyStr;
   document.getElementById('cpanel-notas-list').innerHTML = `<div style="text-align:center;padding:12px;color:var(--text3);font-size:11px;">Cargando...</div>`;
@@ -14912,7 +14919,7 @@ function exportarClientesCSV(){
   const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href=url; a.download=`MOVE_Clientes_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href=url; a.download=`MOVE_Clientes_${_hoyMX()}.csv`;
   a.click(); URL.revokeObjectURL(url);
   toast('Clientes exportados ✓','📥');
 }
@@ -15000,7 +15007,7 @@ function _doExportarClientesXLSX(){
   XLSX.utils.book_append_sheet(wb, ws3, 'En Riesgo');
 
   const gymNombre = (gymConfig.gym_nombre||'MOVE').replace(/[^a-zA-Z0-9]/g,'_');
-  XLSX.writeFile(wb, `${gymNombre}_Clientes_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `${gymNombre}_Clientes_${_hoyMX()}.xlsx`);
   toast('Excel exportado (3 hojas) ✓','📊');
 }
 
@@ -15013,7 +15020,7 @@ function exportarPagosCSV(){
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download=`MOVE_Pagos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href=url; a.download=`MOVE_Pagos_${_hoyMX()}.csv`;
   a.click(); URL.revokeObjectURL(url);
   toast('Pagos exportados ✓','📥');
 }
@@ -15029,7 +15036,7 @@ function exportLeadsCSV(){
   const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${gymNombre}_Leads_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `${gymNombre}_Leads_${_hoyMX()}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
   toast(`${leads.length} leads exportados ✓`,'📥');
 }
@@ -15045,7 +15052,7 @@ async function exportAsistenciasCSV(){
   const csv = filas.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = `${gymNombre}_Asistencias_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `${gymNombre}_Asistencias_${_hoyMX()}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
   toast(`${data.length} registros exportados ✓`,'📥');
 }
@@ -17246,7 +17253,7 @@ function _gymTxHTML(){
 // Ocupación de hoy: cuenta reservas por horario_id (no-canceladas).
 async function _gymHoyOcupacion(){
   try{
-    const hoy=new Date().toISOString().slice(0,10);
+    const hoy=_hoyMX();
     const { data } = await gf(window.supabaseClient.from('reservas').select('horario_id,estado')).eq('fecha',hoy).neq('estado','cancelado');
     const map={}; (data||[]).forEach(r=>{ if(r.horario_id!=null) map[r.horario_id]=(map[r.horario_id]||0)+1; });
     return map;
@@ -17994,7 +18001,7 @@ async function loadVisitasFromSupabase(){
 }
 
 function _updateVisitasBadge(){
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = _hoyMX();
   const n = visitasDB.filter(v=>v.fecha===hoy).length;
   const badge = document.getElementById('badge-visitas-hoy');
   if(badge){ badge.textContent=n; badge.style.display=n>0?'inline-flex':'none'; }
@@ -18011,7 +18018,7 @@ function setVisitaFiltro(f, el){
 
 function renderVisitas(){
   const listEl = document.getElementById('visitas-list'); if(!listEl) return;
-  const hoy  = new Date().toISOString().slice(0,10);
+  const hoy  = _hoyMX();
   const now  = new Date(); now.setHours(0,0,0,0);
   const mesS = hoy.slice(0,7);
   const busq = (document.getElementById('visitas-search')||{value:''}).value.toLowerCase().trim();
@@ -18099,7 +18106,7 @@ async function saveVisita(){
   setBtnLoading(btn, true);
   const payload = {
     nombre, monto,
-    fecha:    fecha || new Date().toISOString().slice(0,10),
+    fecha:    fecha || _hoyMX(),
     metodo:   document.getElementById('v-metodo').value,
     telefono: (document.getElementById('v-telefono').value||'').trim()||null,
     notas:    (document.getElementById('v-notas').value||'').trim()||null,
@@ -19287,7 +19294,7 @@ function openGastoModal(id=''){
   document.getElementById('ga-id').value     = g ? g.id : '';
   document.getElementById('ga-desc').value   = g ? g.descripcion : '';
   document.getElementById('ga-monto').value  = g ? g.monto : '';
-  document.getElementById('ga-fecha').value  = g ? g.fecha : new Date().toISOString().slice(0,10);
+  document.getElementById('ga-fecha').value  = g ? g.fecha : _hoyMX();
   document.getElementById('ga-notas').value  = g ? g.notas : '';
   const isRec = g ? !!g.recurrente : false;
   document.getElementById('ga-recurrente').checked = isRec;
@@ -19309,9 +19316,10 @@ async function saveGasto(){
   const recurrente   = document.getElementById('ga-recurrente').checked;
   const dia_rec_raw  = parseInt(document.getElementById('ga-dia').value)||null;
   const dia_recurrencia = recurrente ? dia_rec_raw : null;
-  if(!desc || !monto){
+  // monto > 0: un negativo (ej. -500) era "truthy" y pasaba, inflando el balance del reporte.
+  if(!desc || !(monto > 0)){
     wzdFieldErr('ga-desc', desc?'':'Describe el gasto.');
-    wzdFieldErr('ga-monto', monto?'':'El monto debe ser mayor a 0.');
+    wzdFieldErr('ga-monto', (monto>0)?'':'El monto debe ser mayor a 0.');
     if(typeof wizGoto==='function') wizGoto('gasto',1);
     return;
   }
@@ -20204,7 +20212,7 @@ async function _progFillTemplate(){
 function openProgramaModal(fechaStr){
   if(!fechaStr){
     // If opened from top button, default to today
-    fechaStr = new Date().toISOString().slice(0,10);
+    fechaStr = _hoyMX();
   }
   const prog = programas.find(p=>p.fecha===fechaStr && p.tipo===progTab);
   const dt   = new Date(fechaStr+'T12:00:00');
@@ -22214,7 +22222,7 @@ async function savePago(){
   // desde fecha de pago + vigencia del paquete (fallback 30 días) para nunca mandar null.
   let vence = document.getElementById('p-vence').value;
   if(!vence){
-    const _vb = new Date((fecha || new Date().toISOString().slice(0,10)) + 'T12:00:00');
+    const _vb = new Date((fecha || _hoyMX()) + 'T12:00:00');
     _vb.setDate(_vb.getDate() + ((_selectedPackage && _selectedPackage.duration_days) || 30));
     vence = _vb.toISOString().slice(0,10);
   }
@@ -22378,7 +22386,7 @@ async function toggleCongelarPago(id, esCongelado){
 
   if(!esCongelado){
     // ── Congelar ──
-    const hoy=new Date().toISOString().slice(0,10);
+    const hoy=_hoyMX();
     const msg=`¿Congelar la membresía de <strong>${esc(p.cliente)}</strong>?<br><span style="font-size:12px;color:var(--text3);">Los días congelados se suman al vencimiento cuando se descongele.</span>`;
     if(!await confirmDialog(msg,{title:'Congelar membresía',icon:'❄️'})) return;
     const {error}=await window.supabaseClient.from('pagos')
@@ -22521,11 +22529,25 @@ async function descontarClase(id, btn){
   if(!p){ toast('Paquete no encontrado ✕','✕'); return; }
   const restantes = (p.clases_totales||0) - (p.clases_usadas||0);
   if(restantes <= 0){ toast('Este paquete ya no tiene clases disponibles.','⚠️'); return; }
+  // ¿ya hizo check-in hoy? El QR (move-checkin) ya descuenta la clase al asistir; sin este
+  // aviso, descontar manual además = 2 clases por 1 visita.
+  let _yaCheckin = false;
+  try {
+    const _cli = clientesDB.find(c=>c.nombre===p.cliente);
+    if(_cli && _cli.id){
+      const { data } = await window.supabaseClient.from('asistencias')
+        .select('id').eq('cliente_id', _cli.id).eq('fecha', _hoyMX()).limit(1);
+      _yaCheckin = !!(data && data.length);
+    }
+  } catch(_){}
   // Confirmar: resta algo que el cliente pagó — evita el tap accidental en la lista de pagos.
   const _uSes = _term('sesion').toLowerCase();
+  const _aviso = _yaCheckin
+    ? `\n\n⚠ ${p.cliente} YA hizo check-in hoy. Si entró con el QR, la ${_uSes} ya se descontó automáticamente — no la descuentes doble.`
+    : '';
   const _okDesc = await confirmDialog(
-    `Vas a descontar 1 ${_uSes} del paquete de ${p.cliente}. Quedarán ${restantes-1} de ${p.clases_totales||0}. Hazlo cuando ${_term('cliente').toLowerCase()==='atleta'?'el atleta':'el cliente'} asista.`,
-    { title:`Descontar una ${_uSes}`, icon:'📋', danger:false, confirmText:'Sí, descontar 1', cancelText:'Cancelar' }
+    `Vas a descontar 1 ${_uSes} del paquete de ${p.cliente}. Quedarán ${restantes-1} de ${p.clases_totales||0}. Hazlo cuando ${_term('cliente').toLowerCase()==='atleta'?'el atleta':'el cliente'} asista.${_aviso}`,
+    { title:`Descontar una ${_uSes}`, icon:'📋', danger:_yaCheckin, confirmText:_yaCheckin?'Descontar de todas formas':'Sí, descontar 1', cancelText:'Cancelar' }
   );
   if(!_okDesc) return;
   if(btn) btn.disabled = true;
@@ -22606,7 +22628,7 @@ async function saveEditPago(btn){
   }
   // vence es NOT NULL: si quedó vacío, fallback a fecha de pago + 30 días (nunca null).
   let _epVence = document.getElementById('ep-vence').value;
-  if(!_epVence){ const _d=new Date((fecha||new Date().toISOString().slice(0,10))+'T12:00:00'); _d.setDate(_d.getDate()+30); _epVence=_d.toISOString().slice(0,10); }
+  if(!_epVence){ const _d=new Date((fecha||_hoyMX())+'T12:00:00'); _d.setDate(_d.getDate()+30); _epVence=_d.toISOString().slice(0,10); }
   const updates = {
     cliente, monto, fecha,
     plan:      epPlan,
@@ -23316,7 +23338,7 @@ async function renderCalendario(){
   const y=_mktYear, m=_mktMonth;
   if(label) label.textContent=`${MESES_FULL[m-1]} ${y}`;
 
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = _hoyMX();
   const todayY   = parseInt(todayStr.slice(0,4),10);
   const todayM   = parseInt(todayStr.slice(5,7),10);
   const todayD   = parseInt(todayStr.slice(8,10),10);
@@ -25170,7 +25192,7 @@ async function loadQRCheckinsHoy(){
   const lbl = document.getElementById('asist-qr-label');
   if(!el) return;
   el.innerHTML = '<div style="padding:10px 0;font-size:12px;color:var(--text3);">Cargando check-ins...</div>';
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = _hoyMX();
   if(lbl) lbl.textContent = `Hoy · ${hoy}`;
   try{
     const { data, error } = await gf(window.supabaseClient.from('qr_checkins').select('*')).eq('fecha', hoy).order('created_at', {ascending:false});
@@ -25206,7 +25228,7 @@ async function loadReservasHoy(){
   const lbl = document.getElementById('reservas-hoy-label');
   if(!el) return;
   el.innerHTML = '<div style="padding:10px 0;font-size:12px;color:var(--text3);">Cargando reservas…</div>';
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = _hoyMX();
   try{
     // Fetch all non-cancelled reservas for today
     const { data, error } = await gf(
@@ -25515,7 +25537,7 @@ function cerrarDetalleClase(){
 async function loadDetalleClase(horarioId,hora,tipo,cupo){
   const body = document.getElementById('detalle-body');
   if(!body) return;
-  const hoyStr = new Date().toISOString().slice(0,10);
+  const hoyStr = _hoyMX();
   const gymId  = MOVE_GYM_ID||null;
   try{
     let q = window.supabaseClient.from('reservas')
@@ -25938,7 +25960,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   if(input) input.value='';
   if(res)   res.style.display='none';
 
-  const hoyStr = new Date().toISOString().slice(0,10);
+  const hoyStr = _hoyMX();
   const gymId  = MOVE_GYM_ID||null;
   const cupo   = _detalleCtx?.cupo||0;
 
@@ -26473,14 +26495,14 @@ let vaGreeted   = false;
 
 function vaSaveHistory(){
   try{
-    const today = new Date().toISOString().slice(0,10);
+    const today = _hoyMX();
     localStorage.setItem('velum_va_history', JSON.stringify(vaHistory.slice(-20)));
     localStorage.setItem('velum_va_date', today);
   }catch(e){}
 }
 function vaLoadHistory(){
   try{
-    const today = new Date().toISOString().slice(0,10);
+    const today = _hoyMX();
     if(localStorage.getItem('velum_va_date') !== today){ localStorage.removeItem('velum_va_history'); return []; }
     const saved = localStorage.getItem('velum_va_history');
     return saved ? JSON.parse(saved) : [];
@@ -27315,7 +27337,7 @@ function closeMasMenu(){
 // TIER 4.2 — WAITLIST (ADMIN)
 // ══════════════════════════════════════════════════════
 async function loadWaitlistHoy(){
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = _hoyMX();
   const sec = document.getElementById('asist-waitlist-section');
   const lst = document.getElementById('asist-waitlist-list');
   if(!lst) return;
@@ -27765,7 +27787,7 @@ async function openMedidasCliente(nombre, cliId){
   if(el) el.textContent = nombre.split(' ')[0];
   // Set today's date as default
   const fechaEl = document.getElementById('med-fecha');
-  if(fechaEl && !fechaEl.value) fechaEl.value = new Date().toISOString().slice(0,10);
+  if(fechaEl && !fechaEl.value) fechaEl.value = _hoyMX();
   // Clear fields
   ['med-peso','med-grasa','med-cintura','med-cadera','med-pecho','med-brazo','med-notas']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
