@@ -3,18 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Descubre — Estudios y gyms con página en VELUM</title>
+<title>VELUM — Encuentra dónde entrenar y reserva directo</title>
 <meta name="description" content="Encuentra gyms, estudios y centros de recovery cerca de ti. Reserva tu clase directo con el negocio, sin intermediarios ni comisiones.">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#F7F9FA">
-<link rel="canonical" href="https://myvelum.app/descubre">
+<link rel="canonical" href="https://myvelum.app/">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
 <link rel="apple-touch-icon" href="/move-icon-180.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Descubre — VELUM">
+<meta property="og:title" content="VELUM — Encuentra dónde entrenar">
 <meta property="og:description" content="Gyms, estudios y recovery con reserva en línea. Directo con el negocio, sin comisiones.">
-<meta property="og:url" content="https://myvelum.app/descubre">
+<meta property="og:url" content="https://myvelum.app/">
+<!-- GA4 (misma propiedad que la landing) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KVWQ7L8SS3"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-KVWQ7L8SS3');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://savzjanpydyjtrgdkllx.supabase.co" crossorigin>
@@ -45,6 +48,30 @@ a{color:inherit;}
 .top .mark{width:32px;height:32px;border-radius:9px;background:var(--accent);color:var(--ink);display:grid;place-items:center;flex:none;}
 .top b{font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.01em;}
 .top .tag{font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--text3);text-transform:uppercase;margin-left:6px;}
+
+/* ── topbar derecha: Para negocios + Iniciar sesión (patrón marketplace) ── */
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px;}
+.top-link{font-size:13.5px;font-weight:600;color:var(--text2);text-decoration:none;transition:color .15s;}
+.top-link:hover{color:var(--text);}
+.login-wrap{position:relative;}
+.btn-login{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;background:var(--text);color:var(--bg);border:none;border-radius:99px;padding:9px 18px;transition:opacity .15s;}
+.btn-login:hover{opacity:.85;}
+.login-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px -16px rgba(10,30,40,.25);min-width:238px;padding:6px;display:none;z-index:80;}
+.login-menu.open{display:block;}
+.login-menu a{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;text-decoration:none;font-size:13.5px;font-weight:600;color:var(--text);}
+.login-menu a:hover{background:var(--card2);}
+.login-menu .lm-ic{width:30px;height:30px;border-radius:8px;background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);display:grid;place-items:center;flex:none;}
+.login-menu .lm-sub{display:block;font-size:11px;font-weight:400;color:var(--text3);margin-top:1px;}
+@media (max-width:560px){ .top-link{display:none;} }
+
+/* ── banda pre-footer: puerta al lado B2B (la landing del sistema en /para-negocios) ── */
+.negocio-band{max-width:1080px;margin:56px auto 0;padding:0 clamp(16px,3vw,32px);}
+.negocio-band .nb-in{background:var(--ink);color:#EAF4F8;border-radius:20px;padding:clamp(24px,4vw,40px);display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+.negocio-band h2{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(20px,3vw,26px);letter-spacing:-.02em;line-height:1.15;}
+.negocio-band p{color:rgba(234,244,248,.66);font-size:14px;margin-top:6px;max-width:52ch;}
+.negocio-band .nb-cta{margin-left:auto;flex:none;background:var(--accent);color:var(--ink);font-weight:700;font-size:14px;text-decoration:none;border-radius:99px;padding:13px 26px;transition:opacity .15s;}
+.negocio-band .nb-cta:hover{opacity:.88;}
+@media (max-width:700px){ .negocio-band .nb-cta{margin-left:0;} }
 
 /* ── encabezado ── */
 .hero{max-width:1080px;margin:34px auto 0;padding:0 clamp(16px,3vw,32px);}
@@ -88,12 +115,26 @@ footer a{color:var(--text2);text-decoration:none;font-weight:600;}
 
 <header class="top"><div class="top-in">
   <div class="mark"><svg width="16" height="16" viewBox="0 0 100 100"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="currentColor"/></svg></div>
-  <b>VELUM</b><span class="tag">Descubre</span>
+  <b>VELUM</b>
+  <div class="top-right">
+    <a class="top-link" href="/para-negocios">Para negocios</a>
+    <div class="login-wrap">
+      <button class="btn-login" onclick="toggleLogin()" aria-haspopup="true" aria-expanded="false" id="btn-login">
+        Iniciar sesión
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="login-menu" id="login-menu">
+        <a href="/atleta" onclick="typeof gtag!=='undefined'&&gtag('event','home_login_atleta')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>Soy atleta<span class="lm-sub">Mi membresía, reservas y progreso</span></span></a>
+        <a href="https://apps.apple.com/mx/app/velum/id6780286384" id="lm-appstore" style="display:none;" rel="noopener" onclick="typeof gtag!=='undefined'&&gtag('event','home_appstore_click')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></span><span>Descarga la app<span class="lm-sub">VELUM en App Store</span></span></a>
+        <a href="/app" onclick="typeof gtag!=='undefined'&&gtag('event','home_login_negocio')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span><span>Tengo un negocio<span class="lm-sub">Panel de administración</span></span></a>
+      </div>
+    </div>
+  </div>
 </div></header>
 
 <div class="hero">
-  <h1>Descubre dónde entrenar</h1>
-  <p>Gyms, estudios y centros de recovery con página propia y reserva en línea. Le compras directo al negocio: sin intermediarios y sin comisiones.</p>
+  <h1>Encuentra dónde entrenar.<br>Reserva directo, sin comisiones.</h1>
+  <p>Gyms, estudios y centros de recovery con página propia y reserva en línea. Le compras directo al negocio: sin intermediarios y sin cargos extra.</p>
   <div class="filtros" id="filtros">
     <button class="filtro on" data-v="todos" onclick="filtrar(this)">Todos</button>
     <button class="filtro" data-v="gym" onclick="filtrar(this)">Gym</button>
@@ -108,9 +149,20 @@ footer a{color:var(--text2);text-decoration:none;font-weight:600;}
   <div class="estado" id="vacio" style="display:none;">No hay espacios en esta categoría todavía.<br>Muy pronto verás más negocios aquí.</div>
 </main>
 
+<!-- Banda B2B: la puerta a la landing del sistema (/para-negocios) -->
+<div class="negocio-band" id="para-negocios-band">
+  <div class="nb-in">
+    <div>
+      <h2>¿Tienes un gym, estudio o centro de recovery?</h2>
+      <p>Cobros, reservas, app para tus atletas y tu página pública como estas — todo en un sistema, 0% de comisión.</p>
+    </div>
+    <a class="nb-cta" href="/para-negocios" onclick="typeof gtag!=='undefined'&&gtag('event','home_b2b_click')">Conoce el sistema →</a>
+  </div>
+</div>
+
 <footer>
   <span>VELUM · Descubre</span>
-  <span><a href="https://myvelum.app" rel="noopener">¿Tienes un gym? Crea tu página gratis</a></span>
+  <span><a href="/para-negocios" rel="noopener">Para negocios · Crea tu página gratis</a></span>
 </footer>
 
 <script>
@@ -120,6 +172,24 @@ const HDRS = { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY };
 
 // Etiquetas por vertical (mismos valores que gyms.vertical)
 const VERT_LABEL = { gym: 'Gym', studios: 'Studio', recovery: 'Recovery' };
+
+// ── login: menú de dos puertas + App Store solo en iOS ──
+function toggleLogin(){
+  const m = document.getElementById('login-menu');
+  const abierto = m.classList.toggle('open');
+  document.getElementById('btn-login').setAttribute('aria-expanded', abierto);
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.login-wrap')){
+    document.getElementById('login-menu').classList.remove('open');
+    document.getElementById('btn-login').setAttribute('aria-expanded', 'false');
+  }
+});
+// La app iOS ya es pública; Android sigue en prueba cerrada → el link solo aparece en iPhone/iPad
+if (/iPhone|iPad|iPod/.test(navigator.userAgent)){
+  const el = document.getElementById('lm-appstore');
+  if (el) el.style.display = '';
+}
 
 let _negocios = [];   // [{slug, nombre, ciudad, vertical, foto, logo, color, disciplinas}]
 let _filtro = 'todos';
