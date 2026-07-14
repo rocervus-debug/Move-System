@@ -4,7 +4,6 @@
 // No requiere JWT — acceso público con rate limiting básico.
 // deploy: supabase functions deploy move-checkin --no-verify-jwt
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
@@ -13,7 +12,7 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
   const url = new URL(req.url);
@@ -65,29 +64,43 @@ serve(async (req) => {
 
   const pagosList = pagos || [];
 
-  // Find most recent non-exhausted class package
+  // ── Regla de acceso (fix 2026-07-14, reporte de Krajo) ─────────────
+  // Un pago da acceso SOLO si:
+  //   · membresía por tiempo (sin clases_totales): vence >= hoy
+  //   · paquete de clases: quedan clases Y (sin vence O vence >= hoy)
+  // Antes, tener clases sin usar daba acceso aunque la fecha ya hubiera
+  // vencido — planes tipo "Mensual 3 días x semana" (12 clases + vence)
+  // dejaban entrar a gente vencida.
+  // "Hoy" en hora de México — Deno corre en UTC: a partir de las 18:00 (UTC-6)
+  // la fecha UTC ya es mañana → negaba acceso vespertino a quien vence hoy y
+  // guardaba asistencias con fecha corrida.
+  const ahora = new Date();
+  const todayStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(ahora);
+  // Ancla a mediodía igual que vence+'T12:00:00' → comparación puramente de fecha
+  const today = new Date(todayStr + 'T12:00:00');
+  const noVencido = (p: any) => {
+    if (!p.vence) return true;
+    const d = new Date(p.vence + 'T12:00:00');
+    return !isNaN(d.getTime()) && d >= today;
+  };
+
+  // Paquete válido más reciente: con clases restantes y no vencido por fecha
   const paqueteActivo = pagosList.find(
-    (p: any) => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales
+    (p: any) => p.clases_totales && (p.clases_usadas ?? 0) < p.clases_totales && noVencido(p)
   ) ?? null;
 
-  // Membership vence: from most recent pago with a vence date
+  // Membresía por tiempo vigente (pagos sin conteo de clases)
+  const membresiaVigente = pagosList.some(
+    (p: any) => !p.clases_totales && p.vence && noVencido(p)
+  );
+
+  const membershipOk = paqueteActivo !== null || membresiaVigente;
+
+  // Vence para mostrar en el kiosco: el del pago más reciente con fecha
   const pagoConVence = pagosList.find((p: any) => p.vence) ?? null;
   const vence        = pagoConVence?.vence ?? null;
-
-  // ── Check membership status ───────────────────────────────────────
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().slice(0, 10);
-  const venceDate = vence ? new Date(vence + 'T12:00:00') : null;
-
-  // All clients in the system are considered active (no estado column)
-  const hasPaqueteActivo     = paqueteActivo !== null;
-  const hayHistorialPaquetes = pagosList.some((p: any) => p.clases_totales !== null);
-  const isVigente            = venceDate ? venceDate >= today : false;
-
-  // membershipOk: paquete clients → active paquete required
-  //               membresía clients → valid vence date required
-  const membershipOk = hayHistorialPaquetes ? hasPaqueteActivo : isVigente;
 
   // ── Check for duplicate check-in today ───────────────────────────
   const { data: existing } = await db
@@ -106,8 +119,10 @@ serve(async (req) => {
   let paqueteAgotado = false;
 
   if (membershipOk && !alreadyCheckedIn) {
-    const now = new Date();
-    const hora = now.toTimeString().slice(0, 8);
+    // Hora local de México (antes toTimeString() en UTC: 8:22am quedaba como 14:22)
+    const hora = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    }).format(new Date());
     await db.from('asistencias').insert({
       cliente_id: cliente.id,
       gym_id:     cliente.gym_id,
