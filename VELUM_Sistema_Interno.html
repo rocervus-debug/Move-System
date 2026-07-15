@@ -2392,7 +2392,7 @@ select option{background:#08121E;color:var(--text);}
   /* ──────────── Tables ──────────── */
   div[style*="overflow-x:auto"],
   div[style*="overflow-x: auto"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-  .tbl { min-width: 560px; }
+  /* .tbl NO usa min-width en móvil: se transforma a tarjetas (ver bloque .tbl→cards) con data-label. */
   .tbl td, .tbl th { padding: 8px 10px; font-size: 12px; }
   .tbl-action { display: flex; gap: 4px; flex-wrap: nowrap; }
   .tbl-action .btn { font-size: 10px; padding: 4px 8px; min-height: 32px; }
@@ -2956,7 +2956,15 @@ select option{background:#08121E;color:var(--text);}
 @media(max-width:768px){
   #va-btn{ bottom:82px !important; right:16px !important; }
   #va-panel{ bottom:146px !important; right:12px; left:12px; width:auto; }
-  .pkg-bar{ display:none !important; }
+  /* .pkg-bar (barra + conteo de clases) ahora SÍ se muestra en móvil: en tarjetas cabe bien. */
+  /* Clientes: la fila envuelve y las acciones bajan a su propia línea (ya no se recortan). */
+  .cli-row{ flex-wrap:wrap; }
+  .cli-row > .cli-actions{ flex-basis:100%; margin-top:8px; }
+  .cli-row > .cli-actions > div{ flex-wrap:wrap; }
+  /* Revenue: las dos tarjetas (nuevos vs renovaciones / top planes) se apilan en móvil. */
+  #revenue-two-col{ grid-template-columns:1fr !important; }
+  /* Leads Web: la tabla hecha a mano scrollea horizontal en vez de recortarse. */
+  #landing-leads-list{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 }
 @media(max-width:420px){
   #va-btn{ bottom:80px !important; right:12px !important; }
@@ -12583,11 +12591,11 @@ function renderCRM(tab){
     html += `<tr>
       <td onclick="event.stopPropagation()"><input type="checkbox" class="crm-row-check" data-id="${l.id}" onchange="updateCRMBulkBar()" style="cursor:pointer;accent-color:var(--accent);"></td>
       <td class="name" style="cursor:pointer;" onclick="openDetail('${l.id}')">${esc(l.nombre)}</td>
-      <td>${esc(l.fuente)}</td>
-      <td><span class="badge ${cb}">${esc(l.clase)}</span></td>
-      <td><span class="badge ${eb}">${esc(l.estado)}</span></td>
-      <td>${esc(l.fechaIngreso)}</td>
-      <td>${esc(l.tel)}</td>
+      <td data-label="Fuente">${esc(l.fuente)}</td>
+      <td data-label="Clase"><span class="badge ${cb}">${esc(l.clase)}</span></td>
+      <td data-label="Estado"><span class="badge ${eb}">${esc(l.estado)}</span></td>
+      <td data-label="Fecha ingreso">${esc(l.fechaIngreso)}</td>
+      <td data-label="Teléfono">${esc(l.tel)}</td>
       <td class="tbl-action">
         <button class="btn btn-outline btn-sm" onclick="openDetail('${l.id}')">Ver</button>
         <button class="btn btn-outline btn-sm" onclick="openEditLead('${l.id}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
@@ -14092,7 +14100,7 @@ function renderClientes(){
            ${cobrarBtn}${qrBtn}${medBtn}${delBtn}
          </div>`;
 
-    return `<div onclick="openClientePanel('${esc(c.nombre)}')"
+    return `<div class="cli-row" onclick="openClientePanel('${esc(c.nombre)}')"
                  style="display:flex;align-items:center;gap:14px;padding:14px 16px;
                          background:var(--card);border:1px solid var(--border);border-radius:12px;
                          border-left:3px solid ${cfg.color};cursor:pointer;transition:background .15s;"
@@ -14117,7 +14125,7 @@ function renderClientes(){
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;">${histHtml}</div>
       </div>
-      <div style="flex-shrink:0;" onclick="event.stopPropagation()">${waBtn}</div>
+      <div class="cli-actions" style="flex-shrink:0;" onclick="event.stopPropagation()">${waBtn}</div>
     </div>`;
   }).join('');
 
@@ -18410,7 +18418,7 @@ async function renderSuperAdmin(){
     if(crossSummEl) crossSummEl.innerHTML = `<strong style="color:var(--text);">${totClientes}</strong> clientes · <strong style="color:var(--ok);">$${totIngresos.toLocaleString('es-MX')}</strong> totales`;
 
     cgEl.innerHTML = `
-      <div style="margin:0 -22px;">
+      <div style="margin:0 -22px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);">
             <th style="text-align:left;padding:9px 22px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;">Gym</th>
@@ -22898,11 +22906,11 @@ function renderPagos(){
     const reciboBtn=`<button class="btn btn-outline btn-sm" onclick="printRecibo('${p.id}')" title="Generar recibo" style="font-size:11px;padding:3px 8px;border-color:var(--text3);color:var(--text3);"></button>`;
     html += `<tr>
       <td class="name">${esc(p.cliente)}</td>
-      <td>${esc(p.plan)}</td>
-      <td style="font-weight:700;color:var(--ok);font-family:var(--fm);">${abonoTag}$${p.monto.toLocaleString('es-MX')}</td>
-      <td>${metodoBadge(p.metodo)}</td>
-      <td>${fechaFmt}</td>
-      <td>${venceCol}</td>
+      <td data-label="Plan">${esc(p.plan)}</td>
+      <td data-label="Monto" style="font-weight:700;color:var(--ok);font-family:var(--fm);">${abonoTag}$${p.monto.toLocaleString('es-MX')}</td>
+      <td data-label="Método">${metodoBadge(p.metodo)}</td>
+      <td data-label="Fecha de pago">${fechaFmt}</td>
+      <td data-label="Vencimiento / Clases">${venceCol}</td>
       <td class="tbl-action">
         ${descontarBtn}${freezeBtn}
         ${gymStripeId ? `<button class="btn btn-outline btn-sm" onclick="openStripeCharge('${esc(p.cliente)}',${p.monto},'${esc(p.plan)}')" title="Generar link de cobro Stripe" style="font-size:10px;padding:3px 8px;border-color:#7c3aed;color:#a78bfa;">Cobrar</button>` : ''}
