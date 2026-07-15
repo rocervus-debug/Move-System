@@ -127,3 +127,7 @@ se despliegan solos y no entran en esta lista.
   lo tiene desde el push); la app nativa lo toma en esta build vía build.js. iOS+Android.
 - **Smart App Banner iOS** (`apple-itunes-app` id6780286384 en el head) — solo afecta Safari
   web; Capacitor lo ignora. Ya en atleta.html; entra solo con el build.
+- **Equipo multi-coach en Clases** (fase 2 multi-coach, 2026-07-14) — la lista de clases y el
+  sheet de detalle muestran el equipo completo ("Ana & Luis" / "Ana, Luis +1") leyendo
+  horarios.coaches_extra. Ya en atleta.html (web desplegada); la app lo toma con build.js.
+  Caso real: BYCO (indoor cycling, studios) quiere ver su "DUO RIDE" con ambos coaches.

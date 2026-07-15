@@ -5031,7 +5031,10 @@ function renderNextClassCard(){
   const tipo=slot.tipo||'Clase';
   // Show raw hour large (e.g. "18:00")
   const rawHora=(slot.hora||'').replace(/[apm\s]/gi,'').trim();
-  const coachNombre=slot.coach_nombre||slot.coach||'';
+  // Equipo multi-coach: "con Ana & Luis" (DUO RIDE)
+  const _exs=Array.isArray(slot.coaches_extra)?slot.coaches_extra.map(x=>x&&x.nombre).filter(Boolean):[];
+  const _eq=[slot.coach_nombre||slot.coach, ..._exs].filter(Boolean);
+  const coachNombre=_eq.length<=1?(_eq[0]||''):_eq.length===2?`${_eq[0]} & ${_eq[1]}`:`${_eq[0]}, ${_eq[1]} +${_eq.length-2}`;
   const coachLine=coachNombre?`con ${coachNombre}`:'';
   const gymNombre=portalData?.gym?.nombre||'';
   const subtitleParts=[coachLine,gymNombre].filter(Boolean);
@@ -6600,7 +6603,7 @@ async function loadClasesData(){
     // 1. Fetch weekly horarios template (fecha vacía = recurrente)
     // La tabla usa fecha="" para plantillas semanales (no NULL)
     const hRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&select=id,dia,hora,tipo,coach_nombre,cupo,fecha`,
+      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&select=id,dia,hora,tipo,coach_nombre,coaches_extra,cupo,fecha`,
       { headers: _sbHeaders() }
     );
     if(!hRes.ok) throw new Error('horarios fetch failed');
@@ -6852,7 +6855,12 @@ function renderClasesView(dates){
       displayHour=`${h12}:${mNum}`;
     }
     const meridiem = isAmSuffix?'AM':isPmSuffix?'PM':isPm24?'PM':'AM';
-    const coachTxt = h.coach_nombre||'';
+    // Equipo multi-coach (ej. DUO RIDE): "Ana & Luis"; 3+: "Ana, Luis +1"
+    const _extras = Array.isArray(h.coaches_extra) ? h.coaches_extra.map(x=>x&&x.nombre).filter(Boolean) : [];
+    const _equipo = [h.coach_nombre, ..._extras].filter(Boolean);
+    const coachTxt = _equipo.length<=1 ? (_equipo[0]||'')
+      : _equipo.length===2 ? `${_equipo[0]} & ${_equipo[1]}`
+      : `${_equipo[0]}, ${_equipo[1]} +${_equipo.length-2}`;
 
     // ── Status / action block (right column) ──
     const safeKey = key.replace(/'/g,"\\'");

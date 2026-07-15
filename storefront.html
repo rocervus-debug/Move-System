@@ -1224,7 +1224,14 @@ function renderScheduleWeekly(weekly){
             <div class="sc-time">${escapeHtml(c.hora || '—')}</div>
             <div class="sc-mid">
               <div class="sc-name">${escapeHtml(c.tipo || 'Clase')}</div>
-              <div class="sc-coach">${c.coach ? 'Con ' + escapeHtml(c.coach) : ''}</div>
+              <div class="sc-coach">${(() => {
+                // Equipo multi-coach (ej. DUO RIDE): "Con Ana & Luis"; 3+: "Con Ana, Luis +1"
+                const eq = Array.isArray(c.coaches) && c.coaches.length ? c.coaches : (c.coach ? [c.coach] : []);
+                if (!eq.length) return '';
+                if (eq.length === 1) return 'Con ' + escapeHtml(eq[0]);
+                if (eq.length === 2) return 'Con ' + escapeHtml(eq[0]) + ' & ' + escapeHtml(eq[1]);
+                return 'Con ' + escapeHtml(eq[0]) + ', ' + escapeHtml(eq[1]) + ' +' + (eq.length - 2);
+              })()}</div>
             </div>
             ${c.cupo_total ? `<div class="sc-cupo"><i></i>${c.cupo_total} CUPOS</div>` : ''}
             <button class="sc-res" onclick="sfReservarSlot('${jsAttr(d)}', '${jsAttr(c.hora || '')}', '${jsAttr(c.tipo || '')}')">Reservar</button>
