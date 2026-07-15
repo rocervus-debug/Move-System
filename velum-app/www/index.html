@@ -86,6 +86,37 @@
   --radius-card:24px;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   PIEL "MARFIL" — vertical STUDIOS (tema claro boutique).
+   Aditiva: solo aplica con body[data-skin="marfil"] (lo pone _applyAtletaSkin
+   cuando _atletaVertical==='studios'). Gym (cyan oscuro) y recovery: SIN cambio.
+   Como la app está ~93% tokenizada, sobreescribir estos tokens re-pinta casi todo.
+   ══════════════════════════════════════════════════════════════════════ */
+body[data-skin="marfil"]{
+  /* Acento: bronce/champagne (legible sobre claro) */
+  --accent:#A67C3C; --accent-light:#C9A86A;
+  --cyan:#A67C3C; --cyan-light:#C9A86A; --cyan-dark:#7A5A24;
+  /* Fondos: marfil cálido */
+  --bg:#EFEAE0; --bg-card:#FBF8F2; --bg-elevated:#F5EFE4; --bg-input:#F7F3EC; --bg2:#F5EFE4; --bg3:#EDE6D8;
+  /* Surfaces: oscuro translúcido sobre claro (antes eran blanco translúcido → invisibles) */
+  --surface:rgba(38,32,26,.035); --surface2:rgba(38,32,26,.055); --surface3:rgba(38,32,26,.075); --surface-hover:rgba(38,32,26,.06);
+  --card:rgba(251,248,242,.92);
+  /* Texto: carbón cálido + taupe (antes text2 era cyan) */
+  --text:#26201A; --text1:#26201A; --text2:#6B6355; --text3:#8E8474; --text4:#A99E8C;
+  /* Bordes: hairlines carbón visibles sobre claro; el de acento sigue bronce */
+  --border:rgba(38,32,26,.10); --border-soft:rgba(38,32,26,.08); --border-medium:rgba(38,32,26,.14); --border-strong:rgba(38,32,26,.20);
+  --border-accent:color-mix(in srgb, var(--accent) 45%, transparent);
+  /* Glows: suavizados (los fuertes de dark se ven sucios en claro) */
+  --glow-soft:0 0 18px color-mix(in srgb, var(--accent) 9%, transparent);
+  --glow-medium:0 0 26px color-mix(in srgb, var(--accent) 11%, transparent);
+  --glow-strong:0 0 36px color-mix(in srgb, var(--accent) 13%, transparent);
+  /* Estados: tonos que contrastan sobre claro (los neón de dark no se leen) */
+  --ok:#3E9E6E; --success:#3E9E6E; --warn:#A87A1E; --danger:#D14343;
+  /* Tipografía editorial para títulos */
+  --fd:ui-serif,Georgia,'Iowan Old Style','Times New Roman',serif;
+  color-scheme:light;
+}
+
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
 body{
   background:
@@ -2465,7 +2496,7 @@ body::before{
 <!-- LOADING -->
 <div id="loading-screen">
   <svg width="36" height="36" viewBox="0 0 100 100">
-  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
+  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="var(--accent)"/>
 </svg>
   <div class="ls-logo" id="ls-gym-name">VELUM</div>
   <script>try{var _lb=JSON.parse(localStorage.getItem('velum_pwa_brand')||'null');if(_lb&&_lb.name){document.getElementById('ls-gym-name').textContent=_lb.name;}var _la=localStorage.getItem('velum_pwa_accent');if(_la&&/^#[0-9a-fA-F]{6}$/.test(_la)){var _rs=document.documentElement.style;_rs.setProperty('--accent',_la);_rs.setProperty('--cyan',_la);}}catch(_){}</script>
@@ -2481,7 +2512,7 @@ body::before{
     <div class="login-brand">
       <div class="login-brand-mark">
         <svg width="40" height="40" viewBox="0 0 100 100">
-          <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
+          <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="var(--accent)"/>
         </svg>
       </div>
       <div class="login-brand-logo" style="font-size:28px;letter-spacing:6px;">VELUM</div>
@@ -2514,7 +2545,7 @@ body::before{
     <div class="login-brand">
       <div class="login-brand-mark">
         <svg width="40" height="40" viewBox="0 0 100 100">
-  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="#00D4FF"/>
+  <polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="var(--accent)"/>
 </svg>
       </div>
       <div class="login-brand-logo" id="login-brand-logo">VELUM</div>
@@ -2623,7 +2654,7 @@ body::before{
         <!-- Push permission prompt — shown only when not granted -->
         <div id="push-prompt-banner" style="display:none;margin:0 16px 12px;background:color-mix(in srgb, var(--accent) 8%, transparent);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="requestPushPermission()">
           <div style="width:36px;height:36px;border-radius:10px;background:color-mix(in srgb, var(--accent) 12%, transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text1);">Activa las notificaciones</div>
@@ -3196,7 +3227,7 @@ body::before{
     <div style="padding:0 4px 8px;">
       <div class="onboarding-hero">
         <div class="onb-logo">
-          <svg viewBox="0 0 100 100"><polygon points="50,4 62,38 96,50 62,62 50,96 38,62 4,50 38,38" fill="#00D4FF"/></svg>
+          <svg viewBox="0 0 100 100"><polygon points="50,4 62,38 96,50 62,62 50,96 38,62 4,50 38,38" fill="var(--accent)"/></svg>
         </div>
         <div class="onb-welcome">Configura tu meta</div>
         <div class="onb-title">Tu semana ideal</div>
@@ -4192,7 +4223,8 @@ let _pwaGymName = 'VELUM';
 
 function applyPWABranding(gymName, themeHex){
   const name  = gymName  || _pwaGymName || 'VELUM';
-  const color = themeHex || '#00D4FF';
+  // Fallback del acento según la piel: bronce en marfil (studios), cyan en el default.
+  const color = themeHex || (document.body.dataset.skin==='marfil' ? '#A67C3C' : '#00D4FF');
   _pwaGymName = name;
 
   // 1. Update apple + theme-color meta tags (runtime change)
@@ -4267,7 +4299,20 @@ const _AT_TERMS={
 // Relabela el lenguaje del DOM al giro actual. Idempotente: como los renders reconstruyen el
 // innerHTML desde plantillas en lenguaje gym, re-correr transforma siempre desde el original
 // (no acumula). Para gym/studios es no-op (studios usa el mismo vocabulario de clases/reservas).
+// Aplica la piel visual por vertical: studios → "marfil" (claro boutique); gym/recovery → default.
+function _applyAtletaSkin(){
+  const marfil = (_atletaVertical === 'studios');
+  try{ document.body.dataset.skin = marfil ? 'marfil' : ''; }catch(e){}
+  // theme-color de la barra (PWA/navegador)
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute('content', marfil ? '#EFEAE0' : '#040C14');
+  // StatusBar nativo (Capacitor): texto oscuro sobre marfil, claro sobre el dark del gym.
+  // (No-op en web; verificar en device. Style.Light = contenido oscuro para fondo claro.)
+  try{ const SB=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
+    if(SB&&SB.setStyle) SB.setStyle({ style: marfil ? 'LIGHT' : 'DARK' }); }catch(e){}
+}
 function _verticalizeAtleta(){
+  _applyAtletaSkin();
   const t=_AT_TERMS[_atletaVertical]; if(!t) return;
   if(t.nav){ for(const id in t.nav){ const el=document.querySelector('#'+id+' .bn-lbl'); if(el && el.textContent!==t.nav[id]) el.textContent=t.nav[id]; } }
   const root=document.body; if(!root) return;
@@ -4807,7 +4852,7 @@ function statsRowHTML(data){
   // SVG icons for stat chips
   const svgVisits=`<svg viewBox="0 0 24 24" style="stroke:#8B5CF6"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
   const svgStreak=`<svg viewBox="0 0 24 24" style="stroke:#F97316"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
-  const svgDays=`<svg viewBox="0 0 24 24" style="stroke:#00D4FF"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  const svgDays=`<svg viewBox="0 0 24 24" style="stroke:var(--accent)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
   const svgPkg=`<svg viewBox="0 0 24 24" style="stroke:#FCD34D"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
 
   // 3rd chip: clases remaining if package, else days
@@ -4932,7 +4977,7 @@ function renderHomeRing(data){
         <defs>
           <linearGradient id="rcvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#66E8FF"/>
-            <stop offset="100%" stop-color="#00D4FF"/>
+            <stop offset="100%" stop-color="var(--accent)"/>
           </linearGradient>
         </defs>
         <circle class="rcv-ring-bg" cx="48" cy="48" r="43"/>
@@ -6455,7 +6500,7 @@ async function renderMisMarcasAsync(){
     }
 
     el.innerHTML = card(marcas.map(m => {
-      const spark = m.series.length >= 2 ? _sparklineSvg(m.series.slice(-10), 56, 26, '#00D4FF') : '';
+      const spark = m.series.length >= 2 ? _sparklineSvg(m.series.slice(-10), 56, 26, 'var(--accent)') : '';
       let trend;
       if(m.series.length < 2)      trend = `<span class="prog-marca-trend flat">nuevo</span>`;
       else if(m.delta > 0.01)      trend = `<span class="prog-marca-trend up">${vic('trending',10)}+${fk(m.delta)}${esc(m.unit)}</span>`;
@@ -7932,7 +7977,7 @@ function renderMedidasView(rows){
 
   // Sparkline charts
   const chartKeys = [
-    {key:'peso_kg', lbl:'Peso', unit:'kg', color:'#00D4FF'},
+    {key:'peso_kg', lbl:'Peso', unit:'kg', color:'var(--accent)'},
     {key:'grasa_pct', lbl:'% Grasa corporal', unit:'%', color:'#f97316'},
   ];
   chartKeys.forEach(({key,lbl,unit,color})=>{
