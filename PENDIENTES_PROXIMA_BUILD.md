@@ -1,6 +1,16 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado (2026-07-15) — BUILD DEFINITIVO 1.0.4 armado:**
+> **Estado (2026-07-15) — BUILD 1.0.5 armado (incluye piel Marfil de studios):**
+> - www regenerado con **la piel Marfil de studios** (atleta.html → build.js) + todo lo del 1.0.4.
+> - Versiones: **iOS build 8 / Android versionCode 7, ambos 1.0.5**. (Se bumpeó desde 1.0.4/vc6
+>   para no arriesgar colisión de versionCode.)
+> - **Android: AAB firmado listo** → `velum-app/android/app/build/outputs/bundle/release/app-release.aab`
+>   (vc7). Falta subirlo a Play Console → Alpha.
+> - **iOS: listo para archivar** en Xcode (build 8 / 1.0.5) → Distribute → Upload. Ojo: si Xcode
+>   estaba abierto antes del bump, confirmar que muestre 1.0.5/build 8 (recargar el proyecto).
+> - QA en device del tema Marfil (studios): StatusBar claro, pantallas Progreso/QR en claro.
+>
+> **(previo) Estado (2026-07-15) — BUILD DEFINITIVO 1.0.4 armado:**
 > - **www regenerado** desde `atleta.html` (build.js) + `cap copy ios/android` hechos. Incluye:
 >   botón "Registrar marca" en Progreso, Spots/Lugares de BYCO, multi-coach fase 2.
 > - **Versiones bumpeadas a 1.0.4:** iOS `build 7` (MARKETING_VERSION 1.0.4) · Android
