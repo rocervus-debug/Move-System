@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
 <title>VELUM — Portal Atleta</title>
+<!-- Smart App Banner: Safari iOS ofrece abrir/descargar la app nativa (ignorado dentro de Capacitor) -->
+<meta name="apple-itunes-app" content="app-id=6780286384"/>
 <link rel="manifest" href="manifest.json"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -2821,7 +2823,9 @@ body::before{
           </div>
         </div>
 
-        <!-- Registrar medición -->
+        <!-- Registrar marca de fuerza (PR / repes máx / peso / score) → alimenta Mis Marcas -->
+        <button class="prog-add-btn" onclick="openBitacoraSheet()" style="margin-bottom:10px;">+ REGISTRAR MARCA (PR / REPES / PESO)</button>
+        <!-- Registrar medición corporal -->
         <button class="prog-add-btn" onclick="openMedicionModal()">+ REGISTRAR MEDICIÓN</button>
 
       </div>
@@ -3807,7 +3811,21 @@ function openClassDetail(key){
   let btnHtml;
   if(isReserved){
     const rid = reserva.id || '';
-    btnHtml = `<button class="cd-action-primary cancel" onclick="cancelarReserva('${rid}','${key}');">CANCELAR RESERVA</button>`;
+    // Studios: cambiar de Lugar hasta 1h antes de la clase (decisión Roy 2026-07-14)
+    let lugarBtn = '';
+    if(_atletaVertical==='studios'){
+      const _min = (h.hora||'').toLowerCase().match(/(\d{1,2}):?(\d{0,2})\s*(am|pm)?/);
+      let _hN=_min?parseInt(_min[1])||0:0; const _mN=_min?parseInt(_min[2])||0:0;
+      if(_min&&_min[3]==='pm'&&_hN!==12)_hN+=12; if(_min&&_min[3]==='am'&&_hN===12)_hN=0;
+      const claseTs = new Date(fecha+'T12:00:00'); claseTs.setHours(_hN,_mN,0,0);
+      const faltaMs = claseTs - new Date();
+      if(faltaMs > 60*60*1000){
+        lugarBtn = `<button class="cd-action-primary" style="background:transparent;border:1px solid var(--border);color:var(--text);margin-bottom:8px;"
+          onclick="closeSheet('class-detail-sheet');openLugarPicker({mode:'change',reservaId:'${rid}',horarioId:'${horarioId}',fecha:'${fecha}',tipo:'${esc(h.tipo||'Clase')}',hora:'${h.hora||''}'})">
+          ${reserva.spot ? 'CAMBIAR LUGAR (tienes el '+reserva.spot+')' : 'ELEGIR LUGAR'}</button>`;
+      }
+    }
+    btnHtml = `${lugarBtn}<button class="cd-action-primary cancel" onclick="cancelarReserva('${rid}','${key}');">CANCELAR RESERVA</button>`;
   } else if(libres > 0){
     btnHtml = `<button class="cd-action-primary" onclick="closeSheet('class-detail-sheet');crearReserva('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">RESERVAR CLASE</button>`;
   } else if(!inWaitlist){
@@ -4350,7 +4368,10 @@ function showPortal(data){
   portalData=data;
   // 1.1 — Apply gym brand color (async, non-blocking). Prefiere el swatch del Storefront vía slug.
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
-  if(data.gym?.id) fetchGymVertical(data.gym.id);
+  // v34: el portal ya trae gym.vertical (gyms.vertical); el fetch a gym_config queda de fallback
+  const _v = data.gym?.vertical;
+  if(_v==='recovery'||_v==='studios'){ _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+  else if(data.gym?.id) fetchGymVertical(data.gym.id);
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'VELUM'}`;
 
   if(data.cliente.portal_token){
@@ -5050,7 +5071,10 @@ function renderNextClassCard(){
   const tipo=slot.tipo||'Clase';
   // Show raw hour large (e.g. "18:00")
   const rawHora=(slot.hora||'').replace(/[apm\s]/gi,'').trim();
-  const coachNombre=slot.coach_nombre||slot.coach||'';
+  // Equipo multi-coach: "con Ana & Luis" (DUO RIDE)
+  const _exs=Array.isArray(slot.coaches_extra)?slot.coaches_extra.map(x=>x&&x.nombre).filter(Boolean):[];
+  const _eq=[slot.coach_nombre||slot.coach, ..._exs].filter(Boolean);
+  const coachNombre=_eq.length<=1?(_eq[0]||''):_eq.length===2?`${_eq[0]} & ${_eq[1]}`:`${_eq[0]}, ${_eq[1]} +${_eq.length-2}`;
   const coachLine=coachNombre?`con ${coachNombre}`:'';
   const gymNombre=portalData?.gym?.nombre||'';
   const subtitleParts=[coachLine,gymNombre].filter(Boolean);
@@ -6619,7 +6643,7 @@ async function loadClasesData(){
     // 1. Fetch weekly horarios template (fecha vacía = recurrente)
     // La tabla usa fecha="" para plantillas semanales (no NULL)
     const hRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&select=id,dia,hora,tipo,coach_nombre,cupo,fecha`,
+      `${SUPABASE_URL}/rest/v1/horarios?gym_id=eq.${gymId}&select=id,dia,hora,tipo,coach_nombre,coaches_extra,cupo,fecha`,
       { headers: _sbHeaders() }
     );
     if(!hRes.ok) throw new Error('horarios fetch failed');
@@ -6654,7 +6678,7 @@ async function loadClasesData(){
       // 2. Mis reservas (próximos 7 días)
       (async()=>{
         const rRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado`,
+          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado,spot`,
           { headers: _sbHeaders() }
         ).catch(()=>null);
         const myReservas = rRes?.ok ? await rRes.json() : [];
@@ -6871,7 +6895,12 @@ function renderClasesView(dates){
       displayHour=`${h12}:${mNum}`;
     }
     const meridiem = isAmSuffix?'AM':isPmSuffix?'PM':isPm24?'PM':'AM';
-    const coachTxt = h.coach_nombre||'';
+    // Equipo multi-coach (ej. DUO RIDE): "Ana & Luis"; 3+: "Ana, Luis +1"
+    const _extras = Array.isArray(h.coaches_extra) ? h.coaches_extra.map(x=>x&&x.nombre).filter(Boolean) : [];
+    const _equipo = [h.coach_nombre, ..._extras].filter(Boolean);
+    const coachTxt = _equipo.length<=1 ? (_equipo[0]||'')
+      : _equipo.length===2 ? `${_equipo[0]} & ${_equipo[1]}`
+      : `${_equipo[0]}, ${_equipo[1]} +${_equipo.length-2}`;
 
     // ── Status / action block (right column) ──
     const safeKey = key.replace(/'/g,"\\'");
@@ -6880,9 +6909,11 @@ function renderClasesView(dates){
     let statusHtml;
     if(isReserved){
       // Show checkmark + tap card to open detail (cancel from there)
+      const _lug = (miReserva && miReserva.spot) ? `<div class="csr-lbl" style="color:var(--accent);font-weight:800;">LUGAR ${miReserva.spot}</div>` : '';
       statusHtml = `<div class="cls-status-reserved">
         <div class="csr-check">✓</div>
         <div class="csr-lbl">RESERVADA</div>
+        ${_lug}
       </div>`;
     } else if(isPast || _isClassPast(h)){
       statusHtml = `<div class="cls-status-past"><div class="csp-lbl">PASADO</div></div>`;
@@ -6953,10 +6984,93 @@ function _fmtHora(hora){
   return `${hr12}:${m||'00'} <span style="font-size:12px;font-weight:600;opacity:.6;">${suffix}</span>`;
 }
 
-async function crearReserva(horarioId, fecha, tipo, hora){
+// ── Selector de Lugar (bici/reformer) — solo vertical studios ──────────────
+// mode 'new': al elegir, continúa crearReserva con el lugar. mode 'change': PATCH a la reserva.
+async function openLugarPicker(ctx){
+  const h = clasesHorarios.find(x=>String(x.id)===String(ctx.horarioId));
+  const cupo = (h && h.cupo) || 0;
+  if(!cupo){ ctx.mode==='new' ? crearReserva(ctx.horarioId, ctx.fecha, ctx.tipo, ctx.hora, null) : null; return; }
+  // Lugares ocupados/bloqueados de esa clase+fecha (bloqueados = reservas estado 'bloqueado')
+  let taken = {};
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/reservas?horario_id=eq.${ctx.horarioId}&fecha=eq.${ctx.fecha}&estado=neq.cancelado&select=id,spot,estado`,
+      {headers:_sbHeaders()});
+    (r.ok ? await r.json() : []).forEach(x=>{ if(x.spot) taken[x.spot] = (String(x.id)===String(ctx.reservaId)) ? 'mio' : (x.estado==='bloqueado'?'bloqueado':'ocupado'); });
+  }catch(_){}
+  let sheet = document.getElementById('lugar-sheet');
+  if(sheet) sheet.remove();
+  sheet = document.createElement('div');
+  sheet.id = 'lugar-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;';
+  const cells = Array.from({length:cupo},(_,i)=>{
+    const n=i+1, st=taken[n];
+    const dis = st==='ocupado'||st==='bloqueado';
+    const bg = st==='mio' ? 'var(--accent)' : dis ? 'rgba(255,255,255,.06)' : 'var(--bg-elevated)';
+    const col= st==='mio' ? '#001420' : dis ? 'var(--text3)' : 'var(--text)';
+    const bor= st==='mio' ? 'var(--accent)' : dis ? 'transparent' : 'var(--border)';
+    return `<button ${dis?'disabled':''} onclick="_lugarPick(${n})"
+      style="aspect-ratio:1;border-radius:12px;border:1.5px solid ${bor};background:${bg};color:${col};font-weight:800;font-size:14px;${dis?'opacity:.45;text-decoration:line-through;':'cursor:pointer;'}">${n}</button>`;
+  }).join('');
+  sheet.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:520px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-weight:800;font-size:16px;">Elige tu lugar</div>
+        <button onclick="document.getElementById('lugar-sheet').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px;">${(ctx.tipo||'Clase')} · ${(ctx.hora||'')} — los lugares tachados ya están ocupados</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:9px;max-height:46vh;overflow-y:auto;">${cells}</div>
+      ${ctx.mode==='new' ? `<button onclick="_lugarPick(null)" style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;">Sin preferencia</button>` : ''}
+    </div>`;
+  sheet.addEventListener('click', e=>{ if(e.target===sheet) sheet.remove(); });
+  document.body.appendChild(sheet);
+  window._lugarCtx = ctx;
+}
+
+async function _lugarPick(n){
+  const ctx = window._lugarCtx; if(!ctx) return;
+  const sheet = document.getElementById('lugar-sheet'); if(sheet) sheet.remove();
+  if(ctx.mode==='change'){
+    // Cambio de lugar de una reserva existente (hasta 1h antes; el botón ya lo validó)
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/reservas?id=eq.${ctx.reservaId}`,{
+        method:'PATCH', headers:{..._sbHeaders(),'Prefer':'return=representation'},
+        body: JSON.stringify({ spot:n })
+      });
+      const data = await res.json();
+      if(!res.ok){
+        const dup = JSON.stringify(data).includes('reservas_spot_unico_idx');
+        showToast(dup ? 'Ese lugar ya se ocupó, elige otro.' : 'No se pudo cambiar el lugar.', '⚠️');
+        if(dup) openLugarPicker(ctx);
+        return;
+      }
+      const row = Array.isArray(data)?data[0]:data;
+      const key = ctx.horarioId+'_'+ctx.fecha;
+      if(clasesReservas[key]) clasesReservas[key].spot = row?row.spot:n;
+      showToast(`Listo — Lugar ${n}`,'✓');
+      try{ const today=new Date(); const dates=[]; for(let i=0;i<7;i++){ const d=new Date(today); d.setDate(today.getDate()+i); dates.push({dia:DIAS[d.getDay()],fecha:_localDate(d)}); } renderClasesView(dates); }catch(_){}
+    }catch(_){ showToast('No se pudo cambiar el lugar.','❌'); }
+    return;
+  }
+  crearReserva(ctx.horarioId, ctx.fecha, ctx.tipo, ctx.hora, n);
+}
+
+async function crearReserva(horarioId, fecha, tipo, hora, spotSel){
   if(!portalData) return;
   const key = horarioId+'_'+fecha;
   const btn = document.querySelector(`#cls-card-${key} .cls-btn, #cls-card-${key} .cls-reserve-btn`);
+
+  // ── Guard 0: membresía vigente ── (el banner ya lo avisaba pero la reserva
+  // se creaba igual; un vencido podía reservar sin límite)
+  if(!portalData.cliente?.membresiaOk){
+    showToast('Tu membresía está vencida. Renueva para reservar clases.','⚠️');
+    return;
+  }
+
+  // ── Studios: elegir Lugar (bici/reformer) antes de reservar ──
+  if(_atletaVertical==='studios' && spotSel===undefined){
+    openLugarPicker({ mode:'new', horarioId, fecha, tipo, hora });
+    return;
+  }
 
   // ── Guard 1: clase ya pasó ──
   const ahora = new Date();
@@ -7017,14 +7131,23 @@ async function crearReserva(horarioId, fecha, tipo, hora){
         clase_tipo:    tipo,
         clase_hora:    hora,
         clase_dia:     dia,
-        estado:        'reservado'
+        estado:        'reservado',
+        spot:          (spotSel!=null ? spotSel : null)
       })
     });
     const data = await res.json();
     if(!res.ok){
+      const raw = JSON.stringify(data);
+      // Colisión de lugar: otra atleta ganó esa bici entre el picker y el insert
+      if(raw.includes('reservas_spot_unico_idx')){
+        showToast('Ese lugar ya se ocupó, elige otro.','⚠️');
+        if(btn){ btn.disabled=false; btn.textContent='RESERVAR'; btn.style.opacity=''; }
+        openLugarPicker({ mode:'new', horarioId, fecha, tipo, hora });
+        return;
+      }
       // Duplicate = already reserved (unique index violation)
-      const isdup = JSON.stringify(data).includes('idx_reservas_no_duplicado');
-      const sbErr = data?.message || data?.details || data?.hint || JSON.stringify(data).slice(0,200);
+      const isdup = raw.includes('idx_reservas_no_duplicado');
+      const sbErr = data?.message || data?.details || data?.hint || raw.slice(0,200);
       showToast(isdup ? 'Ya tienes esta clase reservada' : 'No se pudo reservar: '+sbErr, isdup ? '⚠️' : '❌');
       if(btn){ btn.disabled=false; btn.textContent='RESERVAR'; btn.style.opacity=''; }
       return;
