@@ -97,6 +97,12 @@ Deno.serve(async (req) => {
     const { data: sfRow } = await supabase
       .from('gym_storefront').select('slug, is_enabled').eq('gym_id', gym_id).maybeSingle();
 
+    // v34: vertical del gym (gyms.vertical, la columna de verdad) — la app la usa para
+    // vocabulario y para el selector de Lugar (solo studios). La llave gym_config.vertical
+    // que la app leía antes no está expuesta por RLS al atleta (nunca funcionó).
+    const { data: gymV } = await supabase
+      .from('gyms').select('vertical').eq('id', gym_id).maybeSingle();
+
     const { data: pagos } = await supabase
       .from('pagos')
       .select('id, plan, monto, fecha, vence, clases_totales, clases_usadas, notas')
@@ -166,6 +172,7 @@ Deno.serve(async (req) => {
       gym: {
         id: gym_id, nombre: cfg['gym_nombre'] || 'VELUM Gym', logo: cfg['gym_logo'] || null,
         codigo: cfg['portal_codigo'] || null,
+        vertical: gymV?.vertical || 'gym',
         slug: sfRow?.slug || null, storefrontEnabled: !!sfRow?.is_enabled,
         stripeHabilitado: cfg['stripe_habilitado'] === 'true',
       },

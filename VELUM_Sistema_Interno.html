@@ -25534,6 +25534,31 @@ function cerrarDetalleClase(){
   loadClasesOperativas();
 }
 
+// ── Bloqueo de Lugares (bicis/reformers) por clase+fecha — spec BYCO ─────────
+// Un lugar bloqueado ocupa cupo y sale deshabilitado en la app del atleta.
+// Se modela como reserva estado='bloqueado' (el índice único anti-colisión la protege).
+async function bloquearLugar(horarioId, hora, tipo, spot, cupo){
+  const { error } = await window.supabaseClient.from('reservas').insert([withGymId({
+    horario_id: horarioId, fecha: _hoyMX(), estado: 'bloqueado',
+    cliente_nombre: '(bloqueado)', clase_hora: hora, clase_tipo: tipo, spot
+  })]);
+  if(error){
+    const dup = (error.message||'').includes('reservas_spot_unico_idx');
+    if(_handleSessionError(error)) return;
+    toast(dup ? 'Ese lugar acaba de ocuparse.' : 'No se pudo bloquear: '+(error.message||'').slice(0,60), '⚠️');
+  } else {
+    toast(`Lugar ${spot} bloqueado`, '✓');
+  }
+  loadDetalleClase(horarioId, hora, tipo, cupo);
+}
+
+async function desbloquearLugar(reservaId, horarioId, hora, tipo, cupo){
+  const { error } = await window.supabaseClient.from('reservas').delete().eq('id', reservaId).eq('estado','bloqueado');
+  if(error){ if(_handleSessionError(error)) return; toast('No se pudo desbloquear ✕','✕'); }
+  else toast('Lugar desbloqueado', '✓');
+  loadDetalleClase(horarioId, hora, tipo, cupo);
+}
+
 async function loadDetalleClase(horarioId,hora,tipo,cupo){
   const body = document.getElementById('detalle-body');
   if(!body) return;
@@ -25546,11 +25571,16 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     if(gymId) q = q.eq('gym_id',gymId);
     const {data:reservas,error} = await q;
     if(error) throw error;
-    const lista     = reservas||[];
-    // Studios: spots/reformers ocupados (para el selector por persona)
+    const todas     = reservas||[];
+    // Lugares bloqueados por el admin (estado='bloqueado'): ocupan lugar pero no son personas
+    const bloqueados = todas.filter(r=>r.estado==='bloqueado');
+    const lista      = todas.filter(r=>r.estado!=='bloqueado');
+    // Studios: spots/reformers ocupados (para el selector por persona y el mapa de lugares)
     window._dcCupo = cupo||0;
     window._dcTaken = {};
-    lista.forEach(r=>{ if(r.spot) window._dcTaken[r.spot]=r.cliente_nombre; });
+    todas.forEach(r=>{ if(r.spot) window._dcTaken[r.spot] = r.estado==='bloqueado' ? '(bloqueado)' : r.cliente_nombre; });
+    window._dcBloqueados = {};
+    bloqueados.forEach(r=>{ if(r.spot) window._dcBloqueados[r.spot] = r.id; });
     // Studios: lista de espera de esta clase+fecha (mostrar + promover)
     let waitlistHtml = '';
     if(typeof _gymVertical!=='undefined' && _gymVertical==='studios'){
@@ -25575,8 +25605,25 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     const checkins  = lista.filter(r=>r.estado==='checkin');
     const ausentes  = lista.filter(r=>r.estado==='ausente');
     const pendientes= lista.filter(r=>r.estado==='reservado');
-    const libres    = Math.max(0,(cupo||0)-lista.length);
+    // Cupo efectivo: los lugares bloqueados descuentan
+    const libres    = Math.max(0,(cupo||0)-lista.length-bloqueados.length);
     const hEsc = esc(hora), tEsc = esc(tipo);
+    // Studios: mapa de Lugares (tap libre = bloquear · tap bloqueado = desbloquear)
+    let lugaresHtml = '';
+    if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && (cupo||0)>0){
+      const celdas = Array.from({length:cupo},(_,i)=>{
+        const n=i+1, quien=window._dcTaken[n], esBloq=!!window._dcBloqueados[n];
+        if(esBloq) return `<button onclick="desbloquearLugar('${window._dcBloqueados[n]}','${horarioId}','${hEsc}','${tEsc}',${cupo})" title="Desbloquear"
+          style="aspect-ratio:1;border-radius:10px;border:1px solid rgba(240,96,96,.4);background:rgba(240,96,96,.12);color:#f06060;font-weight:800;font-size:12px;cursor:pointer;text-decoration:line-through;">${n}</button>`;
+        if(quien) return `<div title="${esc(quien)}"
+          style="aspect-ratio:1;border-radius:10px;border:1px solid var(--accent-bg2);background:var(--accent-bg);color:var(--accent);font-weight:800;font-size:12px;display:grid;place-items:center;">${n}</div>`;
+        return `<button onclick="bloquearLugar('${horarioId}','${hEsc}','${tEsc}',${n},${cupo})" title="Bloquear este lugar"
+          style="aspect-ratio:1;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text3);font-weight:700;font-size:12px;cursor:pointer;">${n}</button>`;
+      }).join('');
+      lugaresHtml = `
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:4px 0 8px;">Lugares · toca uno libre para bloquearlo${bloqueados.length?` · ${bloqueados.length} bloqueado${bloqueados.length>1?'s':''}`:''}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:20px;">${celdas}</div>`;
+    }
     body.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px;">
         <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 8px;text-align:center;">
@@ -25596,6 +25643,8 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
           <div style="font-size:9px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Libres</div>
         </div>
       </div>
+
+      ${lugaresHtml}
 
       ${checkins.length?`
         <div style="font-size:11px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">✓ Asistió · ${checkins.length}</div>

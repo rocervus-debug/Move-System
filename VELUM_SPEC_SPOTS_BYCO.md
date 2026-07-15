@@ -61,15 +61,10 @@ ESCUDO revisa RLS del bloqueo.
 - **Regresión en gym/recovery** → picker solo se renderiza con `vertical='studios'`; los
   demás flujos no cambian ni una línea visible.
 
-## Preguntas / cosas que no cuadran
-1. ¿La atleta puede **cambiar** su bici después de reservar (si hay libres), o solo el staff?
-   Propongo: sí puede, desde su reserva, hasta 1h antes de la clase.
-2. ¿El bloqueo de spots es por **clase/fecha individual** (ej. solo el sábado) o también
-   "siempre" (la bici 12 está descompuesta 2 semanas)? Propongo fase 1 = por clase/fecha
-   (cubre ambos con unos taps); bloqueo persistente = fase 2 si lo piden.
-3. BYCO usaría el término "bici" — sale gratis del vocabulario por vertical (studios ya dice
-   "créditos/instructores"); confirmar etiqueta: ¿"Bici" para studios-cycling o "Spot" genérico?
-   Propongo "Lugar" genérico con número, y el gym lo entiende como bici/reformer/tapete.
+## Decisiones (confirmadas por Roy 2026-07-14)
+1. La atleta SÍ puede cambiar su lugar después de reservar (si hay libres), hasta 1h antes.
+2. Bloqueo por clase/fecha individual (fase 1); bloqueo persistente = fase 2 si lo piden.
+3. Etiqueta: **"Lugar"** genérico con número (sirve para bici/reformer/tapete).
 
 **Estimación**: M · **Verificación**: migración en transacción de prueba + node --check +
 preview con evidencia (2 reservas concurrentes al mismo spot → una falla limpio; bloqueo

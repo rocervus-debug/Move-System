@@ -131,3 +131,8 @@ se despliegan solos y no entran en esta lista.
   sheet de detalle muestran el equipo completo ("Ana & Luis" / "Ana, Luis +1") leyendo
   horarios.coaches_extra. Ya en atleta.html (web desplegada); la app lo toma con build.js.
   Caso real: BYCO (indoor cycling, studios) quiere ver su "DUO RIDE" con ambos coaches.
+- **Selector de Lugar al reservar (studios)** (spec BYCO, 2026-07-14) — al reservar en vertical
+  studios la atleta elige su lugar/bici en un grid (ocupados y bloqueados tachados), puede
+  cambiarlo hasta 1h antes desde el detalle, y su tarjeta muestra "LUGAR N". Colisiones
+  protegidas por índice único (toast "ese lugar ya se ocupó"). Ya en atleta.html (web
+  desplegada); la app nativa lo toma con build.js. iOS+Android.
