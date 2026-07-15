@@ -827,6 +827,9 @@ body{
 /* Grid layouts */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+/* Capa TABLET: 601–900px conserva 2 columnas (aprovecha el ancho); TELÉFONO ≤600px = 1 columna. */
+@media(min-width:601px) and (max-width:900px){ .g3{ grid-template-columns:1fr 1fr; } }
+@media(max-width:600px){ .g2,.g3{ grid-template-columns:1fr !important; gap:12px !important; } }
 .g-6040{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;}
 
 /* ── Alert strip — contextual urgency banner ── */
@@ -2102,6 +2105,12 @@ select option{background:#08121E;color:var(--text);}
 .prog-day-has:hover .prog-day-drag-hint{ color:color-mix(in srgb, var(--accent) 75%, transparent); }
 .prog-week-selected{ border-color:rgba(139,92,246,.35)!important;background:rgba(139,92,246,.05)!important; }
 .prog-day-cell.prog-day-has.prog-week-selected{ border-color:rgba(139,92,246,.5)!important; }
+/* Teléfono: el calendario de programa muestra SOLO la semana seleccionada (el selector de
+   semana ya existe); se ocultan las celdas de otras semanas, quedan headers + 7 días legibles. */
+@media(max-width:600px){
+  .prog-cal-grid .prog-day-cell:not(.prog-week-selected){ display:none; }
+  .prog-cal-grid .prog-day-cell{ min-height:64px; }
+}
 .prog-day-tag{ display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px; }
 .prog-day-multi-chip{ display:block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;transition:filter .1s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .prog-day-multi-chip:hover{ filter:brightness(1.25); }
@@ -2270,9 +2279,8 @@ select option{background:#08121E;color:var(--text);}
   #sa-ctx-switcher button { font-size: 10px !important; padding: 4px 8px !important; gap: 4px !important; }
   #sa-ctx-switcher button span:last-child { display: none !important; } /* ocultar flecha ▾ */
 
-  /* ── Grid layouts → columna única en mobile ── */
-  .g2 { grid-template-columns: 1fr !important; gap: 12px !important; }
-  .g3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+  /* Grids .g2/.g3: el colapso por tamaño se maneja en bloques dedicados (teléfono vs tablet)
+     cerca de su definición base, para que la TABLET conserve 2 columnas (no herede el teléfono). */
 
   /* .content is the ONLY scroll container on mobile */
   .content {
