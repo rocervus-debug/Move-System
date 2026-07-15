@@ -1,6 +1,19 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado (2026-07-09):**
+> **Estado (2026-07-15) — BUILD DEFINITIVO 1.0.4 armado:**
+> - **www regenerado** desde `atleta.html` (build.js) + `cap copy ios/android` hechos. Incluye:
+>   botón "Registrar marca" en Progreso, Spots/Lugares de BYCO, multi-coach fase 2.
+> - **Versiones bumpeadas a 1.0.4:** iOS `build 7` (MARKETING_VERSION 1.0.4) · Android
+>   `versionCode 6 / versionName 1.0.4`. (Los proyectos nativos están gitignored; el bump vive local.)
+> - **Android: ✅ AAB FIRMADO GENERADO** (Google ya confirmó el reseteo de clave; keystore.properties
+>   apunta a `~/velum-upload-new.jks`, alias VELUM). Archivo:
+>   `velum-app/android/app/build/outputs/bundle/release/app-release.aab` (vc6). **Falta: subirlo a
+>   Play Console → Prueba cerrada Alpha.**
+> - **iOS: ⏳ LISTO PARA ARCHIVAR.** Xcode abierto con el workspace y el www nuevo copiado.
+>   **Falta (Roy):** Product → Archive (1.0.4 / build 7) → Distribute App → App Store Connect →
+>   Upload; luego adjuntar el build a la ficha 1.0.4 en App Store Connect y enviar a review.
+>
+> **(Histórico) Estado (2026-07-09):**
 > - **iOS 1.0.3 (build 6): ✅ ENVIADO A REVIEW de Apple.** Archivado + subido desde Xcode +
 >   ficha 1.0.3 completa en App Store Connect (build adjunto, novedades, cuenta demo PULSE/4/
 >   VelumDemo2026, nota anti-IAP guía 3.1.3). Release automático al aprobar. Espera ≤48h.
