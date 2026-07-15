@@ -1265,6 +1265,10 @@ body{
 .star{font-size:17px;color:rgba(255,255,255,.1);cursor:pointer;transition:color .1s,transform .1s;}
 .star:hover{transform:scale(1.15);}
 .star.on{color:#fbbf24;filter:drop-shadow(0 0 4px rgba(251,191,36,.5));}
+/* Móvil: estrellas más grandes y con área de toque cómoda. */
+@media(max-width:768px){ .star{font-size:27px;padding:2px 3px;} }
+/* Móvil: rejillas de 2 columnas de Config (ej. Nombre/Email) se apilan. */
+@media(max-width:480px){ .cfg-grid2{ grid-template-columns:1fr !important; } }
 .eval-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);}
 .eval-row:last-child{border-bottom:none;}
 .eval-lbl{font-size:12px;color:var(--text2);flex:1;}
@@ -4399,7 +4403,7 @@ body::before{
       </div>
       <!-- IMPORTANTE: coaches y clientes son perfiles SEPARADOS -->
       <div style="background:var(--accent-bg);border:1px solid rgba(18,70,96,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--accent);display:flex;align-items:center;gap:8px;">
-        <span>ℹ️</span> <strong>Coaches ≠ Clientes.</strong> Este módulo gestiona exclusivamente al equipo de entrenadores. Los clientes se gestionan en el CRM.
+        <span style="flex-shrink:0;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span> <strong>Coaches ≠ Clientes.</strong> Este módulo gestiona exclusivamente al equipo de entrenadores. Los clientes se gestionan en el CRM.
       </div>
       <div class="coach-grid" id="coaches-grid">
         <div class="card" style="grid-column:1/-1;">
@@ -5696,7 +5700,7 @@ body::before{
               <span>Mi Cuenta</span>
               <span class="role-badge" id="cfg-mi-rol">—</span>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+            <div class="cfg-grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
               <div>
                 <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre</label>
                 <input id="cfg-mi-nombre-input" type="text" class="settings-input" style="width:100%;" placeholder="Tu nombre"/>
@@ -7577,7 +7581,7 @@ body::before{
           </select>
         </div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:rgba(99,102,241,.07);border-radius:8px;border:1px solid rgba(99,102,241,.2);">
-          ℹ️ El cliente recibirá un email de Stripe para autorizar los cobros automáticos. Puede cancelar en cualquier momento desde su email.
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> El cliente recibirá un email de Stripe para autorizar los cobros automáticos. Puede cancelar en cualquier momento desde su email.
         </div>
       </div>
       <div id="sc-link-result" style="display:none;margin-top:4px;">
@@ -7903,7 +7907,7 @@ body::before{
         </select>
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--text3);background:var(--card2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
-        ℹ️ Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.
       </div>
     </div>
     <div class="modal-footer">
@@ -7939,7 +7943,7 @@ body::before{
         </select>
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--text3);background:var(--card2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
-        ℹ️ Solo se modifica esta clase en esta fecha. La plantilla semanal no cambia. El conteo de la quincena se actualiza automáticamente.
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Solo se modifica esta clase en esta fecha. La plantilla semanal no cambia. El conteo de la quincena se actualiza automáticamente.
       </div>
     </div>
     <div class="modal-footer">
@@ -10804,6 +10808,8 @@ function openSettingsPanel(id){
   if(panel) panel.classList.add('cfg-panel-active');
   const view = document.getElementById('v-settings');
   if(view) view.scrollTop = 0;
+  const _cont = document.querySelector('.content'); if(_cont) _cont.scrollTop = 0;   // móvil: el scroll real vive en .content
+  try{ window.scrollTo(0,0); }catch(e){}
   // Lazy-load panel-specific renders
   if(id === 'planes'){
     // v2: render skeleton + fetch async desde Supabase packages
@@ -10843,6 +10849,8 @@ function closeSettingsPanel(){
   if(landing) landing.style.display = '';
   const view = document.getElementById('v-settings');
   if(view) view.scrollTop = 0;
+  const _cont = document.querySelector('.content'); if(_cont) _cont.scrollTop = 0;   // móvil: el scroll real vive en .content
+  try{ window.scrollTo(0,0); }catch(e){}
 }
 
 // ── Onboarding guiado: checklist de configuración inicial (auto-detecta estado, se oculta al completar) ──
@@ -15533,7 +15541,7 @@ function renderRetencionWidget(){
     </div>
     <div style="font-size:11px;color:${color};font-weight:700;">${emoji} ${tasaRet>=70?'Excelente retención':tasaRet>=40?'Retención aceptable':'Retención baja — revisa clientes vencidos'}</div>
     <div style="font-size:10px;color:var(--text4);margin-top:6px;border-top:1px solid var(--border);padding-top:6px;">
-      ℹ️ <em>Clientes del mes anterior que renovaron este mes ÷ total del mes anterior</em>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> <em>Clientes del mes anterior que renovaron este mes ÷ total del mes anterior</em>
     </div>`;
 }
 
@@ -17476,7 +17484,7 @@ function renderBriefingHoy(){
                   padding:10px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
                   border-radius:12px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:18px;">⏰</span>
+          <span style="display:inline-flex;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--text);">${esc(p.cliente)}</div>
             <div style="font-size:10px;color:var(--text3);">Vence hoy · ${esc(p.plan||'—')}</div>
@@ -17797,7 +17805,7 @@ function renderDashboard(){
           const urgLabel = diffDays===0 ? 'Hoy' : diffDays===1 ? 'Mañana' : `${diffDays} días`;
           const vFmt = v.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
           return `<div class="dash-item">
-            <div class="dash-item-ico" style="background:${urgColor}20;">⏰</div>
+            <div class="dash-item-ico" style="background:${urgColor}20;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
             <div class="dash-item-main">
               <div class="dash-item-name">${esc(e.nombre)}</div>
               <div class="dash-item-sub">${esc(p.plan||'—')} · ${vFmt}</div>
@@ -19191,7 +19199,7 @@ function renderGastos(){
           <strong style="color:#fff;">${esc(g.descripcion)}</strong> <span style="color:var(--text3);">— $${g.monto.toLocaleString('es-MX')} — día ${g.dia_recurrencia}</span>
         </span>`).join('');
       bannerEl.innerHTML = `<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-        <span style="font-size:12px;color:var(--warn);font-weight:700;margin-right:2px;">⏰ Próximos 7 días:</span>${items}</div>`;
+        <span style="font-size:12px;color:var(--warn);font-weight:700;margin-right:2px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Próximos 7 días:</span>${items}</div>`;
     } else { bannerEl.innerHTML=''; }
   }
 
@@ -25074,7 +25082,7 @@ ${pagosMes.length?`
 
 ${porVencer30.length?`
 <div class="section">
-  <h2>⏰ Membresías Por Vencer — Próximos 30 días (${porVencer30.length})</h2>
+  <h2><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Membresías Por Vencer — Próximos 30 días (${porVencer30.length})</h2>
   <table><thead><tr><th>Cliente</th><th>Plan</th><th>Vencimiento</th><th>Días restantes</th></tr></thead><tbody>
   ${porVencer30.map(([nombre,p])=>{
     const dias = Math.round((new Date(p.vence+'T12:00:00')-hoyMs)/(1000*60*60*24));
