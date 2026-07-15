@@ -102,7 +102,7 @@ body[data-skin="marfil"]{
   --surface:rgba(38,32,26,.035); --surface2:rgba(38,32,26,.055); --surface3:rgba(38,32,26,.075); --surface-hover:rgba(38,32,26,.06);
   --card:rgba(251,248,242,.92);
   /* Texto: carbón cálido + taupe (antes text2 era cyan) */
-  --text:#26201A; --text1:#26201A; --text2:#6B6355; --text3:#8E8474; --text4:#A99E8C;
+  --text:#26201A; --text1:#26201A; --text2:#6B6355; --text3:#6E6456; --text4:#8A8070;
   /* Bordes: hairlines carbón visibles sobre claro; el de acento sigue bronce */
   --border:rgba(38,32,26,.10); --border-soft:rgba(38,32,26,.08); --border-medium:rgba(38,32,26,.14); --border-strong:rgba(38,32,26,.20);
   --border-accent:color-mix(in srgb, var(--accent) 45%, transparent);
@@ -116,6 +116,30 @@ body[data-skin="marfil"]{
   --fd:ui-serif,Georgia,'Iowan Old Style','Times New Roman',serif;
   color-scheme:light;
 }
+
+/* ── Marfil · overrides puntuales (contraste) ──────────────────────────────
+   Los tokens re-pintan el 93% tokenizado, pero quedan fondos/textos con hex
+   fijo que en claro se ven mal. Aquí se corrigen SOLO en marfil (gym intacto). */
+/* Tarjetas del Inicio con fondo azul-marino fijo → crema (salían gris sucio) */
+body[data-skin="marfil"] .ring-card-v,
+body[data-skin="marfil"] .next-class-card,
+body[data-skin="marfil"] .hms-card{
+  background:var(--bg-card);
+  border-top-color:var(--border-soft);
+  box-shadow:var(--glow-soft),0 10px 28px rgba(38,32,26,.07);
+}
+/* Texto blanco fijo (títulos/valores sobre tarjeta clara) → carbón legible.
+   NO toca la tarjeta verde de membresía (.card-*), avatares, badges de color,
+   ni las pantallas de login/error (que no son marfil). */
+body[data-skin="marfil"] :is(
+  .greeting-name,.rcv-pct,.rcv-check,.rcv-value,.hms-value,.stat-num,.med-stat-n,
+  .med-chart-val,.prog-peso-num,.prog-asist-title,.prog-pr-val,.prog-mini-val,
+  .workout-day-title,.attend-n,.pr-value,.qa-ttl,.cls-time-hour,.cls-card-time,
+  .bit-title,.sheet-title,.bit-ej,.bit-empty-ttl,.pkg-title,.wk-title,.wn-range,
+  .ci-date,.es-title,.planes-empty-title,.plan-nombre,.plan-precio-num,.ps-name,
+  .qr-name,.pd-fecha,.prog-desktop-date,.bcs-title,.bcs-row-val,.prog-view-title,
+  .pw-line.pw-exer
+){color:var(--text);}
 
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
 body{

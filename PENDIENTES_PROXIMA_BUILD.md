@@ -1,5 +1,27 @@
 # VELUM — Pendientes para la próxima build de la app
 
+> **Estado (2026-07-15) — BUILD 1.0.6 ARMADO (fix de contraste Marfil):**
+> - www regenerado con el fix de contraste + `cap copy` a iOS/Android (verificado: el override
+>   "Marfil · overrides puntuales" está en `ios/.../public/index.html` y `android/.../assets/public/index.html`).
+> - Versiones: **iOS build 9 / 1.0.6 · Android versionCode 8 / 1.0.6.**
+> - **Android: ✅ AAB FIRMADO** (`bundleRelease`) → `velum-app/android/app/build/outputs/bundle/release/app-release.aab`
+>   (1.0.6, vc8, 7.0M, firmado con clave de subida activa SHA1 27:D3:96:5F…E9:51). **Falta (Roy):** subir a Play → Alpha.
+> - **iOS: ⏳ LISTO PARA ARCHIVAR.** pbxproj bumpeado a 1.0.6/build 9 + www nuevo copiado. **Falta (Roy):**
+>   en Xcode, si estaba abierto **recargar el proyecto** (para que muestre 1.0.6/9) → Product → Archive →
+>   Distribute App → App Store Connect → Upload → adjuntar build a la ficha y enviar.
+> - QA en device del contraste Marfil (studios): ya verificado en preview (Inicio/Progreso/Cuenta/Clases
+>   legibles); confirmar StatusBar claro en device real.
+>
+> **(previo) Estado (2026-07-15) — FIX DE CONTRASTE MARFIL:**
+> - El 1.0.5 (ya subido a stores) lleva Marfil pero con **texto ilegible** en varias pantallas:
+>   texto blanco fijo (`color:#fff`) y tarjetas del Inicio con fondo azul-marino fijo que en
+>   claro salían gris sucio. **Arreglado en `atleta.html`** con overrides scopeados a
+>   `body[data-skin="marfil"]` (bloque "Marfil · overrides puntuales") + text3/text4 más oscuros.
+>   Verificado por computed-style: en marfil los textos → carbón #26201A y las tarjetas → crema;
+>   **gym/recovery sin cambio** (aditivo). **www YA regenerado** con el fix.
+> - **Falta para que llegue a devices:** bump a **1.0.6** (iOS build 9 / Android vc8), `cap copy`,
+>   AAB firmado + subir a Alpha, y Archive/Upload en Xcode. (Bundlear junto a lo que Roy quiera.)
+>
 > **Estado (2026-07-15) — BUILD 1.0.5 armado (incluye piel Marfil de studios):**
 > - www regenerado con **la piel Marfil de studios** (atleta.html → build.js) + todo lo del 1.0.4.
 > - Versiones: **iOS build 8 / Android versionCode 7, ambos 1.0.5**. (Se bumpeó desde 1.0.4/vc6
