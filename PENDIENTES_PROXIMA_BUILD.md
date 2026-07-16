@@ -1,6 +1,19 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado (2026-07-15) — BUILD 1.0.6 ARMADO (fix de contraste Marfil):**
+> **Estado (2026-07-15) — BUILD 1.0.6 vc9/build10 (FIX CRÍTICO DE CRASH DE PUSH):**
+> - Al auditar la app antes de avisar a los 13 testers se detectó que el **crash de push regresó**:
+>   `PUSH_ENABLED=false` se había perdido de `native/bridge.js` y `registerPush` (que llama a
+>   `PushNotifications.register()`) se ejecuta auto al login → crash nativo sin `google-services.json`.
+> - **Arreglado:** re-envuelto en `if(PUSH_ENABLED && PushNotifications)` con `PUSH_ENABLED=false`.
+>   www regenerado + `cap copy` (verificado en www/android/ios). node --check OK.
+> - **Versiones: Android versionCode 9 · iOS build 10 (ambos 1.0.6).** ⚠️ El **vc8/build9 NO se debe
+>   liberar** (tiene el crash) — usar vc9/build10.
+> - **Android: ✅ AAB firmado** (vc9, 7.0M, SHA1 27:D3:96:5F…E9:51) en
+>   `velum-app/android/app/build/outputs/bundle/release/app-release.aab`. Falta subir a Alpha.
+> - **iOS: ⏳ LISTO PARA ARCHIVAR** (build 10). Xcode reabierto. Archive → Upload.
+> - Para reactivar push algún día: `google-services.json` + `PUSH_ENABLED=true`.
+>
+> **(previo) Estado (2026-07-15) — BUILD 1.0.6 ARMADO (fix de contraste Marfil):**
 > - www regenerado con el fix de contraste + `cap copy` a iOS/Android (verificado: el override
 >   "Marfil · overrides puntuales" está en `ios/.../public/index.html` y `android/.../assets/public/index.html`).
 > - Versiones: **iOS build 9 / 1.0.6 · Android versionCode 8 / 1.0.6.**

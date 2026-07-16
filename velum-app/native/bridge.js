@@ -216,8 +216,15 @@
    *
    * window.registerPush(portalToken, supabaseUrl, anonKey)
    */
+  // PUSH DESHABILITADO hasta configurar Firebase (google-services.json en android/app).
+  // Sin él, PushNotifications.register() lanza un crash NATIVO en Android
+  // ("Default FirebaseApp is not initialized") que NO se atrapa con try/catch JS y
+  // tumba la app al terminar el login. Mientras no exista Firebase, registerPush queda
+  // sin definir → los call sites de atleta.html hacen no-op. Para reactivar push:
+  // agregar google-services.json y poner PUSH_ENABLED = true.
+  const PUSH_ENABLED = false;
   const { PushNotifications } = window.Capacitor.Plugins;
-  if (PushNotifications) {
+  if (PUSH_ENABLED && PushNotifications) {
     window.registerPush = async function (portalToken, supabaseUrl, anonKey) {
       if (!portalToken || !supabaseUrl) return;
       try {
