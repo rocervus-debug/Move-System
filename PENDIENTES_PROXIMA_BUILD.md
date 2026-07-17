@@ -1,6 +1,22 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado (2026-07-15) — BUILD 1.0.6 vc9/build10 (FIX CRÍTICO DE CRASH DE PUSH):**
+> **Estado (2026-07-17) — BUILD 1.0.6 vc9/build10 CON PUSH NATIVO (FCM):**
+> - Se integró push nativo real (no solo el fix del crash): plugin `@capacitor-firebase/messaging`
+>   (quitado `@capacitor/push-notifications`), `bridge.js` usa `FirebaseMessaging.getToken()` (token
+>   FCM en iOS+Android) con `PUSH_ENABLED=true`. `AppDelegate.swift` con `FirebaseApp.configure()`.
+>   Firebase proyecto **velum-26952**: `google-services.json` en android/app + `GoogleService-Info.plist`
+>   en ios/App/App (ambos gitignored).
+> - **Android: ✅ AAB vc9 firmado y COMPILA con Firebase** → app-release.aab (7.0M, SHA1 27:D3:96…E9:51).
+> - **iOS: ⚠️ FALTA 1 PASO MANUAL EN XCODE:** agregar `GoogleService-Info.plist` al target "App"
+>   (arrastrarlo al navegador de Xcode, marcar target App). Sin eso iOS crashea al abrir. Luego Archive build 10.
+>   OJO: abrir **App.xcworkspace** (hay pods ahora), no el .xcodeproj. `AppDelegate.swift` está en ios/
+>   (gitignored) — si se regenera el proyecto nativo, re-aplicar `FirebaseApp.configure()`.
+> - **Backend: `velum-push-send`** (edge function FCM HTTP v1) escrita, SIN desplegar. Necesita el
+>   secret **`FIREBASE_SERVICE_ACCOUNT`** (service account JSON de Firebase, lo pone Roy) + OK de deploy.
+> - **Pendiente tras subir:** deploy de velum-push-send + disparadores (recordatorio de clase, vencimiento).
+>   Eso es backend puro → NO requiere otra build de la app.
+>
+> **(previo) Estado (2026-07-15) — BUILD 1.0.6 vc9/build10 (FIX CRÍTICO DE CRASH DE PUSH):**
 > - Al auditar la app antes de avisar a los 13 testers se detectó que el **crash de push regresó**:
 >   `PUSH_ENABLED=false` se había perdido de `native/bridge.js` y `registerPush` (que llama a
 >   `PushNotifications.register()`) se ejecuta auto al login → crash nativo sin `google-services.json`.

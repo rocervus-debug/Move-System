@@ -216,67 +216,55 @@
    *
    * window.registerPush(portalToken, supabaseUrl, anonKey)
    */
-  // PUSH DESHABILITADO hasta configurar Firebase (google-services.json en android/app).
-  // Sin él, PushNotifications.register() lanza un crash NATIVO en Android
-  // ("Default FirebaseApp is not initialized") que NO se atrapa con try/catch JS y
-  // tumba la app al terminar el login. Mientras no exista Firebase, registerPush queda
-  // sin definir → los call sites de atleta.html hacen no-op. Para reactivar push:
-  // agregar google-services.json y poner PUSH_ENABLED = true.
-  const PUSH_ENABLED = false;
-  const { PushNotifications } = window.Capacitor.Plugins;
-  if (PUSH_ENABLED && PushNotifications) {
+  // Push NATIVO vía Firebase Cloud Messaging (@capacitor-firebase/messaging).
+  // FirebaseMessaging.getToken() devuelve un token FCM en iOS Y Android → un solo backend
+  // (velum-push-send) envía a ambas plataformas. Requiere google-services.json (Android) y
+  // GoogleService-Info.plist + FirebaseApp.configure() en AppDelegate (iOS), ya presentes.
+  // Si algún día se quita Firebase, poner PUSH_ENABLED=false para volver a no-op sin crash.
+  const PUSH_ENABLED = true;
+  const { FirebaseMessaging } = window.Capacitor.Plugins;
+  if (PUSH_ENABLED && FirebaseMessaging) {
+    // Listeners globales (una sola vez): notificación recibida en foreground y tap.
+    try {
+      FirebaseMessaging.addListener('notificationReceived', (event) => {
+        const n = (event && event.notification) || {};
+        if (typeof window.showToast === 'function') {
+          window.showToast(n.body || n.title || 'Nueva notificación');
+        }
+      });
+      FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+        const data = (event && event.notification && event.notification.data) || {};
+        if (data.view && typeof window.switchView === 'function') {
+          window.switchView(data.view);
+        }
+      });
+    } catch (e) { console.warn('[Bridge] Push listeners error:', e); }
+
     window.registerPush = async function (portalToken, supabaseUrl, anonKey) {
       if (!portalToken || !supabaseUrl) return;
       try {
-        const perm = await PushNotifications.requestPermissions();
+        const perm = await FirebaseMessaging.requestPermissions();
         if (perm.receive !== 'granted') {
           console.log('[Bridge] Push: permiso denegado');
           return;
         }
-        await PushNotifications.register();
-
-        // Escuchar el token una sola vez
-        const onReg = PushNotifications.addListener('registration', async (token) => {
-          console.log('[Bridge] Push token:', token.value);
-          onReg.remove();
-          // Guardar token en Supabase
-          try {
-            await fetch(`${supabaseUrl}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': anonKey,
-                'Authorization': 'Bearer ' + anonKey
-              },
-              body: JSON.stringify({ push_token: token.value, push_platform: IS_IOS ? 'ios' : 'android' })
-            });
-          } catch (e) {
-            console.warn('[Bridge] Error guardando push token:', e);
-          }
-        });
-
-        PushNotifications.addListener('registrationError', (err) => {
-          console.warn('[Bridge] Push registration error:', err);
-        });
-
-        // Manejar notificaciones recibidas en primer plano
-        PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('[Bridge] Push recibida:', notification.title);
-          // Mostrar como toast si la app está activa
-          if (typeof window.showToast === 'function') {
-            window.showToast(notification.body || notification.title || 'Nueva notificación');
-          }
-        });
-
-        // Manejar tap en notificación (app en background)
-        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-          const data = action.notification.data || {};
-          // Navegar a la sección correcta según el payload
-          if (data.view && typeof window.switchView === 'function') {
-            window.switchView(data.view);
-          }
-        });
-
+        const { token } = await FirebaseMessaging.getToken();
+        if (!token) { console.warn('[Bridge] Push: sin token FCM'); return; }
+        console.log('[Bridge] FCM token:', token.slice(0, 12) + '…');
+        // Guardar token en Supabase (campo push_token del cliente)
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': 'Bearer ' + anonKey
+            },
+            body: JSON.stringify({ push_token: token, push_platform: IS_IOS ? 'ios' : 'android' })
+          });
+        } catch (e) {
+          console.warn('[Bridge] Error guardando push token:', e);
+        }
       } catch (e) {
         console.warn('[Bridge] Push setup error:', e);
       }
