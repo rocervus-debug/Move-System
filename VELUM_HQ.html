@@ -269,6 +269,9 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
 /* Selector de vertical inline en la tabla de Cuentas (escribe gyms.vertical) */
 .vert-sel{ font:inherit; font-size:12px; color:var(--text); background:transparent; border:1px solid transparent; border-radius:7px; padding:2px 4px; cursor:pointer; }
 .vert-sel:hover, .vert-sel:focus{ border-color:var(--border); background:var(--card); outline:none; }
+/* Botón eliminar gym (solo superadmin): discreto hasta hover */
+.gym-del-btn{ background:transparent; border:none; color:var(--muted, #6b7787); padding:5px; border-radius:7px; cursor:pointer; display:inline-grid; place-items:center; transition:color .14s, background .14s; }
+.gym-del-btn:hover{ color:#f06060; background:rgba(240,96,96,.1); }
 .kcard-accion{
   margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);
   font-size:11.5px; color:var(--text2); display:flex; align-items:center; gap:6px;
@@ -2350,6 +2353,41 @@ async function cambiarVertical(gymId, sel){
   toast(`${gym ? gym.nombre : 'Gym'} → ${VERTICAL_LABEL[vertical]}. Se refleja en Descubre y su tema al recargar.`);
 }
 
+// Borra un gym COMPLETO (función sa_borrar_gym en DB, solo superadmin).
+// Doble fricción: muestra cuántos datos se van + hay que escribir el nombre exacto.
+// La función del lado DB además se NIEGA si el gym tiene comisiones registradas.
+async function borrarGym(gymId){
+  const gym = (GYMS||[]).find(g=>g.id===gymId);
+  if(!gym) return;
+  let nCli=0, nPagos=0;
+  try{
+    const [c,p] = await Promise.all([
+      sb.from('clientes').select('id',{count:'exact',head:true}).eq('gym_id',gymId),
+      sb.from('pagos').select('id',{count:'exact',head:true}).eq('gym_id',gymId),
+    ]);
+    nCli=c.count||0; nPagos=p.count||0;
+  }catch(_){}
+  const typed = prompt(
+    `Vas a ELIMINAR "${gym.nombre}" para siempre:\n\n`+
+    `· ${nCli} cliente${nCli!==1?'s':''} y ${nPagos} pago${nPagos!==1?'s':''}\n`+
+    `· Horarios, reservas, asistencias, configuración y storefront\n\n`+
+    `Esto NO se puede deshacer. Tu CRM (leads/tareas) se conserva.\n\n`+
+    `Para confirmar, escribe el nombre exacto del gym:`
+  );
+  if(typed === null) return;
+  if(typed.trim() !== gym.nombre){
+    toast('El nombre no coincide — no se borró nada.', 'err');
+    return;
+  }
+  const { data, error } = await sb.rpc('sa_borrar_gym', { p_gym_id: gymId });
+  if(error){
+    toast('No se pudo borrar: ' + (error.message||'desconocido'), 'err');
+    return;
+  }
+  toast(`"${gym.nombre}" eliminado por completo.`);
+  loadCuentas();
+}
+
 async function loadCuentas(){
   const zone = document.getElementById('cuentas-zone');
   stateLoading(zone, 'Cargando cuentas…');
@@ -2376,13 +2414,18 @@ async function loadCuentas(){
           <td class="td-mono">${esc(g.plan || '—')}</td>
           <td class="td-mono">${fmtFecha(String(g.created_at || '').slice(0,10))}</td>
           <td class="td-mono">${esc(g.owner_email || '—')}</td>
+          <td onclick="event.stopPropagation()" style="width:36px;text-align:center;">
+            <button class="gym-del-btn" onclick="borrarGym(${g.id})" title="Eliminar este gym y TODOS sus datos">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </td>
         </tr>`;
     }).join('');
     zone.innerHTML = `
       <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr>
-            <th>Gym</th><th>Vertical</th><th>Estado</th><th>Plan</th><th>Alta</th><th>Owner</th>
+            <th>Gym</th><th>Vertical</th><th>Estado</th><th>Plan</th><th>Alta</th><th>Owner</th><th></th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
