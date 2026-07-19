@@ -1,6 +1,19 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado (2026-07-17) — BUILD 1.0.6 vc9/build10 CON PUSH NATIVO (FCM):**
+> **Estado (2026-07-17) — PUSH: faltaba la CAPABILITY iOS → build 11 + botón en panel:**
+> - **Causa de que no llegara token iOS:** faltaba la capability **Push Notifications** (entitlement
+>   `aps-environment`). Se creó `ios/App/App/App.entitlements` (aps-environment=development) y se
+>   agregó `CODE_SIGN_ENTITLEMENTS` al target por xcodeproj. **iOS bumpeado a build 11.**
+>   **FALTA (Roy): re-Archivar build 11 en Xcode → Upload.** Al archivar, la firma automática debe
+>   habilitar Push en el App ID (si Xcode marca error en Signing & Capabilities, "Try Again").
+>   Tras instalar build 11 y entrar a la app → el token FCM sí se guarda en clientes.push_token.
+> - **Panel: botón "Notificar" (toolbar de Clientes)** → modal título/mensaje → llama a
+>   `velum-push-send` con el JWT del panel (aislado por gym, cuenta destinatarios con dry_run).
+>   Verificado: panel arranca sin errores, funciones definidas. Para probar de verdad: build 11
+>   instalado + login en la app (token) + clic en Notificar desde el panel.
+> - Android: el token se guarda solo cuando esté instalado el vc9 (no necesita entitlement).
+>
+> **(previo) Estado (2026-07-17) — BUILD 1.0.6 vc9/build10 CON PUSH NATIVO (FCM):**
 > - Se integró push nativo real (no solo el fix del crash): plugin `@capacitor-firebase/messaging`
 >   (quitado `@capacitor/push-notifications`), `bridge.js` usa `FirebaseMessaging.getToken()` (token
 >   FCM en iOS+Android) con `PUSH_ENABLED=true`. `AppDelegate.swift` con `FirebaseApp.configure()`.

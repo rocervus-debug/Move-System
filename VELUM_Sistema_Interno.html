@@ -4042,7 +4042,34 @@ body::before{
         <button class="btn btn-sm btn-icon" style="background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);" onclick="launchKiosco()">Kiosco</button>
         <button class="btn btn-sm btn-icon" id="btn-bulk-portales" style="background:rgba(138,43,226,.12);color:#c084fc;border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Portales pendientes</button>
         <button class="btn btn-sm btn-icon" style="background:rgba(16,232,160,.1);color:#10E8A0;border:1px solid rgba(16,232,160,.28);" onclick="importarClientesCSV()" title="Importar clientes desde un archivo CSV/Excel">⬆ Importar CSV</button>
+        <button class="btn btn-sm btn-icon" style="background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);" onclick="openNotificarPush()" title="Enviar una notificación push a tus clientes con la app"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Notificar</button>
         <button class="btn btn-sm btn-primary btn-icon" onclick="openModal('solo-cliente')">+ Cliente</button>
+      </div>
+
+      <!-- Modal: enviar notificación push a los clientes (feature push nativo) -->
+      <div class="modal-overlay" id="modal-notificar-push">
+        <div class="modal" style="width:440px;">
+          <div class="modal-head">
+            <div class="modal-title">Notificar a mis clientes</div>
+            <button class="modal-close" onclick="closeModal('notificar-push')">✕</button>
+          </div>
+          <div class="modal-body" style="padding-top:16px;">
+            <div class="wzd-hint" style="margin-bottom:12px;">Se envía como notificación al celular de los clientes que tienen la app instalada y con notificaciones activas. Los demás no reciben nada.</div>
+            <div class="field">
+              <label>Título *</label>
+              <input id="np-title" type="text" maxlength="60" placeholder="Ej: Clase de hoy"/>
+            </div>
+            <div class="field">
+              <label>Mensaje *</label>
+              <textarea id="np-body" rows="3" maxlength="160" placeholder="Ej: Tu clase de Reformer es a las 7pm. ¡Te esperamos!"></textarea>
+            </div>
+            <div id="np-count" class="wzd-hint" style="margin-bottom:4px;">—</div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;padding:0 4px 4px;">
+            <button class="btn btn-ghost" onclick="closeModal('notificar-push')">Cancelar</button>
+            <button class="btn btn-primary" id="np-send" onclick="enviarPushNotif()">Enviar notificación</button>
+          </div>
+        </div>
       </div>
 
       <!-- Acciones rápidas — mobile (rail scrollable, oculto en desktop por CSS) -->
@@ -28129,6 +28156,59 @@ async function deleteMedidaAdmin(medId){
        Fuera de cualquier .view para que funcione desde home y asistencia -->
   <div id="asist-detalle-overlay" onclick="cerrarDetalleClase()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;backdrop-filter:blur(3px);"></div>
   <div id="asist-detalle-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:min(480px,100vw);background:var(--bg2,var(--bg));border-left:1px solid var(--border);z-index:201;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.4);"></div>
+
+<!-- ══ Notificaciones push a clientes (llama a la edge function velum-push-send) ══ -->
+<script>
+function openNotificarPush(){
+  var t=document.getElementById('np-title'), b=document.getElementById('np-body');
+  if(t) t.value=''; if(b) b.value='';
+  var send=document.getElementById('np-send'); if(send){ send.disabled=false; send.textContent='Enviar notificación'; }
+  openModal('notificar-push');
+  _npContarDestinatarios();
+}
+// Cuenta destinatarios sin enviar (dry_run) para que el dueño sepa a cuántos llegará.
+async function _npContarDestinatarios(){
+  var el=document.getElementById('np-count'); if(el) el.textContent='Contando destinatarios…';
+  try{
+    if(typeof _pvImpersonando==='function' && _pvImpersonando()){ if(el) el.textContent='Estás viendo otro gym (superadmin): no se puede notificar desde aquí.'; var s=document.getElementById('np-send'); if(s) s.disabled=true; return; }
+    if(!currentUser||!currentUser.jwt){ if(el) el.textContent='Sesión no válida.'; return; }
+    var res=await fetch(supabaseUrl+'/functions/v1/velum-push-send',{
+      method:'POST', headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({ dry_run:true })
+    });
+    var j=await res.json();
+    if(el){
+      if(j && typeof j.destinatarios==='number') el.textContent = j.destinatarios>0 ? ('Llegará a '+j.destinatarios+' cliente(s) con la app.') : 'Ningún cliente tiene la app con notificaciones activas todavía.';
+      else el.textContent = (j&&j.error) ? ('No se pudo contar: '+j.error) : 'No se pudo contar destinatarios.';
+    }
+  }catch(_){ if(el) el.textContent='No se pudo contar destinatarios.'; }
+}
+async function enviarPushNotif(){
+  var title=(document.getElementById('np-title').value||'').trim();
+  var body=(document.getElementById('np-body').value||'').trim();
+  if(!title||!body){ toast('Escribe título y mensaje.','✕'); return; }
+  if(typeof _pvImpersonando==='function' && _pvImpersonando()){ toast('Estás viendo otro gym: no se puede notificar desde aquí.','✕'); return; }
+  if(!currentUser||!currentUser.jwt){ toast('Sesión no válida.','✕'); return; }
+  var send=document.getElementById('np-send'); if(send){ send.disabled=true; send.textContent='Enviando…'; }
+  try{
+    var res=await fetch(supabaseUrl+'/functions/v1/velum-push-send',{
+      method:'POST', headers:{'Content-Type':'application/json','apikey':window._ANON_KEY||'','Authorization':'Bearer '+currentUser.jwt},
+      body: JSON.stringify({ title:title, body:body, data:{ view:'home' } })
+    });
+    var j=await res.json();
+    if(res.ok && j && j.ok){
+      toast('Notificación enviada a '+(j.enviados||0)+' cliente(s).');
+      closeModal('notificar-push');
+    } else {
+      toast('No se pudo enviar: '+((j&&j.error)||res.status),'✕',5000);
+      if(send){ send.disabled=false; send.textContent='Enviar notificación'; }
+    }
+  }catch(e){
+    toast('Error de red al enviar.','✕');
+    if(send){ send.disabled=false; send.textContent='Enviar notificación'; }
+  }
+}
+</script>
 
 </body>
 </html>
