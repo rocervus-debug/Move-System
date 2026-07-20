@@ -22,9 +22,12 @@ function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, stri
   }
   return out;
 }
-async function stripeFetch(path: string, method: string, body: Record<string, unknown> | undefined, secretKey: string) {
+async function stripeFetch(path: string, method: string, body: Record<string, unknown> | undefined, secretKey: string, stripeAccount?: string) {
   const params = body ? new URLSearchParams(flatten(body)).toString() : undefined;
-  const res = await fetch(`https://api.stripe.com/v1${path}`, { method, headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2024-11-20.acacia' }, body: params });
+  const headers: Record<string,string> = { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2024-11-20.acacia' };
+  // Cobro DIRECTO: crear en la cuenta del gym → el gym paga su comisión de Stripe (recibe el neto).
+  if (stripeAccount) headers['Stripe-Account'] = stripeAccount;
+  const res = await fetch(`https://api.stripe.com/v1${path}`, { method, headers, body: params });
   const j = await res.json();
   if (!res.ok) throw new Error(`Stripe ${res.status}: ${JSON.stringify(j).slice(0,300)}`);
   return j;
@@ -103,9 +106,8 @@ serve(async (req) => {
     const sharedMeta = { gym_id: String(gym.id), package_id: String(pkg.id), slug, customer_email: customer.email, customer_name: customer.name || '', customer_phone: customer.phone || '', visitor_session: visitorSession || '' };
 
     if (isRecurring) {
+      // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
       const subData: Record<string, unknown> = {
-        transfer_data: { destination: gym.stripe_account_id },
-        on_behalf_of: gym.stripe_account_id,
         metadata: { ...sharedMeta, velum_member_sub: 'true', velum_fee_pct: String(feePct) },
       };
       if (feePct > 0) subData.application_fee_percent = Number((feePct * 100).toFixed(4));
@@ -120,7 +122,7 @@ serve(async (req) => {
         cancel_url: cancelUrl,
         metadata: { ...sharedMeta, velum_member_sub: 'true' },
         locale: 'es',
-      }, stripeSecret) as { id: string; url: string };
+      }, stripeSecret, gym.stripe_account_id) as { id: string; url: string };
 
       await db.from('member_subscriptions').insert({
         gym_id: gym.id, package_id: pkg.id, cliente_nombre: customer.name || null, customer_email: customer.email,
@@ -131,9 +133,8 @@ serve(async (req) => {
       return json({ ok: true, session_id: session.id, checkout_url: session.url, recurring: true });
     }
 
+    // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
     const paymentIntentData: Record<string, unknown> = {
-      transfer_data: { destination: gym.stripe_account_id },
-      on_behalf_of: gym.stripe_account_id,
       statement_descriptor: descriptor,
       metadata: { gym_id: String(gym.id), package_id: String(pkg.id), customer_email: customer.email, customer_name: customer.name || '', velum_platform: 'true', velum_fee_pct: String(feePct) },
     };
@@ -150,7 +151,7 @@ serve(async (req) => {
       metadata: sharedMeta,
       locale: 'es',
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-    }, stripeSecret) as { id: string; url: string };
+    }, stripeSecret, gym.stripe_account_id) as { id: string; url: string };
 
     await db.from('storefront_orders').insert({
       gym_id: gym.id, package_id: pkg.id, stripe_session_id: session.id, stripe_account_id: gym.stripe_account_id,

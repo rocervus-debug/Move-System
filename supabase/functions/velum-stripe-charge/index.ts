@@ -75,9 +75,12 @@ function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, stri
   }
   return out;
 }
-async function stripeFetch(path: string, method: string, body: Record<string, unknown> | undefined, secretKey: string) {
+async function stripeFetch(path: string, method: string, body: Record<string, unknown> | undefined, secretKey: string, stripeAccount?: string) {
   const params = body ? new URLSearchParams(flatten(body)).toString() : undefined;
-  const res = await fetch(`https://api.stripe.com/v1${path}`, { method, headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2024-11-20.acacia' }, body: params });
+  const headers: Record<string,string> = { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2024-11-20.acacia' };
+  // Cobro DIRECTO: crear en la cuenta del gym → el gym paga su comisión de Stripe (recibe el neto).
+  if (stripeAccount) headers['Stripe-Account'] = stripeAccount;
+  const res = await fetch(`https://api.stripe.com/v1${path}`, { method, headers, body: params });
   const j = await res.json();
   if (!res.ok) throw new Error(`Stripe ${res.status}: ${JSON.stringify(j).slice(0, 300)}`);
   return j;
@@ -205,9 +208,8 @@ Deno.serve(async (req: Request) => {
       descripcion: desc,
     };
     if (pkgId) meta.package_id = String(pkgId);
+    // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
     const paymentIntentData: Record<string, unknown> = {
-      transfer_data: { destination: gym.stripe_account_id },
-      on_behalf_of: gym.stripe_account_id,
       statement_descriptor: descriptor,
       metadata: { ...meta, velum_platform: 'true', velum_fee_pct: String(feePct) },
     };
@@ -238,7 +240,7 @@ Deno.serve(async (req: Request) => {
     };
     if (cliente_email) sessionBody.customer_email = cliente_email;
 
-    const session = await stripeFetch('/checkout/sessions', 'POST', sessionBody, platformSecret) as {
+    const session = await stripeFetch('/checkout/sessions', 'POST', sessionBody, platformSecret, gym.stripe_account_id) as {
       id: string; url: string; expires_at: number;
     };
 

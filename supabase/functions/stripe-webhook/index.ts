@@ -33,35 +33,31 @@ function genSlug(nombre: string): string {
 }
 
 const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY');
-async function stripeGet(path: string): Promise<any> {
-  const res = await fetch(`https://api.stripe.com/v1${path}`, { headers: { 'Authorization': `Bearer ${STRIPE_SECRET}`, 'Stripe-Version': '2024-11-20.acacia' } });
-  return res.json();
-}
-// GET en el contexto de una cuenta conectada (para leer el balance_transaction del gym).
-async function stripeGetOnAccount(path: string, acctId?: string | null): Promise<any> {
+// acct = cuenta conectada del gym. En cobro DIRECTO los objetos (sub, charge, PI) viven en la
+// cuenta del gym → hay que leer con Stripe-Account. En cobro de destino (viejo) viven en la
+// plataforma → sin header. El webhook decide por event.account (Connect events lo traen).
+async function stripeGet(path: string, acct?: string | null): Promise<any> {
   const headers: Record<string,string> = { 'Authorization': `Bearer ${STRIPE_SECRET}`, 'Stripe-Version': '2024-11-20.acacia' };
-  if (acctId) headers['Stripe-Account'] = acctId;
+  if (acct) headers['Stripe-Account'] = acct;
   const res = await fetch(`https://api.stripe.com/v1${path}`, { headers });
   return res.json();
 }
-// Comisión REAL de Stripe (MXN) de un cargo, leída de su balance_transaction.
-// En cobros de destino (transfer_data.destination) el charge vive en la PLATAFORMA y su
-// balance_transaction ya reporta el fee real → se lee sin header de cuenta (verificado: con
-// Stripe-Account da 404). Devuelve null si aún no está disponible (no rompe el registro).
-async function stripeFeeFromCharge(chargeId?: string | null): Promise<number | null> {
+// Comisión REAL de Stripe (MXN) de un cargo, leída de su balance_transaction. Devuelve null si
+// aún no está disponible (no rompe el registro del pago).
+async function stripeFeeFromCharge(chargeId?: string | null, acct?: string | null): Promise<number | null> {
   if (!chargeId) return null;
   try {
-    const ch = await stripeGet(`/charges/${chargeId}?expand[]=balance_transaction`);
+    const ch = await stripeGet(`/charges/${chargeId}?expand[]=balance_transaction`, acct);
     const bt = ch?.balance_transaction;
     if (bt && typeof bt.fee === 'number') return bt.fee / 100;
   } catch (_) { /* degradar con gracia */ }
   return null;
 }
 // Igual pero partiendo de un PaymentIntent (storefront / link) → su latest_charge.
-async function stripeFeeFromPI(piId?: string | null): Promise<number | null> {
+async function stripeFeeFromPI(piId?: string | null, acct?: string | null): Promise<number | null> {
   if (!piId) return null;
   try {
-    const pi = await stripeGet(`/payment_intents/${piId}?expand[]=latest_charge.balance_transaction`);
+    const pi = await stripeGet(`/payment_intents/${piId}?expand[]=latest_charge.balance_transaction`, acct);
     const bt = pi?.latest_charge?.balance_transaction;
     if (bt && typeof bt.fee === 'number') return bt.fee / 100;
   } catch (_) { /* degradar con gracia */ }
@@ -79,6 +75,10 @@ Deno.serve(async (req: Request) => {
   const sig = req.headers.get('Stripe-Signature') || '';
   if (!await verifyStripeSignature(payload, sig, webhookSecret)) return json({ error: 'Invalid signature.' }, 401);
   const event = JSON.parse(payload);
+  // Cuenta conectada del evento: en cobro DIRECTO los Connect events traen event.account (la
+  // cuenta del gym) → se usa para leer sub/charge/PI en su cuenta. En cobro de destino (viejo)
+  // viene undefined → se lee en la plataforma. Así el webhook sirve a los DOS modelos.
+  const evAcct = (event.account as string) || undefined;
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -218,7 +218,7 @@ Deno.serve(async (req: Request) => {
           const { data: gym } = await db.from('gyms').select('nombre').eq('id', gymId).maybeSingle();
           if (!pkg || !gym) { console.error('member sub: pkg/gym no encontrado'); break; }
           const cli = await resolveCliente(gymId, email, md.customer_name || '', md.customer_phone || null);
-          const sub = await stripeGet(`/subscriptions/${subId}`);
+          const sub = await stripeGet(`/subscriptions/${subId}`, evAcct);
           const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end*1000).toISOString() : null;
           const feePct = Number(md.velum_fee_pct || '0');
 
@@ -259,7 +259,7 @@ Deno.serve(async (req: Request) => {
           const mgPlan = (mgGym?.subscription_plan || '').toLowerCase();
           const feePct = (mgPlan === 'max' || mgPlan === 'owner') ? 0 : 0.02;
           const commission = Math.round(amount * feePct);
-          const mlStripeFee = await stripeFeeFromPI(session.payment_intent as string);
+          const mlStripeFee = await stripeFeeFromPI(session.payment_intent as string, evAcct);
           const mlFeeR = (mlStripeFee != null && Number.isFinite(mlStripeFee)) ? Math.round(mlStripeFee) : null;
           // Si el link se generó con un PAQUETE del gym, el pago extiende membresía
           // (vence con stacking + clases) igual que una compra de storefront.
@@ -322,7 +322,7 @@ Deno.serve(async (req: Request) => {
           const venceDate = new Date(baseDate); venceDate.setDate(venceDate.getDate() + (pkg.duration_days || 30));
           const monto = Number(pkg.price_mxn);
           const comm = Math.round((order.application_fee_cents || 0) / 100);
-          const sfStripeFee = await stripeFeeFromPI(session.payment_intent as string);
+          const sfStripeFee = await stripeFeeFromPI(session.payment_intent as string, evAcct);
           const sfFeeR = (sfStripeFee != null && Number.isFinite(sfStripeFee)) ? Math.round(sfStripeFee) : null;
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
           const { error: pErr } = await db.from('pagos').insert({ gym_id: gymId, cliente: clienteNombre, monto, fecha: new Date().toISOString().slice(0,10), plan: pkg.name, metodo: 'Stripe (Storefront)', vence: venceDate.toISOString().slice(0,10), telefono: order.customer_phone || null, package_id: packageId, applied_price_mxn: Math.round(monto), list_price_mxn: Math.round(monto), source: 'storefront', velum_commission_mxn: comm, stripe_fee_mxn: sfFeeR, net_to_gym_mxn: Math.round(monto-comm-(sfFeeR||0)), stripe_session_id: session.id, notas: `Compra online — ${order.customer_email}`, clases_totales: clasesTotales, clases_usadas: 0 });
@@ -356,7 +356,7 @@ Deno.serve(async (req: Request) => {
               const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
               const realMonto = (typeof inv.amount_paid === 'number' ? inv.amount_paid : Math.round(Number(pkg.price_mxn)*100)) / 100;
               const realFee = (typeof inv.application_fee_amount === 'number') ? inv.application_fee_amount/100 : undefined;
-              const stripeFeeMxn = await stripeFeeFromCharge(inv.charge as string);
+              const stripeFeeMxn = await stripeFeeFromCharge(inv.charge as string, evAcct);
               await recordMemberPago({ gymId: ms.gym_id, clienteNombre: ms.cliente_nombre, phone: null, pkgName: pkg.name, packageId: ms.package_id, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: realMonto, feePct: Number(ms.application_fee_pct||0), feeMxn: realFee, stripeFeeMxn, subId, invoiceId: inv.id });
             }
           }
