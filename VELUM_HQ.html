@@ -827,6 +827,10 @@ table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
       <span class="nav-label">Cockpit</span>
     </button>
+    <button class="nav-item" onclick="showView('cobranza')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+      <span class="nav-label">Cobranza</span>
+    </button>
     <button class="nav-item" id="nav-pipeline" onclick="showView('pipeline')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="7" rx="1"/></svg>
       <span class="nav-label">Pipeline</span>
@@ -900,6 +904,13 @@ table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
       <section id="view-cockpit" hidden>
         <div id="cockpit-zone">
           <div class="state-box"><div class="spinner"></div><h3>Cargando cockpit…</h3></div>
+        </div>
+      </section>
+
+      <!-- ─── VISTA: COBRANZA (SaaS gym→VELUM) ─── -->
+      <section id="view-cobranza" hidden>
+        <div id="cobranza-zone">
+          <div class="state-box"><div class="spinner"></div><h3>Cargando cobranza…</h3></div>
         </div>
       </section>
 
@@ -1435,12 +1446,12 @@ document.addEventListener('DOMContentLoaded', boot);
 // ════════════════════════════════════════════════════════════════
 
 const VIEW_TITLES = {
-  hoy:'Hoy', pipeline:'Pipeline', cockpit:'Cockpit', cuentas:'Cuentas',
+  hoy:'Hoy', cockpit:'Cockpit', cobranza:'Cobranza', pipeline:'Pipeline', cuentas:'Cuentas',
   salud:'Salud', tareas:'Tareas', referidos:'Referidos'
 };
 // Cada vista refresca sus datos al abrirse
 const VIEW_LOADERS = {
-  hoy:'loadHoy', pipeline:'loadLeads', cockpit:'loadCockpit', cuentas:'loadCuentas',
+  hoy:'loadHoy', cockpit:'loadCockpit', cobranza:'loadCobranza', pipeline:'loadLeads', cuentas:'loadCuentas',
   salud:'loadSalud', tareas:'loadTareas', referidos:'loadReferidos'
 };
 
@@ -2155,6 +2166,70 @@ function esGymPagando(g){ return g.subscription_status === 'active'; }
 // ════════════════════════════════════════════════════════════════
 // F2a — COCKPIT: 3 métricas + fila secundaria + GMV por mes
 // ════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════
+// COBRANZA — dashboard global del SaaS (lo que los gyms le pagan a VELUM)
+// ════════════════════════════════════════════════════════════════
+async function loadCobranza(){
+  const zone = document.getElementById('cobranza-zone');
+  stateLoading(zone, 'Cargando cobranza…');
+  const s = getSession();
+  if(!s || !s.jwt){ stateError(zone, 'Sesión expirada.', 'loadCobranza'); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/velum-saas-dashboard`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${s.jwt}` },
+      body: JSON.stringify({}),
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || 'Error');
+    const r = d.resumen || {};
+    const subs = d.subs || [];
+    const pagos = d.pagos || [];
+    const estMap = { active:'Activo', trialing:'Trial', past_due:'Moroso', canceled:'Cancelado', unpaid:'Impago', incomplete:'Incompleto' };
+    const estCls = { active:'ok', trialing:'warn', past_due:'danger', unpaid:'danger', canceled:'danger', incomplete:'neutral' };
+    const stInv = { paid:'Pagada', open:'Pendiente', void:'Anulada', uncollectible:'Incobrable', draft:'Borrador' };
+
+    const kpis = `
+      <div class="mini-grid" style="margin-bottom:18px">
+        <div class="mini-stat"><b>${fmtMoney(r.mrr||0)}</b><span>MRR · recurrente/mes</span></div>
+        <div class="mini-stat"><b>${r.activos||0}</b><span>gyms pagando</span></div>
+        <div class="mini-stat"><b>${fmtMoney(r.cobrado_mes||0)}</b><span>cobrado este mes</span></div>
+        <div class="mini-stat"><b>${r.morosos||0}</b><span>morosos</span></div>
+      </div>`;
+
+    const filasSubs = subs.length ? subs.map(x => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)">
+        <span style="flex:1;font-weight:600">${esc(x.gym_nombre)}</span>
+        <span style="width:90px;text-align:right">${x.amount_mxn!=null?fmtMoney(x.amount_mxn):'—'}/mes</span>
+        <span class="estado-pill ${estCls[x.status]||'neutral'}" style="min-width:70px;text-align:center">${esc(estMap[x.status]||x.status)}</span>
+        <span style="width:96px;text-align:right;font-size:12px;opacity:.75">${x.current_period_end?esc(fmtFecha(x.current_period_end)):'—'}</span>
+      </div>`).join('') : '<div class="bit-empty">Ningún gym con suscripción SaaS todavía.</div>';
+
+    const filasPagos = pagos.length ? pagos.slice(0,20).map(p => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">
+        <span style="width:90px;font-size:12px;opacity:.8">${esc(fmtFecha(p.date)||p.date||'—')}</span>
+        <span style="flex:1">${esc(p.gym_nombre)}</span>
+        <span style="width:90px;text-align:right;font-weight:600">${fmtMoney(p.amount_mxn)}</span>
+        <span style="width:80px;text-align:right;font-size:11px;opacity:.7">${esc(stInv[p.status]||p.status||'—')}</span>
+        ${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener" style="font-size:11px">ver</a>`:'<span style="width:22px"></span>'}
+      </div>`).join('') : '<div class="bit-empty">Sin cobros todavía.</div>';
+
+    zone.innerHTML = `
+      ${kpis}
+      <div class="f-section">
+        <h4>Gyms domiciliados (SaaS)</h4>
+        <div style="margin-top:4px">${filasSubs}</div>
+      </div>
+      <div class="f-section" style="margin-top:18px">
+        <h4>Historial de cobros</h4>
+        <div style="margin-top:4px">${filasPagos}</div>
+      </div>
+      <p style="font-size:11px;opacity:.5;margin-top:14px">Datos en vivo de Stripe. Aquí solo lo que los gyms le pagan a VELUM (el SaaS); las domiciliaciones de atletas viven en cada gym.</p>`;
+  }catch(e){
+    stateError(zone, e.message, 'loadCobranza');
+  }
+}
 
 async function loadCockpit(){
   const zone = document.getElementById('cockpit-zone');
