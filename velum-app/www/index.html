@@ -4499,9 +4499,14 @@ function showPortal(data){
   // Señal para el native bridge (oculta splash, etc.)
   window.dispatchEvent(new CustomEvent('velum:appReady'));
 
-  // Registrar push notifications en app nativa (no-op en browser)
+  // Registrar push notifications en app nativa (no-op en browser).
+  // Si el token se guardó (saved) o el usuario ya decidió que NO, ocultamos el banner
+  // de forma persistente. Si quedó "granted pero sin guardar", dejamos el banner para
+  // reintentar en el próximo arranque (auto-sanación).
   if(window.registerPush && data.cliente?.portal_token){
-    window.registerPush(data.cliente.portal_token, SUPABASE_URL, ANON_KEY).catch(()=>{});
+    window.registerPush(data.cliente.portal_token, SUPABASE_URL, ANON_KEY)
+      .then(r=>{ if(r && (r.saved || r.granted===false) && typeof _markPushDecided==='function') _markPushDecided(); })
+      .catch(()=>{});
   }
 
   // Web Push VAPID (PWA/browser) — registro async, no bloquea
@@ -4643,9 +4648,16 @@ async function requestPushPermission(){
     // NATIVO: el permiso lo maneja el bridge (Capacitor PushNotifications). La API web
     // Notification.permission NO es confiable en WKWebView -> por eso el banner no se ocultaba.
     if(window._isNative && typeof window.registerPush === 'function'){
-      await window.registerPush(token, SUPABASE_URL, ANON_KEY);
-      _markPushDecided();            // tras el flujo nativo, ocultar el banner (persistido)
-      showToast('Notificaciones activadas','🔔',2500);
+      const r = await window.registerPush(token, SUPABASE_URL, ANON_KEY);
+      if(r && r.saved){
+        _markPushDecided();                                   // guardado OK → ocultar banner
+        showToast('Notificaciones activadas','🔔',2500);
+      } else if(r && r.granted===false){
+        _markPushDecided();                                   // el user dijo que no → no insistir
+        showToast('Notificaciones desactivadas. Puedes activarlas en Ajustes del teléfono.','✕',4000);
+      } else {
+        showToast('No se pudo activar. Inténtalo de nuevo en un momento.','✕',3500);
+      }
       return;
     }
     // WEB / PWA: API estándar

@@ -1,6 +1,20 @@
 # VELUM — Pendientes para la próxima build de la app
 
-> **Estado (2026-07-17) — PUSH: faltaba la CAPABILITY iOS → build 11 + botón en panel:**
+> **Estado (2026-07-17) — PUSH: el token NO se guardaba (RLS) → build 12 / vc10:**
+> - Síntoma: build 11 pedía activar notificaciones cada vez y el panel decía "enviado a 0 clientes".
+> - **Causa raíz:** `registerPush` guardaba el token con **PATCH directo usando la anon key**, pero el
+>   RLS de `clientes` solo permite UPDATE autenticado (admin o atleta-own). Con anon → bloqueado en
+>   silencio → token nunca se guardaba. El banner nunca se apagaba porque solo se apaga si el guardado
+>   tiene éxito.
+> - **Fix:** nueva edge function **`velum-push-register`** (service role, gateada por el `portal_token`
+>   secreto) desplegada + verificada (404 con token falso). `bridge.js` `registerPush` ahora hace POST
+>   a esa función y **devuelve {granted,token,saved}**. `atleta.html`: el banner se apaga solo si
+>   `saved` (o si el user negó el permiso); si quedó granted-sin-guardar, reintenta al próximo arranque.
+> - **Versiones: iOS build 12 / Android vc10 (1.0.6).** Android AAB firmado listo (7.0M, vc10).
+>   **FALTA (Roy): re-Archivar build 12 en Xcode + subir vc10 a Play.** Tras instalar → entrar → el
+>   token SÍ se guarda y el botón Notificar del panel ya llega.
+>
+> **(previo) Estado (2026-07-17) — PUSH: faltaba la CAPABILITY iOS → build 11 + botón en panel:**
 > - **Causa de que no llegara token iOS:** faltaba la capability **Push Notifications** (entitlement
 >   `aps-environment`). Se creó `ios/App/App/App.entitlements` (aps-environment=development) y se
 >   agregó `CODE_SIGN_ENTITLEMENTS` al target por xcodeproj. **iOS bumpeado a build 11.**

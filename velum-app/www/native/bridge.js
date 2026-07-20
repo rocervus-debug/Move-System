@@ -240,33 +240,42 @@
       });
     } catch (e) { console.warn('[Bridge] Push listeners error:', e); }
 
+    // Devuelve { granted, token, saved } para que la UI sepa el estado real y decida
+    // si oculta el banner (solo cuando saved === true).
     window.registerPush = async function (portalToken, supabaseUrl, anonKey) {
-      if (!portalToken || !supabaseUrl) return;
+      if (!portalToken || !supabaseUrl) return { granted: false, token: null, saved: false };
       try {
         const perm = await FirebaseMessaging.requestPermissions();
         if (perm.receive !== 'granted') {
           console.log('[Bridge] Push: permiso denegado');
-          return;
+          return { granted: false, token: null, saved: false };
         }
         const { token } = await FirebaseMessaging.getToken();
-        if (!token) { console.warn('[Bridge] Push: sin token FCM'); return; }
+        if (!token) { console.warn('[Bridge] Push: sin token FCM'); return { granted: true, token: null, saved: false }; }
         console.log('[Bridge] FCM token:', token.slice(0, 12) + '…');
-        // Guardar token en Supabase (campo push_token del cliente)
+        // Guardar vía edge function (service role): el PATCH directo con anon key lo bloquea
+        // el RLS de clientes. El portal_token (secreto) gatea la escritura del lado servidor.
         try {
-          await fetch(`${supabaseUrl}/rest/v1/clientes?portal_token=eq.${encodeURIComponent(portalToken)}`, {
-            method: 'PATCH',
+          const res = await fetch(`${supabaseUrl}/functions/v1/velum-push-register`, {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': 'Bearer ' + anonKey
+              'apikey': anonKey || '',
+              'Authorization': 'Bearer ' + (anonKey || '')
             },
-            body: JSON.stringify({ push_token: token, push_platform: IS_IOS ? 'ios' : 'android' })
+            body: JSON.stringify({ portal_token: portalToken, push_token: token, platform: IS_IOS ? 'ios' : 'android' })
           });
+          const j = await res.json().catch(() => ({}));
+          if (!res.ok || !j.ok) { console.warn('[Bridge] push-register falló:', j && j.error); return { granted: true, token: token, saved: false }; }
+          console.log('[Bridge] push token guardado');
+          return { granted: true, token: token, saved: true };
         } catch (e) {
           console.warn('[Bridge] Error guardando push token:', e);
+          return { granted: true, token: token, saved: false };
         }
       } catch (e) {
         console.warn('[Bridge] Push setup error:', e);
+        return { granted: false, token: null, saved: false };
       }
     };
   }
