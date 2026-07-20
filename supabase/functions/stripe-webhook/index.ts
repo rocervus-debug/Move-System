@@ -70,10 +70,17 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+  // Secreto del segundo destino: el que escucha eventos de CUENTAS CONECTADAS (cobro directo).
+  const webhookSecretConnect = Deno.env.get('STRIPE_WEBHOOK_SECRET_CONNECT');
   if (!webhookSecret) return json({ error: 'STRIPE_WEBHOOK_SECRET no configurada.' }, 500);
   const payload = await req.text();
   const sig = req.headers.get('Stripe-Signature') || '';
-  if (!await verifyStripeSignature(payload, sig, webhookSecret)) return json({ error: 'Invalid signature.' }, 401);
+  // Stripe firma cada evento con el secreto del destino que lo emite. Aceptamos AMBOS:
+  // el de la plataforma ("Tu cuenta") y el de cuentas conectadas (cobro directo). Si el
+  // segundo no está configurado, se comporta igual que antes (solo plataforma).
+  const sigOk = await verifyStripeSignature(payload, sig, webhookSecret)
+    || (webhookSecretConnect ? await verifyStripeSignature(payload, sig, webhookSecretConnect) : false);
+  if (!sigOk) return json({ error: 'Invalid signature.' }, 401);
   const event = JSON.parse(payload);
   // Cuenta conectada del evento: en cobro DIRECTO los Connect events traen event.account (la
   // cuenta del gym) → se usa para leer sub/charge/PI en su cuenta. En cobro de destino (viejo)
@@ -225,7 +232,10 @@ Deno.serve(async (req: Request) => {
           const { data: ph } = await db.from('member_subscriptions').select('id').eq('gym_id', gymId).eq('package_id', packageId).eq('customer_email', email).is('stripe_subscription_id', null).order('created_at',{ascending:false}).limit(1).maybeSingle();
           const row = {
             cliente_id: cli.id, cliente_nombre: cli.nombre, customer_email: email,
-            stripe_subscription_id: subId, stripe_customer_id: customerId, stripe_account_id: (sub?.transfer_data?.destination)||null,
+            // Cobro DIRECTO: la sub vive en la cuenta del gym (evAcct). Cobro de destino (viejo):
+            // no hay event.account → cae a transfer_data.destination. Nunca guardar null aquí o se
+            // rompe cancelar/reactivar (no sabría en qué cuenta está la suscripción).
+            stripe_subscription_id: subId, stripe_customer_id: customerId, stripe_account_id: evAcct || (sub?.transfer_data?.destination) || null,
             status: sub?.status || 'active', amount_cents: Math.round(Number(pkg.price_mxn)*100), application_fee_pct: feePct,
             interval: 'month', current_period_end: periodEnd, cancel_at_period_end: !!sub?.cancel_at_period_end, updated_at: new Date().toISOString(),
           };
@@ -234,8 +244,12 @@ Deno.serve(async (req: Request) => {
 
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
           const invoiceId = (sub?.latest_invoice && typeof sub.latest_invoice==='string') ? sub.latest_invoice : (session.invoice as string)||'';
+          // PRIMER cobro: capturar el fee REAL de Stripe (la factura → su charge → balance_transaction).
+          // Sin esto, el primer pago quedaba con net = bruto (los cobros de renovación sí lo capturaban).
+          let firstStripeFee: number | null = null;
+          try { if (invoiceId) { const firstInv = await stripeGet(`/invoices/${invoiceId}`, evAcct); firstStripeFee = await stripeFeeFromCharge(firstInv?.charge as string, evAcct); } } catch(_) { /* degradar con gracia */ }
           if (cli.id) {
-            const vence = await recordMemberPago({ gymId, clienteNombre: cli.nombre, phone: md.customer_phone || null, pkgName: pkg.name, packageId, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: Number(pkg.price_mxn), feePct, subId, invoiceId });
+            const vence = await recordMemberPago({ gymId, clienteNombre: cli.nombre, phone: md.customer_phone || null, pkgName: pkg.name, packageId, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: Number(pkg.price_mxn), feePct, stripeFeeMxn: firstStripeFee, subId, invoiceId });
             if (email) {
               await sendEmail(email, 'recibo', { gym: gym.nombre, monto: String(Math.round(Number(pkg.price_mxn))), plan: pkg.name + ' (mensual)', vence: vence || '' });
               if (cli.isNew) {
