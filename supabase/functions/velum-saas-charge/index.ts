@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
     const gymId = parseInt(String(body.gym_id || '0'), 10);
     const amountMxn = Math.round(Number(body.amount_mxn || DEFAULT_FOUNDING_MXN));
     if (!gymId) return json({ error: 'gym_id requerido.' }, 400);
-    if (!(amountMxn >= 100 && amountMxn <= 20000)) return json({ error: 'Monto fuera de rango ($100–$20,000).' }, 400);
+    if (!(amountMxn >= 10 && amountMxn <= 20000)) return json({ error: 'Monto fuera de rango ($10–$20,000).' }, 400);
 
     const { data: gym } = await db.from('gyms').select('id, nombre, owner_email, subscription_status, stripe_subscription_id').eq('id', gymId).maybeSingle();
     if (!gym) return json({ error: 'Gym no encontrado.' }, 404);

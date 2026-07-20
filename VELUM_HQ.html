@@ -2527,7 +2527,7 @@ async function openGymDetalle(id){
         ? `<div class="bit-empty">Ya tiene suscripción SaaS activa (<b>${esc(est.label)}</b>). El cobro corre solo cada mes; gestiónalo en Stripe.</div>`
         : `<div class="bit-form">
             <label style="font-size:12px;opacity:.7">Precio founding · MXN/mes (de por vida)</label>
-            <input id="founding-amount" type="number" min="100" max="20000" step="1" value="649" style="max-width:150px">
+            <input id="founding-amount" type="number" min="10" max="20000" step="1" value="649" style="max-width:150px">
             <button class="btn btn-sm" id="founding-btn" style="align-self:flex-start" onclick="generarLinkFounding(${g.id})">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
               Generar link de cobro
@@ -2558,7 +2558,7 @@ async function openGymDetalle(id){
 async function generarLinkFounding(gymId){
   const inp = document.getElementById('founding-amount');
   const amount = Math.round(Number(inp && inp.value || 649));
-  if(!(amount >= 100 && amount <= 20000)){ toast('Monto inválido (100–20000).', 'err'); return; }
+  if(!(amount >= 10 && amount <= 20000)){ toast('Monto inválido (10–20000).', 'err'); return; }
   const s = getSession();
   if(!s || !s.jwt){ toast('Sesión expirada, vuelve a entrar.', 'err'); return; }
   const btn = document.getElementById('founding-btn');
