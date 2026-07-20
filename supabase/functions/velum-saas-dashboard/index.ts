@@ -83,6 +83,7 @@ Deno.serve(async (req: Request) => {
       subName.set(s.id, g.nombre); // para nombrar las facturas de esta sub
       return {
         gym_id: g.id, gym_nombre: g.nombre,
+        subscription_id: s.id,
         status: s.status,
         amount_mxn: (typeof item?.price?.unit_amount === 'number') ? Math.round(item.price.unit_amount / 100) : null,
         current_period_end: s.current_period_end ? new Date(s.current_period_end * 1000).toISOString().slice(0, 10) : null,

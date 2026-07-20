@@ -2204,6 +2204,7 @@ async function loadCobranza(){
         <span style="width:90px;text-align:right">${x.amount_mxn!=null?fmtMoney(x.amount_mxn):'—'}/mes</span>
         <span class="estado-pill ${estCls[x.status]||'neutral'}" style="min-width:70px;text-align:center">${esc(estMap[x.status]||x.status)}</span>
         <span style="width:96px;text-align:right;font-size:12px;opacity:.75">${x.current_period_end?esc(fmtFecha(x.current_period_end)):'—'}</span>
+        <button class="btn btn-sm" data-sub="${esc(x.subscription_id||'')}" data-nombre="${esc(x.gym_nombre)}" onclick="cancelarSubSaaS(this)" style="padding:4px 10px" title="Cancelar suscripción">Cancelar</button>
       </div>`).join('') : '<div class="bit-empty">Ningún gym con suscripción SaaS todavía.</div>';
 
     const filasPagos = pagos.length ? pagos.slice(0,20).map(p => `
@@ -2228,6 +2229,30 @@ async function loadCobranza(){
       <p style="font-size:11px;opacity:.5;margin-top:14px">Datos en vivo de Stripe. Aquí solo lo que los gyms le pagan a VELUM (el SaaS); las domiciliaciones de atletas viven en cada gym.</p>`;
   }catch(e){
     stateError(zone, e.message, 'loadCobranza');
+  }
+}
+
+// Cancela la suscripción SaaS de un gym (inmediato). Recibe el <button> con data-sub/data-nombre.
+async function cancelarSubSaaS(btn){
+  const subId = btn && btn.dataset.sub, nombre = (btn && btn.dataset.nombre) || 'este gym';
+  if(!subId){ toast('Sin ID de suscripción.', 'err'); return; }
+  if(!confirm(`¿Cancelar la suscripción SaaS de "${nombre}"?\n\nSe deja de cobrar de inmediato. (Los cobros ya hechos no se reembolsan aquí.)`)) return;
+  const s = getSession();
+  if(!s || !s.jwt){ toast('Sesión expirada.', 'err'); return; }
+  btn.disabled = true; btn.textContent = 'Cancelando…';
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/velum-saas-cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.jwt}` },
+      body: JSON.stringify({ subscription_id: subId }),
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || 'Error');
+    toast('Suscripción cancelada.', 'ok');
+    loadCobranza(); // refrescar el dashboard
+  }catch(e){
+    toast(e.message || 'No se pudo cancelar.', 'err');
+    btn.disabled = false; btn.textContent = 'Cancelar';
   }
 }
 
