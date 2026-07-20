@@ -2524,7 +2524,7 @@ async function openGymDetalle(id){
         Cobro SaaS (founding)
       </h4>
       ${ ['active','trialing','past_due'].includes(g.subscription_status)
-        ? `<div class="bit-empty">Ya tiene suscripción SaaS activa (<b>${esc(est.label)}</b>). El cobro corre solo cada mes; gestiónalo en Stripe.</div>`
+        ? `<div id="saas-info-box"><div class="spinner" style="margin:14px auto"></div></div>`
         : `<div class="bit-form">
             <label style="font-size:12px;opacity:.7">Precio founding · MXN/mes (de por vida)</label>
             <input id="founding-amount" type="number" min="10" max="20000" step="1" value="649" style="max-width:150px">
@@ -2551,6 +2551,55 @@ async function openGymDetalle(id){
       </div>
       <div id="gym-notas">${renderNotasGym(notas.data || [])}</div>
     </div>`;
+
+  // Si el gym paga SaaS, traer de Stripe su suscripción + historial de facturas.
+  if(['active','trialing','past_due'].includes(g.subscription_status)) cargarSaasInfo(id);
+}
+
+// Trae de Stripe (vía velum-saas-info) la suscripción SaaS del gym y su historial, y lo pinta.
+async function cargarSaasInfo(gymId){
+  const box = document.getElementById('saas-info-box');
+  if(!box) return;
+  const s = getSession();
+  if(!s || !s.jwt){ box.innerHTML = '<div class="bit-empty">Sesión expirada.</div>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/velum-saas-info`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.jwt}` },
+      body: JSON.stringify({ gym_id: gymId }),
+    });
+    const d = await res.json();
+    if(gymDetalleId !== gymId) return; // se cambió/cerró el detalle mientras cargaba
+    if(!res.ok) throw new Error(d.error || 'Error');
+    if(!d.has_sub){ box.innerHTML = '<div class="bit-empty">Sin suscripción SaaS en Stripe.</div>'; return; }
+    const sub = d.subscription || {};
+    const estMap = { active:'Activo', trialing:'Trial', past_due:'Moroso', canceled:'Cancelado', unpaid:'Impago', incomplete:'Incompleto' };
+    const estTxt = estMap[sub.status] || sub.status || '—';
+    const proximo = sub.current_period_end ? fmtFecha(String(sub.current_period_end).slice(0,10)) : '—';
+    const cancelaNota = sub.cancel_at_period_end ? ` · <span style="color:var(--warn,#e0a800)">se cancela al corte</span>` : '';
+    const invoices = d.invoices || [];
+    const stInv = { paid:'Pagada', open:'Pendiente', void:'Anulada', uncollectible:'Incobrable', draft:'Borrador' };
+    const filas = invoices.length
+      ? invoices.map(i => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)">
+            <span style="font-size:12px;opacity:.8">${esc(fmtFecha(i.date) || i.date || '—')}</span>
+            <span style="font-size:12px;font-weight:600">${fmtMoney(i.amount_mxn)}</span>
+            <span style="font-size:11px;opacity:.7">${esc(stInv[i.status] || i.status || '—')}</span>
+            ${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener" style="font-size:11px">ver</a>` : '<span></span>'}
+          </div>`).join('')
+      : '<div class="bit-empty" style="margin-top:6px">Sin cobros todavía.</div>';
+    box.innerHTML = `
+      <dl class="kv-grid">
+        <dt>Monto</dt><dd>${sub.amount_mxn != null ? fmtMoney(sub.amount_mxn) + '/mes' : '—'}</dd>
+        <dt>Estado</dt><dd>${esc(estTxt)}${cancelaNota}</dd>
+        <dt>Próximo cobro</dt><dd>${proximo}</dd>
+      </dl>
+      <p style="font-size:11px;opacity:.6;margin:12px 0 2px;text-transform:uppercase;letter-spacing:.5px">Historial de cobros</p>
+      <div>${filas}</div>
+      <p style="font-size:11px;opacity:.5;margin:10px 0 0">El cobro corre solo cada mes; para cancelar o cambiar tarjeta, gestiónalo en Stripe.</p>`;
+  }catch(e){
+    if(document.getElementById('saas-info-box')) box.innerHTML = `<div class="bit-empty">No se pudo cargar el cobro: ${esc(e.message||'error')}</div>`;
+  }
 }
 
 // Genera el link de checkout de suscripción SaaS founding para este gym (solo superadmin).
