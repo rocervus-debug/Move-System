@@ -52,20 +52,27 @@ Deno.serve(async (req: Request) => {
     if (!stripeKey) return json({ error: 'STRIPE_SECRET_KEY no configurada.' }, 500);
     const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
 
-    // Mapa sub_id / customer_id → gym (para nombrar cada cobro)
-    const { data: gyms } = await db.from('gyms').select('id, nombre, stripe_subscription_id, stripe_customer_id').not('stripe_subscription_id', 'is', null);
+    // Mapas para nombrar cada cobro: por sub_id, por customer_id, y por id (todos los gyms)
+    const { data: gyms } = await db.from('gyms').select('id, nombre, stripe_subscription_id, stripe_customer_id');
     const bySub = new Map<string, { id: number; nombre: string }>();
     const byCust = new Map<string, { id: number; nombre: string }>();
+    const byId = new Map<number, { id: number; nombre: string }>();
     for (const g of (gyms || [])) {
-      if (g.stripe_subscription_id) bySub.set(g.stripe_subscription_id, { id: g.id, nombre: g.nombre });
-      if (g.stripe_customer_id) byCust.set(g.stripe_customer_id, { id: g.id, nombre: g.nombre });
+      const rec = { id: g.id, nombre: g.nombre };
+      byId.set(g.id, rec);
+      if (g.stripe_subscription_id) bySub.set(g.stripe_subscription_id, rec);
+      if (g.stripe_customer_id) byCust.set(g.stripe_customer_id, rec);
     }
+    // subId → nombre resuelto (se llena al procesar las subs; sirve para nombrar las facturas)
+    const subName = new Map<string, string>();
     const nameFor = (subId?: string, custId?: string, meta?: any): { id: number | null; nombre: string } => {
       if (subId && bySub.has(subId)) return bySub.get(subId)!;
+      if (subId && subName.has(subId)) return { id: null, nombre: subName.get(subId)! };
       if (custId && byCust.has(custId)) return byCust.get(custId)!;
       const gid = parseInt(String(meta?.gym_id || '0'), 10);
-      if (gid) { for (const v of bySub.values()) if (v.id === gid) return v; return { id: gid, nombre: meta?.gym_nombre || `Gym ${gid}` }; }
-      return { id: null, nombre: meta?.gym_nombre || 'Desconocido' };
+      if (gid && byId.has(gid)) return byId.get(gid)!;
+      if (gid) return { id: gid, nombre: meta?.gym_nombre || `Gym ${gid}` };
+      return { id: null, nombre: meta?.gym_nombre || 'Sin gym (prueba)' };
     };
 
     // Suscripciones de plataforma (= lo que los gyms pagan a VELUM)
@@ -73,6 +80,7 @@ Deno.serve(async (req: Request) => {
     const subs = (subsRes?.data || []).map((s: any) => {
       const item = s.items?.data?.[0];
       const g = nameFor(s.id, typeof s.customer === 'string' ? s.customer : s.customer?.id, s.metadata);
+      subName.set(s.id, g.nombre); // para nombrar las facturas de esta sub
       return {
         gym_id: g.id, gym_nombre: g.nombre,
         status: s.status,
