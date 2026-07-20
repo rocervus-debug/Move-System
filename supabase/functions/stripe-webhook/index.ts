@@ -211,6 +211,31 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // SaaS founding: activar cobro recurrente en un gym que YA existe (generado desde
+        // superadmin vía velum-saas-charge). Cobro NORMAL de plataforma (no Connect): el
+        // evento llega a "Tu cuenta", evAcct=undefined, la sub vive en la plataforma.
+        if (session.mode === 'subscription' && md.velum_saas_existing === 'true') {
+          const gymId = parseInt(md.gym_id || '0', 10);
+          const subId = session.subscription as string;
+          const customerId = session.customer as string;
+          if (!gymId || !subId) { console.error('saas existing: faltan datos'); break; }
+          const { data: gExist } = await db.from('gyms').select('id, stripe_subscription_id').eq('id', gymId).maybeSingle();
+          if (!gExist) { console.error('saas existing: gym no encontrado', gymId); break; }
+          if (gExist.stripe_subscription_id === subId) { console.log('saas existing duplicado, skip'); break; }
+          const sub = await stripeGet(`/subscriptions/${subId}`); // plataforma (sin Stripe-Account)
+          const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end*1000).toISOString() : null;
+          await db.from('gyms').update({
+            subscription_plan: md.plan || 'max',
+            subscription_status: sub?.status === 'trialing' ? 'trialing' : 'active',
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subId,
+            subscription_current_period_end: periodEnd,
+            subscription_updated_at: new Date().toISOString(),
+          }).eq('id', gymId);
+          console.log(`SaaS founding activado: gym ${gymId} sub ${subId} (${md.founding_amount_mxn || '?'} MXN)`);
+          break;
+        }
+
         if (session.mode === 'subscription' && md.velum_member_sub === 'true') {
           const gymId = parseInt(md.gym_id || '0', 10);
           const packageId = parseInt(md.package_id || '0', 10);

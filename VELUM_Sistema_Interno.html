@@ -11926,8 +11926,12 @@ function buildNotifAlerts(){
   const gastosProx = gastos
     .filter(g => g.recurrente && g.dia_recurrencia)
     .map(g => {
-      const thisM = new Date(hoyGA.getFullYear(), hoyGA.getMonth(), g.dia_recurrencia);
-      const nextDate = thisM >= hoyGA ? thisM : new Date(hoyGA.getFullYear(), hoyGA.getMonth()+1, g.dia_recurrencia);
+      // dia_recurrencia puede ser 31: en mes de 30/28 días, new Date(y,m,31) desborda al
+      // mes siguiente y desfasa la fecha. Se topa al último día real del mes.
+      const _uld = (y,m)=> new Date(y, m+1, 0).getDate();
+      const _yGA = hoyGA.getFullYear(), _mGA = hoyGA.getMonth();
+      const thisM = new Date(_yGA, _mGA, Math.min(g.dia_recurrencia, _uld(_yGA, _mGA)));
+      const nextDate = thisM >= hoyGA ? thisM : new Date(_yGA, _mGA+1, Math.min(g.dia_recurrencia, _uld(_yGA, _mGA+1)));
       return { ...g, nextDate };
     })
     .filter(g => g.nextDate <= en3GA);
@@ -19253,8 +19257,11 @@ function renderGastos(){
       .filter(g => g.recurrente && g.dia_recurrencia)
       .map(g => {
         const dia = g.dia_recurrencia;
-        const thisM = new Date(hoyB.getFullYear(), hoyB.getMonth(), dia);
-        const nextDate = thisM >= hoyB ? thisM : new Date(hoyB.getFullYear(), hoyB.getMonth()+1, dia);
+        // Tope al último día real del mes: dia=31 en mes de 30/28 días desbordaba.
+        const _uld = (y,m)=> new Date(y, m+1, 0).getDate();
+        const _yB = hoyB.getFullYear(), _mB = hoyB.getMonth();
+        const thisM = new Date(_yB, _mB, Math.min(dia, _uld(_yB, _mB)));
+        const nextDate = thisM >= hoyB ? thisM : new Date(_yB, _mB+1, Math.min(dia, _uld(_yB, _mB+1)));
         return { ...g, nextDate };
       })
       .filter(g => g.nextDate <= en7)
@@ -22861,8 +22868,10 @@ function renderPagos(){
   const ingresosMes = pagosSinAbono.filter(p=>(p.fecha||'').startsWith(thisMonth)).reduce((s,p)=>s+(p.monto||0),0)
                     + visitasMesPagos.reduce((s,v)=>s+(v.monto||0),0);
 
-  // Proyección: promedio de últimos 3 meses
-  const proyMeses = [1,2,3].map(i=>{ const d=new Date(today); d.setMonth(d.getMonth()-i); return d.toISOString().slice(0,7); });
+  // Proyección: promedio de últimos 3 meses. setDate(1) ANTES de restar el mes:
+  // sin eso, en día 29/30/31 el mes desbordaba (31-jul −1mes → "31-jun" → 1-jul)
+  // y la proyección promediaba meses repetidos/equivocados los últimos días del mes.
+  const proyMeses = [1,2,3].map(i=>{ const d=new Date(today); d.setDate(1); d.setMonth(d.getMonth()-i); return d.toISOString().slice(0,7); });
   const proyeccion = Math.round(proyMeses.map(m=>pagosSinAbono.filter(p=>(p.fecha||'').startsWith(m)).reduce((s,p)=>s+(p.monto||0),0)).reduce((a,b)=>a+b,0)/3);
 
   // Clientes vencidos / en riesgo — regla canónica por cliente (misma que el dashboard,

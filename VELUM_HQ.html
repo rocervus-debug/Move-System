@@ -2520,6 +2520,25 @@ async function openGymDetalle(id){
     </div>
     <div class="f-section">
       <h4>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Cobro SaaS (founding)
+      </h4>
+      ${ ['active','trialing','past_due'].includes(g.subscription_status)
+        ? `<div class="bit-empty">Ya tiene suscripción SaaS activa (<b>${esc(est.label)}</b>). El cobro corre solo cada mes; gestiónalo en Stripe.</div>`
+        : `<div class="bit-form">
+            <label style="font-size:12px;opacity:.7">Precio founding · MXN/mes (de por vida)</label>
+            <input id="founding-amount" type="number" min="100" max="20000" step="1" value="649" style="max-width:150px">
+            <button class="btn btn-sm" id="founding-btn" style="align-self:flex-start" onclick="generarLinkFounding(${g.id})">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
+              Generar link de cobro
+            </button>
+            <div id="founding-result" style="display:none;margin-top:10px"></div>
+            <p style="font-size:11px;opacity:.55;margin:4px 0 0">Le mandas el link al gym; al pagar arranca su cobranza mensual (la fecha de corte queda anclada a ese día).</p>
+          </div>`
+      }
+    </div>
+    <div class="f-section">
+      <h4>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
         Notas
       </h4>
@@ -2532,6 +2551,47 @@ async function openGymDetalle(id){
       </div>
       <div id="gym-notas">${renderNotasGym(notas.data || [])}</div>
     </div>`;
+}
+
+// Genera el link de checkout de suscripción SaaS founding para este gym (solo superadmin).
+// El cobro recurrente lo hace Stripe solo; aquí solo se crea el link que el gym paga una vez.
+async function generarLinkFounding(gymId){
+  const inp = document.getElementById('founding-amount');
+  const amount = Math.round(Number(inp && inp.value || 649));
+  if(!(amount >= 100 && amount <= 20000)){ toast('Monto inválido (100–20000).', 'err'); return; }
+  const s = getSession();
+  if(!s || !s.jwt){ toast('Sesión expirada, vuelve a entrar.', 'err'); return; }
+  const btn = document.getElementById('founding-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Generando…'; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/velum-saas-charge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.jwt}` },
+      body: JSON.stringify({ gym_id: gymId, amount_mxn: amount }),
+    });
+    const d = await res.json();
+    if(!res.ok || !d.url) throw new Error(d.error || 'No se pudo generar el link.');
+    const box = document.getElementById('founding-result');
+    if(box){
+      box.style.display = 'block';
+      box.innerHTML = `
+        <p style="font-size:12px;margin:0 0 6px">Link para <b>${esc(d.gym)}</b> · $${d.amount_mxn}/mes de por vida:</p>
+        <input id="founding-url" readonly value="${esc(d.url)}" style="width:100%;font-size:11px;padding:7px 9px;border-radius:8px" onclick="this.select()">
+        <button class="btn btn-sm" style="margin-top:6px" onclick="copiarFoundingUrl()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copiar link
+        </button>`;
+    }
+    toast('Link listo. Cópialo y mándaselo al gym.', 'ok');
+  }catch(e){
+    toast(e.message || 'Error generando el cobro.', 'err');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = 'Generar link de cobro'; }
+  }
+}
+function copiarFoundingUrl(){
+  const el = document.getElementById('founding-url');
+  if(el && navigator.clipboard){ navigator.clipboard.writeText(el.value); toast('Link copiado.', 'ok'); }
 }
 
 function renderNotasGym(notas){
