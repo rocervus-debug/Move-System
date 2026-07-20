@@ -28196,9 +28196,14 @@ async function enviarPushNotif(){
       body: JSON.stringify({ title:title, body:body, data:{ view:'home' } })
     });
     var j=await res.json();
-    if(res.ok && j && j.ok){
+    if(res.ok && j && j.ok && (j.enviados>0)){
       toast('Notificación enviada a '+(j.enviados||0)+' cliente(s).');
       closeModal('notificar-push');
+    } else if(res.ok && j && j.ok){
+      // corrió pero no llegó a nadie: mostrar el motivo (código de error de FCM si lo hay)
+      var errTxt = (j.errores && j.errores[0]) ? (j.errores[0].code+(j.errores[0].msg?(' — '+j.errores[0].msg):'')) : 'ningún dispositivo activo';
+      toast('No llegó a nadie ('+(j.fallidos||0)+' fallidos): '+errTxt,'✕',8000);
+      if(send){ send.disabled=false; send.textContent='Enviar notificación'; }
     } else {
       toast('No se pudo enviar: '+((j&&j.error)||res.status),'✕',5000);
       if(send){ send.disabled=false; send.textContent='Enviar notificación'; }

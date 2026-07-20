@@ -153,6 +153,7 @@ Deno.serve(async (req) => {
   const fcmUrl = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
   let enviados = 0, fallidos = 0;
   const tokensMuertos: string[] = [];
+  const errores: Array<{ code: string; msg: string }> = [];
 
   for (const r of recipients) {
     const message = {
@@ -174,9 +175,11 @@ Deno.serve(async (req) => {
       else {
         fallidos++;
         const err = await res.json().catch(() => ({}));
-        const code = err?.error?.details?.[0]?.errorCode || err?.error?.status || '';
-        // Token inválido/desregistrado → marcar para limpiar
-        if (code === 'UNREGISTERED' || code === 'INVALID_ARGUMENT' || res.status === 404) {
+        const code = err?.error?.details?.[0]?.errorCode || err?.error?.status || String(res.status);
+        if (errores.length < 3) errores.push({ code: String(code), msg: (err?.error?.message || '').slice(0, 140) });
+        // Token de verdad inválido/desregistrado → limpiar. (INVALID_ARGUMENT NO se limpia:
+        // suele ser un problema del mensaje/APNs, no del token.)
+        if (code === 'UNREGISTERED' || code === 'NOT_FOUND' || res.status === 404) {
           tokensMuertos.push(r.push_token);
         }
       }
@@ -189,5 +192,5 @@ Deno.serve(async (req) => {
             .eq('gym_id', gymId).in('push_token', tokensMuertos);
   }
 
-  return json({ ok: true, enviados, fallidos, tokens_limpiados: tokensMuertos.length });
+  return json({ ok: true, enviados, fallidos, tokens_limpiados: tokensMuertos.length, errores });
 });
