@@ -26,9 +26,13 @@ function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, stri
   }
   return out;
 }
-async function stripeFetch(path: string, method: string, body: Record<string, unknown> | undefined, secretKey: string) {
+async function stripeFetch(path: string, method: string, body: Record<string, unknown> | undefined, secretKey: string, stripeAccount?: string) {
   const params = body ? new URLSearchParams(flatten(body)).toString() : undefined;
-  const res = await fetch(`https://api.stripe.com/v1${path}`, { method, headers: { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2024-11-20.acacia' }, body: params });
+  const headers: Record<string,string> = { 'Authorization': `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2024-11-20.acacia' };
+  // Cobro DIRECTO: crear/operar en la cuenta del gym → el gym es el comercio y Stripe le
+  // descuenta su comisión (recibe el neto). Sin header = opera en la plataforma (cobros viejos).
+  if (stripeAccount) headers['Stripe-Account'] = stripeAccount;
+  const res = await fetch(`https://api.stripe.com/v1${path}`, { method, headers, body: params });
   const j = await res.json();
   if (!res.ok) throw new Error(`Stripe ${res.status}: ${JSON.stringify(j).slice(0,300)}`);
   return j;
@@ -95,7 +99,10 @@ Deno.serve(async (req: Request) => {
       const feePct = ZERO_FEE_PLANS.has(plan) ? 0 : 0.02;
 
       const meta = { gym_id: String(gymId), package_id: String(pkg.id), customer_email: email, customer_name: customer.name || '', customer_phone: customer.phone || '', velum_member_sub: 'true', velum_fee_pct: String(feePct) };
-      const subData: Record<string, unknown> = { transfer_data: { destination: gym.stripe_account_id }, on_behalf_of: gym.stripe_account_id, metadata: meta };
+      // Cobro DIRECTO en la cuenta del gym: el gym es el comercio y paga su propia comisión de
+      // Stripe (recibe el neto). NO se usa transfer_data/on_behalf_of (eso era cobro de destino,
+      // donde VELUM absorbía el fee). La comisión de VELUM (0% en Max) va como application_fee.
+      const subData: Record<string, unknown> = { metadata: meta };
       if (feePct > 0) subData.application_fee_percent = Number((feePct * 100).toFixed(4));
 
       const session = await stripeFetch('/checkout/sessions', 'POST', {
@@ -108,7 +115,7 @@ Deno.serve(async (req: Request) => {
         cancel_url: `${APP_URL}`,
         metadata: meta,
         locale: 'es',
-      }, stripeSecret) as { id: string; url: string };
+      }, stripeSecret, gym.stripe_account_id) as { id: string; url: string };
 
       // Poblar cliente_id si el atleta ya existe en este gym (lookup por email).
       const { data: cliRow } = await db.from('clientes').select('id').eq('gym_id', gymId).eq('email', email).maybeSingle();
@@ -167,13 +174,19 @@ Deno.serve(async (req: Request) => {
     }
     if (!authorized) return json({ error: 'No autorizado.' }, 403);
 
+    // Sub nuevo (cobro directo) vive en la cuenta del gym; sub viejo (cobro de destino) vive en
+    // la plataforma. Intentamos en la cuenta del gym y, si no existe ahí, caemos a plataforma.
+    async function subUpdate(bodyU: Record<string, unknown>) {
+      try { return await stripeFetch(`/subscriptions/${subscriptionId}`, 'POST', bodyU, stripeSecret, ms.stripe_account_id || undefined); }
+      catch { return await stripeFetch(`/subscriptions/${subscriptionId}`, 'POST', bodyU, stripeSecret); }
+    }
     if (action === 'cancel') {
-      const sub = await stripeFetch(`/subscriptions/${subscriptionId}`, 'POST', { cancel_at_period_end: true }, stripeSecret);
+      const sub = await subUpdate({ cancel_at_period_end: true });
       await db.from('member_subscriptions').update({ cancel_at_period_end: true, updated_at: new Date().toISOString() }).eq('id', ms.id);
       return json({ ok: true, cancel_at_period_end: true, current_period_end: sub?.current_period_end ? new Date(sub.current_period_end*1000).toISOString() : ms.current_period_end });
     }
     if (action === 'reactivate') {
-      await stripeFetch(`/subscriptions/${subscriptionId}`, 'POST', { cancel_at_period_end: false }, stripeSecret);
+      await subUpdate({ cancel_at_period_end: false });
       await db.from('member_subscriptions').update({ cancel_at_period_end: false, updated_at: new Date().toISOString() }).eq('id', ms.id);
       return json({ ok: true, cancel_at_period_end: false });
     }
