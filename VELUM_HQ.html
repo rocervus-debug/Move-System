@@ -2200,17 +2200,18 @@ async function loadCobranza(){
 
     const filasSubs = subs.length ? subs.map(x => `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)">
-        <span style="flex:1;font-weight:600">${esc(x.gym_nombre)}</span>
+        <span style="flex:1;font-weight:600">${esc(x.gym_nombre)}${x.manual?' <span style="font-size:10px;opacity:.65;border:1px solid rgba(255,255,255,.22);padding:1px 5px;border-radius:5px;margin-left:6px;font-weight:500">Manual</span>':''}</span>
         <span style="width:90px;text-align:right">${x.amount_mxn!=null?fmtMoney(x.amount_mxn):'—'}/mes</span>
         <span class="estado-pill ${estCls[x.status]||'neutral'}" style="min-width:70px;text-align:center">${esc(estMap[x.status]||x.status)}</span>
-        <span style="width:96px;text-align:right;font-size:12px;opacity:.75">${x.current_period_end?esc(fmtFecha(x.current_period_end)):'—'}</span>
-        <button class="btn btn-sm" data-sub="${esc(x.subscription_id||'')}" data-nombre="${esc(x.gym_nombre)}" onclick="cancelarSubSaaS(this)" style="padding:4px 10px" title="Cancelar suscripción">Cancelar</button>
+        <span style="width:96px;text-align:right;font-size:12px;opacity:.75">${x.manual?'por fuera':(x.current_period_end?esc(fmtFecha(x.current_period_end)):'—')}</span>
+        <button class="btn btn-sm" ${x.manual?`data-gym="${x.gym_id}" data-manual="1"`:`data-sub="${esc(x.subscription_id||'')}"`} data-nombre="${esc(x.gym_nombre)}" onclick="cancelarSubSaaS(this)" style="padding:4px 10px" title="${x.manual?'Quitar cobro manual':'Cancelar suscripción'}">${x.manual?'Quitar':'Cancelar'}</button>
       </div>`).join('') : '<div class="bit-empty">Ningún gym con suscripción SaaS todavía.</div>';
 
     const filasPagos = pagos.length ? pagos.slice(0,20).map(p => `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">
         <span style="width:90px;font-size:12px;opacity:.8">${esc(fmtFecha(p.date)||p.date||'—')}</span>
         <span style="flex:1">${esc(p.gym_nombre)}</span>
+        <span style="width:96px;font-size:11px;opacity:.6">${esc(p.metodo||'')}</span>
         <span style="width:90px;text-align:right;font-weight:600">${fmtMoney(p.amount_mxn)}</span>
         <span style="width:80px;text-align:right;font-size:11px;opacity:.7">${esc(stInv[p.status]||p.status||'—')}</span>
         ${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener" style="font-size:11px">ver</a>`:'<span style="width:22px"></span>'}
@@ -2219,14 +2220,18 @@ async function loadCobranza(){
     zone.innerHTML = `
       ${kpis}
       <div class="f-section">
-        <h4>Gyms domiciliados (SaaS)</h4>
+        <h4 style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span>Gyms domiciliados (SaaS)</span>
+          <button class="btn btn-sm" onclick="abrirCobroManual()">+ Cobro manual</button>
+        </h4>
+        <div id="cobro-manual-form" style="display:none"></div>
         <div style="margin-top:4px">${filasSubs}</div>
       </div>
       <div class="f-section" style="margin-top:18px">
         <h4>Historial de cobros</h4>
         <div style="margin-top:4px">${filasPagos}</div>
       </div>
-      <p style="font-size:11px;opacity:.5;margin-top:14px">Datos en vivo de Stripe. Aquí solo lo que los gyms le pagan a VELUM (el SaaS); las domiciliaciones de atletas viven en cada gym.</p>`;
+      <p style="font-size:11px;opacity:.5;margin-top:14px">Stripe en vivo + pagos manuales. Solo lo que los gyms le pagan a VELUM (SaaS); las domiciliaciones de atletas viven en cada gym.</p>`;
   }catch(e){
     stateError(zone, e.message, 'loadCobranza');
   }
@@ -2234,7 +2239,18 @@ async function loadCobranza(){
 
 // Cancela la suscripción SaaS de un gym (inmediato). Recibe el <button> con data-sub/data-nombre.
 async function cancelarSubSaaS(btn){
-  const subId = btn && btn.dataset.sub, nombre = (btn && btn.dataset.nombre) || 'este gym';
+  const nombre = (btn && btn.dataset.nombre) || 'este gym';
+  // Cobro manual: solo quitar la marca (no toca Stripe); los pagos registrados se conservan.
+  if(btn && btn.dataset.manual === '1'){
+    const gymId = parseInt(btn.dataset.gym||'0', 10);
+    if(!gymId) return;
+    if(!confirm(`¿Quitar el cobro manual de "${nombre}"? Dejará de contar en MRR. Los pagos ya registrados se conservan.`)) return;
+    btn.disabled = true; btn.textContent = '…';
+    const { error } = await sb.from('gyms').update({ saas_manual_amount_mxn: null }).eq('id', gymId);
+    if(error){ toast(error.message || 'Error', 'err'); btn.disabled = false; btn.textContent = 'Quitar'; return; }
+    toast('Cobro manual quitado.', 'ok'); loadCobranza(); return;
+  }
+  const subId = btn && btn.dataset.sub;
   if(!subId){ toast('Sin ID de suscripción.', 'err'); return; }
   if(!confirm(`¿Cancelar la suscripción SaaS de "${nombre}"?\n\nSe deja de cobrar de inmediato. (Los cobros ya hechos no se reembolsan aquí.)`)) return;
   const s = getSession();
@@ -2253,6 +2269,55 @@ async function cancelarSubSaaS(btn){
   }catch(e){
     toast(e.message || 'No se pudo cancelar.', 'err');
     btn.disabled = false; btn.textContent = 'Cancelar';
+  }
+}
+
+// Formulario para registrar un pago SaaS que un gym hizo POR FUERA de Stripe.
+async function abrirCobroManual(){
+  const box = document.getElementById('cobro-manual-form');
+  if(!box) return;
+  if(box.style.display === 'block'){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  if(!GYMS || !GYMS.length){ try{ await fetchGyms(); }catch(_){} }
+  const opts = (GYMS||[]).map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
+  const hoy = new Date().toISOString().slice(0,10);
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="background:rgba(255,255,255,.03);padding:14px;border-radius:12px;margin:10px 0;display:grid;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="font-size:12px;opacity:.7;display:grid;gap:4px">Gym<select id="cm-gym" style="width:100%">${opts}</select></label>
+        <label style="font-size:12px;opacity:.7;display:grid;gap:4px">Monto MXN<input id="cm-monto" type="number" min="1" step="1" value="649" style="width:100%"></label>
+        <label style="font-size:12px;opacity:.7;display:grid;gap:4px">Fecha<input id="cm-fecha" type="date" value="${hoy}" style="width:100%"></label>
+        <label style="font-size:12px;opacity:.7;display:grid;gap:4px">Método<select id="cm-metodo" style="width:100%"><option>Transferencia</option><option>Efectivo</option><option>Depósito</option><option>Otro</option></select></label>
+      </div>
+      <label style="font-size:12px;opacity:.7;display:grid;gap:4px">Nota (opcional)<input id="cm-nota" type="text" placeholder="Referencia, acuerdo…" style="width:100%"></label>
+      <label style="font-size:12px;display:flex;align-items:center;gap:8px"><input id="cm-recurrente" type="checkbox" checked> Marcar como cobro mensual (cuenta en MRR)</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="guardarCobroManual(this)">Registrar pago</button>
+        <button class="btn btn-sm" onclick="abrirCobroManual()" style="opacity:.7">Cancelar</button>
+      </div>
+    </div>`;
+}
+async function guardarCobroManual(btn){
+  const gymId = parseInt((document.getElementById('cm-gym')||{}).value || '0', 10);
+  const monto = Math.round(Number((document.getElementById('cm-monto')||{}).value || 0));
+  const fecha = (document.getElementById('cm-fecha')||{}).value;
+  const metodo = (document.getElementById('cm-metodo')||{}).value;
+  const nota = (document.getElementById('cm-nota')||{}).value || null;
+  const recurrente = !!(document.getElementById('cm-recurrente')||{}).checked;
+  if(!gymId || !(monto > 0) || !fecha){ toast('Faltan datos: gym, monto y fecha.', 'err'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Guardando…'; }
+  try{
+    const { error: e1 } = await sb.from('saas_manual_payments').insert({ gym_id: gymId, amount_mxn: monto, fecha, metodo, nota });
+    if(e1) throw e1;
+    if(recurrente){
+      const { error: e2 } = await sb.from('gyms').update({ saas_manual_amount_mxn: monto }).eq('id', gymId);
+      if(e2) throw e2;
+    }
+    toast('Pago manual registrado.', 'ok');
+    loadCobranza();
+  }catch(e){
+    toast(e.message || 'No se pudo registrar.', 'err');
+    if(btn){ btn.disabled = false; btn.textContent = 'Registrar pago'; }
   }
 }
 

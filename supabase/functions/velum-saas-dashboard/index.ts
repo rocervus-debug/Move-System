@@ -53,15 +53,17 @@ Deno.serve(async (req: Request) => {
     const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
 
     // Mapas para nombrar cada cobro: por sub_id, por customer_id, y por id (todos los gyms)
-    const { data: gyms } = await db.from('gyms').select('id, nombre, stripe_subscription_id, stripe_customer_id');
+    const { data: gyms } = await db.from('gyms').select('id, nombre, stripe_subscription_id, stripe_customer_id, saas_manual_amount_mxn');
     const bySub = new Map<string, { id: number; nombre: string }>();
     const byCust = new Map<string, { id: number; nombre: string }>();
     const byId = new Map<number, { id: number; nombre: string }>();
+    const manuales: any[] = []; // gyms marcados como cobro manual (pagan por fuera de Stripe)
     for (const g of (gyms || [])) {
       const rec = { id: g.id, nombre: g.nombre };
       byId.set(g.id, rec);
       if (g.stripe_subscription_id) bySub.set(g.stripe_subscription_id, rec);
       if (g.stripe_customer_id) byCust.set(g.stripe_customer_id, rec);
+      if (g.saas_manual_amount_mxn && g.saas_manual_amount_mxn > 0) manuales.push(g);
     }
     // subId → nombre resuelto (se llena al procesar las subs; sirve para nombrar las facturas)
     const subName = new Map<string, string>();
@@ -100,34 +102,54 @@ Deno.serve(async (req: Request) => {
       };
     });
 
-    const activos = subs.filter((s: any) => ACTIVE.has(s.status));
-    const morosos = subs.filter((s: any) => s.status === 'past_due');
-    const mrr = activos.reduce((t: number, s: any) => t + (s.amount_mxn || 0), 0);
+    // Gyms con cobro MANUAL (pagan por fuera de Stripe) → cuentan como activos en MRR/lista
+    const manualSubs = manuales.map((g: any) => ({
+      gym_id: g.id, gym_nombre: g.nombre, subscription_id: null,
+      status: 'active', amount_mxn: g.saas_manual_amount_mxn,
+      current_period_end: null, cancel_at_period_end: false, manual: true,
+    }));
 
-    // Historial de cobros (últimas 30 facturas de plataforma)
-    const invRes = await stripeGet('/invoices?limit=30', stripeKey);
     const now = new Date();
     const mesActual = now.toISOString().slice(0, 7);
     let cobradoMes = 0;
-    const pagos = (invRes?.data || [])
+
+    // Historial: facturas de Stripe (solo SaaS) + pagos manuales
+    const invRes = await stripeGet('/invoices?limit=30', stripeKey);
+    const pagosStripe = (invRes?.data || [])
       .filter((i: any) => saasSubIds.has(typeof i.subscription === 'string' ? i.subscription : i.subscription?.id))
       .map((i: any) => {
         const g = nameFor(typeof i.subscription === 'string' ? i.subscription : i.subscription?.id, typeof i.customer === 'string' ? i.customer : i.customer?.id, i.metadata);
         const fecha = i.created ? new Date(i.created * 1000).toISOString().slice(0, 10) : null;
         const monto = Math.round((i.amount_paid ?? 0) / 100);
         if (i.status === 'paid' && fecha && fecha.slice(0, 7) === mesActual) cobradoMes += monto;
-        return { date: fecha, gym_nombre: g.nombre, amount_mxn: monto, status: i.status, url: i.hosted_invoice_url || null };
+        return { date: fecha, gym_nombre: g.nombre, amount_mxn: monto, status: i.status, url: i.hosted_invoice_url || null, metodo: 'Stripe' };
       });
+    const { data: manPays } = await db.from('saas_manual_payments').select('gym_id, amount_mxn, fecha, metodo').order('fecha', { ascending: false }).limit(30);
+    const pagosManual = (manPays || []).map((p: any) => {
+      const monto = Math.round(Number(p.amount_mxn) || 0);
+      if (p.fecha && String(p.fecha).slice(0, 7) === mesActual) cobradoMes += monto;
+      return { date: p.fecha, gym_nombre: (byId.get(p.gym_id)?.nombre) || `Gym ${p.gym_id}`, amount_mxn: monto, status: 'paid', url: null, metodo: p.metodo || 'Manual' };
+    });
+    const pagos = [...pagosStripe, ...pagosManual].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 30);
+
+    const stripeActivos = subs.filter((s: any) => ACTIVE.has(s.status));
+    const morosos = subs.filter((s: any) => s.status === 'past_due');
+    const mrr = stripeActivos.reduce((t: number, s: any) => t + (s.amount_mxn || 0), 0)
+      + manualSubs.reduce((t: number, s: any) => t + (s.amount_mxn || 0), 0);
+
+    const subsVisibles = [
+      ...subs.filter((s: any) => !['canceled', 'incomplete_expired'].includes(s.status)),
+      ...manualSubs,
+    ].sort((a: any, b: any) => (a.status === 'past_due' ? -1 : 0) - (b.status === 'past_due' ? -1 : 0));
 
     return json({
       ok: true,
       resumen: {
-        mrr, activos: activos.length, morosos: morosos.length,
+        mrr, activos: stripeActivos.length + manualSubs.length, morosos: morosos.length,
         cobrado_mes: cobradoMes,
-        total_gyms_con_sub: subs.filter((s: any) => s.status !== 'canceled' && s.status !== 'incomplete_expired').length,
+        total_gyms_con_sub: subsVisibles.length,
       },
-      subs: subs.filter((s: any) => !['canceled', 'incomplete_expired'].includes(s.status))
-        .sort((a: any, b: any) => (a.status === 'past_due' ? -1 : 0) - (b.status === 'past_due' ? -1 : 0)),
+      subs: subsVisibles,
       pagos,
     });
   } catch (e) {
