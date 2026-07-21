@@ -75,12 +75,21 @@ Deno.serve(async (req: Request) => {
       return { id: null, nombre: meta?.gym_nombre || 'Sin gym (prueba)' };
     };
 
-    // Suscripciones de plataforma (= lo que los gyms pagan a VELUM)
+    // Suscripciones de plataforma. OJO: también viven aquí las domiciliaciones VIEJAS de
+    // atletas (modelo de destino: cliente→gym). Hay que EXCLUIRLAS — este panel es SOLO lo
+    // que los gyms le pagan a VELUM (SaaS). Nunca cruzar dinero de gym con dinero de atleta.
     const subsRes = await stripeGet('/subscriptions?status=all&limit=100&expand[]=data.items.data.price', stripeKey);
-    const subs = (subsRes?.data || []).map((s: any) => {
+    const esSaaS = (s: any): boolean => {
+      const md = s.metadata || {};
+      if (md.velum_member_sub === 'true') return false;                 // domiciliación de atleta → fuera
+      return md.velum_saas_existing === 'true' || md.velum_signup === 'true' || bySub.has(s.id);
+    };
+    const saasSubIds = new Set<string>();
+    const subs = (subsRes?.data || []).filter(esSaaS).map((s: any) => {
       const item = s.items?.data?.[0];
       const g = nameFor(s.id, typeof s.customer === 'string' ? s.customer : s.customer?.id, s.metadata);
       subName.set(s.id, g.nombre); // para nombrar las facturas de esta sub
+      saasSubIds.add(s.id);
       return {
         gym_id: g.id, gym_nombre: g.nombre,
         subscription_id: s.id,
@@ -100,13 +109,15 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     const mesActual = now.toISOString().slice(0, 7);
     let cobradoMes = 0;
-    const pagos = (invRes?.data || []).map((i: any) => {
-      const g = nameFor(typeof i.subscription === 'string' ? i.subscription : i.subscription?.id, typeof i.customer === 'string' ? i.customer : i.customer?.id, i.metadata);
-      const fecha = i.created ? new Date(i.created * 1000).toISOString().slice(0, 10) : null;
-      const monto = Math.round((i.amount_paid ?? 0) / 100);
-      if (i.status === 'paid' && fecha && fecha.slice(0, 7) === mesActual) cobradoMes += monto;
-      return { date: fecha, gym_nombre: g.nombre, amount_mxn: monto, status: i.status, url: i.hosted_invoice_url || null };
-    });
+    const pagos = (invRes?.data || [])
+      .filter((i: any) => saasSubIds.has(typeof i.subscription === 'string' ? i.subscription : i.subscription?.id))
+      .map((i: any) => {
+        const g = nameFor(typeof i.subscription === 'string' ? i.subscription : i.subscription?.id, typeof i.customer === 'string' ? i.customer : i.customer?.id, i.metadata);
+        const fecha = i.created ? new Date(i.created * 1000).toISOString().slice(0, 10) : null;
+        const monto = Math.round((i.amount_paid ?? 0) / 100);
+        if (i.status === 'paid' && fecha && fecha.slice(0, 7) === mesActual) cobradoMes += monto;
+        return { date: fecha, gym_nombre: g.nombre, amount_mxn: monto, status: i.status, url: i.hosted_invoice_url || null };
+      });
 
     return json({
       ok: true,
