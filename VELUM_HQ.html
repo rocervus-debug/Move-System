@@ -2159,9 +2159,25 @@ function estadoGym(g){
     return { label:'Cancelado', cls:'danger' };
   return { label: st || 'Sin estado', cls:'neutral' };
 }
-// Gym que cuenta para "pagando"/MRR: suscripción activa (owner/cortesía queda fuera
-// solo porque su status es 'owner', nunca 'active')
-function esGymPagando(g){ return g.subscription_status === 'active'; }
+// OJO: 'active' = cuenta de cliente activa, NO significa que pague. El dinero real
+// (MRR / gyms pagando) sale de velum-saas-dashboard, nunca del status del gym.
+function esGymCuentaActiva(g){ return g.subscription_status === 'active'; }
+
+// Resumen REAL de cobranza SaaS (Stripe + cobros manuales) — misma fuente que la vista
+// Cobranza, para que el Cockpit y Cobranza nunca muestren MRR distintos.
+async function fetchSaasResumen(){
+  try{
+    const s = getSession();
+    if(!s || !s.jwt) return null;
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/velum-saas-dashboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.jwt}` },
+      body: JSON.stringify({}),
+    });
+    const d = await res.json();
+    return (res.ok && d.resumen) ? d.resumen : null;
+  }catch(_){ return null; }
+}
 
 // ════════════════════════════════════════════════════════════════
 // F2a — COCKPIT: 3 métricas + fila secundaria + GMV por mes
@@ -2345,8 +2361,12 @@ async function loadCockpit(){
     if(payoutsRes.error) throw payoutsRes.error;
 
     const pagos = pagosRes.data || [];
-    const pagando = gyms.filter(esGymPagando);
-    const mrr = pagando.reduce((s,g) => s + precioPlan(g.plan), 0);
+    // MRR y "gyms pagando" REALES: misma fuente que la vista Cobranza (Stripe + cobros
+    // manuales). Antes se calculaba como "status=active × precio de lista", lo que
+    // inventaba ingresos de gyms activos que todavía no pagan.
+    const saasRes = await fetchSaasResumen();
+    const pagandoCount = saasRes ? (saasRes.activos || 0) : null;
+    const mrr = saasRes ? (saasRes.mrr || 0) : null;
     const trials = gyms.filter(g => g.subscription_status === 'trialing').length;
     const leadsAbiertos = leadsRes.count || 0;
     const comisionesPend = (payoutsRes.data || []).reduce((s,p) => s + (Number(p.monto) || 0), 0);
@@ -2388,13 +2408,13 @@ async function loadCockpit(){
       <div class="metric-grid">
         <div class="metric-card">
           <div class="metric-label">Gyms pagando</div>
-          <div class="metric-val">${pagando.length}</div>
-          <div class="metric-sub">suscripción activa — owner/cortesía no cuentan</div>
+          <div class="metric-val">${pagandoCount === null ? '—' : pagandoCount}</div>
+          <div class="metric-sub">con cobro real: Stripe o manual</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">MRR</div>
-          <div class="metric-val accent">${fmtMoney(mrr)}</div>
-          <div class="metric-sub">MXN / mes según plan de cada gym activo</div>
+          <div class="metric-val accent">${mrr === null ? '—' : fmtMoney(mrr)}</div>
+          <div class="metric-sub">MXN / mes cobrado de verdad</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">GMV · 30 días</div>
