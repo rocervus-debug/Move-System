@@ -15681,7 +15681,7 @@ async function agregarPlan(){
     sort_order: nextSort
   };
 
-  const { error } = await window.supabaseClient.from('packages').insert([payload]);
+  const { data: _nuevoPkg, error } = await window.supabaseClient.from('packages').insert([payload]).select('id').single();
   if(error){
     console.error('agregarPlan error:', error); if(_handleSessionError(error))return;
     const m = error.message || '';
@@ -15692,6 +15692,9 @@ async function agregarPlan(){
     }
     return;
   }
+  // Publicarlo de una vez: crear un paquete y que NO se viera en la app era la causa #1 de
+  // "mis paquetes no aparecen" (el gym veía los nuevos y sus atletas seguían con los viejos).
+  if(_nuevoPkg && _nuevoPkg.id) await _publicarPaquete(_nuevoPkg.id, nextSort);
 
   // Reset form
   document.getElementById('plan-nuevo-nombre').value = '';
@@ -15708,8 +15711,34 @@ async function agregarPlan(){
   toast(`Plan "${nombre}" agregado al catálogo ✓`, '📋');
 }
 
+// ── Sincronía catálogo ↔ lo que ven los atletas ────────────────────────────────
+// El paquete vive en `packages`, pero lo que se muestra en la app/storefront es su
+// `storefront_listings`. Si los dos se desincronizan, el gym ve unos paquetes y sus
+// atletas otros. Estos helpers los mantienen pegados. Nunca rompen el alta/baja:
+// si algo falla, solo se loguea.
+async function _publicarPaquete(packageId, sortOrder){
+  try{
+    const { data: ex } = await window.supabaseClient.from('storefront_listings')
+      .select('id').eq('gym_id', gymId).eq('package_id', packageId).maybeSingle();
+    if(ex){
+      await window.supabaseClient.from('storefront_listings')
+        .update({ is_public: true, updated_at: new Date().toISOString() }).eq('id', ex.id);
+    } else {
+      await window.supabaseClient.from('storefront_listings')
+        .insert([{ gym_id: gymId, package_id: packageId, is_public: true, sort_order: sortOrder || 0 }]);
+    }
+  }catch(e){ console.warn('_publicarPaquete:', e); }
+}
+async function _despublicarPaquete(packageId){
+  try{
+    await window.supabaseClient.from('storefront_listings')
+      .update({ is_public: false, updated_at: new Date().toISOString() })
+      .eq('gym_id', gymId).eq('package_id', packageId);
+  }catch(e){ console.warn('_despublicarPaquete:', e); }
+}
+
 async function eliminarPlan(id){
-  if(!await confirmDialog('¿Eliminar este plan del catálogo? Los pagos existentes que lo referencian no se borran.',
+  if(!await confirmDialog('¿Eliminar este plan del catálogo? Dejará de verse en la app de tus atletas. Los pagos existentes que lo referencian no se borran.',
     {title:'Eliminar plan', danger:true, confirmText:'Sí, eliminar', icon:''})) return;
 
   // Soft delete: marcar is_active=false (preserva integridad referencial)
@@ -15717,6 +15746,8 @@ async function eliminarPlan(id){
     .update({ is_active: false })
     .eq('id', id);
   if(error){ toast('Error al eliminar: ' + error.message, '✕'); return; }
+  // …y quitarlo de la vitrina, o seguiría publicado para los atletas.
+  await _despublicarPaquete(id);
 
   await loadPackagesFromCatalog();
   renderPlanes();
@@ -21834,7 +21865,7 @@ async function savePaqueteWizard(){
   };
   const btn = document.querySelector('#modal-paquete .wzd-save');
   setBtnLoading(btn, true);
-  const { error } = await window.supabaseClient.from('packages').insert([payload]);
+  const { data: _nuevoPkg, error } = await window.supabaseClient.from('packages').insert([payload]).select('id').single();
   setBtnLoading(btn, false);
   if(error){
     console.error('savePaqueteWizard error:', error); if(_handleSessionError(error))return;
@@ -21843,6 +21874,8 @@ async function savePaqueteWizard(){
     else showErr('No se pudo crear: ' + m);
     return;
   }
+  // Queda publicado para los atletas desde el minuto uno (ver _publicarPaquete).
+  if(_nuevoPkg && _nuevoPkg.id) await _publicarPaquete(_nuevoPkg.id, nextSort);
   closeModal('paquete');
   if(typeof loadPackagesFromCatalog === 'function') await loadPackagesFromCatalog();
   if(typeof renderPlanes === 'function') renderPlanes();
