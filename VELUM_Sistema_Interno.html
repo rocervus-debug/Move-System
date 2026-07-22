@@ -6270,7 +6270,7 @@ body::before{
             </label>
           </div>
         </div>
-        <div class="wzd-hint" style="margin-top:8px;">Plan <strong>Max — $999/mes</strong> (plan único).</div>
+        <div class="wzd-hint" style="margin-top:8px;">Plan <strong>Max — <span id="wzd-plan-precio" data-plan-precio="max">$999/mes</span></strong> (plan único).</div>
       </div>
 
       <!-- PASO 2 — El acceso del dueño -->
@@ -8602,7 +8602,7 @@ async function renderSuscripcion(){
   const plan = (g.subscription_plan || 'max').toLowerCase();
   const status = (g.subscription_status || '').toLowerCase();
   const isOwner = plan === 'owner' || status === 'owner';
-  const planInfo = { max: { nombre:'VELUM Max', precio:'$999 MXN/mes', color:'#00D4FF' }, pro: { nombre:'VELUM Pro', precio:'$599 MXN/mes', color:'#fbbf24' }, owner: { nombre:'Cortesía VELUM', precio:'Sin costo', color:'#00ff80' } };
+  const planInfo = { max: { nombre:'VELUM Max', precio:planPrecioTxt('max'), color:'#00D4FF' }, pro: { nombre:'VELUM Pro', precio:planPrecioTxt('pro'), color:'#fbbf24' }, owner: { nombre:'Cortesía VELUM', precio:planPrecioTxt('owner'), color:'#00ff80' } };
   const info = isOwner ? planInfo.owner : (planInfo[plan] || planInfo.max);
 
   // Estado visual
@@ -13125,10 +13125,11 @@ function auditLog(accion, tabla='', registroId='', detalle=''){
 }
 
 // Plan limits — controls feature gates per gym plan
-// ─── VELUM PLAN LIMITS (Pro=$599 / Max=$999) ─────────────────────────
+// ─── VELUM PLAN LIMITS (precio vive en price_mxn, ver planPrecio) ────
 const PLAN_LIMITS = {
   // Plan Pro — básico, incentiva a subir a Max
   pro: {
+    price_mxn: 599,   // FUENTE ÚNICA del precio (antes estaba a mano en 3 lugares)
     clientes:  60,    // máx 60 atletas (promedio estudio MX ~50)
     coaches:   3,     // máx 3 coaches
     campanas:  5,     // máx 5 campañas
@@ -13143,6 +13144,7 @@ const PLAN_LIMITS = {
   },
   // Plan Max — experiencia completa
   max: {
+    price_mxn: 999,
     clientes:  99999,
     coaches:   99999,
     campanas:  99999,
@@ -13155,9 +13157,38 @@ const PLAN_LIMITS = {
     retencion_analytics: true,
   },
   // Aliases para compatibilidad con registros existentes
-  basic: { clientes:60, coaches:3, campanas:5 },
-  free:  { clientes:50,  coaches:2, campanas:3 },
+  basic: { price_mxn: 599, clientes:60, coaches:3, campanas:5 },
+  free:  { price_mxn: 0,   clientes:50,  coaches:2, campanas:3 },
 };
+
+// Precio del plan — SIEMPRE desde aquí. Antes estaba escrito a mano en el modal de
+// suscripción, en el mensaje de límite y en el hint del wizard, y se desincronizaban.
+function planPrecio(plan){
+  const p = (plan || '').toLowerCase();
+  if(p === 'owner') return 0;
+  const l = PLAN_LIMITS[p];
+  return (l && typeof l.price_mxn === 'number') ? l.price_mxn : PLAN_LIMITS.max.price_mxn;
+}
+function planPrecioTxt(plan){
+  const p = (plan || '').toLowerCase();
+  if(p === 'owner') return 'Sin costo';
+  return '$' + planPrecio(p).toLocaleString('es-MX') + ' MXN/mes';
+}
+// Rellena cualquier elemento con data-plan-precio="max|pro" para que el HTML estático
+// (hints, <option>, resúmenes) tampoco tenga el precio escrito a mano.
+function _pintarPreciosPlan(){
+  try{
+    document.querySelectorAll('[data-plan-precio]').forEach(el => {
+      const plan = el.getAttribute('data-plan-precio') || 'max';
+      const fmt  = el.getAttribute('data-plan-precio-fmt') || 'corto';
+      const monto = '$' + planPrecio(plan).toLocaleString('es-MX');
+      const precio = fmt === 'largo' ? planPrecioTxt(plan) : (fmt === 'monto' ? monto : monto + '/mes');
+      const tpl = el.getAttribute('data-plan-precio-tpl'); // ej: "Max {p}" — conserva el prefijo
+      el.textContent = tpl ? tpl.replace('{p}', precio) : precio;
+    });
+  }catch(e){ console.warn('_pintarPreciosPlan:', e); }
+}
+document.addEventListener('DOMContentLoaded', _pintarPreciosPlan);
 
 function getPlan(){
   const p = (gymConfig.subscription_plan || gymConfig.plan || gymConfig.gym_plan || 'max').toLowerCase();
@@ -13176,7 +13207,7 @@ function checkPlanLimit(recurso){
   if(recurso === 'campanas') current = campanas.length;
   if(current >= limit){
     const planLabel = plan === 'pro' ? 'Pro' : 'Max';
-    return { ok: false, msg: `Límite de plan ${planLabel} (${ plan==='pro'?'599':'999' } MXN): máximo ${limit} ${recurso}. Actualiza a Max para continuar.` };
+    return { ok: false, msg: `Límite de plan ${planLabel} (${planPrecioTxt(plan)}): máximo ${limit} ${recurso}. Actualiza a Max para continuar.` };
   }
   return { ok: true };
 }
@@ -16230,6 +16261,9 @@ async function cancelMemberSub(subId){
 }
 
 function renderPlanes(){
+  // El hint del wizard también toma el precio de PLAN_LIMITS (fuente única).
+  const _hintPrecio = document.getElementById('wzd-plan-precio');
+  if(_hintPrecio && typeof planPrecio === 'function') _hintPrecio.textContent = '$' + planPrecio('max').toLocaleString('es-MX') + '/mes';
   const el = document.getElementById('planes-lista');
   if(!el) return;
   const planes = _packagesDB || [];
@@ -18423,7 +18457,7 @@ async function renderSuperAdmin(){
         <div style="display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;display:inline-block;">${(g.plan||'max').toUpperCase()}</span>
           <select onchange="saUpdateGymPlan(${g.id},this.value)" style="font-size:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;color:var(--text3);padding:2px 4px;cursor:pointer;font-family:var(--font);">
-            <option value="max" selected>Max $999</option>
+            <option value="max" selected data-plan-precio="max" data-plan-precio-fmt="monto" data-plan-precio-tpl="Max {p}">Max $999</option>
           </select>
         </div>
       </td>
@@ -18464,7 +18498,7 @@ async function renderSuperAdmin(){
           <input id="sa-g-email" type="email" placeholder="admin@gym.com" class="form-input"></div>
         <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px;">PLAN</label>
           <select id="sa-g-plan" class="form-input">
-            <option value="max" selected>Max — $999/mes</option>
+            <option value="max" selected data-plan-precio="max" data-plan-precio-tpl="Max — {p}">Max — $999/mes</option>
           </select></div>
       </div>
       <!-- Tipo de acceso -->
@@ -20700,7 +20734,7 @@ wizRegister('crear-gym', {
         _wzdRow('Negocio', esc(nom)),
         _wzdRow('Slug (URL)', esc(slug)),
         _wzdRow('Tipo', VLBL[vert]||vert),
-        _wzdRow('Plan', 'Max — $999/mes'),
+        _wzdRow('Plan', 'Max — ' + (typeof planPrecio==='function' ? '$'+planPrecio('max').toLocaleString('es-MX')+'/mes' : '$999/mes')),
         _wzdRow('Acceso', status==='owner'?'Gym propio (siempre activo)':'Cliente activo'),
         _wzdRow('Admin', esc(email)),
         _wzdRow('Contraseña', '•••••••• (definida)'),
