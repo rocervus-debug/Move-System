@@ -46,7 +46,10 @@ Deno.serve(async (req) => {
     const { data: gymRow } = await db.from('gyms').select('vertical').eq('id', sf.gym_id).maybeSingle();
     const vertical = (gymRow && gymRow.vertical) ? gymRow.vertical : 'gym';
 
-    const { data: listings } = await db.from('storefront_listings').select(`id, package_id, sort_order, is_featured, badge_text, public_name, public_description, features_list, hero_image_url, packages!inner (id, name, description, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, billing_type)`).eq('gym_id', sf.gym_id).eq('is_public', true).order('sort_order', { ascending: true });
+    // OJO: además de is_public del listing, hay que exigir packages.is_active. Sin eso, un
+    // paquete que el gym DESACTIVÓ en su admin seguía publicándose en el storefront y en la
+    // app del atleta (el gym veía sus paquetes nuevos y los atletas los viejos).
+    const { data: listings } = await db.from('storefront_listings').select(`id, package_id, sort_order, is_featured, badge_text, public_name, public_description, features_list, hero_image_url, packages!inner (id, name, description, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, billing_type)`).eq('gym_id', sf.gym_id).eq('is_public', true).eq('packages.is_active', true).order('sort_order', { ascending: true });
     const packages = (listings || []).map((l: any) => { const p = l.packages; return { listing_id: l.id, package_id: l.package_id, name: l.public_name || p.name, description: l.public_description || p.description, price_mxn: p.price_mxn, duration_days: p.duration_days, num_classes: p.num_classes, unlimited: p.unlimited_classes, billing_type: p.billing_type || 'one_time', recurring: p.billing_type === 'recurring', badge: l.badge_text, is_featured: l.is_featured, features: Array.isArray(l.features_list) ? l.features_list : [], hero_image: l.hero_image_url }; });
 
     let coaches: any[] = [];
