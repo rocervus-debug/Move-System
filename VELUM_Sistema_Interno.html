@@ -15620,6 +15620,15 @@ async function loadPackagesFromCatalog(){
       .order('sort_order', { ascending: true });
     if(error){ console.error('loadPackagesFromCatalog error:', error); if(_handleSessionError(error))return; return; }
     _packagesDB = data || [];
+    // Marcar cuáles se ven realmente en la app/página pública. Un paquete que existe en el
+    // catálogo pero no está publicado es invisible para los atletas — era la causa clásica
+    // de "creé mis paquetes y no aparecen". Si falla, no rompe la carga del catálogo.
+    try{
+      const { data: lst } = await window.supabaseClient
+        .from('storefront_listings').select('package_id, is_public').eq('gym_id', gymId);
+      const publicados = new Set((lst||[]).filter(l => l.is_public).map(l => l.package_id));
+      _packagesDB.forEach(p => { p._publicado = publicados.has(p.id); });
+    }catch(e){ console.warn('listings (indicador publicado):', e); }
   }catch(e){
     console.error('loadPackagesFromCatalog exception:', e);
   }
@@ -16237,12 +16246,16 @@ function renderPlanes(){
     const cobroBadge = p.billing_type === 'recurring'
       ? '<span style="font-size:9px;background:rgba(0,212,255,.15);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">DOMICILIADO /MES</span>'
       : '';
+    // Si no está publicado, el atleta NUNCA lo ve: hay que decirlo de frente.
+    const pubBadge = p._publicado
+      ? '<span style="font-size:9px;background:rgba(16,232,160,.15);color:var(--ok);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Visible en la app y en tu página pública">EN LA APP</span>'
+      : '<span style="font-size:9px;background:rgba(251,191,36,.15);color:var(--warn);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Tus atletas NO lo ven. Publícalo desde Configuración → Página pública.">NO VISIBLE</span>';
     return `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:8px;">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
           <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(p.name)}</span>
-          <span style="font-size:12px;color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${cobroBadge}${descBadge}
+          <span style="font-size:12px;color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${cobroBadge}${pubBadge}${descBadge}
         </div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px;">
           ${p.duration_days} día${p.duration_days===1?'':'s'} · ${tipo}
