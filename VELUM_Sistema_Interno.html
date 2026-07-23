@@ -2231,8 +2231,10 @@ select option{background:#08121E;color:var(--text);}
     filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 60%, transparent));
   }
 
-  /* Ocultar Velum Assistant FAB en mobile */
-  #va-btn { display: none !important; }
+  /* Velum Assistant FAB: VISIBLE en móvil. Antes se ocultaba aquí con !important y dejaba
+     al Asistente IA totalmente inaccesible en teléfono (el botón del topbar también se
+     oculta "porque queda el FAB"). Su posición móvil ya existe más abajo (bottom:82px,
+     sobre la bottom-nav) — solo había que dejar de matarlo. */
 
   /* Main content — flex column, NO scroll here (scroll lives in .content) */
   .main {
@@ -2273,6 +2275,27 @@ select option{background:#08121E;color:var(--text);}
   /* Ocultar elementos que sobran en el topbar mobile */
   #globalSearch          { display: none !important; }  /* input ya oculto */
   #search-wrap-global    { display: none !important; }  /* ocultar también el ícono de búsqueda */
+  /* Búsqueda global en móvil: antes NO había forma de abrirla en touch (solo ⌘K, que no
+     existe en teléfono). Un botón lupa en el topbar (#msearch-btn) togglea body.msearch-open
+     y la barra aparece como overlay fijo arriba, con sus resultados debajo. */
+  #msearch-btn { display: flex !important; }
+  body.msearch-open #search-wrap-global {
+    display: flex !important;
+    position: fixed; top: 10px; left: 12px; right: 12px;
+    z-index: 9600;
+    background: var(--bg-elevated, #0b1410);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: 12px;
+    padding: 4px 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  }
+  body.msearch-open #globalSearch {
+    display: block !important;
+    flex: 1; width: 100%;
+    font-size: 16px; /* evita el zoom de iOS */
+    min-height: 42px;
+    background: transparent; border: none;
+  }
   #va-topbar-btn         { display: none !important; }  /* Asistente — accesible vía FAB flotante */
   #topbar-mode-btn       { display: none !important; }  /* modo — en sidebar en desktop, no necesario en mobile */
   /* SA context switcher — compacto en mobile */
@@ -2443,15 +2466,19 @@ select option{background:#08121E;color:var(--text);}
   .tabs::-webkit-scrollbar { display: none; }
   .tab { white-space: nowrap; font-size: 12px; padding: 7px 12px; min-height: 36px; }
 
-  /* ──────────── Detail panel ──────────── */
-  #detailPanel {
+  /* ──────────── Detail panels ────────────
+     #clientePanel (ficha de cliente) comparte .detail-panel (width:420px fijo) pero no
+     tenía override móvil: a 375px se comía ~45px por la izquierda. Mismo trato que
+     #detailPanel (lead). */
+  #detailPanel, #clientePanel {
     width: 100% !important;
     right: -100% !important;
     top: 0; bottom: 70px;
     border-radius: 0;
     z-index: 300;
   }
-  #detailPanel.open { right: 0 !important; }
+  #clientePanel { z-index: 460; } /* conserva su stacking original sobre el resto */
+  #detailPanel.open, #clientePanel.open { right: 0 !important; }
 
   /* ──────────── Modals → native bottom sheets ──────────── */
   .modal-overlay {
@@ -2611,6 +2638,15 @@ select option{background:#08121E;color:var(--text);}
   .gasto-desc-sub  { font-size: 10px; }
   .gasto-monto { font-size: 13px; }
   .gasto-actions { opacity: 1; }   /* always visible on touch */
+  /* Mismo patrón para los otros 3 controles que solo se revelaban con :hover (en touch no
+     existe hover → eran invisibles/inaccesibles en teléfono): */
+  .cal-post-actions { display: flex; }     /* acciones de posts del calendario de marketing */
+  .hor-clase-actions { display: flex; }    /* editar/eliminar clase en el horario */
+  .nota-delete { opacity: .85; }           /* ✕ de eliminar nota del cliente */
+  /* Panel de notificaciones: 360px + right:16px se pasaba 1px a 375px (y más en phones chicos) */
+  .notif-panel { width: min(360px, calc(100vw - 24px)); }
+  /* Tabla "Clientes en riesgo" (6 columnas, no es .tbl): scroll horizontal en vez de aplastarse */
+  #riesgo-list { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
   /* ──────────── Programa calendar ──────────── */
   .prog-cal-grid { gap: 3px; }
@@ -3565,6 +3601,10 @@ body::before{
         </div>
       </div>
       <button class="btn btn-primary" id="topBtn" style="display:none;"></button>
+      <!-- Lupa móvil: abre la búsqueda global en touch (en desktop está oculta; ahí vive el input + ⌘K) -->
+      <div class="notif-btn" id="msearch-btn" onclick="toggleMobileSearch()" style="display:none;" role="button" aria-label="Buscar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
       <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="notif-dot" id="notif-dot" style="display:none;"></span>
@@ -4090,6 +4130,9 @@ body::before{
         <button class="btn btn-sm btn-icon" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.28);" onclick="abrirRenovacionMasiva()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Renovar</button>
         <button class="btn btn-sm btn-icon" style="background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);" onclick="launchKiosco()">Kiosco</button>
         <button class="btn btn-sm btn-icon" style="background:rgba(138,43,226,.12);color:#c084fc;border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Portales</button>
+        <!-- Paridad con escritorio: Importar CSV y Notificar no existían en el rail móvil -->
+        <button class="btn btn-sm btn-icon" style="background:rgba(16,232,160,.1);color:var(--ok,#10e8a0);border:1px solid rgba(16,232,160,.25);" onclick="importarClientesCSV()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importar</button>
+        <button class="btn btn-sm btn-icon" style="background:rgba(0,212,255,.1);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);" onclick="openNotificarPush()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notificar</button>
       </div>
 
       <!-- Filtro por TIPO (paquete vs pase) -->
@@ -24701,9 +24744,29 @@ function closeSearch(){
   _srSelectedIdx = -1;
 }
 
+// Búsqueda global en MÓVIL: el lupa del topbar (#msearch-btn) abre/cierra la barra como
+// overlay (body.msearch-open — ver CSS @768). En touch no existe ⌘K; sin esto la búsqueda
+// global era inalcanzable en teléfono.
+function toggleMobileSearch(){
+  const abierta = document.body.classList.toggle('msearch-open');
+  if(abierta){
+    const inp = document.getElementById('globalSearch');
+    if(inp) setTimeout(()=>inp.focus(), 60);
+  } else {
+    closeSearch();
+  }
+}
+
 // Close search when clicking outside
 document.addEventListener('click', e=>{
-  if(!e.target.closest('#search-wrap-global')) closeSearch();
+  if(!e.target.closest('#search-wrap-global')){
+    closeSearch();
+    // En móvil, tocar fuera también recoge el overlay (salvo que el tap sea el propio lupa,
+    // que ya togglea él mismo).
+    if(document.body.classList.contains('msearch-open') && !e.target.closest('#msearch-btn')){
+      document.body.classList.remove('msearch-open');
+    }
+  }
 }, true);
 
 // ═══════════════════════════════════════════════════════════════════
