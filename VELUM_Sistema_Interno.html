@@ -308,9 +308,6 @@ body.light-mode .form-input{
 }
 body.light-mode .tbl tr:nth-child(even){ background:rgba(0,0,0,.02); }
 body.light-mode .kpi-card{ background:rgba(255,255,255,.9); }
-body.light-mode .pipe-col{ background:rgba(230,234,240,.7); border-color:rgba(0,0,0,.08); }
-body.light-mode .pipe-card{ background:#ffffff; border-color:rgba(0,0,0,.08); }
-body.light-mode .pipe-card:hover{ border-color:color-mix(in srgb, var(--accent) 35%, transparent); }
 body.light-mode .coach-card{ background:#ffffff; border-color:rgba(0,0,0,.08); }
 body.light-mode .camp-card{ background:#ffffff; border-color:rgba(0,0,0,.08); }
 body.light-mode .sol-item{ border-color:rgba(0,0,0,.07); }
@@ -706,10 +703,6 @@ body{
 /* ── Trend badge slide-in ── */
 .kpi-trend{animation:trend-in .3s cubic-bezier(.34,1.56,.64,1) .5s both;}
 @keyframes trend-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
-
-/* ── Pipeline 3D tilt ── */
-.pipe-card{transform-style:preserve-3d;transition:transform .12s ease,box-shadow .18s,border-color .18s;}
-.pipe-card:hover{transform:perspective(600px) rotateX(3deg) rotateY(-3deg) translateY(-3px);}
 
 /* ── Confetti particle ── */
 .confetti-piece{
@@ -1109,38 +1102,6 @@ body{
   vertical-align:middle;
 }
 
-/* Pipeline */
-.pipeline{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;}
-.pipe-col{
-  flex:0 0 196px;
-  background:rgba(255,255,255,.025);
-  backdrop-filter:blur(16px) saturate(160%);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);
-  border-radius:var(--radius-sm);padding:13px;
-  border:1px solid rgba(255,255,255,.07);
-}
-.pipe-col-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
-.pipe-col-name{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
-.pipe-count{background:rgba(255,255,255,.06);color:var(--text3);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid rgba(255,255,255,.06);}
-.pipe-card{
-  background:rgba(255,255,255,.04);
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  border-radius:10px;padding:11px;margin-bottom:8px;
-  border:1px solid rgba(255,255,255,.07);
-  border-top:1px solid rgba(255,255,255,.11);
-  cursor:grab;transition:all .18s;
-}
-.pipe-card:hover{
-  background:color-mix(in srgb, var(--accent) 6%, transparent);
-  box-shadow:var(--shadow-md), 0 0 20px color-mix(in srgb, var(--accent) 10%, transparent);
-  transform:translateY(-2px);border-color:color-mix(in srgb, var(--accent) 25%, transparent);
-}
-.pipe-card.sortable-ghost{opacity:.35;background:color-mix(in srgb, var(--accent) 8%, transparent);border:2px dashed color-mix(in srgb, var(--accent) 40%, transparent);transform:none;}
-.pipe-card.sortable-drag{box-shadow:0 16px 48px rgba(0,0,0,.7),0 0 32px color-mix(in srgb, var(--accent) 25%, transparent);transform:rotate(1.5deg) scale(1.03);cursor:grabbing;}
-.pipe-col.drag-over{background:color-mix(in srgb, var(--accent) 6%, transparent);border-color:color-mix(in srgb, var(--accent) 28%, transparent);}
-.pc-name{font-size:12px;font-weight:600;color:var(--text);}
-.pc-meta{font-size:11px;color:var(--text3);margin-top:3px;}
 
 /* Coach card */
 .coach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
@@ -2438,18 +2399,6 @@ select option{background:#08121E;color:var(--text);}
   .tbl td, .tbl th { padding: 8px 10px; font-size: 12px; }
   .tbl-action { display: flex; gap: 4px; flex-wrap: nowrap; }
   .tbl-action .btn { font-size: 10px; padding: 4px 8px; min-height: 32px; }
-
-  /* ──────────── Pipeline kanban ──────────── */
-  #pipeline-kanban {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap !important;
-    padding-bottom: 10px;
-    gap: 10px;
-  }
-  .pipe-col { min-width: 160px; flex-shrink: 0; padding: 10px; }
-  .pipe-col-title { font-size: 11px; }
-  .pipe-card { padding: 10px; }
 
   /* ──────────── Coach cards grid ──────────── */
   .coach-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -4253,12 +4202,6 @@ body::before{
         <div class="sh"><div class="sh-title" id="calVencDetailTitle">—</div></div>
         <div id="calVencDetailList"></div>
       </div>
-    </div>
-
-    <!-- ══ PIPELINE ══ -->
-    <div class="view" id="v-pipeline">
-      <div class="sh"><div class="sh-title">Pipeline de Ventas</div></div>
-      <div class="pipeline" id="pipeline-kanban"></div>
     </div>
 
     <!-- ══ PAGOS ══ -->
@@ -10734,7 +10677,6 @@ function _mesLabel(){
 const topTitles = {
   dashboard:   ['Dashboard General',        ()=>`Resumen ejecutivo · ${_todayLabel()}`],
   crm:         ['CRM & Prospectos',          'Gestión comercial de clientes y prospectos'],
-  pipeline:    ['Pipeline de Ventas',        'Kanban de oportunidades'],
   pagos:       ['Pagos & Renovaciones',      ()=>`Control de ingresos · ${_mesLabel()}`],
   domiciliados:['Cobros VELUM',              'Lo que cobras en línea y tus depósitos semanales'],
   visitas:     ['Visitas del Día',           ()=>`Pases de día · ${_mesLabel()}`],
@@ -10762,7 +10704,6 @@ const topTitles = {
 };
 const topBtnLabels = {
   crm:         '+ Nuevo Prospecto',
-  pipeline:    '+ Nuevo Lead',
   pagos:       '+ Registrar Pago',
   clientes:    '+ Registrar Pago',
   visitas:     '+ Registrar Visita',
@@ -10789,7 +10730,6 @@ const topBtnLabels = {
 };
 const topBtnActions = {
   crm:         ()=>openModal('lead'),
-  pipeline:    ()=>openModal('lead'),
   coaches:     ()=>openModal('coach'),
   citas:       ()=>openModal('cita'),
   paquetes:    ()=>openModal('paquete'),
@@ -11199,7 +11139,6 @@ function go(id, el){
   else if(id==='dashboard' || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
-  if(id==='pipeline')    renderPipeline();
   if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); renderReporteCoach(); }
   if(id==='recursos')    { loadRecursos().then(renderRecursos); }
   if(id==='protocolos')  { loadProtocolos().then(renderProtocolos); }
@@ -12548,7 +12487,6 @@ async function saveLead(){
   auditLog('CREAR_LEAD', 'leads', data?.[0]?.id||'', `Nuevo prospecto: ${nombre}`);
   toast(`Prospecto "${nombre}" agregado correctamente.`);
   renderCRM('prospectos');
-  renderPipeline();
   updateBadges();
   renderDashboard();
 }
@@ -12566,7 +12504,6 @@ async function deleteLead(id){
   closeDetail();
   toast('Prospecto eliminado.','🗑');
   renderCRM(currentCRMTab);
-  renderPipeline();
   updateBadges();
   renderDashboard();
 }
@@ -12642,7 +12579,6 @@ async function updateLeadEstado(){
   closeModal('edit-estado');
   toast(`Estado actualizado: ${estado}`);
   renderCRM(currentCRMTab);
-  renderPipeline();
   renderDashboard();
   // refresh detail panel
   document.getElementById('dp-sub').textContent = estado + ' · ' + l.fechaIngreso;
@@ -12776,7 +12712,6 @@ async function applyBulkEstado(){
   toast(`${ids.length} leads → ${estado}`,'✓');
   clearCRMSelection();
   renderCRM(currentCRMTab);
-  renderPipeline();
   renderDashboard();
 }
 
@@ -13390,82 +13325,6 @@ const PIPELINE_STAGES = [
   'Lead Nuevo','Contactado','Prueba Agendada','Prueba Realizada',
   'Propuesta Enviada','Cerrado – Ganado','Cerrado – Perdido','En Espera'
 ];
-
-function renderPipeline(){
-  const kanban = document.getElementById('pipeline-kanban');
-  if(!leads.length){
-    kanban.innerHTML = `<div class="card" style="flex:1;"><div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div><div class="empty-title">Pipeline vacío</div><div class="empty-sub">Agrega tus primeros leads desde el CRM.</div></div></div>`;
-    return;
-  }
-
-  kanban.innerHTML = '';
-  PIPELINE_STAGES.forEach(stage=>{
-    const stageleads = leads.filter(l=>l.estado===stage);
-    const col = document.createElement('div');
-    col.className = 'pipe-col';
-    col.dataset.stage = stage;
-    col.innerHTML = `
-      <div class="pipe-col-head">
-        <span class="pipe-col-name">${stage}</span>
-        <span class="pipe-count" id="pipe-count-${stage.replace(/\s+/g,'_')}">${stageleads.length}</span>
-      </div>
-      <div class="pipe-cards-body" data-stage="${stage}">
-        ${!stageleads.length ? `<div class="pipe-empty-hint" style="font-size:11px;color:var(--text4);text-align:center;padding:20px 0;border:2px dashed rgba(255,255,255,.05);border-radius:8px;">Arrastra aquí</div>` : ''}
-        ${stageleads.map(l=>{
-          const cb = CLASE_BADGE[l.clase]||'b-gray';
-          return `<div class="pipe-card" data-id="${l.id}" onclick="openDetail('${l.id}')">
-            <div class="pc-name">${esc(l.nombre)}</div>
-            <div class="pc-meta">${esc(l.fuente||'—')}</div>
-            <div style="margin-top:6px;display:flex;align-items:center;gap:5px;">
-              <span class="badge ${cb}" style="font-size:9px;">${esc(l.clase)}</span>
-              ${l.valor ? `<span style="font-size:9px;color:var(--ok);font-weight:700;">$${Number(l.valor).toLocaleString('es-MX')}</span>` : ''}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
-    kanban.appendChild(col);
-
-    // Init SortableJS on each column body
-    if(window.Sortable) {
-      Sortable.create(col.querySelector('.pipe-cards-body'), {
-        group:     'pipeline',
-        animation: 180,
-        ghostClass:'sortable-ghost',
-        dragClass: 'sortable-drag',
-        delay:     80,
-        delayOnTouchOnly: true,
-        onAdd: async (evt) => {
-          const leadId   = evt.item.dataset.id;
-          const newStage = evt.to.dataset.stage;
-          const oldStage = evt.from.dataset.stage;
-          if(newStage === oldStage) return;
-
-          // Optimistic UI: update counts
-          const fromCount = document.getElementById('pipe-count-'+oldStage.replace(/\s+/g,'_'));
-          const toCount   = document.getElementById('pipe-count-'+newStage.replace(/\s+/g,'_'));
-          if(fromCount) fromCount.textContent = Math.max(0, parseInt(fromCount.textContent)-1);
-          if(toCount)   toCount.textContent   = parseInt(toCount.textContent||0)+1;
-
-          // Persist to Supabase
-          const lead = leads.find(l=>String(l.id)===String(leadId));
-          if(!lead){ toast('Lead no encontrado','⚠️'); return; }
-          lead.estado = newStage;
-          const { error } = await window.supabaseClient
-            .from('leads').update({ estado: newStage }).eq('id', leadId);
-          if(error){
-            toast('Error al mover lead','✕');
-            lead.estado = oldStage;
-            renderPipeline();
-          } else {
-            auditLog('MOVER_LEAD','leads', leadId, `${oldStage} → ${newStage}`);
-            toast(`${lead.nombre} → ${newStage}`,'✓', 2000);
-            renderDashboard();
-          }
-        }
-      });
-    }
-  });
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // COACHES CRUD
@@ -18105,26 +17964,6 @@ function renderDashboard(){
   // ── Mobile home widget ──
   renderMobileHome();
 
-  // Pipeline bars (widget removed — skip if element not present)
-  const pipeEl = document.getElementById('dash-pipeline-bars');
-  if(pipeEl){
-    if(!leads.length){
-      pipeEl.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div><div class="empty-title">Sin datos aún</div><div class="empty-sub">Agrega tus primeros leads.</div></div>`;
-    } else {
-      const stages = ['Lead Nuevo','Contactado','Prueba Agendada','Prueba Realizada','Propuesta Enviada'];
-      pipeEl.innerHTML = stages.map(s=>{
-        const cnt = leads.filter(l=>l.estado===s).length;
-        const pct = total>0 ? Math.round((cnt/total)*100) : 0;
-        return `<div style="margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
-            <span style="color:var(--text2);">${s}</span><strong>${cnt}</strong>
-          </div>
-          <div class="prog"><div class="prog-fill" style="width:${pct}%;background:var(--accent);"></div></div>
-        </div>`;
-      }).join('');
-    }
-  }
-
   // Coaches semáforo con paginación
   window._dashCoachesData = coaches; // guardar para paginación
   window._dashCoachCurPage = window._dashCoachCurPage || 0;
@@ -19606,7 +19445,6 @@ async function deleteGasto(id){
 const VELUM_NAV_CATALOG = [
   { id:'dashboard',      label:'Dashboard General',      emoji:'', alwaysVisible:true },
   { id:'crm',            label:'CRM & Prospectos',        emoji:'' },
-  { id:'pipeline',       label:'Pipeline de Ventas',      emoji:'' },
   { id:'pagos',          label:'Pagos & Renovaciones',    emoji:'' },
   { id:'clientes',       label:'Clientes',                emoji:'' },
   { id:'domiciliados',   label:'Cobros VELUM',            emoji:'' },
@@ -20625,7 +20463,6 @@ async function saveEditLead(){
   document.getElementById('dp-clase').textContent  = l.clase||'—';
   document.getElementById('dp-estado').innerHTML   = `<span class="badge ${ESTADO_BADGE[l.estado]||'b-gray'}">${l.estado}</span>`;
   renderCRM(currentCRMTab);
-  renderPipeline();
   renderDashboard();
 }
 
@@ -24875,7 +24712,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // else: login screen remains visible (it's shown by default in CSS)
 
   document.addEventListener('click',e=>{
-    if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td')&&!e.target.closest('.pipe-card'))
+    if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td'))
       closeDetail();
   });
 
