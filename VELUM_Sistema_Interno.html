@@ -11836,31 +11836,30 @@ let _notifReadAt = null; // timestamp of last "mark all read"
 function buildNotifAlerts(){
   const now = new Date(); now.setHours(0,0,0,0);
   const todayStr = now.toISOString().slice(0,10);
-  const in3 = new Date(now); in3.setDate(now.getDate()+3);
-
   const alerts = [];
 
-  // ── Membresías vencidas (excluir pases de día — se usan el mismo día) ──
-  const vencidas = pagos.filter(p=>p.vence&&p.vence!=='—'&&new Date(p.vence+'T12:00:00')<now && p.notas!=='__sin_pago__' && !esPaseDia(p.plan));
+  // ── Vencidas y por vencer — regla canónica POR CLIENTE (estadoMembresiaPorCliente).
+  // Antes se contaban FILAS de pagos vencidos (un cliente con 5 pagos viejos contaba 5) y
+  // sin límite de antigüedad (salían vencidas de hace meses). Decisión de Roy 2026-07-23:
+  //   · vencidas  → solo las de los ÚLTIMOS 15 días (lo accionable; lo más viejo es churn)
+  //   · por vencer → los PRÓXIMOS 7 días (antes 3)
+  const _estados = [...estadoMembresiaPorCliente(now).values()];
+  const vencidas = _estados.filter(e => !e.acceso && e.diasRest !== null && e.diasRest < 0 && e.diasRest >= -15);
   if(vencidas.length){
     alerts.push({
       type:'danger', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>', iconCls:'notif-icon-danger',
-      title:`${vencidas.length} membresía${vencidas.length>1?'s':''} vencida${vencidas.length>1?'s':''}`,
-      desc: vencidas.slice(0,3).map(p=>p.cliente).join(', ')+(vencidas.length>3?` y ${vencidas.length-3} más`:''),
+      title:`${vencidas.length} membresía${vencidas.length>1?'s':''} vencida${vencidas.length>1?'s':''} (últimos 15 días)`,
+      desc: vencidas.slice(0,3).map(e=>e.nombre).join(', ')+(vencidas.length>3?` y ${vencidas.length-3} más`:''),
       action:`go('clientes',document.getElementById('nav-clientes'))`,
     });
   }
 
-  // ── Por vencer en 3 días (excluir pases de día) ──
-  const pronto = pagos.filter(p=>{
-    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false;
-    const v=new Date(p.vence+'T12:00:00'); return v>=now && v<=in3;
-  });
+  const pronto = _estados.filter(e => e.acceso && e.diasRest !== null && e.diasRest >= 0 && e.diasRest <= 7);
   if(pronto.length){
     alerts.push({
       type:'warn', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', iconCls:'notif-icon-warn',
-      title:`${pronto.length} membresía${pronto.length>1?'s':''} vence${pronto.length>1?'n':''} en 3 días`,
-      desc: pronto.slice(0,3).map(p=>p.cliente).join(', ')+(pronto.length>3?` y ${pronto.length-3} más`:''),
+      title:`${pronto.length} membresía${pronto.length>1?'s':''} vence${pronto.length>1?'n':''} en los próximos 7 días`,
+      desc: pronto.slice(0,3).map(e=>e.nombre).join(', ')+(pronto.length>3?` y ${pronto.length-3} más`:''),
       action:`go('clientes',document.getElementById('nav-clientes'))`,
     });
   }
