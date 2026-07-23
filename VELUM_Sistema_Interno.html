@@ -11763,10 +11763,15 @@ function _applyMobileModalLayout(modalEl) {
   modalEl.style.display   = 'flex';
   modalEl.style.flexDirection = 'column';
 
-  // Calculate body height = total - header - footer
-  const headH = head ? head.getBoundingClientRect().height : 56;
-  const footH = foot ? foot.getBoundingClientRect().height : 68;
-  const bodyH = Math.max(120, maxModalH - headH - footH);
+  // Alto del cuerpo = alto disponible − TODO lo que no es cuerpo (head, footer y, clave,
+  // la .wzd-bar de los wizards). Antes solo restaba head+footer e ignoraba la barra de
+  // pasos (~40px): el cuerpo quedaba muy alto y empujaba el footer — con el botón
+  // "Crear/Siguiente" — fuera de la pantalla, recortado por overflow:hidden. Ese era el
+  // bug de "no puedo crear un paquete desde el celular". Restar todos los hermanos lo cubre.
+  const otherH = Array.from(modalEl.children)
+    .filter(ch => ch !== body)
+    .reduce((s, ch) => s + ch.getBoundingClientRect().height, 0);
+  const bodyH = Math.max(120, maxModalH - otherH);
 
   body.style.height    = bodyH + 'px';
   body.style.maxHeight = bodyH + 'px';
