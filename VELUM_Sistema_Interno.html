@@ -24951,8 +24951,13 @@ function generarReporteMensual(){
   const mesAntStr  = `${mesAntYear}-${String(mesAntNum).padStart(2,'0')}`;
 
   // ─ Ingresos del mes ─
-  const pagosMes = pagos.filter(p=>(p.fecha||'').startsWith(mesStr));
-  const ingresosMes = pagosMes.reduce((s,p)=>s+(p.monto||0),0);
+  // MISMA fórmula que el KPI del dashboard: pagos del mes (sin placeholders __sin_pago__)
+  // + visitas/pases de día. Antes el reporte omitía las visitas y excluía menos filas →
+  // mostraba un ingreso distinto al del dashboard (bug reportado por Roy: 36k vs 42k).
+  const pagosMes = pagos.filter(p=>(p.fecha||'').startsWith(mesStr) && p.notas!=='__sin_pago__');
+  const visitasMes = (typeof visitasDB!=='undefined' ? (visitasDB||[]) : []).filter(v=>(v.fecha||'').startsWith(mesStr));
+  const ingresosVisitas = visitasMes.reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
+  const ingresosMes = pagosMes.reduce((s,p)=>s+(p.monto||0),0) + ingresosVisitas;
   const meta = parseFloat(localStorage.getItem('move_meta_mensual')||'0');
   const pctMeta = meta>0 ? Math.min(200, Math.round((ingresosMes/meta)*100)) : null;
 
@@ -24982,6 +24987,8 @@ function generarReporteMensual(){
   // ─ Por plan ─
   const porPlan = {};
   pagosMes.forEach(p=>{ const pl=(p.plan||'Sin plan').trim(); if(!porPlan[pl]) porPlan[pl]={qty:0,monto:0}; porPlan[pl].qty++; porPlan[pl].monto+=(p.monto||0); });
+  // Las visitas son ingreso real del mes: van como su propia línea del desglose
+  if(ingresosVisitas>0) porPlan['Pase de día / Visitas'] = { qty: visitasMes.length, monto: ingresosVisitas };
   const planesSorted = Object.entries(porPlan).sort((a,b)=>b[1].monto-a[1].monto);
 
   // ─ Top 5 clientes ─
