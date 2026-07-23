@@ -25000,16 +25000,6 @@ function generarReporteMensual(){
   const totalGastos = gastosMes.reduce((s,g)=>s+(g.monto||0),0);
   const balance = ingresosMes - totalGastos;
 
-  // ─ Coaches ─
-  const rateKey = `move_coach_rate_${year}_${month}`;
-  const rates   = JSON.parse(localStorage.getItem(rateKey)||'{}');
-  const coachRows = coaches.map(c=>{
-    const rate = parseFloat(rates[c.id])||0;
-    const asistData = loadAsistencia().filter(r=>r.fecha&&r.fecha.startsWith(mesStr));
-    const clases = asistData.filter(r=>r.coach===c.nombre||r.coach===c.id).length;
-    return { nombre:c.nombre, clases, rate, pago: clases*rate };
-  }).filter(r=>r.clases>0||Object.keys(rates).includes(String(r.c?.id))).sort((a,b)=>b.clases-a.clases);
-
   const pctColor = pctMeta===null ? '#60a5fa' : pctMeta>=100 ? '#10e8a0' : pctMeta>=70 ? '#fbbf24' : '#f87171';
   const retColor = tasaRet===null ? '#60a5fa' : tasaRet>=70 ? '#10e8a0' : tasaRet>=40 ? '#fbbf24' : '#f87171';
 
@@ -25025,12 +25015,46 @@ function generarReporteMensual(){
     .sort((a,b)=>(a[1].vence||'').localeCompare(b[1].vence||''))
     .slice(0,10);
 
-  // ─ Ingresos mes anterior (para variación) ─
-  const pagosAnt  = pagos.filter(p=>(p.fecha||'').startsWith(mesAntStr));
-  const ingresosAnt = pagosAnt.reduce((s,p)=>s+(p.monto||0),0);
+  // ─ Ingresos mes anterior (para variación) — MISMA fórmula que el mes actual
+  // (sin __sin_pago__ y CON visitas), o la comparación sería peras vs manzanas.
+  const pagosAnt  = pagos.filter(p=>(p.fecha||'').startsWith(mesAntStr) && p.notas!=='__sin_pago__');
+  const visitasAnt = (typeof visitasDB!=='undefined' ? (visitasDB||[]) : []).filter(v=>(v.fecha||'').startsWith(mesAntStr));
+  const ingresosAnt = pagosAnt.reduce((s,p)=>s+(p.monto||0),0) + visitasAnt.reduce((s,v)=>s+(parseFloat(v.monto)||0),0);
   const variacion = ingresosAnt>0 ? Math.round(((ingresosMes-ingresosAnt)/ingresosAnt)*100) : null;
   const varSign   = variacion===null ? '' : variacion>=0 ? `▲ ${variacion}%` : `▼ ${Math.abs(variacion)}%`;
   const varColor  = variacion===null ? '#9ca3af' : variacion>=0 ? '#059669' : '#dc2626';
+  const nuevosAnt = Object.values(primerPago).filter(f=>f.startsWith(mesAntStr)).length;
+
+  // ─ Ticket promedio y transacciones ─
+  const numTransacciones = pagosMes.length + visitasMes.length;
+  const ticketProm = numTransacciones>0 ? Math.round(ingresosMes/numTransacciones) : 0;
+
+  // ─ Ingresos por método de pago (pagos + visitas juntos: sirve para cuadrar caja) ─
+  const porMetodo = {};
+  pagosMes.forEach(p=>{ const m=(p.metodo||'Otro').trim(); if(!porMetodo[m]) porMetodo[m]={qty:0,monto:0}; porMetodo[m].qty++; porMetodo[m].monto+=(p.monto||0); });
+  visitasMes.forEach(v=>{ const m=(v.metodo||'Efectivo').trim(); if(!porMetodo[m]) porMetodo[m]={qty:0,monto:0}; porMetodo[m].qty++; porMetodo[m].monto+=(parseFloat(v.monto)||0); });
+  const metodosSorted = Object.entries(porMetodo).sort((a,b)=>b[1].monto-a[1].monto);
+
+  // ─ Gastos por categoría ─
+  const porCategoria = {};
+  gastosMes.forEach(g=>{ const c=(g.categoria||'Sin categoría').trim(); if(!porCategoria[c]) porCategoria[c]={qty:0,monto:0}; porCategoria[c].qty++; porCategoria[c].monto+=(g.monto||0); });
+  const categoriasSorted = Object.entries(porCategoria).sort((a,b)=>b[1].monto-a[1].monto);
+
+  // ─ Salud de cartera — MISMAS reglas canónicas del dashboard (por cliente):
+  //   activos = con acceso · por vencer = próximos 7 días · vencidos = últimos 15 días
+  const _cart = [...estadoMembresiaPorCliente(hoyMs).values()];   // hoyMs: normalizada a medianoche, igual que el dashboard
+  const cartActivos   = _cart.filter(e=>e.acceso).length;
+  const cartPorVencer = _cart.filter(e=>e.acceso && e.diasRest!==null && e.diasRest>=0 && e.diasRest<=7).length;
+  const cartVencidos  = _cart.filter(e=>!e.acceso && e.diasRest!==null && e.diasRest<0 && e.diasRest>=-15).length;
+
+  // ─ Resumen ejecutivo (2-3 líneas humanas) ─
+  const lineasResumen = [];
+  lineasResumen.push(`Ingresaste <b>$${ingresosMes.toLocaleString('es-MX')}</b> en ${mesNombre}${variacion!==null?` (<b style="color:${varColor};">${varSign}</b> vs ${ingresosAnt>0?'los $'+ingresosAnt.toLocaleString('es-MX')+' de':''} el mes anterior)`:''} con ${numTransacciones} transacciones (ticket promedio $${ticketProm.toLocaleString('es-MX')}).`);
+  if(nuevos>0 || nuevosAnt>0) lineasResumen.push(`Llegaron <b>${nuevos} cliente${nuevos!==1?'s':''} nuevo${nuevos!==1?'s':''}</b>${nuevosAnt>0?` (mes anterior: ${nuevosAnt})`:''}${tasaRet!==null?` y la retención fue del <b>${tasaRet}%</b>`:''}.`);
+  const accion = [];
+  if(cartPorVencer>0) accion.push(`<b>${cartPorVencer}</b> por renovar esta semana`);
+  if(cartVencidos>0) accion.push(`<b>${cartVencidos}</b> vencido${cartVencidos!==1?'s':''} reciente${cartVencidos!==1?'s':''} por recuperar`);
+  if(accion.length) lineasResumen.push(`Para accionar: ${accion.join(' y ')}.`);
   const gymNombreRep = gymConfig.gym_nombre || 'MOVE';
   const accentColor  = gymConfig.gym_color  || '#00D4FF';
 
@@ -25081,17 +25105,22 @@ function generarReporteMensual(){
   <button class="print-btn no-print" onclick="window.print()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / Guardar PDF</button>
 </div>
 
+<div class="section" style="background:#f9fafb;border:1px solid #e5e7eb;border-left:4px solid ${accentColor};border-radius:10px;padding:16px 18px;">
+  <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Resumen del mes</div>
+  ${lineasResumen.map(l=>`<div style="font-size:13.5px;color:#374151;line-height:1.6;">${l}</div>`).join('')}
+</div>
+
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-val">$${ingresosMes.toLocaleString('es-MX')}</div>
     <div class="kpi-lbl">Ingresos del Mes</div>
     ${varSign?`<div class="kpi-sub" style="color:${varColor};font-weight:700;">${varSign} vs mes anterior</div>`:''}
-    ${meta>0?`<div class="kpi-sub">Meta: $${meta.toLocaleString('es-MX')}</div>`:''}
+    <div class="kpi-sub">${numTransacciones} cobros · ticket $${ticketProm.toLocaleString('es-MX')}</div>
   </div>
   <div class="kpi">
-    <div class="kpi-val" style="color:var(--accent);">${activos}</div>
+    <div class="kpi-val" style="color:${accentColor};">${cartActivos}</div>
     <div class="kpi-lbl">Clientes Activos</div>
-    <div class="kpi-sub">${nuevos} nuevos este mes</div>
+    <div class="kpi-sub">${nuevos} nuevos${nuevosAnt>0?` (mes ant: ${nuevosAnt})`:''}</div>
   </div>
   <div class="kpi">
     <div class="kpi-val" style="color:${retColor};">${tasaRet!==null?tasaRet+'%':'—'}</div>
@@ -25102,6 +25131,26 @@ function generarReporteMensual(){
     <div class="kpi-val" style="color:${balance>=0?'#059669':'#dc2626'};">$${balance.toLocaleString('es-MX')}</div>
     <div class="kpi-lbl">Balance Neto</div>
     <div class="kpi-sub">Ingresos − Gastos</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Salud de Cartera</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+    <div class="kpi" style="border-left:3px solid #059669;">
+      <div class="kpi-val" style="color:#059669;">${cartActivos}</div>
+      <div class="kpi-lbl">Con membresía activa</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #d97706;">
+      <div class="kpi-val" style="color:#d97706;">${cartPorVencer}</div>
+      <div class="kpi-lbl">Por vencer · próx. 7 días</div>
+      <div class="kpi-sub">Renuévalos antes de que caduquen</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #dc2626;">
+      <div class="kpi-val" style="color:#dc2626;">${cartVencidos}</div>
+      <div class="kpi-lbl">Vencidos · últimos 15 días</div>
+      <div class="kpi-sub">Aún recuperables con un mensaje</div>
+    </div>
   </div>
 </div>
 
@@ -25128,6 +25177,21 @@ ${meta>0?`
     ${top5.length?`<table><thead><tr><th>#</th><th>Cliente</th><th style="text-align:right;">Total</th></tr></thead><tbody>
     ${top5.map(([n,m],i)=>`<tr><td style="color:#9ca3af;font-weight:700;">${i+1}</td><td>${esc(n)}</td><td class="amt" style="font-family:var(--fm);">$${m.toLocaleString('es-MX')}</td></tr>`).join('')}
     </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin datos este mes.</div>'}
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
+  <div class="section" style="margin-bottom:0;">
+    <h2>Ingresos por Método de Pago</h2>
+    ${metodosSorted.length?`<table><thead><tr><th>Método</th><th>Cobros</th><th style="text-align:right;">Total</th><th style="text-align:right;">%</th></tr></thead><tbody>
+    ${metodosSorted.map(([m,v])=>`<tr><td>${esc(m)}</td><td>${v.qty}</td><td class="amt">$${Math.round(v.monto).toLocaleString('es-MX')}</td><td style="text-align:right;color:#6b7280;font-weight:600;">${ingresosMes>0?Math.round(v.monto/ingresosMes*100):0}%</td></tr>`).join('')}
+    </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin cobros este mes.</div>'}
+  </div>
+  <div class="section" style="margin-bottom:0;">
+    <h2>Gastos por Categoría</h2>
+    ${categoriasSorted.length?`<table><thead><tr><th>Categoría</th><th>#</th><th style="text-align:right;">Total</th><th style="text-align:right;">%</th></tr></thead><tbody>
+    ${categoriasSorted.map(([c,v])=>`<tr><td>${esc(c)}</td><td>${v.qty}</td><td class="amt">$${Math.round(v.monto).toLocaleString('es-MX')}</td><td style="text-align:right;color:#6b7280;font-weight:600;">${totalGastos>0?Math.round(v.monto/totalGastos*100):0}%</td></tr>`).join('')}
+    </tbody></table>`:'<div style="font-size:12px;color:#9ca3af;padding:12px 0;">Sin gastos registrados este mes.</div>'}
   </div>
 </div>
 
