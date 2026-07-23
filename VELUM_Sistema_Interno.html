@@ -17815,7 +17815,12 @@ function renderDashboard(){
   );
 
   // ── Alert strip + Quick Actions — se activa tras las animaciones countUp ──
-  setTimeout(()=>updateAlertStrip(vencidasCount, porVencer30.length), 600);
+  // El BANNER usa ventanas accionables (decisión de Roy 2026-07-23): vencidas de los
+  // últimos 15 días y por vencer en 7. Los KPIs de arriba siguen mostrando el total
+  // (vencidas históricas / por vencer 30d) — son estadística, el banner es acción.
+  const vencidas15Strip = _estadosArr.filter(e=>!e.acceso && e.diasRest!=null && e.diasRest<0 && e.diasRest>=-15).length;
+  const porVencer7Strip = _estadosArr.filter(e=>e.acceso && e.diasRest!=null && e.diasRest>=0 && e.diasRest<=7).length;
+  setTimeout(()=>updateAlertStrip(vencidas15Strip, porVencer7Strip), 600);
 
   // ── Por Vencer nav badge ──
   const pvBadge=document.getElementById('pv-nav-badge');
@@ -27485,11 +27490,11 @@ function updateAlertStrip(vencidasDirect, porVencerDirect){
   if(vencidas > 0 || porVencer > 0){
     let msg = '';
     if(vencidas > 0 && porVencer > 0){
-      msg = `${vencidas} membresía${vencidas>1?'s':''} vencida${vencidas>1?'s':''} · ${porVencer} por vencer en los próximos 30 días`;
+      msg = `${vencidas} membresía${vencidas>1?'s':''} vencida${vencidas>1?'s':''} en los últimos 15 días · ${porVencer} por vencer esta semana`;
     } else if(vencidas > 0){
-      msg = `${vencidas} membresía${vencidas>1?'s':''} vencida${vencidas>1?'s':''} sin renovar — requiere atención`;
+      msg = `${vencidas} membresía${vencidas>1?'s':''} vencida${vencidas>1?'s':''} en los últimos 15 días — aún recuperables`;
     } else {
-      msg = `${porVencer} membresía${porVencer>1?'s':''} por vencer en los próximos 30 días`;
+      msg = `${porVencer} membresía${porVencer>1?'s':''} por vencer en los próximos 7 días`;
     }
     if(stripTxt) stripTxt.textContent = msg;
     strip.classList.add('visible');
