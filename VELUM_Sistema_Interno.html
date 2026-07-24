@@ -15305,13 +15305,23 @@ async function savePortalConfig(){
     if(!_okP) return;
   }
 
-  const rows = [
-    { gym_id, key: 'portal_codigo',   value: codigo },
-    { gym_id, key: 'portal_password', value: password },
-  ];
-  for(const row of rows){
-    await window.supabaseClient.from('gym_config').upsert(row, { onConflict: 'gym_id,key' });
+  // El código del portal es ÚNICO entre TODOS los gyms (candado en DB): si otro negocio ya
+  // lo usa, sus atletas entrarían al gym equivocado. Se guarda primero el código y se REVISA
+  // el error — antes se ignoraba y mostraba "guardado ✓" en falso.
+  const { error: eCod } = await window.supabaseClient.from('gym_config')
+    .upsert({ gym_id, key:'portal_codigo', value: codigo }, { onConflict:'gym_id,key' });
+  if(eCod){
+    if(eCod.code === '23505' || /duplicate|unique/i.test(eCod.message||'')){
+      toast(`El código "${codigo}" ya lo usa otro negocio. Elige uno distinto (ej. las iniciales de tu gym).`, '✕');
+    } else {
+      toast('No se pudo guardar el código: ' + (eCod.message||'error'), '✕');
+    }
+    return; // NO fingir éxito ni tocar la contraseña
   }
+  const { error: ePwd } = await window.supabaseClient.from('gym_config')
+    .upsert({ gym_id, key:'portal_password', value: password }, { onConflict:'gym_id,key' });
+  if(ePwd){ toast('El código se guardó, pero la contraseña no: ' + (ePwd.message||'error'), '✕'); return; }
+
   gymConfig.portal_codigo   = codigo;
   gymConfig.portal_password = password;
   updatePortalLinkBox();
