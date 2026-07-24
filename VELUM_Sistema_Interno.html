@@ -6735,10 +6735,18 @@ body::before{
         </div>
         <span class="field-err" id="p-cliente-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
       </div>
-      <!-- Pista: el nombre escrito no existe → será cliente nuevo -->
-      <div id="p-cliente-nuevo-hint" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:rgba(16,232,160,.07);border:1px solid rgba(16,232,160,.2);border-radius:10px;font-size:12px;color:var(--text2);line-height:1.5;">
-        <span style="font-size:15px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.8L19.5 11l-5.6 2.2L12 19l-1.9-5.8L4.5 11l5.6-2.2z"/></svg></span>
-        <span><strong id="p-cliente-nuevo-nombre" style="color:var(--ok);"></strong> se registrará como cliente nuevo con este pago.</span>
+      <!-- Pista: el nombre escrito no existe → será cliente nuevo (+ correo para crearle su cuenta) -->
+      <div id="p-cliente-nuevo-hint" style="display:none;flex-direction:column;gap:9px;padding:12px 14px;background:rgba(16,232,160,.07);border:1px solid rgba(16,232,160,.2);border-radius:10px;font-size:12px;color:var(--text2);line-height:1.5;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:15px;flex-shrink:0;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.8L19.5 11l-5.6 2.2L12 19l-1.9-5.8L4.5 11l5.6-2.2z"/></svg></span>
+          <span><strong id="p-cliente-nuevo-nombre" style="color:var(--ok);"></strong> se registrará como cliente nuevo con este pago.</span>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px;">Correo electrónico *</label>
+          <input id="p-cliente-email" type="email" placeholder="correo@ejemplo.com" autocomplete="off" inputmode="email" style="width:100%;"/>
+          <span class="field-err" id="p-cliente-email-err" style="display:none;font-size:11px;color:var(--danger);margin-top:3px;"></span>
+          <span style="font-size:10.5px;color:var(--text3);display:block;margin-top:5px;">Con esto le creamos su cuenta para que entre a la app. (No hace falta en un pase de día.)</span>
+        </div>
       </div>
       </div><!-- /pwiz-step-1 -->
 
@@ -11365,7 +11373,7 @@ function openModal(id){
     if(typeof loadPackagesForPagoModal === 'function') loadPackagesForPagoModal();
     const pkgSel = document.getElementById('p-package');
     if(pkgSel) pkgSel.value = '';
-    ['p-monto','p-list-price','p-discount-type','p-notas','p-vence'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
+    ['p-monto','p-list-price','p-discount-type','p-notas','p-vence','p-cliente-email'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
     const ldEl = document.getElementById('p-list-price-display'); if(ldEl) ldEl.textContent='— MXN';
     ['p-package-info','p-discount-block','p-clases-row','p-pasedia-warn'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.style.display='none'; });
     _selectedPackage = null;
@@ -22101,8 +22109,8 @@ function _pcNuevoHint(name){
   const h = document.getElementById('p-cliente-nuevo-hint');
   const n = document.getElementById('p-cliente-nuevo-nombre');
   if(!h) return;
-  if(name){ if(n) n.textContent = name; h.style.display = 'flex'; }
-  else h.style.display = 'none';
+  if(name){ if(n) n.textContent = name; h.style.display = 'flex'; }   // flex-direction:column por CSS inline
+  else { h.style.display = 'none'; _pagoFieldErr('p-cliente-email',''); }  // cliente existente → sin correo forzoso
 }
 
 // Helper escape simple para innerHTML
@@ -22286,10 +22294,23 @@ async function savePago(){
       }
     }
   }
+  // ── Cliente nuevo: si el nombre no está en el padrón y el paquete NO es pase de día, este
+  // pago crea el cliente → por eso el correo es obligatorio. Pase de día: exento (regla de Roy).
+  const clienteExiste = (clientesDB||[]).some(c => (c.nombre||'').trim().toLowerCase() === cliente.toLowerCase());
+  const esVisitaPaquete = !!(_selectedPackage && esPaseDia(_selectedPackage.name));
+  const debeCrearCliente = !!cliente && !clienteExiste && !esVisitaPaquete;
+  let nuevoEmail = '';
+  if(debeCrearCliente){
+    nuevoEmail = (document.getElementById('p-cliente-email')?.value || '').trim();
+    if(!nuevoEmail){ _pagoFieldErr('p-cliente-email','Ingresa el correo para registrar al cliente nuevo.'); hasError=true; }
+    else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(nuevoEmail)){ _pagoFieldErr('p-cliente-email','Correo inválido.'); hasError=true; }
+  }
+
   if(hasError){
     // Wizard: regresa al paso donde está el primer error para que el usuario lo vea
     if(typeof _pagoWizGoto === 'function'){
-      if(document.getElementById('p-cliente-err')?.style.display === 'block') _pagoWizGoto(1);
+      if(document.getElementById('p-cliente-err')?.style.display === 'block'
+         || document.getElementById('p-cliente-email-err')?.style.display === 'block') _pagoWizGoto(1);
       else if(document.getElementById('p-package-err')?.style.display === 'block') _pagoWizGoto(2);
       else _pagoWizGoto(3);
     }
@@ -22304,6 +22325,21 @@ async function savePago(){
   // Loading state
   const btn = document.getElementById('p-save-btn');
   setBtnLoading(btn, true);
+
+  // Crear el cliente nuevo ANTES del pago (los triggers de la DB le asignan nº de socio,
+  // qr_token y portal_token → ya puede entrar a la app). Si falla, no se registra el pago.
+  if(debeCrearCliente){
+    const { error: ecli } = await window.supabaseClient.from('clientes').insert([withGymId({ nombre: cliente, email: nuevoEmail })]);
+    if(ecli){
+      setBtnLoading(btn, false);
+      if(_handleSessionError(ecli)) return;
+      const m = ecli.message || '';
+      if(/unique|duplicate/i.test(m) && /email/i.test(m)) toast('Ese correo ya pertenece a otro cliente. Usa otro o elige al cliente existente.','✕');
+      else if(/enforce_plan_limit|plan/i.test(m)) toast('Alcanzaste el límite de clientes de tu plan.','🔒');
+      else toast('No se pudo registrar al cliente: ' + m, '✕');
+      return;
+    }
+  }
 
   // Vencimiento: la columna es NOT NULL. Si el campo quedó vacío (p.ej. se eligió el
   // paquete antes de fijar la fecha, o se cambió la fecha después), lo calculamos aquí
@@ -22355,7 +22391,8 @@ async function savePago(){
   closeModal('pago');
 
   // Reset modal
-  ['p-cliente','p-monto','p-notas','p-list-price','p-discount-type'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  ['p-cliente','p-cliente-email','p-monto','p-notas','p-list-price','p-discount-type'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  if(typeof _pcNuevoHint === 'function') _pcNuevoHint('');
   document.getElementById('p-fecha').value='';
   document.getElementById('p-vence').value='';
   document.getElementById('p-package').value='';
