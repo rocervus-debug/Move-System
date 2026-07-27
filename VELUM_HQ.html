@@ -2136,7 +2136,7 @@ function precioPlan(plan){
 
 async function fetchGyms(){
   const { data, error } = await sb.from('gyms')
-    .select('id,nombre,vertical,activo,plan,subscription_status,plan_expires_at,created_at,owner_email')
+    .select('id,nombre,vertical,activo,plan,subscription_status,plan_expires_at,created_at,owner_email,stripe_subscription_id,saas_manual_amount_mxn')
     .order('created_at', { ascending:false });
   if(error) throw error;
   GYMS = data || [];
@@ -2708,8 +2708,10 @@ async function openGymDetalle(id){
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         Cobro SaaS (founding)
       </h4>
-      ${ ['active','trialing','past_due'].includes(g.subscription_status)
+      ${ g.stripe_subscription_id
         ? `<div id="saas-info-box"><div class="spinner" style="margin:14px auto"></div></div>`
+        : (Number(g.saas_manual_amount_mxn) > 0
+        ? `<div class="bit-empty" style="text-align:left;padding:12px 0">Cobro manual: <strong>$${Number(g.saas_manual_amount_mxn).toLocaleString('es-MX')}/mes</strong> · se registra en Cobranza.</div>`
         : `<div class="bit-form">
             <label style="font-size:12px;opacity:.7">Precio founding · MXN/mes (de por vida)</label>
             <input id="founding-amount" type="number" min="10" max="20000" step="1" value="649" style="max-width:150px">
@@ -2719,7 +2721,7 @@ async function openGymDetalle(id){
             </button>
             <div id="founding-result" style="display:none;margin-top:10px"></div>
             <p style="font-size:11px;opacity:.55;margin:4px 0 0">Le mandas el link al gym; al pagar arranca su cobranza mensual (la fecha de corte queda anclada a ese día).</p>
-          </div>`
+          </div>`)
       }
     </div>
     <div class="f-section">
@@ -2737,8 +2739,8 @@ async function openGymDetalle(id){
       <div id="gym-notas">${renderNotasGym(notas.data || [])}</div>
     </div>`;
 
-  // Si el gym paga SaaS, traer de Stripe su suscripción + historial de facturas.
-  if(['active','trialing','past_due'].includes(g.subscription_status)) cargarSaasInfo(id);
+  // Si el gym tiene suscripción REAL en Stripe, traer su sub + historial de facturas.
+  if(g.stripe_subscription_id) cargarSaasInfo(id);
 }
 
 // Trae de Stripe (vía velum-saas-info) la suscripción SaaS del gym y su historial, y lo pinta.
