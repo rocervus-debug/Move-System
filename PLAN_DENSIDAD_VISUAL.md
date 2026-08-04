@@ -144,12 +144,29 @@ reusando la misma escala de tokens.
       las 6 acciones al menú `···` (0 controles sueltos, cierra con clic fuera y Escape).
 - [x] **Ola 2 — Dinero**: `.tbl td` 16px, gastos 68px, domiciliados 72px; móvil sube de
       `--fs-xs` a `--fs-sm` en celdas y botones de acción a 36px.
-- [ ] Ola 4 — Operación (horario, asistencia, calendario, visitas, citas)
-- [ ] Ola 5 — Equipo y contenido
-- [ ] Ola 6 — Marketing
-- [ ] Ola 7 — Sistema (settings, ayuda, superadmin, 3 dashboards)
-- [ ] Ola 8 — Los 38 modales + cierre
-- [ ] Tokenizar los 478 hex accionables
+- [x] **Olas 4-8 — aire en 21 clases de fila/tarjeta** (`scripts/migrar-aire.py`),
+      que cubren operación, equipo, marketing, sistema y modales por CSS compartido.
+- [x] **Tokenización de color** (`scripts/migrar-color.py`): 176 hex → tokens semánticos.
+
+### Deuda de color: qué queda y por qué NO es 0
+
+Quedan **305**: ~14 tamaños hero (>34px, deliberados) y ~291 hex.
+De esos hex, **~75 son `#fff`/`#000`** (blanco y negro puros: universales, no
+dependen del tema — un token solo añadiría indirección) y **~61 son colores
+decorativos usados 1-2 veces** (gradientes, sombras puntuales). Tokenizarlos
+crearía ~50 tokens de un solo uso: peor que el problema.
+
+**Lo que sí importaba ya está**: los hex que rompían el theming por vertical
+(fondos, grises, acento) son tokens y se verificó que gym/studios/recovery
+siguen pintando distinto.
+
+### GOTCHA grande (por si se retoma con un script)
+
+Un mapeo hex→token **automático por valor** manda `#00D4FF` a `var(--velum-emerald)`
+—la paleta de marca CRUDA— y **congela el cyan en studios y recovery**. El mapa
+debe ser manual y apuntar a tokens **semánticos** (`--accent`, `--bg`, `--text`).
+Tampoco se deben tocar las definiciones `--algo:#hex` (crea ciclos) ni los hex
+entre comillas en JS (Chart.js, canvas, `${color}44`).
 
 ### Por qué el barrido tipográfico se hizo global y no ola por ola
 
@@ -171,4 +188,12 @@ Nota: los **235 hex entre comillas en JS** (Chart.js, canvas, concatenaciones
 `${color}44`) ya NO cuentan como violación — convertirlos a `var()` rompe el panel.
 Son excepción justificada, no deuda. El auditor los excluye desde esta versión.
 
-_Última medición: 480 violaciones (todas de color; tipografía en 0) — 04-ago-2026_
+_Última medición: **305** — 04-ago-2026. Tipografía en 0; el resto es deuda de
+color justificada (ver arriba). Panel: **1,671 → 305**._
+
+## Pendiente real (no es deuda de esta cruzada)
+
+- **Revisión con datos reales**: todo se verificó contra render con el CSS real,
+  pero no con los 528 clientes de MOVE logueado (requiere sesión de Roy).
+- `atleta.html` y `storefront.html`: reusar los mismos tokens de escala. La app
+  además necesita build + review de tiendas.
