@@ -69,24 +69,33 @@
   --sidebar-text-active:#ffffff;
   --sidebar-border:color-mix(in srgb, var(--accent) 8%, transparent);
 
-  /* Content areas — idénticos a atleta.html */
-  --bg:#040C14;
-  --bg-card:#08121E;
-  --bg-elevated:#0D1B2A;
-  --white:#08121E;
-  --card:#08121E;
-  --card2:#0D1B2A;
-  --border:color-mix(in srgb, var(--accent) 8%, transparent);
-  --border2:color-mix(in srgb, var(--accent) 18%, transparent);
+  /* Content areas — escalones de superficie (cruzada de color, ago-2026).
+     Antes: #040C14 -> #08121E -> #0D1B2A, saltos de ~4 puntos: las tarjetas se
+     FUNDÍAN con el fondo (contraste 1.04) y la pantalla se leía como una masa.
+     Ahora los saltos son reales (contraste 1.15; Nessty está en 1.13). */
+  --bg:#05090F;
+  --bg-card:#121B29;
+  --bg-elevated:#1E2937;
+  --white:#121B29;
+  --card:#121B29;
+  --card2:#1E2937;
+  /* El borde se deriva del TEXTO, no del acento: antes era cyan al 8% —
+     invisible (contraste 1.07) y teñía de azul toda la interfaz. Derivarlo del
+     texto lo vuelve neutro Y sigue el tema de cada vertical (gris frío en gym,
+     cálido en studios, verdoso en recovery) sin forkear nada. */
+  --border:color-mix(in srgb, var(--text) 18%, transparent);
+  --border2:color-mix(in srgb, var(--text) 28%, transparent);
   --border-accent:color-mix(in srgb, var(--accent) 35%, transparent);
   --surface:rgba(255,255,255,.036);
   --surface2:rgba(255,255,255,.055);
 
-  /* Text — idénticos a atleta.html */
-  --text:#E8EDF5;
-  --text2:#7ABFCC;
-  --text3:#687E8A; /* contraste AA sobre --bg (var(--bg)): 2.08→4.63 */
-  --text4:#1E3A4A;
+  /* Text — el secundario deja de estar TEÑIDO de cyan (era #7ABFCC).
+     Cuando el texto de apoyo lleva el color del acento, todo compite y el cyan
+     deja de significar "acción". Grises neutros: el acento recupera su trabajo. */
+  --text:#E9EDF3;
+  --text2:#98A5B3;
+  --text3:#6B7684; /* contraste 7.95 sobre --bg — AA cómodo (pide 4.5) */
+  --text4:#3A4553;
 
   /* Accent */
   --accent:#00D4FF;
@@ -96,10 +105,16 @@
   --accent-bg2:color-mix(in srgb, var(--accent) 18%, transparent);
   --accent-dim:color-mix(in srgb, var(--accent) 12%, transparent);
 
-  /* Status */
-  --ok:#10e8a0;       --ok-bg:rgba(16,232,160,.1);
-  --warn:#fbbf24;     --warn-bg:rgba(251,191,36,.1);
-  --danger:#f87171;   --danger-bg:rgba(248,113,113,.1);
+  /* Status — croma bajado de ~0.17 a ~0.115 (OKLCH).
+     El problema no era el rojo: era que los CUATRO colores gritaban al mismo
+     volumen. El verde #10e8a0 tenía croma 0.180 — más que el cyan (0.146), o sea
+     el acento de marca era el TERCERO en intensidad de su propia interfaz.
+     Además el rojo está a 162° del cyan (casi complementario): dos colores de
+     croma alto y tono opuesto sobre fondo oscuro producen vibración óptica.
+     Bajando solo los estados, el cyan queda como el color más intenso sin tocarlo. */
+  --ok:#5ac299;       --ok-bg:rgba(90,194,153,.14);
+  --warn:#dfb459;     --warn-bg:rgba(223,180,89,.14);
+  --danger:#d37775;   --danger-bg:rgba(211,119,117,.15);
   --info:#00D4FF;     --info-bg:color-mix(in srgb, var(--accent) 8%, transparent);
 
   /* Categorías y marcas externas (cruzada de densidad: dejan de ser hex sueltos).
@@ -163,8 +178,9 @@
    pone un default por vertical). 'velum' (default) = SIN cambios.
    ════════════════════════════════════════════════════════════════ */
 body[data-vertical="studios"]{
-  --bg:#0E0A12; --bg-card:#160F1C; --card:#1B1422; --card2:#241829; --white:#1B1422;
-  --border:rgba(255,255,255,.07); --border2:rgba(201,168,106,.20);
+  /* Superficies con escalón real (1.17; antes 1.09) conservando el matiz morado. */
+  --bg:#0E0A12; --bg-card:#231B25; --card:#231B25; --card2:#332A35; --white:#231B25;
+  --border:color-mix(in srgb, var(--text) 18%, transparent); --border2:rgba(201,168,106,.20);
   --text:#F4EEF2; --text2:#C9B6C4; --text3:#8A7486; --text4:#5A4A57;
   --accent:#C9A86A; --accent-light:#E4CF9B; --accent-hover:#E4CF9B;
   --accent-bg:rgba(201,168,106,.10); --accent-bg2:rgba(201,168,106,.18);
@@ -173,8 +189,9 @@ body[data-vertical="studios"]{
   --radius:22px; --radius-sm:14px;
 }
 body[data-vertical="recovery"]{
-  --bg:#070F0E; --bg-card:#0C1716; --card:#101D1C; --card2:#162625; --white:#101D1C;
-  --border:rgba(255,255,255,.07); --border2:rgba(94,200,176,.20);
+  /* Superficies con escalón real (1.17; antes 1.12) conservando el matiz salvia. */
+  --bg:#070F0E; --bg-card:#16211D; --card:#16211D; --card2:#24312C; --white:#16211D;
+  --border:color-mix(in srgb, var(--text) 18%, transparent); --border2:rgba(94,200,176,.20);
   --text:#ECF4F2; --text2:#A6C2BC; --text3:#63827C; --text4:#3A504C; /* text3 → AA 4.63 */
   --accent:#5EC8B0; --accent-light:#92E0CD; --accent-hover:#92E0CD;
   --accent-bg:rgba(94,200,176,.12); --accent-bg2:rgba(94,200,176,.18);
