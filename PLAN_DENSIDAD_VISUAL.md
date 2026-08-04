@@ -137,8 +137,19 @@ reusando la misma escala de tokens.
       · 1,648 `font-size` migrados a tokens en TODAS las secciones a la vez
       · **810 textos ilegibles (<12px) → 0**
       · Verificado en DOM real: mínimo renderizado = 12px exacto
-- [ ] Olas 2-8 — **reestructura de filas** (mockup de Clientes: 84px, un badge, acciones en `···`)
-- [ ] Tokenizar los 480 hex accionables
+- [x] **Ajuste de escala** (04-ago, 2ª pasada): la 1ª subió el piso pero no la base —
+      82% de la UI seguía en ≤13px y **se sentía igual**. `--fs-sm` 13→14, `--fs-base` 15→**16**
+      (igual que Nessty), `--fs-lg` 17→18, `--fs-xl` 20→22.
+- [x] **Ola 3 — Clientes**: fila de 86px, nombre 18px, meta 14px, **un** badge de estado;
+      las 6 acciones al menú `···` (0 controles sueltos, cierra con clic fuera y Escape).
+- [x] **Ola 2 — Dinero**: `.tbl td` 16px, gastos 68px, domiciliados 72px; móvil sube de
+      `--fs-xs` a `--fs-sm` en celdas y botones de acción a 36px.
+- [ ] Ola 4 — Operación (horario, asistencia, calendario, visitas, citas)
+- [ ] Ola 5 — Equipo y contenido
+- [ ] Ola 6 — Marketing
+- [ ] Ola 7 — Sistema (settings, ayuda, superadmin, 3 dashboards)
+- [ ] Ola 8 — Los 38 modales + cierre
+- [ ] Tokenizar los 478 hex accionables
 
 ### Por qué el barrido tipográfico se hizo global y no ola por ola
 
