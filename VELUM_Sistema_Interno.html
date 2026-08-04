@@ -996,7 +996,7 @@ body{
   white-space:nowrap;
 }
 .tbl td{
-  padding:12px 14px;
+  padding:16px 16px; /* densidad Ola 2: las filas de dinero respiran */
   border-bottom:1px solid rgba(255,255,255,.035);
   color:var(--text2);vertical-align:middle;
   transition:background .12s;
@@ -1049,7 +1049,7 @@ body{
   .tbl tbody tr:hover{border-color:color-mix(in srgb, var(--accent) 25%, transparent);}
   .tbl td{
     border-bottom:1px solid rgba(255,255,255,.04);
-    padding:9px 14px;font-size:var(--fs-xs);
+    padding:12px 14px;font-size:var(--fs-sm); /* densidad Ola 2 */
   }
   .tbl td:last-child{border-bottom:none;}
   .tbl td[data-label]::before{
@@ -2062,7 +2062,7 @@ select option{background:#08121E;color:var(--text);}
 /* ═══════════════════════════════════════════════════════════════
    GASTOS
 ═══════════════════════════════════════════════════════════════ */
-.gasto-row{ display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s, border-color .15s; }
+.gasto-row{ display:flex;align-items:center;gap:14px;padding:16px 18px;min-height:68px;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s, border-color .15s; }
 .gasto-row:last-child{ border-bottom:none; }
 .gasto-row:hover{ background:color-mix(in srgb, var(--accent) 4%, transparent);border-bottom-color:color-mix(in srgb, var(--accent) 12%, transparent); }
 .gasto-cat-dot{ width:10px;height:10px;border-radius:50%;flex-shrink:0; }
@@ -2435,9 +2435,10 @@ select option{background:#08121E;color:var(--text);}
   div[style*="overflow-x:auto"],
   div[style*="overflow-x: auto"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
   /* .tbl NO usa min-width en móvil: se transforma a tarjetas (ver bloque .tbl→cards) con data-label. */
-  .tbl td, .tbl th { padding: 8px 10px; font-size:var(--fs-xs); }
+  /* Densidad Ola 2: en móvil las celdas de dinero eran de 12px y muy apretadas. */
+  .tbl td, .tbl th { padding: 11px 12px; font-size:var(--fs-sm); }
   .tbl-action { display: flex; gap: 4px; flex-wrap: nowrap; }
-  .tbl-action .btn { font-size:var(--fs-xs); padding: 4px 8px; min-height: 32px; }
+  .tbl-action .btn { font-size:var(--fs-sm); padding: 6px 10px; min-height: 36px; }
 
   /* ──────────── Coach cards grid ──────────── */
   .coach-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -2621,7 +2622,7 @@ select option{background:#08121E;color:var(--text);}
   }
   #gastos-filter-row::-webkit-scrollbar { display: none; }
 
-  .gasto-row { padding: 10px 12px; gap: 8px; }
+  .gasto-row { padding: 14px 14px; gap: 10px; min-height:64px; }
   .gasto-desc-main { font-size:var(--fs-xs); }
   .gasto-desc-sub  { font-size:var(--fs-xs); }
   .gasto-monto { font-size:var(--fs-sm); }
@@ -16152,13 +16153,13 @@ async function loadMemberSubs(){
         : '<span style="color:var(--text3);">● Pendiente</span>';
       const cancelBtn = (s.status!=='canceled' && !s.cancel_at_period_end)
         ? `<button class="btn btn-sm btn-outline" onclick="cancelMemberSub('${s.stripe_subscription_id}')" style="font-size:var(--fs-sm);">Cancelar</button>` : '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:8px;">
+      return `<div style="display:flex;align-items:center;gap:12px;padding:16px 16px;min-height:72px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r-md);">
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
-            <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(s.cliente_nombre||'Socio')}</span>
-            <span style="font-size:var(--fs-sm);color:var(--accent);font-weight:700;">${monto}</span>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:var(--fs-lg);font-weight:600;color:var(--text);">${esc(s.cliente_nombre||'Socio')}</span>
+            <span style="font-size:var(--fs-base);color:var(--accent);font-weight:600;">${monto}</span>
           </div>
-          <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:2px;">${esc(plan)} · próx. cobro ${next} · ${estado}</div>
+          <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:3px;">${esc(plan)} · próx. cobro ${next} · ${estado}</div>
         </div>
         ${cancelBtn}
       </div>`;
