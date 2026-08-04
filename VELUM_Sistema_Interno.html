@@ -132,13 +132,13 @@
      SEIS tamaños, ni uno más. Piso duro: nada por debajo de 12px.
      Antes había 23 tamaños distintos y texto de 8-9px (ilegible para
      dueños de gym en el celular). Ver PLAN_DENSIDAD_VISUAL.md */
-  --fs-xs:12px;    /* metadatos, chips, badges — el MÍNIMO permitido */
-  --fs-sm:13px;    /* texto secundario, celdas de tabla densa */
-  --fs-base:15px;  /* texto base de la interfaz */
-  --fs-lg:17px;    /* nombres en listas, subtítulos */
-  --fs-xl:20px;    /* títulos de sección */
-  --fs-2xl:24px;   /* títulos de vista */
-  --fs-3xl:30px;   /* cifras KPI grandes */
+  --fs-xs:12px;    /* SOLO chips y badges — el MÍNIMO permitido */
+  --fs-sm:14px;    /* texto secundario, celdas de tabla densa */
+  --fs-base:16px;  /* texto base de la interfaz (igual que Nessty) */
+  --fs-lg:18px;    /* nombres en listas, subtítulos */
+  --fs-xl:22px;    /* títulos de sección */
+  --fs-2xl:26px;   /* títulos de vista */
+  --fs-3xl:32px;   /* cifras KPI grandes */
 
   /* Espaciado — múltiplos de 4 */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
@@ -1450,6 +1450,24 @@ select option{background:#08121E;color:var(--text);}
   transition:background .12s;cursor:default;
 }
 .notif-item:hover{background:rgba(255,255,255,.04);}
+
+/* ── Menú "···" de fila (cruzada de densidad, Ola 3) ────────────────
+   Las acciones siguen existiendo TODAS: dejan de repetirse en cada
+   renglón y viven aquí. Ver PLAN_DENSIDAD_VISUAL.md */
+.row-menu-wrap{position:relative;flex-shrink:0;}
+.row-menu-btn{
+  width:36px;height:36px;border-radius:var(--r-sm);background:transparent;
+  border:1px solid transparent;color:var(--text3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-lg);line-height:1;letter-spacing:1px;transition:background .15s,color .15s;
+}
+.row-menu-btn:hover{background:var(--card2);color:var(--text);}
+.cli-menu{
+  position:absolute;right:0;top:calc(100% + 6px);z-index:60;display:none;
+  background:var(--bg-elevated);border:1px solid var(--border2);
+  border-radius:var(--r-md);padding:8px;box-shadow:var(--shadow-md);
+}
+.cli-menu.open{display:block;}
 .notif-item.a-danger{border-left:3px solid var(--danger);}
 .notif-item.a-warn{border-left:3px solid var(--warn);}
 .notif-item.a-info{border-left:3px solid var(--accent);}
@@ -2982,10 +3000,10 @@ select option{background:#08121E;color:var(--text);}
   #va-btn{ bottom:82px !important; right:16px !important; }
   #va-panel{ bottom:146px !important; right:12px; left:12px; width:auto; }
   /* .pkg-bar (barra + conteo de clases) ahora SÍ se muestra en móvil: en tarjetas cabe bien. */
-  /* Clientes: la fila envuelve y las acciones bajan a su propia línea (ya no se recortan). */
-  .cli-row{ flex-wrap:wrap; }
-  .cli-row > .cli-actions{ flex-basis:100%; margin-top:8px; }
-  .cli-row > .cli-actions > div{ flex-wrap:wrap; }
+  /* Clientes: las acciones viven en el menú ··· , así que la fila ya no necesita
+     envolver ni bajarlas a otra línea (cruzada de densidad, Ola 3). */
+  .cli-menu{ right:auto; left:0; min-width:auto; }
+  .cli-menu > div{ flex-wrap:wrap; }
   /* Revenue: las dos tarjetas (nuevos vs renovaciones / top planes) se apilan en móvil. */
   #revenue-two-col{ grid-template-columns:1fr !important; }
   /* Leads Web: la tabla hecha a mano scrollea horizontal en vez de recortarse. */
@@ -13863,6 +13881,30 @@ function estadoMembresiaPorCliente(hoy){
   return res;
 }
 
+// Abre/cierra el menú "···" de una fila. Solo uno abierto a la vez.
+// Las acciones no desaparecieron: viven aquí (cruzada de densidad, Ola 3).
+function toggleRowMenu(btn){
+  const menu = btn.parentElement.querySelector('.cli-menu');
+  if(!menu) return;
+  const abierto = menu.classList.contains('open');
+  document.querySelectorAll('.cli-menu.open').forEach(m => m.classList.remove('open'));
+  if(!abierto){
+    menu.classList.add('open');
+    // Si se sale por la derecha de la ventana, lo anclamos del otro lado.
+    const r = menu.getBoundingClientRect();
+    if(r.right > window.innerWidth - 8){ menu.style.right = 'auto'; menu.style.left = '0'; }
+  }
+}
+// Un clic en cualquier otro lado cierra el menú abierto.
+document.addEventListener('click', e => {
+  if(!e.target.closest('.row-menu-wrap')){
+    document.querySelectorAll('.cli-menu.open').forEach(m => m.classList.remove('open'));
+  }
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') document.querySelectorAll('.cli-menu.open').forEach(m => m.classList.remove('open'));
+});
+
 function renderClientes(){
   const listEl = document.getElementById('clientes-list');
   const kpisEl = document.getElementById('clientes-kpis');
@@ -14146,32 +14188,39 @@ function renderClientes(){
            ${cobrarBtn}${qrBtn}${medBtn}${delBtn}
          </div>`;
 
+    // Ola 3 (densidad): la fila muestra NOMBRE + contacto + UN estado.
+    // El resto (tipo, congelado, referidos, portal, historial y las 6 acciones)
+    // vive en el menú ··· y en la ficha del cliente — nada se elimina.
+    const extras = [
+      frozenClientes.has(c.nombre) ? 'Congelado' : '',
+      (refCount[c.nombre]||0) > 0 ? `${refCount[c.nombre]} referido${refCount[c.nombre]!==1?'s':''}` : '',
+      cliDbId && !portalToken ? 'Sin portal' : ''
+    ].filter(Boolean);
+
     return `<div class="cli-row" onclick="openClientePanel('${esc(c.nombre)}')"
-                 style="display:flex;align-items:center;gap:14px;padding:14px 16px;
-                         background:var(--card);border:1px solid var(--border);border-radius:12px;
+                 style="display:flex;align-items:center;gap:16px;padding:18px 18px;min-height:var(--row-h);
+                         background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);
                          border-left:3px solid ${cfg.color};cursor:pointer;transition:background .15s;"
                  onmouseenter="this.style.background='var(--card2)'" onmouseleave="this.style.background='var(--card)'">
-      ${getAvatarHTML(c.nombre, 42, c.foto_url||null)}
+      ${getAvatarHTML(c.nombre, 48, c.foto_url||null)}
       <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px;">
-          ${c.numeroCliente ? `<span style="font-size:var(--fs-xs);font-weight:800;color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);padding:2px 7px;border-radius:6px;letter-spacing:.3px;flex-shrink:0;">#${c.numeroCliente}</span>` : ''}
-          <span style="font-size:var(--fs-base);font-weight:700;color:var(--text);">${esc(c.nombre)}</span>
-          <span style="font-size:var(--fs-xs);padding:2px 7px;border-radius:10px;background:${cfg.bg};color:${cfg.color};font-weight:700;">${cfg.icon} ${cfg.label}</span>
-          ${tipoBadge}
-          ${frozenClientes.has(c.nombre)?`<span style="font-size:var(--fs-xs);padding:2px 7px;border-radius:10px;background:rgba(96,165,250,.12);color:#60a5fa;font-weight:700;border:1px solid rgba(96,165,250,.25);">Congelado</span>`:''}
-          ${(refCount[c.nombre]||0)>0?`<span style="font-size:var(--fs-xs);padding:2px 7px;border-radius:10px;background:rgba(167,139,250,.12);color:#a78bfa;font-weight:700;border:1px solid rgba(167,139,250,.25);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="9" cy="7" r="4"/><path d="M1 21c0-4 4-6 8-6"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${refCount[c.nombre]} referido${refCount[c.nombre]!==1?'s':''}</span>`:''}
-          ${sinPortalBadge}
-          <span style="font-size:var(--fs-xs);color:var(--text4);">${c.total} pago${c.total!==1?'s':''}</span>
+        <div style="font-size:var(--fs-lg);font-weight:600;color:var(--text);letter-spacing:-.2px;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.nombre)}</div>
+        <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:3px;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${c.numeroCliente ? `#${c.numeroCliente} · ` : ''}${tel ? `${tel} · ` : ''}${esc(c.plan||'—')}
+          ${extras.length ? ` · ${extras.join(' · ')}` : ''}
         </div>
-        <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:5px;">
-          <strong style="color:${cfg.color};">${diasLabel}</strong>
-          ${c.vence && c.vence.length>=10 ? ` · ${venceFmt}` : ''}
-          &nbsp;·&nbsp; ${esc(c.plan||'—')}
-          ${tel ? ` · ${tel}` : ''}
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px;">${histHtml}</div>
       </div>
-      <div class="cli-actions" style="flex-shrink:0;" onclick="event.stopPropagation()">${waBtn}</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+        <span style="font-size:var(--fs-sm);padding:5px 12px;border-radius:var(--r-full);
+                     background:${cfg.bg};color:${cfg.color};font-weight:500;white-space:nowrap;">${diasLabel}</span>
+        <div class="row-menu-wrap" onclick="event.stopPropagation()">
+          <button class="row-menu-btn" title="Acciones" aria-label="Acciones de ${esc(c.nombre)}"
+                  onclick="toggleRowMenu(this)">···</button>
+          <div class="cli-menu">${waBtn}</div>
+        </div>
+      </div>
     </div>`;
   }).join('');
 
