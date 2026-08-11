@@ -18,13 +18,16 @@ acento y escena por vertical (gym bruma fría cyan · studios champagne oro · r
 
 ## Olas
 
-- [ ] **G1 — Shell**: escena por vertical + lámina + sidebar vidrio + topbar + tokens
-      translúcidos + modales con blur. (Esto ya hace que TODO el panel se vea glass.)
-- [ ] **G2 — Dashboard fiel**: hero "Hola, {nombre}", KPIs con ícono circular, actividad
-      reciente estilo mockup.
-- [ ] **G3 — Gráficas pastel**: barras redondeadas pastel + dona con hueco (los hex de
-      Chart.js son dinámicos — se cambian en su config JS, no por token).
-- [ ] **G4 — Modales/wizards** pulidos al vidrio profundo del mockup.
+- [x] **G1 — Shell** (`83f9aec`): escena por vertical + lámina + sidebar/topbar vidrio +
+      tokens translúcidos. GOTCHA: la escena lleva `!important` (una regla `body` posterior
+      de menor especificidad ganaba el background-image en runtime).
+- [~] **G2 — Dashboard fiel** (`5312b86` parcial): KPIs con degradado de canto; FALTA hero
+      "Hola, {nombre}" + ícono circular en KPI + actividad estilo mockup (edita renderDashboard).
+- [~] **G3 — Gráficas pastel** (`85da3cc` inicio): barras del historial de ingresos ya en
+      pastel (radius 10, sin borde). FALTAN: checkins (línea L~17497), balance (L~19596),
+      revenue superadmin (L~28016) y grid punteado.
+- [x] **G4 — Modales** (`5312b86`): vidrio profundo blur 22 + inputs translúcidos —
+      verificado abriendo modal-solo-cliente en DOM real.
 - [ ] **G5 — Barrido por sección** (dinero → personas → operación → resto) + móvil real.
 - [ ] **G6 — Auditor**: chequeo AA de texto sobre vidrio + verificación 3 verticales.
 
