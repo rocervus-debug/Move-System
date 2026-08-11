@@ -3459,7 +3459,8 @@ body:not(.light-mode) .hero-stats-row{ display:none !important; }
    propia sección en el panel (Coaches, Calendario, Retención, Gastos &
    Balance, Análisis). El dashboard queda: alertas + hero con acciones +
    4 KPIs del día + Hoy + Transacciones + Análisis plegado. */
-body:not(.light-mode) #dash-widgets-grid{ display:none !important; }
+/* …excepto CUMPLEAÑOS, que Roy quiere en el día a día (11-ago). */
+body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ display:none !important; }
 
 /* ── Sin soporte de backdrop-filter: lámina sólida (nada se vuelve ilegible) ── */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -12497,6 +12498,27 @@ function renderCalVenc(){
     dayMap[day].push({nombre,estado,plan:ult.plan||'—',vence:ult.vence,tel,diff});
   });
 
+  // Cumpleaños del mes (feature 11-ago): misma fuente que el widget del
+  // dashboard — pagos[].cumpleanos (YYYY-MM-DD), dedup por cliente. Se pintan
+  // DISTINTO a los vencimientos: violeta + borde punteado + ícono de regalo.
+  const cumpleMap={};
+  {
+    const mapaC={};
+    pagos.forEach(p=>{
+      const n=(p.cliente||'').trim();
+      if(!n||!p.cumpleanos||p.cumpleanos.length<10) return;
+      if(!mapaC[n]||(p.cumpleanos>mapaC[n])) mapaC[n]=p.cumpleanos;
+    });
+    Object.entries(mapaC).forEach(([nombre,f])=>{
+      if(parseInt(f.slice(5,7))!==m+1) return;      // solo el mes visible
+      const dia=parseInt(f.slice(8,10));
+      if(!dia||isNaN(dia)) return;
+      if(!cumpleMap[dia]) cumpleMap[dia]=[];
+      cumpleMap[dia].push(nombre);
+    });
+  }
+  const CUMPLE_SVG=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`;
+
   // Build calendar
   const firstDay=new Date(y,m,1).getDay(); // 0=Sun
   const daysInMonth=new Date(y,m+1,0).getDate();
@@ -12517,8 +12539,9 @@ function renderCalVenc(){
   const todayDay = (hoy.getFullYear()===y && hoy.getMonth()===m) ? hoy.getDate() : -1;
   for(let d=1;d<=daysInMonth;d++){
     const events=dayMap[d]||[];
+    const cumplesDia=cumpleMap[d]||[];
     const isToday=d===todayDay;
-    const hasEvents=events.length>0;
+    const hasEvents=events.length>0||cumplesDia.length>0;
     const maxShow=3;
     const eventDots=events.slice(0,maxShow).map(e=>`
       <div onclick="event.stopPropagation();calVencShowDay(${d})" title="${esc(e.nombre)}"
@@ -12528,6 +12551,15 @@ function renderCalVenc(){
         ${esc(e.nombre.split(' ')[0])}
       </div>`).join('');
     const moreLabel=events.length>maxShow?`<div style="font-size:var(--fs-xs);color:var(--text3);padding:1px 2px;">+${events.length-maxShow} más</div>`:'';
+    // Cumpleaños: violeta con borde PUNTEADO + regalo — inconfundible vs vencimiento
+    const cumpleDots=cumplesDia.map(n=>`
+      <div onclick="event.stopPropagation();calVencShowDay(${d})" title="Cumpleaños de ${esc(n)}"
+           style="font-size:var(--fs-xs);padding:1px 4px;border-radius:4px;background:rgba(167,139,250,.14);
+                  color:var(--violet);border-left:2px dashed var(--violet);
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:pointer;
+                  display:flex;align-items:center;gap:3px;">
+        ${CUMPLE_SVG}${esc(n.split(' ')[0])}
+      </div>`).join('');
 
     html+=`<div onclick="calVencShowDay(${d})"
                style="min-height:70px;padding:4px;border-radius:8px;cursor:${hasEvents?'pointer':'default'};
@@ -12537,7 +12569,7 @@ function renderCalVenc(){
                onmouseenter="if(${hasEvents})this.style.background='var(--card2)'"
                onmouseleave="this.style.background='${isToday?'var(--accent-bg)':'var(--card)'}'">
         <div style="font-size:var(--fs-sm);font-weight:${isToday?'800':'600'};color:${isToday?'var(--accent)':'var(--text3)'};margin-bottom:3px;">${d}</div>
-        <div style="display:flex;flex-direction:column;gap:2px;">${eventDots}${moreLabel}</div>
+        <div style="display:flex;flex-direction:column;gap:2px;">${eventDots}${moreLabel}${cumpleDots}</div>
       </div>`;
   }
 
@@ -12569,16 +12601,51 @@ function calVencShowDay(day){
     events.push({nombre,estado,plan:ult.plan||'—',vence:dayStr,tel,diff});
   });
 
+  // Cumpleaños de ese día (mes-día del cumpleanos más reciente por cliente)
+  const mmdd=`${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const mapaC={};
+  pagos.forEach(p=>{
+    const n=(p.cliente||'').trim();
+    if(!n||!p.cumpleanos||p.cumpleanos.length<10) return;
+    if(!mapaC[n]||(p.cumpleanos>mapaC[n])) mapaC[n]=p.cumpleanos;
+  });
+  const cumplesDia=Object.entries(mapaC).filter(([,f])=>f.slice(5,10)===mmdd).map(([n])=>n);
+
   const detEl=document.getElementById('calVencDetail');
   const titleEl=document.getElementById('calVencDetailTitle');
   const listEl=document.getElementById('calVencDetailList');
   if(!detEl||!listEl) return;
 
   const mesNombres=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  if(titleEl) titleEl.textContent=`Vencimientos: ${day} de ${mesNombres[m]} de ${y} (${events.length})`;
+  if(titleEl) titleEl.textContent=`${day} de ${mesNombres[m]} de ${y} — ${events.length} vencimiento${events.length===1?'':'s'}${cumplesDia.length?` · ${cumplesDia.length} cumpleaños`:''}`;
 
-  if(!events.length){
-    listEl.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:var(--fs-sm);">Sin vencimientos ese día.</div>`;
+  // Bloque de cumpleaños (violeta, con felicitación por WhatsApp en un clic)
+  const cumpleHtml=cumplesDia.map(n=>{
+    const cliRec=clientesDB.find(c=>c.nombre===n)||{};
+    const telC=(cliRec.telefono||'').replace(/\D/g,'');
+    const numWA=telC.length===10?'52'+telC:telC;
+    const msg=encodeURIComponent(`¡Feliz cumpleaños, ${n.split(' ')[0]}! De parte de todo el equipo, que tengas un excelente día.`);
+    const btn=numWA.length>=12
+      ?`<a href="https://wa.me/${numWA}?text=${msg}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
+            style="padding:5px 10px;border-radius:8px;background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-sm);font-weight:700;text-decoration:none;border:1px solid rgba(37,211,102,.3);">Felicitar</a>`
+      :'';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);background:rgba(167,139,250,.06);">
+      ${getAvatarHTML(n,32)}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(n)}</div>
+        <div style="font-size:var(--fs-sm);color:var(--violet);display:flex;align-items:center;gap:5px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          Cumpleaños
+        </div>
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
+
+  if(!events.length && !cumplesDia.length){
+    listEl.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:var(--fs-sm);">Sin vencimientos ni cumpleaños ese día.</div>`;
+  } else if(!events.length){
+    listEl.innerHTML=cumpleHtml;
   } else {
     const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
     const stateColor={vencido:'var(--danger)',urgente:'#ff6b35',pronto:'var(--warn)',activo:'var(--ok)'};
@@ -12601,7 +12668,7 @@ function calVencShowDay(day){
         <span style="font-size:var(--fs-sm);padding:3px 8px;border-radius:8px;background:${stateColor[e.estado]}18;color:${stateColor[e.estado]};font-weight:700;">${stateLabel[e.estado]}</span>
         <div onclick="event.stopPropagation()">${waBtn}</div>
       </div>`;
-    }).join('');
+    }).join('') + cumpleHtml;
   }
   detEl.style.display='block';
   setTimeout(()=>detEl.scrollIntoView({behavior:'smooth',block:'start'}),50);
