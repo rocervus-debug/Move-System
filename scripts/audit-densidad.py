@@ -80,5 +80,56 @@ def main():
     print("-" * 62)
     return 0 if total == 0 else 1
 
+# ── G6: contraste sobre VIDRIO (cruzada Glass) ──────────────────────────
+# Compone escena -> lámina -> tarjeta en los DOS extremos de cada vertical
+# (tope claro de la niebla y fondo oscuro) y exige AA. Chequear extremos sin
+# blur es CONSERVADOR: el blur promedia hacia el centro, nunca empeora.
+def _lum(rgb):
+    c = [v / 255 for v in rgb]
+    c = [v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4 for v in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+def _ratio(a, b):
+    la, lb = _lum(a), _lum(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+def _hex(h):
+    h = h.lstrip('#')
+    return [int(h[i:i+2], 16) for i in (0, 2, 4)]
+
+def _comp(fg, alpha, bg):
+    return [fg[i] * alpha + bg[i] * (1 - alpha) for i in range(3)]
+
+def glass_check():
+    # Valores del bloque GLASS VELUM (VELUM_Sistema_Interno.html)
+    SHEET = (_hex('101518'), 0.45)   # rgba(16,21,24,.45)
+    CARD  = (_hex('0D1210'), 0.40)   # rgba(13,18,16,.40)
+    ESCENAS = {
+        'gym':      ('7E93A0', '1D2A32'),
+        'studios':  ('A18E7E', '2A1F18'),
+        'recovery': ('8E9B8C', '242F29'),
+    }
+    TEXTOS = {'--text': 'E9EDF3', '--text2': 'A8B4C0', '--text3': 'A2AEBB'}
+    MINIMO = {'--text': 7.0, '--text2': 4.5, '--text3': 4.5}
+    print("\nCONTRASTE SOBRE VIDRIO (peor caso escena+lámina+tarjeta)")
+    fallos = 0
+    for vert, (claro, oscuro) in ESCENAS.items():
+        for extremo in (claro, oscuro):
+            base = _comp(*SHEET, _hex(extremo))
+            base = _comp(*CARD, base)
+            for tok, hexv in TEXTOS.items():
+                r = _ratio(_hex(hexv), base)
+                ok = r >= MINIMO[tok]
+                if not ok:
+                    fallos += 1
+                    print("  FALLA %-8s %-8s sobre #%s: %.2f (pide %.1f)" % (
+                        vert, tok, extremo, r, MINIMO[tok]))
+    if fallos == 0:
+        print("  OK: los 3 textos pasan AA en los 6 extremos de escena")
+    return fallos
+
 if __name__ == '__main__':
-    sys.exit(main())
+    code = main()
+    fallos = glass_check()
+    sys.exit(1 if (code or fallos) else 0)
