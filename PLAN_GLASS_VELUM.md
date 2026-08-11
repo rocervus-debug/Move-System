@@ -21,15 +21,20 @@ acento y escena por vertical (gym bruma fría cyan · studios champagne oro · r
 - [x] **G1 — Shell** (`83f9aec`): escena por vertical + lámina + sidebar/topbar vidrio +
       tokens translúcidos. GOTCHA: la escena lleva `!important` (una regla `body` posterior
       de menor especificidad ganaba el background-image en runtime).
-- [~] **G2 — Dashboard fiel** (`5312b86` parcial): KPIs con degradado de canto; FALTA hero
-      "Hola, {nombre}" + ícono circular en KPI + actividad estilo mockup (edita renderDashboard).
-- [~] **G3 — Gráficas pastel** (`85da3cc` inicio): barras del historial de ingresos ya en
-      pastel (radius 10, sin borde). FALTAN: checkins (línea L~17497), balance (L~19596),
-      revenue superadmin (L~28016) y grid punteado.
+- [x] **G2 — Dashboard fiel** (`92a9ab7`): hero "Hola, {nombre}" protagonista (fs-2xl blanco)
+      sobre vidrio con canto; gym como secundario; stat-boxes en vidrio. GOTCHA: el hero usa
+      estilos inline → la capa glass lleva `!important`.
+- [x] **G3 — Gráficas pastel** (`3a5b0e8`): las 4 gráficas. Check-ins y balance usan
+      `color-mix(var(--accent) 45%, white)` → cada vertical pasteliza SU acento; ingresos/
+      gastos en los estados calmados; 6 grids con borderDash [4,4].
 - [x] **G4 — Modales** (`5312b86`): vidrio profundo blur 22 + inputs translúcidos —
       verificado abriendo modal-solo-cliente en DOM real.
-- [ ] **G5 — Barrido por sección** (dinero → personas → operación → resto) + móvil real.
-- [ ] **G6 — Auditor**: chequeo AA de texto sobre vidrio + verificación 3 verticales.
+- [~] **G5 — Barrido**: hecho en estático (desktop 1280: sin overflow en lámina, mínimo 12px,
+      menús elevados legibles · móvil 375: lámina full-bleed blur 14, sin overflow-x).
+      PENDIENTE: pasada de Roy logueado con datos reales en los 3 verticales.
+- [x] **G6 — Auditor** (`65e3b8c`): `glass_check()` compone escena→lámina→tarjeta en los 6
+      extremos y exige AA. **Cazó su primer bug real**: los grises del tema sólido fallaban
+      sobre vidrio (text3 caía a 2.3) → en glass `--text2:#A8B4C0` / `--text3:#A2AEBB`, medidos.
 
 ## Riesgos aceptados / fuera de alcance
 
@@ -40,4 +45,4 @@ acento y escena por vertical (gym bruma fría cyan · studios champagne oro · r
   si Roy quiere el rail literal, va como variante colapsada con tooltips en G5.
 - Rendimiento en Android de gama baja: presupuesto de blur (lámina+topbar+modal) y fallback.
 
-_Estado: arrancando G1 — 11-ago-2026_
+_Estado: G1-G4 y G6 COMPLETOS, G5 barrido estático — 11-ago-2026. Falta: pasada de Roy con datos reales; decidir modo claro; rail solo-íconos como variante opcional._
