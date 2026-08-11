@@ -17439,8 +17439,8 @@ function renderHistIngresos(){
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>`$${ctx.raw.toLocaleString('es-MX')}` } } },
       scales:{
-        x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}} },
-        y:{ grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}, callback: v=>'$'+v.toLocaleString('es-MX')} }
+        x:{ grid:{borderDash:[4,4],color:'rgba(255,255,255,.04)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}} },
+        y:{ grid:{borderDash:[4,4],color:'rgba(255,255,255,.06)'}, ticks:{color:'rgba(210,224,238,.5)',font:{size:10}, callback: v=>'$'+v.toLocaleString('es-MX')} }
       }
     }
   });
@@ -17497,10 +17497,12 @@ async function renderCheckinsChart(){
         label:'Check-ins',
         data: counts,
         fill: true,
-        backgroundColor: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--accent) 80%, transparent)',
+        // Glass G3: línea en el PASTEL del acento (mezcla con blanco) — así
+        // studios/recovery pastelizan su propio color, no el cyan de gym.
+        backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--accent) 45%, white)',
         borderWidth: 2,
-        pointBackgroundColor: 'color-mix(in srgb, var(--accent) 100%, transparent)',
+        pointBackgroundColor: 'color-mix(in srgb, var(--accent) 45%, white)',
         pointRadius: 3,
         tension: 0.35,
       }]
@@ -17509,8 +17511,8 @@ async function renderCheckinsChart(){
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>`${ctx.raw} check-in${ctx.raw!==1?'s':''}` } } },
       scales:{
-        x:{ grid:{color:gridColor}, ticks:{color:tickColor,font:{size:10},maxRotation:45} },
-        y:{ grid:{color:gridColor}, ticks:{color:tickColor,font:{size:10},stepSize:1}, beginAtZero:true }
+        x:{ grid:{borderDash:[4,4],color:gridColor}, ticks:{color:tickColor,font:{size:10},maxRotation:45} },
+        y:{ grid:{borderDash:[4,4],color:gridColor}, ticks:{color:tickColor,font:{size:10},stepSize:1}, beginAtZero:true }
       }
     }
   });
@@ -19594,9 +19596,11 @@ function renderGastosChart(){
     type:'bar',
     data:{ labels,
       datasets:[
-        { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(16,232,160,.35)', borderColor:'rgba(16,232,160,.8)', borderWidth:2, borderRadius:6 },
-        { label:'Gastos',   data:dataGastos,   backgroundColor:'rgba(248,113,113,.3)',  borderColor:'rgba(248,113,113,.7)', borderWidth:2, borderRadius:6 },
-        { label:'Balance',  data:dataBalance,  type:'line', borderColor:'color-mix(in srgb, var(--accent) 90%, transparent)', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.35 }
+        // Glass G3: los estados calmados de la cruzada de color (#5ac299/#d37775),
+        // barras sin borde con radius 10; la línea de balance en pastel del acento.
+        { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(90,194,153,.55)', borderColor:'transparent', borderWidth:0, borderRadius:10 },
+        { label:'Gastos',   data:dataGastos,   backgroundColor:'rgba(211,119,117,.50)', borderColor:'transparent', borderWidth:0, borderRadius:10 },
+        { label:'Balance',  data:dataBalance,  type:'line', borderColor:'color-mix(in srgb, var(--accent) 45%, white)', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.35 }
       ]
     },
     options:{ responsive:true, maintainAspectRatio:false,
@@ -28016,18 +28020,20 @@ function renderRevenue(){
         datasets:[{
           label:'Ingresos',
           data:monthlyRevenue,
-          backgroundColor: monthlyRevenue.map((_,i)=>i===monthlyRevenue.length-1?accentHex+'cc':'rgba(255,255,255,.08)'),
-          borderColor:    monthlyRevenue.map((_,i)=>i===monthlyRevenue.length-1?accentHex:'rgba(255,255,255,.15)'),
-          borderWidth:1,
-          borderRadius:6,
+          // Glass G3: meses pasados en vidrio suave, el actual en pastel del acento.
+          backgroundColor: monthlyRevenue.map((_,i)=>i===monthlyRevenue.length-1
+            ? `color-mix(in srgb, ${accentHex} 45%, white)` : 'rgba(255,255,255,.12)'),
+          borderColor:'transparent',
+          borderWidth:0,
+          borderRadius:10,
         }]
       },
       options:{
         responsive:true, maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`$${ctx.parsed.y.toLocaleString('es-MX')}`}}},
         scales:{
-          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#666',font:{size:10}}},
-          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#666',font:{size:10},callback:v=>'$'+v.toLocaleString('es-MX')}},
+          x:{grid:{borderDash:[4,4],color:'rgba(255,255,255,.04)'},ticks:{color:'#666',font:{size:10}}},
+          y:{grid:{borderDash:[4,4],color:'rgba(255,255,255,.04)'},ticks:{color:'#666',font:{size:10},callback:v=>'$'+v.toLocaleString('es-MX')}},
         }
       }
     });
