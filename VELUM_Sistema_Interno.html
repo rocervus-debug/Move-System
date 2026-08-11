@@ -3272,6 +3272,112 @@ body::before{
 @media(max-width:768px){
   .kpi-sparkline-wrap{ display:none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   GLASS VELUM — Ola G1 (shell). Contrato visual: mockups aprobados
+   11-ago-2026 (velum-glass-fiel / velum-glass-verticales). Ver
+   PLAN_GLASS_VELUM.md. Bloque ADITIVO al final del CSS: gana cascada
+   sin tocar reglas históricas.
+   Arquitectura: SOLO la lámina (#app-wrapper) difumina la escena;
+   las tarjetas internas son rgba translúcido sobre ese blur (look
+   glass sin costo extra de GPU). El vidrio entra por TOKENS.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens translúcidos: las 20 secciones y 38 modales los heredan ── */
+body:not(.light-mode){
+  --bg-card:rgba(13,18,16,.40);
+  --card:rgba(13,18,16,.40);
+  --white:rgba(13,18,16,.40);
+  --card2:rgba(22,28,24,.48);
+  --bg-elevated:rgba(12,16,14,.90); /* menús/popovers: casi opacos para leerse */
+  --surface:rgba(255,255,255,.07);
+  --surface2:rgba(255,255,255,.10);
+  --border:rgba(255,255,255,.12);
+  --border2:rgba(255,255,255,.22);
+  --shadow:0 1px 8px rgba(0,0,0,.35);
+}
+
+/* ── La ESCENA por vertical (niebla simulada — 0 KB, contraste controlado) ── */
+body:not(.light-mode){
+  background:
+    linear-gradient(180deg, rgba(205,220,228,.16) 0%, transparent 26%),
+    radial-gradient(1300px 260px at 50% 36%, rgba(200,216,224,.20), transparent 70%),
+    radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(8,14,18,.40) 100%),
+    radial-gradient(1200px 500px at 15% 78%, rgba(24,40,48,.75), transparent 60%),
+    radial-gradient(1100px 480px at 90% 82%, rgba(18,32,40,.8), transparent 58%),
+    radial-gradient(500px 260px at 8% 55%, rgba(80,180,210,.22), transparent 65%),
+    linear-gradient(180deg,#7E93A0 0%,#6B8290 22%,#4E6470 48%,#31424C 72%,#1D2A32 100%) !important;
+  background-attachment:fixed;
+}
+body[data-vertical="studios"]:not(.light-mode){
+  background:
+    linear-gradient(180deg, rgba(232,218,200,.16) 0%, transparent 26%),
+    radial-gradient(1300px 260px at 50% 36%, rgba(228,212,192,.20), transparent 70%),
+    radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(20,12,8,.40) 100%),
+    radial-gradient(1200px 500px at 15% 78%, rgba(52,38,28,.75), transparent 60%),
+    radial-gradient(1100px 480px at 90% 82%, rgba(44,32,24,.8), transparent 58%),
+    radial-gradient(500px 260px at 8% 55%, rgba(235,190,110,.28), transparent 65%),
+    linear-gradient(180deg,#A18E7E 0%,#8E7767 22%,#6A5548 48%,#443428 72%,#2A1F18 100%) !important;
+  background-attachment:fixed;
+}
+body[data-vertical="recovery"]:not(.light-mode){
+  background:
+    linear-gradient(180deg, rgba(210,218,208,.16) 0%, transparent 26%),
+    radial-gradient(1300px 260px at 50% 36%, rgba(205,214,204,.22), transparent 70%),
+    radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(10,14,11,.40) 100%),
+    radial-gradient(1200px 500px at 15% 78%, rgba(30,42,34,.75), transparent 60%),
+    radial-gradient(1100px 480px at 90% 82%, rgba(24,34,28,.8), transparent 58%),
+    radial-gradient(500px 260px at 8% 55%, rgba(110,200,170,.24), transparent 65%),
+    linear-gradient(180deg,#8E9B8C 0%,#7C897B 22%,#5E6C60 48%,#3C4A41 72%,#242F29 100%) !important;
+  background-attachment:fixed;
+}
+
+/* ── LA LÁMINA: #app-wrapper es la única capa que difumina la escena ── */
+body:not(.light-mode) #app-wrapper{
+  margin:14px;width:auto;height:calc(100vh - 28px);
+  border-radius:30px;overflow:hidden;
+  background:rgba(16,21,24,.45);
+  -webkit-backdrop-filter:blur(26px) saturate(130%);backdrop-filter:blur(26px) saturate(130%);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 30px 80px rgba(0,0,0,.35);
+}
+
+/* ── Sidebar y topbar: vidrio del shell (sin blur propio: viven sobre la lámina) ── */
+body:not(.light-mode) .sidebar{
+  background:rgba(16,20,17,.35);
+  border-right:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+}
+body:not(.light-mode) .topbar{
+  background:rgba(10,14,12,.30);
+  -webkit-backdrop-filter:blur(14px) saturate(130%);backdrop-filter:blur(14px) saturate(130%);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+/* ── Modales: vidrio profundo del mockup (overlay difumina el fondo) ── */
+body:not(.light-mode) .modal-overlay{
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  background:rgba(4,8,10,.45);
+}
+
+/* ── Canto brillante en tarjetas clave (el "filo de cristal" del mockup) ── */
+body:not(.light-mode) .kpi-card,
+body:not(.light-mode) .tbl-wrap,
+body:not(.light-mode) .cli-row{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+/* ── Móvil: lámina a pantalla completa y blur reducido (GPU de gama baja) ── */
+@media(max-width:768px){
+  body:not(.light-mode) #app-wrapper{
+    margin:0;height:100vh;height:100dvh;border-radius:0;
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  }
+}
+/* ── Sin soporte de backdrop-filter: lámina sólida (nada se vuelve ilegible) ── */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  body:not(.light-mode) #app-wrapper{ background:rgba(14,19,22,.96); }
+}
 </style>
 </head>
 <body>
