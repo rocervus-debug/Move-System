@@ -3300,7 +3300,15 @@ body:not(.light-mode){
      los 6 extremos de las 3 escenas — medido por scripts/audit-densidad.py */
   --text2:#A8B4C0;
   --text3:#A2AEBB;
+  /* text4 (el más tenue, 52 usos) daba 1.10 sobre el compuesto — invisible.
+     #8793A0 da 3.41 en el peor extremo: tenue pero legible. */
+  --text4:#8793A0;
 }
+
+/* Textos tenues del hero (inline rgba .35-.42): sobre vidrio caían por
+   debajo de lo legible — se suben solo en glass. */
+body:not(.light-mode) #hero-date-label{ color:rgba(220,232,240,.62) !important; }
+body:not(.light-mode) #hero-tagline{ color:rgba(220,232,240,.66) !important; }
 
 /* ── La ESCENA por vertical (niebla simulada — 0 KB, contraste controlado) ── */
 body:not(.light-mode){
@@ -9672,7 +9680,7 @@ function saResetUserPassword(userId, userName){
   modal.id = 'sa-reset-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
   modal.innerHTML = `
-    <div style="background:#0f1726;border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);border-radius:18px;padding:28px;width:100%;max-width:380px;">
+    <div style="background:var(--bg-elevated);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);border-radius:18px;padding:28px;width:100%;max-width:380px;">
       <div style="font-size:var(--fs-xl);margin-bottom:8px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.5-8.5M16 6l3 3"/></svg> </div>
       <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:4px;">Resetear contraseña</div>
       <div style="font-size:var(--fs-xs);color:rgba(255,255,255,.4);margin-bottom:20px;">Usuario: <strong style="color:var(--accent);">${userName}</strong></div>
@@ -10515,7 +10523,7 @@ function _pedirPinParaEntrar(pinCorrecto, onSuccess){
   modal.id = 'kiosco-entry-pin';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10001;';
   modal.innerHTML = `
-    <div style="background:#0f1726;border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:18px;padding:32px 28px;width:300px;text-align:center;">
+    <div style="background:var(--bg-elevated);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:18px;padding:32px 28px;width:300px;text-align:center;">
       <div style="font-size:var(--fs-3xl);margin-bottom:10px;"></div>
       <div style="font-size:var(--fs-base);font-weight:700;color:#fff;margin-bottom:16px;">PIN del Kiosco</div>
       <input id="kp-enter-input" type="password" inputmode="numeric" maxlength="6"
@@ -10550,7 +10558,7 @@ function _pedirPinParaSalir(onSuccess){
   modal.id = 'kiosco-exit-pin';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10002;';
   modal.innerHTML = `
-    <div style="background:#0f1726;border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:18px;padding:32px 28px;width:300px;text-align:center;">
+    <div style="background:var(--bg-elevated);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:18px;padding:32px 28px;width:300px;text-align:center;">
       <div style="font-size:var(--fs-3xl);margin-bottom:10px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> </div>
       <div style="font-size:var(--fs-base);font-weight:700;color:#fff;margin-bottom:16px;">PIN para salir</div>
       <input id="kp-exit-input" type="password" inputmode="numeric" maxlength="6"

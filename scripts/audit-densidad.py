@@ -110,8 +110,8 @@ def glass_check():
         'studios':  ('A18E7E', '2A1F18'),
         'recovery': ('8E9B8C', '242F29'),
     }
-    TEXTOS = {'--text': 'E9EDF3', '--text2': 'A8B4C0', '--text3': 'A2AEBB'}
-    MINIMO = {'--text': 7.0, '--text2': 4.5, '--text3': 4.5}
+    TEXTOS = {'--text': 'E9EDF3', '--text2': 'A8B4C0', '--text3': 'A2AEBB', '--text4': '8793A0'}
+    MINIMO = {'--text': 7.0, '--text2': 4.5, '--text3': 4.5, '--text4': 3.0}
     print("\nCONTRASTE SOBRE VIDRIO (peor caso escena+lámina+tarjeta)")
     fallos = 0
     for vert, (claro, oscuro) in ESCENAS.items():
@@ -126,7 +126,7 @@ def glass_check():
                     print("  FALLA %-8s %-8s sobre #%s: %.2f (pide %.1f)" % (
                         vert, tok, extremo, r, MINIMO[tok]))
     if fallos == 0:
-        print("  OK: los 3 textos pasan AA en los 6 extremos de escena")
+        print("  OK: los 4 textos pasan AA en los 6 extremos de escena")
     return fallos
 
 if __name__ == '__main__':
