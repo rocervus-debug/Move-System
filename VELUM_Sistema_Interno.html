@@ -3427,6 +3427,26 @@ body:not(.light-mode) textarea{
   border-color:rgba(255,255,255,.16);
 }
 
+/* ── Login al glass: la escena del body se ve detrás y la tarjeta es vidrio
+   profundo (mismo acabado que los modales). Se conserva el translate3d del
+   template (capa GPU propia — interactividad iOS). ── */
+body:not(.light-mode) #login-screen{
+  background:transparent !important;
+}
+body:not(.light-mode) .login-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(10,14,12,.66) 36%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.20), 0 30px 80px rgba(0,0,0,.45);
+}
+
+/* ── Dashboard MINIMAL (pedido de Roy 11-ago): solo lo esencial del día a
+   día. Los stat-boxes del hero (Coaches / Clases-sem) salen del dashboard —
+   esa info vive en sus secciones (Coaches, Horario). Las métricas avanzadas
+   ya tienen casa en "Análisis del negocio" (plegado). ── */
+body:not(.light-mode) .hero-stats-row{ display:none !important; }
+
 /* ── Sin soporte de backdrop-filter: lámina sólida (nada se vuelve ilegible) ── */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   body:not(.light-mode) #app-wrapper{ background:rgba(14,19,22,.96); }
@@ -16207,13 +16227,25 @@ function _pvHero(cobradoMes, cobradoMesN, stripe){
       <span>En camino: <strong style="color:var(--text2);">${_domiMoneyFmt(enCamino)}</strong> <span style="color:var(--text3);">(en tránsito + por liberar)</span></span>
     </div>`;
   if(ms && !err){
-    // Con datos reales de Stripe: bruto → comisión → neto (los tres cuadran porque salen de balance_transactions)
-    return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
-        ${_domiMetric('Cobrado este mes (bruto)', _pvMoney2(ms.gross_mxn), `${ms.count} pago${ms.count===1?'':'s'} · antes de comisión`, 'var(--accent)')}
+    // La historia del DEPÓSITO como protagonista (caso Krajo 11-ago-2026): la
+    // duda real del gym es "¿cuánto me cae y cuándo?" — no el resumen del mes.
+    // Antes "Disponible/En camino" era una línea fs-xs al pie y la clienta
+    // esperó dinero que Stripe aún no liberaba.
+    const entra = stripe.next_payout ? (+stripe.next_payout.amount_mxn||0) : (+stripe.available_mxn||0);
+    const entraSub = stripe.next_payout
+      ? `programado ${banco}`
+      : `estimado con lo ya liberado · ${banco}`;
+    const espera = +stripe.pending_mxn||0;
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+        ${_domiMetric('Entra el '+proxVal, _domiMoneyFmt(entra), entraSub, 'var(--ok)')}
+        ${_domiMetric('En espera de liberación', _domiMoneyFmt(espera), 'Stripe libera cada cobro en ~7 días hábiles y entra al siguiente depósito', 'var(--warn)')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px;">
+        ${_domiMetric('Cobrado este mes (bruto)', _pvMoney2(ms.gross_mxn), `${ms.count} pago${ms.count===1?'':'s'}`, 'var(--accent)')}
         ${_domiMetric('Comisión de Stripe', '−'+_pvMoney2(ms.fee_mxn), 'procesamiento de tarjeta', 'var(--warn)')}
-        ${_domiMetric('Neto a depositar', _pvMoney2(ms.net_mxn), 'esto llega a tu banco', 'var(--ok)')}
-        ${_domiMetric('Próximo depósito', proxVal, proxSub, 'var(--text)')}
-      </div>${saldoLinea}${warnPayouts}`;
+        ${_domiMetric('Neto del mes', _pvMoney2(ms.net_mxn), 'tras comisión', 'var(--ok)')}
+        ${_domiMetric('Disponible ahora', _domiMoneyFmt(stripe.available_mxn), 'liberado, aún sin depositar', 'var(--text)')}
+      </div>${warnPayouts}`;
   }
   // Sin resumen de Stripe (error al leer transacciones): mostramos bruto de pagos + aviso honesto del neto
   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
