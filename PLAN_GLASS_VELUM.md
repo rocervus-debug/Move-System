@@ -29,9 +29,11 @@ acento y escena por vertical (gym bruma fría cyan · studios champagne oro · r
       gastos en los estados calmados; 6 grids con borderDash [4,4].
 - [x] **G4 — Modales** (`5312b86`): vidrio profundo blur 22 + inputs translúcidos —
       verificado abriendo modal-solo-cliente en DOM real.
-- [~] **G5 — Barrido**: hecho en estático (desktop 1280: sin overflow en lámina, mínimo 12px,
-      menús elevados legibles · móvil 375: lámina full-bleed blur 14, sin overflow-x).
-      PENDIENTE: pasada de Roy logueado con datos reales en los 3 verticales.
+- [x] **G5 — Barrido completo** (`9303105`): las 18 vistas recorridas en DOM real midiendo el
+      color computado de cada nodo de texto. Cazado: `--text4` invisible sobre vidrio (1.10 →
+      `#8793A0`, 3.41), textos de hero con alfa .35 → .62+, 3 cajas QR sólidas → token elevado.
+      Falsos positivos descartados: estrellas vacías, handles, btn-primary (negro sobre cyan).
+      Solo queda la pasada de Roy logueado con datos reales.
 - [x] **G6 — Auditor** (`65e3b8c`): `glass_check()` compone escena→lámina→tarjeta en los 6
       extremos y exige AA. **Cazó su primer bug real**: los grises del tema sólido fallaban
       sobre vidrio (text3 caía a 2.3) → en glass `--text2:#A8B4C0` / `--text3:#A2AEBB`, medidos.
