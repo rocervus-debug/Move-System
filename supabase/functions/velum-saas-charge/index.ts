@@ -1,6 +1,13 @@
 // velum-saas-charge — genera un Checkout de suscripción SaaS (gym → VELUM) para un gym que YA existe
 // (founding gyms). Precio por-gym (default $649 MXN/mes, de por vida). Cobro NORMAL de plataforma
 // (VELUM es el comercio; el fee de Stripe lo paga VELUM). NO es cobro directo/Connect.
+//
+// v2 (12-ago-2026): acepta interval='year' para PLANES ANUALES con descuento (caso Ares Gym:
+// $4,670/año = 40% off sobre el founding anual). Sigue siendo suscripción, así que renueva sola
+// cada año al mismo precio — no hay que perseguir el cobro en 12 meses.
+//
+// OJO AL DESPLEGAR: verify_jwt=false SIEMPRE. La autorización (superadmin) se valida DENTRO del
+// código; el MCP de Supabase manda verify_jwt=true por defecto y rompería la llamada del HQ.
 // Protegida: solo superadmin (JWT custom HS256) o secret interno. deploy: --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -50,8 +57,12 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const gymId = parseInt(String(body.gym_id || '0'), 10);
     const amountMxn = Math.round(Number(body.amount_mxn || DEFAULT_FOUNDING_MXN));
+    // 'month' (founding normal) | 'year' (plan anual con descuento)
+    const interval = String(body.interval || 'month') === 'year' ? 'year' : 'month';
     if (!gymId) return json({ error: 'gym_id requerido.' }, 400);
-    if (!(amountMxn >= 10 && amountMxn <= 20000)) return json({ error: 'Monto fuera de rango ($10–$20,000).' }, 400);
+    // El anual llega a montos mayores (12 meses de golpe) → tope más alto.
+    const topeMax = interval === 'year' ? 200000 : 20000;
+    if (!(amountMxn >= 10 && amountMxn <= topeMax)) return json({ error: `Monto fuera de rango ($10–$${topeMax.toLocaleString('es-MX')}).` }, 400);
 
     const { data: gym } = await db.from('gyms').select('id, nombre, owner_email, subscription_status, stripe_subscription_id').eq('id', gymId).maybeSingle();
     if (!gym) return json({ error: 'Gym no encontrado.' }, 404);
@@ -68,8 +79,10 @@ Deno.serve(async (req: Request) => {
       // Precio inline (ad-hoc): founding es por-gym, no un plan público del catálogo.
       'line_items[0][price_data][currency]': 'mxn',
       'line_items[0][price_data][unit_amount]': String(amountCents),
-      'line_items[0][price_data][recurring][interval]': 'month',
-      'line_items[0][price_data][product_data][name]': `VELUM — Suscripción Founding (${gym.nombre})`,
+      'line_items[0][price_data][recurring][interval]': interval,
+      'line_items[0][price_data][product_data][name]': interval === 'year'
+        ? `VELUM — Plan Anual (${gym.nombre})`
+        : `VELUM — Suscripción Founding (${gym.nombre})`,
       'line_items[0][quantity]': '1',
       'success_url': `${origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       'cancel_url': `${origin}/?saas_cancelled=1`,
@@ -78,13 +91,19 @@ Deno.serve(async (req: Request) => {
       'metadata[gym_id]': String(gymId),
       'metadata[plan]': 'max',
       'metadata[founding_amount_mxn]': String(amountMxn),
+      'metadata[interval]': interval,
       'subscription_data[metadata][velum_saas_existing]': 'true',
       'subscription_data[metadata][gym_id]': String(gymId),
       'subscription_data[metadata][plan]': 'max',
       'subscription_data[metadata][founding_amount_mxn]': String(amountMxn),
+      'subscription_data[metadata][interval]': interval,
       'locale': 'es',
     });
-    if (gym.owner_email) sessionBody.append('customer_email', String(gym.owner_email).toLowerCase().trim());
+    if (gym.owner_email) {
+      // Mismo saneo que move-login: un invisible aquí rompería el recibo de Stripe.
+      const mail = String(gym.owner_email).replace(/[\u200B-\u200D\u2060\uFEFF\u00A0]/g, '').trim().toLowerCase();
+      if (mail) sessionBody.append('customer_email', mail);
+    }
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
@@ -94,7 +113,7 @@ Deno.serve(async (req: Request) => {
     const session = await stripeRes.json();
     if (!stripeRes.ok) throw new Error(session.error?.message || 'Error de Stripe');
 
-    return json({ ok: true, url: session.url, session_id: session.id, gym: gym.nombre, amount_mxn: amountMxn });
+    return json({ ok: true, url: session.url, session_id: session.id, gym: gym.nombre, amount_mxn: amountMxn, interval });
   } catch (e) {
     console.error('velum-saas-charge:', e);
     return json({ error: String((e as Error).message || e) }, 500);

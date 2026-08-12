@@ -2713,8 +2713,13 @@ async function openGymDetalle(id){
         : (Number(g.saas_manual_amount_mxn) > 0
         ? `<div class="bit-empty" style="text-align:left;padding:12px 0">Cobro manual: <strong>$${Number(g.saas_manual_amount_mxn).toLocaleString('es-MX')}/mes</strong> · se registra en Cobranza.</div>`
         : `<div class="bit-form">
-            <label style="font-size:12px;opacity:.7">Precio founding · MXN/mes (de por vida)</label>
-            <input id="founding-amount" type="number" min="10" max="20000" step="1" value="649" style="max-width:150px">
+            <label style="font-size:12px;opacity:.7">Periodicidad</label>
+            <select id="founding-interval" onchange="_ajustarPrecioFounding()" style="max-width:220px">
+              <option value="month">Mensual — $649/mes de por vida</option>
+              <option value="year">Anual con descuento — un solo pago</option>
+            </select>
+            <label style="font-size:12px;opacity:.7;margin-top:8px" id="founding-amount-lbl">Precio founding · MXN/mes (de por vida)</label>
+            <input id="founding-amount" type="number" min="10" max="200000" step="1" value="649" style="max-width:150px">
             <button class="btn btn-sm" id="founding-btn" style="align-self:flex-start" onclick="generarLinkFounding(${g.id})">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
               Generar link de cobro
@@ -2791,10 +2796,27 @@ async function cargarSaasInfo(gymId){
 
 // Genera el link de checkout de suscripción SaaS founding para este gym (solo superadmin).
 // El cobro recurrente lo hace Stripe solo; aquí solo se crea el link que el gym paga una vez.
+// Cambia el precio sugerido segun periodicidad. Anual = 40% off sobre 12 meses
+// founding (caso Ares Gym 12-ago-2026), redondeado a decena: $4,670.
+function _ajustarPrecioFounding(){
+  const sel = document.getElementById('founding-interval');
+  const inp = document.getElementById('founding-amount');
+  const lbl = document.getElementById('founding-amount-lbl');
+  if(!sel || !inp) return;
+  const anual = sel.value === 'year';
+  inp.value = anual ? 4670 : 649;
+  if(lbl) lbl.textContent = anual
+    ? 'Precio del año · MXN (un solo cargo, renueva cada año)'
+    : 'Precio founding · MXN/mes (de por vida)';
+}
+
 async function generarLinkFounding(gymId){
   const inp = document.getElementById('founding-amount');
-  const amount = Math.round(Number(inp && inp.value || 649));
-  if(!(amount >= 10 && amount <= 20000)){ toast('Monto inválido (10–20000).', 'err'); return; }
+  const selInt = document.getElementById('founding-interval');
+  const interval = (selInt && selInt.value === 'year') ? 'year' : 'month';
+  const amount = Math.round(Number(inp && inp.value || (interval === 'year' ? 4670 : 649)));
+  const tope = interval === 'year' ? 200000 : 20000;
+  if(!(amount >= 10 && amount <= tope)){ toast(`Monto inválido (10–${tope.toLocaleString('es-MX')}).`, 'err'); return; }
   const s = getSession();
   if(!s || !s.jwt){ toast('Sesión expirada, vuelve a entrar.', 'err'); return; }
   const btn = document.getElementById('founding-btn');
@@ -2803,7 +2825,7 @@ async function generarLinkFounding(gymId){
     const res = await fetch(`${SUPABASE_URL}/functions/v1/velum-saas-charge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.jwt}` },
-      body: JSON.stringify({ gym_id: gymId, amount_mxn: amount }),
+      body: JSON.stringify({ gym_id: gymId, amount_mxn: amount, interval }),
     });
     const d = await res.json();
     if(!res.ok || !d.url) throw new Error(d.error || 'No se pudo generar el link.');
@@ -2811,7 +2833,9 @@ async function generarLinkFounding(gymId){
     if(box){
       box.style.display = 'block';
       box.innerHTML = `
-        <p style="font-size:12px;margin:0 0 6px">Link para <b>${esc(d.gym)}</b> · $${d.amount_mxn}/mes de por vida:</p>
+        <p style="font-size:12px;margin:0 0 6px">Link para <b>${esc(d.gym)}</b> · ${d.interval === 'year'
+          ? `$${Number(d.amount_mxn).toLocaleString('es-MX')} al año (renueva cada año)`
+          : `$${d.amount_mxn}/mes de por vida`}:</p>
         <input id="founding-url" readonly value="${esc(d.url)}" style="width:100%;font-size:11px;padding:7px 9px;border-radius:8px" onclick="this.select()">
         <button class="btn btn-sm" style="margin-top:6px" onclick="copiarFoundingUrl()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
