@@ -2966,12 +2966,67 @@ function toggleSisErr(){
   if(d) d.style.display = (d.style.display === 'none' || !d.style.display) ? 'block' : 'none';
 }
 
+// Logins fallidos recientes (24h). Solo superadmin: la respuesta al usuario
+// sigue siendo genérica ("Correo o contraseña incorrectos") por seguridad,
+// pero AQUÍ sí distinguimos si el correo existe — que es lo que hace
+// diagnosticable un caso como el de Ares Gym (12-ago-2026: email guardado
+// con un carácter invisible; el correo se veía bien y nunca coincidía).
+async function fetchLoginsFallidos(){
+  try{
+    const desde = new Date(Date.now() - 24*60*60*1000).toISOString();
+    const { data, error } = await sb.from('login_attempts')
+      .select('email, ip, attempted_at, success')
+      .eq('success', false).gte('attempted_at', desde)
+      .order('attempted_at', { ascending:false }).limit(60);
+    if(error) return { _fail:true, _err:error.message };
+    const { data: users } = await sb.from('usuarios').select('email, activo');
+    const mapa = {};
+    (users||[]).forEach(u => { mapa[String(u.email||'').toLowerCase()] = u.activo; });
+    // Agrupar por correo: cuántos intentos y si la cuenta existe
+    const por = {};
+    (data||[]).forEach(r => {
+      const e = String(r.email||'').toLowerCase();
+      if(!por[e]) por[e] = { email:e, n:0, ultimo:r.attempted_at,
+                             existe: Object.prototype.hasOwnProperty.call(mapa, e),
+                             activa: mapa[e] === true };
+      por[e].n++;
+    });
+    return { lista: Object.values(por).sort((a,b)=>b.n-a.n).slice(0,8), total:(data||[]).length };
+  }catch(e){ return { _fail:true, _err:e.message }; }
+}
+
+function loginsFallidosHTML(f){
+  if(!f || f._fail) return '';
+  if(!f.lista || !f.lista.length) return '';
+  const filas = f.lista.map(r => {
+    // El diagnóstico REAL, el que la pantalla de login no puede dar
+    const causa = !r.existe
+      ? ['danger','Ese correo NO existe en usuarios']
+      : (!r.activa ? ['warn','La cuenta existe pero está INACTIVA']
+                   : ['warn','La cuenta existe y está activa → contraseña incorrecta']);
+    const bloqueado = r.n >= 5 ? ' · <b style="color:var(--danger)">bloqueada por reintentos</b>' : '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;">${esc(r.email)}</div>
+        <div style="font-size:12.5px;color:var(--text3);margin-top:1px;">${causa[1]}${bloqueado}</div>
+      </div>
+      <span class="estado-pill ${causa[0]}">${r.n} intento${r.n===1?'':'s'}</span>
+    </div>`;
+  }).join('');
+  return `<div class="sis-salud" style="margin-top:14px;">
+    <div class="sis-head"><b>Logins fallidos (24 h)</b>
+      <span class="estado-pill ${f.total>10?'warn':'ok'}">${f.total} en total</span></div>
+    <p class="sis-desc">Al usuario se le dice siempre "Correo o contraseña incorrectos" por seguridad. Aquí ves la causa real.</p>
+    ${filas}
+  </div>`;
+}
+
 async function loadSalud(){
   const zone = document.getElementById('salud-zone');
   stateLoading(zone, 'Cargando salud…');
   try{
-    const [gyms, agg, sis] = await Promise.all([fetchGyms(), fetchSaludAgg(), fetchSistemaSalud()]);
-    const sisHTML = sistemaSaludHTML(sis);
+    const [gyms, agg, sis, fails] = await Promise.all([fetchGyms(), fetchSaludAgg(), fetchSistemaSalud(), fetchLoginsFallidos()]);
+    const sisHTML = sistemaSaludHTML(sis) + loginsFallidosHTML(fails);
     if(gyms.length === 0){
       zone.innerHTML = sisHTML + `
         <div class="sis-sub-head">Salud de los gyms</div>
