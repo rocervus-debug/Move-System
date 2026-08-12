@@ -8495,8 +8495,21 @@ function getSession(){
 function setSession(u){ localStorage.setItem('move_session', JSON.stringify(u)); }
 function clearSession(){ localStorage.removeItem('move_session'); }
 
+// Limpia un correo antes de guardarlo o buscarlo: quita caracteres INVISIBLES
+// (zero-width space, word joiner, BOM, non-breaking space…) que se cuelan al
+// pegar desde WhatsApp/Notas/PDF, más espacios y mayúsculas.
+// INCIDENTE 12-ago-2026: la cuenta de Ares Gym se guardó con U+2060 al inicio;
+// el login buscaba el email exacto, no coincidía y devolvía 401 sin explicar
+// nada útil ("Correo o contraseña incorrectos" con el correo bien escrito).
+function limpiarEmail(v){
+  return String(v || '')
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u00A0]/g, '')  // invisibles
+    .trim()
+    .toLowerCase();
+}
+
 async function doLogin(totpCode){
-  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const email = limpiarEmail(document.getElementById('login-email').value);
   const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
   errEl.classList.remove('show');
@@ -9614,7 +9627,7 @@ function renderUsuarios(){
 
 async function saveNewUser(){
   const nombre = document.getElementById('nu-nombre').value.trim();
-  const email  = document.getElementById('nu-email').value.trim().toLowerCase();
+  const email  = limpiarEmail(document.getElementById('nu-email').value);
   const pass   = document.getElementById('nu-pass').value;
   const rol    = document.getElementById('nu-rol').value;
   if(!nombre||!email||!pass){ alert('Completa todos los campos.'); return; }
@@ -9644,7 +9657,7 @@ function openEditUser(id){
 async function saveEditUser(){
   const id     = document.getElementById('eu-id').value;
   const nombre = document.getElementById('eu-nombre').value.trim();
-  const email  = document.getElementById('eu-email').value.trim().toLowerCase();
+  const email  = limpiarEmail(document.getElementById('eu-email').value);
   const pass   = document.getElementById('eu-pass').value;
   const rol    = document.getElementById('eu-rol').value;
   const activo = document.getElementById('eu-activo').value === 'true';
@@ -22805,7 +22818,7 @@ async function saveClienteSinPago(){
   _scClearErrs();
 
   const nombre = document.getElementById('sc-nombre').value.trim();
-  const email  = document.getElementById('sc-email-new').value.trim().toLowerCase();
+  const email  = limpiarEmail(document.getElementById('sc-email-new').value);
 
   let hasError = false;
   if(!nombre){ _scErr('nombre','El nombre es obligatorio.'); hasError=true; }
