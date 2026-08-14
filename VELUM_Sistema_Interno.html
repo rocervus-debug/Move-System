@@ -11768,13 +11768,16 @@ function _pcAutoInput(inp){
     ? nombres.slice(0, 20)                                       // sin texto: mostrar todos (máx 20)
     : nombres.filter(n=>n.toLowerCase().includes(q)).slice(0,15); // con texto: filtrar
 
+  // El hint depende de si el nombre EXACTO existe, no de si hay sugerencias:
+  // "Mario" es cliente nuevo aunque el dropdown sugiera "Mario Bros".
+  const _escrito = inp.value.trim();
+  const _esNuevo = (typeof _clienteEsNuevo === 'function') && _clienteEsNuevo(_escrito);
+  if(typeof _pcNuevoHint === 'function') _pcNuevoHint(_esNuevo ? _escrito : '');
+
   if(matches.length === 0){
     dd.style.display='none';
-    // Sin coincidencias y hay texto → será cliente nuevo (pista amigable)
-    if(typeof _pcNuevoHint === 'function') _pcNuevoHint(q ? inp.value.trim() : '');
     return;
   }
-  if(typeof _pcNuevoHint === 'function') _pcNuevoHint('');
 
   dd.innerHTML = matches.map(n=>`
     <div onmousedown="_pcSelect('${n.replace(/'/g,"\\'")}',event)"
@@ -22498,6 +22501,18 @@ function _renderPagoConfirm(){
   box.innerHTML = rows.map(([k,v])=>`<div class="pwiz-crow"><span class="pwiz-ck">${k}</span><span class="pwiz-cv">${v}</span></div>`).join('');
 }
 
+// ¿El nombre escrito es un cliente NUEVO? Coincidencia EXACTA contra el padrón.
+// FUENTE ÚNICA DE VERDAD: la usan el buscador (para mostrar el campo de correo)
+// y savePago (para exigirlo). Si divergen, el usuario ve un error invisible.
+// BUG 12-ago-2026: escribir "Mario" con un "Mario Bros" existente ocultaba el
+// campo de correo (había coincidencias en el dropdown) pero savePago lo pedía
+// igual -> el wizard saltaba al paso 1 sin explicación aparente.
+function _clienteEsNuevo(nombre){
+  const n = String(nombre||'').trim().toLowerCase();
+  if(!n) return false;
+  return !(clientesDB||[]).some(c => String(c.nombre||'').trim().toLowerCase() === n);
+}
+
 // Pista de "cliente nuevo" en el paso 1
 function _pcNuevoHint(name){
   const h = document.getElementById('p-cliente-nuevo-hint');
@@ -22690,11 +22705,14 @@ async function savePago(){
   }
   // ── Cliente nuevo: si el nombre no está en el padrón y el paquete NO es pase de día, este
   // pago crea el cliente → por eso el correo es obligatorio. Pase de día: exento (regla de Roy).
-  const clienteExiste = (clientesDB||[]).some(c => (c.nombre||'').trim().toLowerCase() === cliente.toLowerCase());
+  const clienteExiste = !_clienteEsNuevo(cliente);   // misma regla que el buscador
   const esVisitaPaquete = !!(_selectedPackage && esPaseDia(_selectedPackage.name));
   const debeCrearCliente = !!cliente && !clienteExiste && !esVisitaPaquete;
   let nuevoEmail = '';
   if(debeCrearCliente){
+    // El campo vive dentro del hint; si por lo que sea está oculto, mostrarlo:
+    // nunca mandar al usuario a un paso a corregir algo que no puede ver.
+    if(typeof _pcNuevoHint === 'function') _pcNuevoHint(cliente);
     nuevoEmail = (document.getElementById('p-cliente-email')?.value || '').trim();
     if(!nuevoEmail){ _pagoFieldErr('p-cliente-email','Ingresa el correo para registrar al cliente nuevo.'); hasError=true; }
     else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(nuevoEmail)){ _pagoFieldErr('p-cliente-email','Correo inválido.'); hasError=true; }
@@ -22703,8 +22721,16 @@ async function savePago(){
   if(hasError){
     // Wizard: regresa al paso donde está el primer error para que el usuario lo vea
     if(typeof _pagoWizGoto === 'function'){
-      if(document.getElementById('p-cliente-err')?.style.display === 'block'
-         || document.getElementById('p-cliente-email-err')?.style.display === 'block') _pagoWizGoto(1);
+      const errCli   = document.getElementById('p-cliente-err')?.style.display === 'block';
+      const errEmail = document.getElementById('p-cliente-email-err')?.style.display === 'block';
+      if(errCli || errEmail){
+        _pagoWizGoto(1);
+        // Enfocar y traer a la vista el campo que falla
+        setTimeout(()=>{
+          const f = document.getElementById(errEmail ? 'p-cliente-email' : 'p-cliente');
+          if(f){ f.focus(); f.scrollIntoView({behavior:'smooth', block:'center'}); }
+        }, 120);
+      }
       else if(document.getElementById('p-package-err')?.style.display === 'block') _pagoWizGoto(2);
       else _pagoWizGoto(3);
     }
