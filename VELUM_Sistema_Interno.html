@@ -7299,6 +7299,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <input id="cli-notas" type="text" placeholder="Condición especial, observaciones..."/>
         </div>
       </div>
+      <!-- Nivel de juego — solo vertical padel (lo muestra/oculta el JS por _gymVertical) -->
+      <div class="field" id="cli-nivel-field" style="display:none;">
+        <label>Nivel de juego <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;text-transform:none;">(1.0 principiante — 7.0 profesional)</span></label>
+        <input id="cli-nivel" type="number" min="1" max="7" step="0.1" placeholder="Ej: 3.5"/>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('editar-cliente')">Cancelar</button>
@@ -14491,6 +14496,7 @@ function renderClientes(){
 
     return {
       nombre, telefono, cumpleanos, cliId, numeroCliente,
+      nivel: cliRec.nivel||null,   // padel: nivel de juego del alumno
       plan:  ultimo?ultimo.plan:'Sin membresía',
       vence: ultimo?ultimo.vence:null,
       monto: ultimo?ultimo.monto:0,
@@ -14695,7 +14701,7 @@ function renderClientes(){
       ${getAvatarHTML(c.nombre, 48, c.foto_url||null)}
       <div style="flex:1;min-width:0;">
         <div style="font-size:var(--fs-lg);font-weight:600;color:var(--text);letter-spacing:-.2px;
-                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.nombre)}</div>
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.nombre)}${(_gymVertical==='padel'&&c.nivel)?` <span style="font-family:var(--fm);font-size:var(--fs-xs);font-weight:600;background:rgba(198,232,75,.12);color:#C6E84B;border-radius:99px;padding:2px 9px;vertical-align:2px;">${esc(c.nivel)}</span>`:''}</div>
         <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:3px;
                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           ${c.numeroCliente ? `#${c.numeroCliente} · ` : ''}${tel ? `${tel} · ` : ''}${esc(c.plan||'—')}
@@ -14757,6 +14763,11 @@ function abrirEditarCliente(nombreCliente){
     document.getElementById('cli-referido-por').value = cliRec.referido_por||'';
     document.getElementById('cli-notas').value        = cliRec.notas||'';
   }
+  // Padel: campo de nivel visible solo en esa vertical
+  const _nvF = document.getElementById('cli-nivel-field');
+  if(_nvF) _nvF.style.display = (_gymVertical==='padel') ? '' : 'none';
+  const _nvI = document.getElementById('cli-nivel');
+  if(_nvI) _nvI.value = (cliRec && cliRec.nivel) || '';
   openModal('editar-cliente');
 }
 
@@ -14779,6 +14790,11 @@ async function saveEditarCliente(btn){
     notas:        document.getElementById('cli-notas').value.trim(),
     updated_at:   new Date().toISOString(),
   };
+  // Padel: nivel de juego del alumno (1.0–7.0); solo se guarda en esa vertical
+  if(_gymVertical==='padel'){
+    const _nv = (document.getElementById('cli-nivel')?.value||'').trim();
+    payload.nivel = _nv || null;
+  }
   let err;
   if(id){
     const r = await window.supabaseClient.from('clientes').update(payload).eq('id', id);
