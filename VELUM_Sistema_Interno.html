@@ -3177,6 +3177,15 @@ select option{background:var(--bg-card);color:var(--text);}
   margin:22px 0 6px 4px;
 }
 .cfg-group-label:first-child{ margin-top:4px; }
+/* Setup padel — chips del wizard Configura tu operación */
+.wchip-ps{ text-align:left; font-size:var(--fs-sm); font-weight:600; color:var(--text2);
+  background:var(--card2); border:1.5px solid var(--border); border-radius:12px;
+  padding:12px 16px; cursor:pointer; transition:all .13s; width:100%; }
+.wchip-ps small{ display:block; font-weight:400; font-size:var(--fs-xs); color:var(--text3); margin-top:2px; }
+.wchip-ps.on{ border-color:var(--accent); background:var(--accent-bg); color:var(--accent-light,var(--accent)); }
+.wchip-ps.on small{ color:var(--text2); }
+.ps-precio{ width:110px; background:var(--card); border:1px solid var(--border); border-radius:9px;
+  padding:8px 10px; color:var(--text); font-size:var(--fs-sm); font-family:var(--fm); text-align:right; }
 /* Picker de equipo de coaches por clase (multi-coach) */
 .coach-team-box{ display:flex;flex-wrap:wrap;gap:6px;max-height:132px;overflow-y:auto;padding:2px; }
 .coach-team-box .coach-chip{ display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:6px 12px;cursor:pointer;transition:all .14s;user-select:none; }
@@ -8423,6 +8432,72 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
   </div>
 </div>
 
+<!-- ══ MODAL: SETUP PADEL (Configura tu operación — 5 variables de la spec) ══ -->
+<div class="modal-overlay" id="modal-padel-setup">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-title">Configura tu operación</div>
+      <button class="modal-close" onclick="closeModal('padel-setup')">✕</button>
+    </div>
+    <div class="wzd-bar">
+      <div class="wzd-steplabel" id="ps-label">Paso 1 de 5 · ¿Cómo cobras?</div>
+      <div class="wzd-segs" id="ps-segs"></div>
+    </div>
+    <div class="modal-body" style="padding-top:16px;">
+
+      <!-- Paso 1: cobro (multi + precio editable) -->
+      <div class="ps-step" data-ps="1">
+        <div class="wzd-q">¿Cómo cobras tus clases?</div>
+        <div class="wzd-hint">Elige todas las que uses — con esto te armamos tu catálogo (los precios los puedes cambiar aquí mismo o después).</div>
+        <div id="ps-cobro" style="display:flex;flex-direction:column;gap:8px;">
+          <!-- filas generadas por _psRenderCobro() -->
+        </div>
+      </div>
+      <!-- Paso 2: clínicas -->
+      <div class="ps-step" data-ps="2" style="display:none;">
+        <div class="wzd-q">¿Tus clínicas son fijas cada semana?</div>
+        <div class="wzd-hint">Ambas funcionan siempre — esto solo decide qué te mostramos primero.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button type="button" class="wchip-ps on" data-val="fijas" onclick="_psSolo(this)">Sí, horario fijo<small>Ej. "Intermedios martes y jueves 7pm" — se repite solo</small></button>
+          <button type="button" class="wchip-ps" data-val="variables" onclick="_psSolo(this)">Voy armando sobre la marcha<small>Creas cada clínica con su fecha</small></button>
+        </div>
+      </div>
+      <!-- Paso 3: asistencia -->
+      <div class="ps-step" data-ps="3" style="display:none;">
+        <div class="wzd-q">¿Cómo quieres pasar lista?</div>
+        <div class="wzd-hint">La asistencia descuenta la clase del bono del alumno.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button type="button" class="wchip-ps on" data-val="lista" onclick="_psSolo(this)">Con la lista de la clase<small>Un toque por alumno al terminar — lo más rápido en cancha</small></button>
+          <button type="button" class="wchip-ps" data-val="qr" onclick="_psSolo(this)">QR del alumno<small>El alumno escanea al llegar, tú no haces nada</small></button>
+          <button type="button" class="wchip-ps" data-val="no" onclick="_psSolo(this)">No paso lista<small>Solo agenda y cobranza — puedes activarla después</small></button>
+        </div>
+      </div>
+      <!-- Paso 4: progresión -->
+      <div class="ps-step" data-ps="4" style="display:none;">
+        <div class="wzd-q">¿Tus alumnos ven su progresión?</div>
+        <div class="wzd-hint">Nivel, evaluaciones y notas de entrenamiento en su app.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button type="button" class="wchip-ps on" data-val="true" onclick="_psSolo(this)">Sí, que vean su evolución<small>Motiva y te posiciona como coach profesional</small></button>
+          <button type="button" class="wchip-ps" data-val="false" onclick="_psSolo(this)">Solo yo la veo<small>La manejas interna; puedes abrirla después</small></button>
+        </div>
+      </div>
+      <!-- Paso 5: ubicación -->
+      <div class="ps-step" data-ps="5" style="display:none;">
+        <div class="wzd-q">¿Dónde das clases?</div>
+        <div class="wzd-hint">Opcional — aparece en tus clínicas para que el alumno sepa a dónde llegar. La reserva de la cancha sigue donde ya la haces.</div>
+        <input type="text" id="ps-ubicacion" placeholder="Ej: Gold Padel · Cancha 2, Celaya" style="width:100%;"/>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('padel-setup')" style="margin-right:auto;">Después</button>
+      <button class="btn btn-outline" id="ps-back" onclick="_psStep(_psN-1)" style="display:none;">← Atrás</button>
+      <button class="btn btn-primary" id="ps-next" onclick="_psStep(_psN+1)">Siguiente →</button>
+      <button class="btn btn-primary" id="ps-save" onclick="savePadelSetup(this)" style="display:none;">Crear mi operación</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -9940,11 +10015,17 @@ let _gymVertical = 'gym';
 const _VERTICAL_DEFAULTS = {
   studios:  { accent:'#C9A86A', bg1:'rgba(201,168,106,.07)', bg2:'rgba(201,168,106,.04)' },
   recovery: { accent:'#5EC8B0', bg1:'rgba(94,200,176,.07)',  bg2:'rgba(94,200,176,.04)' },
+  padel:    { accent:'#3FA34D', bg1:'rgba(63,163,77,.07)',   bg2:'rgba(63,163,77,.04)'  },
 };
 function applyVertical(vertical){
   const v = String(vertical || 'gym').toLowerCase();
   _gymVertical = (v === 'studios' || v === 'recovery' || v === 'padel') ? v : 'gym';   // 'velum' (legacy en DB) → 'gym'
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
+  // Padel: si el coach aún no configuró su operación, abrir el wizard de setup (una vez)
+  if(_gymVertical === 'padel' && typeof openPadelSetup === 'function' &&
+     gymConfig && gymConfig.padel_setup_done !== 'true'){
+    setTimeout(()=>{ try{ openPadelSetup(); }catch(_){} }, 900);
+  }
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
   if(typeof renderRecoveryDash === 'function') renderRecoveryDash(); // dashboard bespoke recovery
@@ -9958,6 +10039,96 @@ function applyVertical(vertical){
   const escogioColor = gymConfig && gymConfig.gym_theme && gymConfig.gym_theme === 'custom';
   if(def && !escogioColor && typeof _applyColorToDOM === 'function'){
     _applyColorToDOM(def.accent, null, def.bg1, def.bg2, hexToRgba(def.accent, .16));
+  }
+}
+
+// ── Setup PADEL: wizard "Configura tu operación" (5 variables de la spec) ──
+// Cada respuesta configura el sistema al modelo del coach (decisión Roy: ambas
+// respuestas de cada pregunta se soportan). Al terminar crea su catálogo de paquetes.
+let _psN = 1;
+const _PS_LABELS = {1:'¿Cómo cobras?',2:'Tus clínicas',3:'Asistencia',4:'Progresión',5:'Tu cancha'};
+const _PS_COBRO = [
+  { id:'bono8',  nombre:'Bono 8 clases',      def:1400, dur:45, num:8,    hint:'Vigencia 45 días · clínicas grupales', on:true  },
+  { id:'bono4',  nombre:'Bono 4 clases',      def:800,  dur:30, num:4,    hint:'Vigencia 30 días', on:true  },
+  { id:'suelta', nombre:'Clase suelta',       def:250,  dur:7,  num:1,    hint:'Pago por clase individual', on:true  },
+  { id:'mens',   nombre:'Mensualidad',        def:1200, dur:30, num:null, hint:'Cuota fija al mes, clases ilimitadas', on:false },
+];
+function _psRenderCobro(){
+  const box = document.getElementById('ps-cobro');
+  if(!box) return;
+  box.innerHTML = _PS_COBRO.map(c=>`
+    <div style="display:flex;gap:8px;align-items:stretch;">
+      <button type="button" class="wchip-ps${c.on?' on':''}" id="ps-cb-${c.id}" onclick="this.classList.toggle('on')" style="flex:1;">
+        ${c.nombre}<small>${c.hint}</small>
+      </button>
+      <input class="ps-precio" id="ps-pr-${c.id}" type="number" min="1" value="${c.def}" title="Precio en MXN"/>
+    </div>`).join('');
+}
+function _psSolo(btn){
+  btn.parentElement.querySelectorAll('.wchip-ps').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+}
+function _psStep(n){
+  _psN = Math.max(1, Math.min(5, n));
+  document.querySelectorAll('.ps-step').forEach(s=>{ s.style.display = (+s.dataset.ps===_psN)?'block':'none'; });
+  const lbl=document.getElementById('ps-label'); if(lbl) lbl.textContent = `Paso ${_psN} de 5 · ${_PS_LABELS[_psN]}`;
+  const segs=document.getElementById('ps-segs'); if(segs) segs.innerHTML=[1,2,3,4,5].map(i=>`<div class="wzd-seg${i<=_psN?' done':''}"></div>`).join('');
+  const back=document.getElementById('ps-back'), next=document.getElementById('ps-next'), save=document.getElementById('ps-save');
+  if(back) back.style.display = _psN>1?'':'none';
+  if(next) next.style.display = _psN<5?'':'none';
+  if(save) save.style.display = _psN===5?'':'none';
+}
+function openPadelSetup(){
+  _psRenderCobro();
+  const ub=document.getElementById('ps-ubicacion'); if(ub) ub.value = gymConfig.padel_ubicacion||'';
+  openModal('padel-setup');
+  _psStep(1);
+}
+function _psVal(stepEl){ const on=document.querySelector(stepEl+' .wchip-ps.on'); return on?on.dataset.val:null; }
+async function savePadelSetup(btn){
+  if(btn?.disabled) return;
+  setBtnLoading(btn, true);
+  try{
+    // 1) Catálogo: crear los paquetes elegidos (si no existen ya por nombre)
+    const elegidos = _PS_COBRO.filter(c=>document.getElementById('ps-cb-'+c.id)?.classList.contains('on'));
+    const { data: existentes } = await gf(window.supabaseClient.from('packages').select('name'));
+    const nombres = new Set((existentes||[]).map(p=>(p.name||'').toLowerCase()));
+    const nuevos = elegidos.filter(c=>!nombres.has(c.nombre.toLowerCase())).map(c=>withGymId({
+      name: c.nombre,
+      price_mxn: parseInt(document.getElementById('ps-pr-'+c.id)?.value)||c.def,
+      duration_days: c.dur,
+      num_classes: c.num,
+      unlimited_classes: c.num===null,
+      billing_type: 'one_time',
+      is_active: true,
+    }));
+    if(nuevos.length){
+      const { error: pkErr } = await window.supabaseClient.from('packages').insert(nuevos);
+      if(pkErr) throw pkErr;
+    }
+    // 2) Variables de operación → gym_config
+    const gid = MOVE_GYM_ID;
+    const rows = [
+      { key:'padel_setup_done',          value:'true',                                   gym_id:gid },
+      { key:'padel_clinicas_modo',       value:_psVal('.ps-step[data-ps="2"]')||'fijas', gym_id:gid },
+      { key:'padel_asistencia',          value:_psVal('.ps-step[data-ps="3"]')||'lista', gym_id:gid },
+      { key:'padel_progresion_visible',  value:_psVal('.ps-step[data-ps="4"]')||'true',  gym_id:gid },
+      { key:'padel_ubicacion',           value:(document.getElementById('ps-ubicacion')?.value||'').trim(), gym_id:gid },
+    ];
+    for(const row of rows){
+      const { error } = await window.supabaseClient.from('gym_config').upsert(row, { onConflict:'key,gym_id' });
+      if(error) throw error;
+      gymConfig[row.key]=row.value;
+    }
+    setBtnLoading(btn,false);
+    closeModal('padel-setup');
+    toast(`Listo — tu operación quedó configurada${nuevos.length?` (${nuevos.length} paquete${nuevos.length>1?'s':''} en tu catálogo)`:''}`,'✓');
+    if(typeof loadPackagesFromCatalog==='function') loadPackagesFromCatalog();
+  }catch(e){
+    setBtnLoading(btn,false);
+    if(_handleSessionError(e)) return;
+    console.error('savePadelSetup', e);
+    toast('No se pudo guardar: '+((e&&e.message)||'').slice(0,60),'✕');
   }
 }
 
