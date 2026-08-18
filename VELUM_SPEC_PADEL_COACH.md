@@ -70,14 +70,31 @@ terracota — NO el cyan gym) · IMPULSO define pricing · CENTINELA regresión 
 - **Coach que da clases EN un club con VELUM** → relación coach↔club (dos tenants) NO se
   diseña ahora; hasta tener el caso real enfrente.
 
-## Preguntas abiertas (para la sesión con el coach de Roy — design partner)
-1. ¿Cuántos alumnos y cuántas clínicas por semana maneja? (dimensiona el onboarding)
-2. ¿Cobra por clase suelta, bono (4/8/12) o mensualidad? ¿Le deben seguido? (prioriza
-   cobranza vs agenda)
-3. ¿Las clínicas son fijas semanales o va variando? (plantilla vs calendario)
-4. ¿Hoy registra asistencia? ¿Le importa que el alumno vea su progresión?
-5. ¿Reservaría él la cancha desde el sistema, o eso vive en Playtomic/el club? (define
-   cuánto urge la fase club)
+## Variables de configuración (decisión de Roy 2026-08-18: soportar AMBAS respuestas
+## de cada pregunta — el sistema se adapta al modelo de cada coach, no impone uno)
+
+1. **Volumen** (¿5 alumnos o 60?): la alta funciona igual en ambos extremos — alta rápida
+   1×1 + importación CSV existente. El onboarding no asume tamaño.
+2. **Modelo de cobro** — los TRES conviven en el catálogo del coach y puede mezclarlos:
+   · Clase suelta (pase/visita) · Bono de clases (paquetes con clases_totales, 4/8/12
+   configurables) · Mensualidad (membresía por tiempo). Todo ya existe en pagos/paquetes;
+   el wizard de onboarding pregunta "¿cómo cobras?" y pre-arma su catálogo (puede editar).
+3. **Clínicas fijas vs variables** — ambas: plantilla semanal recurrente (horarios con
+   fecha='') Y clases de fecha única (el mecanismo de overrides por fecha ya existe).
+   El coach que improvisa semana a semana solo usa fechas únicas.
+4. **Asistencia y progresión — toggles por coach**:
+   · Asistencia: por lista (roster) o QR, o simplemente no usarla — no es obligatoria
+     para cobrar (los bonos descuentan por asistencia SOLO si el coach la registra).
+   · `mostrar_progresion_alumno` on/off: hay coaches que quieren que el alumno vea su
+     evolución y coaches que la manejan interna.
+5. **Cancha** — campo opcional `ubicacion` por clínica/clase (texto: "Club X, cancha 2").
+   Si el coach reserva su cancha en Playtomic/el club, VELUM no estorba; si algún día la
+   quiere adentro, eso es la fase club. Nunca es bloqueo.
+
+Estas 5 variables viven en el wizard de onboarding como preguntas simples (una decisión
+por paso, patrón .wzd-*) con defaults sensatos — el coach nunca ve un panel de "settings"
+crudo. Cazador de segmentos: cada combinación de variables ES un perfil de coach distinto
+al que se le puede vender igual.
 
 **Estimación**: M (mayormente verticalización + onboarding; cero esquema nuevo).
 **Verificación**: node --check + preview con evidencia (onboarding coach completo → alumno
