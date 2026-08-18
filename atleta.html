@@ -92,6 +92,18 @@
    cuando _atletaVertical==='studios'). Gym (cyan oscuro) y recovery: SIN cambio.
    Como la app está ~93% tokenizada, sobreescribir estos tokens re-pinta casi todo.
    ══════════════════════════════════════════════════════════════════════ */
+/* ── Piel PADEL (verde cancha + lima) — aditiva, mismo dark de la casa ──
+   Solo re-pinta el acento: el fondo oscuro del gym funciona igual para padel. */
+body[data-skin="padel"]{
+  --accent:#3FA34D; --accent-light:#6BC878;
+  --cyan:#3FA34D; --cyan-light:#6BC878; --cyan-dark:#256B31;
+  --accent-dim:color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-bright:color-mix(in srgb, var(--accent) 25%, transparent);
+  --accent-glow:color-mix(in srgb, var(--accent) 28%, transparent);
+  --cyan-dim:color-mix(in srgb, var(--accent) 12%, transparent);
+  --cyan-bright:color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
 body[data-skin="marfil"]{
   /* Acento: bronce/champagne (legible sobre claro) */
   --accent:#A67C3C; --accent-light:#C9A86A;
@@ -4303,7 +4315,8 @@ const _AT_TERMS={
 // Aplica la piel visual por vertical: studios → "marfil" (claro boutique); gym/recovery → default.
 function _applyAtletaSkin(){
   const marfil = (_atletaVertical === 'studios');
-  try{ document.body.dataset.skin = marfil ? 'marfil' : ''; }catch(e){}
+  const padel  = (_atletaVertical === 'padel');
+  try{ document.body.dataset.skin = marfil ? 'marfil' : (padel ? 'padel' : ''); }catch(e){}
   // theme-color de la barra (PWA/navegador)
   const tc = document.querySelector('meta[name="theme-color"]');
   if(tc) tc.setAttribute('content', marfil ? '#EFEAE0' : '#040C14');
@@ -4348,7 +4361,7 @@ async function fetchGymVertical(gymId){
     if(!res.ok) return;
     const rows=await res.json();
     const v=Array.isArray(rows)&&rows[0]&&rows[0].value;
-    if(v==='recovery'||v==='studios'){ _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+    if(v==='recovery'||v==='studios'||v==='padel'){ _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
   }catch(_){}
 }
 
@@ -4416,7 +4429,7 @@ function showPortal(data){
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
   // v34: el portal ya trae gym.vertical (gyms.vertical); el fetch a gym_config queda de fallback
   const _v = data.gym?.vertical;
-  if(_v==='recovery'||_v==='studios'){ _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+  if(_v==='recovery'||_v==='studios'||_v==='padel'){ _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
   else if(data.gym?.id) fetchGymVertical(data.gym.id);
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'VELUM'}`;
 

@@ -47,6 +47,7 @@
   --v-gym:#00D4FF;
   --v-studios:#C9A86A;
   --v-recovery:#5EC8B0;
+  --v-padel:#3FA34D;
   --sidebar:216px;
 }
 
@@ -265,6 +266,7 @@ input,select,textarea{ font-family:inherit; font-size:13px; }
 .v-gym{ background:var(--v-gym); }
 .v-studios{ background:var(--v-studios); }
 .v-recovery{ background:var(--v-recovery); }
+.v-padel{ background:var(--v-padel); }
 .vlabel{ display:inline-flex; align-items:center; gap:5px; }
 /* Selector de vertical inline en la tabla de Cuentas (escribe gyms.vertical) */
 .vert-sel{ font:inherit; font-size:12px; color:var(--text); background:transparent; border:1px solid transparent; border-radius:7px; padding:2px 4px; cursor:pointer; }
@@ -983,6 +985,7 @@ table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
             <option value="gym">Core</option>
             <option value="studios">Studios</option>
             <option value="recovery">Recovery</option>
+            <option value="padel">Padel</option>
           </select>
         </div>
         <div class="f-field">
@@ -1160,6 +1163,7 @@ table.tbl{ width:100%; border-collapse:collapse; min-width:680px; }
               <option value="gym">Core</option>
               <option value="studios">Studios</option>
               <option value="recovery">Recovery</option>
+              <option value="padel">Padel</option>
             </select>
           </div>
           <div class="f-field">
@@ -1237,7 +1241,7 @@ const ETAPA_COLOR = {
 // Etapas terminales: no aparecen en "Hoy toca"
 const ETAPAS_TERMINALES = ['pagando','perdido'];
 
-const VERTICAL_LABEL = { gym:'Core', studios:'Studios', recovery:'Recovery' };
+const VERTICAL_LABEL = { gym:'Core', studios:'Studios', recovery:'Recovery', padel:'Padel' };
 const CANALES = ['manual','prospeccion-bajio','landing','referido','meta-ads'];
 const CANAL_LABEL = {
   'manual':'Manual', 'prospeccion-bajio':'Prospección Bajío', 'landing':'Landing',
@@ -1777,7 +1781,7 @@ function openFicha(id){
         </div>
         <div class="f-field">
           <label for="fl-vertical">Vertical</label>
-          <select id="fl-vertical">${opts(['gym','studios','recovery'], lead.vertical, VERTICAL_LABEL)}</select>
+          <select id="fl-vertical">${opts(['gym','studios','recovery','padel'], lead.vertical, VERTICAL_LABEL)}</select>
         </div>
         <div class="f-field">
           <label for="fl-tier">Tier</label>
@@ -2593,7 +2597,7 @@ async function loadCuentas(){
         <tr onclick="openGymDetalle(${g.id})">
           <td><strong>${esc(g.nombre)}</strong></td>
           <td onclick="event.stopPropagation()">
-            <span class="vlabel"><span class="vdot v-${esc(g.vertical || 'gym')}"></span><select class="vert-sel" onchange="cambiarVertical(${g.id}, this)" title="Define el tema del gym y su etiqueta en Descubre">${['gym','studios','recovery'].map(v=>`<option value="${v}" ${((g.vertical||'gym')===v)?'selected':''}>${VERTICAL_LABEL[v]}</option>`).join('')}</select></span>
+            <span class="vlabel"><span class="vdot v-${esc(g.vertical || 'gym')}"></span><select class="vert-sel" onchange="cambiarVertical(${g.id}, this)" title="Define el tema del gym y su etiqueta en Descubre">${['gym','studios','recovery','padel'].map(v=>`<option value="${v}" ${((g.vertical||'gym')===v)?'selected':''}>${VERTICAL_LABEL[v]}</option>`).join('')}</select></span>
           </td>
           <td><span class="estado-pill ${est.cls}">${esc(est.label)}</span></td>
           <td class="td-mono">${esc(g.plan || '—')}</td>

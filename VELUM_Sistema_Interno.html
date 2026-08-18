@@ -199,6 +199,16 @@ body[data-vertical="recovery"]{
   --font-display:'Fraunces',Georgia,serif;
   --radius:20px; --radius-sm:14px;
 }
+body[data-vertical="padel"]{
+  /* Verde cancha + lima pelota (mockup aprobado 2026-08-18). Matiz verde bosque. */
+  --bg:#0A100C; --bg-card:#101812; --card:#101812; --card2:#1C2A20; --white:#101812;
+  --border:color-mix(in srgb, var(--text) 18%, transparent); --border2:rgba(63,163,77,.25);
+  --text:#EDF4EE; --text2:#B9C8BC; --text3:#7E8F82; --text4:#55645A;
+  --accent:#3FA34D; --accent-light:#6BC878; --accent-hover:#6BC878;
+  --accent-bg:rgba(63,163,77,.10); --accent-bg2:rgba(63,163,77,.18);
+  --glow:0 0 30px rgba(63,163,77,.20);
+  --radius:20px; --radius-sm:14px;
+}
 
 /* ── Recovery · Agenda por recurso (grid temporal, estética bespoke del mockup) ── */
 .rc-layout{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start;}
@@ -240,15 +250,17 @@ body[data-vertical="recovery"]{
 .rc-side-empty{text-align:center;padding:34px 18px;}
 .rc-side-emptyico{font-size:var(--fs-3xl);color:var(--text3);margin-bottom:10px;line-height:1;}
 
-/* ── Botones primarios siguen el acento de la vertical (studios/recovery). Gym (base) queda cyan tal cual. ── */
+/* ── Botones primarios siguen el acento de la vertical (studios/recovery/padel). Gym (base) queda cyan tal cual. ── */
 body[data-vertical="studios"] .btn-primary,
-body[data-vertical="recovery"] .btn-primary{
+body[data-vertical="recovery"] .btn-primary,
+body[data-vertical="padel"] .btn-primary{
   background:linear-gradient(135deg, var(--accent), var(--accent-hover, var(--accent)));
   box-shadow:0 2px 10px rgba(0,0,0,.25), var(--glow);
   color:#06201B;
 }
 body[data-vertical="studios"] .btn-primary:hover,
-body[data-vertical="recovery"] .btn-primary:hover{
+body[data-vertical="recovery"] .btn-primary:hover,
+body[data-vertical="padel"] .btn-primary:hover{
   background:var(--accent-hover, var(--accent));
 }
 
@@ -6500,6 +6512,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
             <option value="gym" selected>Gimnasio — tradicional (tema cian)</option>
             <option value="studios">Estudio — boutique / clases (tema champagne)</option>
             <option value="recovery">Recovery — bienestar / terapia (tema salvia)</option>
+            <option value="padel">Padel — coach / academia (tema verde cancha)</option>
           </select>
           <span class="wzd-hint" style="margin-top:4px;">Define el vocabulario y los colores del panel y la app del atleta. Se puede cambiar después.</span>
         </div>
@@ -9930,7 +9943,7 @@ const _VERTICAL_DEFAULTS = {
 };
 function applyVertical(vertical){
   const v = String(vertical || 'gym').toLowerCase();
-  _gymVertical = (v === 'studios' || v === 'recovery') ? v : 'gym';   // 'velum' (legacy en DB) → 'gym'
+  _gymVertical = (v === 'studios' || v === 'recovery' || v === 'padel') ? v : 'gym';   // 'velum' (legacy en DB) → 'gym'
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
   if(typeof applyVerticalModules === 'function') applyVerticalModules(_gymVertical);
   if(typeof renderStudiosDash === 'function') renderStudiosDash();   // strip boutique en dashboard
@@ -10038,7 +10051,7 @@ function _syncNavSections(){
 }
 
 // Badge de giro bajo el logo (Gym · Performance / Studio · Boutique / Recovery · Wellness).
-const _VERTICAL_BADGE = { gym:'Core · Performance', studios:'Studio · Boutique', recovery:'Recovery · Wellness' };
+const _VERTICAL_BADGE = { gym:'Core · Performance', studios:'Studio · Boutique', recovery:'Recovery · Wellness', padel:'Padel · Coach' };
 function _setVerticalBadge(vertical){
   const b=document.getElementById('sidebar-vertical-badge'); if(!b) return;
   const txt=_VERTICAL_BADGE[vertical]||_VERTICAL_BADGE.gym;
@@ -10053,6 +10066,7 @@ const _TERMS = {
   gym:      { coach:'Coach',      coaches:'Coaches',      cliente:'Atleta',  clientes:'Atletas',  reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'clases'   },
   studios:  { coach:'Instructor', coaches:'Instructores', cliente:'Cliente', clientes:'Clientes', reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'créditos' },
   recovery: { coach:'Terapeuta',  coaches:'Terapeutas',   cliente:'Cliente', clientes:'Clientes', reserva:'Cita',    reservas:'Citas',    sesion:'Sesión', sesiones:'Sesiones', unidadPaq:'sesiones' },
+  padel:    { coach:'Coach',      coaches:'Coaches',      cliente:'Alumno',  clientes:'Alumnos',  reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'clases'   },
 };
 function _term(key){ const t=_TERMS[_gymVertical]||_TERMS.gym; return (key in t)?t[key]:(_TERMS.gym[key]||''); }
 // Traduce cualquier elemento con [data-term="clave"] al giro actual (mecanismo a futuro).
