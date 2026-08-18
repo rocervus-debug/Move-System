@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Panel del Coach</title>
+<meta name="description" content="El sistema del coach: alumnos, clínicas, asistencia y cobranza — simple y en la cancha."/>
+<meta name="robots" content="noindex"/>
+<meta name="theme-color" content="#0A100C"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="apple-touch-icon" href="/move-icon-180.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   PANEL DEL COACH — app independiente para coaches (padel primero).
+   Un solo archivo, 5 secciones, cero ruido. Corre sobre los rieles de
+   VELUM (move-login + REST con RLS) pero con SU propia experiencia.
+   Diseño: mockup aprobado 2026-08-18 (verde cancha + lima).
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0A100C; --card:#101812; --card2:#16211A; --card3:#1C2A20;
+  --border:rgba(255,255,255,.08); --border2:rgba(63,163,77,.25);
+  --text:#EDF4EE; --text2:#B9C8BC; --text3:#7E8F82; --text4:#55645A;
+  --accent:#3FA34D; --accent-light:#6BC878; --lima:#C6E84B;
+  --accent-bg:rgba(63,163,77,.10); --accent-bg2:rgba(63,163,77,.18);
+  --warn:#E8B44B; --danger:#E85A5A; --ok:#3FA34D;
+  --fd:'Outfit',sans-serif; --fm:'Geist Mono',monospace;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14.5px;line-height:1.5;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input,select,textarea{font-family:inherit;font-size:14.5px;color:var(--text);background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+input::placeholder,textarea::placeholder{color:var(--text4);}
+svg{vertical-align:-2px;flex-shrink:0;}
+.hide{display:none !important;}
+
+/* ── LOGIN ── */
+#login{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:0;}
+.lg-mark{width:52px;height:52px;border-radius:15px;background:var(--accent);color:#04120A;display:grid;place-items:center;margin:0 auto 14px;box-shadow:0 0 40px rgba(63,163,77,.35);}
+.lg-title{font-family:var(--fd);font-weight:800;font-size:22px;text-align:center;}
+.lg-sub{font-size:13px;color:var(--text3);text-align:center;margin:4px 0 26px;}
+.lg-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;}
+.lg-lbl{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);display:block;margin:0 0 6px;}
+.lg-field{margin-bottom:14px;}
+.lg-btn{width:100%;background:var(--accent);color:#04120A;border-radius:12px;font-weight:800;font-size:14.5px;padding:14px;margin-top:6px;transition:background .15s;}
+.lg-btn:hover{background:var(--accent-light);}
+.lg-err{display:none;font-size:12.5px;color:var(--danger);margin-top:10px;text-align:center;}
+.lg-err.show{display:block;}
+.lg-foot{font-family:var(--fm);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);text-align:center;margin-top:22px;}
+
+/* ── SHELL ── */
+#app{display:none;min-height:100dvh;padding-bottom:calc(74px + var(--sab));}
+.top{position:sticky;top:0;z-index:40;background:rgba(10,16,12,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:calc(12px + var(--sat)) 18px 12px;display:flex;align-items:center;gap:11px;}
+.top .mk{width:34px;height:34px;border-radius:10px;background:var(--accent);color:#04120A;display:grid;place-items:center;font-family:var(--fd);font-weight:800;font-size:15px;flex-shrink:0;}
+.top .tn{font-family:var(--fd);font-weight:800;font-size:16px;line-height:1.15;}
+.top .ts{font-size:11px;color:var(--text3);}
+.top .out{margin-left:auto;color:var(--text3);padding:8px;border-radius:9px;transition:color .15s;}
+.top .out:hover{color:var(--danger);}
+
+.wrap{max-width:680px;margin:0 auto;padding:18px 16px 30px;}
+.view{display:none;}
+.view.on{display:block;}
+.vh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.vh h1{font-family:var(--fd);font-weight:800;font-size:21px;}
+.vh .vs{font-size:12px;color:var(--text3);margin-top:1px;}
+
+/* nav inferior (el coach vive en el celular) */
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(10,16,12,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;padding:8px 6px calc(8px + var(--sab));}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text4);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 2px;border-radius:11px;transition:color .15s;}
+.bni.on{color:var(--accent-light);}
+.bni svg{width:20px;height:20px;}
+
+/* piezas */
+.krow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+@media(min-width:560px){ .krow{grid-template-columns:repeat(4,1fr);} }
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:13px 15px;}
+.kpi .kv{font-family:var(--fd);font-weight:800;font-size:21px;}
+.kpi .kl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-top:2px;}
+.kpi.warn .kv{color:var(--warn);} .kpi.ok .kv{color:var(--accent-light);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px 16px;margin-bottom:12px;}
+.card h3{font-family:var(--fd);font-weight:700;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.sec{font-size:10.5px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 9px;}
+.row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.row:last-child{border-bottom:none;}
+.av{width:36px;height:36px;border-radius:50%;background:var(--accent-bg2);color:var(--accent-light);display:grid;place-items:center;font-weight:800;font-size:12px;flex-shrink:0;}
+.nm{font-weight:700;font-size:14px;}
+.meta{font-size:11.5px;color:var(--text3);margin-top:1px;}
+.lvl{font-family:var(--fm);font-size:10px;font-weight:600;background:rgba(198,232,75,.12);color:var(--lima);border-radius:99px;padding:2px 9px;margin-left:5px;vertical-align:1px;}
+.pill{font-size:9.5px;font-weight:800;border-radius:99px;padding:3px 10px;letter-spacing:.03em;white-space:nowrap;}
+.pill.debe{background:rgba(232,90,90,.14);color:var(--danger);}
+.pill.aldia{background:var(--accent-bg);color:var(--accent-light);}
+.pill.warn{background:rgba(232,180,75,.14);color:var(--warn);}
+.mini{font-size:11.5px;padding:8px 13px;border-radius:10px;font-weight:700;border:1px solid var(--border);color:var(--text2);white-space:nowrap;transition:all .13s;}
+.mini:hover{border-color:var(--accent);color:var(--accent-light);}
+.mini.acc{background:var(--accent-bg);border-color:var(--border2);color:var(--accent-light);}
+.mini.solid{background:var(--accent);border-color:var(--accent);color:#04120A;}
+.bono{font-family:var(--fm);font-size:10.5px;font-weight:600;color:var(--text2);}
+.bono.low{color:var(--warn);} .bono.out{color:var(--danger);}
+.chk{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--border);background:transparent;display:grid;place-items:center;color:transparent;flex-shrink:0;transition:all .13s;}
+.chk.on{background:var(--accent);border-color:var(--accent);color:#04120A;}
+.clin{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:14px;padding:13px 15px;margin-bottom:10px;}
+.clin.unica{border-left-color:var(--lima);}
+.clin .cd{font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;}
+.clin .cn{font-family:var(--fd);font-weight:700;font-size:15.5px;margin:2px 0 1px;}
+.clin .cm{font-size:11.5px;color:var(--text3);}
+.tagu{font-size:8.5px;font-weight:800;color:var(--lima);border:1px solid rgba(198,232,75,.3);border-radius:99px;padding:2px 8px;text-transform:uppercase;letter-spacing:.05em;margin-left:6px;}
+.empty{text-align:center;color:var(--text3);font-size:13px;padding:34px 16px;}
+.empty b{display:block;font-family:var(--fd);font-size:15px;color:var(--text2);margin-bottom:4px;}
+.fab-note{font-size:11px;color:var(--text4);margin-top:10px;text-align:center;}
+.alertbar{background:rgba(232,90,90,.08);border:1px solid rgba(232,90,90,.25);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;color:var(--text2);}
+.alertbar b{color:var(--danger);}
+
+/* sheet (modal inferior) */
+.sheet-ov{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;}
+.sheet-ov.on{display:flex;}
+.sheet{width:100%;max-width:560px;background:var(--card);border-radius:22px 22px 0 0;border:1px solid var(--border);border-bottom:none;padding:20px 18px calc(22px + var(--sab));max-height:88dvh;overflow-y:auto;}
+.sh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sh-title{font-family:var(--fd);font-weight:800;font-size:17px;}
+.sh-x{color:var(--text3);font-size:19px;padding:4px 9px;}
+.f{margin-bottom:13px;}
+.f label{font-family:var(--fm);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px;}
+.f .opt{font-weight:400;text-transform:none;letter-spacing:0;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sh-btn{width:100%;background:var(--accent);color:#04120A;border-radius:12px;font-weight:800;font-size:14px;padding:14px;margin-top:4px;}
+.sh-btn:disabled{opacity:.6;}
+.daychips{display:flex;gap:6px;flex-wrap:wrap;}
+.dchip{font-size:12px;font-weight:700;color:var(--text3);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;transition:all .13s;}
+.dchip.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-light);}
+.pkchip{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-weight:600;color:var(--text2);transition:all .13s;width:100%;text-align:left;}
+.pkchip small{display:block;font-weight:400;font-size:11px;color:var(--text3);}
+.pkchip.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-light);}
+.pkchip .pr{font-family:var(--fm);font-size:13px;color:var(--text);}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(90px + var(--sab));transform:translateX(-50%) translateY(20px);z-index:99;background:var(--card3);border:1px solid var(--border2);color:var(--text);font-size:13px;font-weight:600;border-radius:12px;padding:11px 18px;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login">
+  <div>
+    <div class="lg-mark"><svg width="24" height="24" viewBox="0 0 100 100"><polygon points="50,5 59.55,40.45 95,50 59.55,59.55 50,95 40.45,59.55 5,50 40.45,40.45" fill="currentColor"/></svg></div>
+    <div class="lg-title">Panel del Coach</div>
+    <div class="lg-sub">Tus alumnos, tus clínicas, tu cobranza — sin ruido.</div>
+    <div class="lg-card">
+      <div class="lg-field"><label class="lg-lbl">Correo</label><input id="lg-email" type="email" autocomplete="username" placeholder="tu@correo.com"/></div>
+      <div class="lg-field"><label class="lg-lbl">Contraseña</label><input id="lg-pass" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="lg-btn" id="lg-btn" onclick="doLogin()">ENTRAR</button>
+      <div class="lg-err" id="lg-err"></div>
+    </div>
+    <div class="lg-foot">con VELUM</div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="top">
+    <div class="mk" id="t-ini">C</div>
+    <div><div class="tn" id="t-nombre">Coach</div><div class="ts" id="t-sub">—</div></div>
+    <button class="out" onclick="doLogout()" title="Cerrar sesión"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ══ HOY ══ -->
+    <div class="view on" id="v-hoy">
+      <div class="vh"><div><h1 id="hoy-titulo">Hoy</h1><div class="vs" id="hoy-sub"></div></div></div>
+      <div class="krow" id="hoy-kpis"></div>
+      <div id="hoy-alertas"></div>
+      <div id="hoy-clinicas"></div>
+    </div>
+
+    <!-- ══ ALUMNOS ══ -->
+    <div class="view" id="v-alumnos">
+      <div class="vh"><div><h1>Alumnos</h1><div class="vs" id="al-sub"></div></div>
+        <button class="mini acc" onclick="openSheet('alumno')">+ Alumno</button></div>
+      <input id="al-buscar" type="search" placeholder="Buscar alumno…" style="margin-bottom:12px;" oninput="renderAlumnos()"/>
+      <div id="al-lista"></div>
+    </div>
+
+    <!-- ══ CLÍNICAS ══ -->
+    <div class="view" id="v-clinicas">
+      <div class="vh"><div><h1>Clínicas</h1><div class="vs">Tu semana</div></div>
+        <button class="mini acc" onclick="openSheet('clinica')">+ Clínica</button></div>
+      <div id="cl-lista"></div>
+    </div>
+
+    <!-- ══ COBRANZA ══ -->
+    <div class="view" id="v-cobranza">
+      <div class="vh"><div><h1>Cobranza</h1><div class="vs" id="cb-sub"></div></div>
+        <button class="mini acc" onclick="openSheet('pago')">+ Cobro</button></div>
+      <div class="krow" id="cb-kpis" style="grid-template-columns:repeat(2,1fr);"></div>
+      <div class="sec">Deben renovar</div>
+      <div id="cb-deudores"></div>
+      <div class="sec">Últimos cobros</div>
+      <div id="cb-pagos"></div>
+    </div>
+
+    <!-- ══ ENTRENOS ══ -->
+    <div class="view" id="v-entrenos">
+      <div class="vh"><div><h1>Entrenamientos</h1><div class="vs">El plan del día — tus alumnos lo ven en su app</div></div></div>
+      <div class="card">
+        <h3><span id="en-fecha-lbl"></span></h3>
+        <textarea id="en-texto" rows="9" style="font-family:var(--fm);font-size:12.5px;line-height:1.7;resize:vertical;" placeholder="CALENTAMIENTO (10 min): peloteo controlado + desplazamientos&#10;BLOQUE 1: volea-bandeja, 3 rondas por pareja&#10;BLOQUE 2: salida de pared, cruzado y paralelo&#10;JUEGO: tie-break americano, rotación cada 4 puntos"></textarea>
+        <button class="sh-btn" style="margin-top:12px;" onclick="saveEntreno(this)">Guardar plan de hoy</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- nav inferior -->
+  <div class="bnav">
+    <button class="bni on" data-v="hoy" onclick="nav('hoy',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Hoy</button>
+    <button class="bni" data-v="alumnos" onclick="nav('alumnos',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Alumnos</button>
+    <button class="bni" data-v="clinicas" onclick="nav('clinicas',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Clínicas</button>
+    <button class="bni" data-v="cobranza" onclick="nav('cobranza',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Cobranza</button>
+    <button class="bni" data-v="entrenos" onclick="nav('entrenos',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Entrenos</button>
+  </div>
+</div>
+
+<!-- ══ SHEETS ══ -->
+<div class="sheet-ov" id="sheet-ov" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <!-- alta de alumno -->
+    <div class="sh-pane" id="sh-alumno" style="display:none;">
+      <div class="sh-head"><div class="sh-title">Nuevo alumno</div><button class="sh-x" onclick="closeSheet()">✕</button></div>
+      <div class="f"><label>Nombre completo *</label><input id="na-nombre" type="text" placeholder="Ej: Sofía Ramírez"/></div>
+      <div class="grid2">
+        <div class="f"><label>WhatsApp <span class="opt">(opcional)</span></label><input id="na-tel" type="tel" placeholder="+52 461…"/></div>
+        <div class="f"><label>Nivel <span class="opt">(1.0–7.0)</span></label><input id="na-nivel" type="number" min="1" max="7" step="0.1" placeholder="3.0"/></div>
+      </div>
+      <button class="sh-btn" onclick="saveAlumno(this)">Agregar alumno</button>
+    </div>
+    <!-- nueva clínica -->
+    <div class="sh-pane" id="sh-clinica" style="display:none;">
+      <div class="sh-head"><div class="sh-title">Nueva clínica</div><button class="sh-x" onclick="closeSheet()">✕</button></div>
+      <div class="f"><label>Nombre de la clínica *</label><input id="nc-nombre" type="text" placeholder="Ej: Intermedios"/></div>
+      <div class="f"><label>¿Cuándo?</label>
+        <div class="daychips" id="nc-dias">
+          <button type="button" class="dchip" data-d="Lunes">Lun</button><button type="button" class="dchip" data-d="Martes">Mar</button>
+          <button type="button" class="dchip" data-d="Miércoles">Mié</button><button type="button" class="dchip" data-d="Jueves">Jue</button>
+          <button type="button" class="dchip" data-d="Viernes">Vie</button><button type="button" class="dchip" data-d="Sábado">Sáb</button>
+          <button type="button" class="dchip" data-d="Domingo">Dom</button>
+        </div>
+        <div style="font-size:11px;color:var(--text4);margin-top:6px;">Se repite cada semana en los días que marques. ¿Es de una sola fecha? <button type="button" id="nc-unica-btn" style="color:var(--accent-light);font-weight:700;" onclick="ncToggleUnica()">Cambiar a fecha única</button></div>
+        <input id="nc-fecha" type="date" style="margin-top:8px;display:none;"/>
+      </div>
+      <div class="grid2">
+        <div class="f"><label>Hora *</label><input id="nc-hora" type="time" value="19:00"/></div>
+        <div class="f"><label>Lugares</label><input id="nc-cupo" type="number" min="1" value="6"/></div>
+      </div>
+      <div class="f"><label>Ubicación <span class="opt">(opcional)</span></label><input id="nc-lugar" type="text" placeholder="Ej: Gold Padel · Cancha 2"/></div>
+      <button class="sh-btn" onclick="saveClinica(this)">Crear clínica</button>
+    </div>
+    <!-- registrar cobro -->
+    <div class="sh-pane" id="sh-pago" style="display:none;">
+      <div class="sh-head"><div class="sh-title">Registrar cobro</div><button class="sh-x" onclick="closeSheet()">✕</button></div>
+      <div class="f"><label>Alumno *</label><select id="np-alumno"></select></div>
+      <div class="f"><label>¿Qué te pagó? *</label><div id="np-paquetes"></div></div>
+      <div class="f"><label>Método</label><select id="np-metodo"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Otro</option></select></div>
+      <button class="sh-btn" onclick="savePago(this)">Registrar cobro</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══ Config y estado ══ */
+const SB_URL  = 'https://savzjanpydyjtrgdkllx.supabase.co';
+const SB_KEY  = 'sb_publishable_gsUyT71kgtdJkD4X8WSx7g_0EuwOrqd';
+const DEMO    = new URLSearchParams(location.search).has('demo');
+let S = { jwt:null, gymId:null, nombre:'Coach', user:null };
+let alumnos=[], pagos=[], clinicas=[], reservasHoy=[], asistenciasHoy=[], paquetes=[], cfg={};
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function hoyMX(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function ini(n){ return (n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+function fmt$(n){ return '$'+Number(n||0).toLocaleString('es-MX'); }
+
+/* ══ API (REST con RLS vía JWT) ══ */
+function H(){ return { 'apikey':SB_KEY, 'Authorization':'Bearer '+S.jwt, 'Content-Type':'application/json' }; }
+async function api(path, opts={}){
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, { headers:{...H(), ...(opts.headers||{})}, method:opts.method||'GET', body:opts.body?JSON.stringify(opts.body):undefined });
+  if(res.status===401){ toast('Tu sesión expiró — vuelve a entrar'); doLogout(); throw new Error('401'); }
+  const data = res.status===204 ? null : await res.json().catch(()=>null);
+  if(!res.ok) throw Object.assign(new Error((data&&(data.message||data.hint))||'error'), {data});
+  return data;
+}
+
+/* ══ Login (move-login: mismo riel que el panel) ══ */
+async function sha256(s){ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function limpiarEmail(v){ return String(v||'').replace(/[​-‍⁠﻿ ]/g,'').trim().toLowerCase(); }
+async function doLogin(){
+  const err = document.getElementById('lg-err'); err.classList.remove('show');
+  const email = limpiarEmail(document.getElementById('lg-email').value);
+  const pass  = document.getElementById('lg-pass').value;
+  if(!email||!pass){ err.textContent='Completa correo y contraseña.'; err.classList.add('show'); return; }
+  const btn = document.getElementById('lg-btn'); btn.textContent='Verificando…'; btn.disabled=true;
+  try{
+    const pw_hash = await sha256(pass);
+    const res = await fetch(`${SB_URL}/functions/v1/move-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, pw_hash}) });
+    const r = await res.json();
+    if(r.requires_2fa || r.requires_2fa_enrollment){
+      err.textContent='Tu cuenta tiene 2FA — entra una vez por el panel completo para validarlo.'; err.classList.add('show');
+      btn.textContent='ENTRAR'; btn.disabled=false; return;
+    }
+    if(!res.ok || !r.token){ err.textContent=r.error||'Correo o contraseña incorrectos.'; err.classList.add('show'); btn.textContent='ENTRAR'; btn.disabled=false; return; }
+    S = { jwt:r.token, gymId:r.user.gym_id, user:r.user, nombre:r.user.nombre||'Coach' };
+    try{ localStorage.setItem('coach_session', JSON.stringify(S)); }catch(_){}
+    await boot();
+  }catch(e){ err.textContent='No se pudo conectar. Revisa tu internet.'; err.classList.add('show'); btn.textContent='ENTRAR'; btn.disabled=false; }
+}
+function doLogout(){ try{ localStorage.removeItem('coach_session'); }catch(_){} location.href=location.pathname; }
+
+/* ══ Carga de datos ══ */
+async function boot(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  await cargarTodo();
+  renderTodo();
+}
+async function cargarTodo(){
+  if(DEMO){ cargarDemo(); return; }
+  const g = S.gymId;
+  const [cfgRows, al, pg, cl, pk] = await Promise.all([
+    api(`gym_config?gym_id=eq.${g}&select=key,value`),
+    api(`clientes?gym_id=eq.${g}&select=id,nombre,telefono,nivel,portal_token&order=nombre&limit=500`),
+    api(`pagos?gym_id=eq.${g}&select=id,cliente,monto,fecha,plan,metodo,vence,clases_totales,clases_usadas,notas&order=fecha.desc&limit=400`),
+    api(`horarios?gym_id=eq.${g}&select=id,dia,hora,tipo,cupo,notas,fecha&order=hora`),
+    api(`packages?gym_id=eq.${g}&is_active=eq.true&select=id,name,price_mxn,duration_days,num_classes,unlimited_classes&order=price_mxn.desc`),
+  ]);
+  cfg={}; (cfgRows||[]).forEach(r=>cfg[r.key]=r.value);
+  alumnos=al||[]; pagos=(pg||[]).filter(p=>p.notas!=='__sin_pago__'); clinicas=cl||[]; paquetes=pk||[];
+  // roster de hoy: reservas + asistencias del día
+  const hoy = hoyMX();
+  const hids = clinicas.map(c=>c.id);
+  reservasHoy = hids.length ? (await api(`reservas?gym_id=eq.${g}&fecha=eq.${hoy}&estado=neq.cancelado&select=id,horario_id,cliente_id,cliente_nombre,estado,spot`))||[] : [];
+  asistenciasHoy = (await api(`asistencias?gym_id=eq.${g}&fecha=eq.${hoy}&select=id,cliente_id`))||[];
+  const nom = cfg.gym_nombre || S.nombre;
+  document.getElementById('t-nombre').textContent = nom;
+  document.getElementById('t-ini').textContent = ini(nom);
+  document.getElementById('t-sub').textContent = cfg.padel_ubicacion || 'Padel';
+}
+
+/* ══ Regla canónica de vigencia (la misma del kiosco/app) ══ */
+function estadoAlumno(nombre){
+  const hoy = hoyMX();
+  const ps = pagos.filter(p=>(p.cliente||'').trim()===nombre);
+  const noVenc = p => !p.vence || p.vence>=hoy;
+  const bonoActivo = ps.find(p=>p.clases_totales && (p.clases_usadas??0)<p.clases_totales && noVenc(p));
+  const mensualVigente = ps.some(p=>!p.clases_totales && p.vence && noVenc(p));
+  const acceso = !!bonoActivo || mensualVigente;
+  let bonoTxt='', bonoCls='';
+  if(bonoActivo){
+    const rest = bonoActivo.clases_totales-(bonoActivo.clases_usadas??0);
+    bonoTxt = `${rest} de ${bonoActivo.clases_totales}`; bonoCls = rest<=1?'low':'';
+  } else if(mensualVigente){
+    bonoTxt = 'Mensualidad al día';
+  } else if(ps.length){
+    bonoTxt = 'Sin clases — renovar'; bonoCls='out';
+  } else { bonoTxt = 'Sin pagos aún'; bonoCls=''; }
+  return { acceso, bonoActivo, bonoTxt, bonoCls, tienePagos:ps.length>0 };
+}
+
+/* ══ Render ══ */
+function nav(v,btn){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  document.querySelectorAll('.bni').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  window.scrollTo({top:0});
+}
+function renderTodo(){ renderHoy(); renderAlumnos(); renderClinicas(); renderCobranza(); renderEntrenos(); }
+
+function clinicasDeHoy(){
+  const hoy = hoyMX();
+  const diaHoy = DIAS[new Date(hoy+'T12:00:00').getDay()];
+  return clinicas.filter(c => (!c.fecha && c.dia===diaHoy) || c.fecha===hoy);
+}
+function renderHoy(){
+  const hoy = hoyMX();
+  const d = new Date(hoy+'T12:00:00');
+  document.getElementById('hoy-titulo').textContent = `${DIAS[d.getDay()]} ${d.getDate()}`;
+  document.getElementById('hoy-sub').textContent = cfg.padel_ubicacion || '';
+  const deHoy = clinicasDeHoy();
+  const citados = reservasHoy.length;
+  const mesStr = hoy.slice(0,7);
+  const cobradoMes = pagos.filter(p=>(p.fecha||'').startsWith(mesStr)).reduce((s,p)=>s+Number(p.monto||0),0);
+  const deudores = alumnos.filter(a=>{ const e=estadoAlumno(a.nombre); return e.tienePagos && !e.acceso; });
+  document.getElementById('hoy-kpis').innerHTML = `
+    <div class="kpi"><div class="kv">${deHoy.length}</div><div class="kl">Clínicas hoy</div></div>
+    <div class="kpi"><div class="kv">${citados}</div><div class="kl">Reservas hoy</div></div>
+    <div class="kpi ${deudores.length?'warn':''}"><div class="kv">${deudores.length}</div><div class="kl">Por renovar</div></div>
+    <div class="kpi ok"><div class="kv">${fmt$(cobradoMes)}</div><div class="kl">Este mes</div></div>`;
+  document.getElementById('hoy-alertas').innerHTML = deudores.length ? `
+    <div class="alertbar"><b>${deudores.length} alumno${deudores.length>1?'s':''} sin clases o vencido${deudores.length>1?'s':''}:</b>
+    ${deudores.slice(0,4).map(a=>esc(a.nombre.split(' ')[0])).join(', ')}${deudores.length>4?` y ${deudores.length-4} más`:''} —
+    <span style="color:var(--accent-light);font-weight:700;cursor:pointer;" onclick="nav('cobranza',document.querySelector('[data-v=cobranza]'))">ir a cobranza →</span></div>` : '';
+  const wrap = document.getElementById('hoy-clinicas');
+  if(!deHoy.length){ wrap.innerHTML = `<div class="empty"><b>Hoy no tienes clínicas</b>Crea una desde la pestaña Clínicas — o disfruta el descanso.</div>`; return; }
+  wrap.innerHTML = deHoy.map(c=>{
+    const rs = reservasHoy.filter(r=>r.horario_id===c.id && r.estado!=='bloqueado');
+    const filas = rs.length ? rs.map(r=>{
+      const asis = asistenciasHoy.some(a=>a.cliente_id===r.cliente_id);
+      const al = alumnos.find(x=>x.id===r.cliente_id)||{nombre:r.cliente_nombre};
+      const e = estadoAlumno(al.nombre||r.cliente_nombre);
+      return `<div class="row">
+        <span class="av">${ini(al.nombre||r.cliente_nombre)}</span>
+        <div style="flex:1;min-width:0;"><div class="nm">${esc(al.nombre||r.cliente_nombre)}${al.nivel?`<span class="lvl">${esc(al.nivel)}</span>`:''}</div>
+        <div class="meta">Bono: <span class="bono ${e.bonoCls}">${e.bonoTxt}</span></div></div>
+        <button class="chk ${asis?'on':''}" onclick="marcarAsistencia(this,'${r.cliente_id}','${esc(al.nombre||r.cliente_nombre)}')" title="Marcar asistencia">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+      </div>`;
+    }).join('') : `<div class="meta" style="padding:8px 0;">Sin reservas aún — tus alumnos reservan desde su app.</div>`;
+    return `<div class="sec">${esc(c.hora)} · ${esc(c.tipo)}${c.fecha?' <span class="tagu">única</span>':''}</div>
+      <div class="card">${filas}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span class="bono">${rs.length} de ${c.cupo||'—'} lugares</span></div></div>`;
+  }).join('');
+}
+
+function renderAlumnos(){
+  const q = (document.getElementById('al-buscar').value||'').toLowerCase();
+  const lista = alumnos.filter(a=>!q || a.nombre.toLowerCase().includes(q));
+  document.getElementById('al-sub').textContent = `${alumnos.length} en total`;
+  const el = document.getElementById('al-lista');
+  if(!lista.length){ el.innerHTML = `<div class="empty"><b>${q?'Sin resultados':'Aún no tienes alumnos'}</b>${q?'':'Agrega el primero con el botón de arriba.'}</div>`; return; }
+  el.innerHTML = `<div class="card">` + lista.map(a=>{
+    const e = estadoAlumno(a.nombre);
+    const pill = !e.tienePagos ? '' : e.acceso ? `<span class="pill aldia">AL DÍA</span>` : `<span class="pill debe">RENOVAR</span>`;
+    return `<div class="row">
+      <span class="av">${ini(a.nombre)}</span>
+      <div style="flex:1;min-width:0;"><div class="nm">${esc(a.nombre)}${a.nivel?`<span class="lvl">${esc(a.nivel)}</span>`:''}</div>
+      <div class="meta"><span class="bono ${e.bonoCls}">${e.bonoTxt}</span>${a.telefono?` · ${esc(a.telefono)}`:''}</div></div>
+      ${pill}
+      ${e.tienePagos&&!e.acceso?`<button class="mini acc" onclick="openSheet('pago','${esc(a.nombre)}')">Cobrar</button>`:''}
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function renderClinicas(){
+  const el = document.getElementById('cl-lista');
+  const fijas = clinicas.filter(c=>!c.fecha);
+  const unicas = clinicas.filter(c=>c.fecha && c.fecha>=hoyMX());
+  if(!fijas.length && !unicas.length){ el.innerHTML = `<div class="empty"><b>Sin clínicas todavía</b>Crea la primera — fija semanal o de fecha única.</div>`; return; }
+  const orden = {'Lunes':1,'Martes':2,'Miércoles':3,'Jueves':4,'Viernes':5,'Sábado':6,'Domingo':7};
+  el.innerHTML =
+    (fijas.length?`<div class="sec">Fijas cada semana</div>`:'') +
+    fijas.sort((a,b)=>(orden[a.dia]||9)-(orden[b.dia]||9)).map(c=>`
+      <div class="clin"><div class="cd">${esc(c.dia)} · ${esc(c.hora)}</div><div class="cn">${esc(c.tipo)}</div>
+      <div class="cm">${c.cupo||'—'} lugares${c.notas?` · ${esc(c.notas)}`:''}</div></div>`).join('') +
+    (unicas.length?`<div class="sec">Fechas únicas</div>`:'') +
+    unicas.sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).map(c=>`
+      <div class="clin unica"><div class="cd">${esc(c.fecha)} · ${esc(c.hora)} <span class="tagu">única</span></div><div class="cn">${esc(c.tipo)}</div>
+      <div class="cm">${c.cupo||'—'} lugares${c.notas?` · ${esc(c.notas)}`:''}</div></div>`).join('');
+}
+
+function renderCobranza(){
+  const hoy = hoyMX(), mesStr = hoy.slice(0,7);
+  const delMes = pagos.filter(p=>(p.fecha||'').startsWith(mesStr));
+  const cobrado = delMes.reduce((s,p)=>s+Number(p.monto||0),0);
+  document.getElementById('cb-sub').textContent = new Date(hoy+'T12:00:00').toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+  document.getElementById('cb-kpis').innerHTML = `
+    <div class="kpi ok"><div class="kv">${fmt$(cobrado)}</div><div class="kl">Cobrado</div></div>
+    <div class="kpi"><div class="kv">${delMes.length}</div><div class="kl">Cobros del mes</div></div>`;
+  const deudores = alumnos.filter(a=>{ const e=estadoAlumno(a.nombre); return e.tienePagos && !e.acceso; });
+  document.getElementById('cb-deudores').innerHTML = deudores.length ? `<div class="card">`+deudores.map(a=>`
+    <div class="row"><span class="av">${ini(a.nombre)}</span>
+    <div style="flex:1;"><div class="nm">${esc(a.nombre)}</div><div class="meta"><span class="bono out">${estadoAlumno(a.nombre).bonoTxt}</span></div></div>
+    <button class="mini acc" onclick="openSheet('pago','${esc(a.nombre)}')">Cobrar</button></div>`).join('')+`</div>`
+    : `<div class="card"><div class="meta">Nadie debe — todo al día.</div></div>`;
+  document.getElementById('cb-pagos').innerHTML = `<div class="card">` + (pagos.slice(0,8).map(p=>`
+    <div class="row"><span class="av">${ini(p.cliente)}</span>
+    <div style="flex:1;"><div class="nm">${esc(p.cliente)}</div><div class="meta">${esc(p.plan||'')} · ${esc(p.metodo||'')} · ${esc(p.fecha||'')}</div></div>
+    <span class="bono" style="color:var(--accent-light);font-size:12.5px;">${fmt$(p.monto)}</span></div>`).join('')||`<div class="meta">Aún sin cobros.</div>`) + `</div>`;
+}
+
+function renderEntrenos(){
+  const hoy = hoyMX();
+  document.getElementById('en-fecha-lbl').textContent = 'Plan de hoy · '+new Date(hoy+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  if(DEMO) return;
+  api(`programas?gym_id=eq.${S.gymId}&fecha=eq.${hoy}&select=id,contenido&limit=1`).then(r=>{
+    if(r&&r[0]){ document.getElementById('en-texto').value=r[0].contenido||''; window._enId=r[0].id; }
+  }).catch(()=>{});
+}
+
+/* ══ Acciones ══ */
+async function marcarAsistencia(btn, clienteId, nombre){
+  if(btn.classList.contains('on')){ toast('Ya tiene asistencia hoy'); return; }
+  if(DEMO){ btn.classList.add('on'); toast(`Asistencia de ${nombre.split(' ')[0]} ✓`); return; }
+  btn.disabled = true;
+  try{
+    const hora = new Intl.DateTimeFormat('en-GB',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());
+    await api('asistencias',{method:'POST',body:{cliente_id:+clienteId, gym_id:S.gymId, fecha:hoyMX(), hora, metodo:'lista'}});
+    // descontar del bono activo (misma regla canónica del kiosco)
+    const e = estadoAlumno(nombre);
+    if(e.bonoActivo){
+      const nuevas = (e.bonoActivo.clases_usadas??0)+1;
+      await api(`pagos?id=eq.${e.bonoActivo.id}`,{method:'PATCH',body:{clases_usadas:nuevas}});
+      e.bonoActivo.clases_usadas = nuevas;
+    }
+    asistenciasHoy.push({cliente_id:+clienteId});
+    btn.classList.add('on');
+    toast(`Asistencia de ${nombre.split(' ')[0]} ✓${e.bonoActivo?` · bono ${e.bonoActivo.clases_totales-e.bonoActivo.clases_usadas} restantes`:''}`);
+    renderAlumnos(); renderCobranza();
+  }catch(err){ toast('No se pudo guardar la asistencia'); }
+  btn.disabled = false;
+}
+
+async function saveAlumno(btn){
+  const nombre = document.getElementById('na-nombre').value.trim();
+  if(!nombre){ toast('El nombre es obligatorio'); return; }
+  const tel = document.getElementById('na-tel').value.trim();
+  const nivel = document.getElementById('na-nivel').value.trim();
+  if(DEMO){ alumnos.push({id:Date.now(),nombre,telefono:tel,nivel}); closeSheet(); renderAlumnos(); toast(`${nombre.split(' ')[0]} agregado ✓`); return; }
+  btn.disabled=true;
+  try{
+    const r = await api('clientes',{method:'POST',headers:{'Prefer':'return=representation'},body:{gym_id:S.gymId, nombre, telefono:tel, nivel:nivel||null}});
+    alumnos.push(Array.isArray(r)?r[0]:r); alumnos.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    closeSheet(); renderAlumnos(); renderHoy();
+    toast(`${nombre.split(' ')[0]} agregado ✓`);
+    document.getElementById('na-nombre').value=''; document.getElementById('na-tel').value=''; document.getElementById('na-nivel').value='';
+  }catch(e){ toast('No se pudo guardar: '+(e.message||'').slice(0,50)); }
+  btn.disabled=false;
+}
+
+function ncToggleUnica(){
+  const f = document.getElementById('nc-fecha');
+  const unica = f.style.display==='none';
+  f.style.display = unica?'block':'none';
+  document.getElementById('nc-dias').style.display = unica?'none':'flex';
+  document.getElementById('nc-unica-btn').textContent = unica?'Cambiar a semanal':'Cambiar a fecha única';
+}
+document.addEventListener('click',e=>{ const d=e.target.closest('.dchip'); if(d) d.classList.toggle('on'); });
+function hora12(h){ // '19:00' → '7:00pm' (formato que ya usan horarios/apps)
+  if(!h) return h; const [H0,M]=h.split(':').map(Number);
+  const ap=H0>=12?'pm':'am'; const h12=H0%12||12; return `${h12}:${String(M).padStart(2,'0')}${ap}`;
+}
+async function saveClinica(btn){
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  const horaRaw = document.getElementById('nc-hora').value;
+  const cupo = parseInt(document.getElementById('nc-cupo').value)||6;
+  const lugar = document.getElementById('nc-lugar').value.trim() || cfg.padel_ubicacion || '';
+  const esUnica = document.getElementById('nc-fecha').style.display!=='none';
+  const fecha = esUnica ? document.getElementById('nc-fecha').value : '';
+  const dias = esUnica ? [] : [...document.querySelectorAll('#nc-dias .dchip.on')].map(d=>d.dataset.d);
+  if(!nombre){ toast('Ponle nombre a la clínica'); return; }
+  if(!horaRaw){ toast('Elige la hora'); return; }
+  if(esUnica && !fecha){ toast('Elige la fecha'); return; }
+  if(!esUnica && !dias.length){ toast('Marca al menos un día'); return; }
+  const hora = hora12(horaRaw);
+  if(DEMO){
+    (esUnica?[null]:dias).forEach(d=>clinicas.push({id:'d'+Math.random(),dia:d||'',hora,tipo:nombre,cupo,notas:lugar,fecha:fecha||''}));
+    closeSheet(); renderClinicas(); renderHoy(); toast('Clínica creada ✓'); return;
+  }
+  btn.disabled=true;
+  try{
+    const filas = (esUnica?['']:dias).map(d=>({ gym_id:S.gymId, dia:esUnica?'':d, hora, tipo:nombre, coach_id:'', coach_nombre:cfg.gym_nombre||S.nombre||'', cupo, notas:lugar, fecha:fecha||'' }));
+    const r = await api('horarios',{method:'POST',headers:{'Prefer':'return=representation'},body:filas});
+    (Array.isArray(r)?r:[r]).forEach(x=>clinicas.push(x));
+    closeSheet(); renderClinicas(); renderHoy();
+    toast(esUnica?'Clínica de fecha única creada ✓':`Clínica creada (${dias.length} día${dias.length>1?'s':''}) ✓`);
+    document.getElementById('nc-nombre').value='';
+  }catch(e){ toast('No se pudo crear: '+(e.message||'').slice(0,50)); }
+  btn.disabled=false;
+}
+
+let _pagoPkg = null;
+function openSheet(cual, alumnoPre){
+  document.querySelectorAll('.sh-pane').forEach(p=>p.style.display='none');
+  document.getElementById('sh-'+cual).style.display='block';
+  document.getElementById('sheet-ov').classList.add('on');
+  if(cual==='pago'){
+    const sel = document.getElementById('np-alumno');
+    sel.innerHTML = alumnos.map(a=>`<option ${a.nombre===alumnoPre?'selected':''}>${esc(a.nombre)}</option>`).join('');
+    _pagoPkg = null;
+    document.getElementById('np-paquetes').innerHTML = paquetes.length ? paquetes.map(p=>`
+      <button type="button" class="pkchip" onclick="pickPkg(this,${p.id})">
+        <span>${esc(p.name)}<small>${p.num_classes?`${p.num_classes} clases · `:''}${p.duration_days} días</small></span>
+        <span class="pr">${fmt$(p.price_mxn)}</span></button>`).join('')
+      : `<div class="meta">No tienes paquetes en tu catálogo — créalos en tu configuración inicial.</div>`;
+  }
+}
+function pickPkg(btn,id){ document.querySelectorAll('.pkchip').forEach(c=>c.classList.remove('on')); btn.classList.add('on'); _pagoPkg = paquetes.find(p=>p.id===id)||null; }
+function closeSheet(){ document.getElementById('sheet-ov').classList.remove('on'); }
+
+async function savePago(btn){
+  const alumno = document.getElementById('np-alumno').value;
+  if(!alumno){ toast('Elige al alumno'); return; }
+  if(!_pagoPkg){ toast('Elige qué te pagó'); return; }
+  const metodo = document.getElementById('np-metodo').value;
+  const hoy = hoyMX();
+  const v = new Date(hoy+'T12:00:00'); v.setDate(v.getDate()+(_pagoPkg.duration_days||30));
+  const vence = v.toISOString().slice(0,10);
+  if(DEMO){ pagos.unshift({cliente:alumno,monto:_pagoPkg.price_mxn,fecha:hoy,plan:_pagoPkg.name,metodo,vence,clases_totales:_pagoPkg.num_classes,clases_usadas:0}); closeSheet(); renderTodo(); toast(`Cobro de ${fmt$(_pagoPkg.price_mxn)} registrado ✓`); return; }
+  btn.disabled=true;
+  try{
+    const al = alumnos.find(a=>a.nombre===alumno)||{};
+    await api('pagos',{method:'POST',body:{
+      gym_id:S.gymId, cliente:alumno, monto:_pagoPkg.price_mxn, fecha:hoy, plan:_pagoPkg.name, metodo,
+      vence, telefono:(al.telefono||'').replace(/\D/g,''), notas:'',
+      package_id:_pagoPkg.id, list_price_mxn:_pagoPkg.price_mxn, applied_price_mxn:_pagoPkg.price_mxn,
+      clases_totales:_pagoPkg.num_classes||null, clases_usadas:0, is_legacy:false
+    }});
+    pagos.unshift({cliente:alumno,monto:_pagoPkg.price_mxn,fecha:hoy,plan:_pagoPkg.name,metodo,vence,clases_totales:_pagoPkg.num_classes,clases_usadas:0,notas:''});
+    closeSheet(); renderTodo();
+    toast(`Cobro de ${fmt$(_pagoPkg.price_mxn)} a ${alumno.split(' ')[0]} ✓`);
+  }catch(e){ toast('No se pudo registrar: '+(e.message||'').slice(0,50)); }
+  btn.disabled=false;
+}
+
+async function saveEntreno(btn){
+  const txt = document.getElementById('en-texto').value.trim();
+  if(!txt){ toast('Escribe el plan primero'); return; }
+  if(DEMO){ toast('Plan guardado ✓ (demo)'); return; }
+  btn.disabled=true;
+  try{
+    const hoy = hoyMX();
+    if(window._enId){
+      await api(`programas?id=eq.${window._enId}`,{method:'PATCH',body:{contenido:txt}});
+    } else {
+      const r = await api('programas',{method:'POST',headers:{'Prefer':'return=representation'},body:{gym_id:S.gymId, tipo:'Clínica', fecha:hoy, contenido:txt, notas:''}});
+      window._enId = (Array.isArray(r)?r[0]:r)?.id;
+    }
+    toast('Plan de hoy guardado ✓ — tus alumnos lo ven en su app');
+  }catch(e){ toast('No se pudo guardar: '+(e.message||'').slice(0,50)); }
+  btn.disabled=false;
+}
+
+/* ══ Demo (coach.html?demo=1): fixtures para revisar sin credenciales ══ */
+function cargarDemo(){
+  cfg = { gym_nombre:'Eddy Padel', padel_ubicacion:'Gold Padel · Celaya' };
+  alumnos = [
+    {id:1,nombre:'Sofía Ramírez',telefono:'4611234567',nivel:'3.0'},
+    {id:2,nombre:'Iván Torres',telefono:'4617654321',nivel:'2.8'},
+    {id:3,nombre:'Renata Mota',telefono:'',nivel:'3.2'},
+    {id:4,nombre:'Diego Luna',telefono:'4619876543',nivel:'2.5'},
+    {id:5,nombre:'Paola Anaya',telefono:'',nivel:'4.1'},
+  ];
+  const hoy = hoyMX(), mes = hoy.slice(0,7);
+  pagos = [
+    {id:11,cliente:'Sofía Ramírez',monto:1400,fecha:mes+'-02',plan:'Bono 8 clases',metodo:'Transferencia',vence:'2026-06-30',clases_totales:8,clases_usadas:8},
+    {id:12,cliente:'Iván Torres',monto:1400,fecha:mes+'-05',plan:'Bono 8 clases',metodo:'Efectivo',vence:'2099-01-01',clases_totales:8,clases_usadas:3},
+    {id:13,cliente:'Renata Mota',monto:800,fecha:mes+'-08',plan:'Bono 4 clases',metodo:'Transferencia',vence:'2099-01-01',clases_totales:4,clases_usadas:3},
+    {id:14,cliente:'Diego Luna',monto:1200,fecha:mes+'-01',plan:'Mensualidad',metodo:'Efectivo',vence:'2099-01-01',clases_totales:null,clases_usadas:0},
+    {id:15,cliente:'Paola Anaya',monto:450,fecha:mes+'-10',plan:'Privada 1:1',metodo:'Efectivo',vence:'2026-06-01',clases_totales:1,clases_usadas:1},
+  ];
+  const diaHoy = DIAS[new Date(hoy+'T12:00:00').getDay()];
+  clinicas = [
+    {id:'c1',dia:diaHoy,hora:'7:00pm',tipo:'Intermedios',cupo:6,notas:'Gold Padel · Cancha 2',fecha:''},
+    {id:'c2',dia:'Miércoles',hora:'6:00pm',tipo:'Principiantes',cupo:6,notas:'Gold Padel · Cancha 4',fecha:''},
+    {id:'c3',dia:'Viernes',hora:'7:30pm',tipo:'Avanzados',cupo:4,notas:'',fecha:''},
+    {id:'c4',dia:'',hora:'9:00am',tipo:'Clínica de saque',cupo:8,notas:'',fecha:hoy},
+  ];
+  reservasHoy = [
+    {id:'r1',horario_id:'c1',cliente_id:1,cliente_nombre:'Sofía Ramírez',estado:'reservado'},
+    {id:'r2',horario_id:'c1',cliente_id:2,cliente_nombre:'Iván Torres',estado:'reservado'},
+    {id:'r3',horario_id:'c1',cliente_id:3,cliente_nombre:'Renata Mota',estado:'reservado'},
+    {id:'r4',horario_id:'c4',cliente_id:4,cliente_nombre:'Diego Luna',estado:'reservado'},
+  ];
+  asistenciasHoy = [{cliente_id:2}];
+  paquetes = [
+    {id:1,name:'Bono 8 clases',price_mxn:1400,duration_days:45,num_classes:8},
+    {id:2,name:'Bono 4 clases',price_mxn:800,duration_days:30,num_classes:4},
+    {id:3,name:'Clase suelta',price_mxn:250,duration_days:7,num_classes:1},
+    {id:4,name:'Privada 1:1',price_mxn:450,duration_days:7,num_classes:1},
+  ];
+  document.getElementById('t-nombre').textContent='Eddy Padel';
+  document.getElementById('t-ini').textContent='EP';
+  document.getElementById('t-sub').textContent='Gold Padel · Celaya · DEMO';
+}
+
+/* ══ Arranque ══ */
+(function(){
+  if(DEMO){ S={jwt:'demo',gymId:0,nombre:'Eddy'}; boot(); return; }
+  try{
+    const s = JSON.parse(localStorage.getItem('coach_session')||'null');
+    if(s && s.jwt){ S=s; boot(); return; }
+  }catch(_){}
+})();
+</script>
+</body>
+</html>
