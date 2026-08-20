@@ -247,3 +247,15 @@ El backend YA está desplegado (`velum-atleta-portal` v40) y el panel ya deja
 configurarlo, pero **los atletas no lo verán hasta que salga build nueva de iOS
 y Android**: hoy sus apps siguen con el 1-por-día en duro. Ares Gym ya está configurado esperando esa build: PLUS y GENERAL en 2 al día,
 y Estudiante y Sec. Salud / VISITA GYM / ARES en 0 (no reservan clases).
+
+### Estado del build (18-ago-2026)
+
+- `node scripts/build.js` corrido → `www/index.html` regenerado desde `atleta.html`
+- `npx cap copy` hecho → assets copiados a iOS y Android
+- Versión subida: **Android versionCode 11 / 1.0.7** · **iOS build 13 / 1.0.7**
+  (los proyectos nativos están en .gitignore: ese bump vive solo en la Mac de Roy)
+
+Entran en esta build las tres cosas acumuladas: piel Marfil de studios, lugares
+(bicis) de BYCO y reservas por día por paquete.
+
+Falta: abrir Xcode y archivar, y generar el AAB firmado de Android.
