@@ -1,3 +1,10 @@
+// velum-atleta-portal — v36: cliente.maxReservasDia del paquete vigente.
+//   null = sin límite · 0 = el plan NO reserva clases · N = N al día.
+//
+// OJO AL DESPLEGAR: esta función DEBE ir con verify_jwt=false. La app la llama
+// solo con 'apikey', sin Authorization; con verify_jwt=true responde
+// UNAUTHORIZED_NO_AUTH_HEADER y NINGÚN atleta puede abrir su portal.
+// deploy: supabase functions deploy velum-atleta-portal --no-verify-jwt
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -105,7 +112,7 @@ Deno.serve(async (req) => {
 
     const { data: pagos } = await supabase
       .from('pagos')
-      .select('id, plan, monto, fecha, vence, clases_totales, clases_usadas, notas')
+      .select('id, plan, monto, fecha, vence, clases_totales, clases_usadas, notas, package_id')
       .eq('cliente', cliente.nombre).eq('gym_id', gym_id)
       .neq('notas', '__sin_pago__')
       .order('fecha', { ascending: false }).limit(10);
@@ -130,6 +137,34 @@ Deno.serve(async (req) => {
       (p: any) => !p.clases_totales && p.vence && noVencido(p)
     );
     const membresiaOk = !!paqueteActivo || membresiaVigente;
+
+    // ── Reservas por día (v36) ────────────────────────────────────────────
+    // El límite ya no está en duro en la app: vive en el paquete que el atleta
+    // tiene vigente (packages.max_reservas_dia). Se resuelve por package_id,
+    // NUNCA por el nombre del plan: dos reglas distintas para la misma pregunta
+    // ya nos costó un bug invisible.
+    const pagoRige = paqueteActivo
+      || pagosList.find((p: any) => !p.clases_totales && p.vence && noVencido(p))
+      || null;
+    //   null en la columna → se manda null  = SIN LÍMITE
+    //   0                    → 0               = NO puede reservar (solo acceso al gym)
+    //   N                    → N               = hasta N al día
+    //   sin paquete ligado   → 1               = lo histórico
+    let maxReservasDia: number | null = 1;
+    if (pagoRige?.package_id) {
+      const { data: pkg, error: pkgErr } = await supabase
+        .from('packages').select('max_reservas_dia')
+        .eq('id', pagoRige.package_id).eq('gym_id', gym_id).maybeSingle();
+      if (!pkgErr && pkg) {
+        const bruto = (pkg as any).max_reservas_dia;
+        if (bruto === null || bruto === undefined) {
+          maxReservasDia = null;                       // sin límite
+        } else {
+          const n = Number(bruto);
+          maxReservasDia = (Number.isFinite(n) && n >= 0) ? n : 1;
+        }
+      }
+    }
 
     const vence         = pagoReciente?.vence || null;
     const venceDate     = vence ? new Date(vence + 'T12:00:00') : null;
@@ -168,6 +203,7 @@ Deno.serve(async (req) => {
         id: cliente.id, nombre: cliente.nombre, email: cliente.email, tel: cliente.telefono,
         numero_cliente: cliente.numero_cliente, portal_token: cliente.portal_token,
         plan: pagoReciente?.plan || null, vence, activo: membresiaOk, diasRestantes, membresiaOk,
+        maxReservasDia,
       },
       gym: {
         id: gym_id, nombre: cfg['gym_nombre'] || 'VELUM Gym', logo: cfg['gym_logo'] || null,

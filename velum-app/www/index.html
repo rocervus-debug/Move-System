@@ -92,6 +92,18 @@
    cuando _atletaVertical==='studios'). Gym (cyan oscuro) y recovery: SIN cambio.
    Como la app está ~93% tokenizada, sobreescribir estos tokens re-pinta casi todo.
    ══════════════════════════════════════════════════════════════════════ */
+/* ── Piel PADEL (verde cancha + lima) — aditiva, mismo dark de la casa ──
+   Solo re-pinta el acento: el fondo oscuro del gym funciona igual para padel. */
+body[data-skin="padel"]{
+  --accent:#3FA34D; --accent-light:#6BC878;
+  --cyan:#3FA34D; --cyan-light:#6BC878; --cyan-dark:#256B31;
+  --accent-dim:color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-bright:color-mix(in srgb, var(--accent) 25%, transparent);
+  --accent-glow:color-mix(in srgb, var(--accent) 28%, transparent);
+  --cyan-dim:color-mix(in srgb, var(--accent) 12%, transparent);
+  --cyan-bright:color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
 body[data-skin="marfil"]{
   /* Acento: bronce/champagne (legible sobre claro) */
   --accent:#A67C3C; --accent-light:#C9A86A;
@@ -3881,6 +3893,8 @@ function openClassDetail(key){
       }
     }
     btnHtml = `${lugarBtn}<button class="cd-action-primary cancel" onclick="cancelarReserva('${rid}','${key}');">CANCELAR RESERVA</button>`;
+  } else if(!_planReserva()){
+    btnHtml = `<button class="cd-action-primary" style="opacity:.55;cursor:default;" onclick="showToast('Tu plan no incluye reservar clases. Pregunta en recepción.','⚠️')">TU PLAN NO INCLUYE RESERVAS</button>`;
   } else if(libres > 0){
     btnHtml = `<button class="cd-action-primary" onclick="closeSheet('class-detail-sheet');crearReserva('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">RESERVAR CLASE</button>`;
   } else if(!inWaitlist){
@@ -4326,7 +4340,8 @@ const _AT_TERMS={
 // Aplica la piel visual por vertical: studios → "marfil" (claro boutique); gym/recovery → default.
 function _applyAtletaSkin(){
   const marfil = (_atletaVertical === 'studios');
-  try{ document.body.dataset.skin = marfil ? 'marfil' : ''; }catch(e){}
+  const padel  = (_atletaVertical === 'padel');
+  try{ document.body.dataset.skin = marfil ? 'marfil' : (padel ? 'padel' : ''); }catch(e){}
   // theme-color de la barra (PWA/navegador)
   const tc = document.querySelector('meta[name="theme-color"]');
   if(tc) tc.setAttribute('content', marfil ? '#EFEAE0' : '#040C14');
@@ -4371,7 +4386,7 @@ async function fetchGymVertical(gymId){
     if(!res.ok) return;
     const rows=await res.json();
     const v=Array.isArray(rows)&&rows[0]&&rows[0].value;
-    if(v==='recovery'||v==='studios'){ _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+    if(v==='recovery'||v==='studios'||v==='padel'){ _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
   }catch(_){}
 }
 
@@ -4439,7 +4454,7 @@ function showPortal(data){
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
   // v34: el portal ya trae gym.vertical (gyms.vertical); el fetch a gym_config queda de fallback
   const _v = data.gym?.vertical;
-  if(_v==='recovery'||_v==='studios'){ _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+  if(_v==='recovery'||_v==='studios'||_v==='padel'){ _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
   else if(data.gym?.id) fetchGymVertical(data.gym.id);
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'VELUM'}`;
 
@@ -6998,6 +7013,9 @@ function renderClasesView(dates){
       </div>`;
     } else if(isPast || _isClassPast(h)){
       statusHtml = `<div class="cls-status-past"><div class="csp-lbl">PASADO</div></div>`;
+    } else if(!_planReserva()){
+      // El plan es de solo acceso: no se ofrece reservar ni lista de espera.
+      statusHtml = `<div class="cls-status-past"><div class="csp-lbl" style="font-size:10px;">NO INCLUIDO</div></div>`;
     } else if(isFull){
       statusHtml = inWaitlist
         ? `<div class="cls-status-full"><div class="csf-lbl" style="color:#a78bfa;font-size:11px;">EN ESPERA</div></div>`
@@ -7135,6 +7153,21 @@ async function _lugarPick(n){
   crearReserva(ctx.horarioId, ctx.fecha, ctx.tipo, ctx.hora, n);
 }
 
+// ── Reservas por día que permite el PLAN del atleta ──────────────────────
+// Lo resuelve el portal por package_id y llega en cliente.maxReservasDia:
+//   0 = el plan no reserva clases (solo acceso) · null = sin límite · N = N al día
+// undefined = portal viejo o app sin datos → 1, lo histórico. Nunca se regalan
+// permisos por un dato ausente. Una sola función: el guard y los botones que
+// deciden si mostrar RESERVAR tienen que responder lo mismo.
+function _maxReservasDia(){
+  const v = portalData && portalData.cliente ? portalData.cliente.maxReservasDia : undefined;
+  if(v === undefined) return 1;
+  if(v === null) return Infinity;
+  const n = Number(v);
+  return (Number.isFinite(n) && n >= 0) ? n : 1;
+}
+function _planReserva(){ return _maxReservasDia() > 0; }
+
 async function crearReserva(horarioId, fecha, tipo, hora, spotSel){
   if(!portalData) return;
   const key = horarioId+'_'+fecha;
@@ -7169,21 +7202,37 @@ async function crearReserva(horarioId, fecha, tipo, hora, spotSel){
     if(claseMin <= ahoraMin){ showToast('Esta clase ya comenzó','⚠️'); return; }
   }
 
-  // ── Guard 2: máximo 5 reservas activas ──
+  // ── Guard 2: máximo 7 reservas activas ──
+  // Subió de 5 a 7 al permitir más de una clase por día: con 2 diarias, 5 topes
+  // alcanzaban para dos días y medio.
+  const MAX_ACTIVAS = 7;
   const totalActivas = Object.keys(clasesReservas).length;
-  if(totalActivas >= 5){
-    showToast('Tienes el máximo de 5 reservas. Cancela una para poder reservar.','⚠️');
+  if(totalActivas >= MAX_ACTIVAS){
+    showToast(`Tienes el máximo de ${MAX_ACTIVAS} reservas. Cancela una para poder reservar.`,'⚠️');
     return;
   }
 
-  // ── Guard 3: máximo 1 reserva por día ──
-  const yaEseDia = Object.keys(clasesReservas).find(k=>{
-    const f = k.split('_').slice(1).join('_');
-    return f === fecha;
-  });
-  if(yaEseDia){
-    showToast('Ya tienes una clase reservada para ese día.','⚠️');
+  // ── Guard 3: reservas por día, según el PAQUETE del atleta ──
+  // Antes estaba en duro (1 por día). Ahora lo dicta packages.max_reservas_dia,
+  // que el portal resuelve por package_id y manda en cliente.maxReservasDia.
+  // 1 = una al día (lo de siempre) · 0 = sin límite. Si el dato no viene
+  // (app vieja, pago sin paquete), cae a 1: nadie gana permisos por accidente.
+  const maxDia = _maxReservasDia();
+  if(maxDia === 0){
+    showToast('Tu plan no incluye reservar clases. Pregunta en recepción.','⚠️');
     return;
+  }
+  if(Number.isFinite(maxDia)){
+    const reservasEseDia = Object.keys(clasesReservas).filter(k=>{
+      const f = k.split('_').slice(1).join('_');
+      return f === fecha;
+    }).length;
+    if(reservasEseDia >= maxDia){
+      showToast(maxDia === 1
+        ? 'Ya tienes una clase reservada para ese día.'
+        : `Ya tienes ${maxDia} clases reservadas para ese día.`, '⚠️');
+      return;
+    }
   }
 
   if(btn){ btn.disabled=true; btn.textContent='…'; btn.style.opacity='.5'; }
@@ -7432,6 +7481,11 @@ window._velumRefresh = function(){
 // ── Waitlist ──────────────────────────────────────────
 async function entrarWaitlist(horarioId, fecha, tipo, hora){
   if(!portalData) return;
+  // La lista de espera termina en reserva: si el plan no reserva, tampoco espera.
+  if(!_planReserva()){
+    showToast('Tu plan no incluye reservar clases. Pregunta en recepción.','⚠️');
+    return;
+  }
   const token  = portalData.cliente.portal_token;
   const nombre = portalData.cliente.nombre;
   const gymId  = await _resolveGymId();

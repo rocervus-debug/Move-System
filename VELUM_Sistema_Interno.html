@@ -5325,6 +5325,10 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                   <option value="recurring">Mensualidad domiciliada</option>
                 </select>
               </div>
+              <div class="field" style="width:170px;margin:0;">
+                <label>Reservas por día</label>
+                <select id="plan-nuevo-maxdia" class="settings-input" title="Cuántas clases puede apartar un socio en la misma fecha con este plan"></select>
+              </div>
               <div class="field" style="margin:0;display:flex;align-items:center;gap:6px;padding-bottom:10px;">
                 <input id="plan-nuevo-permite-desc" type="checkbox" checked style="width:14px;height:14px;cursor:pointer;"/>
                 <label for="plan-nuevo-permite-desc" style="margin:0;cursor:pointer;font-size:var(--fs-xs);color:var(--text2);user-select:none;">Permite descuento</label>
@@ -6973,6 +6977,61 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
   </div>
 </div>
 
+<!-- Modal: Editar plan del catálogo -->
+<div class="modal-overlay" id="modal-editar-plan">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <div class="modal-title">Editar plan</div>
+      <button class="modal-close" onclick="closeModal('editar-plan')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-id"/>
+      <div class="field"><label>Nombre *</label>
+        <input id="ep-nombre" type="text" maxlength="60"/>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;"><label>Precio (MXN) *</label>
+          <input id="ep-precio" type="number" min="0"/>
+        </div>
+        <div class="field" style="flex:1;"><label>Vigencia (días) *</label>
+          <input id="ep-dias" type="number" min="1"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;"><label>Tipo de plan</label>
+          <select id="ep-tipo" onchange="_epToggleTipo()">
+            <option value="ilimitado">Membresía ilimitada</option>
+            <option value="paquete">Paquete de N clases</option>
+          </select>
+        </div>
+        <div class="field" id="ep-clases-field" style="flex:1;display:none;"><label>Núm. clases</label>
+          <input id="ep-clases" type="number" min="1" max="999"/>
+        </div>
+      </div>
+      <div class="field"><label>¿Cuántas clases puede reservar al día?</label>
+        <select id="ep-maxdia"></select>
+        <span style="font-size:var(--fs-sm);color:var(--text3);margin-top:4px;display:block;">"No puede reservar" deja el plan como solo-acceso: el atleta entra al gimnasio pero no aparta clases.</span>
+      </div>
+      <div class="field"><label>Tipo de cobro</label>
+        <select id="ep-cobro">
+          <option value="one_time">Pago único</option>
+          <option value="recurring">Mensualidad domiciliada</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:4px;">
+        <input id="ep-permite-desc" type="checkbox" style="width:15px;height:15px;cursor:pointer;"/>
+        <span style="font-size:var(--fs-sm);color:var(--text2);">Permitir descuentos al registrar pagos</span>
+      </label>
+      <div id="ep-aviso" style="display:none;font-size:var(--fs-sm);color:var(--warn);margin-top:10px;"></div>
+      <div id="ep-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:8px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editar-plan')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarPlanEditado()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Registrar Pago — Asistente guiado en 4 pasos -->
 <div class="modal-overlay" id="modal-pago">
   <div class="modal" style="max-width:600px;">
@@ -7480,6 +7539,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <label>¿Cuántas clases incluye? *</label>
           <input id="pk-clases" type="number" placeholder="10" min="1" max="999"/>
           <span class="field-err" id="pk-clases-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:3px;"></span>
+        </div>
+        <div class="field">
+          <label>¿Cuántas clases puede reservar al día?</label>
+          <select id="pk-maxdia" style="width:100%;"></select>
+          <span style="font-size:var(--fs-sm);color:var(--text3);margin-top:4px;display:block;">Con "1 al día" un socio no puede apartar dos clases la misma fecha. Súbelo si tu plan permite entrenar más de una vez al día.</span>
         </div>
         <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;">
           <input id="pk-permite-desc" type="checkbox" checked style="width:15px;height:15px;cursor:pointer;"/>
@@ -16145,7 +16209,7 @@ async function loadPackagesFromCatalog(){
     const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
     const { data, error } = await window.supabaseClient
       .from('packages')
-      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active, billing_type')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active, billing_type, max_reservas_dia')
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
@@ -16184,6 +16248,144 @@ function _togglePlanTipo(){
   if(clasesField) clasesField.style.display = (tipo === 'paquete') ? '' : 'none';
 }
 
+// Reservas por día del plan. Una sola función para los DOS formularios
+// (wizard y Configuración): si cada uno lo leyera a su manera acabarían
+// discrepando, que es el patrón de bug que ya nos costó caro.
+// Opciones de "reservas por día" en UN solo lugar: las usan el wizard, el alta
+// de Configuración y el editor. Tres copias de la misma lista divergen siempre.
+const _MAXDIA_OPS = [
+  ['1',  '1 al día (lo normal)'],
+  ['2',  '2 al día'],
+  ['3',  '3 al día'],
+  ['4',  '4 al día'],
+  ['',   'Sin límite'],
+  ['0',  'No puede reservar clases'],
+];
+function _pintarMaxDia(){
+  const html = _MAXDIA_OPS.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+  ['pk-maxdia','plan-nuevo-maxdia','ep-maxdia'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && !el.options.length) el.innerHTML = html;
+  });
+}
+document.addEventListener('DOMContentLoaded', _pintarMaxDia);
+
+// Texto corto del límite, para las etiquetas de la lista de planes.
+function _maxDiaTexto(v){
+  if(v === null || v === undefined) return 'Sin límite';
+  const n = parseInt(v,10);
+  if(!Number.isFinite(n)) return '1 al día';
+  if(n === 0) return 'No reserva';
+  return n + ' al día';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EDITAR UN PLAN EXISTENTE
+// Antes solo se podía crear y borrar: para cambiarle el precio o el
+// límite a un plan había que rehacerlo (y perdía su vínculo con los
+// pagos históricos, que apuntan por package_id).
+// ══════════════════════════════════════════════════════════════════
+function _epToggleTipo(){
+  const esPaquete = document.getElementById('ep-tipo').value === 'paquete';
+  const f = document.getElementById('ep-clases-field');
+  if(f) f.style.display = esPaquete ? '' : 'none';
+}
+
+function editarPlan(id){
+  const p = (_packagesDB||[]).find(x => x.id === id);
+  if(!p){ toast('No encontré ese plan. Recarga la página.','⚠️'); return; }
+  _pintarMaxDia();
+  const set = (el,v)=>{ const e=document.getElementById(el); if(e) e.value = v; };
+  set('ep-id', p.id);
+  set('ep-nombre', p.name || '');
+  set('ep-precio', p.price_mxn ?? '');
+  set('ep-dias', p.duration_days ?? '');
+  set('ep-tipo', p.unlimited_classes ? 'ilimitado' : 'paquete');
+  set('ep-clases', p.num_classes ?? '');
+  set('ep-maxdia', (p.max_reservas_dia === null || p.max_reservas_dia === undefined) ? '' : String(p.max_reservas_dia));
+  set('ep-cobro', p.billing_type || 'one_time');
+  const chk = document.getElementById('ep-permite-desc');
+  if(chk) chk.checked = p.allow_discount !== false;
+  _epToggleTipo();
+
+  // Avisos honestos según el estado real del plan, no genéricos.
+  const avisos = [];
+  if(p.billing_type === 'recurring'){
+    avisos.push('Es domiciliado: cambiar el precio NO cambia lo que Stripe ya le cobra a quien esté suscrito.');
+  }
+  if(p._publicado){
+    avisos.push('Está publicado: los cambios se ven en la app y en tu página pública.');
+  }
+  const av = document.getElementById('ep-aviso');
+  if(av){ av.innerHTML = avisos.join('<br>'); av.style.display = avisos.length ? 'block' : 'none'; }
+  const err = document.getElementById('ep-err');
+  if(err){ err.textContent=''; err.style.display='none'; }
+  openModal('editar-plan');
+}
+
+async function guardarPlanEditado(){
+  const errEl = document.getElementById('ep-err');
+  const showErr = m => { if(errEl){ errEl.textContent=m; errEl.style.display = m?'block':'none'; } };
+  showErr('');
+
+  const id     = parseInt(document.getElementById('ep-id').value, 10);
+  const nombre = (document.getElementById('ep-nombre').value||'').trim();
+  const precio = parseFloat(document.getElementById('ep-precio').value)||0;
+  const dias   = parseInt(document.getElementById('ep-dias').value,10)||0;
+  const tipo   = document.getElementById('ep-tipo').value;
+  const clases = tipo==='paquete' ? (parseInt(document.getElementById('ep-clases').value,10)||null) : null;
+  const cobro  = document.getElementById('ep-cobro').value;
+  const desc   = document.getElementById('ep-permite-desc').checked;
+
+  if(!id){ showErr('No identifiqué el plan.'); return; }
+  if(!nombre){ showErr('Escribe el nombre del plan.'); return; }
+  if(precio <= 0){ showErr('El precio debe ser mayor a 0.'); return; }
+  if(dias < 1){ showErr('La vigencia debe ser al menos 1 día.'); return; }
+  if(tipo === 'paquete' && (!clases || clases < 1)){ showErr('Indica cuántas clases incluye el paquete.'); return; }
+
+  const payload = {
+    name: nombre,
+    price_mxn: Math.round(precio),
+    duration_days: dias,
+    num_classes: clases,
+    unlimited_classes: tipo === 'ilimitado',
+    billing_type: cobro,
+    billing_interval: cobro === 'recurring' ? 'month' : null,
+    allow_discount: desc,
+    max_discount_pct: desc ? 100 : 0,
+    max_reservas_dia: _maxDiaDe('ep-maxdia'),
+    updated_at: new Date().toISOString(),
+  };
+
+  const btn = document.querySelector('#modal-editar-plan .btn-primary');
+  if(typeof setBtnLoading === 'function') setBtnLoading(btn, true);
+  const { error } = await window.supabaseClient.from('packages').update(payload).eq('id', id);
+  if(typeof setBtnLoading === 'function') setBtnLoading(btn, false);
+
+  if(error){
+    console.error('guardarPlanEditado:', error);
+    if(typeof _handleSessionError === 'function' && _handleSessionError(error)) return;
+    const m = error.message || '';
+    showErr(m.includes('unique_active_name_per_gym') || m.includes('duplicate')
+      ? `Ya existe otro plan llamado "${nombre}".`
+      : 'No se pudo guardar: ' + m);
+    return;
+  }
+
+  closeModal('editar-plan');
+  toast('Plan actualizado','✓');
+  await loadPackagesFromCatalog();
+  renderPlanes();
+}
+
+function _maxDiaDe(id){
+  const el = document.getElementById(id);
+  const v = el ? String(el.value) : '1';
+  if(v === '') return null;                 // sin límite
+  const n = parseInt(v, 10);
+  return (Number.isFinite(n) && n >= 0 && n <= 20) ? n : 1;
+}
+
 async function agregarPlan(){
   const errEl = document.getElementById('plan-nuevo-err');
   const showErr = (msg)=>{ if(errEl){ errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; } };
@@ -16212,6 +16414,7 @@ async function agregarPlan(){
     duration_days: dias,
     num_classes: tipo === 'paquete' ? clases : null,
     unlimited_classes: tipo === 'ilimitado',
+    max_reservas_dia: _maxDiaDe('plan-nuevo-maxdia'),
     allow_discount: permiteDesc,
     max_discount_pct: permiteDesc ? 100 : 0,
     billing_type: cobro,
@@ -16792,6 +16995,14 @@ function renderPlanes(){
     const cobroBadge = p.billing_type === 'recurring'
       ? '<span style="font-size:var(--fs-xs);background:rgba(0,212,255,.15);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">DOMICILIADO /MES</span>'
       : '';
+    // Reservas por día: si el plan no reserva o permite varias, hay que verlo
+    // de un vistazo en la lista, no solo al abrir el editor.
+    const _mrd = p.max_reservas_dia;
+    const resBadge = (_mrd === 1 || _mrd === undefined)
+      ? ''
+      : (_mrd === 0
+        ? '<span style="font-size:var(--fs-xs);background:rgba(211,119,117,.15);color:var(--danger);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Solo acceso al gimnasio: no puede apartar clases">NO RESERVA</span>'
+        : `<span style="font-size:var(--fs-xs);background:rgba(0,212,255,.15);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Reservas de clase permitidas por día">${esc(_maxDiaTexto(_mrd)).toUpperCase()}</span>`);
     // Si no está publicado, el atleta NUNCA lo ve: hay que decirlo de frente.
     const pubBadge = p._publicado
       ? '<span style="font-size:var(--fs-xs);background:rgba(16,232,160,.15);color:var(--ok);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Visible en la app y en tu página pública">EN LA APP</span>'
@@ -16801,12 +17012,13 @@ function renderPlanes(){
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
           <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(p.name)}</span>
-          <span style="font-size:var(--fs-xs);color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${cobroBadge}${pubBadge}${descBadge}
+          <span style="font-size:var(--fs-xs);color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${cobroBadge}${pubBadge}${resBadge}${descBadge}
         </div>
         <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:2px;">
           ${p.duration_days} día${p.duration_days===1?'':'s'} · ${tipo}
         </div>
       </div>
+      <button onclick="editarPlan(${p.id})" title="Editar este plan" style="background:none;border:none;color:var(--text3);cursor:pointer;opacity:.6;padding:6px 8px;display:flex;align-items:center;" onmouseenter="this.style.opacity=1;this.style.color='var(--accent)'" onmouseleave="this.style.opacity=.6;this.style.color='var(--text3)'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
       <button onclick="eliminarPlan(${p.id})" title="Eliminar del catálogo" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:var(--fs-base);opacity:.5;padding:6px 8px;" onmouseenter="this.style.opacity=1;this.style.color='var(--danger)'" onmouseleave="this.style.opacity=.5;this.style.color='var(--text3)'">✕</button>
     </div>`;
   }).join('');
@@ -22407,6 +22619,7 @@ async function savePaqueteWizard(){
     duration_days: dias,
     num_classes: clases,
     unlimited_classes: tipo!=='paquete',     // ilimitado y pase-de-día = acceso libre durante su vigencia
+    max_reservas_dia: _maxDiaDe('pk-maxdia'),
     allow_discount: permiteDesc,
     max_discount_pct: permiteDesc ? 100 : 0,
     billing_type: cobro,
@@ -22740,7 +22953,7 @@ async function loadPackagesForPagoModal(){
     const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
     const { data, error } = await window.supabaseClient
       .from('packages')
-      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, billing_type')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, billing_type, max_reservas_dia')
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
@@ -26842,6 +27055,25 @@ function buscarClienteDetalle(query,horarioId,hora,tipo){
   },250);
 }
 
+// Reservas por día que permite el paquete VIGENTE del cliente. Misma regla que
+// usa el portal del atleta: se resuelve por package_id, nunca por el nombre del
+// plan. 1 = una al día · 0 = sin límite · sin paquete ligado = 1.
+function _maxReservasDiaCliente(clienteNombre){
+  const hoy = _hoyMX();
+  const nom = (clienteNombre||'').trim();
+  const noVencido = p => !p.vence || p.vence >= hoy;
+  const mios = (pagos||[]).filter(p => (p.cliente||'').trim() === nom);
+  const rige = mios.find(p => p.clases_totales && (p.clases_usadas??0) < p.clases_totales && noVencido(p))
+            || mios.find(p => !p.clases_totales && p.vence && noVencido(p));
+  if(!rige || !rige.package_id) return 1;
+  const pkg = (_packagesDB||[]).find(x => x.id === rige.package_id);
+  if(!pkg) return 1;
+  const bruto = pkg.max_reservas_dia;
+  if(bruto === null || bruto === undefined) return Infinity;   // sin límite
+  const n = parseInt(bruto, 10);
+  return (Number.isFinite(n) && n >= 0) ? n : 1;
+}
+
 async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,estado='checkin'){
   const input = document.getElementById('asist-add-input');
   const res   = document.getElementById('asist-add-results');
@@ -26863,6 +27095,30 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   if(dupCount>0){
     toast('Este cliente ya tiene una reserva para esta clase.','⚠️');
     return;
+  }
+
+  // ── Validación 2.5: tope de reservas por día del plan ────────────
+  // AVISA pero no bloquea: el admin es la autoridad y puede tener motivo
+  // (un drop-in pagado aparte). Antes esta regla solo vivía en la app del
+  // atleta, así que las dos superficies se contradecían en silencio.
+  const _maxDia = _maxReservasDiaCliente(clienteNombre);
+  if(_maxDia === 0){
+    const _ok0 = await confirmDialog(
+      `El plan de ${clienteNombre} no incluye reservar clases — es de solo acceso al gimnasio. ¿Reservar de todos modos?`,
+      { title:'El plan no incluye reservas', icon:'⚠️', danger:false,
+        confirmText:'Sí, reservar', cancelText:'Cancelar' });
+    if(!_ok0) return;
+  } else if(Number.isFinite(_maxDia)){
+    const {count:diaCount} = await window.supabaseClient
+      .from('reservas').select('id',{count:'exact',head:true})
+      .eq('fecha',hoyStr).eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
+    if((diaCount||0) >= _maxDia){
+      const _ok = await confirmDialog(
+        `${clienteNombre} ya tiene ${diaCount} ${diaCount===1?'reserva':'reservas'} para hoy y su plan permite ${_maxDia} al día. ¿Reservar de todos modos?`,
+        { title:'Supera el límite del plan', icon:'⚠️', danger:false,
+          confirmText:'Sí, reservar', cancelText:'Cancelar' });
+      if(!_ok) return;
+    }
   }
 
   // ── Validación 3: cupo disponible ───────────────────────────────

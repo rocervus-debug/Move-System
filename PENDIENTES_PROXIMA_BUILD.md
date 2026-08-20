@@ -237,3 +237,13 @@ se despliegan solos y no entran en esta lista.
   cambiarlo hasta 1h antes desde el detalle, y su tarjeta muestra "LUGAR N". Colisiones
   protegidas por índice único (toast "ese lugar ya se ocupó"). Ya en atleta.html (web
   desplegada); la app nativa lo toma con build.js. iOS+Android.
+
+## Reservas por día configurables por paquete (18-ago-2026)
+
+`atleta.html` — Guard 2 (5→7 reservas activas) y Guard 3 (el límite diario ahora
+lo dicta `packages.max_reservas_dia`, que llega en `cliente.maxReservasDia`).
+
+El backend YA está desplegado (`velum-atleta-portal` v40) y el panel ya deja
+configurarlo, pero **los atletas no lo verán hasta que salga build nueva de iOS
+y Android**: hoy sus apps siguen con el 1-por-día en duro. Ares Gym ya está configurado esperando esa build: PLUS y GENERAL en 2 al día,
+y Estudiante y Sec. Salud / VISITA GYM / ARES en 0 (no reservan clases).
