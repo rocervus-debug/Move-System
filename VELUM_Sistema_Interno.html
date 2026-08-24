@@ -8308,8 +8308,25 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <option value="Otro">Otro</option>
         </select>
       </div>
-      <div style="margin-top:10px;font-size:var(--fs-sm);color:var(--text3);background:var(--card2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.
+      <div class="field" style="margin-top:12px;">
+        <label>¿Hasta cuándo aplica?</label>
+        <select id="hov-alcance" onchange="_hovAlcanceHint()">
+          <option value="unica">Solo esta fecha</option>
+          <option value="recurrente">Todas las semanas (cambia el horario base)</option>
+        </select>
+      </div>
+      <div id="hov-alcance-hint" style="margin-top:8px;font-size:var(--fs-sm);color:var(--text3);background:var(--card2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> <span id="hov-alcance-txt">Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.</span>
+      </div>
+      <!-- Aviso de clase duplicada: aparece solo si esa misma clase ya existe ese día
+           a otra hora. Es el caso que confundió a Ares: creyó mover y en realidad
+           agregó una segunda, dejando la original viva. -->
+      <div id="hov-mover-wrap" style="display:none;margin-top:10px;font-size:var(--fs-sm);background:rgba(223,180,89,.12);border:1px solid rgba(223,180,89,.35);color:var(--warn);padding:10px 12px;border-radius:8px;">
+        <div id="hov-mover-txt" style="margin-bottom:8px;"></div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text2);">
+          <input type="checkbox" id="hov-mover" style="width:15px;height:15px;cursor:pointer;"/>
+          <span id="hov-mover-label">La estoy moviendo: quita la otra</span>
+        </label>
       </div>
     </div>
     <div class="modal-footer">
@@ -24612,6 +24629,54 @@ function renderHorarioMensual(){
   grid.innerHTML = html;
 }
 
+// Texto del alcance según lo elegido en el selector.
+function _hovAlcanceHint(){
+  const sel = document.getElementById('hov-alcance');
+  const txt = document.getElementById('hov-alcance-txt');
+  if(!sel || !txt) return;
+  const fechaStr = document.getElementById('hov-fecha').value;
+  const dia = _hovDiaNombre(fechaStr);
+  txt.textContent = sel.value === 'recurrente'
+    ? `Cambia el horario base: aplica a TODOS los ${dia} de aquí en adelante.`
+    : 'Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.';
+  _hovMoverHint();
+}
+
+function _hovDiaNombre(fechaStr){
+  try{ return DAY_NAME_BY_DOW[new Date(fechaStr+'T12:00:00').getDay()]; }catch(_){ return 'ese día'; }
+}
+
+// ¿Ya hay una clase de este mismo tipo ese día, pero a otra hora?
+// Devuelve {hora, origen:'plantilla'|'override', id} o null.
+function _hovClaseGemela(fechaStr, hora, tipo){
+  if(!tipo || tipo === 'CERRADO') return null;
+  const dia = _hovDiaNombre(fechaStr);
+  const ov = (typeof horarioOverrides!=='undefined'?horarioOverrides:[])
+    .find(o => o.fecha===fechaStr && o.hora!==hora && o.tipo===tipo);
+  if(ov) return { hora: ov.hora, origen:'override', id: ov.id };
+  const base = (typeof horario!=='undefined'?horario:[])
+    .find(h => h.dia===dia && h.hora!==hora && h.tipo===tipo && !(h.fecha||''));
+  if(base) return { hora: base.hora, origen:'plantilla', id: base.id };
+  return null;
+}
+
+function _hovMoverHint(){
+  const wrap = document.getElementById('hov-mover-wrap');
+  if(!wrap) return;
+  const fechaStr = document.getElementById('hov-fecha').value;
+  const hora     = document.getElementById('hov-hora').value;
+  const coachVal = document.getElementById('hov-coach').value;
+  const tipo     = document.getElementById('hov-tipo').value;
+  const gemela = (coachVal === '__cerrado__') ? null : _hovClaseGemela(fechaStr, hora, tipo);
+  if(!gemela){ wrap.style.display='none'; const c=document.getElementById('hov-mover'); if(c) c.checked=false; return; }
+  const recurrente = document.getElementById('hov-alcance').value === 'recurrente';
+  document.getElementById('hov-mover-txt').textContent =
+    `Ya hay una clase de ${tipo} ${recurrente?'los '+_hovDiaNombre(fechaStr):'ese día'} a las ${formatHoraDisplay(gemela.hora)}. Si guardas así, quedarán DOS.`;
+  document.getElementById('hov-mover-label').textContent =
+    `La estoy moviendo: quita la de las ${formatHoraDisplay(gemela.hora)}`;
+  wrap.style.display = '';
+}
+
 function openEditClaseCell(fechaStr, hora){
   const d = new Date(fechaStr+'T12:00:00');
   const label = `${d.getDate()} ${MESES_CORTO_ES[d.getMonth()]} · ${formatHoraDisplay(hora)}`;
@@ -24642,7 +24707,17 @@ function openEditClaseCell(fechaStr, hora){
   // Toggle tipo visibility when cerrado
   const tipoWrap = document.getElementById('hov-tipo-wrap');
   tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : '';
-  sel.onchange = ()=>{ tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : ''; };
+  sel.onchange = ()=>{ tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : ''; _hovMoverHint(); };
+  const tipoSel = document.getElementById('hov-tipo');
+  if(tipoSel) tipoSel.onchange = _hovMoverHint;
+
+  // Alcance arranca siempre en "solo esta fecha": nunca cambiar el horario base
+  // de todas las semanas por inercia.
+  const alc = document.getElementById('hov-alcance');
+  if(alc) alc.value = 'unica';
+  const mov = document.getElementById('hov-mover');
+  if(mov) mov.checked = false;
+  _hovAlcanceHint();
 
   openModal('horario-override');
 }
@@ -24677,21 +24752,65 @@ async function saveHorarioOverride(){
     notas:        ''
   };
 
-  const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+  const alcance  = (document.getElementById('hov-alcance')||{}).value || 'unica';
+  const moverAca = !!(document.getElementById('hov-mover')||{}).checked;
+  const gemela   = cerrado ? null : _hovClaseGemela(fechaStr, hora, tipo);
+  const diaNom   = _hovDiaNombre(fechaStr);
+
+  // Confirmar el cambio recurrente: toca TODAS las semanas, no solo esta fecha.
+  if(alcance === 'recurrente'){
+    const _okR = await confirmDialog(
+      `Vas a cambiar el horario base: aplica a TODOS los ${diaNom} de aquí en adelante, no solo al ${fechaStr}.`,
+      { title:'Cambiar todas las semanas', icon:'🗓', danger:false, confirmText:'Sí, todas', cancelText:'Cancelar' });
+    if(!_okR) return;
+  }
+
   let err;
-  if(existing){
-    const r = await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id);
+  if(alcance === 'recurrente'){
+    // Escribe en la PLANTILLA (dia + fecha vacía), no un override de un día.
+    const base = (horario||[]).find(h => h.dia===diaNom && h.hora===hora && !(h.fecha||''));
+    const basePayload = { ...payload, fecha:'', dia:diaNom };
+    const r = base
+      ? await window.supabaseClient.from('horarios').update(basePayload).eq('id', base.id)
+      : await window.supabaseClient.from('horarios').insert([withGymId(basePayload)]);
     err = r.error;
+    // "La estoy moviendo": quitar la original en vez de dejar dos.
+    if(!err && moverAca && gemela){
+      if(gemela.origen === 'plantilla'){
+        await window.supabaseClient.from('horarios').delete().eq('id', gemela.id);
+      } else {
+        await window.supabaseClient.from('horarios').delete().eq('id', gemela.id);
+      }
+    }
   } else {
-    const r = await window.supabaseClient.from('horarios').insert([withGymId(payload)]);
+    const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
+    const r = existing
+      ? await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id)
+      : await window.supabaseClient.from('horarios').insert([withGymId(payload)]);
     err = r.error;
+    // Solo esta fecha: la original no se borra (viene de la plantilla y sigue
+    // valiendo el resto de las semanas). Se cierra SOLO ese día con un CERRADO.
+    if(!err && moverAca && gemela){
+      if(gemela.origen === 'override'){
+        await window.supabaseClient.from('horarios').delete().eq('id', gemela.id);
+      } else {
+        await window.supabaseClient.from('horarios').insert([withGymId({
+          fecha: fechaStr, hora: gemela.hora, dia: '', tipo: 'CERRADO',
+          coach_id: '', coach_nombre: 'CERRADO', cupo: 15, notas: ''
+        })]);
+      }
+    }
   }
 
   if(err){ console.error('Error saving override:', err); if(_handleSessionError(err))return; toast('No se pudo guardar: '+(err.message||err),'✕',6000); return; }
 
   await loadHorarioOverridesFromSupabase();
+  if(alcance === 'recurrente' && typeof loadHorarioFromSupabase === 'function'){
+    await loadHorarioFromSupabase();
+    if(typeof renderHorario === 'function') renderHorario();
+  }
   closeModal('horario-override');
-  toast('Clase actualizada ✓','✓');
+  toast(alcance === 'recurrente' ? `Horario de los ${diaNom} actualizado ✓` : 'Clase actualizada ✓','✓');
   renderHorarioMensual();
 }
 
