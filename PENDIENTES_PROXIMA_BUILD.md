@@ -271,3 +271,16 @@ Arreglado con las funciones `reservas_ocupacion` / `waitlist_ocupacion`
 `atleta.html` ahora las consume y pinta nombre + inicial reales.
 
 Entra en la misma build 1.0.7 (www regenerado y `cap copy` corrido de nuevo).
+
+### La app ya respeta los overrides por fecha (18-ago-2026)
+
+`atleta.html` tiraba toda fila con fecha (`filter(h => !h.fecha)`), así que los
+cambios hechos desde el calendario del panel —clase extra, cambio de coach/hora
+por un día, y sobre todo **CERRADO**— nunca llegaban al atleta.
+
+Ahora `_clasesEfectivas(dia, fecha)` aplica la MISMA regla del panel: la
+plantilla del día, menos los huecos que un override pisa, más los overrides de
+esa fecha; CERRADO desaparece la clase. Las búsquedas por id usan `_claseById`,
+que mira plantilla y overrides.
+
+Entra en la build 1.0.7.

@@ -3830,7 +3830,7 @@ function openClassDetail(key){
   const horarioId = parts.join('_');          // rest is the id (may contain underscores)
 
   // Use module-level clasesHorarios (loaded by loadClasesData)
-  const h = clasesHorarios.find(x => x.id === horarioId);
+  const h = _claseById(horarioId);
   if(!h){ console.warn('openClassDetail: horario not found for key', key); return; }
 
   // State from module-level globals
@@ -5119,7 +5119,7 @@ function renderNextClassCard(){
     .map(([key,r])=>{
       const fecha=key.split('_').slice(1).join('_');
       const hid=r.horario_id;
-      const slot=clasesHorarios.find(h=>h.id===hid);
+      const slot=_claseById(hid);
       if(!slot||!fecha) return null;
       if(clasesCancelaciones[key]) return null;
       return {fecha,slot,r};
@@ -5332,7 +5332,7 @@ function renderProximaClase(){
     .map(([key, r]) => {
       const fecha = key.split('_').slice(1).join('_'); // support horario_id with underscores
       const hid   = r.horario_id;
-      const slot  = clasesHorarios.find(h => h.id === hid);
+      const slot  = _claseById(hid);
       if(!slot || !fecha) return null;
       const cancelled = !!clasesCancelaciones[key];
       if(cancelled) return null;
@@ -6661,6 +6661,7 @@ async function renderProgMiniStatsAsync(){
 // ── Clases / Reservas ────────────────────────────────
 const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 let clasesHorarios      = [];   // weekly template from 'horarios' table
+let clasesOverrides     = [];   // filas con fecha concreta que pisan la plantilla ese día
 let clasesReservas      = {};   // { horario_id+fecha: reserva } for current client
 let clasesCupos         = {};   // { horario_id+fecha: count }
 let clasesNombres       = {};   // { horario_id+fecha: ['Alex B.', ...] }
@@ -6732,8 +6733,12 @@ async function loadClasesData(){
     );
     if(!hRes.ok) throw new Error('horarios fetch failed');
     const allHorarios = await hRes.json();
-    // Filtrar solo plantillas recurrentes: fecha vacía o null
+    // La tabla mezcla DOS modelos: plantilla semanal (dia, fecha vacía) y
+    // override de una fecha concreta (dia vacío, fecha puesta). Antes la app
+    // tiraba los overrides, así que el gym cambiaba una clase o cerraba un día
+    // desde el calendario y el atleta seguía viendo lo de siempre.
     clasesHorarios = allHorarios.filter(h => !h.fecha || h.fecha === '');
+    clasesOverrides = allHorarios.filter(h => h.fecha && /^\d{4}-\d{2}-\d{2}$/.test(h.fecha));
     // Ordenar cronológicamente (formato "6:00am", "5:30pm", etc.)
     clasesHorarios.sort((a,b) => _horaToMin(a.hora) - _horaToMin(b.hora));
 
@@ -6747,8 +6752,8 @@ async function loadClasesData(){
 
     // Build set of (horario_id, fecha) combos we need cupos for
     const needed = [];
-    clasesHorarios.forEach(h=>{
-      dates.filter(d=>d.dia===h.dia).forEach(d=>needed.push({hid:h.id,fecha:d.fecha}));
+    dates.forEach(d=>{
+      _clasesEfectivas(d.dia, d.fecha).forEach(h=>needed.push({hid:h.id, fecha:d.fecha}));
     });
 
     // Pasos 2/3/4/6: solo dependen de lo ya calculado de `horarios` y escriben a globals distintos.
@@ -6817,7 +6822,7 @@ async function loadClasesData(){
     ]);
 
     // Build tabs from days that have classes
-    const diasConClases = [...new Set(clasesHorarios.map(h=>h.dia))];
+    const diasConClases = [...new Set(dates.filter(d=>_clasesEfectivas(d.dia,d.fecha).length).map(d=>d.dia))];
     // Order by index in dates (next 7 days in order)
     const diaOrder = dates.map(d=>d.dia).filter((d,i,a)=>a.indexOf(d)===i);
     const tabDias = diaOrder.filter(d=>diasConClases.includes(d));
@@ -6841,7 +6846,7 @@ async function loadClasesData(){
         // Pill number: day of month
         const dateNum = fecha ? parseInt(fecha.slice(8,10),10) : '';
         // Has classes indicator
-        const hasCls = clasesHorarios.some(h=>h.dia===d);
+        const hasCls = !!(fecha && _clasesEfectivas(d, fecha).length);
         const isActive = d===clasesActiveDia;
         return `<div class="day-pill${isActive?' active':''}${hasCls?' has-class':''}" onclick="clsSelectDia('${d}')">
           <div class="day-pill-label">${lblTop}</div>
@@ -6900,6 +6905,25 @@ function _fechaForDia(dia){
   return null;
 }
 
+// Clases efectivas de una fecha: la plantilla del día, quitando los huecos que
+// un override pisa, más los overrides de esa fecha. CERRADO = ese día no hay.
+// Misma regla que el panel (getEffectiveClase): un override sustituye el hueco
+// de SU MISMA hora. Si las dos superficies no comparten regla, se contradicen.
+function _clasesEfectivas(dia, fecha){
+  const ovs = clasesOverrides.filter(o => o.fecha === fecha);
+  const horasPisadas = new Set(ovs.map(o => o.hora));
+  const base  = clasesHorarios.filter(h => h.dia === dia && !horasPisadas.has(h.hora));
+  const extra = ovs.filter(o => (o.tipo || '') !== 'CERRADO');
+  return [...base, ...extra].sort((a,b) => _horaToMin(a.hora) - _horaToMin(b.hora));
+}
+
+// Una clase puede venir de la plantilla o de un override: buscar en ambos.
+function _claseById(id){
+  return clasesHorarios.find(x => String(x.id) === String(id))
+      || clasesOverrides.find(x => String(x.id) === String(id))
+      || null;
+}
+
 function renderClasesView(dates){
   const el = $('cls-content');
   if(!el) return;
@@ -6909,7 +6933,7 @@ function renderClasesView(dates){
   const fecha  = _fechaForDia(clasesActiveDia);
   if(!fecha){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="cls-empty-txt">Sin clases para este día.</div></div>'; return; }
 
-  const clasesDia = clasesHorarios.filter(h=>h.dia===clasesActiveDia);
+  const clasesDia = _clasesEfectivas(clasesActiveDia, fecha);
   if(!clasesDia.length){ el.innerHTML='<div class="cls-empty"><div class="cls-empty-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg></div><div class="cls-empty-txt">No hay clases programadas para este día.</div></div>'; return; }
 
   const nowDate = new Date();
@@ -7081,7 +7105,7 @@ function _fmtHora(hora){
 // ── Selector de Lugar (bici/reformer) — solo vertical studios ──────────────
 // mode 'new': al elegir, continúa crearReserva con el lugar. mode 'change': PATCH a la reserva.
 async function openLugarPicker(ctx){
-  const h = clasesHorarios.find(x=>String(x.id)===String(ctx.horarioId));
+  const h = _claseById(ctx.horarioId);
   const cupo = (h && h.cupo) || 0;
   if(!cupo){ ctx.mode==='new' ? crearReserva(ctx.horarioId, ctx.fecha, ctx.tipo, ctx.hora, null) : null; return; }
   // Lugares ocupados/bloqueados de esa clase+fecha (bloqueados = reservas estado 'bloqueado')
