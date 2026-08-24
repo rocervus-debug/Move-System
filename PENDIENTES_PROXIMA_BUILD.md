@@ -259,3 +259,15 @@ Entran en esta build las tres cosas acumuladas: piel Marfil de studios, lugares
 (bicis) de BYCO y reservas por día por paquete.
 
 Falta: abrir Xcode y archivar, y generar el AAB firmado de Android.
+
+### Fix P0: la app mostraba toda clase como vacía (18-ago-2026)
+
+Tras el blindaje de RLS, `reservas_select` solo dejaba al atleta ver SUS filas →
+el conteo de cupos salía 0 y toda clase parecía disponible aunque estuviera llena.
+Además "Quién viene" mostraba **iniciales inventadas** (`fakeNames` en duro).
+
+Arreglado con las funciones `reservas_ocupacion` / `waitlist_ocupacion`
+(security definer, filtran por `auth_gym_id()`, nunca devuelven `portal_token`).
+`atleta.html` ahora las consume y pinta nombre + inicial reales.
+
+Entra en la misma build 1.0.7 (www regenerado y `cap copy` corrido de nuevo).

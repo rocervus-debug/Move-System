@@ -2422,6 +2422,9 @@ body::before{
 }
 .avatar-item:first-child{margin-left:0;}
 .avatar-item.more{background:var(--bg-elevated);color:var(--cyan);border-color:var(--border-medium);}
+.attendee-names{
+  font-size:11.5px;color:var(--text2);margin-top:8px;line-height:1.5;
+}
 .spots-bar-wrap{margin-top:8px;}
 .spots-bar-bg{height:6px;background:var(--bg-elevated);border-radius:999px;overflow:hidden;}
 .spots-bar-fill{
@@ -3868,11 +3871,17 @@ function openClassDetail(key){
   const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const dateTag = `${dias[dt.getDay()]} ${dt.getDate()} ${meses[dt.getMonth()]} · ${h.hora||'—'}`;
 
-  // Attendee avatars
-  const fakeNames=['DM','AS','LR','JM','PG','CG','RF'];
-  const showing = Math.min(cupoActual, 5);
-  const avatarHtml = fakeNames.slice(0, showing).map(n=>`<div class="avatar-item">${n}</div>`).join('')
-    + (cupoActual > 5 ? `<div class="avatar-item more">+${cupoActual-5}</div>` : '');
+  // Quién viene — nombres REALES del gym (antes eran iniciales inventadas en duro).
+  // Llegan como "Alex B." desde reservas_ocupacion; nunca el nombre completo.
+  const asistentes = (clasesNombres[key] || []);
+  const _inic = n => String(n||'').trim().split(/\s+/).slice(0,2)
+    .map(w=>w.charAt(0).toUpperCase()).join('') || '?';
+  const showing = Math.min(asistentes.length, 5);
+  const avatarHtml = asistentes.slice(0, showing).map(n=>`<div class="avatar-item" title="${esc(n)}">${esc(_inic(n))}</div>`).join('')
+    + (asistentes.length > 5 ? `<div class="avatar-item more">+${asistentes.length-5}</div>` : '');
+  const nombresHtml = asistentes.length
+    ? `<div class="attendee-names">${asistentes.slice(0,6).map(n=>esc(n)).join(' · ')}${asistentes.length>6?' · +'+(asistentes.length-6):''}</div>`
+    : '';
 
   // Action button — correct function signatures
   let btnHtml;
@@ -3928,7 +3937,8 @@ function openClassDetail(key){
         <span class="attendees-title">QUIÉN VIENE</span>
         <span class="attendees-count">${cupoActual} / ${maxCupo}</span>
       </div>
-      <div class="avatar-stack">${cupoActual>0?avatarHtml:'<span style="font-size:12px;color:var(--text3);">Sé el primero</span>'}</div>
+      <div class="avatar-stack">${asistentes.length?avatarHtml:'<span style="font-size:12px;color:var(--text3);">Sé el primero</span>'}</div>
+      ${nombresHtml}
       <div class="spots-bar-wrap">
         <div class="spots-bar-bg"><div class="spots-bar-fill" style="width:${pct}%"></div></div>
         <div class="spots-bar-meta">
@@ -6676,6 +6686,7 @@ const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábad
 let clasesHorarios      = [];   // weekly template from 'horarios' table
 let clasesReservas      = {};   // { horario_id+fecha: reserva } for current client
 let clasesCupos         = {};   // { horario_id+fecha: count }
+let clasesNombres       = {};   // { horario_id+fecha: ['Alex B.', ...] }
 let clasesWaitlist      = {};   // { horario_id+fecha: waitlist_entry } for current client
 let clasesWaitlistN     = {};   // { horario_id+fecha: total waitlist count }
 let clasesCancelaciones = {};   // { horario_id+fecha: true } cancelled single occurrences
@@ -6768,7 +6779,7 @@ async function loadClasesData(){
     const fechaMin = dates[0].fecha;
     const fechaMax = dates[6].fecha;
     const hids = needed.length ? [...new Set(needed.map(n=>n.hid))] : [];
-    clasesReservas = {}; clasesCupos = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
+    clasesReservas = {}; clasesCupos = {}; clasesNombres = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
 
     await Promise.all([
       // 2. Mis reservas (próximos 7 días)
@@ -6784,12 +6795,19 @@ async function loadClasesData(){
       (async()=>{
         if(!hids.length) return;
         try{
-          const cRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/reservas?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=neq.cancelado&select=horario_id,fecha`,
-            { headers: _sbHeaders() }
-          );
-          const allReservas = cRes.ok ? await cRes.json() : [];
-          allReservas.forEach(r=>{ const k=r.horario_id+'_'+r.fecha; clasesCupos[k]=(clasesCupos[k]||0)+1; });
+          // RLS solo deja al atleta ver SUS reservas, así que contar la tabla daba
+          // siempre 0 y toda clase parecía vacía. La función devuelve el conteo y
+          // los nombres cortos del gym del JWT, sin exponer portal_token.
+          const cRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/reservas_ocupacion`, {
+            method:'POST', headers:_sbHeaders(),
+            body: JSON.stringify({ p_horarios: hids, p_desde: fechaMin, p_hasta: fechaMax })
+          });
+          const ocup = cRes.ok ? await cRes.json() : [];
+          ocup.forEach(o=>{
+            const k = o.horario_id+'_'+o.fecha;
+            clasesCupos[k]   = o.inscritos || 0;
+            clasesNombres[k] = Array.isArray(o.nombres) ? o.nombres : [];
+          });
         }catch(_){ /* fallback to 0 counts */ }
       })(),
       // 4. Mi waitlist + conteo de waitlist (ambos en un Promise.all interno)
@@ -6800,13 +6818,13 @@ async function loadClasesData(){
             `${SUPABASE_URL}/rest/v1/waitlist?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=id,horario_id,fecha,posicion`,
             { headers: _sbHeaders() }
           ).catch(()=>null),
-          fetch(
-            `${SUPABASE_URL}/rest/v1/waitlist?horario_id=in.(${hids.join(',')})&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.espera&select=horario_id,fecha`,
-            { headers: _sbHeaders() }
-          ).catch(()=>null)
+          fetch(`${SUPABASE_URL}/rest/v1/rpc/waitlist_ocupacion`, {
+            method:'POST', headers:_sbHeaders(),
+            body: JSON.stringify({ p_horarios: hids, p_desde: fechaMin, p_hasta: fechaMax })
+          }).catch(()=>null)
         ]);
         if(wMyRes?.ok){ const d=await wMyRes.json(); d.forEach(w=>{ clasesWaitlist[w.horario_id+'_'+w.fecha]=w; }); }
-        if(wAllRes?.ok){ const d=await wAllRes.json(); d.forEach(w=>{ const k=w.horario_id+'_'+w.fecha; clasesWaitlistN[k]=(clasesWaitlistN[k]||0)+1; }); }
+        if(wAllRes?.ok){ const d=await wAllRes.json(); (Array.isArray(d)?d:[]).forEach(w=>{ clasesWaitlistN[w.horario_id+'_'+w.fecha] = w.en_espera || 0; }); }
       })(),
       // 6. Cancelaciones de ocurrencia única en la ventana de 7 días
       (async()=>{
