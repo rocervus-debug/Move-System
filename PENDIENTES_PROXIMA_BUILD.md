@@ -285,7 +285,17 @@ que mira plantilla y overrides.
 
 Entra en la build 1.0.7.
 
-## BUILD 1.0.7 — SUBIDA A AMBAS TIENDAS (27-ago-2026)
+## BUILD 1.0.7 — CERRADA EN AMBAS TIENDAS (27-ago-2026)
+
+**Definitivos: Android vc12 (publicado en Alpha) · iOS build 14 (procesando en
+TestFlight).** Los vc11/b13 quedaron supersedidos sin llegar a testers: traían
+el bug del Marfil pegado. Los definitivos llevan además la arquitectura de
+flags (verticales = presets + switches, velum_flags como fuente única).
+
+Al quedar "Ready to Test" en TestFlight: asignar build 14 al grupo y probar el
+cruce BYCO → logout → MOVE (debe verse oscuro, no Marfil).
+
+### (histórico de la primera subida del día)
 
 - **Android vc11**: AAB firmado (huella verificada contra velum-upload-new.jks,
   alias `velum`), subido a Prueba cerrada Alpha, en comprobaciones automáticas.
