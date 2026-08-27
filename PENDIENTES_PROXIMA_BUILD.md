@@ -284,3 +284,18 @@ esa fecha; CERRADO desaparece la clase. Las búsquedas por id usan `_claseById`,
 que mira plantilla y overrides.
 
 Entra en la build 1.0.7.
+
+## BUILD 1.0.7 — SUBIDA A AMBAS TIENDAS (27-ago-2026)
+
+- **Android vc11**: AAB firmado (huella verificada contra velum-upload-new.jks,
+  alias `velum`), subido a Prueba cerrada Alpha, en comprobaciones automáticas.
+  `keystore.properties` ya existe en android/ (fuera de git) — el bloqueo murió.
+- **iOS build 13**: archivado por terminal (xcodebuild + firma automática) y
+  subido a App Store Connect. Procesa ~10-30 min y aparece en TestFlight.
+- Contenido: reservas por día por paquete, cupos/nombres reales, overrides
+  respetados, piel Marfil, lugares BYCO, bitácora/Mis Marcas verificada E2E.
+
+### Para la PRÓXIMA build (aviso de Apple)
+- Subir IPHONEOS_DEPLOYMENT_TARGET de 13.0 → 15.0 (obligatorio primavera 2027;
+  iOS 15 cubre los mismos equipos, pérdida de usuarios ~nula). Cambiar también
+  el platform del Podfile y correr pod install.
