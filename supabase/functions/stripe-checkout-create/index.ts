@@ -1,5 +1,4 @@
 // stripe-checkout-create — v14: on_behalf_of = cuenta del gym (merchant of record = gym, white-label)
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey' };
@@ -43,7 +42,7 @@ function safeReturnTo(url: string | undefined): string | null {
   return null;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

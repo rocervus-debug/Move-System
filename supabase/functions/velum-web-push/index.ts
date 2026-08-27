@@ -5,7 +5,6 @@
 // deploy: supabase functions deploy velum-web-push --no-verify-jwt
 //   (verify_jwt=false porque validamos el JWT manualmente con SUPABASE_JWT_SECRET)
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
@@ -44,7 +43,7 @@ async function verifyJWT(token: string, secret: string): Promise<Record<string, 
   } catch { return null; }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
   const VAPID_PUBLIC  = Deno.env.get('VAPID_PUBLIC_KEY')  || '';

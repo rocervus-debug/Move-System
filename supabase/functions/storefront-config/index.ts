@@ -1,4 +1,9 @@
-// storefront-config — v17: + coaches (equipo multi-coach por clase, ej. DUO RIDE de BYCO)
+// storefront-config — v19: el horario público refleja la PRÓXIMA ocurrencia real
+// de cada día (overrides por fecha + CERRADO + cancelaciones), no solo la plantilla.
+// v18: cada clase expone su id para atar leads a ESA clase.
+// v17: + coaches (equipo multi-coach por clase, ej. DUO RIDE de BYCO)
+//
+// OJO AL DESPLEGAR: verify_jwt=false. El storefront la llama solo con 'apikey'.
 // v14: + vertical (gym/studios/recovery) para que el storefront hable el idioma del giro
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -61,14 +66,52 @@ Deno.serve(async (req) => {
     let schedule_weekly: any = null;
     if (sf.show_schedule) {
       const { data: horarios } = await db.from('horarios').select('id, dia, hora, tipo, coach_nombre, coaches_extra, cupo, fecha').eq('gym_id', sf.gym_id);
+
+      // v19: cada columna del horario público representa la PRÓXIMA ocurrencia de
+      // ese día (que es la fecha con la que se reserva). Se aplica la misma regla
+      // que la app y el panel: plantilla del día, menos los huecos que un override
+      // de esa fecha pisa, más los overrides no-CERRADO. Además se excluyen las
+      // clases canceladas (horario_cancelaciones). Antes el storefront mostraba
+      // solo la plantilla: ofrecía clases de días cerrados y aceptaba reservas
+      // de prueba para clases que no iban a existir.
+      const hoyMX = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const hoyD = new Date(hoyMX + 'T12:00:00');
+      const DIAS_IDX: Record<string, number> = { 'Domingo': 0, 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6 };
+      const proxFecha: Record<string, string> = {};
+      Object.keys(DIAS_IDX).forEach(dn => {
+        const delta = (DIAS_IDX[dn] - hoyD.getDay() + 7) % 7;
+        const d = new Date(hoyD); d.setDate(hoyD.getDate() + delta);
+        proxFecha[dn] = d.toISOString().slice(0, 10);
+      });
+
+      const filas = horarios || [];
+      const plantilla = filas.filter((h: any) => !h.fecha || h.fecha === '');
+      const overrides = filas.filter((h: any) => h.fecha && /^\d{4}-\d{2}-\d{2}$/.test(h.fecha));
+
+      // Clases canceladas en las próximas ocurrencias (una sola consulta)
+      const fechasProx = Object.values(proxFecha);
+      const { data: cancs } = await db.from('horario_cancelaciones')
+        .select('horario_id, fecha').eq('gym_id', String(sf.gym_id)).in('fecha', fechasProx);
+      const cancSet = new Set((cancs || []).map((c: any) => c.horario_id + '_' + c.fecha));
+
       const grouped: Record<string, any[]> = { 'Lunes': [], 'Martes': [], 'Miércoles': [], 'Jueves': [], 'Viernes': [], 'Sábado': [], 'Domingo': [] };
-      (horarios || []).forEach((h: any) => {
-        const dia = normalizeDay(h.dia);
-        if (!grouped[dia]) return;
-        // Equipo completo de la clase: principal + coaches_extra (multi-coach, ej. DUO RIDE)
+      const pushClase = (dia: string, h: any) => {
         const extras = Array.isArray(h.coaches_extra) ? h.coaches_extra.map((x: any) => x && x.nombre).filter(Boolean) : [];
         const equipo = [h.coach_nombre, ...extras].filter(Boolean);
         grouped[dia].push({ id: h.id, hora: h.hora, tipo: h.tipo, coach: h.coach_nombre || '', coaches: equipo, cupo_total: h.cupo || 0, minutes: horaToMinutes(h.hora) });
+      };
+      Object.keys(grouped).forEach(dia => {
+        const fecha = proxFecha[dia];
+        const ovsDia = overrides.filter((h: any) => h.fecha === fecha);
+        const horasPisadas = new Set(ovsDia.map((h: any) => h.hora));
+        plantilla
+          .filter((h: any) => normalizeDay(h.dia) === dia && !horasPisadas.has(h.hora))
+          .filter((h: any) => !cancSet.has(h.id + '_' + fecha))
+          .forEach((h: any) => pushClase(dia, h));
+        ovsDia
+          .filter((h: any) => (h.tipo || '') !== 'CERRADO')
+          .filter((h: any) => !cancSet.has(h.id + '_' + fecha))
+          .forEach((h: any) => pushClase(dia, h));
       });
       Object.keys(grouped).forEach(d => { grouped[d].sort((a, b) => a.minutes - b.minutes); grouped[d].forEach(c => delete c.minutes); });
       const hasAny = Object.values(grouped).some((arr: any) => arr.length > 0);

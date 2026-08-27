@@ -2,7 +2,6 @@
 //   (rate-limit por IP y por sesión, honeypot, tope de nº de mensajes y longitud).
 // deploy: supabase functions deploy storefront-ia-chat --no-verify-jwt
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
@@ -50,7 +49,7 @@ function normalizeDay(d: string): string {
   return d || '';
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   try {
     const { slug, session_id, messages, visitor_email, visitor_phone, visitor_name, hp } = await req.json();

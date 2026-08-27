@@ -15936,12 +15936,8 @@ function saveAsistenciaLS(data){ localStorage.setItem('move_asistencia', JSON.st
 
 async function openRegistrarClase(){
   // Build a quick picker: select class → opens detail panel
-  const gymId  = MOVE_GYM_ID||null;
   const diaHoy = _DIAS_ES[new Date().getDay()];
-  let hQ = window.supabaseClient.from('horarios').select('id,hora,tipo,coach_nombre,cupo').eq('dia',diaHoy);
-  if(gymId) hQ = hQ.eq('gym_id',gymId);
-  const {data:_h} = await hQ;
-  const horarios = (_h||[]).slice().sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+  const horarios = await _horariosEfectivosFecha(_hoyMX(), diaHoy).catch(()=>[]);
   if(!horarios.length){ toast('Sin clases programadas para hoy','ℹ️'); return; }
 
   // Reuse existing modal infrastructure or create inline overlay
@@ -26590,6 +26586,28 @@ async function loadQRCheckinsHoy(){
 // ═══════════════════════════════════════════════════════════════════
 // RESERVAS DE HOY — panel de ocupación por clase
 // ═══════════════════════════════════════════════════════════════════
+// Clases EFECTIVAS de una fecha: plantilla del día, menos los huecos que un
+// override pisa, más los overrides de esa fecha (CERRADO desaparece la clase).
+// MISMA regla que _clasesEfectivas en la app del atleta y getEffectiveClase del
+// calendario. Sin esto, la vista de asistencia solo leía la plantilla: en un día
+// con override la app reserva contra el id del override y el roster del panel
+// abría el id de la plantilla → reservas y prospectos invisibles.
+async function _horariosEfectivosFecha(fechaStr, diaNombre){
+  const gymId = MOVE_GYM_ID||null;
+  let q = window.supabaseClient.from('horarios')
+    .select('id,hora,tipo,coach_nombre,cupo,dia,fecha')
+    .or(`dia.eq.${diaNombre},fecha.eq.${fechaStr}`);
+  if(gymId) q = q.eq('gym_id', gymId);
+  const { data, error } = await q;
+  if(error) throw error;
+  const filas = data||[];
+  const ovs  = filas.filter(h => h.fecha === fechaStr);
+  const horasPisadas = new Set(ovs.map(h => h.hora));
+  const base = filas.filter(h => h.dia === diaNombre && !(h.fecha||'') && !horasPisadas.has(h.hora));
+  const extra = ovs.filter(h => (h.tipo||'') !== 'CERRADO');
+  return [...base, ...extra].sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+}
+
 async function loadReservasHoy(){
   const el  = document.getElementById('reservas-hoy-content');
   const lbl = document.getElementById('reservas-hoy-label');
@@ -26771,12 +26789,7 @@ async function loadClasesOperativas(){
   el.innerHTML = '<div style="padding:28px 0;text-align:center;font-size:var(--fs-sm);color:var(--text3);">Cargando clases…</div>';
   try{
     const gymId = MOVE_GYM_ID||null;
-    let hQ = window.supabaseClient.from('horarios').select('id,hora,tipo,coach_nombre,cupo').eq('dia',diaHoy).order('hora',{ascending:true});
-    if(gymId) hQ = hQ.eq('gym_id',gymId);
-    const {data:_horarios,error:hErr} = await hQ;
-    if(hErr) throw hErr;
-    // Sort by real time value (hora is text "6:00am"/"5:30pm" — alphabetical sort is wrong)
-    const horarios = (_horarios||[]).slice().sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+    const horarios = await _horariosEfectivosFecha(hoyStr, diaHoy);
     if(!horarios||!horarios.length){
       el.innerHTML = `<div style="padding:48px 20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;"></div><div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:6px;">Sin clases hoy</div><div style="font-size:var(--fs-xs);color:var(--text3);">No hay clases programadas para el ${diaHoy}.</div></div>`;
       return;
