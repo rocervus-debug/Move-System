@@ -1,4 +1,5 @@
-// storefront-config — v19: el horario público refleja la PRÓXIMA ocurrencia real
+// storefront-config — v20: + gym.flags (velum_flags).
+// v19: el horario público refleja la PRÓXIMA ocurrencia real
 // de cada día (overrides por fecha + CERRADO + cancelaciones), no solo la plantilla.
 // v18: cada clase expone su id para atar leads a ESA clase.
 // v17: + coaches (equipo multi-coach por clase, ej. DUO RIDE de BYCO)
@@ -50,6 +51,10 @@ Deno.serve(async (req) => {
 
     const { data: gymRow } = await db.from('gyms').select('vertical').eq('id', sf.gym_id).maybeSingle();
     const vertical = (gymRow && gymRow.vertical) ? gymRow.vertical : 'gym';
+
+    // v20: switches de experiencia (misma fuente única velum_flags que el portal)
+    let gymFlags: any = null;
+    try { const { data: fl } = await db.rpc('velum_flags', { p_gym_id: sf.gym_id }); gymFlags = fl || null; } catch (_) {}
 
     // OJO: además de is_public del listing, hay que exigir packages.is_active. Sin eso, un
     // paquete que el gym DESACTIVÓ en su admin seguía publicándose en el storefront y en la
@@ -122,7 +127,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       gym: {
-        id: sf.gym_id, slug: sf.slug, vertical,
+        id: sf.gym_id, slug: sf.slug, vertical, flags: gymFlags,
         nombre: cfg['gym_nombre'] || 'VELUM Gym', logo: cfg['gym_logo_url'] || null, tagline: cfg['gym_tagline'] || null,
         description: sf.description, primary_color: sf.primary_color || cfg['gym_color'] || '#00D4FF',
         theme: sf.theme || 'pulse', ia_prominent: sf.ia_prominent !== false,

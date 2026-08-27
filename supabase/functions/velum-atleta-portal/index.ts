@@ -1,4 +1,6 @@
-// velum-atleta-portal — v36: cliente.maxReservasDia del paquete vigente.
+// velum-atleta-portal — v37: + gym.flags (velum_flags: piel/vocabulario/
+// lugares/waitlist resueltos en servidor; vertical = preset + overrides).
+// v36: cliente.maxReservasDia del paquete vigente.
 //   null = sin límite · 0 = el plan NO reserva clases · N = N al día.
 //
 // OJO AL DESPLEGAR: esta función DEBE ir con verify_jwt=false. La app la llama
@@ -110,6 +112,15 @@ Deno.serve(async (req) => {
     const { data: gymV } = await supabase
       .from('gyms').select('vertical').eq('id', gym_id).maybeSingle();
 
+    // v37: switches de experiencia resueltos por velum_flags() — LA fuente única
+    // (vertical = preset + overrides de gym_config). La app consume esto y deja
+    // de decidir la piel/vocabulario/lugares por su cuenta.
+    let gymFlags: any = null;
+    try {
+      const { data: fl } = await supabase.rpc('velum_flags', { p_gym_id: gym_id });
+      gymFlags = fl || null;
+    } catch (_) { gymFlags = null; }
+
     const { data: pagos } = await supabase
       .from('pagos')
       .select('id, plan, monto, fecha, vence, clases_totales, clases_usadas, notas, package_id')
@@ -209,6 +220,7 @@ Deno.serve(async (req) => {
         id: gym_id, nombre: cfg['gym_nombre'] || 'VELUM Gym', logo: cfg['gym_logo'] || null,
         codigo: cfg['portal_codigo'] || null,
         vertical: gymV?.vertical || 'gym',
+        flags: gymFlags,
         slug: sfRow?.slug || null, storefrontEnabled: !!sfRow?.is_enabled,
         stripeHabilitado: cfg['stripe_habilitado'] === 'true',
       },

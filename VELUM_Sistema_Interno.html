@@ -5181,6 +5181,27 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
             </div>
 
 
+            <!-- ── EXPERIENCIA (switches sobre el preset del giro) ── -->
+            <div class="gym-section-card">
+              <div class="gym-section-title">Experiencia del negocio</div>
+              <div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:12px;">Tu giro define lo automático. Aquí puedes prender o apagar cada pieza sin cambiar de giro — aplica en la app de tus clientes y en este panel.</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">
+                <div><label style="font-size:var(--fs-xs);color:var(--text2);display:block;margin-bottom:4px;">Apariencia de la app</label>
+                  <select id="cfg-flag-skin" style="width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:8px;color:var(--text);font-size:var(--fs-xs);outline:none;"><option value="auto">Auto (según giro)</option><option value="oscura">Oscura</option><option value="marfil">Clara boutique (Marfil)</option></select>
+                </div>
+                <div><label style="font-size:var(--fs-xs);color:var(--text2);display:block;margin-bottom:4px;">Vocabulario</label>
+                  <select id="cfg-flag-vocab" style="width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:8px;color:var(--text);font-size:var(--fs-xs);outline:none;"><option value="auto">Auto (según giro)</option><option value="clases">Clases y reservas</option><option value="creditos">Créditos (boutique)</option><option value="sesiones">Sesiones y citas</option></select>
+                </div>
+                <div><label style="font-size:var(--fs-xs);color:var(--text2);display:block;margin-bottom:4px;">Lugares numerados (bicis/reformers)</label>
+                  <select id="cfg-flag-lugares" style="width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:8px;color:var(--text);font-size:var(--fs-xs);outline:none;"><option value="auto">Auto (según giro)</option><option value="on">Prendido</option><option value="off">Apagado</option></select>
+                </div>
+                <div><label style="font-size:var(--fs-xs);color:var(--text2);display:block;margin-bottom:4px;">Lista de espera al llenarse</label>
+                  <select id="cfg-flag-waitlist" style="width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:8px;color:var(--text);font-size:var(--fs-xs);outline:none;"><option value="auto">Auto (según giro)</option><option value="on">Prendida</option><option value="off">Apagada</option></select>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveGymFlags()">Guardar experiencia</button>
+            </div>
+
             <!-- ── IDENTIDAD ── -->
             <div class="gym-section-card">
               <div class="gym-section-title">Identidad</div>
@@ -10120,10 +10141,42 @@ const _VERTICAL_DEFAULTS = {
   recovery: { accent:'#5EC8B0', bg1:'rgba(94,200,176,.07)',  bg2:'rgba(94,200,176,.04)' },
   padel:    { accent:'#3FA34D', bg1:'rgba(63,163,77,.07)',   bg2:'rgba(63,163,77,.04)'  },
 };
+// ── Switches de experiencia (velum_flags) ───────────────────────────────────
+// La vertical es el PRESET; gym_config (flag_*) sobreescribe por gym. La fuente
+// única es la función velum_flags de la base — el panel solo la consume. El
+// fallback local existe SOLO por si el rpc falla (offline): replica los mismos
+// defaults, nunca otros.
+let _gymFlags = null;
+function _flagsPreset(v){
+  return {
+    vertical: v,
+    skin:  v==='studios' ? 'marfil' : (v==='padel' ? 'padel' : 'oscura'),
+    vocabulario: v==='recovery' ? 'sesiones' : (v==='studios' ? 'creditos' : (v==='padel' ? 'padel' : 'clases')),
+    lugares: v==='studios',
+    waitlist: true,
+  };
+}
+function _fLugaresP(){ return _gymFlags ? !!_gymFlags.lugares : (_gymVertical==='studios'); }
+function _fWaitlistP(){ return _gymFlags ? !!_gymFlags.waitlist : true; }
+function _vocabP(){ return (_gymFlags && _gymFlags.vocabulario) || _flagsPreset(_gymVertical).vocabulario; }
+async function loadGymFlags(){
+  const gid = (typeof MOVE_GYM_ID!=='undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+  try{
+    const { data, error } = await window.supabaseClient.rpc('velum_flags', { p_gym_id: gid });
+    _gymFlags = (!error && data && data.vertical) ? data : _flagsPreset(_gymVertical);
+  }catch(_){ _gymFlags = _flagsPreset(_gymVertical); }
+  // Re-aplicar lo que depende de flags ya con el valor real
+  if(typeof _verticalizeUI === 'function') _verticalizeUI();
+  if(typeof _applyDataTerms === 'function') _applyDataTerms();
+  if(typeof renderStudiosCal === 'function') renderStudiosCal();
+  if(typeof renderStudiosDash === 'function') renderStudiosDash();
+}
+
 function applyVertical(vertical){
   const v = String(vertical || 'gym').toLowerCase();
   _gymVertical = (v === 'studios' || v === 'recovery' || v === 'padel') ? v : 'gym';   // 'velum' (legacy en DB) → 'gym'
   try { document.body.dataset.vertical = _gymVertical; } catch(e){}
+  loadGymFlags();   // async; re-verticaliza al llegar
   // Padel: si el coach aún no configuró su operación, abrir el wizard de setup (una vez)
   if(_gymVertical === 'padel' && typeof openPadelSetup === 'function' &&
      gymConfig && gymConfig.padel_setup_done !== 'true'){
@@ -10463,21 +10516,23 @@ function _setVerticalBadge(vertical){
 // ── Diccionario de vocabulario por vertical (fuente única de verdad) ──
 // Centraliza los términos que antes vivían dispersos en ternarios. Úsalo vía _term('clave').
 // Para etiquetas nuevas, marca el elemento con data-term="clave" y _applyDataTerms() lo traduce.
+// Indexada por VOCABULARIO (el switch), no por identidad de vertical: el mismo
+// juego de términos puede usarlo cualquier giro vía flag_vocabulario.
 const _TERMS = {
-  gym:      { coach:'Coach',      coaches:'Coaches',      cliente:'Atleta',  clientes:'Atletas',  reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'clases'   },
-  studios:  { coach:'Instructor', coaches:'Instructores', cliente:'Cliente', clientes:'Clientes', reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'créditos' },
-  recovery: { coach:'Terapeuta',  coaches:'Terapeutas',   cliente:'Cliente', clientes:'Clientes', reserva:'Cita',    reservas:'Citas',    sesion:'Sesión', sesiones:'Sesiones', unidadPaq:'sesiones' },
+  clases:   { coach:'Coach',      coaches:'Coaches',      cliente:'Atleta',  clientes:'Atletas',  reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'clases'   },
+  creditos: { coach:'Instructor', coaches:'Instructores', cliente:'Cliente', clientes:'Clientes', reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'créditos' },
+  sesiones: { coach:'Terapeuta',  coaches:'Terapeutas',   cliente:'Cliente', clientes:'Clientes', reserva:'Cita',    reservas:'Citas',    sesion:'Sesión', sesiones:'Sesiones', unidadPaq:'sesiones' },
   padel:    { coach:'Coach',      coaches:'Coaches',      cliente:'Alumno',  clientes:'Alumnos',  reserva:'Reserva', reservas:'Reservas', sesion:'Clase',  sesiones:'Clases',   unidadPaq:'clases'   },
 };
-function _term(key){ const t=_TERMS[_gymVertical]||_TERMS.gym; return (key in t)?t[key]:(_TERMS.gym[key]||''); }
+function _term(key){ const t=_TERMS[_vocabP()]||_TERMS.clases; return (key in t)?t[key]:(_TERMS.clases[key]||''); }
 // Traduce cualquier elemento con [data-term="clave"] al giro actual (mecanismo a futuro).
 function _applyDataTerms(root){
   (root||document).querySelectorAll('[data-term]').forEach(el=>{ const v=_term(el.getAttribute('data-term')); if(v) el.textContent=v; });
 }
 function _verticalizeUI(){
-  const rec = (_gymVertical==='recovery');
-  // Clientes: filtros con vocabulario del giro
-  const _stu=(_gymVertical==='studios');
+  const rec = (_vocabP()==='sesiones');
+  // Clientes: filtros con el vocabulario EFECTIVO (flag), no con la identidad
+  const _stu=(_vocabP()==='creditos');
   const t1=document.querySelector('.cli-tab-tipo[data-tipo="paquete"]'); if(t1) t1.textContent = rec?'Paquetes':(_stu?'Membresías':'Membresías');
   const t2=document.querySelector('.cli-tab-tipo[data-tipo="pase"]');    if(t2) t2.textContent = rec?'Sesión suelta':(_stu?'Drop-in':'Pase de Día');
   document.querySelectorAll('.cli-filter-label').forEach(l=>{ if(/^\s*Estado d/i.test(l.textContent)) l.textContent = rec?'Estado del paquete':'Estado de membresía'; });
@@ -10568,6 +10623,10 @@ function applyGymConfig(){
   if(el('cfg-gym-color-hex')) el('cfg-gym-color-hex').value = usedColor;
   if(el('cfg-color-preview')) el('cfg-color-preview').style.background = usedColor;
   if(logo && el('cfg-logo-img')){ el('cfg-logo-img').src=logo; el('cfg-logo-img').style.display='block'; }
+  // Switches de experiencia: mostrar lo GUARDADO (auto = sin override)
+  [['cfg-flag-skin','flag_skin_atleta'],['cfg-flag-vocab','flag_vocabulario'],
+   ['cfg-flag-lugares','flag_lugares'],['cfg-flag-waitlist','flag_waitlist']]
+  .forEach(([idd,k])=>{ const e=el(idd); if(e) e.value=(gymConfig&&gymConfig[k])||'auto'; });
   // Show gym_id
   const gymIdEl = el('cfg-gym-id-display');
   if(gymIdEl) gymIdEl.textContent = MOVE_GYM_ID || gymConfig.gym_id || 'Cargando...';
@@ -10581,6 +10640,29 @@ function applyGymConfig(){
       if(Array.isArray(saved) && saved.length) applySidebarOrder(getSidebarOrder());
     }catch(_){}
   }
+}
+
+// Guarda los switches de experiencia. 'auto' = SIN override (se borra la llave,
+// no se guarda el string 'auto': velum_flags solo whitelistea valores reales).
+async function saveGymFlags(){
+  const gid = MOVE_GYM_ID || 1;
+  const pares = [['cfg-flag-skin','flag_skin_atleta'],['cfg-flag-vocab','flag_vocabulario'],
+                 ['cfg-flag-lugares','flag_lugares'],['cfg-flag-waitlist','flag_waitlist']];
+  for(const [idd,key] of pares){
+    const v = document.getElementById(idd)?.value || 'auto';
+    if(v === 'auto'){
+      const { error } = await window.supabaseClient.from('gym_config').delete().eq('gym_id',gid).eq('key',key);
+      if(error && !_handleSessionError(error)){ toast('No se pudo guardar: '+(error.message||''),'✕'); return; }
+      if(gymConfig) delete gymConfig[key];
+    } else {
+      const { error } = await window.supabaseClient.from('gym_config')
+        .upsert({ gym_id:gid, key, value:v }, { onConflict:'key,gym_id' });
+      if(error && !_handleSessionError(error)){ toast('No se pudo guardar: '+(error.message||''),'✕'); return; }
+      if(gymConfig) gymConfig[key]=v;
+    }
+  }
+  await loadGymFlags();   // re-resuelve y re-verticaliza con la fuente única
+  toast('Experiencia guardada ✓');
 }
 
 async function saveGymConfig(){
@@ -12147,11 +12229,11 @@ function openModal(id){
     // Vocabulario por vertical (recovery: sesiones; gym/studios: clases)
     try{
       const _u=(typeof _pkUnidad==='function')?_pkUnidad():'clases';
-      const _art=_gymVertical==='studios'?'Cuántos':'Cuántas'; // créditos (masc) vs clases/sesiones (fem)
+      const _art=_vocabP()==='creditos'?'Cuántos':'Cuántas'; // créditos (masc) vs clases/sesiones (fem)
       const _cl=document.querySelector('#pk-clases-field label'); if(_cl) _cl.textContent=`¿${_art} ${_u} incluye? *`;
       const _cn=document.getElementById('pk-clases'); if(_cn) _cn.setAttribute('placeholder','10');
-      const _nn=document.getElementById('pk-nombre'); if(_nn) _nn.setAttribute('placeholder', _gymVertical==='recovery'?'Ej: Pack 10 sesiones, Ilimitado mensual…':(_gymVertical==='studios'?'Ej: Pack 10 créditos, Ilimitado mensual…':'Ej: Mensual, Pack 10 clases…'));
-      const _mt=document.querySelector('#modal-paquete .modal-title'); if(_mt) _mt.textContent=_gymVertical==='recovery'?'Crear paquete de recovery':(_gymVertical==='studios'?'Crear paquete de créditos':'Crear paquete');
+      const _nn=document.getElementById('pk-nombre'); if(_nn) _nn.setAttribute('placeholder', _vocabP()==='sesiones'?'Ej: Pack 10 sesiones, Ilimitado mensual…':(_vocabP()==='creditos'?'Ej: Pack 10 créditos, Ilimitado mensual…':'Ej: Mensual, Pack 10 clases…'));
+      const _mt=document.querySelector('#modal-paquete .modal-title'); if(_mt) _mt.textContent=_vocabP()==='sesiones'?'Crear paquete de recovery':(_vocabP()==='creditos'?'Crear paquete de créditos':'Crear paquete');
     }catch(_){}
     if(typeof _renderPaqueteTipoCards==='function') _renderPaqueteTipoCards();
     if(typeof wizInit==='function') wizInit('paquete');
@@ -22200,7 +22282,7 @@ async function renderRecoveryDash(){
   const sibs=vd ? Array.prototype.slice.call(vd.children).filter(c=>c.id!=='recovery-dash') : [];
   if(_gymVertical!=='recovery'){
     host.style.display='none';
-    if(_gymVertical==='studios') return;   // studios maneja su propio hide; no restaurar aquí
+    if(_fLugaresP()) return;   // el calendario bespoke maneja su propio hide; no restaurar aquí
     sibs.forEach(el=>{ if(el.dataset.rhHidden){ el.style.display=el.dataset.rhPrev||''; delete el.dataset.rhHidden; delete el.dataset.rhPrev; } });
     return;
   }
@@ -22726,7 +22808,7 @@ function _paqueteTipos(){
     {v:'paquete',   ico:'❋',   name:'Paquete de sesiones', sub:'Un número fijo de sesiones con vigencia (ej. 10 sesiones)', dias:60},
     {v:'pasedia',   ico:'◷',   name:'Sesión suelta',       sub:'Una sola sesión, vence el mismo día', dias:1},
   ];
-  if(_gymVertical==='studios') return [
+  if(_vocabP()==='creditos') return [
     {v:'ilimitado', ico:'∞',   name:'Membresía ilimitada', sub:'Clases libres por X días (mensual, trimestral…)', dias:30},
     {v:'paquete',   ico:'◈',   name:'Paquete de créditos', sub:'Un número fijo de clases / créditos (ej. 10 clases)', dias:60},
     {v:'pasedia',   ico:'◷',   name:'Drop-in / clase suelta', sub:'Una sola clase, vence el mismo día', dias:1},
@@ -26998,7 +27080,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
 
     // Studios: lista de espera de esta clase+fecha (mostrar + promover)
     let waitlistHtml = '';
-    if(typeof _gymVertical!=='undefined' && _gymVertical==='studios'){
+    if(_fWaitlistP()){
       let wq = window.supabaseClient.from('waitlist')
         .select('id,cliente_nombre,posicion').eq('horario_id',horarioId).eq('fecha',hoyStr).eq('estado','espera')
         .order('posicion',{ascending:true});
@@ -27025,7 +27107,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     const hEsc = esc(hora), tEsc = esc(tipo);
     // Studios: mapa de Lugares (tap libre = bloquear · tap bloqueado = desbloquear)
     let lugaresHtml = '';
-    if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && (cupo||0)>0){
+    if(_fLugaresP() && (cupo||0)>0){
       const celdas = Array.from({length:cupo},(_,i)=>{
         const n=i+1, quien=window._dcTaken[n], esBloq=!!window._dcBloqueados[n];
         if(esBloq) return `<button onclick="desbloquearLugar('${window._dcBloqueados[n]}','${horarioId}','${hEsc}','${tEsc}',${cupo})" title="Desbloquear"
@@ -27098,7 +27180,7 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
   const label  = isCheckin?'Asistió ✓':isAusente?'No asistió':'Pendiente';
   const lColor = isCheckin?'var(--ok)':isAusente?'#f06060':'var(--text3)';
   // Studios: selector de spot/reformer por persona
-  const showSpot = (typeof _gymVertical!=='undefined' && _gymVertical==='studios');
+  const showSpot = _fLugaresP();
   const cupo  = (typeof window!=='undefined' && window._dcCupo) || 0;
   const taken = (typeof window!=='undefined' && window._dcTaken) || {};
   let spotSel = '';
@@ -27136,7 +27218,7 @@ async function asignarSpot(reservaId, spotVal){
   if(error){ if(_handleSessionError(error))return; toast('No se pudo asignar el spot ✕'+(error&&error.message?': '+error.message:''), '✕'); console.error('asignarSpot',error); return; }
   toast(spot ? `Spot ${spot} asignado ✦` : 'Spot liberado','✦');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
-  if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && typeof renderStudiosCal==='function') renderStudiosCal();
+  if(_fLugaresP() && typeof renderStudiosCal==='function') renderStudiosCal();
 }
 
 // Studios: agrega a la lista de espera de una clase llena.
@@ -27173,7 +27255,7 @@ async function promoverDeWaitlist(waitlistId){
   if(eUpd){ console.error('promoverDeWaitlist update', eUpd); toast('Reserva creada, pero la lista de espera no se actualizó — no lo promuevas de nuevo o se duplicará.','⚠️',5000); }
   toast(`${(w.cliente_nombre||'').split(' ')[0]} promovido a la clase ✓`,'✓');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
-  if(typeof _gymVertical!=='undefined' && _gymVertical==='studios' && typeof renderStudiosCal==='function') renderStudiosCal();
+  if(_fLugaresP() && typeof renderStudiosCal==='function') renderStudiosCal();
 }
 
 // Studios: dashboard boutique bespoke (reemplaza el dashboard genérico de gym).
@@ -27285,7 +27367,7 @@ async function renderStudiosCal(){
   const host=document.getElementById('studios-cal'); if(!host) return;
   const vh=document.getElementById('v-horario');
   const sibs=vh?Array.prototype.slice.call(vh.children).filter(c=>c.id!=='studios-cal'):[];
-  if(typeof _gymVertical==='undefined' || _gymVertical!=='studios'){
+  if(!_fLugaresP()){
     host.style.display='none';
     sibs.forEach(el=>{ if(el.dataset.shHidden){ el.style.display=el.dataset.shPrev||''; delete el.dataset.shHidden; delete el.dataset.shPrev; } });
     return;
@@ -27540,8 +27622,9 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
     .from('reservas').select('id',{count:'exact',head:true})
     .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado');
   if(cupo>0 && (cntActual||0)>=cupo){
-    // Studios: clase llena → ofrecer lista de espera (no fuerza la reserva).
-    if(typeof _gymVertical!=='undefined' && _gymVertical==='studios'){
+    // Clase llena → ofrecer lista de espera (switch waitlist; antes solo studios,
+    // mientras la app la ofrecía a todos: esa divergencia muere aquí).
+    if(_fWaitlistP()){
       const irWaitlist = await confirmDialog(
         `La clase está llena (${cntActual}/${cupo}). ¿Agregar a ${clienteNombre.split(' ')[0]} a la lista de espera?`,
         {title:'Clase llena',icon:'⏳',confirmText:'Sí, a la lista'}
@@ -28852,7 +28935,7 @@ function updateAlertStrip(vencidasDirect, porVencerDirect){
 // (ver openMasMenu). Una sola fuente de verdad → nunca se queda viejo ni ignora la vertical.
 
 // Sección "core" que la barra inferior ya expone (varía por vertical) — no se repite en "Más".
-function _bottomNavCoreId(){ return (typeof _gymVertical!=='undefined' && _gymVertical==='recovery') ? 'citas' : 'asistencia'; }
+function _bottomNavCoreId(){ return _vocabP()==='sesiones' ? 'citas' : 'asistencia'; }
 
 // Reemplaza el texto de un botón mbn conservando su <svg>.
 function _mbnSetLabel(btn, label){
@@ -28865,7 +28948,9 @@ function _mbnSetLabel(btn, label){
 // y el tab de clientes se relabela. Se llama desde applyVertical (corre en las 3 verticales).
 // Usa la clase estable .mbn-core para reencontrar el botón aunque su id haya cambiado.
 function _verticalizeBottomNav(){
-  const v = (typeof _gymVertical!=='undefined') ? _gymVertical : 'gym';
+  // El tab core es VOCABULARIO (citas/reservas), no identidad: sigue al flag.
+  const vc = _vocabP();
+  const v = vc==='sesiones' ? 'recovery' : (vc==='creditos' ? 'studios' : ((typeof _gymVertical!=='undefined')?_gymVertical:'gym'));
   const core = document.querySelector('.mbn-core');
   if(core){
     let id='asistencia', lbl='Asistencia',

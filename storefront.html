@@ -1921,7 +1921,11 @@ async function load(){
     if (!data.gym){ showError('Respuesta inválida del servidor.'); return; }
 
     // Config nueva sf_* (gym_config) con fallbacks seguros: si no existe, todo usa defaults
-    _sfVertical = (data.gym && data.gym.vertical) || 'gym';
+    // v20: el vocabulario viene resuelto en flags (fuente única velum_flags).
+    // Fallback al vertical para storefront-config viejos.
+    const _sfFl = data.gym && data.gym.flags;
+    const _sfVocab = _sfFl && _sfFl.vocabulario;
+    _sfVertical = _sfVocab==='sesiones' ? 'recovery' : (_sfVocab==='creditos' ? 'studios' : (_sfVocab==='padel' ? 'padel' : (_sfVocab==='clases' ? 'gym' : ((data.gym && data.gym.vertical) || 'gym'))));
     await _sfFetchSfConfig(data.gym.id, data);
     if (SF_CFG.theme && STOREFRONT_THEMES[SF_CFG.theme]) data.gym.theme = SF_CFG.theme;
 

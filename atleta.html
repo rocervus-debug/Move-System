@@ -3866,7 +3866,7 @@ function openClassDetail(key){
     const rid = reserva.id || '';
     // Studios: cambiar de Lugar hasta 1h antes de la clase (decisión Roy 2026-07-14)
     let lugarBtn = '';
-    if(_atletaVertical==='studios'){
+    if(_fLugares()){
       const _min = (h.hora||'').toLowerCase().match(/(\d{1,2}):?(\d{0,2})\s*(am|pm)?/);
       let _hN=_min?parseInt(_min[1])||0:0; const _mN=_min?parseInt(_min[2])||0:0;
       if(_min&&_min[3]==='pm'&&_hN!==12)_hN+=12; if(_min&&_min[3]==='am'&&_hN===12)_hN=0;
@@ -3883,6 +3883,8 @@ function openClassDetail(key){
     btnHtml = `<button class="cd-action-primary" style="opacity:.55;cursor:default;" onclick="showToast('Tu plan no incluye reservar clases. Pregunta en recepción.','⚠️')">TU PLAN NO INCLUYE RESERVAS</button>`;
   } else if(libres > 0){
     btnHtml = `<button class="cd-action-primary" onclick="closeSheet('class-detail-sheet');crearReserva('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">RESERVAR CLASE</button>`;
+  } else if(!inWaitlist && !_fWaitlist()){
+    btnHtml = `<button class="cd-action-primary" style="opacity:.55;cursor:default;">CLASE LLENA</button>`;
   } else if(!inWaitlist){
     btnHtml = `<button class="cd-action-primary waitlist" onclick="closeSheet('class-detail-sheet');entrarWaitlist('${horarioId}','${fecha}','${esc(h.tipo||'Clase')}','${h.hora||''}');">UNIRSE A LISTA ESPERA</button>`;
   } else {
@@ -4307,6 +4309,19 @@ let _atletaVertical='gym';
 // un gym core tras haber abierto antes una cuenta studios). La bandera evita
 // ciclos: tras recargar nace en false y ya no se dispara.
 let _vzAplicada=false;
+
+// ── Switches de experiencia (velum_flags, servidos por el portal v37+) ──────
+// La vertical es un PRESET; cada switch puede venir sobreescrito por gym.
+// Si el portal aún no manda flags (versión vieja), _atletaFlags queda null y
+// todo cae al comportamiento legado por vertical.
+let _atletaFlags = null;
+function _fLugares(){ return _atletaFlags ? !!_atletaFlags.lugares : (_atletaVertical==='studios'); }
+function _fWaitlist(){ return _atletaFlags ? !!_atletaFlags.waitlist : true; }
+// Tabla de vocabulario efectiva: por flag si hay, por vertical si no.
+function _vocabTabla(){
+  if(_atletaFlags) return _atletaFlags.vocabulario==='sesiones' ? _AT_TERMS.recovery : null;
+  return _AT_TERMS[_atletaVertical] || null;
+}
 const _AT_TERMS={
   recovery:{
     nav:{ 'bn-clases':'SESIONES', 'bn-plan':'PLAN' },
@@ -4332,8 +4347,10 @@ const _AT_TERMS={
 // (no acumula). Para gym/studios es no-op (studios usa el mismo vocabulario de clases/reservas).
 // Aplica la piel visual por vertical: studios → "marfil" (claro boutique); gym/recovery → default.
 function _applyAtletaSkin(){
-  const marfil = (_atletaVertical === 'studios');
-  const padel  = (_atletaVertical === 'padel');
+  // Con flags el valor es absoluto (oscura/marfil/padel); sin flags, preset legado.
+  const skinF  = _atletaFlags ? _atletaFlags.skin : null;
+  const marfil = skinF ? skinF === 'marfil' : (_atletaVertical === 'studios');
+  const padel  = skinF ? skinF === 'padel'  : (_atletaVertical === 'padel');
   try{ document.body.dataset.skin = marfil ? 'marfil' : (padel ? 'padel' : ''); }catch(e){}
   // theme-color de la barra (PWA/navegador)
   const tc = document.querySelector('meta[name="theme-color"]');
@@ -4345,7 +4362,14 @@ function _applyAtletaSkin(){
 }
 function _verticalizeAtleta(){
   _applyAtletaSkin();
-  const t=_AT_TERMS[_atletaVertical]; if(!t) return;
+  const t=_vocabTabla();
+  if(!t){
+    // Volver al vocabulario base: los renders reconstruyen sus textos, pero la
+    // nav inferior es estática y hay que restaurarla explícito.
+    const _c=document.querySelector('#bn-clases .bn-lbl'); if(_c && _c.textContent!=='CLASES') _c.textContent='CLASES';
+    const _p=document.querySelector('#bn-plan .bn-lbl');   if(_p && _p.textContent!=='PLAN')   _p.textContent='PLAN';
+    return;
+  }
   if(t.nav){ for(const id in t.nav){ const el=document.querySelector('#'+id+' .bn-lbl'); if(el && el.textContent!==t.nav[id]) el.textContent=t.nav[id]; } }
   const root=document.body; if(!root) return;
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
@@ -4362,7 +4386,7 @@ function _verticalizeAtleta(){
 // y el guard del nav evita el auto-loop. rAF para agrupar ráfagas de renders.
 let _vzScheduled=false, _vzObs=null;
 function _verticalizeAtletaSoon(){
-  if(_atletaVertical==='gym'||_vzScheduled) return; _vzScheduled=true;
+  if(!_vocabTabla()||_vzScheduled) return; _vzScheduled=true;
   const run=()=>{ _vzScheduled=false; _verticalizeAtleta(); };
   (window.requestAnimationFrame?requestAnimationFrame:(f)=>setTimeout(f,16))(run);
 }
@@ -4448,10 +4472,23 @@ function showPortal(data){
   // 1.1 — Apply gym brand color (async, non-blocking). Prefiere el swatch del Storefront vía slug.
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
   // v34: el portal ya trae gym.vertical (gyms.vertical); el fetch a gym_config queda de fallback
-  const _v = data.gym?.vertical;
-  if(_v==='recovery'||_v==='studios'||_v==='padel'){ _vzAplicada=true; _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
-  else if(_vzAplicada){ try{ window.location.reload(); return; }catch(_){} }
-  else { _atletaVertical='gym'; _applyAtletaSkin(); if(data.gym?.id) fetchGymVertical(data.gym.id); }
+  const _fl = data.gym?.flags;
+  if(_fl && typeof _fl === 'object' && _fl.vertical){
+    // Camino nuevo: el servidor ya resolvió TODO. Cada login aplica valores
+    // absolutos — la piel/vocabulario no pueden quedarse pegados entre cuentas.
+    _atletaFlags = _fl;
+    _atletaVertical = _fl.vertical;
+    _verticalizeAtleta();
+    if(_vocabTabla()) _startVerticalizeObserver();
+  } else {
+    // Camino legado (portal viejo sin flags): preset por vertical, con recarga
+    // si esta página ya pintó otra vertical (fix del Marfil pegado en MOVE).
+    _atletaFlags = null;
+    const _v = data.gym?.vertical;
+    if(_v==='recovery'||_v==='studios'||_v==='padel'){ _vzAplicada=true; _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+    else if(_vzAplicada){ try{ window.location.reload(); return; }catch(_){} }
+    else { _atletaVertical='gym'; _applyAtletaSkin(); if(data.gym?.id) fetchGymVertical(data.gym.id); }
+  }
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'VELUM'}`;
 
   if(data.cliente.portal_token){
@@ -7047,7 +7084,9 @@ function renderClasesView(dates){
     } else if(isFull){
       statusHtml = inWaitlist
         ? `<div class="cls-status-full"><div class="csf-lbl" style="color:#a78bfa;font-size:11px;">EN ESPERA</div></div>`
-        : `<button class="cls-reserve-btn waitlist" onclick="event.stopPropagation();entrarWaitlist('${h.id}','${fecha}','${safeTipo}','${safeHora}')">ESPERA</button>`;
+        : (_fWaitlist()
+          ? `<button class="cls-reserve-btn waitlist" onclick="event.stopPropagation();entrarWaitlist('${h.id}','${fecha}','${safeTipo}','${safeHora}')">ESPERA</button>`
+          : `<div class="cls-status-full"><div class="csf-lbl">LLENA</div></div>`);
     } else {
       // Available — direct RESERVAR button
       statusHtml = `<button class="cls-reserve-btn" onclick="event.stopPropagation();crearReserva('${h.id}','${fecha}','${safeTipo}','${safeHora}')">RESERVAR</button>`;
@@ -7209,7 +7248,7 @@ async function crearReserva(horarioId, fecha, tipo, hora, spotSel){
   }
 
   // ── Studios: elegir Lugar (bici/reformer) antes de reservar ──
-  if(_atletaVertical==='studios' && spotSel===undefined){
+  if(_fLugares() && spotSel===undefined){
     openLugarPicker({ mode:'new', horarioId, fecha, tipo, hora });
     return;
   }
@@ -7509,6 +7548,7 @@ window._velumRefresh = function(){
 // ── Waitlist ──────────────────────────────────────────
 async function entrarWaitlist(horarioId, fecha, tipo, hora){
   if(!portalData) return;
+  if(!_fWaitlist()){ showToast('Este negocio no maneja lista de espera.','⚠️'); return; }
   // La lista de espera termina en reserva: si el plan no reserva, tampoco espera.
   if(!_planReserva()){
     showToast('Tu plan no incluye reservar clases. Pregunta en recepción.','⚠️');
