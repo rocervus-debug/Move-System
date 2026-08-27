@@ -26948,6 +26948,41 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     todas.forEach(r=>{ if(r.spot) window._dcTaken[r.spot] = r.estado==='bloqueado' ? '(bloqueado)' : r.cliente_nombre; });
     window._dcBloqueados = {};
     bloqueados.forEach(r=>{ if(r.spot) window._dcBloqueados[r.spot] = r.id; });
+    // Prospectos: quien reservó esta clase desde el enlace público. No son socios
+    // (no tienen ficha ni membresía), por eso viven en storefront_leads y no en
+    // reservas. Antes solo se veían en Storefront → Leads, así que el gym no
+    // sabía a quién esperar en la clase.
+    let prospectosHtml = '';
+    try{
+      let pq = window.supabaseClient.from('storefront_leads')
+        .select('id,visitor_name,visitor_phone,visitor_email,preferred_day,status')
+        .eq('horario_id',horarioId).eq('fecha',hoyStr)
+        .eq('type','trial_class').neq('status','converted')
+        .order('created_at',{ascending:true});
+      if(gymId) pq = pq.eq('gym_id',gymId);
+      const { data:props, error:pErr } = await pq;
+      if(pErr) console.warn('prospectos:', pErr.message);
+      window._dcProspectos = props || [];
+      if((props||[]).length){
+        prospectosHtml = `
+          <div style="font-size:var(--fs-sm);font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 8px;">
+            Prospectos · reservaron por el enlace público (${props.length})
+          </div>
+          <div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:10px;">No cuentan al cupo. Al marcar “Llegó” se crean como cliente y se registra su visita.</div>
+          ${props.map((pr,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(223,180,89,.07);border:1px solid rgba(223,180,89,.25);border-radius:10px;margin-bottom:7px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(pr.visitor_name||'Sin nombre')}</div>
+                <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:2px;">${esc(pr.visitor_phone||pr.visitor_email||'sin contacto')}${pr.status==='contacted'?' · ya contactado':''}</div>
+              </div>
+              ${pr.visitor_phone?`<a href="https://wa.me/52${esc(String(pr.visitor_phone).replace(/\D/g,''))}" target="_blank" rel="noopener"
+                 style="border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:var(--fs-xs);font-weight:700;color:var(--ok);text-decoration:none;">WhatsApp</a>`:''}
+              <button onclick="prospectoLlego(${i})"
+                style="border:none;cursor:pointer;border-radius:8px;padding:6px 11px;font-size:var(--fs-xs);font-weight:800;background:rgba(15,223,154,.14);color:var(--ok);">Llegó</button>
+            </div>`).join('')}`;
+      }
+    }catch(e){ console.warn('prospectos:', e); }
+
     // Studios: lista de espera de esta clase+fecha (mostrar + promover)
     let waitlistHtml = '';
     if(typeof _gymVertical!=='undefined' && _gymVertical==='studios'){
@@ -27031,6 +27066,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
           ${pendientes.map(r=>_renderPersonaRow(r,'reservado',horarioId,hEsc,tEsc)).join('')}
         </div>`:''}
 
+      ${prospectosHtml}
       ${waitlistHtml}
 
       ${!lista.length?`<div style="padding:32px 20px;text-align:center;font-size:var(--fs-sm);color:var(--text3);">Sin reservas para esta clase.<br>Usa el campo de arriba para agregar clientes.</div>`:''}`;
@@ -27387,6 +27423,56 @@ function _maxReservasDiaCliente(clienteNombre){
   if(bruto === null || bruto === undefined) return Infinity;   // sin límite
   const n = parseInt(bruto, 10);
   return (Number.isFinite(n) && n >= 0) ? n : 1;
+}
+
+// Un prospecto llegó a su clase de prueba: se vuelve cliente de verdad.
+// Reutiliza agregarClienteAClase (la misma ruta que usa el buscador del panel)
+// en vez de duplicar la lógica de reserva/check-in.
+async function prospectoLlego(idx){
+  const pr  = (window._dcProspectos||[])[idx];
+  const ctx = window._dc;
+  if(!pr || !ctx){ toast('No encontré ese prospecto. Recarga la clase.','⚠️'); return; }
+
+  const nombre = (pr.visitor_name||'').trim();
+  if(!nombre){ toast('Ese prospecto no dejó nombre. Agrégalo a mano con el buscador.','⚠️'); return; }
+
+  if(!await confirmDialog(
+      `Se dará de alta a ${nombre} como cliente y se registrará su visita a esta clase.`,
+      { title:'Registrar llegada', icon:'👤', danger:false,
+        confirmText:'Sí, registrar', cancelText:'Cancelar' })) return;
+
+  const gymId = (typeof MOVE_GYM_ID!=='undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
+  const clave = n => String(n||'').trim().toLowerCase();
+
+  // Si ya existe alguien con ese nombre, no duplicar la ficha.
+  let cli = (clientesDB||[]).find(c => clave(c.nombre) === clave(nombre));
+  if(!cli){
+    const nuevo = { nombre, gym_id: gymId };
+    if(pr.visitor_phone) nuevo.telefono = String(pr.visitor_phone).trim();
+    if(pr.visitor_email) nuevo.email = (typeof limpiarEmail==='function') ? limpiarEmail(pr.visitor_email) : String(pr.visitor_email).trim().toLowerCase();
+    const { data, error } = await window.supabaseClient.from('clientes').insert([nuevo]).select('id,nombre').single();
+    if(error){
+      if(_handleSessionError(error)) return;
+      toast('No se pudo crear el cliente: '+(error.message||''),'✕',6000); return;
+    }
+    cli = data;
+    if(typeof loadClientesFromSupabase==='function') await loadClientesFromSupabase();
+  }
+
+  await agregarClienteAClase(cli.id, cli.nombre, ctx.horarioId, ctx.hora, ctx.tipo, 'checkin');
+
+  // El lead deja de estar pendiente: ya es cliente.
+  const { error: upErr } = await window.supabaseClient.from('storefront_leads')
+    .update({ status:'converted', contacted_at: new Date().toISOString() })
+    .eq('id', pr.id);
+  if(upErr) console.warn('marcar lead convertido:', upErr.message);
+
+  // agregarClienteAClase ya refrescó el detalle, pero el lead se marcó DESPUÉS:
+  // sin este segundo refresco el prospecto seguiría apareciendo en la lista.
+  if(ctx) await loadDetalleClase(ctx.horarioId, ctx.hora, ctx.tipo, ctx.cupo);
+
+  toast(`${cli.nombre} quedó registrado`,'✓');
+  if(typeof sfReloadLeads==='function'){ try{ await sfReloadLeads(); }catch(_){} }
 }
 
 async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,estado='checkin'){

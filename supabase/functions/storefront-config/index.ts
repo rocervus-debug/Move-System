@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         // Equipo completo de la clase: principal + coaches_extra (multi-coach, ej. DUO RIDE)
         const extras = Array.isArray(h.coaches_extra) ? h.coaches_extra.map((x: any) => x && x.nombre).filter(Boolean) : [];
         const equipo = [h.coach_nombre, ...extras].filter(Boolean);
-        grouped[dia].push({ hora: h.hora, tipo: h.tipo, coach: h.coach_nombre || '', coaches: equipo, cupo_total: h.cupo || 0, minutes: horaToMinutes(h.hora) });
+        grouped[dia].push({ id: h.id, hora: h.hora, tipo: h.tipo, coach: h.coach_nombre || '', coaches: equipo, cupo_total: h.cupo || 0, minutes: horaToMinutes(h.hora) });
       });
       Object.keys(grouped).forEach(d => { grouped[d].sort((a, b) => a.minutes - b.minutes); grouped[d].forEach(c => delete c.minutes); });
       const hasAny = Object.values(grouped).some((arr: any) => arr.length > 0);

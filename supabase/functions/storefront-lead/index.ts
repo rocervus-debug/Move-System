@@ -1,6 +1,10 @@
-// storefront-lead v3 — captura leads + rate limiting por IP + honeypot + topes de longitud
+// storefront-lead v4 — captura leads + rate limiting por IP + honeypot + topes.
+// v4: guarda horario_id + fecha cuando el visitante reserva una clase concreta,
+// para que el gym lo vea en el roster de ESA clase y no en una lista aparte.
+//
+// OJO AL DESPLEGAR: verify_jwt=false. El storefront la llama solo con 'apikey'.
+// Migrada a Deno.serve nativo: deno.land/std provoca timeouts de bundling.
 // deploy: supabase functions deploy storefront-lead --no-verify-jwt
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
@@ -34,7 +38,7 @@ async function checkRateLimit(db: any, key: string, max: number, windowSec: numb
   return data === true;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   try {
     const db = createClient(
@@ -47,7 +51,8 @@ serve(async (req) => {
     const {
       slug, type, name, email, phone,
       preferred_day, preferred_time, message, package_id,
-      session_id, utm_source, utm_medium, utm_campaign, hp
+      session_id, utm_source, utm_medium, utm_campaign, hp,
+      horario_id, fecha
     } = body;
 
     // Honeypot: un bot rellena el campo oculto → respondemos "ok" sin guardar nada.
@@ -82,6 +87,13 @@ serve(async (req) => {
     const cEmail = clip(email, CAP.email);
     const cPhone = clip(phone, CAP.phone);
     const cDay   = clip(preferred_day, CAP.day);
+    // Clase concreta que eligió el visitante. Se validan de forma estricta:
+    // vienen del navegador, así que nada de confiar en el formato.
+    const cHorario = (typeof horario_id === 'string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(horario_id))
+      ? horario_id : null;
+    const cFecha = (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha))
+      ? fecha : null;
     const cTime  = clip(preferred_time, CAP.time);
     const cMsg   = clip(message, CAP.message);
 
@@ -132,6 +144,8 @@ serve(async (req) => {
       preferred_time: cTime,
       message: cMsg,
       package_id: package_id || null,
+      horario_id: cHorario,
+      fecha: cFecha,
       session_id: clip(session_id, 80),
       utm_source: clip(utm_source, CAP.utm),
       utm_medium: clip(utm_medium, CAP.utm),

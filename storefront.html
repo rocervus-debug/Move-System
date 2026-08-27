@@ -1069,6 +1069,7 @@ function _sfApplyCta(gym){
 }
 function sfCtaClick(){
   trackEvent('cta_sticky_click', { mode: _sfApplyCta._mode || 'reservar' });
+  _sfSlotElegido = { horario_id:null, fecha:null };   // botón general: sin clase concreta
   openLeadModal('trial');
   // Si el gym no ofrece clase de prueba, el mismo modal se re-etiqueta como reserva normal
   if (_sfApplyCta._mode !== 'prueba'){
@@ -1079,7 +1080,25 @@ function sfCtaClick(){
 }
 
 // Reservar desde una clase específica del horario: mismo lead modal, con el día prellenado
-function sfReservarSlot(dia, hora, tipo){
+// Próxima fecha de ese día de la semana (hoy incluido). El lead guardaba solo
+// "Miércoles" y nadie sabía CUÁL miércoles; ahora queda la fecha exacta.
+function _sfProximaFecha(diaNombre){
+  const orden = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const idx = orden.indexOf(diaNombre);
+  if(idx < 0) return null;
+  const hoy = new Date();
+  const delta = (idx - hoy.getDay() + 7) % 7;
+  const d = new Date(hoy); d.setDate(hoy.getDate() + delta);
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+// Clase que el visitante eligió: se manda con el lead para que el gym la vea
+// en el roster de ESA clase, no perdida en una lista aparte.
+let _sfSlotElegido = { horario_id:null, fecha:null };
+
+function sfReservarSlot(dia, hora, tipo, horarioId){
+  _sfSlotElegido = { horario_id: horarioId || null, fecha: _sfProximaFecha(dia) };
   openLeadModal('trial');
   const ey = document.getElementById('lead-eyebrow'); if (ey) ey.textContent = 'RESERVA';
   const ti = document.getElementById('lead-title'); if (ti) ti.textContent = _sfTerm('Reserva tu lugar');
@@ -1234,7 +1253,7 @@ function renderScheduleWeekly(weekly){
               })()}</div>
             </div>
             ${c.cupo_total ? `<div class="sc-cupo"><i></i>${c.cupo_total} CUPOS</div>` : ''}
-            <button class="sc-res" onclick="sfReservarSlot('${jsAttr(d)}', '${jsAttr(c.hora || '')}', '${jsAttr(c.tipo || '')}')">Reservar</button>
+            <button class="sc-res" onclick="sfReservarSlot('${jsAttr(d)}', '${jsAttr(c.hora || '')}', '${jsAttr(c.tipo || '')}', '${jsAttr(c.id || '')}')">Reservar</button>
           </div>
         `).join('')}
       </div>
@@ -1812,6 +1831,8 @@ async function submitLead(){
       body: JSON.stringify({
         slug: getSlug(), type, name, phone, email,
         preferred_day: day, message, session_id: _iaSessionId,
+        horario_id: _sfSlotElegido.horario_id,
+        fecha: _sfSlotElegido.fecha,
         hp: document.getElementById('lead-hp')?.value || ''
       })
     });
