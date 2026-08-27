@@ -1978,6 +1978,14 @@ select option{background:var(--bg-card);color:var(--text);}
 .role-coach{background:rgba(16,232,160,.1);color:var(--ok);border:1px solid rgba(16,232,160,.2);}
 .role-marketing{background:rgba(192,132,252,.1);color:var(--hyrox);border:1px solid rgba(192,132,252,.2);}
 .role-operaciones{background:rgba(251,191,36,.1);color:var(--warn);border:1px solid rgba(251,191,36,.2);}
+.role-recepcion{background:rgba(94,200,176,.1);color:#5EC8B0;border:1px solid rgba(94,200,176,.22);}
+/* Ocultamiento por rol. El !important es deliberado: varios renderers reescriben
+   style.display en cada corrida (renderGymAnalytics, renderGymPulso) y deshacían
+   un ocultamiento hecho solo con inline style. Ver applyRoleModules(). */
+body.role-restricted [data-role-hidden]{display:none !important;}
+/* Columna "LTV alumnos" del reporte por coach: es la suma de todo lo pagado por
+   los alumnos de cada coach. Se quita por CSS porque la tabla se re-renderiza. */
+body.role-oculta-dinero [data-col-ltv]{display:none !important;}
 
 /* ═══════════════════════════════════════════════════════════════
    HORARIO DINÁMICO
@@ -8063,6 +8071,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <div class="field"><label>Rol *</label>
         <select id="nu-rol">
           <option value="admin">Admin (acceso total)</option>
+          <option value="recepcion">Recepción (opera todo, sin ver dinero)</option>
           <option value="coach">Coach (horario y evaluaciones)</option>
           <option value="marketing">Marketing (CRM y campañas)</option>
           <option value="operaciones">Operaciones (pagos y horario)</option>
@@ -8091,6 +8100,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <div class="field"><label>Rol *</label>
         <select id="eu-rol">
           <option value="admin">Admin (acceso total)</option>
+          <option value="recepcion">Recepción (opera todo, sin ver dinero)</option>
           <option value="coach">Coach (horario y evaluaciones)</option>
           <option value="marketing">Marketing (CRM y campañas)</option>
           <option value="operaciones">Operaciones (pagos y horario)</option>
@@ -9411,6 +9421,9 @@ function showApp(){
     } else {
       document.getElementById('users-section').style.display='none';
     }
+    // Ocultar módulos vetados por rol (recepción: todo lo de dinero).
+    // Va DESPUÉS de applyStoredSettings() porque esa cadena reconstruye el nav.
+    applyRoleModules();
     // Dashboard ya fue inicializado en DOMContentLoaded; solo re-renderiza con datos reales
     renderDashboard();
     // Show onboarding wizard — forzado si viene de success.html (?onboarding=true)
@@ -9702,7 +9715,7 @@ function updateSidebarUser(){
   const initials = currentUser.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
   document.getElementById('sidebar-av').textContent    = initials;
   document.getElementById('sidebar-nombre').textContent = currentUser.nombre;
-  const rolLabel = {admin:'Administrador',coach:'Coach',marketing:'Marketing',operaciones:'Operaciones'};
+  const rolLabel = {admin:'Administrador',recepcion:'Recepción',coach:'Coach',marketing:'Marketing',operaciones:'Operaciones'};
   document.getElementById('sidebar-rol').textContent    = rolLabel[currentUser.rol]||currentUser.rol;
   // Show super-admin nav only for superadmin role
   const saNav = document.getElementById('nav-superadmin');
@@ -9766,9 +9779,13 @@ async function saveMiCuenta(){
 // SUPABASE — usuarios
 // ═══════════════════════════════════════════════════════════════════
 async function loadUsuariosFromSupabase(){
-  const { data, error } = await gf(window.supabaseClient.from('usuarios').select('*')).order('created_at');
+  // Columnas EXPLÍCITAS a propósito: select('*') se traía pw_hash, totp_secret y
+  // recovery_codes de todo el equipo al navegador. Ninguna se usa aquí.
+  // (La migración 20260826_rol_recepcion.sql revoca esas columnas a nivel de grant.)
+  const { data, error } = await gf(window.supabaseClient
+    .from('usuarios').select('id,nombre,email,rol,activo,gym_id,pw_version,created_at')).order('created_at');
   if(error){ console.error('Error cargando usuarios:', error); if(_handleSessionError(error))return; return; }
-  usuarios = (data||[]).map(u=>({ id:u.id, nombre:u.nombre, email:u.email, password:u.password, rol:u.rol, activo:u.activo, gym_id:u.gym_id }));
+  usuarios = (data||[]).map(u=>({ id:u.id, nombre:u.nombre, email:u.email, rol:u.rol, activo:u.activo, gym_id:u.gym_id }));
 }
 
 function renderUsuarios(){
@@ -9778,7 +9795,7 @@ function renderUsuarios(){
     el.innerHTML = `<div style="color:var(--text3);font-size:var(--fs-sm);padding:16px 0;">Sin usuarios registrados aún.</div>`;
     return;
   }
-  const rolLabel = {admin:'Admin',coach:'Coach',marketing:'Marketing',operaciones:'Operaciones'};
+  const rolLabel = {admin:'Admin',recepcion:'Recepción',coach:'Coach',marketing:'Marketing',operaciones:'Operaciones'};
   el.innerHTML = usuarios.map(u=>{
     const initials = u.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
     const isMe = currentUser && u.id===currentUser.id;
@@ -10287,12 +10304,21 @@ function applyVerticalModules(vertical){
   const _showIds = new Set(); Object.values(_VERTICAL_NAV).forEach(c=>(c.show||[]).forEach(i=>_showIds.add(i)));
   _showIds.forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display='none'; });
   const cfg = _VERTICAL_NAV[vertical];
-  if(!cfg) return; // velum = sin cambios
+  if(!cfg){
+    // velum/gym = sin cambios de vertical. Pero el reset de arriba ya restauró
+    // style.display, así que los vetos por rol hay que re-aplicarlos IGUAL —
+    // si no, en la vertical por defecto los items reaparecían en el menú "Más".
+    if(typeof applyRoleModules==='function') applyRoleModules();
+    return;
+  }
   Object.entries(cfg.relabel||{}).forEach(([id,txt])=>{ const l=_navLblEl(id); if(l) l.textContent=' '+txt; });
   (cfg.hide||[]).forEach(id=>{ const it=document.getElementById(id); if(it){ it.style.display='none'; _navVertHidden.push(id); } });
   (cfg.show||[]).forEach(id=>{ const it=document.getElementById(id); if(it) it.style.display=''; });
   _syncNavSections();
   _setVerticalBadge(vertical);
+  // Esta función restaura style.display de _navVertHidden y puede revivir items que
+  // applyRoleModules ocultó. Re-aplicar los vetos por rol al final, siempre.
+  if(typeof applyRoleModules==='function') applyRoleModules();
 }
 
 // Oculta el label de un grupo del sidebar cuando TODOS sus items quedaron ocultos
@@ -10305,6 +10331,124 @@ function _syncNavSections(){
     lbl.style.display = anyVisible ? '' : 'none';
     sec.style.display = anyVisible ? '' : 'none';
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MÓDULOS POR ROL — recepción opera todo, pero no ve dinero
+// ═══════════════════════════════════════════════════════════════════════
+// Criterio: recepción ve el pago INDIVIDUAL de un cliente (lo necesita para
+// cobrar y validar vigencia) pero nunca la SUMA. Se oculta el "cuánto hay".
+//
+// Esto es capa de PRESENTACIÓN. El candado real vive en RLS
+// (migración 20260826_rol_recepcion.sql): gastos y commission_payouts
+// devuelven 0 filas para app_rol='recepcion' aunque abran devtools.
+const _ROLE_MODULES = {
+  recepcion: {
+    ocultaDinero: true,   // bandera que consultan los renderers para cortar temprano
+
+    // Vistas que desaparecen del sidebar
+    hideNav: ['nav-revenue','nav-gastos','nav-domiciliados','nav-paquetes',
+              'nav-calendario-venc','nav-retencion','nav-visitas'],
+
+    // KPIs sueltos dentro de vistas permitidas (se oculta la tarjeta contenedora,
+    // por eso van por id + closest() en vez de selector CSS).
+    hideKpis: ['kpi-ingresos-mes','kpi-total-ingresos','mhw-ingresos',
+               'pagos-kpi-cobrado','pagos-kpi-pvencer','pagos-kpi-proyeccion'],
+
+    // Bloques con agregados de dinero dentro de vistas permitidas.
+    hideCss: [
+      '[data-widget-id="balance"]',            // Balance del mes: ingresos/egresos/margen/nómina
+      '[data-widget-id="hist"]',               // Ingresos últimos 6 meses
+      '#dash-meta-card',                       // Meta del mes ($ del mes con otro nombre)
+      '#gym-analytics','#gym-analisis-toggle', // Ingresos 30d, ticket promedio, planes por revenue
+      '#htab-btn-nomina','#hor-tab-nomina',    // Nómina Quincena (dentro de Horario)
+      '[onclick*="exportarClientesCSV"]',      // exports con Total Pagado / LTV
+      '[onclick*="exportarClientesXLSX"]',
+      '[onclick*="exportarPagosCSV"]',
+      '[onclick*="generarReporteMensual"]',    // XLSX con estado de resultados
+      // Configuración: solo "Mi Cuenta" (contraseña y 2FA). Se excluye doLogout
+      // del ocultamiento: si no, recepción pierde el "Cerrar sesión" de primer nivel.
+      '.cfg-menu-item:not([onclick*="cuenta"]):not([onclick*="doLogout"])',
+    ],
+
+    // Guard de navegación: ni por consola ni por el nav móvil
+    blockViews: ['revenue','gastos','domiciliados','paquetes','calendario-venc',
+                 'retencion','visitas','superadmin'],
+
+    // Paneles de Configuración permitidos
+    allowSettings: ['cuenta'],
+  },
+};
+
+function _roleCfg(){
+  return (currentUser && currentUser.rol) ? _ROLE_MODULES[currentUser.rol] : null;
+}
+
+// ¿Esta vista está vetada para el rol actual?
+function roleBlocksView(id){
+  const cfg = _roleCfg();
+  return !!(cfg && (cfg.blockViews||[]).indexOf(id) !== -1);
+}
+
+// ¿El rol actual tiene prohibido ver agregados de dinero?
+// Lo consultan los renderers para no calcular ni pintar (no basta con ocultar:
+// generarReporteMensual y los exports producen archivos aunque el botón no se vea).
+function roleOcultaDinero(){
+  const cfg = _roleCfg();
+  return !!(cfg && cfg.ocultaDinero);
+}
+
+// ¿Puede abrir este panel de Configuración?
+function roleAllowsSettings(panel){
+  const cfg = _roleCfg();
+  if(!cfg || !cfg.allowSettings) return true;
+  return cfg.allowSettings.indexOf(panel) !== -1;
+}
+
+// Aplica el ocultamiento del rol actual. IDEMPOTENTE: se puede llamar N veces.
+//
+// Marca con [data-role-hidden] Y con style.display='none'. Los dos, a propósito:
+//   · el ATRIBUTO lo tapa vía CSS con !important, que le gana al inline style que
+//     varios renderers reescriben en cada corrida (renderGymAnalytics hace
+//     card.style.display='' y deshacía el ocultamiento solo)
+//   · el style.display='none' mantiene funcionando a openMasMenu() y
+//     _syncNavSections(), que filtran leyendo style.display
+//
+// DEBE re-invocarse después de applySidebarOrder() y applyVerticalModules(),
+// porque ambas reconstruyen o restauran items del nav.
+function applyRoleModules(){
+  // Limpiar SIEMPRE lo que marcó una sesión anterior. Sin esto, si un admin inicia
+  // sesión después de recepción en la misma pestaña (sin F5), heredaba los ocultos:
+  // quitar la clase apaga la regla CSS, pero el style.display='none' inline se queda.
+  document.querySelectorAll('[data-role-hidden]').forEach(el=>{
+    el.removeAttribute('data-role-hidden');
+    el.style.display = '';
+  });
+
+  const cfg = _roleCfg();
+  if(!cfg){                                                   // admin/coach/etc → sin cambios
+    document.body.classList.remove('role-restricted','role-oculta-dinero');
+    return;
+  }
+  document.body.classList.add('role-restricted');
+  document.body.classList.toggle('role-oculta-dinero', !!cfg.ocultaDinero);
+
+  const tapar = el=>{ if(!el) return; el.setAttribute('data-role-hidden',''); el.style.display='none'; };
+
+  (cfg.hideNav||[]).forEach(id=> tapar(document.getElementById(id)) );
+
+  (cfg.hideKpis||[]).forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    // Subir a la tarjeta contenedora para no dejar un hueco vacío en el grid.
+    tapar(el.closest('.kpi-card') || el.closest('.mhw-stat') || el);
+  });
+
+  (cfg.hideCss||[]).forEach(sel=>{
+    try{ document.querySelectorAll(sel).forEach(tapar); }catch(_){}
+  });
+
+  _syncNavSections();
 }
 
 // Badge de giro bajo el logo (Gym · Performance / Studio · Boutique / Recovery · Wellness).
@@ -11393,6 +11537,12 @@ function openSettingsPanel(id){
   // Paneles fusionados (jul-2026): sus accesos viejos redirigen al nuevo hogar
   const _cfgAlias = { metas:'personalizacion', suscripcion:'stripe', seguridad:'cuenta' };
   if(_cfgAlias[id]) id = _cfgAlias[id];
+  // Guard por rol: recepción solo entra a "Mi Cuenta" (contraseña y 2FA). El resto
+  // expone meta de ingresos, precios, domiciliaciones, Stripe, suscripción y CFDI.
+  if(typeof roleAllowsSettings==='function' && !roleAllowsSettings(id)){
+    if(typeof toast==='function') toast('No tienes acceso a esta sección','🔒',2500);
+    return;
+  }
   const landing = document.getElementById('cfg-menu-landing');
   if(landing) landing.style.display = 'none';
   document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('cfg-panel-active'));
@@ -11501,6 +11651,8 @@ async function renderOnboardingCard(){
 
 // ── Analítica del gym: ingresos por mes, retención, planes (desde el global `pagos`) ──
 function renderGymAnalytics(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()) return;   // recepción: sin agregados de dinero
+
   const card = document.getElementById('gym-analytics');
   if(!card) return;
   try {
@@ -11668,6 +11820,12 @@ function renderHelpList(query){
 }
 
 function go(id, el){
+  // Guard por rol: cierra la puerta aunque llamen go() desde la consola o desde
+  // un botón del nav móvil que sobrevivió al ocultamiento.
+  if(typeof roleBlocksView==='function' && roleBlocksView(id)){
+    if(typeof toast==='function') toast('No tienes acceso a esta sección','🔒',2500);
+    return;
+  }
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   // Sync mobile bottom nav active state
@@ -12124,6 +12282,10 @@ let _confirmResolve = null;
     { label:'Marketing',       icon:'', nav:'marketing' },
     { label:'Configuración',   icon:'', nav:'settings' },
   ];
+  // Módulos visibles para el rol actual. Se evalúa EN CADA BÚSQUEDA, no aquí:
+  // este IIFE corre al cargar el script, cuando currentUser todavía es null.
+  const _modulesVisibles = () => MODULES.filter(m =>
+    !(typeof roleBlocksView==='function' && roleBlocksView(m.nav)));
 
   let _results = [];
   let _selected = 0;
@@ -12141,7 +12303,7 @@ let _confirmResolve = null;
   }
 
   function renderModules(){
-    _results = MODULES.map(m=>({
+    _results = _modulesVisibles().map(m=>({
       type:'module', label:m.label, icon:m.icon, sub:'Ir al módulo',
       action:()=>{ close(); const el=document.getElementById('nav-'+m.nav); if(el) go(m.nav,el); }
     }));
@@ -12155,7 +12317,7 @@ let _confirmResolve = null;
     _results=[];
 
     // Módulos
-    MODULES.filter(m=>m.label.toLowerCase().includes(q)).forEach(m=>{
+    _modulesVisibles().filter(m=>m.label.toLowerCase().includes(q)).forEach(m=>{
       _results.push({ type:'module', label:m.label, icon:m.icon, sub:'Módulo',
         action:()=>{ close(); const el=document.getElementById('nav-'+m.nav); if(el) go(m.nav,el); } });
     });
@@ -13041,7 +13203,7 @@ function renderReporteCoach(){
         <th style="text-align:center;padding:10px 8px;font-weight:600;">Asistentes</th>
         <th style="text-align:center;padding:10px 8px;font-weight:600;">Prom/Clase</th>
         <th style="text-align:center;padding:10px 8px;font-weight:600;">Alumnos únicos</th>
-        <th style="text-align:right;padding:10px 12px;font-weight:600;">LTV alumnos</th>
+        <th style="text-align:right;padding:10px 12px;font-weight:600;" data-col-ltv>LTV alumnos</th>
       </tr></thead>
       <tbody>` +
       rows.map(r=>`
@@ -13059,7 +13221,7 @@ function renderReporteCoach(){
           <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:800;color:var(--ok);">${r.asistentes}</td>
           <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:700;color:var(--text);">${r.promedio}</td>
           <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:700;color:var(--violet);">${r.clientesDelCoach.length}</td>
-          <td style="text-align:right;padding:12px;font-size:var(--fs-base);font-weight:700;color:var(--ok);">$${r.ltv.toLocaleString('es-MX')}</td>
+          <td style="text-align:right;padding:12px;font-size:var(--fs-base);font-weight:700;color:var(--ok);" data-col-ltv>$${r.ltv.toLocaleString('es-MX')}</td>
         </tr>`).join('') +
     `</tbody></table></div>`;
 }
@@ -15583,6 +15745,11 @@ function importarClientesCSV(){
 
 // ─── Exportar CSV de clientes ──────────────────────────────────────
 function exportarClientesCSV(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()){
+    if(typeof toast==='function') toast('No tienes acceso a esta información','\u{1F512}',2500);
+    return;
+  }
+
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const mapaConteo = {};
   pagos.forEach(p=>{
@@ -15634,6 +15801,11 @@ function ensureXLSX(callback){
 
 // ─── Exportar Excel (XLSX) de clientes ────────────────────────────
 function exportarClientesXLSX(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()){
+    if(typeof toast==='function') toast('No tienes acceso a esta información','\u{1F512}',2500);
+    return;
+  }
+
   ensureXLSX(_doExportarClientesXLSX);
 }
 function _doExportarClientesXLSX(){
@@ -15707,6 +15879,11 @@ function _doExportarClientesXLSX(){
 
 // ─── Exportar CSV de pagos ─────────────────────────────────────────
 function exportarPagosCSV(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()){
+    if(typeof toast==='function') toast('No tienes acceso a esta información','\u{1F512}',2500);
+    return;
+  }
+
   const filas=[['Fecha','Cliente','Plan','Monto','Método','Vencimiento','Teléfono','Notas']];
   const sorted=[...pagos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   sorted.forEach(p=>filas.push([p.fecha||'',p.cliente||'',p.plan||'',p.monto||0,p.metodo||'',p.vence||'',p.telefono||'',p.notas||'']));
@@ -16131,6 +16308,8 @@ function saveMetaMensual(){
 }
 
 function renderMetaMensual(ingresosMes){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()) return;   // recepción: sin agregados de dinero
+
   const el = document.getElementById('dash-meta-body');
   const lbl= document.getElementById('dash-meta-label');
   if(!el) return;
@@ -17993,6 +18172,8 @@ function renderCumpleanos(){
 
 // ─── Gráfica histórica de ingresos ────────────────────────────────
 function renderHistIngresos(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()) return;   // recepción: sin agregados de dinero
+
   const canvas = document.getElementById('histIngrChart');
   const lbl    = document.getElementById('dash-hist-total');
   if(!canvas) return;
@@ -20402,6 +20583,9 @@ function applySidebarOrder(order){
   });
   // Reaplicar módulos/visibilidad por vertical sobre el sidebar recién reconstruido.
   if(typeof applyVerticalModules==='function' && typeof _gymVertical!=='undefined'){ applyVerticalModules(_gymVertical); }
+  // Y los vetos por ROL — este rebuild revive los items que applyRoleModules ocultó,
+  // así que tiene que ir al final y DESPUÉS de applyVerticalModules.
+  if(typeof applyRoleModules==='function'){ applyRoleModules(); }
 }
 
 function renderSidebarCustomizer(){
@@ -24476,6 +24660,11 @@ function getEffectiveClase(fechaStr, hora){
 }
 
 function switchHorTab(tab){
+  // Nómina Quincena expone tarifa por coach y el total a pagar del gym.
+  if(tab==='nomina' && typeof roleOcultaDinero==='function' && roleOcultaDinero()){
+    if(typeof toast==='function') toast('No tienes acceso a esta información','🔒',2500);
+    return;
+  }
   ['mensual','plantilla','nomina'].forEach(t=>{
     const el = document.getElementById('hor-tab-'+t);
     const btn= document.getElementById('htab-btn-'+t);
@@ -25097,6 +25286,8 @@ async function loadCoachRates(year, month){
 }
 
 function renderQuincenaKPI(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()) return;   // recepción: sin agregados de dinero
+
   const el = document.getElementById('nomina-quincena-wrap');
   if(!el) return;
   const lbl2 = document.getElementById('hor-mes-label2');
@@ -25941,6 +26132,11 @@ async function enviarEmailsVencimiento(){
 <!-- ═══ REPORTE MENSUAL ═══ -->
 <script>
 function generarReporteMensual(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()){
+    if(typeof toast==='function') toast('No tienes acceso a esta información','\u{1F512}',2500);
+    return;
+  }
+
   // Abrir ventana ANTES de cualquier cómputo — iOS Safari bloquea window.open después de async/awaits
   const win = window.open('', '_blank');
   if(!win){ toast('Permite ventanas emergentes para generar el reporte.','⚠️'); return; }
@@ -27800,6 +27996,9 @@ function vaInit(){
 }
 
 function vaToggle(){
+  // vaInit() ya oculta los botones para roles no-admin, pero esta función es global
+  // y llamable desde consola. El asistente responde con ingresos_mes en su contexto.
+  if(currentUser && currentUser.rol!=='admin' && currentUser.rol!=='superadmin') return;
   vaOpen = !vaOpen;
   const panel = document.getElementById('va-panel');
   const btn   = document.getElementById('va-btn');
@@ -28988,7 +29187,7 @@ function renderPorVencer(){
       ${hoy>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(239,68,68,.12);color:var(--danger);font-size:var(--fs-xs);font-weight:700;border:1px solid rgba(239,68,68,.25);">Hoy: ${hoy}</span>`:''}
       ${maña>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(245,158,11,.12);color:var(--warn);font-size:var(--fs-xs);font-weight:700;border:1px solid rgba(245,158,11,.25);">Mañana: ${maña}</span>`:''}
       ${resto>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(74,222,128,.1);color:#4ade80;font-size:var(--fs-xs);font-weight:700;border:1px solid rgba(74,222,128,.2);">Próximos: ${resto}</span>`:''}
-      <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.04);color:var(--text2);font-size:var(--fs-xs);font-weight:700;border:1px solid var(--border);">En riesgo: $${ingrEst.toLocaleString('es-MX')}</span>
+      ${(typeof roleOcultaDinero==='function' && roleOcultaDinero()) ? '' : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.04);color:var(--text2);font-size:var(--fs-xs);font-weight:700;border:1px solid var(--border);">En riesgo: $${ingrEst.toLocaleString('es-MX')}</span>`}
     </div>`;
   }
 
