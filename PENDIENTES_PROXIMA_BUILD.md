@@ -287,8 +287,10 @@ Entra en la build 1.0.7.
 
 ## BUILD 1.0.7 — CERRADA EN AMBAS TIENDAS (27-ago-2026)
 
-**Definitivos: Android vc12 (publicado en Alpha) · iOS build 14 (procesando en
-TestFlight).** Los vc11/b13 quedaron supersedidos sin llegar a testers: traían
+**Definitivos: Android vc12 (Alpha, en revisión de Google) · iOS 1.0.7/build 14
+ENVIADA A REVISIÓN DE APP STORE (27-ago, ~48h, lanzamiento automático).**
+Producción de Android sigue tras la regla de Google: 12 testers activos ×
+14 días en prueba cerrada antes de poder solicitarla.** Los vc11/b13 quedaron supersedidos sin llegar a testers: traían
 el bug del Marfil pegado. Los definitivos llevan además la arquitectura de
 flags (verticales = presets + switches, velum_flags como fuente única).
 
