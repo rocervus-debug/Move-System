@@ -4324,6 +4324,12 @@ function applyPWABranding(gymName, themeHex){
 // ── Vocabulario por vertical (recovery habla de "sesiones/citas", no "clases/reservas") ──
 // El color ya lo aplica applyGymAccent (sigue el gym_color del giro). Esto es solo el lenguaje.
 let _atletaVertical='gym';
+// ¿Esta sesión de página ya pintó una vertical no-gym? Si sí y luego entra un
+// gym core, hay que RECARGAR: la piel, el vocabulario y el observador de
+// verticalización quedan pegados (reporte MOVE en TestFlight: salió Marfil en
+// un gym core tras haber abierto antes una cuenta studios). La bandera evita
+// ciclos: tras recargar nace en false y ya no se dispara.
+let _vzAplicada=false;
 const _AT_TERMS={
   recovery:{
     nav:{ 'bn-clases':'SESIONES', 'bn-plan':'PLAN' },
@@ -4396,7 +4402,9 @@ async function fetchGymVertical(gymId){
     if(!res.ok) return;
     const rows=await res.json();
     const v=Array.isArray(rows)&&rows[0]&&rows[0].value;
-    if(v==='recovery'||v==='studios'||v==='padel'){ _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+    if(v==='recovery'||v==='studios'||v==='padel'){ _vzAplicada=true; _atletaVertical=v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+    else if(_vzAplicada){ try{ window.location.reload(); }catch(_){} }
+    else { _atletaVertical='gym'; _applyAtletaSkin(); }
   }catch(_){}
 }
 
@@ -4464,8 +4472,9 @@ function showPortal(data){
   if(data.gym?.id || data.gym?.slug) fetchGymBranding(data.gym.id, data.gym.slug);
   // v34: el portal ya trae gym.vertical (gyms.vertical); el fetch a gym_config queda de fallback
   const _v = data.gym?.vertical;
-  if(_v==='recovery'||_v==='studios'||_v==='padel'){ _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
-  else if(data.gym?.id) fetchGymVertical(data.gym.id);
+  if(_v==='recovery'||_v==='studios'||_v==='padel'){ _vzAplicada=true; _atletaVertical=_v; _verticalizeAtleta(); _startVerticalizeObserver(); }
+  else if(_vzAplicada){ try{ window.location.reload(); return; }catch(_){} }
+  else { _atletaVertical='gym'; _applyAtletaSkin(); if(data.gym?.id) fetchGymVertical(data.gym.id); }
   document.title=`${(data.cliente.nombre||'').split(' ')[0]||'Portal'} — ${data.gym?.nombre||'VELUM'}`;
 
   if(data.cliente.portal_token){
