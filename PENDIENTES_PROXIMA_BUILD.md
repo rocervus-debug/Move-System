@@ -311,3 +311,19 @@ cruce BYCO → logout → MOVE (debe verse oscuro, no Marfil).
 - Subir IPHONEOS_DEPLOYMENT_TARGET de 13.0 → 15.0 (obligatorio primavera 2027;
   iOS 15 cubre los mismos equipos, pérdida de usuarios ~nula). Cambiar también
   el platform del Podfile y correr pod install.
+
+### Target API 36 CUMPLIDO (28-ago, deadline de Google era el 31)
+
+- `variables.gradle`: compile/target 35 → **36** · Capacitor 6.2.1 · versionCode **13**
+- Edge-to-edge obligatorio de target 36 resuelto en `MainActivity.java`: el
+  content root absorbe los insets como padding, franja superior pintada de
+  #04120f y con iconos claros. **Verificado en emulador Android 17 (API 37)**
+  con capturas: layout correcto, barra legible.
+- El proyecto `android/` vive fuera de git: copia de referencia del fix en
+  `velum-app/native/MainActivity-android-target36.java.ref`.
+- AAB firmado listo: `~/Desktop/VELUM-1.0.7-vc13-api36.aab` (misma huella).
+  Subirlo a Alpha cuando la vc12 salga de revisión (o reemplazándola). Con esto
+  el deadline queda desactivado: cualquier subida futura ya apunta a 36.
+- Matiz conocido: en piel Marfil (studios) sobre Android 15+, la franja de la
+  barra queda oscura sobre página clara — legible y deliberado por ahora; el
+  arreglo fino llega con la migración a Capacitor 8 (insets vía CSS).

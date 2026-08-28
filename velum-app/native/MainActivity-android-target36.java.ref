@@ -1,0 +1,36 @@
+// Referencia rastreada del fix de insets para targetSdk 36 (el android/ real está en .gitignore).
+package app.myvelum.platform;
+
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.view.View;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    // targetSdk 36 fuerza edge-to-edge. Estrategia: el content root absorbe los
+    // insets como padding (el contenido vuelve a arrancar bajo la barra), la
+    // franja que queda detrás se pinta del oscuro de marca y los iconos del
+    // sistema se fijan en claro. En Android <15 todo esto es no-op.
+    if (Build.VERSION.SDK_INT >= 35) {
+      final View content = findViewById(android.R.id.content);
+      content.setBackgroundColor(Color.parseColor("#04120f")); // themeColor de marca
+      WindowCompat.getInsetsController(getWindow(), content)
+          .setAppearanceLightStatusBars(false); // iconos claros sobre franja oscura
+      ViewCompat.setOnApplyWindowInsetsListener(content, (v, windowInsets) -> {
+        Insets bars = windowInsets.getInsets(
+            WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+        v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+        return WindowInsetsCompat.CONSUMED;
+      });
+      ViewCompat.requestApplyInsets(content);
+    }
+  }
+}
