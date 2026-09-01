@@ -13228,9 +13228,16 @@ function initCoachReportMes(){
   sel.innerHTML = opts.join('');
 }
 
-function renderReporteCoach(){
+// Clases del mes = plantilla semanal efectiva + overrides por fecha (misma regla que
+// _horariosEfectivosFecha), sin CERRADO ni canceladas, y solo días ya transcurridos.
+// Asistentes = reservas con check-in (la única tabla que liga asistencia ↔ clase);
+// los check-ins de puerta (asistencias/qr_checkins) no traen clase, así que no se
+// atribuyen a ningún coach — atribuirlos por hora sería inventar datos.
+let _repCoachRun = 0; // token anti-carrera al cambiar de mes con fetch en vuelo
+
+async function renderReporteCoach(){
   const sel = document.getElementById('coach-report-mes');
-  const mesKey = sel ? sel.value : new Date().toISOString().slice(0,7);
+  const mesKey = (sel && sel.value) ? sel.value : new Date().toISOString().slice(0,7);
   const bodyEl = document.getElementById('coach-report-body');
   if(!bodyEl) return;
 
@@ -13238,59 +13245,124 @@ function renderReporteCoach(){
     bodyEl.innerHTML = `<div style="padding:16px;color:var(--text3);font-size:var(--fs-sm);">Sin coaches registrados.</div>`;
     return;
   }
+  const run = ++_repCoachRun;
+  bodyEl.innerHTML = `<div style="padding:16px;color:var(--text3);font-size:var(--fs-sm);">Calculando reporte…</div>`;
 
-  // Build rows: one per coach
-  const rows = coaches.map(coach=>{
-    const nombre = coach.nombre || coach.name || '—';
-    // Count clases impartidas this month. OJO: la global es `horario` (singular);
-    // aquí decía `horarios` (no existe) y el ReferenceError tumbaba TODA la vista
-    // Coaches a media carga (P0 COREX 01-sep). Las filas con fecha viven en
-    // horarioOverrides; la plantilla (fecha='') se descarta abajo igual que antes.
-    const _filasHor = (typeof horario!=='undefined'?horario:[])
-      .concat(typeof horarioOverrides!=='undefined'?(horarioOverrides||[]):[]);
-    const clasesEseMes = _filasHor.filter(h=>{
-      if(!h.fecha) return false;
-      const coachMatch = (h.coach_id && h.coach_id === coach.id) ||
-                         (h.coach   && h.coach   === nombre)    ||
-                         (h.nombre  && h.nombre  === nombre);
-      return h.fecha.startsWith(mesKey) && coachMatch;
-    });
+  const [anio, mesNum] = mesKey.split('-').map(Number);            // mesNum 1-12
+  const diasMes = new Date(anio, mesNum, 0).getDate();
+  const start = `${mesKey}-01`;
+  const end   = `${mesKey}-${String(diasMes).padStart(2,'0')}`;
+  const hoy   = _hoyMX();
+  const lastFecha = end > hoy ? hoy : end;                          // impartidas, no programadas
+  const ocultaDinero = (typeof roleOcultaDinero==='function' && roleOcultaDinero());
 
-    // Count asistentes from qr_checkins (by clase instructor - we match by coach name in clase field)
-    const clasesNombres = clasesEseMes.map(h=>h.clase||h.tipo||'').filter(Boolean);
-    const checkins = (window.qrCheckins||[]).filter(c=>
-      c.fecha && c.fecha.startsWith(mesKey) &&
-      clasesNombres.some(cn=>(c.clase||'').toLowerCase().includes(cn.toLowerCase()) || cn.toLowerCase().includes((c.clase||'').toLowerCase()))
-    );
-
-    // Compute LTV of coach's clients (clients who attended their classes)
-    const clientesDelCoach = [...new Set(checkins.map(c=>(c.nombre||'').trim()).filter(Boolean))];
-    const ltv = clientesDelCoach.reduce((sum,nombre)=>{
-      const totalPagado = pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.notas!=='__sin_pago__').reduce((s,p)=>s+(p.monto||0),0);
-      return sum + totalPagado;
-    },0);
-
-    const claseCount = clasesEseMes.length;
-    const asistentes = checkins.length;
-    const promedio   = claseCount > 0 ? (asistentes/claseCount).toFixed(1) : '—';
-
-    return { coach, nombre, claseCount, asistentes, promedio, clientesDelCoach, ltv };
-  });
-
-  if(!rows.length){
-    bodyEl.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:var(--fs-sm);">Sin datos para este mes.</div>`;
+  let filasHor, cancels, checkinsRes;
+  try{
+    // Fetch propio: no depende de horarioOverrides (cargado para OTRO mes en la vista
+    // Horario) ni del global horario, que descarta coaches_extra al mapear.
+    const [horRes, canRes, resRes] = await Promise.all([
+      gf(qb('horarios').select('id,dia,hora,fecha,tipo,coach_id,coach_nombre,coaches_extra')),
+      gf(qb('horario_cancelaciones').select('horario_id,fecha')).gte('fecha',start).lte('fecha',end),
+      gf(qb('reservas').select('horario_id,fecha,cliente_nombre')).gte('fecha',start).lte('fecha',end).eq('estado','checkin'),
+    ]);
+    if(horRes.error) throw horRes.error;
+    if(canRes.error) throw canRes.error;
+    if(resRes.error) throw resRes.error;
+    filasHor    = horRes.data||[];
+    cancels     = new Set((canRes.data||[]).map(c=>`${c.horario_id}|${c.fecha}`));
+    checkinsRes = resRes.data||[];
+  }catch(e){
+    console.error('renderReporteCoach fetch:', e);
+    if(typeof _handleSessionError==='function' && _handleSessionError(e)) return;
+    if(run !== _repCoachRun) return;
+    bodyEl.innerHTML = `<div style="padding:16px;color:var(--text3);font-size:var(--fs-sm);">No se pudo cargar el reporte. Revisa tu conexión e inténtalo de nuevo.</div>`;
     return;
   }
+  if(run !== _repCoachRun) return; // ya se pidió otro mes; este resultado es viejo
 
+  const esFechaISO = f => /^\d{4}-\d{2}-\d{2}$/.test(f||'');
+  const plantilla  = filasHor.filter(h=>!esFechaISO(h.fecha));
+  const ovsMes     = filasHor.filter(h=>esFechaISO(h.fecha) && h.fecha>=start && h.fecha<=end);
+  const ovsPorDia  = {};
+  ovsMes.forEach(o=>{ (ovsPorDia[o.fecha] = ovsPorDia[o.fecha]||[]).push(o); });
+  const filaPorId  = {};
+  filasHor.forEach(h=>{ filaPorId[h.id] = h; });
+
+  // Clases efectivas de una fecha: overrides pisan su hora; el resto sale de la plantilla
+  // del día; fuera CERRADO y canceladas (regla espejo de _horariosEfectivosFecha).
+  function clasesEfectivas(fecha){
+    const ovs = ovsPorDia[fecha]||[];
+    const horasPisadas = new Set(ovs.map(o=>o.hora));
+    const diaNombre = DAY_NAME_BY_DOW[new Date(fecha+'T12:00:00').getDay()];
+    const base = plantilla.filter(h=>h.dia===diaNombre && !horasPisadas.has(h.hora));
+    return [...base, ...ovs].filter(c=>(c.tipo||'')!=='CERRADO' && !cancels.has(`${c.id}|${fecha}`));
+  }
+
+  // Equipo completo de la clase: principal + coaches_extra (multi-coach cuenta a todos)
+  function coachEnClase(c, coach){
+    if(c.coach_id && String(c.coach_id)===String(coach.id)) return true;
+    if(c.coach_nombre && c.coach_nombre!=='CERRADO' && c.coach_nombre===coach.nombre) return true;
+    const extra = Array.isArray(c.coaches_extra) ? c.coaches_extra : [];
+    return extra.some(x=>x && (String(x.id)===String(coach.id) || x.nombre===coach.nombre));
+  }
+
+  const stats = {}; // coach.id → { claseCount, asistentes, clientes:Set }
+  coaches.forEach(c=>{ stats[c.id] = { claseCount:0, asistentes:0, clientes:new Set() }; });
+
+  // 1) Clases impartidas: recorre cada día ya transcurrido del mes
+  for(let d=1; d<=diasMes; d++){
+    const fecha = `${mesKey}-${String(d).padStart(2,'0')}`;
+    if(fecha > lastFecha) break;
+    clasesEfectivas(fecha).forEach(c=>{
+      coaches.forEach(coach=>{ if(coachEnClase(c, coach)) stats[coach.id].claseCount++; });
+    });
+  }
+
+  // 2) Asistentes: cada reserva con check-in se atribuye a la clase EFECTIVA de ese
+  //    día a esa hora (si un override movió el coach, cuenta para quien la dio).
+  checkinsRes.forEach(r=>{
+    const fila = filaPorId[r.horario_id];
+    if(!fila || !esFechaISO(r.fecha)) return;
+    const efectiva = clasesEfectivas(r.fecha).find(c=>c.hora===fila.hora);
+    if(!efectiva) return; // clase cerrada/cancelada ese día
+    coaches.forEach(coach=>{
+      if(!coachEnClase(efectiva, coach)) return;
+      stats[coach.id].asistentes++;
+      const nom = (r.cliente_nombre||'').trim();
+      if(nom) stats[coach.id].clientes.add(nom);
+    });
+  });
+
+  const rows = coaches.map(coach=>{
+    const s = stats[coach.id];
+    const clientesDelCoach = [...s.clientes];
+    // LTV = total pagado histórico por los alumnos que asistieron a sus clases.
+    // roleOcultaDinero: ni se calcula (los renderers no deben producir el dato).
+    const ltv = ocultaDinero ? 0 : clientesDelCoach.reduce((sum,nom)=>{
+      return sum + pagos.filter(p=>(p.cliente||'').trim()===nom && p.notas!=='__sin_pago__')
+                        .reduce((s2,p)=>s2+(p.monto||0),0);
+    },0);
+    return {
+      coach, nombre: coach.nombre||'—',
+      claseCount: s.claseCount, asistentes: s.asistentes,
+      promedio: s.claseCount>0 ? (s.asistentes/s.claseCount).toFixed(1) : '—',
+      alumnos: clientesDelCoach.length, ltv,
+    };
+  }).sort((a,b)=>b.claseCount-a.claseCount);
+
+  if(run !== _repCoachRun) return;
+
+  const sinCheckins = checkinsRes.length===0;
+  const parcial = lastFecha===hoy && end>hoy;
   bodyEl.innerHTML = `<div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
       <thead><tr style="color:var(--text3);border-bottom:1px solid var(--border);">
         <th style="text-align:left;padding:10px 12px;font-weight:600;">Coach</th>
-        <th style="text-align:center;padding:10px 8px;font-weight:600;">Clases</th>
+        <th style="text-align:center;padding:10px 8px;font-weight:600;">Clases impartidas</th>
         <th style="text-align:center;padding:10px 8px;font-weight:600;">Asistentes</th>
         <th style="text-align:center;padding:10px 8px;font-weight:600;">Prom/Clase</th>
         <th style="text-align:center;padding:10px 8px;font-weight:600;">Alumnos únicos</th>
-        <th style="text-align:right;padding:10px 12px;font-weight:600;" data-col-ltv>LTV alumnos</th>
+        ${ocultaDinero?'':`<th style="text-align:right;padding:10px 12px;font-weight:600;">LTV alumnos</th>`}
       </tr></thead>
       <tbody>` +
       rows.map(r=>`
@@ -13307,10 +13379,14 @@ function renderReporteCoach(){
           <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:800;color:var(--accent);">${r.claseCount}</td>
           <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:800;color:var(--ok);">${r.asistentes}</td>
           <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:700;color:var(--text);">${r.promedio}</td>
-          <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:700;color:var(--violet);">${r.clientesDelCoach.length}</td>
-          <td style="text-align:right;padding:12px;font-size:var(--fs-base);font-weight:700;color:var(--ok);" data-col-ltv>$${r.ltv.toLocaleString('es-MX')}</td>
+          <td style="text-align:center;padding:12px 8px;font-size:var(--fs-base);font-weight:700;color:var(--violet);">${r.alumnos}</td>
+          ${ocultaDinero?'':`<td style="text-align:right;padding:12px;font-size:var(--fs-base);font-weight:700;color:var(--ok);">$${r.ltv.toLocaleString('es-MX')}</td>`}
         </tr>`).join('') +
-    `</tbody></table></div>`;
+    `</tbody></table></div>
+    <div style="padding:8px 12px;font-size:var(--fs-xs);color:var(--text3);">
+      Clases de la plantilla semanal + cambios por fecha, sin cerradas ni canceladas${parcial?`, al día de hoy`:''}.
+      Asistentes = check-ins de reservas de clase${sinCheckins?' (este mes no hay check-ins de reservas registrados; los check-ins de puerta no indican clase)':''}.
+    </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
