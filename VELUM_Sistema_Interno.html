@@ -16773,21 +16773,39 @@ async function agregarPlan(){
 // `storefront_listings`. Si los dos se desincronizan, el gym ve unos paquetes y sus
 // atletas otros. Estos helpers los mantienen pegados. Nunca rompen el alta/baja:
 // si algo falla, solo se loguea.
+// OJO: no hay `gymId` global — cada función declara el suyo. Estas dos lo usaban
+// sin declararlo → ReferenceError SIEMPRE, tragado por el catch: publicar y
+// despublicar nunca funcionaron desde aquí (todo COREX quedó NO VISIBLE, 01-sep).
+function _gymIdActual(){
+  return (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID
+       : ((typeof currentUser !== 'undefined' && currentUser && currentUser.gym_id) || null);
+}
 async function _publicarPaquete(packageId, sortOrder){
   try{
+    const gymId = _gymIdActual();
+    if(!gymId) return;
     const { data: ex } = await window.supabaseClient.from('storefront_listings')
       .select('id').eq('gym_id', gymId).eq('package_id', packageId).maybeSingle();
     if(ex){
       await window.supabaseClient.from('storefront_listings')
         .update({ is_public: true, updated_at: new Date().toISOString() }).eq('id', ex.id);
     } else {
-      await window.supabaseClient.from('storefront_listings')
+      const { error } = await window.supabaseClient.from('storefront_listings')
         .insert([{ gym_id: gymId, package_id: packageId, is_public: true, sort_order: sortOrder || 0 }]);
+      // Carrera con el backfill de Página pública: si la fila nació entre el
+      // select y el insert (23505), publicar vía update — idempotente.
+      if(error && String(error.code) === '23505'){
+        await window.supabaseClient.from('storefront_listings')
+          .update({ is_public: true, updated_at: new Date().toISOString() })
+          .eq('gym_id', gymId).eq('package_id', packageId);
+      }
     }
   }catch(e){ console.warn('_publicarPaquete:', e); }
 }
 async function _despublicarPaquete(packageId){
   try{
+    const gymId = _gymIdActual();
+    if(!gymId) return;
     await window.supabaseClient.from('storefront_listings')
       .update({ is_public: false, updated_at: new Date().toISOString() })
       .eq('gym_id', gymId).eq('package_id', packageId);
