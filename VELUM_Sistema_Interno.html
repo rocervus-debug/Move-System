@@ -7051,6 +7051,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <input id="ep-permite-desc" type="checkbox" style="width:15px;height:15px;cursor:pointer;"/>
         <span style="font-size:var(--fs-sm);color:var(--text2);">Permitir descuentos al registrar pagos</span>
       </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:8px;">
+        <input id="ep-visible-app" type="checkbox" style="width:15px;height:15px;cursor:pointer;"/>
+        <span style="font-size:var(--fs-sm);color:var(--text2);">Visible en la app y la página pública</span>
+      </label>
+      <span style="font-size:var(--fs-sm);color:var(--text3);display:block;margin:4px 0 0 23px;">Apágalo para venderlo solo en recepción (transferencia o efectivo): tus atletas no lo verán ni podrán pagarlo en línea.</span>
       <div id="ep-aviso" style="display:none;font-size:var(--fs-sm);color:var(--warn);margin-top:10px;"></div>
       <div id="ep-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:8px;"></div>
     </div>
@@ -7851,6 +7856,14 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div class="field"><label>Rol</label><input id="ec-rol" type="text"/></div>
       </div>
       <div class="field"><label>Clases que imparte</label><input id="ec-clases" type="text"/></div>
+      <div class="field"><label>Foto del coach <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);">(opcional · aparece en el Storefront público)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="uploadCoachFotoEdit()">Subir foto</button>
+          <img id="ec-foto-preview" src="" style="display:none;width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);"/>
+          <span id="ec-foto-upload-status" style="font-size:var(--fs-sm);color:var(--text3);"></span>
+        </div>
+        <input id="ec-foto" type="text" placeholder="o pega URL: https://..."/>
+      </div>
       <div class="field"><label>Notas internas</label><textarea id="ec-notas" placeholder="Certificaciones, fortalezas, observaciones..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -14260,6 +14273,13 @@ function openEditCoach(id){
   document.getElementById('ec-rol').value   = c.rol||'';
   document.getElementById('ec-clases').value= c.clases||'';
   document.getElementById('ec-notas').value = c.notas||'';
+  // Foto: el alta la tenía y la edición no — "le pico en editar y no me deja" (COREX)
+  const efInp = document.getElementById('ec-foto');
+  if(efInp) efInp.value = c.foto_url||'';
+  const efPrev = document.getElementById('ec-foto-preview');
+  if(efPrev){ efPrev.src = c.foto_url||''; efPrev.style.display = c.foto_url ? 'block' : 'none'; }
+  const efSt = document.getElementById('ec-foto-upload-status');
+  if(efSt) efSt.textContent = '';
   openModal('edit-coach');
 }
 
@@ -14274,6 +14294,7 @@ async function saveEditCoach(btn){
     email: document.getElementById('ec-email').value.trim(),
     rol: document.getElementById('ec-rol').value,
     clases: document.getElementById('ec-clases').value,
+    foto_url: (document.getElementById('ec-foto')?.value || '').trim() || null,
   };
   const { error } = await window.supabaseClient.from('coaches').update(updates).eq('id', id);
   if(error){ setBtnLoading(btn,false); console.error('Error actualizando coach:', error); if(_handleSessionError(error))return; alert('No se pudo actualizar.'+'\n\n'+(error.message||error.details||'')); return; }
@@ -14296,7 +14317,7 @@ function renderCoaches(){
     const color = COACH_COLORS[idx % COACH_COLORS.length];
     const statusBadge = c.activo ? ['b-ok','Activo'] : ['b-gray','Inactivo'];
     return `<div class="coach-card">
-      <div class="coach-av" style="background:${color};">${initials}</div>
+      <div class="coach-av" style="background:${color};overflow:hidden;">${c.foto_url?`<img src="${esc(c.foto_url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`:initials}</div>
       <div class="coach-name">${esc(c.nombre)}</div>
       <div class="coach-spec">${esc(c.rol||'—')}${c.clases?` · ${esc(c.clases)}`:''}</div>
       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
@@ -16585,6 +16606,8 @@ function editarPlan(id){
   set('ep-cobro', p.billing_type || 'one_time');
   const chk = document.getElementById('ep-permite-desc');
   if(chk) chk.checked = p.allow_discount !== false;
+  const vis = document.getElementById('ep-visible-app');
+  if(vis) vis.checked = !!p._publicado;
   _epToggleTipo();
 
   // Avisos honestos según el estado real del plan, no genéricos.
@@ -16649,6 +16672,18 @@ async function guardarPlanEditado(){
       ? `Ya existe otro plan llamado "${nombre}".`
       : 'No se pudo guardar: ' + m);
     return;
+  }
+
+  // Visibilidad en app/página pública: usa las mismas funciones que el resto del
+  // sistema (_publicarPaquete/_despublicarPaquete) — una sola regla, no dos.
+  const visChk = document.getElementById('ep-visible-app');
+  if(visChk){
+    const pAntes = (_packagesDB||[]).find(x => x.id === id);
+    const estaba = !!(pAntes && pAntes._publicado);
+    if(visChk.checked !== estaba){
+      if(visChk.checked) await _publicarPaquete(id, (pAntes && pAntes.sort_order) || 0);
+      else await _despublicarPaquete(id);
+    }
   }
 
   closeModal('editar-plan');
@@ -18019,6 +18054,16 @@ function uploadCoachFoto(){
     const inp = document.getElementById('c-foto');
     if (inp) inp.value = url;
     const preview = document.getElementById('c-foto-preview');
+    if (preview) { preview.src = url; preview.style.display = 'block'; }
+  });
+}
+
+// Variante para el modal de EDICIÓN (ids ec-*)
+function uploadCoachFotoEdit(){
+  pickAndUploadImage('coach', 'ec-foto-upload-status', (url) => {
+    const inp = document.getElementById('ec-foto');
+    if (inp) inp.value = url;
+    const preview = document.getElementById('ec-foto-preview');
     if (preview) { preview.src = url; preview.style.display = 'block'; }
   });
 }
