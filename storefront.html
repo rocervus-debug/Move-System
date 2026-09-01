@@ -278,6 +278,10 @@ button { font-family: inherit; cursor: pointer; }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
 .coaches-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .coach-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 16px; padding: 18px; display: flex; align-items: center; gap: 14px; text-align: left; }
+/* Columna de texto: sin ella, nombre/rol/clases quedaban en FILA como hijos
+   del flex y el texto se salía de la tarjeta (reporte COREX 01-sep). */
+.coach-info { flex: 1; min-width: 0; }
+.coach-info > div { overflow-wrap: break-word; }
 .coach-avatar { width: 46px; height: 46px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); display: grid; place-items: center; font-family: var(--font-hero); font-weight: 700; font-size: 15px; flex: none; overflow: hidden; }
 .coach-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .coach-name { font-family: var(--font-hero); font-weight: 700; font-size: 15px; }
@@ -1283,9 +1287,11 @@ function renderCoaches(coaches){
     return `
       <div class="coach-card">
         <div class="coach-avatar">${c.foto_url ? `<img src="${escapeHtml(c.foto_url)}" alt="${escapeHtml(c.nombre||'')}" loading="lazy"/>` : escapeHtml(initial)}</div>
-        <div class="coach-name">${escapeHtml(c.nombre)}</div>
-        <div class="coach-rol">${escapeHtml(c.rol || 'Coach')}</div>
-        ${c.clases ? `<div class="coach-clases">${escapeHtml(c.clases)}</div>` : ''}
+        <div class="coach-info">
+          <div class="coach-name">${escapeHtml(c.nombre)}</div>
+          <div class="coach-rol">${escapeHtml(c.rol || 'Coach')}</div>
+          ${c.clases ? `<div class="coach-clases">${escapeHtml(c.clases)}</div>` : ''}
+        </div>
       </div>`;
   }).join('');
 }
