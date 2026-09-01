@@ -11946,7 +11946,7 @@ function go(id, el){
   else if(id==='dashboard' || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
-  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ renderReporteCoach(); }catch(e){ console.error('reporte coach:', e); } }
+  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ Promise.resolve(renderReporteCoach()).catch(e=>console.error('reporte coach:', e)); }catch(e){ console.error('reporte coach:', e); } }
   if(id==='recursos')    { loadRecursos().then(renderRecursos); }
   if(id==='protocolos')  { loadProtocolos().then(renderProtocolos); }
   if(id==='citas')       { _citaEnsureFecha(); Promise.all([loadRecursos(),loadProtocolos(),loadCitas()]).then(renderCitas); }
