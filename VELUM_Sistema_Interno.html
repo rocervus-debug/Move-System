@@ -11933,7 +11933,7 @@ function go(id, el){
   else if(id==='dashboard' || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
-  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); renderReporteCoach(); }
+  if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ renderReporteCoach(); }catch(e){ console.error('reporte coach:', e); } }
   if(id==='recursos')    { loadRecursos().then(renderRecursos); }
   if(id==='protocolos')  { loadProtocolos().then(renderProtocolos); }
   if(id==='citas')       { _citaEnsureFecha(); Promise.all([loadRecursos(),loadProtocolos(),loadCitas()]).then(renderCitas); }
@@ -13242,8 +13242,13 @@ function renderReporteCoach(){
   // Build rows: one per coach
   const rows = coaches.map(coach=>{
     const nombre = coach.nombre || coach.name || '—';
-    // Count clases impartidas this month from horarios
-    const clasesEseMes = (horarios||[]).filter(h=>{
+    // Count clases impartidas this month. OJO: la global es `horario` (singular);
+    // aquí decía `horarios` (no existe) y el ReferenceError tumbaba TODA la vista
+    // Coaches a media carga (P0 COREX 01-sep). Las filas con fecha viven en
+    // horarioOverrides; la plantilla (fecha='') se descarta abajo igual que antes.
+    const _filasHor = (typeof horario!=='undefined'?horario:[])
+      .concat(typeof horarioOverrides!=='undefined'?(horarioOverrides||[]):[]);
+    const clasesEseMes = _filasHor.filter(h=>{
       if(!h.fecha) return false;
       const coachMatch = (h.coach_id && h.coach_id === coach.id) ||
                          (h.coach   && h.coach   === nombre)    ||
@@ -13253,7 +13258,7 @@ function renderReporteCoach(){
 
     // Count asistentes from qr_checkins (by clase instructor - we match by coach name in clase field)
     const clasesNombres = clasesEseMes.map(h=>h.clase||h.tipo||'').filter(Boolean);
-    const checkins = (qrCheckins||[]).filter(c=>
+    const checkins = (window.qrCheckins||[]).filter(c=>
       c.fecha && c.fecha.startsWith(mesKey) &&
       clasesNombres.some(cn=>(c.clase||'').toLowerCase().includes(cn.toLowerCase()) || cn.toLowerCase().includes((c.clase||'').toLowerCase()))
     );
