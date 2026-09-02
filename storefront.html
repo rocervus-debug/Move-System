@@ -1341,9 +1341,17 @@ function renderLocation(loc, gymName){
   }
   document.getElementById('location-section').style.display = '';
 
+  // Solo las URLs de embed reales (/maps/embed u output=embed) se pueden meter en un
+  // iframe; un link de COMPARTIR (share.google, maps.app.goo.gl, /maps/place/...)
+  // Google lo bloquea y el mapa sale en blanco (reporte COREX 02-sep). Ese link igual
+  // sirve: manda a "Cómo llegar" con el pin exacto, y el mapa se arma con lat/lng o
+  // la dirección, que sí embeben.
+  const _embedOk = (u) => /\/maps\/embed|output=embed/.test(u || '');
+  const _shareLink = (loc.maps_embed_url && !_embedOk(loc.maps_embed_url)) ? loc.maps_embed_url : null;
+
   const items = [];
   if (loc.full_address){
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.full_address + ' ' + (gymName||''))}`;
+    const mapsLink = _shareLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.full_address + ' ' + (gymName||''))}`;
     items.push(`
       <div class="location-info-item">
         <div class="location-info-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg></div>
@@ -1366,7 +1374,7 @@ function renderLocation(loc, gymName){
   document.getElementById('location-info').innerHTML = items.join('') || '<div style="color:var(--text-3);font-size:13px;">Ubicación no configurada.</div>';
 
   const mapEl = document.getElementById('location-map');
-  if (loc.maps_embed_url){
+  if (loc.maps_embed_url && _embedOk(loc.maps_embed_url)){
     mapEl.classList.remove('no-map');
     mapEl.innerHTML = `<iframe src="${escapeHtml(loc.maps_embed_url)}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
   } else if (loc.latitude && loc.longitude){
