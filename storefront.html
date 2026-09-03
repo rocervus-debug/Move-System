@@ -213,6 +213,19 @@ button { font-family: inherit; cursor: pointer; }
 .sc-coach { font-size: 13px; color: var(--text-2); margin-top: 2px; }
 .sc-cupo { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-2); letter-spacing: .04em; text-align: right; flex-shrink: 0; }
 .sc-cupo i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 6px; font-style: normal; }
+/* Ocupación: la barra se llena con las reservas reales de la próxima ocurrencia. */
+.sc-ocup { flex-shrink: 0; width: 108px; text-align: right; }
+.sc-ocup-txt { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .04em; color: var(--text-2); white-space: nowrap; }
+.sc-ocup-txt b { color: var(--text-1); font-weight: 700; }
+.sc-ocup-bar { margin-top: 6px; height: 5px; border-radius: 99px; background: var(--border-soft); overflow: hidden; }
+.sc-ocup-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 420ms cubic-bezier(.22,1,.36,1); }
+.sc-ocup.is-warm .sc-ocup-fill { background: #F5A623; }
+.sc-ocup.is-warm .sc-ocup-txt b { color: #F5A623; }
+.sc-ocup.is-full .sc-ocup-fill { background: #F06060; }
+.sc-ocup.is-full .sc-ocup-txt { color: #F06060; }
+.sc-ocup.is-full .sc-ocup-txt b { color: #F06060; }
+.sc-res[disabled] { opacity: .45; cursor: not-allowed; filter: none; }
+@media (max-width: 640px){ .sc-ocup { width: 96px; } }
 .sc-res { background: var(--accent); color: var(--accent-ink); border: none; border-radius: 10px; font-weight: 700; font-size: 13px; padding: 10px 18px; flex: none; transition: filter 160ms; }
 .sc-res:hover { filter: brightness(1.06); }
 
@@ -1211,6 +1224,27 @@ function renderPackages(packages){
   }).join('');
 }
 
+// Barra de ocupación de una clase. `reservados` viene de storefront-config (v21),
+// contado contra la MISMA próxima ocurrencia que se muestra. Sin cupo no hay barra:
+// mejor no decir nada que inventar un aforo.
+function sfOcupacionHTML(c){
+  const cupo = parseInt(c.cupo_total, 10) || 0;
+  if (!cupo) return '';
+  const tomados = Math.max(0, Math.min(parseInt(c.reservados, 10) || 0, cupo));
+  const libres = cupo - tomados;
+  const pct = Math.round((tomados / cupo) * 100);
+  const estado = libres === 0 ? 'is-full' : (pct >= 70 ? 'is-warm' : '');
+  const texto = libres === 0
+    ? 'CLASE LLENA'
+    : `<b>${libres}</b> de ${cupo} libres`;
+  return `<div class="sc-ocup ${estado}">
+    <div class="sc-ocup-txt">${texto}</div>
+    <div class="sc-ocup-bar" role="img" aria-label="${tomados} de ${cupo} lugares ocupados">
+      <div class="sc-ocup-fill" style="width:${pct}%"></div>
+    </div>
+  </div>`;
+}
+
 function renderScheduleWeekly(weekly){
   if (!weekly){
     document.getElementById('schedule-section').style.display = 'none';
@@ -1256,8 +1290,12 @@ function renderScheduleWeekly(weekly){
                 return 'Con ' + escapeHtml(eq[0]) + ', ' + escapeHtml(eq[1]) + ' +' + (eq.length - 2);
               })()}</div>
             </div>
-            ${c.cupo_total ? `<div class="sc-cupo"><i></i>${c.cupo_total} CUPOS</div>` : ''}
-            <button class="sc-res" onclick="sfReservarSlot('${jsAttr(d)}', '${jsAttr(c.hora || '')}', '${jsAttr(c.tipo || '')}', '${jsAttr(c.id || '')}')">Reservar</button>
+            ${sfOcupacionHTML(c)}
+            ${(() => {
+              const llena = c.cupo_total > 0 && (c.reservados || 0) >= c.cupo_total;
+              if (llena) return `<button class="sc-res" disabled title="Esta clase ya está llena">Llena</button>`;
+              return `<button class="sc-res" onclick="sfReservarSlot('${jsAttr(d)}', '${jsAttr(c.hora || '')}', '${jsAttr(c.tipo || '')}', '${jsAttr(c.id || '')}')">Reservar</button>`;
+            })()}
           </div>
         `).join('')}
       </div>

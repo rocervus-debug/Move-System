@@ -8346,6 +8346,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <label>Tipo de clase</label>
         <input id="hov-tipo" type="text" maxlength="48" list="tipos-clase-list" placeholder="Ej: Strength - Lower Body"/>
       </div>
+      <div class="field" id="hov-cupo-wrap">
+        <label>Cupo máximo</label>
+        <input id="hov-cupo" type="number" min="1" max="999"/>
+        <span style="font-size:var(--fs-sm);color:var(--text3);margin-top:4px;display:block;">Viene del cupo de tu horario base; cámbialo solo si esta clase lleva otro número.</span>
+      </div>
       <div class="field" style="margin-top:12px;">
         <label>¿Hasta cuándo aplica?</label>
         <select id="hov-alcance" onchange="_hovAlcanceHint()">
@@ -25123,11 +25128,18 @@ function openEditClaseCell(fechaStr, hora){
     sel.value = '';
     document.getElementById('hov-tipo').value = 'Strength';
   }
+  // El cupo se HEREDA de la clase efectiva. Antes se guardaba 15 fijo: un gym con
+  // cupo 12 en su plantilla veía 15 en su página pública en cuanto editaba un día
+  // (reporte COREX 03-sep).
+  const _cupoEl = document.getElementById('hov-cupo');
+  if(_cupoEl) _cupoEl.value = (clase && Number.isFinite(parseInt(clase.cupo,10))) ? parseInt(clase.cupo,10) : 15;
 
   // Toggle tipo visibility when cerrado
   const tipoWrap = document.getElementById('hov-tipo-wrap');
-  tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : '';
-  sel.onchange = ()=>{ tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : ''; _hovMoverHint(); };
+  const cupoWrap = document.getElementById('hov-cupo-wrap');
+  const _syncCerrado = ()=>{ const c = sel.value==='__cerrado__'; tipoWrap.style.display = c?'none':''; if(cupoWrap) cupoWrap.style.display = c?'none':''; };
+  _syncCerrado();
+  sel.onchange = ()=>{ _syncCerrado(); _hovMoverHint(); };
   const tipoSel = document.getElementById('hov-tipo');
   if(tipoSel){ tipoSel.onchange = _hovMoverHint; tipoSel.oninput = _hovMoverHint; }
 
@@ -25162,6 +25174,14 @@ async function saveHorarioOverride(){
     if(!_okC) return;
   }
 
+  // El cupo sale del campo, que se prellenó con el de la clase efectiva. Nunca un
+  // 15 fijo: eso pisaba el cupo real del gym al editar cualquier día.
+  const _cupoBase = (getEffectiveClase(fechaStr, hora)||{}).cupo;
+  const _cupoIn = parseInt((document.getElementById('hov-cupo')||{}).value, 10);
+  const cupoVal = Number.isFinite(_cupoIn) && _cupoIn > 0
+    ? _cupoIn
+    : (Number.isFinite(parseInt(_cupoBase,10)) ? parseInt(_cupoBase,10) : 15);
+
   // CERRADO stored as tipo='CERRADO' — no cerrado bool column needed
   const payload = {
     fecha:        fechaStr,
@@ -25170,7 +25190,7 @@ async function saveHorarioOverride(){
     tipo:         cerrado ? 'CERRADO' : tipo,
     coach_id:     coachId,
     coach_nombre: cerrado ? 'CERRADO' : coachNom,
-    cupo:         15,
+    cupo:         cupoVal,
     notas:        ''
   };
 
@@ -25218,7 +25238,8 @@ async function saveHorarioOverride(){
       } else {
         await window.supabaseClient.from('horarios').insert([withGymId({
           fecha: fechaStr, hora: gemela.hora, dia: '', tipo: 'CERRADO',
-          coach_id: '', coach_nombre: 'CERRADO', cupo: 15, notas: ''
+          coach_id: '', coach_nombre: 'CERRADO',
+          cupo: parseInt((getEffectiveClase(fechaStr, gemela.hora)||{}).cupo,10) || 15, notas: ''
         })]);
       }
     }
@@ -25310,6 +25331,8 @@ async function saveCobertura(){
   const coachObj = coaches.find(c=>String(c.id)===String(coachVal));
   const coachNom = coachObj ? coachObj.nombre : '';
 
+  // Una cobertura solo cambia QUIÉN da la clase: el cupo se hereda tal cual
+  // (antes se pisaba con 15 y le cambiaba el aforo al gym sin avisar).
   const payload = {
     fecha:        fechaStr,
     hora:         hora,
@@ -25317,7 +25340,7 @@ async function saveCobertura(){
     tipo:         tipo,
     coach_id:     coachVal,
     coach_nombre: coachNom,
-    cupo:         15,
+    cupo:         parseInt((getEffectiveClase(fechaStr, hora)||{}).cupo,10) || 15,
     notas:        `SUB:${origNombre}|${origId}`
   };
 

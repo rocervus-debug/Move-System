@@ -1,4 +1,6 @@
-// storefront-config — v20: + gym.flags (velum_flags).
+// storefront-config — v21: + ocupación real por clase (reservados) para la barra
+// de llenado del storefront. Se cuenta contra la MISMA próxima ocurrencia que ya
+// se calcula abajo, con el service role (el visitante anónimo no puede leer reservas).
 // v19: el horario público refleja la PRÓXIMA ocurrencia real
 // de cada día (overrides por fecha + CERRADO + cancelaciones), no solo la plantilla.
 // v18: cada clase expone su id para atar leads a ESA clase.
@@ -99,11 +101,29 @@ Deno.serve(async (req) => {
         .select('horario_id, fecha').eq('gym_id', String(sf.gym_id)).in('fecha', fechasProx);
       const cancSet = new Set((cancs || []).map((c: any) => c.horario_id + '_' + c.fecha));
 
+      // Ocupación real: reservas vivas de cada clase en SU próxima ocurrencia.
+      // Solo se expone el CONTEO (nunca nombres ni tokens): el storefront es público.
+      const { data: resvs } = await db.from('reservas')
+        .select('horario_id, fecha').eq('gym_id', sf.gym_id)
+        .in('fecha', fechasProx).neq('estado', 'cancelado');
+      const ocupMap: Record<string, number> = {};
+      (resvs || []).forEach((r: any) => {
+        const k = r.horario_id + '_' + r.fecha;
+        ocupMap[k] = (ocupMap[k] || 0) + 1;
+      });
+
       const grouped: Record<string, any[]> = { 'Lunes': [], 'Martes': [], 'Miércoles': [], 'Jueves': [], 'Viernes': [], 'Sábado': [], 'Domingo': [] };
       const pushClase = (dia: string, h: any) => {
         const extras = Array.isArray(h.coaches_extra) ? h.coaches_extra.map((x: any) => x && x.nombre).filter(Boolean) : [];
         const equipo = [h.coach_nombre, ...extras].filter(Boolean);
-        grouped[dia].push({ id: h.id, hora: h.hora, tipo: h.tipo, coach: h.coach_nombre || '', coaches: equipo, cupo_total: h.cupo || 0, minutes: horaToMinutes(h.hora) });
+        const fechaOcurrencia = proxFecha[dia];
+        const cupoTotal = h.cupo || 0;
+        const reservados = Math.min(ocupMap[h.id + '_' + fechaOcurrencia] || 0, cupoTotal || Infinity);
+        grouped[dia].push({
+          id: h.id, hora: h.hora, tipo: h.tipo, coach: h.coach_nombre || '', coaches: equipo,
+          cupo_total: cupoTotal, reservados, fecha: fechaOcurrencia,
+          minutes: horaToMinutes(h.hora),
+        });
       };
       Object.keys(grouped).forEach(dia => {
         const fecha = proxFecha[dia];
