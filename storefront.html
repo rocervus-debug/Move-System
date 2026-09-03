@@ -1216,10 +1216,14 @@ function renderPackages(packages){
       <div class="pkg-card ${featured}" data-listing-id="${p.listing_id}">
         ${badge}
         <div class="pkg-name">${escapeHtml(p.name)}</div>
-        <div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span>${p.recurring ? '<span style="font-size:14px;color:var(--text-3);font-weight:600;margin-left:3px;">/mes</span>' : ''}</div>
-        <div class="pkg-meta">${escapeHtml(meta)}${p.recurring ? ' · cobro mensual automático' : ''}</div>
+        ${(p.price_mxn > 0)
+          ? `<div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span>${p.recurring ? '<span style="font-size:14px;color:var(--text-3);font-weight:600;margin-left:3px;">/mes</span>' : ''}</div>`
+          : `<div class="pkg-price-row"><span class="pkg-price">Gratis</span></div>`}
+        <div class="pkg-meta">${escapeHtml(meta)}${p.recurring && p.price_mxn > 0 ? ' · cobro mensual automático' : ''}</div>
         <ul class="pkg-features">${featuresHtml}</ul>
-        <button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${jsAttr(p.name)}', ${p.recurring?1:0})">${p.recurring ? 'Suscribirme' : 'Comprar ahora'}</button>
+        ${(p.price_mxn > 0)
+          ? `<button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${jsAttr(p.name)}', ${p.recurring?1:0})">${p.recurring ? 'Suscribirme' : 'Comprar ahora'}</button>`
+          : `<button class="pkg-cta" onclick="openLeadModal('trial', {package_id: ${p.package_id}, package_name: '${jsAttr(p.name)}'})">Reservar mi lugar</button>`}
       </div>`;
   }).join('');
 }
@@ -1469,6 +1473,11 @@ function dismissPromo(){
 
 function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
   recurring = !!recurring;
+  // Stripe rechaza cobros de $0 (monto mínimo). Un plan gratis se pide como lead.
+  if (!(priceMxn > 0)){
+    if (typeof openLeadModal === 'function') openLeadModal('trial', { package_id: packageId, package_name: pkgName });
+    return;
+  }
   // Abrir modal de checkout
   closeCheckoutModal();
   const modal = document.createElement('div');
@@ -1813,10 +1822,12 @@ document.addEventListener('keydown', (e) => {
 // LEAD MODAL (trial class / more_info / callback)
 // ════════════════════════════════════════════════════════════
 let _leadType = 'trial';
+let _leadPackage = null;   // plan (gratis) que originó el lead, si lo hubo
 let _leadGymData = null;
 
 function openLeadModal(type, prefillData){
   _leadType = type;
+  _leadPackage = (prefillData && prefillData.package_id) ? prefillData : null;
   const modal = document.getElementById('lead-modal');
   if (!modal) return;
   const dayField = document.getElementById('lead-day-field');
@@ -1835,8 +1846,8 @@ function openLeadModal(type, prefillData){
   document.getElementById('lead-error').style.display = 'none';
 
   if (type === 'trial'){
-    eyebrow.textContent = 'PRIMERA CLASE GRATIS';
-    title.textContent = 'Reserva tu clase de prueba';
+    eyebrow.textContent = _leadPackage ? 'GRATIS' : 'PRIMERA CLASE GRATIS';
+    title.textContent = _leadPackage ? `Reserva: ${_leadPackage.package_name}` : 'Reserva tu clase de prueba';
     sub.textContent = 'Sin tarjeta. Sin compromiso. Te confirmamos por WhatsApp en horas.';
     dayField.style.display = '';
     msgField.style.display = 'none';
@@ -1855,6 +1866,7 @@ function openLeadModal(type, prefillData){
 }
 
 function closeLeadModal(){
+  _leadPackage = null;
   document.getElementById('lead-modal')?.classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -1885,6 +1897,7 @@ async function submitLead(){
         preferred_day: day, message, session_id: _iaSessionId,
         horario_id: _sfSlotElegido.horario_id,
         fecha: _sfSlotElegido.fecha,
+        package_id: _leadPackage ? _leadPackage.package_id : null,
         hp: document.getElementById('lead-hp')?.value || ''
       })
     });

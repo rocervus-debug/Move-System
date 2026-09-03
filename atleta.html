@@ -6081,10 +6081,13 @@ function renderPlanes(){
       <div class="plan-nombre">${esc(plan.name||'Plan')}</div>
       <div class="plan-desc">${esc(detail)}</div>
       <div class="plan-precio">
-        <span class="plan-precio-num">${fmtMXN(plan.price_mxn)}</span>
-        <span class="plan-precio-cur">MXN</span>
+        ${(plan.price_mxn > 0)
+          ? `<span class="plan-precio-num">${fmtMXN(plan.price_mxn)}</span><span class="plan-precio-cur">MXN</span>`
+          : `<span class="plan-precio-num">Gratis</span>`}
       </div>
-      <button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="doCheckout(${plan.package_id})">Renovar / Comprar →</button>
+      ${(plan.price_mxn > 0)
+        ? `<button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="doCheckout(${plan.package_id})">Renovar / Comprar →</button>`
+        : `<button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="showToast('Pide este plan en recepción — es cortesía del gym.','✓',5000)">Pídelo en recepción</button>`}
     </div>`;
   });
   html+=`</div>`;
@@ -6093,6 +6096,12 @@ function renderPlanes(){
 
 async function doCheckout(packageId){
   if(!portalData) return;
+  // Stripe rechaza cobros de $0: un plan gratis se entrega en recepción.
+  const _pl = ((portalData.paquetes)||[]).find(p=>String(p.package_id)===String(packageId));
+  if(_pl && !(_pl.price_mxn > 0)){
+    showToast('Pide este plan en recepción — es cortesía del gym.','✓',5000);
+    return;
+  }
   const slug = portalData.gym?.slug;
   const c = portalData.cliente;
   if(!slug){ showToast('Este gym aún no tiene tienda en línea activa.','❌',5000); return; }

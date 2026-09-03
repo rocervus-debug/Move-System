@@ -15791,7 +15791,7 @@ async function ejecutarRenovacionMasiva(){
   const fecha  = document.getElementById('rm-fecha').value;
   const plan   = document.getElementById('rm-plan').value;
   const metodo = document.getElementById('rm-metodo').value;
-  if(!monto||monto<=0){ toast('Ingresa un monto válido.','⚠️'); return; }
+  if(!Number.isFinite(monto)||monto<0){ toast('El monto no puede ser negativo (0 si es cortesía).','⚠️'); return; }
   if(!fecha){ toast('Ingresa la fecha de pago.','⚠️'); return; }
 
   const confirmMsg = `¿Renovar ${seleccionados.length} cliente${seleccionados.length!==1?'s':''} con el plan "${plan}" por $${monto.toLocaleString('es-MX')} cada uno?\n\nTotal: $${(seleccionados.length*monto).toLocaleString('es-MX')}`;
@@ -16716,7 +16716,7 @@ async function guardarPlanEditado(){
 
   if(!id){ showErr('No identifiqué el plan.'); return; }
   if(!nombre){ showErr('Escribe el nombre del plan.'); return; }
-  if(precio <= 0){ showErr('El precio debe ser mayor a 0.'); return; }
+  if(!Number.isFinite(precio) || precio < 0){ showErr('El precio no puede ser negativo (usa 0 si el plan es gratis).'); return; }
   if(dias < 1){ showErr('La vigencia debe ser al menos 1 día.'); return; }
   if(tipo === 'paquete' && (!clases || clases < 1)){ showErr('Indica cuántas clases incluye el paquete.'); return; }
 
@@ -16789,7 +16789,7 @@ async function agregarPlan(){
   const cobro = document.getElementById('plan-nuevo-cobro')?.value || 'one_time';
 
   if(!nombre){ showErr('Escribe el nombre del plan.'); return; }
-  if(precio <= 0){ showErr('El precio debe ser mayor a 0.'); return; }
+  if(!Number.isFinite(precio) || precio < 0){ showErr('El precio no puede ser negativo (usa 0 si el plan es gratis).'); return; }
   if(dias < 1){ showErr('La vigencia debe ser al menos 1 día.'); return; }
   if(tipo === 'paquete' && (!clases || clases < 1)){ showErr('Para paquete de clases, indica cuántas clases incluye.'); return; }
 
@@ -19406,7 +19406,7 @@ async function saveVisita(){
   [nErr,mErr].forEach(e=>{ if(e){ e.style.display='none'; e.textContent=''; } });
   let err=false;
   if(!nombre){ if(nErr){nErr.textContent='El nombre es obligatorio.';nErr.style.display='block';} err=true; if(typeof wizGoto==='function') wizGoto('visita',1); }
-  else if(!monto||monto<=0){ if(mErr){mErr.textContent='Ingresa un monto válido.';mErr.style.display='block';} err=true; if(typeof wizGoto==='function') wizGoto('visita',2); }
+  else if(!Number.isFinite(monto)||monto<0){ if(mErr){mErr.textContent='El monto no puede ser negativo (0 si es cortesía).';mErr.style.display='block';} err=true; if(typeof wizGoto==='function') wizGoto('visita',2); }
   if(err) return;
   const btn = document.getElementById('v-save-btn');
   setBtnLoading(btn, true);
@@ -23008,7 +23008,7 @@ wizRegister('paquete', {
     const clases=parseInt(document.getElementById('pk-clases').value)||0;
     let ok=true;
     if(!nom){ wzdFieldErr('pk-nombre','Escribe el nombre del plan.'); ok=false; } else wzdFieldErr('pk-nombre','');
-    if(precio<=0){ wzdFieldErr('pk-precio','El precio debe ser mayor a 0.'); ok=false; } else wzdFieldErr('pk-precio','');
+    if(!Number.isFinite(precio) || precio<0){ wzdFieldErr('pk-precio','El precio no puede ser negativo (usa 0 si el plan es gratis).'); ok=false; } else wzdFieldErr('pk-precio','');
     if(dias<1){ wzdFieldErr('pk-dias','La vigencia debe ser al menos 1 día.'); ok=false; } else wzdFieldErr('pk-dias','');
     if(tipo==='paquete' && clases<1){ wzdFieldErr('pk-clases','Indica cuántas '+_pkUnidad()+' incluye.'); ok=false; } else wzdFieldErr('pk-clases','');
     return ok;
@@ -23045,7 +23045,7 @@ async function savePaqueteWizard(){
   const showErr = (msg)=>{ if(errEl){ errEl.textContent=msg; errEl.style.display=msg?'block':'none'; } };
   showErr('');
   // Red de seguridad (el wizard ya validó en el paso 2)
-  if(!nombre || precio<=0 || dias<1 || (tipo==='paquete' && (!clases||clases<1))){ wizGoto('paquete',2); return; }
+  if(!nombre || !Number.isFinite(precio) || precio<0 || dias<1 || (tipo==='paquete' && (!clases||clases<1))){ wizGoto('paquete',2); return; }
 
   const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
   const nextSort = ((_packagesDB||[]).reduce((m,p)=>Math.max(m, p.sort_order||0), 0)) + 1;
@@ -23258,10 +23258,10 @@ function _pagoWizValidate(n){
     const applied   = parseFloat(document.getElementById('p-monto')?.value||'0');
     const fecha     = document.getElementById('p-fecha')?.value;
     const discType  = document.getElementById('p-discount-type')?.value||'';
-    if(!applied || applied <= 0){ _pagoFieldErr('p-monto','Ingresa el precio que pagará el cliente.'); ok = false; }
+    if(!Number.isFinite(applied) || applied < 0){ _pagoFieldErr('p-monto','Ingresa el precio que pagará el cliente (0 si es cortesía).'); ok = false; }
     else if(applied > listPrice){ _pagoFieldErr('p-monto',`No puedes cobrar más del precio de lista ($${listPrice.toLocaleString('es-MX')}).`); ok = false; }
     else _pagoFieldErr('p-monto','');
-    if(_selectedPackage && applied > 0 && applied < listPrice){
+    if(_selectedPackage && applied >= 0 && applied < listPrice){
       if(_selectedPackage.allow_discount === false){
         _pagoFieldErr('p-monto','Este paquete no permite descuentos.'); ok = false;
       } else {
@@ -23479,7 +23479,7 @@ function toggleDiscountBlock(){
   const block = document.getElementById('p-discount-block');
   const pct = document.getElementById('p-discount-pct');
   if(!block) return;
-  if(applied > 0 && listPrice > 0 && applied < listPrice){
+  if(applied >= 0 && listPrice > 0 && applied < listPrice){
     block.style.display = 'block';
     const discPct = Math.round(((listPrice - applied) / listPrice) * 100);
     if(pct) pct.textContent = discPct + '%';
@@ -23529,7 +23529,7 @@ async function savePago(){
     if(e){ e.textContent='Selecciona un paquete del catálogo.'; e.style.display='block'; }
     hasError=true;
   }
-  if(!applied || applied <= 0){ _pagoFieldErr('p-monto','Ingresa un precio aplicado válido.'); hasError=true; }
+  if(!Number.isFinite(applied) || applied < 0){ _pagoFieldErr('p-monto','Ingresa un precio aplicado válido (0 si es cortesía).'); hasError=true; }
   if(applied > listPrice){
     _pagoFieldErr('p-monto', `No puedes cobrar más del precio listado ($${listPrice.toLocaleString('es-MX')}).`);
     hasError=true;
@@ -24010,7 +24010,7 @@ async function saveEditPago(btn){
   const monto   = parseFloat(document.getElementById('ep-monto').value);
   const fecha   = document.getElementById('ep-fecha').value;
   if(!cliente){ toast('El nombre del cliente es obligatorio.','⚠️'); return; }
-  if(!monto||monto<=0){ toast('Ingresa un monto válido.','⚠️'); return; }
+  if(!Number.isFinite(monto)||monto<0){ toast('El monto no puede ser negativo (0 si es cortesía).','⚠️'); return; }
   if(!fecha){ toast('La fecha de pago es obligatoria.','⚠️'); return; }
   const epPlan = document.getElementById('ep-plan').value;
   // Paquete = el pago original tiene contadores (nunca decidir por el nombre del plan)
