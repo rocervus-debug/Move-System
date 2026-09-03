@@ -8220,15 +8220,19 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <div class="wzd-hint">Elige el tipo de clase. Puedes asignar coach ahora o dejarlo para después.</div>
       <div class="field">
         <label>Tipo de clase *</label>
-        <!-- select oculto controlado por las cards (la lógica de saveClase no cambia) -->
-        <select id="cl-tipo" style="display:none;">
-          <option value="Strength">Strength</option>
-          <option value="Endurance">Endurance</option>
-          <option value="Hyrox">Hyrox</option>
-          <option value="Open">Open</option>
-          <option value="Otro">Otro</option>
-        </select>
+        <!-- Texto LIBRE (petición COREX: "Strength - Lower Body" por día). Las cards
+             de abajo son atajos que llenan el campo; se puede escribir lo que sea. -->
         <div id="cl-tipo-grid" class="wzd-opt-grid"></div>
+        <input id="cl-tipo" type="text" maxlength="48" list="tipos-clase-list"
+          placeholder="Ej: Strength - Lower Body" oninput="_renderClaseTipoCards()"
+          style="margin-top:10px;"/>
+        <span id="cl-tipo-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:6px;"></span>
+        <datalist id="tipos-clase-list">
+          <option value="Strength"></option>
+          <option value="Endurance"></option>
+          <option value="Hyrox"></option>
+          <option value="Open"></option>
+        </datalist>
       </div>
       <div class="field">
         <label>Coach(es) <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;text-transform:none;">(opcional · marca a todo el equipo que da la clase)</span></label>
@@ -8301,13 +8305,9 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       </div>
       <div class="field-grid">
         <div class="field"><label>Tipo *</label>
-          <select id="ecl-tipo">
-            <option value="Strength">Strength</option>
-            <option value="Endurance">Endurance</option>
-            <option value="Hyrox">Hyrox</option>
-            <option value="Open">Open</option>
-            <option value="Otro">Otro</option>
-          </select>
+          <!-- Texto libre con sugerencias (antes un select: un tipo personalizado
+               ni siquiera se podía mostrar al editar) -->
+          <input id="ecl-tipo" type="text" maxlength="48" list="tipos-clase-list" placeholder="Ej: Strength - Upper Body"/>
         </div>
         <div class="field" style="grid-column:1/-1;"><label>Coach(es) <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;text-transform:none;">(equipo que da la clase)</span></label>
           <div id="ecl-coaches-box" class="coach-team-box"></div>
@@ -8344,13 +8344,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       </div>
       <div class="field" id="hov-tipo-wrap">
         <label>Tipo de clase</label>
-        <select id="hov-tipo">
-          <option value="Strength">Strength</option>
-          <option value="Endurance">Endurance</option>
-          <option value="Hyrox">Hyrox</option>
-          <option value="Open">Open</option>
-          <option value="Otro">Otro</option>
-        </select>
+        <input id="hov-tipo" type="text" maxlength="48" list="tipos-clase-list" placeholder="Ej: Strength - Lower Body"/>
       </div>
       <div class="field" style="margin-top:12px;">
         <label>¿Hasta cuándo aplica?</label>
@@ -22891,20 +22885,29 @@ wizRegister('sf-wizard', {
 });
 
 // CREAR CLASE / PLANTILLA SEMANAL (modal-clase) — 3 pasos
+// Atajos, no catálogo: el tipo es texto LIBRE (ej. "Strength - Lower Body");
+// estas cards solo llenan el campo rápido.
 const _CLASE_TIPOS = [
   {v:'Strength', ico:'', sub:'Fuerza'},
   {v:'Endurance',ico:'', sub:'Resistencia'},
   {v:'Hyrox',    ico:'', sub:'Híbrido'},
   {v:'Open',     ico:'', sub:'Libre'},
-  {v:'Otro',     ico:'', sub:'Personalizado'},
 ];
 function _renderClaseTipoCards(){
   const grid=document.getElementById('cl-tipo-grid');
   if(!grid) return;
-  const cur=document.getElementById('cl-tipo').value||'Strength';
+  const cur=(document.getElementById('cl-tipo').value||'').trim();
   grid.innerHTML=_CLASE_TIPOS.map(t=>`<div class="wzd-opt${t.v===cur?' sel':''}" role="button" tabindex="0"
     onclick="_pickClaseTipo('${t.v}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pickClaseTipo('${t.v}');}">
     <div class="wzd-opt-ico">${t.ico}</div><div class="wzd-opt-name">${t.v}</div><div class="wzd-opt-sub">${t.sub}</div></div>`).join('');
+}
+// Una sola regla para los 3 editores: no vacío y nunca la palabra reservada
+// CERRADO (la app y el panel la usan como centinela de "día cerrado").
+function _tipoClaseValido(v){
+  const t=(v||'').trim();
+  if(!t) return {ok:false, msg:'Escribe el tipo de clase (ej. Strength - Lower Body).'};
+  if(t.toUpperCase()==='CERRADO') return {ok:false, msg:'"CERRADO" está reservado para cerrar el día; usa otro nombre.'};
+  return {ok:true, t};
 }
 function _pickClaseTipo(v){
   const sel=document.getElementById('cl-tipo'); if(sel) sel.value=v;
@@ -22913,6 +22916,12 @@ function _pickClaseTipo(v){
 wizRegister('clase', {
   labels: {1:'¿Qué días y a qué hora?', 2:'¿Qué clase y quién?', 3:'Confirma'},
   validate(n){
+    if(n===2){
+      const r=_tipoClaseValido(document.getElementById('cl-tipo').value);
+      const err=document.getElementById('cl-tipo-err');
+      if(err){ err.textContent=r.ok?'':r.msg; err.style.display=r.ok?'none':'block'; }
+      return r.ok;
+    }
     if(n!==1) return true;
     const dias=document.querySelectorAll('.cl-dia-chk:checked').length;
     const err=document.getElementById('cl-dias-err');
@@ -25109,7 +25118,7 @@ function openEditClaseCell(fechaStr, hora){
       sel.value = clase.coach_id || '';
     }
     const tipoVal = (clase.tipo==='CERRADO'||!clase.tipo) ? 'Strength' : clase.tipo;
-    setSelectVal('hov-tipo', tipoVal);
+    document.getElementById('hov-tipo').value = tipoVal;
   } else {
     sel.value = '';
     document.getElementById('hov-tipo').value = 'Strength';
@@ -25120,7 +25129,7 @@ function openEditClaseCell(fechaStr, hora){
   tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : '';
   sel.onchange = ()=>{ tipoWrap.style.display = sel.value==='__cerrado__' ? 'none' : ''; _hovMoverHint(); };
   const tipoSel = document.getElementById('hov-tipo');
-  if(tipoSel) tipoSel.onchange = _hovMoverHint;
+  if(tipoSel){ tipoSel.onchange = _hovMoverHint; tipoSel.oninput = _hovMoverHint; }
 
   // Alcance arranca siempre en "solo esta fecha": nunca cambiar el horario base
   // de todas las semanas por inercia.
@@ -25137,9 +25146,11 @@ async function saveHorarioOverride(){
   const fechaStr = document.getElementById('hov-fecha').value;
   const hora     = document.getElementById('hov-hora').value;
   const coachVal = document.getElementById('hov-coach').value;
-  const tipo     = document.getElementById('hov-tipo').value;
-
   const cerrado  = coachVal === '__cerrado__';
+  const _rt = cerrado ? {ok:true, t:''} : _tipoClaseValido(document.getElementById('hov-tipo').value);
+  if(!_rt.ok){ toast(_rt.msg,'✕',5000); return; }
+  const tipo     = _rt.t;
+
   const coachId  = cerrado ? '' : (coachVal||'');   // coach_id es text NOT NULL → '' nunca null (mismo patrón que saveClase)
   const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)||c.nombre===coachId) : null;
   const coachNom = coachObj ? coachObj.nombre : '';
@@ -25774,6 +25785,7 @@ function openAddClaseModal(dia, hora){
   document.getElementById('cl-cupo').value = '15';
   document.getElementById('cl-notas').value = '';
   const clErr = document.getElementById('cl-dias-err'); if(clErr) clErr.style.display='none';
+  const tErr = document.getElementById('cl-tipo-err'); if(tErr){ tErr.textContent=''; tErr.style.display='none'; }
   openModal('clase');
   if(typeof wizInit==='function') wizInit('clase');   // arranca el asistente en el paso 1
 }
@@ -25781,7 +25793,9 @@ function openAddClaseModal(dia, hora){
 async function saveClase(){
   const dias  = [...document.querySelectorAll('.cl-dia-chk:checked')].map(c=>c.value);
   const hora  = document.getElementById('cl-hora').value;
-  const tipo  = document.getElementById('cl-tipo').value;
+  const _rt = _tipoClaseValido(document.getElementById('cl-tipo').value);
+  if(!_rt.ok){ const e=document.getElementById('cl-tipo-err'); if(e){ e.textContent=_rt.msg; e.style.display='block'; } if(typeof wizGoto==='function') wizGoto('clase',2); return; }
+  const tipo  = _rt.t;
   const team  = readCoachTeam('cl-coaches-box');   // { cid, cnombre, extra:[...] }
   const cupo  = parseInt(document.getElementById('cl-cupo').value)||15;
   const notas = document.getElementById('cl-notas').value.trim();
@@ -25837,7 +25851,7 @@ function openEditClase(id){
   // set selects
   for(let o of document.getElementById('ecl-dia').options)  { o.selected = (o.value===c.dia);  }
   for(let o of document.getElementById('ecl-hora').options) { o.selected = (o.value===c.hora); }
-  for(let o of document.getElementById('ecl-tipo').options) { o.selected = (o.value===c.tipo); }
+  document.getElementById('ecl-tipo').value = c.tipo || '';
 
   openModal('edit-clase');
 }
@@ -25847,7 +25861,9 @@ async function saveEditClase(btn){
   const id    = document.getElementById('ecl-id').value;
   const dia   = document.getElementById('ecl-dia').value;
   const hora  = document.getElementById('ecl-hora').value;
-  const tipo  = document.getElementById('ecl-tipo').value;
+  const _rt = _tipoClaseValido(document.getElementById('ecl-tipo').value);
+  if(!_rt.ok){ toast(_rt.msg,'✕',5000); return; }
+  const tipo  = _rt.t;
   const team  = readCoachTeam('ecl-coaches-box');
   const cupo  = parseInt(document.getElementById('ecl-cupo').value)||15;
   const notas = document.getElementById('ecl-notas').value.trim();
