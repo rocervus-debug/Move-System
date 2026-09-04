@@ -27006,6 +27006,16 @@ function _horaToMinutes(h){
 
 /* ── Day offset global (0 = hoy, 1 = mañana, …) ── */
 let _asistDayOffset = 0;
+// Fecha del día seleccionado en la tira de días. La lista Y el detalle deben leer
+// la MISMA fecha: si el detalle usa "hoy" por su cuenta, una clase de otro día
+// abre con el roster equivocado (bug reportado por Ares 03-sep).
+function _asistFechaSel(){
+  const t = new Date();
+  t.setDate(t.getDate() + _asistDayOffset);
+  const mm = String(t.getMonth()+1).padStart(2,'0');
+  const dd = String(t.getDate()).padStart(2,'0');
+  return `${t.getFullYear()}-${mm}-${dd}`;
+}
 
 function renderAsistDayStrip(){
   const strip = document.getElementById('asist-day-strip');
@@ -27042,10 +27052,7 @@ async function loadClasesOperativas(){
   target.setDate(base.getDate() + _asistDayOffset);
 
   // Build local date string (YYYY-MM-DD) without UTC shift
-  const yyyy = target.getFullYear();
-  const mm   = String(target.getMonth()+1).padStart(2,'0');
-  const dd   = String(target.getDate()).padStart(2,'0');
-  const hoyStr = `${yyyy}-${mm}-${dd}`;
+  const hoyStr = _asistFechaSel();
 
   const diaHoy = _DIAS_ES[target.getDay()];
   const esHoy  = _asistDayOffset === 0;
@@ -27064,6 +27071,16 @@ async function loadClasesOperativas(){
     const {data:reservas} = await rQ;
     const rMap = {};
     (reservas||[]).forEach(r=>{ if(!r.horario_id) return; if(!rMap[r.horario_id]) rMap[r.horario_id]=[]; rMap[r.horario_id].push(r); });
+    // Prospectos del enlace público (storefront_leads) de ESE día: no son socios
+    // ni ocupan cupo, pero el gym tiene que saber que van a llegar.
+    const pMap = {};
+    try{
+      let pQ = window.supabaseClient.from('storefront_leads')
+        .select('horario_id').eq('fecha',hoyStr).eq('type','trial_class').neq('status','converted');
+      if(gymId) pQ = pQ.eq('gym_id',gymId);
+      const {data:props} = await pQ;
+      (props||[]).forEach(pr=>{ if(!pr.horario_id) return; pMap[pr.horario_id] = (pMap[pr.horario_id]||0)+1; });
+    }catch(e){ console.warn('prospectos por clase:', e); }
     // ── Feed check-in count to mobile home widget ──
     window._mhwCheckins = (reservas||[]).filter(r=>r.estado==='checkin').length;
     renderMobileHome();
@@ -27092,6 +27109,7 @@ async function loadClasesOperativas(){
             <div style="font-size:var(--fs-2xl);font-weight:900;font-family:var(--fd);color:#fff;line-height:1;">${ocupados}<span style="font-size:var(--fs-base);color:var(--text3);font-weight:500;"> / ${cupo}</span></div>
             <div style="font-size:var(--fs-xs);font-weight:700;margin-top:4px;color:${libres===0?'#f06060':libres<=3?'#f5a623':'var(--ok)'};">${libres===0?'LLENO':`${libres} libre${libres!==1?'s':''}`}</div>
             ${checkins>0?`<div style="font-size:var(--fs-xs);color:var(--text3);margin-top:2px;">${checkins} check-in${checkins!==1?'s':''}</div>`:''}
+            ${(pMap[h.id]||0)>0?`<div style="font-size:var(--fs-xs);font-weight:800;color:var(--warn);margin-top:3px;">+${pMap[h.id]} prospecto${pMap[h.id]!==1?'s':''}</div>`:''}
           </div>
         </div>
         ${cupo>0?`<div style="margin-top:12px;height:4px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;"><div style="height:100%;width:${barW}%;background:${barClr};border-radius:99px;transition:width .4s;"></div></div>`:''}
@@ -27184,7 +27202,7 @@ function cerrarDetalleClase(){
 // Se modela como reserva estado='bloqueado' (el índice único anti-colisión la protege).
 async function bloquearLugar(horarioId, hora, tipo, spot, cupo){
   const { error } = await window.supabaseClient.from('reservas').insert([withGymId({
-    horario_id: horarioId, fecha: _hoyMX(), estado: 'bloqueado',
+    horario_id: horarioId, fecha: (typeof _asistFechaSel==='function' ? _asistFechaSel() : _hoyMX()), estado: 'bloqueado',
     cliente_nombre: '(bloqueado)', clase_hora: hora, clase_tipo: tipo, spot
   })]);
   if(error){
@@ -27207,7 +27225,8 @@ async function desbloquearLugar(reservaId, horarioId, hora, tipo, cupo){
 async function loadDetalleClase(horarioId,hora,tipo,cupo){
   const body = document.getElementById('detalle-body');
   if(!body) return;
-  const hoyStr = _hoyMX();
+  const hoyStr = _asistFechaSel();   // el día que el usuario está viendo, no "hoy"
+  window._dcFecha = hoyStr;          // las acciones del panel escriben en esa misma fecha
   const gymId  = MOVE_GYM_ID||null;
   try{
     let q = window.supabaseClient.from('reservas')
@@ -27759,7 +27778,8 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   if(input) input.value='';
   if(res)   res.style.display='none';
 
-  const hoyStr = _hoyMX();
+  // El panel abierto puede ser de otro día: la reserva se crea en ESA fecha.
+  const hoyStr = (typeof _asistFechaSel==='function' ? _asistFechaSel() : _hoyMX());
   const gymId  = MOVE_GYM_ID||null;
   const cupo   = _detalleCtx?.cupo||0;
 
