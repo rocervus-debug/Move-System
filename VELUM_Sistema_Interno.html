@@ -24133,6 +24133,38 @@ function getPagoEstado(p, today, in7){
   return 'vigente';
 }
 
+// ── Cuándo cae el depósito de un cobro en línea ─────────────────────────────
+// Stripe libera el dinero en `stripe_available_on`; VELUM tiene los depósitos
+// configurados SEMANALES LOS VIERNES, así que el dinero sale en el primer viernes
+// en o después de esa fecha. Sin dato de Stripe no se inventa nada.
+function _viernesDeposito(availableOn){
+  if(!availableOn) return null;
+  const d = new Date(availableOn + 'T12:00:00');
+  if(isNaN(d)) return null;
+  // 5 = viernes. Si ya es viernes, ese mismo.
+  const faltan = (5 - d.getDay() + 7) % 7;
+  d.setDate(d.getDate() + faltan);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Etiqueta para la columna de pagos: "Se deposita vie 12 sep" / "Depositado".
+function _depositoTag(p){
+  const esEnLinea = /stripe/i.test(p.metodo||'') || ['storefront','domiciliacion','manual_link','stripe'].includes(p.source||'');
+  if(!esEnLinea) return '';
+  const av = p.stripe_available_on || null;
+  if(!av) return `<div style="font-size:var(--fs-xs);color:var(--text3);margin-top:3px;">Depósito: calculando…</div>`;
+  const vie = _viernesDeposito(av);
+  if(!vie) return '';
+  const hoy = _hoyMX();
+  const fmt = (f)=>{ try{ return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }catch(_){ return f; } };
+  const yaCayo = vie < hoy;
+  return `<div style="font-size:var(--fs-xs);margin-top:3px;color:${yaCayo?'var(--ok)':'var(--accent)'};font-weight:600;" title="Stripe libera este cobro el ${av}; los depósitos salen los viernes.">
+    ${yaCayo ? 'Depositado ' + fmt(vie) : 'Se deposita ' + fmt(vie)}
+  </div>`;
+}
+
 function renderPagos(){
   // Filtros de plan dinámicos (planes reales del gym)
   renderPlanFilters();
@@ -24299,7 +24331,7 @@ function renderPagos(){
       <td data-label="Plan">${esc(p.plan)}</td>
       <td data-label="Monto" style="font-weight:700;color:var(--ok);font-family:var(--fm);">${abonoTag}$${p.monto.toLocaleString('es-MX')}</td>
       <td data-label="Método">${metodoBadge(p.metodo)}</td>
-      <td data-label="Fecha de pago">${fechaFmt}</td>
+      <td data-label="Fecha de pago">${fechaFmt}${_depositoTag(p)}</td>
       <td data-label="Vencimiento / Clases">${venceCol}</td>
       <td class="tbl-action">
         ${descontarBtn}${freezeBtn}

@@ -42,26 +42,39 @@ async function stripeGet(path: string, acct?: string | null): Promise<any> {
   const res = await fetch(`https://api.stripe.com/v1${path}`, { headers });
   return res.json();
 }
-// Comisión REAL de Stripe (MXN) de un cargo, leída de su balance_transaction. Devuelve null si
-// aún no está disponible (no rompe el registro del pago).
-async function stripeFeeFromCharge(chargeId?: string | null, acct?: string | null): Promise<number | null> {
-  if (!chargeId) return null;
+// Datos REALES del cargo leídos de su balance_transaction: la comisión de Stripe y
+// available_on (la fecha en que Stripe LIBERA el dinero; el depósito al banco sale en
+// el primer payout —viernes, política VELUM— en o después de esa fecha). Es un solo
+// objeto de Stripe, así que ambos salen de la misma llamada. Devuelve nulls sin romper
+// el registro del pago si Stripe aún no lo tiene.
+type BtInfo = { fee: number | null, availableOn: string | null };
+const BT_VACIO: BtInfo = { fee: null, availableOn: null };
+
+function btParse(bt: any): BtInfo {
+  if (!bt) return BT_VACIO;
+  const fee = (typeof bt.fee === 'number') ? bt.fee / 100 : null;
+  // available_on viene en segundos epoch → YYYY-MM-DD
+  const availableOn = (typeof bt.available_on === 'number')
+    ? new Date(bt.available_on * 1000).toISOString().slice(0, 10) : null;
+  return { fee, availableOn };
+}
+
+async function stripeBtFromCharge(chargeId?: string | null, acct?: string | null): Promise<BtInfo> {
+  if (!chargeId) return BT_VACIO;
   try {
     const ch = await stripeGet(`/charges/${chargeId}?expand[]=balance_transaction`, acct);
-    const bt = ch?.balance_transaction;
-    if (bt && typeof bt.fee === 'number') return bt.fee / 100;
+    return btParse(ch?.balance_transaction);
   } catch (_) { /* degradar con gracia */ }
-  return null;
+  return BT_VACIO;
 }
 // Igual pero partiendo de un PaymentIntent (storefront / link) → su latest_charge.
-async function stripeFeeFromPI(piId?: string | null, acct?: string | null): Promise<number | null> {
-  if (!piId) return null;
+async function stripeBtFromPI(piId?: string | null, acct?: string | null): Promise<BtInfo> {
+  if (!piId) return BT_VACIO;
   try {
     const pi = await stripeGet(`/payment_intents/${piId}?expand[]=latest_charge.balance_transaction`, acct);
-    const bt = pi?.latest_charge?.balance_transaction;
-    if (bt && typeof bt.fee === 'number') return bt.fee / 100;
+    return btParse(pi?.latest_charge?.balance_transaction);
   } catch (_) { /* degradar con gracia */ }
-  return null;
+  return BT_VACIO;
 }
 
 function isDupErr(e: any): boolean { return !!e && (e.code === '23505' || String(e.message||'').includes('duplicate key')); }
@@ -105,8 +118,8 @@ Deno.serve(async (req: Request) => {
     return { id: nc?.id ?? null, nombre: clienteNombre, isNew: true };
   }
 
-  async function recordMemberPago(opts: { gymId:number, clienteNombre:string, phone:string|null, pkgName:string, packageId:number|null, durationDays:number, clasesTotales:number|null, montoMxn:number, feePct:number, feeMxn?:number, stripeFeeMxn?:number|null, subId:string, invoiceId:string }) {
-    const { gymId, clienteNombre, phone, pkgName, packageId, durationDays, clasesTotales, montoMxn, feePct, feeMxn, stripeFeeMxn, subId, invoiceId } = opts;
+  async function recordMemberPago(opts: { gymId:number, clienteNombre:string, phone:string|null, pkgName:string, packageId:number|null, durationDays:number, clasesTotales:number|null, montoMxn:number, feePct:number, feeMxn?:number, stripeFeeMxn?:number|null, availableOn?:string|null, subId:string, invoiceId:string }) {
+    const { gymId, clienteNombre, phone, pkgName, packageId, durationDays, clasesTotales, montoMxn, feePct, feeMxn, stripeFeeMxn, availableOn, subId, invoiceId } = opts;
     if (invoiceId) {
       const { data: dup } = await db.from('pagos').select('id').eq('gym_id', gymId).eq('stripe_session_id', invoiceId).maybeSingle();
       if (dup) return;
@@ -125,6 +138,7 @@ Deno.serve(async (req: Request) => {
       metodo: 'Stripe (Domiciliación)', vence: venceDate.toISOString().slice(0,10), telefono: phone,
       applied_price_mxn: Math.round(montoMxn), list_price_mxn: Math.round(montoMxn), source: 'domiciliacion',
       velum_commission_mxn: comm, stripe_fee_mxn: sFee, net_to_gym_mxn: Math.round(montoMxn - comm - (sFee || 0)),
+      stripe_available_on: availableOn || null,
       stripe_session_id: invoiceId || null, stripe_sub_id: subId, stripe_status: 'active',
       notas: 'Mensualidad domiciliada', clases_totales: clasesTotales, clases_usadas: 0,
     });
@@ -272,9 +286,10 @@ Deno.serve(async (req: Request) => {
           // PRIMER cobro: capturar el fee REAL de Stripe (la factura → su charge → balance_transaction).
           // Sin esto, el primer pago quedaba con net = bruto (los cobros de renovación sí lo capturaban).
           let firstStripeFee: number | null = null;
-          try { if (invoiceId) { const firstInv = await stripeGet(`/invoices/${invoiceId}`, evAcct); firstStripeFee = await stripeFeeFromCharge(firstInv?.charge as string, evAcct); } } catch(_) { /* degradar con gracia */ }
+          let firstAvailableOn: string | null = null;   // fecha en que Stripe libera el dinero
+          try { if (invoiceId) { const firstInv = await stripeGet(`/invoices/${invoiceId}`, evAcct); const _bt = await stripeBtFromCharge(firstInv?.charge as string, evAcct); firstStripeFee = _bt.fee; firstAvailableOn = _bt.availableOn; } } catch(_) { /* degradar con gracia */ }
           if (cli.id) {
-            const vence = await recordMemberPago({ gymId, clienteNombre: cli.nombre, phone: md.customer_phone || null, pkgName: pkg.name, packageId, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: Number(pkg.price_mxn), feePct, stripeFeeMxn: firstStripeFee, subId, invoiceId });
+            const vence = await recordMemberPago({ gymId, clienteNombre: cli.nombre, phone: md.customer_phone || null, pkgName: pkg.name, packageId, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: Number(pkg.price_mxn), feePct, stripeFeeMxn: firstStripeFee, availableOn: firstAvailableOn, subId, invoiceId });
             if (email) {
               await sendEmail(email, 'recibo', { gym: gym.nombre, monto: String(Math.round(Number(pkg.price_mxn))), plan: pkg.name + ' (mensual)', vence: vence || '' });
               if (cli.isNew) {
@@ -298,7 +313,8 @@ Deno.serve(async (req: Request) => {
           const mgPlan = (mgGym?.subscription_plan || '').toLowerCase();
           const feePct = (mgPlan === 'max' || mgPlan === 'owner') ? 0 : 0.02;
           const commission = Math.round(amount * feePct);
-          const mlStripeFee = await stripeFeeFromPI(session.payment_intent as string, evAcct);
+          const _mlBt = await stripeBtFromPI(session.payment_intent as string, evAcct);
+          const mlStripeFee = _mlBt.fee;
           const mlFeeR = (mlStripeFee != null && Number.isFinite(mlStripeFee)) ? Math.round(mlStripeFee) : null;
           // Si el link se generó con un PAQUETE del gym, el pago extiende membresía
           // (vence con stacking + clases) igual que una compra de storefront.
@@ -336,6 +352,7 @@ Deno.serve(async (req: Request) => {
             clases_totales: mlClases, clases_usadas: 0,
             applied_price_mxn: Math.round(amount), list_price_mxn: Math.round(amount), source: 'manual_link',
             velum_commission_mxn: commission, stripe_fee_mxn: mlFeeR, net_to_gym_mxn: Math.round(amount - commission - (mlFeeR||0)),
+            stripe_available_on: _mlBt.availableOn,
             stripe_session_id: session.id, notas: `Link de pago manual${md.cliente ? ' — ' + md.cliente : ''}`,
           });
           if (mlErr && !isDupErr(mlErr)) console.error('manual_link pago:', mlErr);
@@ -361,10 +378,11 @@ Deno.serve(async (req: Request) => {
           const venceDate = new Date(baseDate); venceDate.setDate(venceDate.getDate() + (pkg.duration_days || 30));
           const monto = Number(pkg.price_mxn);
           const comm = Math.round((order.application_fee_cents || 0) / 100);
-          const sfStripeFee = await stripeFeeFromPI(session.payment_intent as string, evAcct);
+          const _sfBt = await stripeBtFromPI(session.payment_intent as string, evAcct);
+          const sfStripeFee = _sfBt.fee;
           const sfFeeR = (sfStripeFee != null && Number.isFinite(sfStripeFee)) ? Math.round(sfStripeFee) : null;
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
-          const { error: pErr } = await db.from('pagos').insert({ gym_id: gymId, cliente: clienteNombre, monto, fecha: new Date().toISOString().slice(0,10), plan: pkg.name, metodo: 'Stripe (Storefront)', vence: venceDate.toISOString().slice(0,10), telefono: order.customer_phone || null, package_id: packageId, applied_price_mxn: Math.round(monto), list_price_mxn: Math.round(monto), source: 'storefront', velum_commission_mxn: comm, stripe_fee_mxn: sfFeeR, net_to_gym_mxn: Math.round(monto-comm-(sfFeeR||0)), stripe_session_id: session.id, notas: `Compra online — ${order.customer_email}`, clases_totales: clasesTotales, clases_usadas: 0 });
+          const { error: pErr } = await db.from('pagos').insert({ gym_id: gymId, cliente: clienteNombre, monto, fecha: new Date().toISOString().slice(0,10), plan: pkg.name, metodo: 'Stripe (Storefront)', vence: venceDate.toISOString().slice(0,10), telefono: order.customer_phone || null, package_id: packageId, applied_price_mxn: Math.round(monto), list_price_mxn: Math.round(monto), source: 'storefront', velum_commission_mxn: comm, stripe_fee_mxn: sfFeeR, net_to_gym_mxn: Math.round(monto-comm-(sfFeeR||0)), stripe_available_on: _sfBt.availableOn, stripe_session_id: session.id, notas: `Compra online — ${order.customer_email}`, clases_totales: clasesTotales, clases_usadas: 0 });
           if (pErr && !isDupErr(pErr)) console.error('pago insert err:', pErr);
           if (order.customer_email) {
             await sendEmail(order.customer_email, 'recibo', { gym: gym.nombre, monto: String(Math.round(monto)), plan: pkg.name, vence: venceDate.toISOString().slice(0,10) });
@@ -395,8 +413,9 @@ Deno.serve(async (req: Request) => {
               const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
               const realMonto = (typeof inv.amount_paid === 'number' ? inv.amount_paid : Math.round(Number(pkg.price_mxn)*100)) / 100;
               const realFee = (typeof inv.application_fee_amount === 'number') ? inv.application_fee_amount/100 : undefined;
-              const stripeFeeMxn = await stripeFeeFromCharge(inv.charge as string, evAcct);
-              await recordMemberPago({ gymId: ms.gym_id, clienteNombre: ms.cliente_nombre, phone: null, pkgName: pkg.name, packageId: ms.package_id, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: realMonto, feePct: Number(ms.application_fee_pct||0), feeMxn: realFee, stripeFeeMxn, subId, invoiceId: inv.id });
+              const _invBt = await stripeBtFromCharge(inv.charge as string, evAcct);
+              const stripeFeeMxn = _invBt.fee;
+              await recordMemberPago({ gymId: ms.gym_id, clienteNombre: ms.cliente_nombre, phone: null, pkgName: pkg.name, packageId: ms.package_id, durationDays: pkg.duration_days||30, clasesTotales, montoMxn: realMonto, feePct: Number(ms.application_fee_pct||0), feeMxn: realFee, stripeFeeMxn, availableOn: _invBt.availableOn, subId, invoiceId: inv.id });
             }
           }
           break;

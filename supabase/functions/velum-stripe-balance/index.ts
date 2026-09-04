@@ -1,4 +1,6 @@
-// velum-stripe-balance — v2: Saldo, depósitos y CONFIGURACIÓN de payout de la cuenta conectada.
+// velum-stripe-balance — v3: + relleno de pagos.stripe_available_on (fecha en que
+// Stripe libera cada cobro) para mostrar al gym cuándo cae su depósito.
+// v2: Saldo, depósitos y CONFIGURACIÓN de payout de la cuenta conectada.
 // Devuelve: Disponible / Pendiente / En tránsito + payouts + horario de depósito + banco (last4).
 // Política VELUM (decisión Roy 08-jul): depósito automático SEMANAL los VIERNES para todos los
 // gyms — esta función lo AUTO-CORRIGE si la cuenta tiene otro horario (self-healing, idempotente).
@@ -213,6 +215,40 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── Relleno de la fecha de liberación en pagos viejos (self-healing, acotado) ──
+    // Los pagos anteriores al webhook v3 no traen stripe_available_on. Aquí se completan
+    // leyendo su balance_transaction en Stripe. Tope de 25 por corrida para no alargar
+    // la respuesta del panel; lo que falte se completa la próxima vez que abran la vista.
+    let backfilled = 0;
+    try {
+      const { data: faltantes } = await db.from('pagos')
+        .select('id, stripe_session_id')
+        .eq('gym_id', gymId)
+        .is('stripe_available_on', null)
+        .not('stripe_session_id', 'is', null)
+        .order('fecha', { ascending: false })
+        .limit(25);
+      for (const pg of (faltantes || [])) {
+        const sid = String(pg.stripe_session_id || '');
+        let bt: any = null;
+        try {
+          if (sid.startsWith('cs_')) {
+            const cs = await stripeGet(`checkout/sessions/${sid}?expand[]=payment_intent.latest_charge.balance_transaction`, platformSecret, acct);
+            bt = cs?.payment_intent?.latest_charge?.balance_transaction;
+          } else if (sid.startsWith('in_')) {
+            const inv = await stripeGet(`invoices/${sid}?expand[]=charge.balance_transaction`, platformSecret, acct);
+            bt = inv?.charge?.balance_transaction;
+          }
+        } catch (_) { /* un pago que no se pueda leer no frena a los demás */ }
+        const av = (bt && typeof bt.available_on === 'number')
+          ? new Date(bt.available_on * 1000).toISOString().slice(0, 10) : null;
+        if (av) {
+          await db.from('pagos').update({ stripe_available_on: av }).eq('id', pg.id);
+          backfilled += 1;
+        }
+      }
+    } catch (e) { console.warn('backfill available_on:', e); }
+
     // ── Banco destino (last4 + nombre) para mostrar "depósito a ****1234" ──
     let bank: { last4: string; bank_name: string | null } | null = null;
     const ext = account?.external_accounts?.data;
@@ -235,6 +271,7 @@ Deno.serve(async (req: Request) => {
         delay_days: schedule.delay_days ?? null,
       } : null,
       schedule_updated,
+      backfilled_available_on: backfilled,
       bank,
       payouts_enabled: account?.payouts_enabled ?? gymRow.stripe_payouts_enabled ?? null,
       // Resumen del mes con montos REALES de Stripe (bruto / comisión / neto a depositar).
