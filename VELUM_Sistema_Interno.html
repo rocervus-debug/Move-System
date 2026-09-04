@@ -2201,6 +2201,7 @@ body.role-oculta-dinero [data-col-ltv]{display:none !important;}
 .asist-day-pill.active .adp-day,.asist-day-pill.active .adp-num{color:#fff;}
 .asist-day-pill.active .adp-day{color:var(--accent);}
 .asist-day-pill.active .adp-dot{opacity:1;}
+.asist-day-pill.con-prospecto .adp-dot{opacity:1;background:var(--warn);}
 
 @media (max-width: 768px) {
 
@@ -4257,6 +4258,9 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
       <!-- Day Picker Strip -->
       <div class="asist-day-strip" id="asist-day-strip"></div>
+
+      <!-- Reservas del enlace público de la semana (pueden ser de días futuros) -->
+      <div id="asist-prospectos-semana" style="display:none;"></div>
 
       <!-- Lista de clases del día -->
       <div id="asist-clases-list" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -11958,7 +11962,7 @@ function go(id, el){
   if(id==='visitas')     renderVisitas();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { _asistDayOffset=0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); }
+  if(id==='asistencia')  { _asistDayOffset=0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); cargarProspectosSemana().then(()=>{ renderAsistDayStrip(); renderAvisoProspectosSemana(); }); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
@@ -27017,6 +27021,35 @@ function _asistFechaSel(){
   return `${t.getFullYear()}-${mm}-${dd}`;
 }
 
+let _asistProxProspectos = [];   // leads del enlace público en la ventana de 7 días
+
+async function cargarProspectosSemana(){
+  try{
+    const gymId = MOVE_GYM_ID||null;
+    const desde = _asistFechaSel_offset(0);
+    const hasta = _asistFechaSel_offset(6);
+    let q = window.supabaseClient.from('storefront_leads')
+      .select('id,visitor_name,visitor_phone,horario_id,fecha,preferred_day')
+      .gte('fecha',desde).lte('fecha',hasta)
+      .eq('type','trial_class').neq('status','converted')
+      .not('horario_id','is',null)
+      .order('fecha',{ascending:true});
+    if(gymId) q = q.eq('gym_id',gymId);
+    const { data, error } = await q;
+    if(error){ console.warn('prospectos semana:', error.message); _asistProxProspectos=[]; return; }
+    _asistProxProspectos = data||[];
+  }catch(e){ console.warn('prospectos semana:', e); _asistProxProspectos=[]; }
+}
+
+// Fecha de un offset concreto (la tira arranca en HOY y avanza 7 días)
+function _asistFechaSel_offset(off){
+  const t = new Date();
+  t.setDate(t.getDate() + off);
+  const mm = String(t.getMonth()+1).padStart(2,'0');
+  const dd = String(t.getDate()).padStart(2,'0');
+  return `${t.getFullYear()}-${mm}-${dd}`;
+}
+
 function renderAsistDayStrip(){
   const strip = document.getElementById('asist-day-strip');
   if(!strip) return;
@@ -27027,7 +27060,9 @@ function renderAsistDayStrip(){
     d.setDate(hoy.getDate() + i);
     const isToday = i===0;
     const isActive = i===_asistDayOffset;
-    return `<div class="asist-day-pill${isActive?' active':''}${isToday?' today-pill':''}" onclick="selectAsistDia(${i})">
+    const fechaPill = _asistFechaSel_offset(i);
+    const nProsp = (_asistProxProspectos||[]).filter(pr=>pr.fecha===fechaPill).length;
+    return `<div class="asist-day-pill${isActive?' active':''}${isToday?' today-pill':''}${nProsp?' con-prospecto':''}" onclick="selectAsistDia(${i})"${nProsp?` title="${nProsp} reserva${nProsp!==1?'s':''} del enlace público"`:''}>
       <div class="adp-day">${isToday?'HOY':diasAbrev[d.getDay()]}</div>
       <div class="adp-num">${d.getDate()}</div>
       <div class="adp-dot"></div>
@@ -27039,6 +27074,38 @@ function selectAsistDia(offset){
   _asistDayOffset = offset;
   renderAsistDayStrip();
   loadClasesOperativas();
+}
+
+// Banner de la semana: quién reservó por el enlace público y QUÉ DÍA. Con solo la
+// tira de días, una reserva del lunes es invisible el viernes.
+function renderAvisoProspectosSemana(){
+  const host = document.getElementById('asist-prospectos-semana');
+  if(!host) return;
+  const props = _asistProxProspectos||[];
+  if(!props.length){ host.innerHTML=''; host.style.display='none'; return; }
+  const hoyF = _asistFechaSel_offset(0);
+  const fmt = f => {
+    if(f===hoyF) return 'HOY';
+    try{ const d=new Date(f+'T12:00:00');
+      return d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }catch(_){ return f; }
+  };
+  const offsetDe = f => { for(let i=0;i<7;i++) if(_asistFechaSel_offset(i)===f) return i; return 0; };
+  host.style.display='';
+  host.innerHTML = `
+    <div style="background:rgba(223,180,89,.09);border:1px solid rgba(223,180,89,.3);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:var(--fs-sm);font-weight:800;color:var(--warn);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">
+        ${props.length} reserva${props.length!==1?'s':''} por tu enlace público esta semana
+      </div>
+      ${props.map(pr=>`
+        <div onclick="selectAsistDia(${offsetDe(pr.fecha)})" style="display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;border-top:1px solid rgba(223,180,89,.18);">
+          <div style="font-size:var(--fs-xs);font-weight:800;color:var(--warn);min-width:74px;text-transform:uppercase;">${esc(fmt(pr.fecha))}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(pr.visitor_name||'Sin nombre')}</div>
+            <div style="font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(pr.preferred_day||'')}</div>
+          </div>
+          <div style="font-size:var(--fs-xs);color:var(--accent);font-weight:700;flex-shrink:0;">Ver →</div>
+        </div>`).join('')}
+    </div>`;
 }
 
 async function loadClasesOperativas(){
