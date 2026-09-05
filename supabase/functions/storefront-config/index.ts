@@ -1,4 +1,5 @@
-// storefront-config — v21: + ocupación real por clase (reservados) para la barra
+// storefront-config — v22: + gym.reserva_modo (contacto | pago).
+// v21: + ocupación real por clase (reservados) para la barra
 // de llenado del storefront. Se cuenta contra la MISMA próxima ocurrencia que ya
 // se calcula abajo, con el service role (el visitante anónimo no puede leer reservas).
 // v19: el horario público refleja la PRÓXIMA ocurrencia real
@@ -157,6 +158,8 @@ Deno.serve(async (req) => {
         years_open: sf.years_open, active_athletes_count: sf.active_athletes_count,
         social: { instagram: sf.social_instagram, facebook: sf.social_facebook, whatsapp: sf.social_whatsapp, tiktok: sf.social_tiktok },
         trial_class_enabled: sf.trial_class_enabled, free_first_month: sf.free_first_month, mode: sf.mode,
+        // 'pago' = reservar exige comprar paquete y la reserva ocupa lugar; 'contacto' = lead
+        reserva_modo: sf.reserva_modo || 'contacto',
         meta_pixel_id: sf.meta_pixel_id || null, google_tag_id: sf.google_tag_id || null,
       },
       location: { address: sf.address, city: sf.city, state: sf.state, country: sf.country || 'México', postal_code: sf.postal_code, full_address: fullAddress || null, maps_embed_url: sf.maps_embed_url, latitude: sf.latitude, longitude: sf.longitude, hours_text: sf.hours_text },

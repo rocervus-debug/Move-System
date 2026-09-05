@@ -5653,6 +5653,16 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                     <input type="checkbox" id="sf-trial-class" onchange="sfSaveField('trial_class_enabled', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
                     <span style="font-size:var(--fs-sm);">Ofrecer clase de prueba GRATIS</span>
                   </label>
+                  <div class="field" style="margin-top:10px;">
+                    <label>¿Cómo se reserva desde tu página?</label>
+                    <select id="sf-reserva-modo" class="settings-input" onchange="sfSaveField('reserva_modo', this.value)">
+                      <option value="contacto">Dejan sus datos y tú los contactas (no aparta lugar)</option>
+                      <option value="pago">Solo con pago: compran un paquete y su lugar queda apartado</option>
+                    </select>
+                    <span style="font-size:var(--fs-sm);color:var(--text3);margin-top:4px;display:block;">
+                      Con "solo con pago" nadie ocupa un lugar sin pagar: al confirmarse el cobro se crea su reserva y baja el cupo disponible. Requiere tener Stripe conectado y al menos un paquete publicado.
+                    </span>
+                  </div>
                   <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
                     <input type="checkbox" id="sf-free-month" onchange="sfSaveField('free_first_month', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
                     <span style="font-size:var(--fs-sm);">Primer mes GRATIS (para campañas)</span>
@@ -17709,6 +17719,7 @@ function _sfPopulateFormFields(){
   setCheck('sf-show-schedule',     s.show_schedule !== false);
   setCheck('sf-show-coaches',      s.show_coaches !== false);
   setCheck('sf-trial-class',       s.trial_class_enabled !== false);
+  set('sf-reserva-modo',           s.reserva_modo || 'contacto');
   setCheck('sf-free-month',        s.free_first_month === true);
   setCheck('sf-ia-prominent',      s.ia_prominent !== false);
 

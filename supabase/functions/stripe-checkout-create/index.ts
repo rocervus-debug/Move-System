@@ -56,6 +56,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { slug, package_id, customer, session_id: visitorSession, return_to } = body;
+    // Clase que el visitante está reservando (storefront en modo 'pago'). Validadas
+    // estrictas: vienen del navegador. Sin ellas el flujo es una compra normal.
+    const rHorario = (typeof body.horario_id === 'string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.horario_id))
+      ? body.horario_id : '';
+    const rFecha = (typeof body.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.fecha))
+      ? body.fecha : '';
     if (!slug || !package_id || !customer?.email) return json({ error: 'slug, package_id y customer.email son requeridos.' }, 400);
 
     const { data: sf, error: sfErr } = await db.from('gym_storefront').select('gym_id, slug, is_enabled').eq('slug', slug.toLowerCase()).maybeSingle();
@@ -102,7 +109,7 @@ Deno.serve(async (req) => {
     const productName = `${gym.nombre} — ${pkg.name}`;
     const productDesc = pkg.num_classes ? `${pkg.num_classes} clases · ${pkg.duration_days} días` : `${pkg.duration_days} días de acceso`;
 
-    const sharedMeta = { gym_id: String(gym.id), package_id: String(pkg.id), slug, customer_email: customer.email, customer_name: customer.name || '', customer_phone: customer.phone || '', visitor_session: visitorSession || '' };
+    const sharedMeta = { gym_id: String(gym.id), package_id: String(pkg.id), slug, customer_email: customer.email, customer_name: customer.name || '', customer_phone: customer.phone || '', visitor_session: visitorSession || '', reserva_horario_id: rHorario, reserva_fecha: rFecha };
 
     if (isRecurring) {
       // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
@@ -156,7 +163,7 @@ Deno.serve(async (req) => {
       gym_id: gym.id, package_id: pkg.id, stripe_session_id: session.id, stripe_account_id: gym.stripe_account_id,
       customer_email: customer.email, customer_name: customer.name || null, customer_phone: customer.phone || null,
       amount_cents: amountCents, application_fee_cents: feeCents, currency: 'mxn',
-      status: 'pending', metadata: { visitor_session: visitorSession || null, source: returnTo ? 'atleta_renewal' : 'storefront', fee_pct: feePct },
+      status: 'pending', metadata: { visitor_session: visitorSession || null, source: returnTo ? 'atleta_renewal' : 'storefront', fee_pct: feePct, reserva_horario_id: rHorario || null, reserva_fecha: rFecha || null },
     });
 
     return json({ ok: true, session_id: session.id, checkout_url: session.url });

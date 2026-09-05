@@ -1,3 +1,4 @@
+// stripe-webhook — crea también la RESERVA cuando el storefront va en modo 'pago'.
 // stripe-webhook — v16: DOS fixes P0 cazados en certificación: (1) recordMemberPago manda package_id (check pago_requires_package), (2) clases_usadas siempre 0 — con null (paquetes ilimitados) el insert violaba NOT NULL y el pago cobrado no se registraba (la causa de las ventas fantasma de mayo). v15: + atribución de referidos (metadata.ref → saas_leads con referrer_id) en el signup SaaS.
 // v13/v14: idempotencia DB (pagos únicos por stripe_session_id), monto real en renovaciones,
 // upsert de member_subscriptions, dunning, anti-replay. Deno.serve nativo (sin deno.land/std).
@@ -384,6 +385,45 @@ Deno.serve(async (req: Request) => {
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
           const { error: pErr } = await db.from('pagos').insert({ gym_id: gymId, cliente: clienteNombre, monto, fecha: new Date().toISOString().slice(0,10), plan: pkg.name, metodo: 'Stripe (Storefront)', vence: venceDate.toISOString().slice(0,10), telefono: order.customer_phone || null, package_id: packageId, applied_price_mxn: Math.round(monto), list_price_mxn: Math.round(monto), source: 'storefront', velum_commission_mxn: comm, stripe_fee_mxn: sfFeeR, net_to_gym_mxn: Math.round(monto-comm-(sfFeeR||0)), stripe_available_on: _sfBt.availableOn, stripe_session_id: session.id, notas: `Compra online — ${order.customer_email}`, clases_totales: clasesTotales, clases_usadas: 0 });
           if (pErr && !isDupErr(pErr)) console.error('pago insert err:', pErr);
+
+          // ── Reserva REAL de la clase (storefront en modo 'pago') ──────────────
+          // El visitante eligió una clase antes de pagar: ahora que pagó, se le
+          // aparta el lugar de verdad (ocupa cupo y sale en la lista de asistencia).
+          // Si la clase se llenó mientras pagaba, NO se pierde su compra: queda con
+          // su paquete y se avisa para reagendar (nunca sobrevender el cupo).
+          const rHid = String(md.reserva_horario_id || (order.metadata as any)?.reserva_horario_id || '');
+          const rFec = String(md.reserva_fecha || (order.metadata as any)?.reserva_fecha || '');
+          if (rHid && rFec && clienteId) {
+            try {
+              const { data: hRow } = await db.from('horarios')
+                .select('id, hora, tipo, cupo').eq('id', rHid).eq('gym_id', gymId).maybeSingle();
+              if (hRow) {
+                const { count: ocupados } = await db.from('reservas')
+                  .select('id', { count: 'exact', head: true })
+                  .eq('horario_id', rHid).eq('fecha', rFec).neq('estado', 'cancelado');
+                const cupo = hRow.cupo || 0;
+                if (cupo > 0 && (ocupados || 0) >= cupo) {
+                  console.warn('reserva storefront: clase llena', { rHid, rFec, gymId });
+                  if (order.customer_email) {
+                    await sendEmail(order.customer_email, 'recibo', {
+                      gym: gym.nombre, monto: String(Math.round(monto)),
+                      plan: `${pkg.name} — tu clase se llenó, escríbenos para reagendar`,
+                      vence: venceDate.toISOString().slice(0, 10),
+                    });
+                  }
+                } else {
+                  const { error: rErr } = await db.from('reservas').insert({
+                    gym_id: gymId, horario_id: rHid, fecha: rFec,
+                    cliente_id: clienteId, cliente_nombre: clienteNombre,
+                    clase_hora: hRow.hora || null, clase_tipo: hRow.tipo || null,
+                    estado: 'reservado',
+                  });
+                  if (rErr && !isDupErr(rErr)) console.error('reserva storefront insert:', rErr);
+                }
+              }
+            } catch (e) { console.error('reserva storefront:', e); }
+          }
+
           if (order.customer_email) {
             await sendEmail(order.customer_email, 'recibo', { gym: gym.nombre, monto: String(Math.round(monto)), plan: pkg.name, vence: venceDate.toISOString().slice(0,10) });
             if (cli.isNew) {

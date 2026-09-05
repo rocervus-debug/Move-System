@@ -942,6 +942,7 @@ function scrollToId(id){ document.getElementById(id)?.scrollIntoView({behavior:'
 
 // ─── Estado de la página v2 (config sf_* con defaults seguros) ───
 const SF_CFG = { theme:null, fotos:[], cta:null, pkg_rec:null, tabs:null, descubre_optin:null };
+let SF_DATA = null;   // respuesta completa de storefront-config (gym, packages, horario…)
 let _sfVertical = 'gym';
 
 // Traducción por vertical para strings generados en runtime (después del verticalize inicial)
@@ -1069,7 +1070,7 @@ function _sfBuildTabs(data){
 function _sfApplyCta(gym){
   const mode = (SF_CFG.cta === 'prueba' || SF_CFG.cta === 'reservar')
     ? SF_CFG.cta
-    : (gym.trial_class_enabled ? 'prueba' : 'reservar');
+    : ((gym.trial_class_enabled && gym.reserva_modo !== 'pago') ? 'prueba' : 'reservar');
   const btn = document.getElementById('cta-main');
   const title = document.getElementById('cta-title');
   const sub = document.getElementById('cta-sub');
@@ -1087,6 +1088,19 @@ function _sfApplyCta(gym){
 function sfCtaClick(){
   trackEvent('cta_sticky_click', { mode: _sfApplyCta._mode || 'reservar' });
   _sfSlotElegido = { horario_id:null, fecha:null };   // botón general: sin clase concreta
+  // Modo 'pago': nadie reserva sin pagar, tampoco por este botón. Se manda a elegir
+  // clase en el horario; de ahí el flujo exige paquete.
+  if (SF_DATA && SF_DATA.gym && SF_DATA.gym.reserva_modo === 'pago'){
+    const tabHorario = document.querySelector('.tab[data-p="horario"]');
+    if (tabHorario && tabHorario.style.display !== 'none'){
+      sfTab('horario');
+      const sec = document.getElementById('schedule-section');
+      if (sec) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
+    sfTab('planes');
+    return;
+  }
   openLeadModal('trial');
   // Si el gym no ofrece clase de prueba, el mismo modal se re-etiqueta como reserva normal
   if (_sfApplyCta._mode !== 'prueba'){
@@ -1116,6 +1130,13 @@ let _sfSlotElegido = { horario_id:null, fecha:null };
 
 function sfReservarSlot(dia, hora, tipo, horarioId){
   _sfSlotElegido = { horario_id: horarioId || null, fecha: _sfProximaFecha(dia) };
+  // Modo 'pago': reservar EXIGE comprar un paquete. La reserva se crea al pagarse
+  // y ocupa lugar — así el horario público refleja la ocupación real.
+  if (SF_DATA && SF_DATA.gym && SF_DATA.gym.reserva_modo === 'pago'){
+    _sfReservaPendiente = { horario_id: horarioId || null, fecha: _sfProximaFecha(dia), etiqueta: [dia,hora,tipo].filter(Boolean).join(' · ') };
+    sfIrAPagarReserva();
+    return;
+  }
   openLeadModal('trial', _leadPlanGratis || undefined);
   const ey = document.getElementById('lead-eyebrow'); if (ey) ey.textContent = 'RESERVA';
   const ti = document.getElementById('lead-title'); if (ti) ti.textContent = _sfTerm('Reserva tu lugar');
@@ -1234,6 +1255,37 @@ function renderPackages(packages){
 // Plan GRATIS: primero elegir la clase. Un lead sin horario_id no aparece en la
 // lista de asistencia de ninguna clase — solo en Leads — y el gym no sabe a quién
 // esperar (caso COREX 04-sep).
+// Modo 'pago': manda a los planes con un aviso de qué clase está apartando.
+function sfIrAPagarReserva(){
+  const pagables = (SF_DATA?.packages || []).filter(p => (p.price_mxn || 0) > 0);
+  if (!pagables.length){
+    // Sin paquetes de pago publicados no hay forma de reservar: decirlo claro en
+    // vez de mandar a una pestaña vacía.
+    alert('Este negocio aún no tiene paquetes disponibles en línea. Escríbeles para reservar tu lugar.');
+    _sfReservaPendiente = null;
+    return;
+  }
+  sfTab('planes');
+  const sec = document.getElementById('p-planes');
+  if (sec) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+  sfAvisoReservaPendiente();
+  trackEvent('reserva_requiere_pago', { horario_id: _sfReservaPendiente?.horario_id || '' });
+}
+
+function sfAvisoReservaPendiente(){
+  const host = document.getElementById('p-planes');
+  if (!host || !_sfReservaPendiente) return;
+  let aviso = document.getElementById('sf-aviso-reserva');
+  if (!aviso){
+    aviso = document.createElement('div');
+    aviso.id = 'sf-aviso-reserva';
+    aviso.style.cssText = 'margin:0 0 14px;padding:12px 16px;border-radius:12px;background:color-mix(in srgb, var(--accent) 12%, transparent);border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);font-size:14px;line-height:1.5;color:var(--text-1);';
+    host.insertBefore(aviso, host.firstChild);
+  }
+  aviso.innerHTML = `Estás apartando <strong>${escapeHtml(_sfReservaPendiente.etiqueta || 'tu clase')}</strong> — elige tu paquete para confirmar el lugar.`;
+  aviso.style.display = '';
+}
+
 function sfPedirPlanGratis(packageId, pkgName){
   _leadPlanGratis = { package_id: packageId, package_name: pkgName };
   const tabHorario = document.querySelector('.tab[data-p="horario"]');
@@ -1595,6 +1647,10 @@ async function submitCheckout(packageId){
         slug, package_id: packageId,
         customer: { name, email, phone },
         session_id: sessionId,
+        // Clase que se está reservando: al confirmarse el pago, el webhook crea
+        // la reserva y ocupa el lugar.
+        horario_id: (_sfReservaPendiente && _sfReservaPendiente.horario_id) || null,
+        fecha: (_sfReservaPendiente && _sfReservaPendiente.fecha) || null,
       })
     });
     const data = await res.json();
@@ -1857,6 +1913,7 @@ document.addEventListener('keydown', (e) => {
 let _leadType = 'trial';
 let _leadPackage = null;   // plan (gratis) que originó el lead, si lo hubo
 let _leadPlanGratis = null; // plan gratis en curso: se adjunta a la clase que elija
+let _sfReservaPendiente = null; // clase elegida que espera pago (modo 'pago')
 let _leadGymData = null;
 
 function openLeadModal(type, prefillData){
@@ -2020,6 +2077,7 @@ async function load(){
     if (!res.ok){ showError('Error al cargar. Intenta de nuevo en un momento.'); return; }
     const data = await res.json();
     if (!data.gym){ showError('Respuesta inválida del servidor.'); return; }
+    SF_DATA = data;   // lo consultan el flujo de reserva y el de planes
 
     // Config nueva sf_* (gym_config) con fallbacks seguros: si no existe, todo usa defaults
     // v20: el vocabulario viene resuelto en flags (fuente única velum_flags).
