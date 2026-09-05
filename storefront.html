@@ -1128,12 +1128,15 @@ function _sfProximaFecha(diaNombre){
 // en el roster de ESA clase, no perdida en una lista aparte.
 let _sfSlotElegido = { horario_id:null, fecha:null };
 
-function sfReservarSlot(dia, hora, tipo, horarioId){
-  _sfSlotElegido = { horario_id: horarioId || null, fecha: _sfProximaFecha(dia) };
+function sfReservarSlot(dia, hora, tipo, horarioId, fechaReal){
+  // fechaReal viene de la celda cuando el horario navega por semanas; el fallback
+  // por nombre de día solo aplica al modo de 1 semana.
+  const fecha = fechaReal || _sfProximaFecha(dia);
+  _sfSlotElegido = { horario_id: horarioId || null, fecha };
   // Modo 'pago': reservar EXIGE comprar un paquete. La reserva se crea al pagarse
   // y ocupa lugar — así el horario público refleja la ocupación real.
   if (SF_DATA && SF_DATA.gym && SF_DATA.gym.reserva_modo === 'pago'){
-    _sfReservaPendiente = { horario_id: horarioId || null, fecha: _sfProximaFecha(dia), etiqueta: [dia,hora,tipo].filter(Boolean).join(' · ') };
+    _sfReservaPendiente = { horario_id: horarioId || null, fecha, etiqueta: [dia,hora,tipo].filter(Boolean).join(' · ') };
     sfIrAPagarReserva();
     return;
   }
@@ -1334,7 +1337,134 @@ function sfOcupacionHTML(c){
   </div>`;
 }
 
+let _sfSemana = 0;   // semana visible dentro de la ventana
+
+const _SF_DIAS_CORTO = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+const _SF_MES_CORTO  = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+function _sfFechaDeOffset(off){
+  const d = new Date(); d.setDate(d.getDate() + off);
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+// Fechas CON CLASE de la semana pedida, dentro de la ventana que envió el servidor.
+function _sfFechasDeSemana(byDate, semana){
+  const out = [];
+  for (let i = semana*7; i < (semana+1)*7; i++){
+    const f = _sfFechaDeOffset(i);
+    if (byDate[f] && byDate[f].length) out.push(f);
+  }
+  return out;
+}
+
+function sfSemanaNav(dir){
+  const total = (SF_DATA && SF_DATA.schedule_semanas) || 1;
+  const n = _sfSemana + dir;
+  if (n < 0 || n > total - 1) return;
+  _sfSemana = n;
+  renderScheduleNavegable();
+}
+
+function sfSelectFecha(fecha){
+  document.querySelectorAll('.schedule-tab').forEach(t => t.classList.toggle('active', t.dataset.f === fecha));
+  document.querySelectorAll('.schedule-day').forEach(d => d.classList.toggle('active', d.dataset.f === fecha));
+}
+
+// Horario navegable por semanas, con la FECHA de cada clase (no solo el día).
+function renderScheduleNavegable(){
+  const byDate = (SF_DATA && SF_DATA.schedule_by_date) || null;
+  const total  = (SF_DATA && SF_DATA.schedule_semanas) || 1;
+  if (!byDate) return false;
+
+  const fechas = _sfFechasDeSemana(byDate, _sfSemana);
+  const sec = document.getElementById('schedule-section');
+  if (!fechas.length){
+    // Semana sin clases (vacaciones, cierre): se dice, no se deja en blanco.
+    document.getElementById('schedule-tabs').innerHTML = '';
+    document.getElementById('schedule-days').innerHTML =
+      `<div style="padding:26px 4px;text-align:center;color:var(--text-3);font-size:14px;">Sin clases programadas esta semana.</div>`;
+  }
+  if (sec) sec.style.display = '';
+
+  // Rótulo de la semana + flechas
+  let head = document.getElementById('sf-semana-nav');
+  if (!head){
+    head = document.createElement('div');
+    head.id = 'sf-semana-nav';
+    head.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:nowrap;';
+    const tabs = document.getElementById('schedule-tabs');
+    tabs.parentNode.insertBefore(head, tabs);
+  }
+  if (total <= 1){ head.style.display = 'none'; }
+  else {
+    const ini = new Date(_sfFechaDeOffset(_sfSemana*7) + 'T12:00:00');
+    const fin = new Date(_sfFechaDeOffset(_sfSemana*7 + 6) + 'T12:00:00');
+    const rango = _sfSemana === 0
+      ? 'Esta semana'
+      : `${ini.getDate()} ${_SF_MES_CORTO[ini.getMonth()]} — ${fin.getDate()} ${_SF_MES_CORTO[fin.getMonth()]}`;
+    const btn = (dir, txt, off) => `<button onclick="sfSemanaNav(${dir})" aria-label="${txt}"
+        ${off ? 'disabled' : ''}
+        style="width:34px;height:34px;flex:none;border-radius:10px;border:1px solid var(--border-soft);
+        background:transparent;color:${off ? 'var(--text-3)' : 'var(--text-1)'};font-size:16px;
+        cursor:${off ? 'not-allowed' : 'pointer'};opacity:${off ? '.4' : '1'};">${txt}</button>`;
+    head.style.display = 'flex';   // '' borraría el flex del cssText inicial
+    head.innerHTML = `
+      ${btn(-1, '‹', _sfSemana === 0)}
+      <div style="flex:1;min-width:0;text-align:center;">
+        <div style="font-weight:700;font-size:15px;">${escapeHtml(rango)}</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--text-3);margin-top:2px;">SEMANA ${_sfSemana+1} DE ${total}</div>
+      </div>
+      ${btn(1, '›', _sfSemana >= total-1)}`;
+  }
+
+  if (!fechas.length) return true;
+
+  // Pestañas de día CON FECHA real
+  document.getElementById('schedule-tabs').innerHTML = fechas.map((f,i)=>{
+    const d = new Date(f+'T12:00:00');
+    const esHoy = (_sfSemana===0 && f === _sfFechaDeOffset(0));
+    return `<button class="schedule-tab ${i===0?'active':''}" data-f="${f}" onclick="sfSelectFecha('${f}')">
+      ${esHoy ? 'HOY' : _SF_DIAS_CORTO[d.getDay()]} ${d.getDate()}<span class="badge">${byDate[f].length}</span>
+    </button>`;
+  }).join('');
+
+  // Contenido por fecha
+  document.getElementById('schedule-days').innerHTML = fechas.map((f,i)=>{
+    const d = new Date(f+'T12:00:00');
+    const diaNombre = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][d.getDay()];
+    return `<div class="schedule-day ${i===0?'active':''}" data-f="${f}">
+      <div class="schedule-grid">
+        ${byDate[f].map(c => `
+          <div class="schedule-card">
+            <div class="sc-time">${escapeHtml(c.hora || '—')}</div>
+            <div class="sc-mid">
+              <div class="sc-name">${escapeHtml(c.tipo || 'Clase')}</div>
+              <div class="sc-coach">${(() => {
+                const eq = Array.isArray(c.coaches) && c.coaches.length ? c.coaches : (c.coach ? [c.coach] : []);
+                if (!eq.length) return '';
+                if (eq.length === 1) return 'Con ' + escapeHtml(eq[0]);
+                if (eq.length === 2) return 'Con ' + escapeHtml(eq[0]) + ' & ' + escapeHtml(eq[1]);
+                return 'Con ' + escapeHtml(eq[0]) + ', ' + escapeHtml(eq[1]) + ' +' + (eq.length - 2);
+              })()}</div>
+            </div>
+            ${sfOcupacionHTML(c)}
+            ${(() => {
+              const llena = c.cupo_total > 0 && (c.reservados || 0) >= c.cupo_total;
+              if (llena) return `<button class="sc-res" disabled title="Esta clase ya está llena">Llena</button>`;
+              return `<button class="sc-res" onclick="sfReservarSlot('${jsAttr(diaNombre)}', '${jsAttr(c.hora || '')}', '${jsAttr(c.tipo || '')}', '${jsAttr(c.id || '')}', '${jsAttr(f)}')">Reservar</button>`;
+            })()}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  return true;
+}
+
 function renderScheduleWeekly(weekly){
+  // v23: si el servidor manda el horario por fecha, se navega por semanas.
+  if (SF_DATA && SF_DATA.schedule_by_date && renderScheduleNavegable()) return;
+
   if (!weekly){
     document.getElementById('schedule-section').style.display = 'none';
     return;

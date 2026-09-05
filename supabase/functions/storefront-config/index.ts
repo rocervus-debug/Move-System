@@ -1,4 +1,5 @@
-// storefront-config — v22: + gym.reserva_modo (contacto | pago).
+// storefront-config — v23: + schedule_by_date (ventana de N semanas navegable).
+// v22: + gym.reserva_modo (contacto | pago).
 // v21: + ocupación real por clase (reservados) para la barra
 // de llenado del storefront. Se cuenta contra la MISMA próxima ocurrencia que ya
 // se calcula abajo, con el service role (el visitante anónimo no puede leer reservas).
@@ -72,6 +73,8 @@ Deno.serve(async (req) => {
     }
 
     let schedule_weekly: any = null;
+    let schedule_by_date: any = null;
+    let schedule_semanas = 1;
     if (sf.show_schedule) {
       const { data: horarios } = await db.from('horarios').select('id, dia, hora, tipo, coach_nombre, coaches_extra, cupo, fecha').eq('gym_id', sf.gym_id);
 
@@ -92,21 +95,33 @@ Deno.serve(async (req) => {
         proxFecha[dn] = d.toISOString().slice(0, 10);
       });
 
+      // Ventana visible: HOY + (semanas × 7) días. El público navega semana por
+      // semana con la fecha real de cada clase — la reserva se ata a esa fecha,
+      // no a "la próxima vez que caiga ese día".
+      const semanas = Math.min(6, Math.max(1, Number(sf.semanas_visibles) || 1));
+      const NOMBRE_DIA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+      const ventana: { fecha: string; dia: string }[] = [];
+      for (let i = 0; i < semanas * 7; i++) {
+        const d = new Date(hoyD); d.setDate(hoyD.getDate() + i);
+        ventana.push({ fecha: d.toISOString().slice(0, 10), dia: NOMBRE_DIA[d.getDay()] });
+      }
+      const fechasVentana = ventana.map(v => v.fecha);
+
       const filas = horarios || [];
       const plantilla = filas.filter((h: any) => !h.fecha || h.fecha === '');
       const overrides = filas.filter((h: any) => h.fecha && /^\d{4}-\d{2}-\d{2}$/.test(h.fecha));
 
       // Clases canceladas en las próximas ocurrencias (una sola consulta)
-      const fechasProx = Object.values(proxFecha);
       const { data: cancs } = await db.from('horario_cancelaciones')
-        .select('horario_id, fecha').eq('gym_id', String(sf.gym_id)).in('fecha', fechasProx);
+        .select('horario_id, fecha').eq('gym_id', String(sf.gym_id)).in('fecha', fechasVentana);
       const cancSet = new Set((cancs || []).map((c: any) => c.horario_id + '_' + c.fecha));
 
       // Ocupación real: reservas vivas de cada clase en SU próxima ocurrencia.
       // Solo se expone el CONTEO (nunca nombres ni tokens): el storefront es público.
       const { data: resvs } = await db.from('reservas')
         .select('horario_id, fecha').eq('gym_id', sf.gym_id)
-        .in('fecha', fechasProx).neq('estado', 'cancelado');
+        .gte('fecha', fechasVentana[0]).lte('fecha', fechasVentana[fechasVentana.length - 1])
+        .neq('estado', 'cancelado');
       const ocupMap: Record<string, number> = {};
       (resvs || []).forEach((r: any) => {
         const k = r.horario_id + '_' + r.fecha;
@@ -142,6 +157,38 @@ Deno.serve(async (req) => {
       Object.keys(grouped).forEach(d => { grouped[d].sort((a, b) => a.minutes - b.minutes); grouped[d].forEach(c => delete c.minutes); });
       const hasAny = Object.values(grouped).some((arr: any) => arr.length > 0);
       schedule_weekly = hasAny ? grouped : null;
+
+      // Horario POR FECHA de toda la ventana. Misma regla efectiva que arriba
+      // (plantilla − horas pisadas por override + overrides no-CERRADO − canceladas),
+      // aplicada a cada día real en vez de a la próxima ocurrencia.
+      const porFecha: Record<string, any[]> = {};
+      for (const { fecha, dia } of ventana) {
+        const ovsDia = overrides.filter((h: any) => h.fecha === fecha);
+        const horasPisadas = new Set(ovsDia.map((h: any) => h.hora));
+        const base = plantilla
+          .filter((h: any) => normalizeDay(h.dia) === dia && !horasPisadas.has(h.hora));
+        const extra = ovsDia.filter((h: any) => (h.tipo || '') !== 'CERRADO');
+        const items = [...base, ...extra]
+          .filter((h: any) => !cancSet.has(h.id + '_' + fecha))
+          .map((h: any) => {
+            const extras = Array.isArray(h.coaches_extra) ? h.coaches_extra.map((x: any) => x && x.nombre).filter(Boolean) : [];
+            const equipo = [h.coach_nombre, ...extras].filter(Boolean);
+            const cupoTotal = h.cupo || 0;
+            const crudos = ocupMap[h.id + '_' + fecha] || 0;
+            return {
+              id: h.id, hora: h.hora, tipo: h.tipo, coach: h.coach_nombre || '', coaches: equipo,
+              cupo_total: cupoTotal,
+              reservados: cupoTotal ? Math.min(crudos, cupoTotal) : crudos,
+              fecha,
+              minutes: horaToMinutes(h.hora),
+            };
+          })
+          .sort((a: any, b: any) => a.minutes - b.minutes);
+        items.forEach((c: any) => delete c.minutes);
+        if (items.length) porFecha[fecha] = items;
+      }
+      schedule_by_date = Object.keys(porFecha).length ? porFecha : null;
+      schedule_semanas = semanas;
     }
 
     const fullAddress = [sf.address, sf.city, sf.state, sf.postal_code, sf.country].filter(Boolean).join(', ');
@@ -169,6 +216,8 @@ Deno.serve(async (req) => {
       gallery: Array.isArray(sf.gallery_urls) ? sf.gallery_urls : [],
       faqs: Array.isArray(sf.faqs) ? sf.faqs : [],
       coaches, schedule_weekly,
+      // Horario por fecha (ventana de N semanas) + cuántas semanas navegar
+      schedule_by_date, schedule_semanas,
       generatedAt: new Date().toISOString(),
     }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=30' } });
   } catch (err) {
