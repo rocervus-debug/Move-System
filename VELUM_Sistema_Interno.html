@@ -3521,13 +3521,23 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
   </div>
   <!-- Main tabs -->
   <div class="coach-tabs">
-    <div class="coach-tab active" id="ctab-horario" onclick="switchCoachTab('horario')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Horario</div>
+    <div class="coach-tab active" id="ctab-hoy" onclick="switchCoachTab('hoy')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg> Mis clases</div>
+    <div class="coach-tab" id="ctab-horario" onclick="switchCoachTab('horario')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Horario</div>
     <div class="coach-tab" id="ctab-programa" onclick="switchCoachTab('programa')">Programa</div>
   </div>
   <!-- Body -->
   <div class="coach-body">
+    <!-- Mis clases del día: quiénes vienen -->
+    <div id="cpanel-hoy">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <button class="btn btn-outline btn-sm" onclick="coachHoyNav(-1)">‹</button>
+        <span style="font-size:var(--fs-base);font-weight:700;flex:1;text-align:center;" id="coach-hoy-label">—</span>
+        <button class="btn btn-outline btn-sm" onclick="coachHoyNav(1)">›</button>
+      </div>
+      <div id="coach-hoy-list"></div>
+    </div>
     <!-- Horario panel -->
-    <div id="cpanel-horario">
+    <div id="cpanel-horario" style="display:none;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
         <button class="btn btn-outline btn-sm" onclick="coachHorNav(-1)">‹</button>
         <span style="font-size:var(--fs-base);font-weight:700;flex:1;text-align:center;" id="coach-hor-label">—</span>
@@ -4261,6 +4271,9 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
       <!-- Reservas del enlace público de la semana (pueden ser de días futuros) -->
       <div id="asist-prospectos-semana" style="display:none;"></div>
+
+      <!-- Clases próximas con 1 sola reserva de clase suelta -->
+      <div id="asist-baja-ocupacion" style="display:none;"></div>
 
       <!-- Lista de clases del día -->
       <div id="asist-clases-list" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -9497,16 +9510,86 @@ function showCoachView(){
   if(aw) aw.style.display = 'none';
   const nombre = currentUser.nombre || 'Coach';
   document.getElementById('coach-nombre').textContent = nombre;
-  switchCoachTab('horario');
+  _coachHoyOffset = 0;
+  switchCoachTab('hoy');
 }
 
 function switchCoachTab(tab){
-  ['horario','programa'].forEach(t=>{
-    document.getElementById('ctab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('cpanel-'+t).style.display = t===tab ? '' : 'none';
+  ['hoy','horario','programa'].forEach(t=>{
+    const bt=document.getElementById('ctab-'+t), pn=document.getElementById('cpanel-'+t);
+    if(bt) bt.classList.toggle('active', t===tab);
+    if(pn) pn.style.display = t===tab ? '' : 'none';
   });
+  if(tab==='hoy') renderCoachHoy();
   if(tab==='horario') renderCoachHorario();
   if(tab==='programa'){ renderCoachProgTabs(); renderCoachPrograma(); }
+}
+
+// ── Mis clases del día: cuántas reservas y QUIÉN viene ────────────────────────
+// Los datos salen de coach_mis_clases(fecha): función security definer que devuelve
+// SOLO las clases que este coach imparte y solo nombres cortos — el rol coach no
+// tiene acceso directo a `reservas` ni a nada de dinero.
+let _coachHoyOffset = 0;
+
+function _coachHoyFecha(){
+  const t = new Date();
+  t.setDate(t.getDate() + _coachHoyOffset);
+  const mm=String(t.getMonth()+1).padStart(2,'0'), dd=String(t.getDate()).padStart(2,'0');
+  return `${t.getFullYear()}-${mm}-${dd}`;
+}
+
+function coachHoyNav(dir){ _coachHoyOffset += dir; renderCoachHoy(); }
+
+async function renderCoachHoy(){
+  const el = document.getElementById('coach-hoy-list');
+  const lbl = document.getElementById('coach-hoy-label');
+  if(!el) return;
+  const fecha = _coachHoyFecha();
+  if(lbl){
+    const d = new Date(fecha+'T12:00:00');
+    lbl.textContent = _coachHoyOffset===0 ? 'Hoy' : d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  }
+  el.innerHTML = '<div style="padding:22px 0;text-align:center;font-size:var(--fs-sm);color:var(--text3);">Cargando…</div>';
+  try{
+    const { data, error } = await window.supabaseClient.rpc('coach_mis_clases', { p_fecha: fecha });
+    if(error) throw error;
+    const clases = data || [];
+    if(!clases.length){
+      el.innerHTML = `<div style="padding:40px 20px;text-align:center;">
+        <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:6px;">Sin clases este día</div>
+        <div style="font-size:var(--fs-sm);color:var(--text3);">No tienes clases asignadas. Si crees que es un error, avísale a tu gym.</div>
+      </div>`;
+      return;
+    }
+    el.innerHTML = clases.map(c=>{
+      const cupo = c.cupo||0, res = Number(c.reservados)||0, chk = Number(c.checkins)||0;
+      const libres = Math.max(0, cupo-res);
+      const pct = cupo>0 ? Math.min(100, Math.round(res/cupo*100)) : 0;
+      const col = libres===0 ? '#f06060' : (pct>=70 ? '#f5a623' : 'var(--accent)');
+      const gente = Array.isArray(c.personas) ? c.personas : [];
+      return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="font-size:var(--fs-xl);font-weight:900;font-family:var(--fd);color:var(--text);">${esc(fmtHoraClase ? fmtHoraClase(c.hora) : c.hora)}</div>
+            <div style="font-size:var(--fs-sm);font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:3px;">${esc(c.tipo||'Clase')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:var(--fs-2xl);font-weight:900;font-family:var(--fd);color:var(--text);line-height:1;">${res}<span style="font-size:var(--fs-base);color:var(--text3);font-weight:500;"> / ${cupo}</span></div>
+            ${chk>0?`<div style="font-size:var(--fs-xs);color:var(--ok);margin-top:3px;font-weight:700;">${chk===1?'1 ya llegó':chk+' ya llegaron'}</div>`:''}
+          </div>
+        </div>
+        ${cupo>0?`<div style="margin-top:10px;height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};border-radius:99px;"></div></div>`:''}
+        <div style="margin-top:12px;">
+          ${gente.length
+            ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${gente.map(n=>`<span style="font-size:var(--fs-xs);font-weight:700;padding:5px 10px;border-radius:8px;background:color-mix(in srgb, var(--accent) 10%, transparent);border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);color:var(--text);">${esc(n)}</span>`).join('')}</div>`
+            : `<div style="font-size:var(--fs-sm);color:var(--text3);">Nadie ha reservado todavía.</div>`}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    console.error('renderCoachHoy', e);
+    el.innerHTML = `<div style="padding:22px;text-align:center;font-size:var(--fs-sm);color:var(--text3);">No se pudieron cargar tus clases. Intenta de nuevo.</div>`;
+  }
 }
 
 function coachHorNav(dir){
@@ -11972,7 +12055,7 @@ function go(id, el){
   if(id==='visitas')     renderVisitas();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { _asistDayOffset=0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); cargarProspectosSemana().then(()=>{ renderAsistDayStrip(); renderAvisoProspectosSemana(); }); }
+  if(id==='asistencia')  { _asistDayOffset=0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); cargarProspectosSemana().then(()=>{ renderAsistDayStrip(); renderAvisoProspectosSemana(); }); cargarBajaOcupacion().then(renderAvisoBajaOcupacion); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
@@ -27121,6 +27204,73 @@ function selectAsistDia(offset){
 
 // Banner de la semana: quién reservó por el enlace público y QUÉ DÍA. Con solo la
 // tira de días, una reserva del lunes es invisible el viernes.
+// ── Clases con 1 sola reserva de CLASE SUELTA ────────────────────────────────
+// Economía del estudio: dar clase para 1 sola persona que compró una visita suelta
+// cuesta más de lo que deja. Si esa persona trae PAQUETE, la clase se da — ya pagó
+// por adelantado y cancelarle quema la relación. El sistema propone; decide la dueña.
+let _bajaOcupacion = [];
+
+async function cargarBajaOcupacion(){
+  try{
+    const gymId = MOVE_GYM_ID||null;
+    if(!gymId){ _bajaOcupacion=[]; return; }
+    const { data, error } = await window.supabaseClient.rpc('clases_baja_ocupacion', { p_gym_id: gymId, p_horas: 12 });
+    if(error){ console.warn('baja ocupación:', error.message); _bajaOcupacion=[]; return; }
+    _bajaOcupacion = (data||[]).filter(c=>c.es_suelta);   // con paquete la clase se da
+  }catch(e){ console.warn('baja ocupación:', e); _bajaOcupacion=[]; }
+}
+
+function renderAvisoBajaOcupacion(){
+  const host = document.getElementById('asist-baja-ocupacion');
+  if(!host) return;
+  const items = _bajaOcupacion||[];
+  if(!items.length){ host.innerHTML=''; host.style.display='none'; return; }
+  const fmtF = f => { try{ return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }catch(_){ return f; } };
+  host.style.display='';
+  host.innerHTML = `
+    <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.28);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:var(--fs-sm);font-weight:800;color:var(--danger);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">
+        ${items.length} clase${items.length!==1?'s':''} con 1 sola reserva de clase suelta
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:10px;">
+        Si cancelas, a esa persona se le extiende la vigencia 30 días para que use su clase otro día (no pierde su dinero) y la clase desaparece de la app.
+      </div>
+      ${items.map((c,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(248,113,113,.18);">
+          <div style="font-size:var(--fs-xs);font-weight:800;color:var(--danger);min-width:76px;text-transform:uppercase;">${esc(fmtF(c.fecha))}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(typeof fmtHoraClase==='function'?fmtHoraClase(c.hora):c.hora)} · ${esc(c.tipo||'Clase')}</div>
+            <div style="font-size:var(--fs-xs);color:var(--text3);">${esc(c.cliente_nombre||'—')} · ${esc(c.plan||'clase suelta')}</div>
+          </div>
+          <button onclick="cancelarPorBajaOcupacion(${i})"
+            style="border:none;cursor:pointer;border-radius:8px;padding:7px 12px;font-size:var(--fs-xs);font-weight:800;background:rgba(248,113,113,.16);color:var(--danger);">Cancelar y acreditar</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function cancelarPorBajaOcupacion(idx){
+  const c = (_bajaOcupacion||[])[idx];
+  if(!c) return;
+  const ok = await confirmDialog(
+    `Se cancelará ${c.tipo||'la clase'} del ${c.fecha} a las ${typeof fmtHoraClase==='function'?fmtHoraClase(c.hora):c.hora}.\n\n` +
+    `${c.cliente_nombre} recibirá 30 días más de vigencia para usar su clase otro día — no pierde su pago. ` +
+    `La clase desaparecerá de la app y de tu página pública.`,
+    { title:'Cancelar por baja ocupación', icon:'⚠', danger:true, confirmText:'Sí, cancelar y acreditar', cancelText:'Mejor no' });
+  if(!ok) return;
+  const { data, error } = await window.supabaseClient.rpc('cancelar_clase_baja_ocupacion',
+    { p_horario_id: c.horario_id, p_fecha: c.fecha, p_dias_credito: 30 });
+  const r = Array.isArray(data) ? data[0] : data;
+  if(error || !r || !r.ok){
+    toast((r && r.mensaje) || 'No se pudo cancelar'+(error?': '+error.message:''), '✕', 6000);
+    return;
+  }
+  toast(`Clase cancelada · ${r.cliente||'el cliente'} tiene crédito hasta ${r.credito_hasta||'—'}`, '✓', 6000);
+  await cargarBajaOcupacion();
+  renderAvisoBajaOcupacion();
+  if(typeof loadClasesOperativas==='function') loadClasesOperativas();
+  if(typeof loadHorarioCancelaciones==='function') loadHorarioCancelaciones();
+}
+
 function renderAvisoProspectosSemana(){
   const host = document.getElementById('asist-prospectos-semana');
   if(!host) return;
