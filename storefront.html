@@ -1128,6 +1128,18 @@ function _sfProximaFecha(diaNombre){
 // en el roster de ESA clase, no perdida en una lista aparte.
 let _sfSlotElegido = { horario_id:null, fecha:null };
 
+// La clase que viaja con un LEAD. En modo 'pago' siempre va vacía: un lead con
+// horario_id nace como "prospecto" con lugar en el roster sin haber pagado, que
+// es justo lo que este modo prohíbe. Antes bastaba tocar "Reservar" en una clase
+// (que deja _sfSlotElegido puesto) y luego enviar el form de "Contáctanos" para
+// colarse por atrás. Una sola función decide, para que no haya dos reglas.
+function _sfSlotParaLead(){
+  if (SF_DATA && SF_DATA.gym && SF_DATA.gym.reserva_modo === 'pago'){
+    return { horario_id:null, fecha:null };
+  }
+  return _sfSlotElegido;
+}
+
 function sfReservarSlot(dia, hora, tipo, horarioId, fechaReal){
   // fechaReal viene de la celda cuando el horario navega por semanas; el fallback
   // por nombre de día solo aplica al modo de 1 semana.
@@ -2118,8 +2130,8 @@ async function submitLead(){
       body: JSON.stringify({
         slug: getSlug(), type, name, phone, email,
         preferred_day: day, message, session_id: _iaSessionId,
-        horario_id: _sfSlotElegido.horario_id,
-        fecha: _sfSlotElegido.fecha,
+        horario_id: _sfSlotParaLead().horario_id,
+        fecha: _sfSlotParaLead().fecha,
         package_id: _leadPackage ? _leadPackage.package_id : null,
         hp: document.getElementById('lead-hp')?.value || ''
       })

@@ -27539,7 +27539,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 8px;">
             Prospectos · reservaron por el enlace público (${props.length})
           </div>
-          <div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:10px;">No cuentan al cupo. Al marcar “Llegó” se crean como cliente y se registra su visita.</div>
+          <div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:10px;"><b>Apartar lugar</b> lo convierte en cliente y le ocupa un cupo de esta clase (queda como cortesía de $0). <b>Llegó</b> hace lo mismo y además registra su visita.</div>
           ${props.map((pr,i)=>`
             <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(223,180,89,.07);border:1px solid rgba(223,180,89,.25);border-radius:10px;margin-bottom:7px;">
               <div style="flex:1;min-width:0;">
@@ -27548,6 +27548,8 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
               </div>
               ${pr.visitor_phone?`<a href="https://wa.me/52${esc(String(pr.visitor_phone).replace(/\D/g,''))}" target="_blank" rel="noopener"
                  style="border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:var(--fs-xs);font-weight:700;color:var(--ok);text-decoration:none;">WhatsApp</a>`:''}
+              <button onclick="prospectoApartar(${i})"
+                style="border:1px solid var(--border);cursor:pointer;border-radius:8px;padding:6px 11px;font-size:var(--fs-xs);font-weight:800;background:transparent;color:var(--text2);">Apartar lugar</button>
               <button onclick="prospectoLlego(${i})"
                 style="border:none;cursor:pointer;border-radius:8px;padding:6px 11px;font-size:var(--fs-xs);font-weight:800;background:rgba(15,223,154,.14);color:var(--ok);">Llegó</button>
             </div>`).join('')}`;
@@ -27996,41 +27998,97 @@ function _maxReservasDiaCliente(clienteNombre){
   return (Number.isFinite(n) && n >= 0) ? n : 1;
 }
 
-// Un prospecto llegó a su clase de prueba: se vuelve cliente de verdad.
-// Reutiliza agregarClienteAClase (la misma ruta que usa el buscador del panel)
-// en vez de duplicar la lógica de reserva/check-in.
-async function prospectoLlego(idx){
+// ── Prospecto del enlace público → socio con lugar apartado ────────────────
+// Dos acciones ("Apartar lugar" y "Llegó") comparten TODA la ruta: alta de la
+// ficha, cortesía de $0 y reserva. Si cada botón hiciera lo suyo acabarían
+// creando fichas distintas para la misma persona.
+
+// Un pago exige paquete (constraint pago_requires_package). La cortesía se apoya
+// en el plan de $0 que el gym ya tenga; si no hay ninguno, crea uno interno que
+// nunca sale al catálogo público.
+async function _paqueteCortesia(gymId){
+  const { data:ex } = await window.supabaseClient.from('packages')
+    .select('id').eq('gym_id',gymId).eq('price_mxn',0)
+    .order('id',{ascending:true}).limit(1);
+  if(ex && ex.length) return ex[0].id;
+  const { data:nuevo, error } = await window.supabaseClient.from('packages').insert({
+    gym_id: gymId, name:'Clase de cortesía', price_mxn:0, currency:'MXN',
+    duration_days:1, num_classes:1, unlimited_classes:false,
+    is_active:false, internal_only:true,
+    description:'Uso interno: clase sin cobro (reserva del enlace público).'
+  }).select('id').single();
+  if(error){ console.warn('paquete cortesía:', error.message); return null; }
+  return nuevo.id;
+}
+
+// Registra la clase sin cobro como un pago de $0. Deja rastro de POR QUÉ esa
+// persona entra a la clase sin haber pagado, sin inflar ingresos (monto 0).
+// Idempotente: si ya tiene una cortesía para esa fecha no crea otra.
+async function _pagoCortesia(nombre, fechaClase, gymId){
+  const { data:ya } = await window.supabaseClient.from('pagos')
+    .select('id').eq('gym_id',gymId).eq('cliente',nombre)
+    .eq('vence',fechaClase).eq('monto',0).limit(1);
+  if(ya && ya.length) return ya[0].id;
+  const pkgId = await _paqueteCortesia(gymId);
+  if(!pkgId) return null;
+  const { data, error } = await window.supabaseClient.from('pagos').insert({
+    gym_id: gymId, cliente: nombre, monto: 0,
+    fecha: _hoyMX(), plan: 'Clase de cortesía', metodo: 'Otro',
+    vence: fechaClase, notas: 'Reserva del enlace público sin cobro',
+    clases_totales: 1, clases_usadas: 0, package_id: pkgId,
+    list_price_mxn: 0, applied_price_mxn: 0, source: 'storefront'
+  }).select('id').single();
+  if(error){ console.warn('cortesía:', error.message); return null; }
+  return data.id;
+}
+
+// Da de alta la ficha del prospecto (o reusa la que ya exista con ese nombre).
+async function _prospectoACliente(pr, gymId){
+  const nombre = (pr.visitor_name||'').trim();
+  const clave = n => String(n||'').trim().toLowerCase();
+  let cli = (clientesDB||[]).find(c => clave(c.nombre) === clave(nombre));
+  if(cli) return cli;
+  const nuevo = { nombre, gym_id: gymId };
+  if(pr.visitor_phone) nuevo.telefono = String(pr.visitor_phone).trim();
+  if(pr.visitor_email) nuevo.email = (typeof limpiarEmail==='function') ? limpiarEmail(pr.visitor_email) : String(pr.visitor_email).trim().toLowerCase();
+  const { data, error } = await window.supabaseClient.from('clientes').insert([nuevo]).select('id,nombre').single();
+  if(error){
+    if(_handleSessionError(error)) return null;
+    toast('No se pudo crear el cliente: '+(error.message||''),'✕',6000); return null;
+  }
+  if(typeof loadClientesFromSupabase==='function') await loadClientesFromSupabase();
+  return data;
+}
+
+// Núcleo compartido. `estado` decide si solo aparta el lugar o además registra
+// la visita.
+async function _prospectoConvertir(idx, estado){
   const pr  = (window._dcProspectos||[])[idx];
-  const ctx = window._dc;
+  const ctx = window._dc || _detalleCtx;
   if(!pr || !ctx){ toast('No encontré ese prospecto. Recarga la clase.','⚠️'); return; }
 
   const nombre = (pr.visitor_name||'').trim();
   if(!nombre){ toast('Ese prospecto no dejó nombre. Agrégalo a mano con el buscador.','⚠️'); return; }
 
+  const apartar = estado !== 'checkin';
   if(!await confirmDialog(
-      `Se dará de alta a ${nombre} como cliente y se registrará su visita a esta clase.`,
-      { title:'Registrar llegada', icon:'👤', danger:false,
-        confirmText:'Sí, registrar', cancelText:'Cancelar' })) return;
+      apartar
+        ? `Se dará de alta a ${nombre} como cliente y se le apartará un lugar en esta clase como cortesía de $0.`
+        : `Se dará de alta a ${nombre} como cliente y se registrará su visita a esta clase.`,
+      { title: apartar ? 'Apartar su lugar' : 'Registrar llegada', icon:'👤', danger:false,
+        confirmText: apartar ? 'Sí, apartar' : 'Sí, registrar', cancelText:'Cancelar' })) return;
 
   const gymId = (typeof MOVE_GYM_ID!=='undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
-  const clave = n => String(n||'').trim().toLowerCase();
+  const cli = await _prospectoACliente(pr, gymId);
+  if(!cli) return;
 
-  // Si ya existe alguien con ese nombre, no duplicar la ficha.
-  let cli = (clientesDB||[]).find(c => clave(c.nombre) === clave(nombre));
-  if(!cli){
-    const nuevo = { nombre, gym_id: gymId };
-    if(pr.visitor_phone) nuevo.telefono = String(pr.visitor_phone).trim();
-    if(pr.visitor_email) nuevo.email = (typeof limpiarEmail==='function') ? limpiarEmail(pr.visitor_email) : String(pr.visitor_email).trim().toLowerCase();
-    const { data, error } = await window.supabaseClient.from('clientes').insert([nuevo]).select('id,nombre').single();
-    if(error){
-      if(_handleSessionError(error)) return;
-      toast('No se pudo crear el cliente: '+(error.message||''),'✕',6000); return;
-    }
-    cli = data;
-    if(typeof loadClientesFromSupabase==='function') await loadClientesFromSupabase();
-  }
+  // La cortesía va ANTES de la reserva: agregarClienteAClase avisa de "membresía
+  // vencida" si no encuentra ningún pago, y ese aviso aquí sobra.
+  const fechaClase = (typeof _asistFechaSel==='function' ? _asistFechaSel() : _hoyMX());
+  await _pagoCortesia(cli.nombre, fechaClase, gymId);
+  if(typeof loadPagosFromSupabase==='function'){ try{ await loadPagosFromSupabase(); }catch(_){} }
 
-  await agregarClienteAClase(cli.id, cli.nombre, ctx.horarioId, ctx.hora, ctx.tipo, 'checkin');
+  await agregarClienteAClase(cli.id, cli.nombre, ctx.horarioId, ctx.hora, ctx.tipo, estado);
 
   // El lead deja de estar pendiente: ya es cliente.
   const { error: upErr } = await window.supabaseClient.from('storefront_leads')
@@ -28042,9 +28100,15 @@ async function prospectoLlego(idx){
   // sin este segundo refresco el prospecto seguiría apareciendo en la lista.
   if(ctx) await loadDetalleClase(ctx.horarioId, ctx.hora, ctx.tipo, ctx.cupo);
 
-  toast(`${cli.nombre} quedó registrado`,'✓');
+  toast(`${cli.nombre} — ${apartar?'lugar apartado':'quedó registrado'}`,'✓');
   if(typeof sfReloadLeads==='function'){ try{ await sfReloadLeads(); }catch(_){} }
+  if(typeof cargarProspectosSemana==='function'){
+    try{ await cargarProspectosSemana(); renderAvisoProspectosSemana(); renderAsistDayStrip(); }catch(_){}
+  }
 }
+
+async function prospectoApartar(idx){ return _prospectoConvertir(idx, 'reservado'); }
+async function prospectoLlego(idx){   return _prospectoConvertir(idx, 'checkin');   }
 
 async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,estado='checkin'){
   const input = document.getElementById('asist-add-input');
@@ -28133,7 +28197,9 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   }
 
   // ── Insert ──────────────────────────────────────────────────────
-  const diaHoy = _DIAS_ES[new Date().getDay()];
+  // El día de la semana sale de la FECHA de la reserva, no de hoy: una reserva
+  // para el jueves creada un lunes se guardaba como "Lunes".
+  const diaHoy = _DIAS_ES[new Date(hoyStr+'T12:00:00').getDay()];
   const {error} = await window.supabaseClient.from('reservas').insert({
     gym_id:          gymId,
     horario_id:      horarioId,
