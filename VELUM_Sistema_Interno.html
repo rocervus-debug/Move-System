@@ -6427,6 +6427,37 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
   </div>
 </div>
 
+<!-- Modal: Visita nueva desde la clase -->
+<div class="modal-overlay" id="modal-visita">
+  <div class="modal" style="width:440px;">
+    <div class="modal-head">
+      <div class="modal-title">Registrar visita</div>
+      <button class="modal-close" onclick="closeModal('visita')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding-top:16px;">
+      <div id="vis-clase" style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;margin-bottom:16px;"></div>
+      <div class="field">
+        <label>Nombre *</label>
+        <input id="vis-nombre" type="text" autocomplete="off" placeholder="Ej: Ana Ram&iacute;rez" oninput="_visitaChecarParecido()"/>
+        <span class="field-err" id="vis-nombre-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:3px;"></span>
+      </div>
+      <div class="field">
+        <label>WhatsApp <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;text-transform:none;">(opcional)</span></label>
+        <input id="vis-tel" type="tel" inputmode="tel" autocomplete="off" placeholder="4611234567"/>
+      </div>
+      <div id="vis-parecido" style="display:none;"></div>
+      <div style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-top:4px;">
+        Queda registrada como <b>clase muestra de cortes&iacute;a</b> ($0) y ocupa un lugar de esta clase.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('visita')">Cancelar</button>
+      <button class="btn btn-outline" onclick="_guardarVisita('reservado')">Apartar lugar</button>
+      <button class="btn btn-primary" onclick="_guardarVisita('checkin')">Ya lleg&oacute;</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Nuevo Lead -->
 <div class="modal-overlay" id="modal-lead">
   <div class="modal" style="width:480px;">
@@ -27945,8 +27976,19 @@ function buscarClienteDetalle(query,horarioId,hora,tipo){
     if(numQuery) q = q.or(`nombre.ilike.%${query}%,numero_cliente.eq.${numQuery},telefono.ilike.%${query}%`);
     else q = q.or(`nombre.ilike.%${query}%,telefono.ilike.%${query}%`);
     const {data} = await q;
+    // La persona que no está en el padrón antes no tenía camino: el buscador
+    // decía "Sin resultados" y el lugar seguía marcándose libre. La opción de
+    // registrarla va SIEMPRE al final, nunca en lugar de los resultados, para
+    // que dar de alta un duplicado cueste más que usar la ficha que ya existe.
+    window._dcVisitaQuery = query;
+    const _filaVisita = `
+      <div class="asist-search-item" onclick="_abrirVisitaNueva(window._dcVisitaQuery)"
+        style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;border-top:1px solid var(--border);color:var(--accent);font-weight:700;font-size:var(--fs-sm);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Registrar a «${esc(query)}» como visita</span>
+      </div>`;
     if(!data||!data.length){
-      res.innerHTML='<div class="asist-search-item" style="color:var(--text3);">Sin resultados</div>';
+      res.innerHTML='<div class="asist-search-item" style="color:var(--text3);">Sin resultados</div>'+_filaVisita;
       res.style.display='block'; return;
     }
     // Use window._dc to avoid any string-escaping issues in onclick attributes
@@ -27974,7 +28016,7 @@ function buscarClienteDetalle(query,horarioId,hora,tipo){
             ✓ Check-in
           </button>
         </div>
-      </div>`).join('');
+      </div>`).join('') + _filaVisita;
     res.style.display='block';
   },250);
 }
@@ -28109,6 +28151,110 @@ async function _prospectoConvertir(idx, estado){
 
 async function prospectoApartar(idx){ return _prospectoConvertir(idx, 'reservado'); }
 async function prospectoLlego(idx){   return _prospectoConvertir(idx, 'checkin');   }
+
+// ── Visita nueva: agendar a alguien que todavía no es cliente ──────────────
+// Comparte la MISMA ruta que el prospecto del enlace público (_prospectoACliente
+// + _pagoCortesia + agregarClienteAClase). Si cada entrada hiciera lo suyo,
+// acabaríamos con dos fichas de la misma persona según por dónde entró.
+let _visitaCtx = null;
+
+function _visNorm(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+                .replace(/\s+/g,' ').trim();
+}
+
+function _abrirVisitaNueva(nombre){
+  const ctx = window._dc || _detalleCtx;
+  if(!ctx){ toast('Abre la clase de nuevo para registrar la visita.','⚠️'); return; }
+  _visitaCtx = ctx;
+
+  const res = document.getElementById('asist-add-results'); if(res) res.style.display='none';
+  const inp = document.getElementById('asist-add-input');   if(inp) inp.value='';
+
+  document.getElementById('vis-nombre').value = (nombre||'').trim();
+  document.getElementById('vis-tel').value    = '';
+  const err = document.getElementById('vis-nombre-err'); if(err) err.style.display='none';
+
+  const fecha = (typeof _asistFechaSel==='function' ? _asistFechaSel() : _hoyMX());
+  let cuando = fecha;
+  try{ cuando = new Date(fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}); }catch(_){}
+  const lbl = document.getElementById('vis-clase');
+  if(lbl) lbl.innerHTML = `Le apartas lugar en <b>${esc(ctx.tipo||'la clase')}</b> · ${esc(ctx.hora||'')}<br>${esc(cuando)}`;
+
+  openModal('visita');
+  _visitaChecarParecido();
+  setTimeout(()=>{ const n=document.getElementById('vis-nombre'); if(n){ n.focus(); n.select(); } }, 60);
+}
+
+// El riesgo real de este botón es partir a una persona en tres fichas
+// ("Maria", "maría", "Maria G"). Aquí no solo se avisa: se ofrece usar la que
+// ya existe, para que el camino correcto sea el más corto.
+function _visitaChecarParecido(){
+  const host = document.getElementById('vis-parecido'); if(!host) return;
+  const n = _visNorm(document.getElementById('vis-nombre')?.value);
+  if(n.length < 3){ host.style.display='none'; host.innerHTML=''; return; }
+  const parecidos = (clientesDB||[]).filter(c=>{
+    const m = _visNorm(c.nombre);
+    return m && (m===n || m.includes(n) || n.includes(m));
+  }).slice(0,3);
+  if(!parecidos.length){ host.style.display='none'; host.innerHTML=''; return; }
+  window._visParecidos = parecidos;
+  host.style.display='';
+  host.innerHTML = `
+    <div style="background:rgba(223,180,89,.08);border:1px solid rgba(223,180,89,.3);border-radius:9px;padding:10px 12px;margin-bottom:12px;">
+      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--warn);margin-bottom:6px;">
+        Ya existe alguien con ese nombre
+      </div>
+      <div style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;margin-bottom:8px;">
+        Si es la misma persona, úsala en vez de crear otra ficha.
+      </div>
+      ${parecidos.map((c,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+          <div style="flex:1;min-width:0;font-size:var(--fs-sm);font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.nombre)}</div>
+          <button onclick="_visitaUsarExistente(${i})"
+            style="flex-shrink:0;border:1px solid var(--border);background:transparent;color:var(--accent);border-radius:8px;padding:5px 10px;font-size:var(--fs-xs);font-weight:800;cursor:pointer;">Usar esta</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function _visitaUsarExistente(i){
+  const c = (window._visParecidos||[])[i]; const ctx = _visitaCtx;
+  if(!c || !ctx) return;
+  closeModal('visita');
+  await agregarClienteAClase(c.id, c.nombre, ctx.horarioId, ctx.hora, ctx.tipo, 'reservado');
+}
+
+async function _guardarVisita(estado){
+  const ctx = _visitaCtx;
+  if(!ctx){ toast('Se perdió la clase. Ábrela de nuevo.','⚠️'); return; }
+  const nombre = (document.getElementById('vis-nombre')?.value||'').trim();
+  const tel    = (document.getElementById('vis-tel')?.value||'').trim();
+  const err    = document.getElementById('vis-nombre-err');
+  if(!nombre){ if(err){ err.textContent='Escribe el nombre de la persona.'; err.style.display=''; } return; }
+  if(err) err.style.display='none';
+
+  const gymId = (typeof _gymIdActual==='function' ? _gymIdActual() : null) || MOVE_GYM_ID;
+  if(!gymId){ toast('No pude identificar el gimnasio. Recarga el panel.','✕'); return; }
+
+  const btns = document.querySelectorAll('#modal-visita .modal-footer button');
+  btns.forEach(b=>b.disabled=true);
+  try{
+    const cli = await _prospectoACliente({ visitor_name: nombre, visitor_phone: tel }, gymId);
+    if(!cli) return;
+    // La cortesía va ANTES de la reserva: deja constancia de por qué entra sin
+    // pagar y evita el aviso de "membresía vencida" de agregarClienteAClase.
+    const fechaClase = (typeof _asistFechaSel==='function' ? _asistFechaSel() : _hoyMX());
+    await _pagoCortesia(cli.nombre, fechaClase, gymId);
+    if(typeof loadPagosFromSupabase==='function'){ try{ await loadPagosFromSupabase(); }catch(_){} }
+    closeModal('visita');
+    await agregarClienteAClase(cli.id, cli.nombre, ctx.horarioId, ctx.hora, ctx.tipo, estado);
+  }catch(e){
+    console.error('visita nueva:', e);
+    toast('No se pudo registrar la visita. Intenta de nuevo.','✕');
+  }finally{
+    btns.forEach(b=>b.disabled=false);
+  }
+}
 
 async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,estado='checkin'){
   const input = document.getElementById('asist-add-input');
