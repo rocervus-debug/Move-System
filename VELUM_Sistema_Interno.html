@@ -4681,7 +4681,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div class="tabs" style="margin-bottom:0;">
           <div class="tab active" id="htab-btn-mensual" onclick="switchHorTab('mensual')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Vista Mensual</div>
           <div class="tab" id="htab-btn-plantilla" onclick="switchHorTab('plantilla')">Plantilla Semanal</div>
-          <div class="tab" id="htab-btn-nomina" onclick="switchHorTab('nomina')">Nómina Quincena</div>
+          <div class="tab" id="htab-btn-nomina" onclick="switchHorTab('nomina')">Nómina</div>
         </div>
         <a href="horario-publico.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);padding:7px 14px;border-radius:8px;background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);text-decoration:none;font-weight:700;white-space:nowrap;">Ver Horario Público</a>
       </div>
@@ -25033,8 +25033,11 @@ function coachColorIdx(coach_id, coach_nombre){
 async function loadHorarioOverridesFromSupabase(){
   const mm    = String(hvMonth+1).padStart(2,'0');
   const dd    = String(new Date(hvYear, hvMonth+1, 0).getDate());  // último día real del mes
-  const start = `${hvYear}-${mm}-01`;
-  const end   = `${hvYear}-${mm}-${dd}`;
+  // ±7 días: una semana de nómina puede cruzar de mes y necesita los overrides
+  // y cancelaciones del mes vecino o los contaría con la plantilla pelona.
+  const _iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const start = _iso(new Date(hvYear, hvMonth, 1 - 7));
+  const end   = _iso(new Date(hvYear, hvMonth, Number(dd) + 7));
   // Overrides = records in the same 'horarios' table that have a specific fecha
   const { data, error } = await gf(window.supabaseClient.from('horarios').select('*')).gte('fecha', start).lte('fecha', end).not('fecha','is',null);
   if(error){ console.error('Error cargando overrides:', error); if(_handleSessionError(error))return; horarioOverrides=[]; return; }
@@ -25050,8 +25053,11 @@ async function loadHorarioOverridesFromSupabase(){
 async function loadHorarioCancelaciones(){
   const mm    = String(hvMonth+1).padStart(2,'0');
   const dd    = String(new Date(hvYear, hvMonth+1, 0).getDate());  // último día real del mes
-  const start = `${hvYear}-${mm}-01`;
-  const end   = `${hvYear}-${mm}-${dd}`;
+  // ±7 días: una semana de nómina puede cruzar de mes y necesita los overrides
+  // y cancelaciones del mes vecino o los contaría con la plantilla pelona.
+  const _iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const start = _iso(new Date(hvYear, hvMonth, 1 - 7));
+  const end   = _iso(new Date(hvYear, hvMonth, Number(dd) + 7));
   const { data, error } = await gf(window.supabaseClient.from('horario_cancelaciones').select('id,horario_id,fecha,motivo')).gte('fecha', start).lte('fecha', end);
   if(error){ console.error('Error cargando cancelaciones:', error); if(_handleSessionError(error))return; horarioCancelaciones=[]; return; }
   horarioCancelaciones = data||[];
@@ -25703,11 +25709,16 @@ async function removeCobertura(){
   renderQuincenaKPI();
 }
 
-// Load coach rates from Supabase into localStorage cache, then re-render
+// Trae tarifas y tabulador de la nube. Y RESCATA lo que quedó atrapado en el
+// navegador: la tabla coach_tarifas no existía, así que la consulta fallaba en
+// silencio y cada tarifa capturada vivía solo en el localStorage de esa máquina.
+// Cambiar de computadora o limpiar datos las borraba todas.
 async function loadCoachRates(year, month){
   const gymId = MOVE_GYM_ID || window._currentGymId;
   if(!window.supabaseClient){ renderQuincenaKPI(); return; }
+  const rateKey = `move_coach_rate_${year}_${month}`;
   try{
+    await loadTabulador();
     const { data, error } = await window.supabaseClient
       .from('coach_tarifas')
       .select('coach_id,tarifa')
@@ -25715,18 +25726,122 @@ async function loadCoachRates(year, month){
       .eq('anio', year)
       .eq('mes', month);
     if(error) throw error;
+
+    const local = JSON.parse(localStorage.getItem(rateKey)||'{}');
+    const enNube = new Set((data||[]).map(r=>String(r.coach_id)));
+    // Sube lo que solo existe local. Se hace una vez por periodo y se acabó.
+    const rescate = Object.entries(local)
+      .filter(([id,t]) => !enNube.has(String(id)) && (parseFloat(t)||0) > 0)
+      .map(([id,t]) => ({ gym_id:gymId, coach_id:String(id), anio:year, mes:month,
+                          tarifa:parseFloat(t)||0, updated_at:new Date().toISOString() }));
+    if(rescate.length){
+      const { error: upErr } = await window.supabaseClient.from('coach_tarifas')
+        .upsert(rescate, { onConflict:'gym_id,coach_id,anio,mes' });
+      if(upErr) console.warn('rescate de tarifas:', upErr.message);
+      else console.info(`VELUM: ${rescate.length} tarifa(s) rescatadas del navegador a la nube.`);
+    }
     if(data && data.length){
-      const rateKey = `move_coach_rate_${year}_${month}`;
-      const existing = JSON.parse(localStorage.getItem(rateKey)||'{}');
-      data.forEach(r=>{ existing[r.coach_id] = parseFloat(r.tarifa)||0; });
-      localStorage.setItem(rateKey, JSON.stringify(existing));
+      data.forEach(r=>{ local[r.coach_id] = parseFloat(r.tarifa)||0; });
+      localStorage.setItem(rateKey, JSON.stringify(local));
     }
   }catch(e){ console.warn('loadCoachRates error (using localStorage fallback)', e); }
   renderQuincenaKPI();
 }
 
-function renderQuincenaKPI(){
-  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()) return;   // recepción: sin agregados de dinero
+// ═══════════════════════════════════════════════════════════════════
+// NÓMINA — semanal o quincenal, con tabulador opcional por asistentes
+// ═══════════════════════════════════════════════════════════════════
+// Cada gym paga distinto: Roy usa quincenal, COREX paga por semana. El modo es
+// una preferencia de vista; el cálculo es el mismo. Y si el gym configuró un
+// tabulador, cada clase se paga por cuánta gente llegó en vez de una tarifa fija.
+let nominaModo      = localStorage.getItem('velum_nomina_modo') || 'quincenal';
+let nominaTabulador = [];
+let _nominaCheckins = {};   // "horarioId|fecha" -> asistentes
+
+async function loadTabulador(){
+  const gymId = MOVE_GYM_ID || window._currentGymId;
+  nominaTabulador = [];
+  if(!gymId || !window.supabaseClient) return;
+  const { data, error } = await window.supabaseClient.from('nomina_tabulador')
+    .select('id,desde,hasta,monto,orden').eq('gym_id', gymId).order('orden');
+  if(error){ console.warn('tabulador:', error.message); return; }
+  nominaTabulador = data || [];
+}
+
+// El último escalón no tiene techo a propósito: si llega más gente de la que
+// contempla la tabla, la clase igual se tiene que poder pagar.
+function _tarifaPorAsistentes(n){
+  if(!nominaTabulador.length) return 0;
+  const fila = nominaTabulador.find(f =>
+    n >= f.desde && (f.hasta === null || f.hasta === undefined || n <= f.hasta));
+  return parseFloat((fila || nominaTabulador[nominaTabulador.length-1]).monto) || 0;
+}
+
+async function _cargarCheckinsNomina(desde, hasta){
+  _nominaCheckins = {};
+  if(!window.supabaseClient) return;
+  const gymId = MOVE_GYM_ID || null;
+  let q = window.supabaseClient.from('reservas')
+    .select('horario_id,fecha').eq('estado','checkin').gte('fecha',desde).lte('fecha',hasta);
+  if(gymId) q = q.eq('gym_id', gymId);
+  const { data, error } = await q;
+  if(error){ console.warn('asistentes de nómina:', error.message); return; }
+  (data||[]).forEach(r=>{
+    const k = `${r.horario_id}|${r.fecha}`;
+    _nominaCheckins[k] = (_nominaCheckins[k]||0) + 1;
+  });
+}
+
+const _isoF = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+function _nominaPeriodos(){
+  const dim = new Date(hvYear, hvMonth+1, 0).getDate();
+  const pad = n => String(n).padStart(2,'0');
+  const f   = d => `${hvYear}-${pad(hvMonth+1)}-${pad(d)}`;
+  const abr = m => MESES_ES[m].slice(0,3).toLowerCase();
+
+  if(nominaModo === 'quincenal'){
+    return [
+      { label:'Q1', sub:`1–15 ${abr(hvMonth)}`,   desde:f(1),  hasta:f(15)  },
+      { label:'Q2', sub:`16–${dim} ${abr(hvMonth)}`, desde:f(16), hasta:f(dim) },
+    ];
+  }
+  // Semanas lunes→domingo que tocan el mes. Se cuenta la SEMANA COMPLETA aunque
+  // se salga del mes: así es como se paga, y por eso los overrides cargan ±7 días.
+  const out = [];
+  const primero = new Date(hvYear, hvMonth, 1);
+  const lunes   = new Date(primero);
+  lunes.setDate(primero.getDate() - ((primero.getDay()+6)%7));
+  const ultimo  = new Date(hvYear, hvMonth, dim);
+  let i = 1;
+  while(lunes <= ultimo && i <= 6){
+    const dom = new Date(lunes); dom.setDate(lunes.getDate()+6);
+    out.push({
+      label: 'Sem '+i,
+      sub: `${lunes.getDate()} ${abr(lunes.getMonth())} – ${dom.getDate()} ${abr(dom.getMonth())}`,
+      desde: _isoF(lunes), hasta: _isoF(dom)
+    });
+    lunes.setDate(lunes.getDate()+7); i++;
+  }
+  return out;
+}
+
+function setNominaModo(m){
+  nominaModo = (m==='semanal') ? 'semanal' : 'quincenal';
+  localStorage.setItem('velum_nomina_modo', nominaModo);
+  renderQuincenaKPI();
+}
+
+// Cuenta si es el principal O va en el equipo (coaches_extra). Multi-coach:
+// cada integrante cobra la clase completa.
+function _coachEnClase(c, coachId, coachNom){
+  if(String(c.coach_id)===String(coachId) || c.coach_nombre===coachNom) return true;
+  const extra = Array.isArray(c.coaches_extra) ? c.coaches_extra : [];
+  return extra.some(x => x && (String(x.id)===String(coachId) || x.nombre===coachNom));
+}
+
+async function renderQuincenaKPI(){
+  if(typeof roleOcultaDinero==='function' && roleOcultaDinero()) return;   // recepción: sin sueldos
 
   const el = document.getElementById('nomina-quincena-wrap');
   if(!el) return;
@@ -25737,62 +25852,69 @@ function renderQuincenaKPI(){
     el.innerHTML = '<div class="empty-state card"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="empty-title">Sin coaches registrados</div></div>'; return;
   }
 
-  const allHoras  = [...new Set(horario.map(h=>h.hora))];
-  const daysInMonth = new Date(hvYear, hvMonth+1, 0).getDate();
-  const q1End = 15, q2End = daysInMonth;
+  const periodos = _nominaPeriodos();
+  if(!periodos.length){ el.innerHTML=''; return; }
+  await _cargarCheckinsNomina(periodos[0].desde, periodos[periodos.length-1].hasta);
 
-  // Cuenta las clases-hora de un coach: cuenta si es el principal O está en el equipo
-  // (coaches_extra). Multi-coach: cada integrante cobra la clase completa a su tarifa.
-  function coachEnClase(c, coachId, coachNom){
-    if(String(c.coach_id)===String(coachId) || c.coach_nombre===coachNom) return true;
-    const extra = Array.isArray(c.coaches_extra) ? c.coaches_extra : [];
-    return extra.some(x=> x && (String(x.id)===String(coachId) || x.nombre===coachNom));
-  }
-  function countForCoach(coachId, coachNom, from, to){
-    let cnt = 0;
-    for(let d=from; d<=to; d++){
-      const mm2 = String(hvMonth+1).padStart(2,'0');
-      const dd2 = String(d).padStart(2,'0');
-      const fStr = `${hvYear}-${mm2}-${dd2}`;
-      allHoras.forEach(hora=>{
-        const c = getEffectiveClase(fStr, hora);
-        if(!c || c.cerrado || c.cancelada) return;   // cancelada = no se dio = no se paga
-        if(coachEnClase(c, coachId, coachNom)) cnt++;
-      });
-    }
-    return cnt;
-  }
+  const allHoras = [...new Set(horario.map(h=>h.hora))];
+  const rateKey  = `move_coach_rate_${hvYear}_${hvMonth}`;
+  const rates    = JSON.parse(localStorage.getItem(rateKey)||'{}');
+  const hayTab   = nominaTabulador.length > 0;
 
-  const rateKey = `move_coach_rate_${hvYear}_${hvMonth}`;
-  // Rates are loaded from Supabase into localStorage by loadCoachRates() before this renders
-  const rates   = JSON.parse(localStorage.getItem(rateKey)||'{}');
+  const rows = coaches.map((c, idx) => {
+    const cols = periodos.map(per => {
+      let clases = 0, pago = 0, asist = 0;
+      const d1 = new Date(per.hasta+'T12:00:00');
+      for(let d = new Date(per.desde+'T12:00:00'); d <= d1; d.setDate(d.getDate()+1)){
+        const fStr = _isoF(d);
+        allHoras.forEach(hora=>{
+          const cl = getEffectiveClase(fStr, hora);
+          if(!cl || cl.cerrado || cl.cancelada) return;      // cancelada = no se dio
+          if(!_coachEnClase(cl, c.id, c.nombre)) return;
+          const n = _nominaCheckins[`${cl.id}|${fStr}`] || 0;
+          clases++; asist += n;
+          pago += hayTab ? _tarifaPorAsistentes(n) : (parseFloat(rates[c.id])||0);
+        });
+      }
+      return { clases, pago, asist };
+    });
+    return { c, idx, cols,
+      rate: parseFloat(rates[c.id])||0,
+      totalClases: cols.reduce((s,x)=>s+x.clases,0),
+      totalPago:   cols.reduce((s,x)=>s+x.pago,0),
+      totalAsist:  cols.reduce((s,x)=>s+x.asist,0),
+      color: COACH_COLORS[idx % COACH_COLORS.length] };
+  }).sort((a,b)=>b.totalClases-a.totalClases);
 
-  const rows = coaches.map((c,idx)=>{
-    const q1    = countForCoach(c.id, c.nombre, 1, q1End);
-    const q2    = countForCoach(c.id, c.nombre, q1End+1, q2End);
-    const total = q1+q2;
-    const rate  = parseFloat(rates[c.id])||0;
-    const color = COACH_COLORS[idx%COACH_COLORS.length];
-    return { c, q1, q2, total, rate, payQ1: q1*rate, payQ2: q2*rate, color };
-  }).sort((a,b)=>b.total-a.total);
+  const totClases = rows.reduce((s,r)=>s+r.totalClases,0);
+  const totPago   = rows.reduce((s,r)=>s+r.totalPago,0);
+  const $ = n => '$'+Number(n).toLocaleString('es-MX');
 
-  const totalQ1 = rows.reduce((s,r)=>s+r.q1,0);
-  const totalQ2 = rows.reduce((s,r)=>s+r.q2,0);
-  const totalPay= rows.reduce((s,r)=>s+r.payQ1+r.payQ2,0);
+  const selector = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;">Periodo de pago</span>
+      <div style="display:flex;gap:4px;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:3px;">
+        ${['quincenal','semanal'].map(m=>`
+          <button onclick="setNominaModo('${m}')" style="border:none;cursor:pointer;border-radius:7px;padding:6px 14px;font-size:var(--fs-sm);font-weight:700;
+            background:${nominaModo===m?'var(--accent)':'transparent'};color:${nominaModo===m?'#04121a':'var(--text3)'};">
+            ${m==='quincenal'?'Quincenal':'Semanal'}
+          </button>`).join('')}
+      </div>
+    </div>`;
 
-  el.innerHTML = `
+  el.innerHTML = selector + `
   <div class="card" style="margin-bottom:18px;">
-    <div class="card-header"><div class="card-title">Resumen de Clases — ${MESES_ES[hvMonth]} ${hvYear}</div></div>
+    <div class="card-header"><div class="card-title">Nómina ${nominaModo==='semanal'?'semanal':'quincenal'} — ${MESES_ES[hvMonth]} ${hvYear}</div></div>
     <div style="overflow-x:auto;">
     <table class="tbl">
       <thead><tr>
         <th>Coach</th>
-        <th style="text-align:center;">Q1 clases<br><span style="font-weight:400;font-size:var(--fs-xs);opacity:.6;">(días 1–15)</span></th>
-        <th style="text-align:center;">Q2 clases<br><span style="font-weight:400;font-size:var(--fs-xs);opacity:.6;">(días 16–${q2End})</span></th>
-        <th style="text-align:center;">Total mes</th>
-        <th>Tarifa / clase<br><span style="font-weight:400;font-size:var(--fs-xs);opacity:.6;">Guardar = Enter</span></th>
-        <th style="text-align:center;">Pago Q1</th>
-        <th style="text-align:center;">Pago Q2</th>
+        ${periodos.map(p=>`<th style="text-align:center;">${esc(p.label)}<br><span style="font-weight:400;font-size:var(--fs-xs);opacity:.6;">${esc(p.sub)}</span></th>`).join('')}
+        <th style="text-align:center;">Total clases</th>
+        ${hayTab
+          ? '<th style="text-align:center;">Asistentes</th>'
+          : '<th>Tarifa / clase<br><span style="font-weight:400;font-size:var(--fs-xs);opacity:.6;">Guardar = Enter</span></th>'}
+        <th style="text-align:center;">A pagar</th>
       </tr></thead>
       <tbody>
         ${rows.map(r=>`<tr>
@@ -25802,33 +25924,101 @@ function renderQuincenaKPI(){
               ${esc(r.c.nombre)}
             </div>
           </td>
-          <td style="text-align:center;font-size:var(--fs-base);font-weight:800;color:var(--accent);">${r.q1}</td>
-          <td style="text-align:center;font-size:var(--fs-base);font-weight:800;color:var(--accent);">${r.q2}</td>
-          <td style="text-align:center;font-size:var(--fs-lg);font-weight:800;color:var(--ok);">${r.total}</td>
-          <td>
-            <div style="display:flex;align-items:center;gap:4px;">
-              <span style="color:var(--text3);font-size:var(--fs-xs);">$</span>
-              <input type="number" value="${r.rate||''}" placeholder="0" min="0"
-                style="width:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text1);font-size:var(--fs-xs);"
-                onchange="saveCoachRate('${r.c.id}',this.value)"/>
-            </div>
-          </td>
-          <td style="text-align:center;font-weight:700;color:var(--ok);">${r.payQ1>0?'$'+r.payQ1.toLocaleString('es-MX'):'—'}</td>
-          <td style="text-align:center;font-weight:700;color:var(--ok);">${r.payQ2>0?'$'+r.payQ2.toLocaleString('es-MX'):'—'}</td>
+          ${r.cols.map(x=>`<td style="text-align:center;">
+            <div style="font-size:var(--fs-base);font-weight:800;color:var(--accent);">${x.clases}</div>
+            ${x.clases?`<div style="font-size:var(--fs-xs);color:var(--ok);font-weight:700;">${$(x.pago)}</div>`:''}
+          </td>`).join('')}
+          <td style="text-align:center;font-size:var(--fs-lg);font-weight:800;color:var(--ok);">${r.totalClases}</td>
+          ${hayTab
+            ? `<td style="text-align:center;font-weight:700;color:var(--text2);">${r.totalAsist}</td>`
+            : `<td><div style="display:flex;align-items:center;gap:4px;">
+                 <span style="color:var(--text3);font-size:var(--fs-xs);">$</span>
+                 <input type="number" value="${r.rate||''}" placeholder="0" min="0"
+                   style="width:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text1);font-size:var(--fs-xs);"
+                   onchange="saveCoachRate('${r.c.id}',this.value)"/>
+               </div></td>`}
+          <td style="text-align:center;font-weight:800;color:var(--ok);">${r.totalPago>0?$(r.totalPago):'—'}</td>
         </tr>`).join('')}
         <tr style="border-top:2px solid var(--border);background:var(--card2);">
           <td style="font-weight:700;">TOTAL</td>
-          <td style="text-align:center;font-weight:800;color:var(--accent);">${totalQ1}</td>
-          <td style="text-align:center;font-weight:800;color:var(--accent);">${totalQ2}</td>
-          <td style="text-align:center;font-weight:800;color:var(--ok);">${totalQ1+totalQ2}</td>
+          ${periodos.map((p,i)=>{
+            const cl = rows.reduce((s,r)=>s+r.cols[i].clases,0);
+            const pg = rows.reduce((s,r)=>s+r.cols[i].pago,0);
+            return `<td style="text-align:center;">
+              <div style="font-weight:800;color:var(--accent);">${cl}</div>
+              ${pg?`<div style="font-size:var(--fs-xs);color:var(--ok);font-weight:800;">${$(pg)}</div>`:''}
+            </td>`;
+          }).join('')}
+          <td style="text-align:center;font-weight:800;color:var(--ok);">${totClases}</td>
           <td></td>
-          <td colspan="2" style="text-align:center;font-weight:800;color:var(--ok);">${totalPay>0?'$'+totalPay.toLocaleString('es-MX'):'—'}</td>
+          <td style="text-align:center;font-weight:800;color:var(--ok);">${totPago>0?$(totPago):'—'}</td>
         </tr>
       </tbody>
     </table>
     </div>
-    <div style="margin-top:10px;font-size:var(--fs-sm);color:var(--text3);">* Tarifas sincronizadas en la nube. Los conteos incluyen clases de la plantilla + cambios específicos del mes.</div>
+    <div style="margin-top:10px;font-size:var(--fs-sm);color:var(--text3);line-height:1.5;">
+      Las clases canceladas no cuentan ni se pagan.
+      ${hayTab ? ' El pago sale del tabulador según cuánta gente hizo check-in en cada clase.' : ''}
+      ${nominaModo==='semanal' ? ' Las semanas van de lunes a domingo completas, aunque crucen de mes.' : ''}
+    </div>
+  </div>` + _tabuladorHTML();
+}
+
+// ── Editor del tabulador ───────────────────────────────────────────────────
+function _tabuladorHTML(){
+  const t = nominaTabulador;
+  return `
+  <div class="card">
+    <div class="card-header"><div class="card-title">Tabulador por asistentes</div></div>
+    <div style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;margin-bottom:12px;">
+      ${t.length
+        ? 'Cada clase se paga según cuánta gente llegó. El último escalón no tiene techo: si llega más gente, se paga igual.'
+        : 'Sin escalones, cada coach cobra su tarifa fija por clase. Agrega el primero para pagar según la asistencia.'}
+    </div>
+    ${t.map(f=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-size:var(--fs-sm);color:var(--text3);">De</span>
+        <input type="number" min="0" value="${f.desde}" onchange="saveTabuladorFila('${f.id}','desde',this.value)"
+          style="width:62px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text1);font-size:var(--fs-sm);"/>
+        <span style="font-size:var(--fs-sm);color:var(--text3);">a</span>
+        <input type="number" min="0" value="${f.hasta ?? ''}" placeholder="sin tope" onchange="saveTabuladorFila('${f.id}','hasta',this.value)"
+          style="width:82px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text1);font-size:var(--fs-sm);"/>
+        <span style="font-size:var(--fs-sm);color:var(--text3);">personas paga</span>
+        <span style="font-size:var(--fs-sm);color:var(--text3);">$</span>
+        <input type="number" min="0" value="${f.monto}" onchange="saveTabuladorFila('${f.id}','monto',this.value)"
+          style="width:82px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text1);font-size:var(--fs-sm);font-weight:700;"/>
+        <button onclick="delTabuladorFila('${f.id}')" title="Quitar escalón"
+          style="border:1px solid var(--border);background:transparent;color:var(--danger);border-radius:7px;padding:5px 10px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;">Quitar</button>
+      </div>`).join('')}
+    <button class="btn btn-outline btn-sm" onclick="addTabuladorFila()" style="margin-top:6px;">+ Agregar escalón</button>
   </div>`;
+}
+
+async function saveTabuladorFila(id, campo, valor){
+  const v = (campo==='hasta' && String(valor).trim()==='') ? null : (parseInt(valor,10) || 0);
+  const { error } = await window.supabaseClient.from('nomina_tabulador').update({ [campo]: v }).eq('id', id);
+  if(error){ toast('No se pudo guardar: '+error.message,'✕',5000); return; }
+  await loadTabulador(); renderQuincenaKPI();
+  toast('Tabulador actualizado','✓');
+}
+
+async function addTabuladorFila(){
+  const gymId = MOVE_GYM_ID || window._currentGymId;
+  if(!gymId){ toast('No pude identificar el gimnasio.','✕'); return; }
+  const ult = nominaTabulador[nominaTabulador.length-1];
+  const desde = ult ? ((ult.hasta ?? ult.desde) + 1) : 0;
+  const { error } = await window.supabaseClient.from('nomina_tabulador')
+    .insert({ gym_id:gymId, desde, hasta:null, monto:0, orden:(ult?ult.orden:0)+1 });
+  if(error){ toast('No se pudo agregar: '+error.message,'✕',5000); return; }
+  await loadTabulador(); renderQuincenaKPI();
+}
+
+async function delTabuladorFila(id){
+  if(!await confirmDialog('Se quita ese escalón del tabulador.',
+      {title:'Quitar escalón', confirmText:'Sí, quitar'})) return;
+  const { error } = await window.supabaseClient.from('nomina_tabulador').delete().eq('id', id);
+  if(error){ toast('No se pudo quitar: '+error.message,'✕',5000); return; }
+  await loadTabulador(); renderQuincenaKPI();
 }
 
 async function saveCoachRate(coachId, rate){
