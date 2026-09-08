@@ -25062,12 +25062,21 @@ function isCancelada(claseId, fechaStr){
 }
 
 function getEffectiveClase(fechaStr, hora){
+  let out = null;
   const ov = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
-  if(ov !== undefined) return { ...ov, cerrado: ov.tipo==='CERRADO', _isOverride: true };
-  const dow = new Date(fechaStr+'T12:00:00').getDay();
-  const dayName = DAY_NAME_BY_DOW[dow];
-  const base = horario.find(h=>h.dia===dayName && h.hora===hora);
-  return base ? { ...base, cerrado: base.tipo==='CERRADO', _isOverride: false } : null;
+  if(ov !== undefined){
+    out = { ...ov, cerrado: ov.tipo==='CERRADO', _isOverride: true };
+  }else{
+    const dow = new Date(fechaStr+'T12:00:00').getDay();
+    const dayName = DAY_NAME_BY_DOW[dow];
+    const base = horario.find(h=>h.dia===dayName && h.hora===hora);
+    out = base ? { ...base, cerrado: base.tipo==='CERRADO', _isOverride: false } : null;
+  }
+  // Una clase cancelada NO se dio: no se cuenta ni se paga. Se marca aparte de
+  // `cerrado` a propósito — el calendario las pinta distinto ("✕ Cancelada" vs
+  // "CERRADO") y esa diferencia le importa a la dueña.
+  if(out) out.cancelada = !!isCancelada(out.id, fechaStr);
+  return out;
 }
 
 function switchHorTab(tab){
@@ -25747,7 +25756,7 @@ function renderQuincenaKPI(){
       const fStr = `${hvYear}-${mm2}-${dd2}`;
       allHoras.forEach(hora=>{
         const c = getEffectiveClase(fStr, hora);
-        if(!c||c.cerrado) return;
+        if(!c || c.cerrado || c.cancelada) return;   // cancelada = no se dio = no se paga
         if(coachEnClase(c, coachId, coachNom)) cnt++;
       });
     }
@@ -27038,9 +27047,16 @@ async function _horariosEfectivosFecha(fechaStr, diaNombre){
     .select('id,hora,tipo,coach_nombre,cupo,dia,fecha')
     .or(`dia.eq.${diaNombre},fecha.eq.${fechaStr}`);
   if(gymId) q = q.eq('gym_id', gymId);
-  const { data, error } = await q;
+  // Las canceladas de ESE día. Sin esto, asistencia listaba clases que la dueña
+  // ya había cancelado y que el calendario sí marcaba como canceladas.
+  let cq = window.supabaseClient.from('horario_cancelaciones')
+    .select('horario_id').eq('fecha', fechaStr);
+  if(gymId) cq = cq.eq('gym_id', gymId);
+  const [{ data, error }, canRes] = await Promise.all([q, cq]);
   if(error) throw error;
-  const filas = data||[];
+  if(canRes.error) console.warn('cancelaciones del día:', canRes.error.message);
+  const canceladas = new Set((canRes.data||[]).map(c=>String(c.horario_id)));
+  const filas = (data||[]).filter(h => !canceladas.has(String(h.id)));
   const ovs  = filas.filter(h => h.fecha === fechaStr);
   const horasPisadas = new Set(ovs.map(h => h.hora));
   const base = filas.filter(h => h.dia === diaNombre && !(h.fecha||'') && !horasPisadas.has(h.hora));
