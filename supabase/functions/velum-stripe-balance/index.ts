@@ -1,4 +1,5 @@
-// velum-stripe-balance — v3: + relleno de pagos.stripe_available_on (fecha en que
+// velum-stripe-balance — v4: relleno de pagos.stripe_available_on Y stripe_fee_mxn
+// (v3 leía la balance_transaction y tiraba el fee: el neto quedaba inflado). Fecha en que
 // Stripe libera cada cobro) para mostrar al gym cuándo cae su depósito.
 // v2: Saldo, depósitos y CONFIGURACIÓN de payout de la cuenta conectada.
 // Devuelve: Disponible / Pendiente / En tránsito + payouts + horario de depósito + banco (last4).
@@ -215,19 +216,20 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── Relleno de la fecha de liberación en pagos viejos (self-healing, acotado) ──
-    // Los pagos anteriores al webhook v3 no traen stripe_available_on. Aquí se completan
-    // leyendo su balance_transaction en Stripe. Tope de 25 por corrida para no alargar
-    // la respuesta del panel; lo que falte se completa la próxima vez que abran la vista.
+    // ── Relleno self-healing de fecha de depósito Y comisión (acotado) ──
+    // La balance_transaction trae AMBOS datos; antes se leía solo available_on y se
+    // tiraba bt.fee, así que esos pagos quedaban con net_to_gym = bruto y el panel
+    // prometía más dinero del que Stripe iba a depositar. Tope por corrida para no
+    // alargar la respuesta del panel; lo que falte se completa la próxima vez.
     let backfilled = 0;
     try {
       const { data: faltantes } = await db.from('pagos')
-        .select('id, stripe_session_id')
+        .select('id, stripe_session_id, monto, velum_commission_mxn, stripe_available_on, stripe_fee_mxn')
         .eq('gym_id', gymId)
-        .is('stripe_available_on', null)
+        .or('stripe_available_on.is.null,stripe_fee_mxn.is.null')
         .not('stripe_session_id', 'is', null)
         .order('fecha', { ascending: false })
-        .limit(25);
+        .limit(40);
       for (const pg of (faltantes || [])) {
         const sid = String(pg.stripe_session_id || '');
         let bt: any = null;
@@ -242,8 +244,19 @@ Deno.serve(async (req: Request) => {
         } catch (_) { /* un pago que no se pueda leer no frena a los demás */ }
         const av = (bt && typeof bt.available_on === 'number')
           ? new Date(bt.available_on * 1000).toISOString().slice(0, 10) : null;
-        if (av) {
-          await db.from('pagos').update({ stripe_available_on: av }).eq('id', pg.id);
+        const fee = (bt && typeof bt.fee === 'number') ? bt.fee / 100 : null;
+
+        const upd: Record<string, unknown> = {};
+        if (av  && !pg.stripe_available_on) upd.stripe_available_on = av;
+        if (fee !== null && pg.stripe_fee_mxn === null) {
+          upd.stripe_fee_mxn = fee;
+          // Se recalcula lo que REALMENTE le queda al gym: bruto − comisión VELUM − fee Stripe.
+          upd.net_to_gym_mxn = Math.round(
+            Number(pg.monto || 0) - Number(pg.velum_commission_mxn || 0) - fee
+          );
+        }
+        if (Object.keys(upd).length) {
+          await db.from('pagos').update(upd).eq('id', pg.id);
           backfilled += 1;
         }
       }

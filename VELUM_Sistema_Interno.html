@@ -17310,6 +17310,137 @@ function _pvHero(cobradoMes, cobradoMesN, stripe){
     </div>
     <div style="margin-top:10px;font-size:var(--fs-xs);color:var(--text3);">El "cobrado" es bruto; al depositarse se descuenta la comisión de Stripe (~3.6% + $3 por pago). Tu saldo <strong>Disponible</strong> ya es neto.</div>${warnPayouts}`;
 }
+// ── Agenda de depósitos: "¿qué me cae y cuándo?" ──────────────────────────
+// La dueña de Krajo creía que todo lo cobrado en la semana caía el viernes. No es
+// así: Stripe aparta cada cobro unos días antes de liberarlo, y el depósito sale
+// el viernes SIGUIENTE a esa liberación. Dos cobros con un día de diferencia
+// pueden caer con una semana de diferencia.
+async function _pvDepositos(){
+  try{
+    const d = new Date(); d.setDate(d.getDate()-45);
+    const ini = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const { data, error } = await gf(window.supabaseClient
+      .from('pagos')
+      .select('id,cliente,monto,fecha,metodo,stripe_available_on,stripe_fee_mxn,velum_commission_mxn,net_to_gym_mxn'))
+      .ilike('metodo','Stripe%')
+      .gte('fecha', ini)
+      .limit(500);
+    if(error) throw error;
+    return data||[];
+  }catch(e){ console.warn('pv depositos', e); return []; }
+}
+
+function _pvFechaLarga(f){
+  try{ return new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}); }
+  catch(_){ return f; }
+}
+function _pvCuando(f, hoy){
+  const dias = Math.round((new Date(f+'T12:00:00') - new Date(hoy+'T12:00:00'))/86400000);
+  if(dias <= 0) return 'hoy';
+  if(dias === 1) return 'mañana';
+  if(dias <= 7)  return `en ${dias} días`;
+  return `en ${Math.round(dias/7)} semana${dias>=14?'s':''}`;
+}
+
+// Lo que de verdad le queda: bruto − comisión VELUM − comisión Stripe. Si la
+// comisión todavía no se confirma con Stripe NO se inventa un neto: se dice.
+function _pvNeto(p){
+  const bruto = +p.monto || 0;
+  if(p.stripe_fee_mxn === null || p.stripe_fee_mxn === undefined){
+    return { bruto, fee:null, neto:bruto, confirmado:false };
+  }
+  const fee  = +p.stripe_fee_mxn || 0;
+  const comm = +p.velum_commission_mxn || 0;
+  const neto = (p.net_to_gym_mxn !== null && p.net_to_gym_mxn !== undefined)
+    ? (+p.net_to_gym_mxn) : Math.round(bruto - comm - fee);
+  return { bruto, fee: fee + comm, neto, confirmado:true };
+}
+
+function _pvPagoRow(p){
+  const n = _pvNeto(p);
+  const $ = v => '$'+Number(v).toLocaleString('es-MX');
+  return `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.cliente||'—')}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:1px;">Cobrado el ${esc(_pvFechaLarga(p.fecha))}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--ok);">${$(n.neto)}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;">
+          ${n.confirmado ? `${$(n.bruto)} − ${$(n.fee)} comisión` : `${$(n.bruto)} · comisión por confirmar`}
+        </div>
+      </div>
+    </div>`;
+}
+
+function _pvGrupoHTML(fecha, lista, hoy, pasado){
+  const $ = v => '$'+Number(v).toLocaleString('es-MX');
+  const total  = lista.reduce((a,p)=>a+_pvNeto(p).neto,0);
+  const dudoso = lista.some(p=>!_pvNeto(p).confirmado);
+  const color  = pasado ? 'var(--text2)' : 'var(--ok)';
+  return `
+    <div style="border:1px solid ${pasado?'var(--border)':'color-mix(in srgb, var(--ok) 30%, transparent)'};border-radius:11px;padding:11px 13px;margin-bottom:9px;background:${pasado?'transparent':'color-mix(in srgb, var(--ok) 5%, transparent)'};">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);text-transform:capitalize;">${esc(_pvFechaLarga(fecha))}</div>
+          <div style="font-size:var(--fs-xs);color:var(--text3);">${pasado?'ya depositado':_pvCuando(fecha,hoy)} · ${lista.length} cobro${lista.length===1?'':'s'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:var(--fs-lg);font-weight:800;color:${color};">${$(total)}</div>
+          ${dudoso?`<div style="font-size:var(--fs-xs);color:var(--warn);">aproximado</div>`:''}
+        </div>
+      </div>
+      ${lista.map(_pvPagoRow).join('')}
+    </div>`;
+}
+
+function _pvAgendaHTML(items){
+  const hoy = (typeof _hoyMX==='function') ? _hoyMX() : new Date().toISOString().slice(0,10);
+  const grupos = {}; const sinFecha = [];
+  items.forEach(p=>{
+    const vie = _viernesDeposito(p.stripe_available_on);
+    if(!vie){ sinFecha.push(p); return; }
+    (grupos[vie] = grupos[vie] || []).push(p);
+  });
+  const fechas    = Object.keys(grupos).sort();
+  const pendiente = fechas.filter(f=>f>=hoy);
+  const pasado    = fechas.filter(f=>f< hoy).reverse();
+  const $ = v => '$'+Number(v).toLocaleString('es-MX');
+  const totalPend = pendiente.reduce((a,f)=>a+grupos[f].reduce((x,p)=>x+_pvNeto(p).neto,0),0);
+
+  if(!items.length) return '';
+
+  return `
+  <div class="card" style="margin-bottom:14px;">
+    <div class="rc-card-title" style="margin-bottom:2px;">Qué te cae y cuándo</div>
+    <div class="card-sub" style="color:var(--text3);margin-bottom:12px;line-height:1.5;">
+      Stripe aparta cada cobro unos días antes de liberarlo, y el depósito sale el <b>viernes siguiente</b> a esa liberación.
+      Por eso dos cobros con un día de diferencia pueden caer con una semana de diferencia — no se deposita todo lo de la semana junto.
+    </div>
+
+    ${pendiente.length ? `
+      <div style="font-size:var(--fs-xs);font-weight:800;color:var(--ok);text-transform:uppercase;letter-spacing:.7px;margin:2px 0 9px;">
+        Por depositar · ${$(totalPend)}
+      </div>
+      ${pendiente.map(f=>_pvGrupoHTML(f, grupos[f], hoy, false)).join('')}` : ''}
+
+    ${sinFecha.length ? `
+      <div style="background:rgba(223,180,89,.08);border:1px solid rgba(223,180,89,.3);border-radius:11px;padding:11px 13px;margin-bottom:9px;">
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--warn);margin-bottom:3px;">${sinFecha.length} cobro${sinFecha.length===1?'':'s'} sin fecha confirmada</div>
+        <div style="font-size:var(--fs-xs);color:var(--text3);line-height:1.5;">
+          Todavía le estamos preguntando a Stripe cuándo los libera. Vuelve a abrir esta pantalla en un momento y aparecerán arriba con su fecha.
+        </div>
+      </div>` : ''}
+
+    ${pasado.length ? `
+      <div style="font-size:var(--fs-xs);font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin:16px 0 9px;">
+        Ya depositado
+      </div>
+      ${pasado.slice(0,4).map(f=>_pvGrupoHTML(f, grupos[f], hoy, true)).join('')}` : ''}
+  </div>`;
+}
+
 async function renderDomiciliados(){
   // "Panel VELUM" (Cobros VELUM): héroe de saldo/depósitos + canales del mes + subsección Domiciliación
   const host=document.getElementById('domi-body'); if(!host) return;
@@ -17322,10 +17453,11 @@ async function renderDomiciliados(){
     .in('status',['active','past_due','incomplete','trialing'])
     .order('current_period_end',{ascending:true});
   // Las 3 fuentes en paralelo: suscripciones, pagos en línea del mes y saldo Stripe
-  const [subsRes, pagosMes, stripe] = await Promise.all([
+  const [subsRes, pagosMes, stripe, depos] = await Promise.all([
     subsQ.then(r=>r).catch(e=>({error:e})),
     _pvPagosMes(),
-    _pvStripeData()
+    _pvStripeData(),
+    _pvDepositos()
   ]);
   try{
     if(subsRes && subsRes.error) throw subsRes.error;
@@ -17362,6 +17494,7 @@ async function renderDomiciliados(){
   host.innerHTML = `
     ${_pvHero(cobradoMesTotal, pagosMes.length, stripe)}
     ${ (stripe && stripe.connected) ? _pvNotaDepositos() : '<div style="margin-bottom:18px;"></div>' }
+    ${_pvAgendaHTML(depos)}
     <div class="card" style="margin-bottom:14px;">
       <div class="rc-card-title" style="margin-bottom:2px;">Cobros del mes por canal</div>
       <div class="card-sub" style="color:var(--text3);margin-bottom:10px;">Storefront público, app del atleta, domiciliación y links de pago · montos brutos (antes de comisión)</div>
