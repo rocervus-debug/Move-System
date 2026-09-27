@@ -236,7 +236,7 @@ Deno.serve(async (req: Request) => {
       cancel_url: `${APP_URL}/app`,
       metadata: meta,
       locale: 'es',
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // el link expira en 30 min
+      expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 h (máximo de Stripe): un link que se manda por WhatsApp se abre cuando la persona puede
     };
     if (cliente_email) sessionBody.customer_email = cliente_email;
 
@@ -244,9 +244,39 @@ Deno.serve(async (req: Request) => {
       id: string; url: string; expires_at: number;
     };
 
+    // ── Link corto propio ────────────────────────────────────────────────
+    // WhatsApp deja de convertir el texto en enlace al llegar al primer '%', y
+    // la URL de Stripe va llena de ellos después del '#': el cliente tocaba
+    // media URL y Stripe decía "This link is incomplete". El token es aleatorio
+    // de 128 bits, sin '#' ni '%'.
+    let shortUrl: string | null = null;
+    try {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      const token = btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const { error: linkErr } = await db.from('payment_links').insert({
+        token,
+        gym_id: gym.id,
+        session_id: session.id,
+        stripe_url: session.url,
+        cliente: cliente_nombre ?? null,
+        monto: amountCents / 100,
+        descripcion: desc || null,
+        vence: new Date(session.expires_at * 1000).toISOString(),
+      });
+      if (linkErr) console.warn('payment_link:', linkErr.message);
+      else shortUrl = `${APP_URL}/pagar/${token}`;
+    } catch (e) {
+      console.warn('payment_link:', e);
+    }
+
     return json({
       ok: true,
-      url: session.url,
+      // Si el link corto falla se devuelve el de Stripe: es mejor un link que
+      // WhatsApp rompe que ningún link.
+      url: shortUrl || session.url,
+      stripe_url: session.url,
       session_id: session.id,
       expires_at: session.expires_at,
       fee_pct: feePct,
