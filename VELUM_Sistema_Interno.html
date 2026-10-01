@@ -25477,7 +25477,33 @@ function openEditClaseCell(fechaStr, hora){
   openModal('horario-override');
 }
 
+// Guarda UNA clase sin poder duplicarla. Desde el 30-sep la base tiene índices
+// únicos (plantilla: día+hora · excepción: fecha+hora), así que un insert que
+// choca devuelve 23505. Aquí ese choque se convierte en EDICIÓN de la clase que
+// ya estaba. Antes cada pantalla preguntaba "¿existe?" a la memoria del
+// navegador y luego insertaba: un doble clic alcanzaba a insertar dos veces
+// (COREX, Ares y MOVE tenían copias así).
+async function _guardarHorarioUnico(payload){
+  const row = withGymId(payload);
+  const ins = await window.supabaseClient.from('horarios').insert([row]);
+  if(!ins.error) return { error:null, yaExistia:false };
+  if(String(ins.error.code) !== '23505') return { error: ins.error, yaExistia:false };
+  let q = window.supabaseClient.from('horarios').update(row)
+    .eq('gym_id', row.gym_id).eq('hora', row.hora);
+  q = (row.fecha || '') === '' ? q.eq('fecha','').eq('dia', row.dia) : q.eq('fecha', row.fecha);
+  const up = await q;
+  return { error: up.error || null, yaExistia:true };
+}
+
+let _hovGuardando = false;   // guarda contra doble clic en "guardar clase de una fecha"
+
 async function saveHorarioOverride(){
+  if(_hovGuardando) return;
+  _hovGuardando = true;
+  try{ return await _saveHorarioOverrideImpl(); }
+  finally{ _hovGuardando = false; }
+}
+async function _saveHorarioOverrideImpl(){
   const fechaStr = document.getElementById('hov-fecha').value;
   const hora     = document.getElementById('hov-hora').value;
   const coachVal = document.getElementById('hov-coach').value;
@@ -25537,7 +25563,7 @@ async function saveHorarioOverride(){
     const basePayload = { ...payload, fecha:'', dia:diaNom };
     const r = base
       ? await window.supabaseClient.from('horarios').update(basePayload).eq('id', base.id)
-      : await window.supabaseClient.from('horarios').insert([withGymId(basePayload)]);
+      : await _guardarHorarioUnico(basePayload);
     err = r.error;
     // "La estoy moviendo": quitar la original en vez de dejar dos.
     if(!err && moverAca && gemela){
@@ -25551,7 +25577,7 @@ async function saveHorarioOverride(){
     const existing = horarioOverrides.find(o=>o.fecha===fechaStr && o.hora===hora);
     const r = existing
       ? await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id)
-      : await window.supabaseClient.from('horarios').insert([withGymId(payload)]);
+      : await _guardarHorarioUnico(payload);
     err = r.error;
     // Solo esta fecha: la original no se borra (viene de la plantilla y sigue
     // valiendo el resto de las semanas). Se cierra SOLO ese día con un CERRADO.
@@ -25559,11 +25585,11 @@ async function saveHorarioOverride(){
       if(gemela.origen === 'override'){
         await window.supabaseClient.from('horarios').delete().eq('id', gemela.id);
       } else {
-        await window.supabaseClient.from('horarios').insert([withGymId({
+        await _guardarHorarioUnico({
           fecha: fechaStr, hora: gemela.hora, dia: '', tipo: 'CERRADO',
           coach_id: '', coach_nombre: 'CERRADO',
           cupo: parseInt((getEffectiveClase(fechaStr, gemela.hora)||{}).cupo,10) || 15, notas: ''
-        })]);
+        });
       }
     }
   }
@@ -25673,7 +25699,7 @@ async function saveCobertura(){
     const r = await window.supabaseClient.from('horarios').update(payload).eq('id', existing.id);
     err = r.error;
   } else {
-    const r = await window.supabaseClient.from('horarios').insert([withGymId(payload)]);
+    const r = await _guardarHorarioUnico(payload);
     err = r.error;
   }
 
@@ -26337,9 +26363,36 @@ async function saveClase(){
     return;
   }
 
+  // ¿Alguno de esos días YA tiene clase a esa hora? Se pregunta a la BASE, no a
+  // la memoria: otra persona pudo agregar clases desde otro dispositivo. Así se
+  // duplicaron 13 clases de COREX el 24-sep: "Nueva clase" sobre horas ocupadas,
+  // sin aviso. Aquí NO se sobrescribe nada — la clase existente puede tener otro
+  // nombre, coach o cupo que la dueña sí quiere conservar. Se le dice y se crean
+  // solo los días libres.
+  const _gymIdCl = (typeof _gymIdActual==='function' ? _gymIdActual() : null) || MOVE_GYM_ID;
+  const { data: _yaHay, error: _errYa } = await window.supabaseClient.from('horarios')
+    .select('dia,tipo').eq('gym_id', _gymIdCl).eq('hora', hora).eq('fecha','').in('dia', dias);
+  if(_errYa){ toast('No pude revisar el horario. Intenta de nuevo.','✕'); return; }
+  const _ocupados = (_yaHay||[]);
+  const _diasOcupados = _ocupados.map(x=>x.dia);
+  const _diasLibres = dias.filter(d => !_diasOcupados.includes(d));
+  if(_ocupados.length){
+    const _lista = _ocupados.map(x=>`${x.dia} (${x.tipo})`).join(', ');
+    if(!_diasLibres.length){
+      await confirmDialog(
+        `Ya hay clase a las ${hora} el ${_lista}. Para cambiarla, ábrela desde el horario y edítala — si creo otra, quedarían dos clases en el mismo horario.`,
+        { title:'Ese horario ya está ocupado', icon:'⚠', danger:false, confirmText:'Entendido', cancelText:'Cerrar' });
+      return;
+    }
+    const _okParcial = await confirmDialog(
+      `Ya hay clase a las ${hora} el ${_lista} — esa no se toca. ¿Creo la clase solo el ${_diasLibres.join(', ')}?`,
+      { title:'Algunos días ya están ocupados', icon:'⚠', danger:false, confirmText:'Sí, solo los libres', cancelText:'Cancelar' });
+    if(!_okParcial) return;
+  }
+
   // Build one payload per day; fecha='' marks it as base template (not a specific date override)
   // coach_id/coach_nombre son text NOT NULL → principal (o '' sin equipo); coaches_extra = el resto
-  const payloads = dias.map(dia=>withGymId({
+  const payloads = _diasLibres.map(dia=>withGymId({
     dia, hora, tipo,
     fecha:        '',             // empty string = base template (avoids PK null violation)
     coach_id:     team.cid||'',
@@ -26353,6 +26406,12 @@ async function saveClase(){
   const { error } = await window.supabaseClient.from('horarios').insert(payloads);
   setBtnLoading(_clbtn, false);
   if(error){
+    // 23505 = otra persona creó esa clase entre la revisión y el guardado.
+    if(String(error.code) === '23505'){
+      toast('Alguien acaba de crear una clase en ese horario. Recargo para que la veas.','⚠',6000);
+      await loadHorarioFromSupabase(); renderHorario(); renderHorarioMensual();
+      return;
+    }
     const msg = error.message||JSON.stringify(error);
     toast('Error ✕: '+msg.slice(0,60),'✕');
     console.error('saveClase error:', error);
@@ -26362,7 +26421,8 @@ async function saveClase(){
   await loadHorarioFromSupabase();
   renderHorario();
   renderHorarioMensual();
-  toast(`${dias.length} clase${dias.length>1?'s':''} agregada${dias.length>1?'s':''} ✓`,'✓');
+  const _n = _diasLibres.length;
+  toast(`${_n} clase${_n>1?'s':''} agregada${_n>1?'s':''} ✓`,'✓');
 }
 
 function openEditClase(id){
