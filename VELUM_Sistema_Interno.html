@@ -10188,10 +10188,11 @@ async function loadConfigFromSupabase(){
   }
   // Load gym plan from gyms table for PLAN_LIMITS (prioriza subscription_plan)
   if(MOVE_GYM_ID && !gymConfig.gym_plan){
-    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,subscription_current_period_end,nombre').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
+    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,subscription_current_period_end,nombre,acceso_garantizado').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
       if(g){
         gymConfig.gym_plan = g.subscription_plan || g.plan || 'max';
         gymConfig.subscription_status = g.subscription_status || null;
+        gymConfig.acceso_garantizado = !!g.acceso_garantizado;
         gymConfig.subscription_current_period_end = g.subscription_current_period_end || null;
         if(typeof checkSubscriptionBlock === 'function') checkSubscriptionBlock();
       }
@@ -14389,6 +14390,10 @@ function checkSubscriptionBlock(){
   const plan = getPlan();
   const status = (gymConfig.subscription_status || '').toLowerCase();
   if (status === 'owner' || plan === 'owner') { removeSubBlock(); return; }
+  // Acuerdo especial (ej. Krajo paga por transferencia): nunca se bloquea. Es la
+  // MISMA regla que aplica move-login; si sólo una de las dos la respetara, el
+  // gym entraría y se toparía con la pantalla de bloqueo.
+  if (gymConfig.acceso_garantizado) { removeSubBlock(); return; }
   if (!['past_due','canceled','cancelled','unpaid'].includes(status)) { removeSubBlock(); return; }
   const GRACE_MS = 3 * 24 * 60 * 60 * 1000;
   const periodEnd = gymConfig.subscription_current_period_end ? new Date(gymConfig.subscription_current_period_end).getTime() : 0;
@@ -20070,16 +20075,21 @@ async function saCreateGym(){
 }
 
 // ── Activar gym manualmente (sin Stripe) ─────────────────────────────
+// Antes sólo escribía subscription_status='active' — el mismo campo que el
+// webhook de Stripe sobrescribe en su siguiente aviso. El aviso prometía
+// "permanentemente" y a Krajo lo volvieron a bloquear a las 6:27am tras un cobro
+// fallido. Ahora pone acceso_garantizado, que move-login y el bloqueo del panel
+// respetan aunque Stripe diga lo que diga.
 async function saActivateGym(gymId){
-  if(!await confirmDialog('¿Activar este gym sin pago? El acceso quedará habilitado permanentemente hasta que lo desactives.', {
-    title:'Activar gym (sin pago)', danger:false, confirmText:'Activar ahora', icon:'✓'
+  if(!await confirmDialog('El gym tendrá acceso permanente al panel aunque su cobro en Stripe falle o esté cancelado. Úsalo para gyms que pagan por transferencia o con acuerdo especial.', {
+    title:'Acceso garantizado', danger:false, confirmText:'Activar acceso garantizado', icon:'✓'
   })) return;
   const { error } = await window.supabaseClient.from('gyms').update({
-    subscription_status: 'active', activo: true
+    subscription_status: 'active', activo: true, acceso_garantizado: true
   }).eq('id', gymId);
   if(error){ if(_handleSessionError(error))return; toast('Error al activar','✕'); return; }
-  toast('Gym activado ✓ — acceso habilitado sin pago','✓');
-  auditLog('SA_ACTIVATE_GYM','gyms',gymId,'Activación manual sin Stripe');
+  toast('Acceso garantizado ✓ — ya no depende de Stripe','✓');
+  auditLog('SA_ACTIVATE_GYM','gyms',gymId,'Acceso garantizado (no depende de Stripe)');
   renderSuperAdmin();
 }
 

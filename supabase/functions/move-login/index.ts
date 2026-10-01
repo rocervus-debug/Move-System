@@ -1,4 +1,9 @@
-// move-login — v35: sanitiza el correo del lado SERVIDOR + Deno.serve nativo.
+// move-login — v37: + acceso_garantizado (gyms con acuerdo especial nunca se bloquean).
+// v36: sanitiza el correo del lado SERVIDOR + Deno.serve nativo.
+//
+// OJO AL DESPLEGAR: esta función DEBE ir con verify_jwt=false. Es el login: el
+// cliente todavía no tiene JWT cuando la llama. Con verify_jwt=true se tumba el
+// acceso de TODOS los gyms.
 //
 // INCIDENTE 12-ago-2026 (Ares Gym): el email se guardó con U+2060 (word joiner)
 // invisible al pegarlo desde WhatsApp; el lookup por email exacto no encontraba
@@ -113,9 +118,12 @@ Deno.serve(async (req: Request) => {
     }
 
     if (user.gym_id) {
-      const { data: gym } = await db.from('gyms').select('subscription_status').eq('id', user.gym_id).maybeSingle();
+      const { data: gym } = await db.from('gyms').select('subscription_status, acceso_garantizado').eq('id', user.gym_id).maybeSingle();
       const allowedStatuses = ['active', 'trialing', 'owner'];
-      if (gym && !allowedStatuses.includes(gym.subscription_status ?? '')) {
+      // acceso_garantizado: acuerdo especial con el gym (ej. Krajo paga por
+      // transferencia). subscription_status sigue reflejando a Stripe para saber
+      // si debe, pero el acceso NUNCA se corta. Solo el superadmin puede ponerla.
+      if (gym && !gym.acceso_garantizado && !allowedStatuses.includes(gym.subscription_status ?? '')) {
         return new Response(JSON.stringify({ error: 'Tu suscripción no está activa.', subscription_status: gym.subscription_status }), { status: 402, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
     }
