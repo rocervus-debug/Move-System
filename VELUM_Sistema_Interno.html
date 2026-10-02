@@ -15276,7 +15276,7 @@ function renderClientes(){
                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.nombre)}${(_gymVertical==='padel'&&c.nivel)?` <span style="font-family:var(--fm);font-size:var(--fs-xs);font-weight:600;background:rgba(198,232,75,.12);color:#C6E84B;border-radius:99px;padding:2px 9px;vertical-align:2px;">${esc(c.nivel)}</span>`:''}</div>
         <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:3px;
                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${c.numeroCliente ? `#${c.numeroCliente} · ` : ''}${tel ? `${tel} · ` : ''}${esc(c.plan||'—')}
+          ${c.numeroCliente ? `#${c.numeroCliente} · ` : ''}${tel ? `${tel} · ` : ''}${esc(c.plan||'—')}<span class="cli-paq" data-cid="${c.cliId||''}"></span>
           ${extras.length ? ` · ${extras.join(' · ')}` : ''}
         </div>
       </div>
@@ -15311,6 +15311,22 @@ function renderClientes(){
         </div>
       </div>`;
   }
+  _pintarPaquetesListaClientes();
+}
+
+// Clases que le quedan a cada cliente de la PÁGINA visible: una sola llamada a la
+// base con la misma regla que la ficha y la lista de la clase.
+async function _pintarPaquetesListaClientes(){
+  const spans = [...document.querySelectorAll('.cli-paq[data-cid]')].filter(x=>x.dataset.cid);
+  if(!spans.length) return;
+  const m = await _cargarPaquetesLista(spans.map(x=>x.dataset.cid), _hoyMX());
+  spans.forEach(sp=>{
+    const e = m[parseInt(sp.dataset.cid)];
+    if(!e || e.membresia || !e.totales){ sp.innerHTML=''; return; }
+    const q = Math.max(0, e.restantes ?? 0);
+    const color = e.sin_clases || q<=0 ? 'var(--danger)' : (q===1 ? 'var(--warn)' : 'var(--text2)');
+    sp.innerHTML = ` · <b style="color:${color};font-weight:700;">${e.sin_clases ? 'sin clases' : `${q} de ${e.totales} clases`}</b>`;
+  });
 }
 
 let _cliPage = 0;
@@ -15399,6 +15415,34 @@ async function saveEditarCliente(btn){
 }
 
 // ─── Panel de detalle de cliente ──────────────────────────────────
+async function _pintarPaqueteFicha(clienteId){
+  const host = document.getElementById('cpanel-paquete');
+  if(!host || !clienteId) return;
+  const m = await _cargarPaquetesLista([clienteId], _hoyMX());
+  const e = m[parseInt(clienteId)];
+  if(!e || e.membresia || !e.totales){ host.innerHTML=''; return; }   // mensualidad: no cuenta clases
+  const quedan = Math.max(0, e.restantes ?? 0);
+  const usadas = Math.max(0, e.totales - quedan);
+  const pct    = Math.round((usadas / e.totales) * 100);
+  const color  = e.sin_clases || quedan<=0 ? 'var(--danger)' : (quedan===1 ? 'var(--warn)' : 'var(--ok)');
+  let venceTxt = '';
+  try{ if(e.vence) venceTxt = new Date(e.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'}); }catch(_){}
+  host.innerHTML = `
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+        <div style="font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;">Clases del paquete</div>
+        <div style="font-size:var(--fs-lg);font-weight:800;color:${color};">${quedan} <span style="font-size:var(--fs-sm);color:var(--text3);font-weight:600;">de ${e.totales}</span></div>
+      </div>
+      <div style="height:6px;border-radius:99px;background:var(--card2);margin:8px 0 6px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;"></div>
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--text3);">
+        ${e.sin_clases ? '<b style="color:var(--danger);">Sin clases disponibles</b> — necesita renovar para reservar.'
+          : `Ha usado ${usadas} · le ${quedan===1?'queda':'quedan'} ${quedan}${venceTxt?' · vence '+esc(venceTxt):''}`}
+      </div>
+    </div>`;
+}
+
 function openClientePanel(nombreCliente){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   // Identity data from clientes table
@@ -15491,7 +15535,12 @@ function openClientePanel(nombreCliente){
       <div style="font-size:var(--fs-xs);color:${cfg.color};font-weight:700;">${diasLabel}</div>
       ${tel?`<div style="font-size:var(--fs-sm);color:var(--text3);margin-top:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> ${tel}</div>`:''}
       ${freezeInfo}${refPor}${refInfo}
+      <div id="cpanel-paquete"></div>
     </div>`;
+  // Clases que le quedan: lo calcula la base (estado_paquete_cliente), la MISMA
+  // regla que descuenta el check-in y que pinta la lista de la clase. Así la
+  // ficha, la lista y la app del cliente nunca dicen números distintos.
+  _pintarPaqueteFicha(cliRec.id);
 
   // Acciones
   const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
