@@ -27582,7 +27582,7 @@ async function loadReservasHoy(){
               const bd=done?'rgba(15,223,154,.2)':(ns?'rgba(248,113,113,.22)':'rgba(255,255,255,.07)');
               const mark=done?'✓':(ns?'✕':'');
               // Botones solo en reservas pendientes: confirmar llegada o marcar no-show al instante.
-              const acts=(!done&&!ns)?`<button onclick="reservaLlegoHoy('${r.id}','${esc(r.cliente_nombre||'')}')" title="Confirmar llegada" style="border:none;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:var(--fs-xs);font-weight:800;background:rgba(15,223,154,.14);color:var(--ok);">Llegó</button><button onclick="reservaNoShowHoy('${r.id}','${esc(r.cliente_nombre||'')}')" title="Marcar no-show" style="border:none;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:var(--fs-xs);font-weight:800;background:rgba(248,113,113,.12);color:var(--danger);">✕</button>`:'';
+              const acts=(!done&&!ns)?`<button onclick="reservaLlegoHoy('${r.id}','${esc(r.cliente_nombre||'')}')" title="Confirmar llegada" style="border:none;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:var(--fs-xs);font-weight:800;background:rgba(15,223,154,.14);color:var(--ok);">Llegó</button><button onclick="reservaNoShowHoy('${r.id}','${esc(r.cliente_nombre||'')}')" title="Marcar no-show" style="border:none;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:var(--fs-xs);font-weight:800;background:rgba(248,113,113,.12);color:var(--danger);">✕</button><button onclick="cancelarReservaAdmin('${r.id}','${esc(r.cliente_nombre||'')}')" title="Cancelar reserva (avisó a tiempo)" style="border:1px solid var(--border);cursor:pointer;border-radius:5px;padding:2px 7px;font-size:var(--fs-xs);font-weight:700;background:transparent;color:var(--text3);">Cancelar</button>`:'';
               return `<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 9px;border-radius:6px;font-size:var(--fs-sm);background:${bg};border:1px solid ${bd};color:${col};">
                 ${mark?`<span>${mark}</span>`:''}
                 <span style="font-weight:700;">${esc(r.cliente_nombre||'—')}</span>
@@ -28233,6 +28233,13 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
         style="padding:6px 10px;border-radius:8px;background:rgba(15,223,154,.12);color:var(--ok);border:1px solid rgba(15,223,154,.3);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✓ Asistió</button>
       <button onclick="marcarAusenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
         style="padding:6px 10px;border-radius:8px;background:rgba(240,96,96,.1);color:#f06060;border:1px solid rgba(240,96,96,.25);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✕ No asistió</button>
+      <button onclick="cancelarReservaAdmin('${r.id}','${n}')"
+        style="padding:6px 10px;border-radius:8px;background:transparent;color:var(--text3);border:1px solid var(--border);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">Cancelar reserva</button>
+    </div>`:''}
+    ${isAusente?`
+    <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+      <button onclick="cancelarReservaAdmin('${r.id}','${n}')" title="Si avisó a tiempo, cámbiala a cancelada"
+        style="padding:6px 10px;border-radius:8px;background:transparent;color:var(--text3);border:1px solid var(--border);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">Avisó · cancelar</button>
     </div>`:''}
   </div>`;
 }
@@ -28901,6 +28908,22 @@ async function reservaNoShowHoy(id,nombre){
   toast(`${nombre} — no-show registrado`,'✕'); navigator.vibrate?.([30]);
   loadReservasHoy();
   if(typeof renderStudiosDash==='function') renderStudiosDash();
+}
+
+// Cancelar una reserva desde el panel (la clienta avisó a tiempo). Es la misma
+// operación que hace la app de la atleta (estado='cancelado'): libera el lugar y
+// no gasta clase del paquete. También sirve para corregir un "No asistió" mal puesto.
+async function cancelarReservaAdmin(reservaId, nombre){
+  const n = (nombre||'').split(' ')[0] || 'esta persona';
+  if(!await confirmDialog(`Se cancela la reserva de ${nombre}. Su lugar queda libre y no se le descuenta la clase del paquete.`,
+      {title:`¿Cancelar la reserva de ${n}?`, confirmText:'Sí, cancelar reserva', cancelText:'No'})) return;
+  const {error} = await window.supabaseClient.from('reservas').update({estado:'cancelado'}).eq('id',reservaId);
+  if(error){ if(_handleSessionError(error))return; toast('No se pudo cancelar la reserva: '+error.message,'✕'); return; }
+  toast(`Reserva de ${n} cancelada · lugar libre`,'✓');
+  if(_detalleCtx) await loadDetalleClase(_detalleCtx.horarioId,_detalleCtx.hora,_detalleCtx.tipo,_detalleCtx.cupo||0);
+  if(typeof loadReservasHoy==='function') loadReservasHoy();
+  if(typeof renderStudiosDash==='function') renderStudiosDash();
+  if(_fLugaresP() && typeof renderStudiosCal==='function') renderStudiosCal();
 }
 
 async function marcarPresenteReserva(reservaId,nombre,horarioId,hora,tipo){
