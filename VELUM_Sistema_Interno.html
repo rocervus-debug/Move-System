@@ -27963,6 +27963,10 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     todas.forEach(r=>{ if(r.spot) window._dcTaken[r.spot] = r.estado==='bloqueado' ? '(bloqueado)' : r.cliente_nombre; });
     window._dcBloqueados = {};
     bloqueados.forEach(r=>{ if(r.spot) window._dcBloqueados[r.spot] = r.id; });
+    // Cuántas clases le quedan a cada quien. Lo calcula la BASE con la misma
+    // regla que descuenta el check-in (estado_paquetes_lista): no hay una segunda
+    // cuenta en el navegador que se pueda desfasar.
+    window._dcPaquetes = await _cargarPaquetesLista(lista.map(r=>r.cliente_id), hoyStr);
     // Prospectos: quien reservó esta clase desde el enlace público. No son socios
     // (no tienen ficha ni membresía), por eso viven en storefront_leads y no en
     // reservas. Antes solo se veían en Storefront → Leads, así que el gym no
@@ -28093,6 +28097,55 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
   }
 }
 
+// ── Paquetes de clases: lo que le queda a cada persona ─────────────────────
+// Antes SOLO el QR del kiosco descontaba; "Llegó" desde la lista no. COREX pasa
+// lista desde la clase → Mariela llevaba 6 clases y el sistema decía 0, Gloria
+// tomó 12 de un paquete de 8 sin que nadie se enterara. Desde el 02-oct descuenta
+// la base (trigger trg_paquete_consumo) en CUALQUIER camino; aquí solo se muestra
+// y se bloquea, con la misma función que usa la base.
+async function _cargarPaquetesLista(ids, fecha){
+  const limpios = [...new Set((ids||[]).filter(x=>x!=null).map(x=>parseInt(x)).filter(Boolean))];
+  if(!limpios.length) return {};
+  const gymId = (typeof _gymIdActual==='function' ? _gymIdActual() : null) || MOVE_GYM_ID;
+  const { data, error } = await window.supabaseClient.rpc('estado_paquetes_lista',
+    { p_gym: gymId, p_cliente_ids: limpios, p_fecha: fecha });
+  if(error){ console.warn('estado de paquetes:', error.message); return {}; }
+  const out = {};
+  (data||[]).forEach(e=>{ out[e.cliente_id] = e; });
+  return out;
+}
+
+function _chipPaquete(e){
+  if(!e) return '';
+  if(e.membresia) return '';                                   // mensualidad: no cuenta clases
+  if(e.sin_clases){
+    return `<div style="font-size:var(--fs-xs);font-weight:800;color:var(--danger);margin-top:2px;">${esc(e.plan||'Paquete')} · sin clases</div>`;
+  }
+  if(!e.totales) return '';
+  const quedan = e.restantes ?? 0;
+  const color  = quedan<=0 ? 'var(--danger)' : (quedan===1 ? 'var(--warn)' : 'var(--text3)');
+  return `<div style="font-size:var(--fs-xs);font-weight:700;color:${color};margin-top:2px;">${esc(e.plan||'Paquete')} · le ${quedan===1?'queda':'quedan'} ${quedan} de ${e.totales}</div>`;
+}
+
+// Guardián ÚNICO para los tres caminos que marcan llegada o apartan lugar
+// (lista de la clase, "Reservas de hoy" y el buscador). Bloquea a quien tiene
+// paquete de clases sin clases disponibles y sin mensualidad vigente.
+async function _paqueteBloquea(clienteId, nombre, fecha){
+  if(!clienteId) return false;   // sin ficha no hay forma de saber: no se inventa un bloqueo
+  const m = await _cargarPaquetesLista([clienteId], fecha || _hoyMX());
+  const e = m[parseInt(clienteId)];
+  if(!e || !e.sin_clases) return false;
+  await confirmDialog(
+    `${nombre} ya no tiene clases disponibles: su ${e.plan||'paquete'} se agotó o venció. Registra su pago de renovación para que pueda tomar la clase.`,
+    { title:'Sin clases disponibles', icon:'⚠', danger:true, confirmText:'Entendido', cancelText:'Cerrar' });
+  return true;
+}
+async function _paqueteBloqueaReserva(reservaId, nombre){
+  const { data:r } = await window.supabaseClient.from('reservas')
+    .select('cliente_id, fecha').eq('id', reservaId).maybeSingle();
+  return r ? _paqueteBloquea(r.cliente_id, nombre, r.fecha) : false;
+}
+
 function _renderPersonaRow(r,estado,horarioId,hora,tipo){
   const n = esc(r.cliente_nombre||'—');
   const isCheckin = estado==='checkin';
@@ -28116,11 +28169,13 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
       style="flex-shrink:0;padding:6px 8px;border-radius:8px;background:var(--accent-bg);border:1px solid var(--accent-bg2);color:var(--accent);font-size:var(--fs-sm);font-weight:700;cursor:pointer;font-family:var(--font);max-width:110px;">${opts}</select>`;
   }
   const labelSpot = (showSpot && r.spot) ? ` · <span style="color:var(--accent);font-weight:700;">Spot ${r.spot}</span>` : '';
+  const labelPaq  = _chipPaquete((window._dcPaquetes||{})[r.cliente_id]);
   return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}" style="${isAusente?'border-color:rgba(240,96,96,.2);background:rgba(240,96,96,.04);':''}">
     <div style="width:36px;height:36px;border-radius:50%;background:${avatar};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:var(--fs-base);">${icon}</div>
     <div style="flex:1;min-width:0;">
       <div style="font-size:var(--fs-base);font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</div>
       <div style="font-size:var(--fs-sm);color:${lColor};">${label}${labelSpot}</div>
+      ${labelPaq}
     </div>
     ${spotSel}
     ${estado==='reservado'?`
@@ -28683,6 +28738,9 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   // ── Validación 1: cliente existe ────────────────────────────────
   if(!clienteId){ toast('Cliente no encontrado.','⚠️'); return; }
 
+  // ── Validación 1.5: paquete con clases (misma regla que la base) ──
+  if(await _paqueteBloquea(clienteId, clienteNombre, hoyStr)) return;
+
   // ── Validación 2: duplicado en esta clase ───────────────────────
   const {count:dupCount} = await window.supabaseClient
     .from('reservas').select('id',{count:'exact',head:true})
@@ -28780,6 +28838,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
 
 // Check-in directo desde el widget "Reservas de hoy" (P1 studios: confirmar asistencia).
 async function reservaLlegoHoy(id,nombre){
+  if(await _paqueteBloqueaReserva(id, nombre)) return;
   const {error} = await window.supabaseClient.from('reservas').update({estado:'checkin'}).eq('id',id);
   if(error){ toast('Error: '+error.message,'✕'); return; }
   toast(`${nombre} ✓ llegó`,'✓'); navigator.vibrate?.([50,30,50]);
@@ -28796,6 +28855,7 @@ async function reservaNoShowHoy(id,nombre){
 }
 
 async function marcarPresenteReserva(reservaId,nombre,horarioId,hora,tipo){
+  if(await _paqueteBloqueaReserva(reservaId, nombre)) return;
   const row = document.getElementById(`prow-${reservaId}`);
   const btns = row?.querySelectorAll('button');
   btns?.forEach(b=>{ b.disabled=true; });
