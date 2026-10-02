@@ -28902,7 +28902,7 @@ async function reservaLlegoHoy(id,nombre){
   if(typeof renderStudiosDash==='function') renderStudiosDash();
 }
 async function reservaNoShowHoy(id,nombre){
-  if(!await confirmDialog(`Marcar a ${nombre} como no-show en esta clase.`, {title:'¿No llegó?', confirmText:'Sí, no-show'})) return;
+  if(!await confirmDialog(`Si tiene paquete de clases, esta falta le descuenta una clase. Si avisó a tiempo, mejor usa Cancelar.`, {title:`¿${nombre} no llegó?`, confirmText:'Sí, no asistió', cancelText:'Volver'})) return;
   const {error} = await window.supabaseClient.from('reservas').update({estado:'ausente'}).eq('id',id);
   if(error){ toast('Error: '+error.message,'✕'); return; }
   toast(`${nombre} — no-show registrado`,'✕'); navigator.vibrate?.([30]);
@@ -28943,6 +28943,8 @@ async function marcarPresenteReserva(reservaId,nombre,horarioId,hora,tipo){
 }
 
 async function marcarAusenteReserva(reservaId,nombre,horarioId,hora,tipo){
+  // Desde 2026-10-02 la falta gasta la clase del paquete (regla en la base).
+  if(!await confirmDialog(`Si tiene paquete de clases, esta falta le descuenta una clase. Si avisó a tiempo, mejor usa Cancelar reserva.`, {title:`¿${nombre} no asistió?`, confirmText:'Sí, no asistió', cancelText:'Volver'})) return;
   const row = document.getElementById(`prow-${reservaId}`);
   const btns = row?.querySelectorAll('button');
   btns?.forEach(b=>{ b.disabled=true; });
@@ -28952,7 +28954,7 @@ async function marcarAusenteReserva(reservaId,nombre,horarioId,hora,tipo){
     btns?.forEach(b=>{ b.disabled=false; });
     return;
   }
-  toast(`${nombre} — no asistió registrado`,'📋');
+  toast(`${nombre} — no asistió registrado`,'✓');
   navigator.vibrate?.([30]);
   await loadDetalleClase(horarioId,hora,tipo,_detalleCtx?.cupo||0);
 }

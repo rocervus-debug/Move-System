@@ -1,4 +1,7 @@
-// move-checkin — v28: el paquete se descuenta con la MISMA regla que la lista de
+// move-checkin — v29: una reserva marcada "No asistió" (que ya gastó la clase)
+// pasa a "Llegó" si la persona escanea tarde; antes se trataba como llegada sin
+// reserva y se cobraba dos veces.
+// v28: el paquete se descuenta con la MISMA regla que la lista de
 // la clase (trigger trg_paquete_consumo en reservas) y del paquete que VENCE
 // PRIMERO. Antes este era el ÚNICO camino que descontaba y lo hacía del paquete
 // más NUEVO: las clases del viejo se vencían sin usar.
@@ -128,11 +131,14 @@ Deno.serve(async (req) => {
     const { data: reservasHoy } = await db.from('reservas')
       .select('id, estado, pago_id')
       .eq('gym_id', cliente.gym_id).eq('cliente_id', cliente.id).eq('fecha', todayStr)
-      .in('estado', ['reservado', 'checkin'])
+      .in('estado', ['reservado', 'checkin', 'ausente'])
       .order('clase_hora', { ascending: true });
 
     const yaCobrada = (reservasHoy || []).find((r: any) => r.estado === 'checkin');
-    const pendiente = (reservasHoy || []).find((r: any) => r.estado === 'reservado');
+    // 'ausente' = la marcaron "No asistió" y llegó tarde: se pasa a checkin; el
+    // trigger no vuelve a cobrar porque la reserva ya trae su pago_id.
+    const pendiente = (reservasHoy || []).find((r: any) => r.estado === 'reservado')
+                   ?? (reservasHoy || []).find((r: any) => r.estado === 'ausente');
 
     if (yaCobrada) {
       pagoConsumido = yaCobrada.pago_id ?? null;

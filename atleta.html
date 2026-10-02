@@ -6822,7 +6822,7 @@ async function loadClasesData(){
       // 2. Mis reservas (próximos 7 días)
       (async()=>{
         const rRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado,spot`,
+          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,clase_hora,clase_tipo,estado,spot`,
           { headers: _sbHeaders() }
         ).catch(()=>null);
         const myReservas = rRes?.ok ? await rRes.json() : [];
@@ -7429,6 +7429,22 @@ function _showReservaConfirmBanner(tipo, hora, fechaStr){
 
 async function cancelarReserva(reservaId, key){
   if(!portalData) return;
+  // Cancelar con menos de N horas (default 2, por gym) cuenta como falta y la base
+  // descuenta la clase del paquete. Avisamos antes para que no sea sorpresa.
+  try{
+    const r = clasesReservas[key] || {};
+    const horas = Number(portalData.gym?.flags?.cancelacion_horas ?? 2);
+    const m = String(r.clase_hora||'').toLowerCase().match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if(r.fecha && m){
+      let h = parseInt(m[1])||0; const mi = parseInt(m[2]||'0')||0;
+      if(m[3]==='pm' && h!==12) h+=12; if(m[3]==='am' && h===12) h=0;
+      const ini = new Date(r.fecha+'T12:00:00'); ini.setHours(h,mi,0,0);
+      if(ini - new Date() < horas*3600*1000){
+        const ok = confirm(`Faltan menos de ${horas} h para tu clase. Si cancelas ahora cuenta como falta y se descuenta de tu paquete.\n\n¿Cancelar de todos modos?`);
+        if(!ok) return;
+      }
+    }
+  }catch(_){}
   const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Cancelando…'; }
 

@@ -327,3 +327,11 @@ cruce BYCO → logout → MOVE (debe verse oscuro, no Marfil).
 - Matiz conocido: en piel Marfil (studios) sobre Android 15+, la franja de la
   barra queda oscura sobre página clara — legible y deliberado por ahora; el
   arreglo fino llega con la migración a Capacitor 8 (insets vía CSS).
+
+### Aviso de cancelación tardía (2-oct)
+
+- `atleta.html`: al cancelar con menos de `flags.cancelacion_horas` (default 2 h)
+  la app avisa "cuenta como falta y se descuenta de tu paquete" antes de mandar
+  nada. La consulta de reservas ahora trae `clase_hora` (sin ella no hay aviso).
+- La REGLA ya vive en la base (trigger), así que la app instalada ya cobra la
+  cancelación tardía; lo que falta en la nativa es solo el aviso previo.
