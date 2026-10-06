@@ -11520,7 +11520,35 @@ function _iniciarKiosco(){
     const b=document.getElementById('k-enter-btn');if(b)b.textContent='REGISTRAR ENTRADA';
   };
 
+  // Lector QR USB: escribe la URL del QR (…/move-checkin?token=<uuid>) como teclado
+  // en una ráfaga y da Enter. Antes solo se escuchaban dígitos y el escaneo se perdía.
+  // El check-in por QR va por move-checkin (valida membresía, descuenta paquete y
+  // marca la reserva), igual que el kiosco checkin.html.
+  window._kioscoScan = async function(raw){
+    const ctx = window._kioscoCtx; ctx.num='';
+    const d=document.getElementById('k-digits'); if(d) d.textContent='';
+    const hint=document.getElementById('k-name-hint');
+    const avisar=(msg)=>{ if(hint){ hint.textContent=msg; hint.style.color='#f87171'; }
+      setTimeout(()=>{ const h=document.getElementById('k-name-hint'); if(h){ h.textContent=''; h.style.color=''; } },3000); };
+    const t=String(raw||'').toLowerCase();
+    const re=/([0-9a-f]{8})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{12})/g;
+    let m, ult=null; while((m=re.exec(t))) ult=m;
+    if(!ult){ avisar('No se reconoció el QR'); return; }
+    const tk = ult.slice(1).join('-');
+    if(hint){ hint.textContent='Verificando…'; hint.style.color=''; }
+    try{
+      const base = window._SUPABASE_URL || 'https://savzjanpydyjtrgdkllx.supabase.co';
+      const res = await fetch(`${base}/functions/v1/move-checkin?token=${encodeURIComponent(tk)}&gym=${encodeURIComponent(MOVE_GYM_ID||'')}`);
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok || !data.ok){ avisar(data.error || 'QR inválido'); return; }
+      if(!data.membership_ok){ avisar(`${(data.cliente?.nombre||'').split(' ')[0]}: sin membresía vigente`); return; }
+      const cli = clientesDB.find(c=>String(c.id)===String(data.cliente?.id));
+      _kioscoShowSuccess(data.cliente?.nombre || cli?.nombre || '', cli?.foto_url || null);
+    }catch(_){ avisar('Error de conexión. Intenta de nuevo.'); }
+  };
+
   // ── Physical keyboard + USB QR scanner ──
+  let _kScanBuf='', _kScanLast=0, _kScanMode=false;
   document.addEventListener('keydown', function _kioscoKey(e){
     if(!document.getElementById('kiosco-overlay')){
       document.removeEventListener('keydown',_kioscoKey); return;
@@ -11531,9 +11559,26 @@ function _iniciarKiosco(){
       try{document.exitFullscreen?.();}catch(ex){}
       return;
     }
+    const ahora=Date.now();
+    if(ahora-_kScanLast>300){ _kScanBuf=''; _kScanMode=false; }   // pausa humana = ráfaga nueva
+    _kScanLast=ahora;
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const buf=_kScanBuf, eraScan=_kScanMode || buf.length>=16;
+      _kScanBuf=''; _kScanMode=false;
+      if(eraScan) _kioscoScan(buf); else _kioscoSubmit();
+      return;
+    }
+    if(e.key.length===1){
+      _kScanBuf+=e.key;
+      if(!/^[0-9]$/.test(e.key) && !_kScanMode){   // letra/símbolo = es el lector, no el número
+        _kScanMode=true; window._kioscoCtx.num='';
+        const d=document.getElementById('k-digits'); if(d) d.textContent='';
+      }
+    }
+    if(_kScanMode){ e.preventDefault(); return; }
     if(e.key>='0'&&e.key<='9'){ e.preventDefault(); _kKp(e.key); }
     else if(e.key==='Backspace'){ e.preventDefault(); _kKp('del'); }
-    else if(e.key==='Enter'){ e.preventDefault(); _kioscoSubmit(); }
   });
 
   // ── Fullscreen ──
