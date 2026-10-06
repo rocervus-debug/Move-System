@@ -345,12 +345,53 @@ function npDel(){ _num=_num.slice(0,-1); _renderNum(); }
 // Reinicia el buffer cada vez que se muestra el kiosco
 const _origKiosco=renderKiosco;
 renderKiosco=function(){ _num=''; _origKiosco(); };
-// Soporte de teclado físico (monitor de PC con teclado numérico)
+// Teclado físico + LECTOR QR USB. El lector se comporta como teclado: "escribe"
+// el contenido del QR (la URL .../move-checkin?token=<uuid>) muy rápido y da Enter.
+// Antes solo se escuchaban dígitos, así que el escaneo se perdía sin hacer nada.
+let _scanBuf='', _scanLast=0, _scanMode=false;
+// Saca el token del texto escaneado. El separador puede llegar cambiado si el
+// lector está en distribución de teclado US y la PC en español ('-' → ''', '=' → '¿'),
+// por eso se aceptan los 5 grupos hex con CUALQUIER separador y se reconstruye.
+function _tokenDeScan(txt){
+  const t=String(txt||'').toLowerCase();
+  const re=/([0-9a-f]{8})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{12})/g;
+  let m, ult=null; while((m=re.exec(t))) ult=m;
+  if(ult) return ult.slice(1).join('-');
+  const crudo=t.trim();
+  return /^[a-z0-9_-]{16,128}$/.test(crudo) ? crudo : null;
+}
+async function doCheckinScan(raw){
+  const tk=_tokenDeScan(raw);
+  _num=''; if(document.getElementById('num-display')) _renderNum();
+  if(!tk){ renderError('No se reconoció el QR. Abre tu QR en la app VELUM e intenta de nuevo.', true); return; }
+  try{
+    const gp = kioscoGymId ? `&gym=${encodeURIComponent(kioscoGymId)}` : '';
+    const res=await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(tk)}${gp}`); const data=await res.json();
+    if(!res.ok||!data.ok){ renderError(data.error||'QR inválido', true); return; }
+    renderSuccess(data, true);
+  }catch(e){ renderError('Error de conexión. Intenta de nuevo.', true); }
+}
 document.addEventListener('keydown',e=>{
+  if(!kiosco) return;
+  const ahora=Date.now();
+  if(ahora-_scanLast>300){ _scanBuf=''; _scanMode=false; }   // pausa humana = ráfaga nueva
+  _scanLast=ahora;
+  if(e.key==='Enter'){
+    const buf=_scanBuf; const eraScan=_scanMode || buf.length>=16;
+    _scanBuf=''; _scanMode=false;
+    if(eraScan){ e.preventDefault(); doCheckinScan(buf); return; }
+    if(document.getElementById('num-display')) doCheckinByNumero(_num);
+    return;
+  }
+  if(e.key.length===1){
+    _scanBuf+=e.key;
+    // Una letra o símbolo = no es el número de cliente: es el lector.
+    if(!/^[0-9]$/.test(e.key) && !_scanMode){ _scanMode=true; _num=''; if(document.getElementById('num-display')) _renderNum(); }
+  }
+  if(_scanMode) return;                       // mientras escanea no se llena el teclado numérico
   if(!document.getElementById('num-display')) return;
   if(/^[0-9]$/.test(e.key)) npPress(e.key);
   else if(e.key==='Backspace') npDel();
-  else if(e.key==='Enter') doCheckinByNumero(_num);
 });
 
 /* ── Init ── */

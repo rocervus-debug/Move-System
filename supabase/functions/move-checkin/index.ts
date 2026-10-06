@@ -1,4 +1,6 @@
-// move-checkin — v29: una reserva marcada "No asistió" (que ya gastó la clase)
+// move-checkin — v30: el kiosco manda ?gym=<id>; un QR de OTRO negocio se rechaza
+// (antes el lector USB del kiosco de un gym registraba entradas de cualquier gym).
+// v29: una reserva marcada "No asistió" (que ya gastó la clase)
 // pasa a "Llegó" si la persona escanea tarde; antes se trataba como llegada sin
 // reserva y se cobraba dos veces.
 // v28: el paquete se descuenta con la MISMA regla que la lista de
@@ -55,6 +57,14 @@ Deno.serve(async (req) => {
   if (error || !cliente) {
     return new Response(JSON.stringify({ error: 'Cliente no encontrado. Verifica el número o QR.' }), {
       status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Kiosco de un gym: solo registra a SUS clientes.
+  const gymKiosco = url.searchParams.get('gym');
+  if (gymKiosco && String(cliente.gym_id) !== String(parseInt(gymKiosco, 10))) {
+    return new Response(JSON.stringify({ error: 'Este QR es de otro negocio.' }), {
+      status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
 
