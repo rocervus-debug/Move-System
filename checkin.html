@@ -249,7 +249,7 @@ async function doCheckinByNumero(numero){
     if(!Array.isArray(rows)||!rows.length){ showNumErr('Número no encontrado. Verifícalo.'); resetCta(); return; }
     const token=rows[0].qr_token;
     if(!token){ showNumErr('Este cliente no tiene acceso configurado.'); resetCta(); return; }
-    const cRes=await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}`); const data=await cRes.json();
+    const cRes=await fetch(`${CHECKIN_URL}?token=${encodeURIComponent(token)}&gym=${encodeURIComponent(kioscoGymId)}`); const data=await cRes.json();
     if(!cRes.ok||!data.ok){ const msg=data.error||'No se pudo registrar el acceso.'; showNumErr((msg.includes('no encontrado')||msg.includes('no válido'))?'Cliente no encontrado. Verifica el número.':msg); resetCta(); return; }
     renderSuccess(data, true);
   }catch(e){ showNumErr('Error de conexión. Intenta de nuevo.'); resetCta(); }

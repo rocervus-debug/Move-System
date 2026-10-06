@@ -11444,36 +11444,16 @@ function _iniciarKiosco(){
       }, 2200);
       return;
     }
-    const btn = document.getElementById('k-enter-btn');
-    if(btn) btn.textContent='Registrando...';
-    const now  = new Date();
-    const fecha= now.toISOString().slice(0,10);
-    // La columna asistencias.hora es `time`: debe ir en 24h HH:MM:SS.
-    // toLocaleTimeString('es-MX',…) daba "02:30 p.m." y Postgres lo rechazaba → check-in fallaba.
-    const hora = now.toTimeString().slice(0,8);
-    // Fetch foto_url fresca + insert asistencia en paralelo
-    const [{error}, fotoResult] = await Promise.all([
-      gf(window.supabaseClient.from('asistencias')
-        .insert({cliente_id:cliente.id, gym_id:MOVE_GYM_ID, fecha, hora, metodo:'Kiosco'})),
-      gf(window.supabaseClient.from('clientes')
-        .select('foto_url').eq('id', cliente.id).single())
-    ]);
-    if(error){
-      if(btn) btn.textContent='REGISTRAR ENTRADA';
-      const hint=document.getElementById('k-name-hint');
-      if(hint){hint.textContent='Error al registrar. Intenta de nuevo.';hint.style.color='#f87171';}
-      setTimeout(()=>{
-        ctx.num='';
-        const d=document.getElementById('k-digits');if(d)d.textContent='';
-        const h=document.getElementById('k-name-hint');if(h){h.textContent='';h.style.color='';}
-        if(btn)btn.textContent='REGISTRAR ENTRADA';
-      },2500);
-    } else {
-      const fotoUrl = (fotoResult?.data?.foto_url) || cliente.foto_url || null;
-      // Actualizar caché local para la próxima vez
-      if(fotoUrl) cliente.foto_url = fotoUrl;
-      _kioscoShowSuccess(cliente.nombre, fotoUrl);
+    // Antes el número insertaba la asistencia directo (sin validar membresía, sin
+    // descontar paquete, sin marcar la reserva, y con fecha UTC). Ahora va por la
+    // MISMA regla que el QR: move-checkin con el token del cliente.
+    let tk = cliente.qr_token || cliente.portal_token || null;
+    if(!tk){
+      const { data: rows } = await window.supabaseClient.rpc('kiosco_lookup', { p_gym_id: Number(MOVE_GYM_ID), p_numero: Number(ctx.num) });
+      tk = rows && rows[0] && rows[0].qr_token;
     }
+    if(!tk){ _kioscoAviso('Este cliente no tiene acceso configurado'); return; }
+    await _kioscoCheckinToken(tk, cliente);
   };
 
   window._kioscoShowSuccess = function(nombre, fotoUrl){
@@ -11525,26 +11505,40 @@ function _iniciarKiosco(){
   // El check-in por QR va por move-checkin (valida membresía, descuenta paquete y
   // marca la reserva), igual que el kiosco checkin.html.
   window._kioscoScan = async function(raw){
-    const ctx = window._kioscoCtx; ctx.num='';
+    window._kioscoCtx.num='';
     const d=document.getElementById('k-digits'); if(d) d.textContent='';
-    const hint=document.getElementById('k-name-hint');
-    const avisar=(msg)=>{ if(hint){ hint.textContent=msg; hint.style.color='#f87171'; }
-      setTimeout(()=>{ const h=document.getElementById('k-name-hint'); if(h){ h.textContent=''; h.style.color=''; } },3000); };
     const t=String(raw||'').toLowerCase();
     const re=/([0-9a-f]{8})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{4})[^0-9a-f]?([0-9a-f]{12})/g;
     let m, ult=null; while((m=re.exec(t))) ult=m;
-    if(!ult){ avisar('No se reconoció el QR'); return; }
-    const tk = ult.slice(1).join('-');
-    if(hint){ hint.textContent='Verificando…'; hint.style.color=''; }
+    if(!ult){ _kioscoAviso('No se reconoció el QR'); return; }
+    await _kioscoCheckinToken(ult.slice(1).join('-'), null);
+  };
+
+  // Aviso en rojo bajo los dígitos; se limpia solo.
+  window._kioscoAviso = function(msg){
+    const ctx = window._kioscoCtx; ctx.num='';
+    const d=document.getElementById('k-digits'); if(d) d.textContent='';
+    const b=document.getElementById('k-enter-btn'); if(b) b.textContent='REGISTRAR ENTRADA';
+    const h=document.getElementById('k-name-hint'); if(h){ h.textContent=msg; h.style.color='#f87171'; }
+    setTimeout(()=>{ const h2=document.getElementById('k-name-hint'); if(h2 && h2.textContent===msg){ h2.textContent=''; h2.style.color=''; } },3500);
+  };
+
+  // UNA sola regla de entrada para el kiosco (QR y número): move-checkin valida
+  // membresía, descuenta paquete, marca la reserva y rechaza clientes de otro gym.
+  window._kioscoCheckinToken = async function(tk, clienteLocal){
+    const b=document.getElementById('k-enter-btn'); if(b) b.textContent='Registrando...';
+    const hint=document.getElementById('k-name-hint'); if(hint && !clienteLocal){ hint.textContent='Verificando…'; hint.style.color=''; }
     try{
       const base = window._SUPABASE_URL || 'https://savzjanpydyjtrgdkllx.supabase.co';
       const res = await fetch(`${base}/functions/v1/move-checkin?token=${encodeURIComponent(tk)}&gym=${encodeURIComponent(MOVE_GYM_ID||'')}`);
       const data = await res.json().catch(()=>({}));
-      if(!res.ok || !data.ok){ avisar(data.error || 'QR inválido'); return; }
-      if(!data.membership_ok){ avisar(`${(data.cliente?.nombre||'').split(' ')[0]}: sin membresía vigente`); return; }
-      const cli = clientesDB.find(c=>String(c.id)===String(data.cliente?.id));
-      _kioscoShowSuccess(data.cliente?.nombre || cli?.nombre || '', cli?.foto_url || null);
-    }catch(_){ avisar('Error de conexión. Intenta de nuevo.'); }
+      if(!res.ok || !data.ok){ _kioscoAviso(data.error || 'No se pudo registrar la entrada'); return; }
+      const cli = clienteLocal || clientesDB.find(c=>String(c.id)===String(data.cliente?.id));
+      const nombre = data.cliente?.nombre || cli?.nombre || '';
+      if(!data.membership_ok){ _kioscoAviso(`${nombre.split(' ')[0]}: tu membresía no está vigente. Pasa a recepción.`); return; }
+      if(b) b.textContent='REGISTRAR ENTRADA';
+      _kioscoShowSuccess(nombre, cli?.foto_url || null);
+    }catch(_){ _kioscoAviso('Error de conexión. Intenta de nuevo.'); }
   };
 
   // ── Physical keyboard + USB QR scanner ──
