@@ -6427,12 +6427,13 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
   </div>
 </div>
 
-<!-- Modal: Visita nueva desde la clase -->
-<div class="modal-overlay" id="modal-visita">
+<!-- Modal: Visita nueva desde la clase (id propio: 'modal-visita' es el wizard
+     de Registrar Visita; compartirlo dejó ese botón muerto del 7-sep al 6-oct) -->
+<div class="modal-overlay" id="modal-visita-clase">
   <div class="modal" style="width:440px;">
     <div class="modal-head">
       <div class="modal-title">Registrar visita</div>
-      <button class="modal-close" onclick="closeModal('visita')">&#10005;</button>
+      <button class="modal-close" onclick="closeModal('visita-clase')">&#10005;</button>
     </div>
     <div class="modal-body" style="padding-top:16px;">
       <div id="vis-clase" style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;margin-bottom:16px;"></div>
@@ -6446,12 +6447,18 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <input id="vis-tel" type="tel" inputmode="tel" autocomplete="off" placeholder="4611234567"/>
       </div>
       <div id="vis-parecido" style="display:none;"></div>
-      <div style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-top:4px;">
-        Queda registrada como <b>clase muestra de cortes&iacute;a</b> ($0) y ocupa un lugar de esta clase.
+      <div class="field">
+        <label>Cobro</label>
+        <select id="vis-cobro" onchange="_visitaCobroCambio()"></select>
       </div>
+      <div class="field" id="vis-metodo-wrap">
+        <label>M&eacute;todo de pago</label>
+        <select id="vis-metodo"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Otro</option></select>
+      </div>
+      <div id="vis-nota" style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-top:4px;"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('visita')">Cancelar</button>
+      <button class="btn btn-outline" onclick="closeModal('visita-clase')">Cancelar</button>
       <button class="btn btn-outline" onclick="_guardarVisita('reservado')">Apartar lugar</button>
       <button class="btn btn-primary" onclick="_guardarVisita('checkin')">Ya lleg&oacute;</button>
     </div>
@@ -28744,8 +28751,9 @@ function _abrirVisitaNueva(nombre){
   const lbl = document.getElementById('vis-clase');
   if(lbl) lbl.innerHTML = `Le apartas lugar en <b>${esc(ctx.tipo||'la clase')}</b> · ${esc(ctx.hora||'')}<br>${esc(cuando)}`;
 
-  openModal('visita');
+  openModal('visita-clase');
   _visitaChecarParecido();
+  _visitaCargarCobro();
   setTimeout(()=>{ const n=document.getElementById('vis-nombre'); if(n){ n.focus(); n.select(); } }, 60);
 }
 
@@ -28783,10 +28791,70 @@ function _visitaChecarParecido(){
 async function _visitaUsarExistente(i){
   const c = (window._visParecidos||[])[i]; const ctx = _visitaCtx;
   if(!c || !ctx) return;
-  closeModal('visita');
+  closeModal('visita-clase');
   await agregarClienteAClase(c.id, c.nombre, ctx.horarioId, ctx.hora, ctx.tipo, 'reservado');
 }
 
+// ── Cobro de la clase muestra ──────────────────────────────────────────────
+// Cada gym decide si su clase muestra es cortesía ($0) o se cobra con uno de sus
+// paquetes de 1 día (COREX: "First class" $100). La elección se recuerda por gym
+// en gym_config 'clase_muestra_cobro' (id de paquete o 'cortesia'; default cortesía).
+let _visPaquetes = [];
+async function _visitaCargarCobro(){
+  const sel = document.getElementById('vis-cobro'); if(!sel) return;
+  const gymId = (typeof _gymIdActual==='function' ? _gymIdActual() : null) || MOVE_GYM_ID;
+  sel.innerHTML = '<option value="cortesia">Cortesía ($0)</option>';
+  try{
+    const { data } = await window.supabaseClient.from('packages')
+      .select('id,name,price_mxn,num_classes,unlimited_classes,duration_days')
+      .eq('gym_id', gymId).eq('is_active', true).lte('duration_days', 1).gt('price_mxn', 0)
+      .order('price_mxn', { ascending: true });
+    _visPaquetes = data || [];
+  }catch(_){ _visPaquetes = []; }
+  _visPaquetes.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = String(p.id);
+    o.textContent = `${p.name} · $${Number(p.price_mxn).toLocaleString('es-MX')}`;
+    sel.appendChild(o);
+  });
+  const pref = String(gymConfig?.clase_muestra_cobro || 'cortesia');
+  sel.value = [...sel.options].some(o=>o.value===pref) ? pref : 'cortesia';
+  _visitaCobroCambio();
+}
+function _visitaCobroCambio(){
+  const v = document.getElementById('vis-cobro')?.value || 'cortesia';
+  const pk = _visPaquetes.find(p=>String(p.id)===v);
+  const wrap = document.getElementById('vis-metodo-wrap'); if(wrap) wrap.style.display = pk ? '' : 'none';
+  const nota = document.getElementById('vis-nota');
+  if(nota) nota.innerHTML = pk
+    ? `Se registra el pago de <b>${esc(pk.name)}</b> ($${Number(pk.price_mxn).toLocaleString('es-MX')}) y ocupa un lugar de esta clase.`
+    : 'Queda registrada como <b>clase muestra de cortesía</b> ($0) y ocupa un lugar de esta clase.';
+}
+// Pago real de la clase muestra con el paquete elegido. Idempotente por persona,
+// paquete y fecha de la clase (un doble clic no cobra dos veces).
+async function _pagoClaseMuestra(nombre, fechaClase, gymId, pk, metodo){
+  const { data:ya } = await window.supabaseClient.from('pagos')
+    .select('id').eq('gym_id',gymId).eq('cliente',nombre)
+    .eq('package_id',pk.id).eq('vence',fechaClase).limit(1);
+  if(ya && ya.length) return ya[0].id;
+  const precio = Number(pk.price_mxn)||0;
+  const { data, error } = await window.supabaseClient.from('pagos').insert({
+    gym_id: gymId, cliente: nombre, monto: precio,
+    fecha: _hoyMX(), plan: pk.name, metodo: metodo || 'Efectivo',
+    vence: fechaClase, notas: 'Clase muestra',
+    clases_totales: pk.unlimited_classes ? null : (pk.num_classes || 1), clases_usadas: 0,
+    package_id: pk.id, list_price_mxn: Math.round(precio), applied_price_mxn: Math.round(precio),
+    source: 'admin'
+  }).select('id').single();
+  if(error){ if(_handleSessionError(error)) return null; toast('No se pudo registrar el pago: '+(error.message||''),'✕',6000); return null; }
+  return data.id;
+}
+async function _visitaRecordarCobro(gymId, valor){
+  if(String(gymConfig?.clase_muestra_cobro||'cortesia') === String(valor)) return;
+  const { error } = await window.supabaseClient.from('gym_config')
+    .upsert({ key:'clase_muestra_cobro', value:String(valor), gym_id:gymId }, { onConflict:'key,gym_id' });
+  if(!error) gymConfig.clase_muestra_cobro = String(valor);
+}
 async function _guardarVisita(estado){
   const ctx = _visitaCtx;
   if(!ctx){ toast('Se perdió la clase. Ábrela de nuevo.','⚠️'); return; }
@@ -28799,17 +28867,25 @@ async function _guardarVisita(estado){
   const gymId = (typeof _gymIdActual==='function' ? _gymIdActual() : null) || MOVE_GYM_ID;
   if(!gymId){ toast('No pude identificar el gimnasio. Recarga el panel.','✕'); return; }
 
-  const btns = document.querySelectorAll('#modal-visita .modal-footer button');
+  const btns = document.querySelectorAll('#modal-visita-clase .modal-footer button');
   btns.forEach(b=>b.disabled=true);
   try{
     const cli = await _prospectoACliente({ visitor_name: nombre, visitor_phone: tel }, gymId);
     if(!cli) return;
-    // La cortesía va ANTES de la reserva: deja constancia de por qué entra sin
-    // pagar y evita el aviso de "membresía vencida" de agregarClienteAClase.
+    // El pago (o la cortesía) va ANTES de la reserva: deja constancia de por qué
+    // entra y evita el aviso de "membresía vencida" de agregarClienteAClase.
     const fechaClase = (typeof _asistFechaSel==='function' ? _asistFechaSel() : _hoyMX());
-    await _pagoCortesia(cli.nombre, fechaClase, gymId);
+    const cobro = document.getElementById('vis-cobro')?.value || 'cortesia';
+    const pk = _visPaquetes.find(p=>String(p.id)===cobro);
+    if(pk){
+      const pid = await _pagoClaseMuestra(cli.nombre, fechaClase, gymId, pk, document.getElementById('vis-metodo')?.value);
+      if(!pid) return;
+    } else {
+      await _pagoCortesia(cli.nombre, fechaClase, gymId);
+    }
+    _visitaRecordarCobro(gymId, pk ? pk.id : 'cortesia');
     if(typeof loadPagosFromSupabase==='function'){ try{ await loadPagosFromSupabase(); }catch(_){} }
-    closeModal('visita');
+    closeModal('visita-clase');
     await agregarClienteAClase(cli.id, cli.nombre, ctx.horarioId, ctx.hora, ctx.tipo, estado);
   }catch(e){
     console.error('visita nueva:', e);
