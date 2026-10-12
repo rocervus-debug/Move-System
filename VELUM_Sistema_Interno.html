@@ -25862,7 +25862,10 @@ async function showCancelClaseNotifModal(claseId, fechaStr, hora, motivo){
     .select('id, cliente_id, estado')
     .eq('horario_id', claseId)
     .eq('fecha', fechaStr)
-    .neq('estado', 'cancelada');
+    // Mismo criterio que la lista de la clase. Antes filtraba 'cancelada' (estado que
+    // no existe en reservas: el real es 'cancelado'), así que la clienta que ya había
+    // cancelado desde la app aparecía como "reservada" al cancelar la clase.
+    .not('estado', 'in', '(cancelado,bloqueado)');
 
   const listEl = document.getElementById('cancel-clase-reservas-list');
   const wrapEl = document.getElementById('cancel-clase-reservas-wrap');
