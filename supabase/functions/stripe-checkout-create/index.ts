@@ -1,4 +1,4 @@
-// stripe-checkout-create — v14: on_behalf_of = cuenta del gym (merchant of record = gym, white-label)
+// stripe-checkout-create — v23: paquetes solo_primera_vez (clase muestra) se rechazan si la persona ya compró en el gym
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey' };
@@ -74,10 +74,20 @@ Deno.serve(async (req) => {
     if (!gym?.stripe_account_id) return json({ error: 'El gym aún no ha conectado Stripe.' }, 400);
     if (!gym.stripe_charges_enabled) return json({ error: 'El gym aún no puede aceptar cobros.' }, 400);
 
-    const { data: pkg } = await db.from('packages').select('id, name, price_mxn, num_classes, duration_days, gym_id, is_active, billing_type').eq('id', package_id).maybeSingle();
+    const { data: pkg } = await db.from('packages').select('id, name, price_mxn, num_classes, duration_days, gym_id, is_active, billing_type, solo_primera_vez').eq('id', package_id).maybeSingle();
     if (!pkg || pkg.gym_id !== sf.gym_id || !pkg.is_active) return json({ error: 'Paquete no disponible.' }, 400);
     const { data: listing } = await db.from('storefront_listings').select('id, is_public').eq('package_id', package_id).eq('gym_id', sf.gym_id).maybeSingle();
     if (!listing?.is_public) return json({ error: 'Paquete no está publicado.' }, 400);
+
+    // Clase muestra: solo para la primera visita. Coincide por correo, teléfono o
+    // nombre completo contra pagos, órdenes pagadas y visitas de ESTE gym.
+    if (pkg.solo_primera_vez) {
+      const { data: yaCompro, error: ycErr } = await db.rpc('ya_compro_en_gym', {
+        p_gym: gym.id, p_email: customer.email || '', p_tel: customer.phone || '', p_nombre: customer.name || '',
+      });
+      if (ycErr) { console.error('ya_compro_en_gym:', ycErr); return json({ error: 'No pudimos validar tu compra. Intenta de nuevo.' }, 500); }
+      if (yaCompro) return json({ error: `${pkg.name} es solo para tu primera visita y ya tienes compras registradas aquí. Elige otra opción, como la clase suelta.`, code: 'solo_primera_vez' }, 409);
+    }
 
     const isRecurring = pkg.billing_type === 'recurring';
 

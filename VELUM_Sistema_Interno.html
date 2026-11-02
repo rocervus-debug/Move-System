@@ -15489,6 +15489,26 @@ async function _pintarPaqueteFicha(clienteId){
     </div>`;
 }
 
+// Cancelaciones tardías de los últimos 30 días (la marca la pone la base al
+// cancelar desde la app dentro de la ventana del gym). Solo informa: a quien tiene
+// paquete de clases ya se le descontó; a las ilimitadas no se les castiga.
+async function _pintarTardiasFicha(clienteId){
+  const host = document.getElementById('cpanel-tardias');
+  if(!host || !clienteId) return;
+  const desde = new Date(Date.now() - 30*86400000).toLocaleDateString('en-CA',{timeZone:'America/Mexico_City'});
+  let q = window.supabaseClient.from('reservas').select('id,pago_id')
+    .eq('cliente_id', parseInt(clienteId)).eq('estado','cancelado')
+    .eq('cancelacion_tardia', true).gte('fecha', desde);
+  if(MOVE_GYM_ID) q = q.eq('gym_id', MOVE_GYM_ID);
+  const { data, error } = await q;
+  if(error){ console.warn('cancelaciones tardías:', error.message); return; }
+  const n = (data||[]).length;
+  if(!n){ host.innerHTML=''; return; }
+  const desc = data.filter(r=>r.pago_id).length;
+  host.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--warn);font-weight:700;margin-top:8px;">
+    ${n} cancelaci${n===1?'ón tardía':'ones tardías'} en 30 días${desc?` · ${desc} descontada${desc===1?'':'s'} de su paquete`:''}</div>`;
+}
+
 function openClientePanel(nombreCliente){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   // Identity data from clientes table
@@ -15582,11 +15602,13 @@ function openClientePanel(nombreCliente){
       ${tel?`<div style="font-size:var(--fs-sm);color:var(--text3);margin-top:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> ${tel}</div>`:''}
       ${freezeInfo}${refPor}${refInfo}
       <div id="cpanel-paquete"></div>
+      <div id="cpanel-tardias"></div>
     </div>`;
   // Clases que le quedan: lo calcula la base (estado_paquete_cliente), la MISMA
   // regla que descuenta el check-in y que pinta la lista de la clase. Así la
   // ficha, la lista y la app del cliente nunca dicen números distintos.
   _pintarPaqueteFicha(cliRec.id);
+  _pintarTardiasFicha(cliRec.id);
 
   // Acciones
   const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
@@ -28102,6 +28124,31 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
       }
     }catch(e){ console.warn('prospectos:', e); }
 
+    // Cancelaron tarde: la atleta canceló desde la app dentro de la ventana del gym
+    // (2 h por defecto). Si tiene paquete de clases la base ya le descontó una
+    // (pago_id); las mensualidades ilimitadas no se castigan, solo quedan a la vista.
+    let tardesHtml = '';
+    try{
+      let tq = window.supabaseClient.from('reservas')
+        .select('id,cliente_nombre,pago_id')
+        .eq('horario_id',horarioId).eq('fecha',hoyStr)
+        .eq('estado','cancelado').eq('cancelacion_tardia',true)
+        .order('created_at',{ascending:true});
+      if(gymId) tq = tq.eq('gym_id',gymId);
+      const { data:tardes, error:tErr } = await tq;
+      if(tErr) console.warn('cancelaron tarde:', tErr.message);
+      if((tardes||[]).length){
+        tardesHtml = `
+          <div style="font-size:var(--fs-sm);font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 8px;">Cancelaron tarde · ${tardes.length}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${tardes.map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;">
+              <div style="flex:1;min-width:0;font-size:var(--fs-sm);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.cliente_nombre||'—')}</div>
+              <div style="flex-shrink:0;font-size:var(--fs-xs);font-weight:700;color:${t.pago_id?'var(--warn)':'var(--text3)'};">${t.pago_id?'Se le descontó 1 clase':'Sin descuento · no tiene paquete de clases'}</div>
+            </div>`).join('')}
+          </div>`;
+      }
+    }catch(e){ console.warn('cancelaron tarde:', e); }
+
     // Studios: lista de espera de esta clase+fecha (mostrar + promover)
     let waitlistHtml = '';
     if(_fWaitlistP()){
@@ -28186,6 +28233,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
         </div>`:''}
 
       ${prospectosHtml}
+      ${tardesHtml}
       ${waitlistHtml}
 
       ${!lista.length?`<div style="padding:32px 20px;text-align:center;font-size:var(--fs-sm);color:var(--text3);">Sin reservas para esta clase.<br>Usa el campo de arriba para agregar clientes.</div>`:''}`;
@@ -28809,7 +28857,7 @@ async function _visitaCargarCobro(){
   sel.innerHTML = '<option value="cortesia">Cortesía ($0)</option>';
   try{
     const { data } = await window.supabaseClient.from('packages')
-      .select('id,name,price_mxn,num_classes,unlimited_classes,duration_days')
+      .select('id,name,price_mxn,num_classes,unlimited_classes,duration_days,solo_primera_vez')
       .eq('gym_id', gymId).eq('is_active', true).lte('duration_days', 1).gt('price_mxn', 0)
       .order('price_mxn', { ascending: true });
     _visPaquetes = data || [];
@@ -28852,6 +28900,25 @@ async function _pagoClaseMuestra(nombre, fechaClase, gymId, pk, metodo){
   if(error){ if(_handleSessionError(error)) return null; toast('No se pudo registrar el pago: '+(error.message||''),'✕',6000); return null; }
   return data.id;
 }
+// ¿La persona ya compró algo aquí? Para paquetes "solo primera vez" (clase muestra).
+// Misma idea que ya_compro_en_gym en la base (que es la que bloquea la página
+// pública): nombre completo o teléfono contra el historial de pagos del gym.
+function _visitaYaCompro(nombre, tel){
+  const n = _visNorm(nombre);
+  const t = String(tel||'').replace(/\D/g,'').slice(-10);
+  const tels = new Set(t.length===10 ? [t] : []);
+  const noms = new Set(n.includes(' ') ? [n] : []);
+  (clientesDB||[]).forEach(c=>{
+    const ct = String(c.telefono||'').replace(/\D/g,'').slice(-10);
+    if((t.length===10 && ct===t) || (noms.size && _visNorm(c.nombre)===n)){
+      if(ct.length===10) tels.add(ct);
+      const cn = _visNorm(c.nombre); if(cn.includes(' ')) noms.add(cn);
+    }
+  });
+  if(!tels.size && !noms.size) return false;
+  return (pagos||[]).some(p=>noms.has(_visNorm(p.cliente))
+    || tels.has(String(p.telefono||'').replace(/\D/g,'').slice(-10)));
+}
 async function _visitaRecordarCobro(gymId, valor){
   if(String(gymConfig?.clase_muestra_cobro||'cortesia') === String(valor)) return;
   const { error } = await window.supabaseClient.from('gym_config')
@@ -28873,6 +28940,13 @@ async function _guardarVisita(estado){
   const btns = document.querySelectorAll('#modal-visita-clase .modal-footer button');
   btns.forEach(b=>b.disabled=true);
   try{
+    const _pkSel = _visPaquetes.find(p=>String(p.id)===(document.getElementById('vis-cobro')?.value||''));
+    if(_pkSel && _pkSel.solo_primera_vez && _visitaYaCompro(nombre, tel)){
+      const ok = await confirmDialog(
+        `${nombre} ya tiene compras registradas en el gym y ${_pkSel.name} es solo para la primera visita. ¿Cobrarla de todos modos?`,
+        { title:'No es su primera visita', icon:'⚠', danger:true, confirmText:'Cobrar de todos modos', cancelText:'Cambiar el cobro' });
+      if(!ok) return;
+    }
     const cli = await _prospectoACliente({ visitor_name: nombre, visitor_phone: tel }, gymId);
     if(!cli) return;
     // El pago (o la cortesía) va ANTES de la reserva: deja constancia de por qué
