@@ -4,7 +4,10 @@
 //   Ahora: si no hay orden, consulta la sesión en Stripe; si es suscripción pagada, responde
 //   paid:true con los datos de member_subscriptions. Migrado a Deno.serve nativo.
 // anon GET ?session_id=cs_xxx — devuelve info para la success page.
+import { stripeSettlement } from '../_shared/stripe-settlement.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const APP_URL = new URL(Deno.env.get('SITE_URL') || 'https://myvelum.app').origin;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +29,11 @@ Deno.serve(async (req: Request) => {
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const { data: order } = await db.from('storefront_orders').select('id, gym_id, package_id, status, customer_email, customer_name, amount_cents, cliente_id, paid_at').eq('stripe_session_id', sessionId).maybeSingle();
+    const { data: order, error: orderError } = await db.from('storefront_orders').select('id, gym_id, package_id, status, customer_email, customer_name, amount_cents, cliente_id, paid_at, metadata, stripe_account_id, stripe_payment_intent_id, application_fee_cents').eq('stripe_session_id', sessionId).maybeSingle();
+    if (orderError) {
+      console.error('storefront-order-status: consulta de orden', orderError.code);
+      return json({ error: 'No se pudo consultar la compra. Vuelve a intentarlo en unos segundos.' }, 503);
+    }
 
     if (order) {
       const { data: pkg } = await db.from('packages').select('name, duration_days, num_classes, unlimited_classes').eq('id', order.package_id).maybeSingle();
@@ -37,10 +44,35 @@ Deno.serve(async (req: Request) => {
         const { data: c } = await db.from('clientes').select('nombre, email, numero_cliente, portal_token').eq('id', order.cliente_id).maybeSingle();
         cliente = c;
       }
+      // The charge can settle after checkout completes. Refresh only this paid order.
+      if (order.status === 'paid' && order.stripe_account_id && order.stripe_payment_intent_id) {
+        try {
+          const { data: pago } = await db.from('pagos').select('id,stripe_balance_transaction_id')
+            .eq('gym_id', order.gym_id).eq('stripe_session_id', sessionId).maybeSingle();
+          if (pago && !pago.stripe_balance_transaction_id) {
+            const pi = encodeURIComponent(order.stripe_payment_intent_id);
+            const res = await fetch(`https://api.stripe.com/v1/payment_intents/${pi}?expand[]=latest_charge.balance_transaction`, {
+              headers: { Authorization: `Bearer ${Deno.env.get('STRIPE_SECRET_KEY')}`, 'Stripe-Account': order.stripe_account_id,
+                'Stripe-Version': '2024-11-20.acacia' }, signal: AbortSignal.timeout(3000),
+            });
+            if (res.ok) {
+              const payment = await res.json();
+              const fields = stripeSettlement(payment.latest_charge, order.amount_cents, order.application_fee_cents || 0, true);
+              if (fields.stripe_balance_transaction_id) {
+                const { error } = await db.from('pagos').update(fields).eq('id', pago.id)
+                  .eq('gym_id', order.gym_id).is('stripe_balance_transaction_id', null);
+                if (error) console.warn('No se pudo conciliar el pago', error.code);
+              }
+            }
+          }
+        } catch { console.warn('Conciliación de la orden pendiente'); }
+      }
       return json({
         ok: true,
         status: order.status,
         paid: order.status === 'paid',
+        reserva: order.metadata?.reserva_horario_id && order.metadata?.reserva_fecha
+          ? (order.metadata.reserva_resultado || 'por_verificar') : null,
         gym: gym ? { nombre: gym.nombre, slug: sf?.slug } : null,
         package: pkg,
         amount_mxn: order.amount_cents / 100,
@@ -49,7 +81,7 @@ Deno.serve(async (req: Request) => {
           nombre: cliente.nombre,
           email: cliente.email,
           numero_cliente: cliente.numero_cliente,
-          portal_link: cliente.portal_token ? `https://myvelum.app/atleta?token=${cliente.portal_token}` : null,
+          portal_link: cliente.portal_token ? `${APP_URL}/atleta?token=${encodeURIComponent(cliente.portal_token)}` : null,
         } : null,
       });
     }
@@ -95,7 +127,7 @@ Deno.serve(async (req: Request) => {
               nombre: cliente.nombre,
               email: cliente.email,
               numero_cliente: cliente.numero_cliente,
-              portal_link: cliente.portal_token ? `https://myvelum.app/atleta?token=${cliente.portal_token}` : null,
+              portal_link: cliente.portal_token ? `${APP_URL}/atleta?token=${encodeURIComponent(cliente.portal_token)}` : null,
             } : null,
           });
         }
@@ -120,7 +152,7 @@ Deno.serve(async (req: Request) => {
                 .order('id', { ascending: true }).limit(1).maybeSingle();
               if (c) cliente = {
                 nombre: c.nombre, email: c.email, numero_cliente: c.numero_cliente,
-                portal_link: c.portal_token ? `https://myvelum.app/atleta?token=${c.portal_token}` : null,
+                portal_link: c.portal_token ? `${APP_URL}/atleta?token=${encodeURIComponent(c.portal_token)}` : null,
               };
             }
             return json({

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>¡Compra exitosa! — VELUM</title>
+<title>Estado de tu compra — VELUM</title>
 <meta name="robots" content="noindex,nofollow"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
@@ -46,14 +46,16 @@ h1{font-size:26px;font-weight:800;text-align:center;margin-bottom:10px;letter-sp
   .card{padding:32px 24px;}
   h1{font-size:22px;}
 }
+
+[hidden]{display:none!important;}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="icon-wrap">
+  <div class="icon-wrap" id="paid-icon" hidden aria-hidden="true">
     <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
   </div>
-  <h1 id="page-title">¡Pago exitoso!</h1>
+  <h1 id="page-title" aria-live="polite">Consultando tu compra…</h1>
   <p class="sub" id="page-sub">Procesando los detalles de tu compra…</p>
 
   <div id="content"><div class="loading">Cargando información de tu compra…</div></div>
@@ -73,36 +75,55 @@ async function loadOrder(){
   const sub = document.getElementById('page-sub');
 
   if (!sessionId){
-    title.textContent = 'Pago confirmado';
-    sub.textContent = 'No tenemos detalles adicionales para mostrar.';
+    title.textContent = 'Falta la referencia de tu compra';
+    sub.textContent = 'Abre el enlace que recibiste al terminar el pago o consulta con recepción.';
     content.innerHTML = `<a href="https://myvelum.app" class="btn btn-secondary">Volver a VELUM</a>`;
     return;
   }
 
   // El webhook puede tardar 1-3s en procesar. Reintentamos hasta 5 veces con 1.5s entre intentos.
   let order = null;
+  let statusReceived = false;
   for (let i = 0; i < 5; i++){
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/storefront-order-status?session_id=${encodeURIComponent(sessionId)}`, {
         headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
       });
       const data = await res.json();
-      if (res.ok && data.paid && data.cliente) { order = data; break; }
-      if (res.ok && data.paid && !data.cliente && i >= 2) { order = data; break; }
+      if (res.ok) statusReceived = true;
+      if (res.ok && !data.paid && ['failed', 'expired'].includes(data.status)) {
+        title.textContent = data.status === 'expired' ? 'La sesión de pago venció' : 'El pago no se completó';
+        sub.textContent = 'Puedes iniciar una nueva compra desde la página de tu gimnasio.';
+        const slug = data.gym?.slug;
+        content.innerHTML = slug
+          ? `<a href="/g/${encodeURIComponent(slug)}" class="btn btn-secondary">Volver al gimnasio</a>`
+          : '<a href="/" class="btn btn-secondary">Volver a VELUM</a>';
+        return;
+      }
+      if (res.ok && data.paid) {
+        order = data;
+        if (data.reserva !== 'por_verificar' && (data.cliente || i >= 2)) break;
+      }
     } catch(e){ console.error('fetch order:', e); }
     if (i < 4) await new Promise(r => setTimeout(r, 1500));
   }
 
   if (!order){
-    title.textContent = 'Confirmando tu pago…';
-    sub.textContent = 'Tu pago se está procesando. Recibirás un correo en unos minutos.';
+    title.textContent = statusReceived ? 'Confirmando tu pago…' : 'No pudimos consultar tu compra';
+    sub.textContent = statusReceived
+      ? 'Aún no pudimos confirmar el resultado. Vuelve a consultar antes de intentar otro pago.'
+      : 'Guarda este enlace y vuelve a consultar en unos minutos. Espera a conocer el resultado antes de repetir el pago.';
     content.innerHTML = `<button onclick="location.reload()" class="btn btn-secondary">Refrescar</button>`;
     return;
   }
 
   const gymName = order.gym?.nombre || 'tu gym';
-  title.textContent = `¡Bienvenido a ${esc(gymName)}!`;
-  sub.textContent = `Tu compra fue procesada. Aquí están tus accesos.`;
+  document.getElementById('paid-icon').hidden = false;
+  title.textContent = `Pago confirmado en ${gymName}`;
+  sub.textContent = order.cliente?.portal_link ? 'Tu acceso al portal está listo.' : 'Aquí están los detalles de tu compra.';
+  if (order.reserva === 'reservado') sub.textContent = 'Tu lugar para la clase quedó reservado.';
+  if (order.reserva === 'sin_cupo') sub.textContent = 'Tu paquete está pagado. La clase ya no tiene lugar disponible. Contacta a recepción para elegir otro horario.';
+  if (order.reserva === 'por_verificar') sub.textContent = 'Tu paquete está pagado. Consulta en el portal o en recepción si tu lugar quedó reservado.';
 
   const pkgMeta = order.package?.unlimited_classes
     ? `Ilimitadas · ${order.package.duration_days} días`
@@ -116,11 +137,11 @@ async function loadOrder(){
       <a href="${esc(order.cliente.portal_link)}" class="btn btn-primary">
         🔑 Abrir mi portal de atleta
       </a>
-      <a href="https://myvelum.app/g/${esc(order.gym?.slug || '')}" class="btn btn-secondary">Volver al storefront</a>
+      ${order.gym?.slug ? `<a href="/g/${encodeURIComponent(order.gym.slug)}" class="btn btn-secondary">Volver al gimnasio</a>` : ''}
     `;
   } else {
     portalSection = `
-      <div class="error">Tu acceso se está generando. Refrescaremos en unos segundos…</div>
+      <div class="error">Tu acceso se está generando. Vuelve a consultar en unos segundos.</div>
       <button onclick="location.reload()" class="btn btn-primary">Refrescar ahora</button>
     `;
   }
@@ -148,20 +169,19 @@ async function loadOrder(){
       <span class="detail-value">${esc(order.customer?.email || order.cliente?.email || '')}</span>
     </div>
 
-    <div class="callout">
+    ${order.cliente?.portal_link ? `<div class="callout">
       <div class="callout-title">📋 Próximos pasos</div>
       <ol class="callout-list">
         <li>Abre tu <strong>portal de atleta</strong> con el botón abajo (guárdalo en favoritos)</li>
         <li>Desde ahí podrás <strong>reservar clases</strong> según el horario de ${esc(gymName)}</li>
         <li>Cuando llegues al gym, escanea tu <strong>QR de check-in</strong> en la entrada</li>
       </ol>
-    </div>
+    </div>` : ''}
 
     ${portalSection}
 
     <div class="foot">
-      Recibirás un correo de confirmación en <strong>${esc(order.customer?.email || order.cliente?.email || 'tu email')}</strong>.
-      <br>¿Problemas? Escríbenos a <strong>soporte@myvelum.app</strong>.
+      ¿Necesitas ayuda con esta compra? Escríbenos a <strong>soporte@myvelum.app</strong>.
     </div>
   `;
 

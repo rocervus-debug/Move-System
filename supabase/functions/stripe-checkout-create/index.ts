@@ -2,7 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey' };
-const APP_URL = 'https://myvelum.app';
+const APP_URL = new URL(Deno.env.get('SITE_URL') || 'https://myvelum.app').origin;
 const VELUM_FEE_PCT = 0.02;
 const ZERO_FEE_PLANS = new Set(['max', 'owner']);
 const MEMBER_LIMITS: Record<string, number> = { pro: 60, basic: 60, free: 50 };
@@ -72,7 +72,23 @@ Deno.serve(async (req) => {
     const { data: gym, error: gymErr } = await db.from('gyms').select('id, nombre, stripe_account_id, stripe_charges_enabled, subscription_plan').eq('id', sf.gym_id).maybeSingle();
     if (gymErr) return json({ error: 'Error gym.' }, 500);
     if (!gym?.stripe_account_id) return json({ error: 'El gym aún no ha conectado Stripe.' }, 400);
-    if (!gym.stripe_charges_enabled) return json({ error: 'El gym aún no puede aceptar cobros.' }, 400);
+    if (!gym.stripe_charges_enabled) {
+      // El comercio puede regresar del alta antes de que llegue account.updated.
+      const account = await stripeFetch('/accounts/' + encodeURIComponent(gym.stripe_account_id), 'GET', undefined, stripeSecret);
+      if (account.id !== gym.stripe_account_id || !account.charges_enabled) {
+        return json({ error: 'El gym aún no puede aceptar cobros.' }, 400);
+      }
+      const syncedAt = new Date().toISOString();
+      const { data: synced, error: syncError } = await db.from('gyms').update({
+        stripe_charges_enabled: true,
+        stripe_payouts_enabled: !!account.payouts_enabled,
+        stripe_details_submitted: !!account.details_submitted,
+        stripe_account_status: account.payouts_enabled ? 'enabled' : 'pending',
+        stripe_last_sync_at: syncedAt,
+        ...(account.details_submitted ? { stripe_onboarded_at: syncedAt } : {}),
+      }).eq('id', gym.id).eq('stripe_account_id', account.id).select('id').maybeSingle();
+      if (syncError || !synced) return json({ error: 'No se pudo confirmar la conexión del gimnasio.' }, 503);
+    }
 
     const { data: pkg } = await db.from('packages').select('id, name, price_mxn, num_classes, duration_days, gym_id, is_active, billing_type, solo_primera_vez').eq('id', package_id).maybeSingle();
     if (!pkg || pkg.gym_id !== sf.gym_id || !pkg.is_active) return json({ error: 'Paquete no disponible.' }, 400);

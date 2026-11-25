@@ -8,6 +8,7 @@
 // Seguridad: el gym_id sale del JWT verificado del panel (no del body) → un gym solo ve lo suyo.
 // Migrado a Deno.serve nativo (deno.land/std provoca timeouts de bundling al desplegar).
 // deploy: supabase functions deploy velum-stripe-balance --no-verify-jwt
+import { stripeSettlement, withDestinationPayment } from '../_shared/stripe-settlement.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
@@ -28,7 +29,7 @@ function b64urlToStr(b64url: string): string {
   while (b64.length % 4) b64 += '=';
   return atob(b64);
 }
-function b64urlToBytes(b64url: string): Uint8Array {
+function b64urlToBytes(b64url: string) {
   const s = b64urlToStr(b64url);
   return Uint8Array.from(s, (c) => c.charCodeAt(0));
 }
@@ -55,9 +56,10 @@ async function verifyJWT(token: string, secret: string): Promise<Record<string, 
 
 // ── Stripe REST helpers ──────────────────────────────────────────────
 // GET con Stripe-Account (recursos DE la cuenta conectada: balance, payouts)
-async function stripeGet(path: string, secretKey: string, stripeAccount?: string) {
+async function stripeGet(path: string, secretKey: string, stripeAccount?: string, version?: string) {
   const headers: Record<string, string> = { 'Authorization': `Bearer ${secretKey}` };
   if (stripeAccount) headers['Stripe-Account'] = stripeAccount;
+  if (version) headers['Stripe-Version'] = version;
   const res = await fetch(`https://api.stripe.com/v1/${path}`, { method: 'GET', headers });
   return res.json();
 }
@@ -181,7 +183,7 @@ Deno.serve(async (req: Request) => {
     const available_mxn = sumMxn(balance.available);
     const pending_mxn   = sumMxn(balance.pending);
 
-    const list = Array.isArray(payouts.data) ? payouts.data : [];
+    const list: Array<{ status: string; amount: number; arrival_date: number; created: number }> = Array.isArray(payouts.data) ? payouts.data : [];
     const in_transit_mxn = list
       .filter((p: { status: string }) => p.status === 'in_transit' || p.status === 'pending')
       .reduce((acc: number, p: { amount: number }) => acc + (p.amount || 0), 0) / 100;
@@ -224,41 +226,39 @@ Deno.serve(async (req: Request) => {
     let backfilled = 0;
     try {
       const { data: faltantes } = await db.from('pagos')
-        .select('id, stripe_session_id, monto, velum_commission_mxn, stripe_available_on, stripe_fee_mxn')
+        .select('id, stripe_session_id, monto, velum_commission_mxn')
         .eq('gym_id', gymId)
-        .or('stripe_available_on.is.null,stripe_fee_mxn.is.null')
+        .is('stripe_balance_transaction_id', null)
         .not('stripe_session_id', 'is', null)
         .order('fecha', { ascending: false })
         .limit(40);
       for (const pg of (faltantes || [])) {
         const sid = String(pg.stripe_session_id || '');
-        let bt: any = null;
+        const invoice = sid.startsWith('in_');
+        if (!invoice && !sid.startsWith('cs_')) continue;
+        const path = invoice ? `invoices/${encodeURIComponent(sid)}?expand[]=charge.balance_transaction`
+          : `checkout/sessions/${encodeURIComponent(sid)}?expand[]=payment_intent.latest_charge.balance_transaction`;
         try {
-          if (sid.startsWith('cs_')) {
-            const cs = await stripeGet(`checkout/sessions/${sid}?expand[]=payment_intent.latest_charge.balance_transaction`, platformSecret, acct);
-            bt = cs?.payment_intent?.latest_charge?.balance_transaction;
-          } else if (sid.startsWith('in_')) {
-            const inv = await stripeGet(`invoices/${sid}?expand[]=charge.balance_transaction`, platformSecret, acct);
-            bt = inv?.charge?.balance_transaction;
+          let direct = true;
+          let obj = await stripeGet(path, platformSecret, acct, '2024-11-20.acacia');
+          if (obj.error?.code === 'resource_missing') {
+            obj = await stripeGet(path, platformSecret, undefined, '2024-11-20.acacia');
+            direct = false;
           }
-        } catch (_) { /* un pago que no se pueda leer no frena a los demás */ }
-        const av = (bt && typeof bt.available_on === 'number')
-          ? new Date(bt.available_on * 1000).toISOString().slice(0, 10) : null;
-        const fee = (bt && typeof bt.fee === 'number') ? bt.fee / 100 : null;
-
-        const upd: Record<string, unknown> = {};
-        if (av  && !pg.stripe_available_on) upd.stripe_available_on = av;
-        if (fee !== null && pg.stripe_fee_mxn === null) {
-          upd.stripe_fee_mxn = fee;
-          // Se recalcula lo que REALMENTE le queda al gym: bruto − comisión VELUM − fee Stripe.
-          upd.net_to_gym_mxn = Math.round(
-            Number(pg.monto || 0) - Number(pg.velum_commission_mxn || 0) - fee
-          );
-        }
-        if (Object.keys(upd).length) {
-          await db.from('pagos').update(upd).eq('id', pg.id);
-          backfilled += 1;
-        }
+          let charge = invoice ? obj.charge : obj.payment_intent?.latest_charge;
+          if (!direct && charge?.transfer_data?.destination !== acct) continue;
+          if (!direct) {
+            charge = await withDestinationPayment(charge, (path, account) =>
+              stripeGet(path.slice(1), platformSecret, account, '2024-11-20.acacia'));
+          }
+          const fields = stripeSettlement(charge, Math.round(Number(pg.monto) * 100),
+            Math.round(Number(pg.velum_commission_mxn || 0) * 100), direct);
+          if (fields.stripe_balance_transaction_id) {
+            const { error } = await db.from('pagos').update(fields).eq('gym_id', gymId)
+              .eq('id', pg.id).is('stripe_balance_transaction_id', null);
+            if (!error) backfilled++;
+          }
+        } catch { /* Retry the payment on a later visit. */ }
       }
     } catch (e) { console.warn('backfill available_on:', e); }
 

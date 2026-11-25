@@ -17443,7 +17443,7 @@ async function _pvDepositos(){
     const ini = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const { data, error } = await gf(window.supabaseClient
       .from('pagos')
-      .select('id,cliente,monto,fecha,metodo,stripe_available_on,stripe_fee_mxn,velum_commission_mxn,net_to_gym_mxn'))
+      .select('id,cliente,monto,fecha,metodo,stripe_available_on,stripe_fee_mxn,velum_commission_mxn,net_to_gym_mxn,stripe_balance_transaction_id'))
       .ilike('metodo','Stripe%')
       .gte('fecha', ini)
       .limit(500);
@@ -17468,13 +17468,12 @@ function _pvCuando(f, hoy){
 // comisión todavía no se confirma con Stripe NO se inventa un neto: se dice.
 function _pvNeto(p){
   const bruto = +p.monto || 0;
-  if(p.stripe_fee_mxn === null || p.stripe_fee_mxn === undefined){
-    return { bruto, fee:null, neto:bruto, confirmado:false };
+  if(!p.stripe_balance_transaction_id || p.net_to_gym_mxn == null || p.stripe_fee_mxn == null){
+    return { bruto, fee:null, neto:null, confirmado:false };
   }
   const fee  = +p.stripe_fee_mxn || 0;
   const comm = +p.velum_commission_mxn || 0;
-  const neto = (p.net_to_gym_mxn !== null && p.net_to_gym_mxn !== undefined)
-    ? (+p.net_to_gym_mxn) : Math.round(bruto - comm - fee);
+  const neto = +p.net_to_gym_mxn;
   return { bruto, fee: fee + comm, neto, confirmado:true };
 }
 
@@ -17488,7 +17487,7 @@ function _pvPagoRow(p){
         <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:1px;">Cobrado el ${esc(_pvFechaLarga(p.fecha))}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--ok);">${$(n.neto)}</div>
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--ok);">${n.confirmado ? $(n.neto) : 'Neto pendiente'}</div>
         <div style="font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;">
           ${n.confirmado ? `${$(n.bruto)} − ${$(n.fee)} comisión` : `${$(n.bruto)} · comisión por confirmar`}
         </div>
@@ -17522,7 +17521,7 @@ function _pvAgendaHTML(items){
   const grupos = {}; const sinFecha = [];
   items.forEach(p=>{
     const vie = _viernesDeposito(p.stripe_available_on);
-    if(!vie){ sinFecha.push(p); return; }
+    if(!vie || !_pvNeto(p).confirmado){ sinFecha.push(p); return; }
     (grupos[vie] = grupos[vie] || []).push(p);
   });
   const fechas    = Object.keys(grupos).sort();
@@ -17549,7 +17548,7 @@ function _pvAgendaHTML(items){
 
     ${sinFecha.length ? `
       <div style="background:rgba(223,180,89,.08);border:1px solid rgba(223,180,89,.3);border-radius:11px;padding:11px 13px;margin-bottom:9px;">
-        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--warn);margin-bottom:3px;">${sinFecha.length} cobro${sinFecha.length===1?'':'s'} sin fecha confirmada</div>
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--warn);margin-bottom:3px;">${sinFecha.length} cobro${sinFecha.length===1?'':'s'} por conciliar</div>
         <div style="font-size:var(--fs-xs);color:var(--text3);line-height:1.5;">
           Todavía le estamos preguntando a Stripe cuándo los libera. Vuelve a abrir esta pantalla en un momento y aparecerán arriba con su fecha.
         </div>
