@@ -4569,8 +4569,8 @@ function showPortal(data){
   loadClasesData().then(()=>{ renderProximaClase(); renderNextClassCard(); }).catch(()=>{});
 
   // Cargar ausentes para cálculo correcto de racha (async, no bloquea UI)
-  if(data.cliente?.portal_token){
-    fetch(`${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${encodeURIComponent(data.cliente.portal_token)}&estado=eq.ausente&select=fecha`,
+  if(data.cliente?.id || data.cliente?.portal_token){
+    fetch(`${SUPABASE_URL}/rest/v1/reservas?${filtroReservasAtleta(data.cliente, data.gym?.id)}&estado=eq.ausente&select=fecha`,
       {headers:_sbHeaders()})
       .then(r=>r.ok?r.json():[])
       .then(ausentes=>{
@@ -6735,6 +6735,26 @@ function _sbHeaders(){
   return {'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'};
 }
 
+// Una reserva de recepción o de la tienda puede guardar solo cliente_id.
+// Los registros antiguos del portal también pueden identificarse solo por token.
+function filtroReservasAtleta(cliente, gymId){
+  const params = new URLSearchParams();
+  if(gymId) params.set('gym_id', 'eq.'+gymId);
+  const token = String(cliente.portal_token || '');
+  const id = Number(cliente.id);
+  if(Number.isSafeInteger(id) && id > 0){
+    if(token){
+      const quoted = JSON.stringify(token);
+      params.set('or', '(cliente_id.eq.'+id+',and(cliente_id.is.null,portal_token.eq.'+quoted+'))');
+    }else{
+      params.set('cliente_id', 'eq.'+id);
+    }
+  }else{
+    params.set('portal_token', 'eq.'+token);
+  }
+  return params.toString();
+}
+
 // Resolves gym_id: uses portalData.gym.id if present, otherwise looks it up
 // from the clientes table using the portal_token (fallback for old edge function versions)
 async function _resolveGymId(){
@@ -6822,7 +6842,7 @@ async function loadClasesData(){
       // 2. Mis reservas (próximos 7 días)
       (async()=>{
         const rRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,clase_hora,clase_tipo,estado,spot`,
+          `${SUPABASE_URL}/rest/v1/reservas?${filtroReservasAtleta(portalData.cliente, gymId)}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,clase_hora,clase_tipo,estado,spot`,
           { headers: _sbHeaders() }
         );
         if(!rRes.ok) throw new Error('No se pudieron consultar las reservas.');
