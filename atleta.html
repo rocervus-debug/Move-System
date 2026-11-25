@@ -4571,7 +4571,7 @@ function showPortal(data){
   // Cargar ausentes para cálculo correcto de racha (async, no bloquea UI)
   if(data.cliente?.portal_token){
     fetch(`${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${encodeURIComponent(data.cliente.portal_token)}&estado=eq.ausente&select=fecha`,
-      {headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`}})
+      {headers:_sbHeaders()})
       .then(r=>r.ok?r.json():[])
       .then(ausentes=>{
         portalData.ausentes=ausentes||[];
@@ -6816,7 +6816,7 @@ async function loadClasesData(){
     const fechaMin = dates[0].fecha;
     const fechaMax = dates[6].fecha;
     const hids = needed.length ? [...new Set(needed.map(n=>n.hid))] : [];
-    clasesReservas = {}; clasesCupos = {}; clasesNombres = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
+    clasesCupos = {}; clasesNombres = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
 
     await Promise.all([
       // 2. Mis reservas (próximos 7 días)
@@ -6824,9 +6824,10 @@ async function loadClasesData(){
         const rRes = await fetch(
           `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,clase_hora,clase_tipo,estado,spot`,
           { headers: _sbHeaders() }
-        ).catch(()=>null);
-        const myReservas = rRes?.ok ? await rRes.json() : [];
-        myReservas.forEach(r=>{ clasesReservas[r.horario_id+'_'+r.fecha] = r; });
+        );
+        if(!rRes.ok) throw new Error('No se pudieron consultar las reservas.');
+        const myReservas = await rRes.json();
+        clasesReservas = Object.fromEntries(myReservas.map(r=>[r.horario_id+'_'+r.fecha, r]));
       })(),
       // 3. Conteo de cupos en UN batch
       (async()=>{
