@@ -6646,16 +6646,6 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <input id="cg-slug" type="text" placeholder="crossfit-mty"/>
           <span class="field-err" id="cg-slug-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:3px;"></span>
         </div>
-        <div class="field">
-          <label>Tipo de negocio *</label>
-          <select id="cg-vertical">
-            <option value="gym" selected>Gimnasio — tradicional (tema cian)</option>
-            <option value="studios">Estudio — boutique / clases (tema champagne)</option>
-            <option value="recovery">Recovery — bienestar / terapia (tema salvia)</option>
-            <option value="padel">Padel — coach / academia (tema verde cancha)</option>
-          </select>
-          <span class="wzd-hint" style="margin-top:4px;">Define el vocabulario y los colores del panel y la app del atleta. Se puede cambiar después.</span>
-        </div>
         <!-- Sin clase .field: evita heredar el CSS de label de campo (uppercase/letter-spacing)
              y el width:100% que .field aplica a los inputs, que apilaba el texto del radio. -->
         <div style="margin-bottom:14px;">
@@ -8869,7 +8859,7 @@ async function activarSesionPersonal(session, intento, restaurada){
   }
 }
 
-async function doLogin(totpCode){
+async function doLogin(totpCode, challenge){
   const email = limpiarEmail(document.getElementById('login-email').value);
   const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
@@ -8883,6 +8873,7 @@ async function doLogin(totpCode){
     const pw_hash = await hashPassword(pass);
     const reqBody = { email, pw_hash };
     if (totpCode) reqBody.totp_code = totpCode;
+    if (totpCode && challenge) reqBody.challenge = challenge;
     // ── Call Edge Function: validates credentials, returns signed JWT (or 2FA challenge) ──
     const res = await fetch(EDGE_LOGIN_URL, {
       method:'POST',
@@ -8893,7 +8884,7 @@ async function doLogin(totpCode){
     // ── 2FA flow ──
     if (result.requires_2fa) {
       btn.textContent = 'ENTRAR'; btn.disabled = false;
-      open2FAChallenge(email, result.error);
+      open2FAChallenge(email, result.error, result.challenge);
       return;
     }
     if (result.requires_2fa_enrollment) {
@@ -8945,9 +8936,10 @@ function getTotpFnUrl(){ return `${supabaseUrl}/functions/v1/velum-totp`; }
 
 function close2FAModal(){ const m = document.getElementById('twofa-modal'); if(m) m.remove(); }
 
-function open2FAChallenge(email, errorMsg){
+function open2FAChallenge(email, errorMsg, challenge){
   close2FAModal();
   const modal = document.createElement('div');
+  if(challenge) modal.dataset.challenge = challenge;
   modal.id = 'twofa-modal';
   modal.className = 'modal-overlay open';
   modal.innerHTML = `
@@ -9003,9 +8995,10 @@ async function submit2FACode(){
   if (!code) { errEl.textContent = 'Ingresa el código.'; return; }
   errEl.textContent = '';
   btn.textContent = 'Verificando…'; btn.disabled = true;
+  const challenge = document.getElementById('twofa-modal')?.dataset.challenge;
   close2FAModal();
   // Llamar de nuevo a doLogin con el código
-  await doLogin(code);
+  await doLogin(code, challenge);
 }
 
 function open2FAEnrollment(enrollmentToken, userId, email){
@@ -20449,7 +20442,6 @@ function _cgAutoSlug(){
 }
 function openCrearGym(){
   ['cg-nombre','cg-slug','cg-admin-email','cg-admin-nombre','cg-pass'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
-  const _cgv=document.getElementById('cg-vertical'); if(_cgv) _cgv.value='gym';
   ['cg-nombre','cg-slug','cg-admin-email','cg-pass'].forEach(f=>wzdFieldErr(f,''));
   const st=document.querySelector('input[name="cg-status"][value="active"]'); if(st) st.checked=true;
   _cgSlugTouched=false;
@@ -20470,30 +20462,20 @@ async function saCreateGymWizard(){
   const nombreAdmin=(document.getElementById('cg-admin-nombre').value||'').trim() || email.split('@')[0];
   const pass=(document.getElementById('cg-pass').value||'');
   const status=(document.querySelector('input[name="cg-status"]:checked')||{}).value||'active';
-  // Vertical elegida (gym/studios/recovery) — define theming + vocabulario. Default gym.
-  const vertical=(document.getElementById('cg-vertical')||{}).value||'gym';
-  // Color/tema/tagline por vertical (aditivo: el theming real lo maneja gyms.vertical, pero
-  // sembramos gym_config coherente para el branding y el fallback de acento de la app).
-  const VMETA={
-    gym:      { color:'#00D4FF', theme:'teal',      tagline:'Fitness Center' },
-    studios:  { color:'#C9A86A', theme:'champagne', tagline:'Estudio boutique' },
-    recovery: { color:'#5EC8B0', theme:'sage',      tagline:'Centro de recovery' },
-  };
-  const vm=VMETA[vertical]||VMETA.gym;
   if(!nombre||!slug||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||pass.length<8){ toast('Revisa los datos del wizard.','✕'); return; }
   const btn=document.querySelector('#modal-crear-gym .wzd-save');
   if(btn){ btn.disabled=true; btn.textContent='Creando…'; }
   try{
     const pw_hash=await hashPassword(pass);
     const { data:g, error:ge } = await window.supabaseClient.from('gyms').insert([{
-      nombre, slug, activo:true, plan:'max', owner_email:email||null, subscription_status:status, vertical,
+      nombre, slug, activo:true, plan:'max', owner_email:email||null, subscription_status:status, vertical:'gym',
     }]).select().single();
     if(ge) throw ge;
     await window.supabaseClient.from('gym_config').insert([
       { gym_id:g.id, key:'gym_nombre',  value:nombre },
-      { gym_id:g.id, key:'gym_tagline', value:vm.tagline },
-      { gym_id:g.id, key:'gym_color',   value:vm.color },
-      { gym_id:g.id, key:'gym_theme',   value:vm.theme },
+      { gym_id:g.id, key:'gym_tagline', value:'Fitness Center' },
+      { gym_id:g.id, key:'gym_color',   value:'#00D4FF' },
+      { gym_id:g.id, key:'gym_theme',   value:'teal' },
       { gym_id:g.id, key:'meta_mensual',value:'0' },
     ]).then(({error:e})=>{ if(e) console.warn('gym_config seed:', e.message); });
     const { error:ue } = await window.supabaseClient.from('usuarios').insert({
@@ -22484,12 +22466,10 @@ wizRegister('crear-gym', {
       const slug=(document.getElementById('cg-slug').value||'').trim();
       const email=(document.getElementById('cg-admin-email').value||'').trim();
       const status=(document.querySelector('input[name="cg-status"]:checked')||{}).value||'active';
-      const vert=(document.getElementById('cg-vertical')||{}).value||'gym';
-      const VLBL={gym:'Gimnasio (tema cian)',studios:'Estudio boutique (tema champagne)',recovery:'Recovery (tema salvia)'};
       document.getElementById('cg-confirm').innerHTML=[
         _wzdRow('Negocio', esc(nom)),
         _wzdRow('Slug (URL)', esc(slug)),
-        _wzdRow('Tipo', VLBL[vert]||vert),
+        _wzdRow('Producto', 'VELUM CORE'),
         _wzdRow('Plan', 'Max — ' + (typeof planPrecio==='function' ? '$'+planPrecio('max').toLocaleString('es-MX')+'/mes' : '$999/mes')),
         _wzdRow('Acceso', status==='owner'?'Gym propio (siempre activo)':'Cliente activo'),
         _wzdRow('Admin', esc(email)),
