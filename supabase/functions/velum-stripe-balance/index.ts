@@ -93,31 +93,41 @@ async function monthNetSummary(secretKey: string, acct: string) {
   const mx = new Date(now.getTime() - 6 * 3600 * 1000);
   const firstUtc = Date.UTC(mx.getUTCFullYear(), mx.getUTCMonth(), 1, 6, 0, 0); // 00:00 CDMX
   const gte = Math.floor(firstUtc / 1000);
-  let gross = 0, fee = 0, net = 0, count = 0;
-  let starting_after = '';
-  // Cobros entrantes = type 'charge' (cargos directos) o 'payment' (destination charges con
-  // on_behalf_of=gym: en la cuenta conectada el ingreso llega como 'payment', NO 'charge').
-  // NO filtramos por type en la URL para no perder ninguno; se filtra abajo. Se excluyen
-  // 'transfer'/'payout'/'refund'/etc. para no doble-contar ni restar depósitos.
-  const COBROS = new Set(['charge', 'payment']);
-  // Paginación con tope de seguridad (10 páginas = 1000 movimientos/mes).
+  let gross = 0, fee = 0, refunds = 0, disputes = 0, count = 0;
+  let cursor = '';
+  // A dispute can have both a withdrawal and a reinstatement. Use the signed
+  // net posted to this account, including any fee Stripe applied to the adjustment.
+  const seen = new Set<string>();
   for (let page = 0; page < 10; page++) {
     const q = `balance_transactions?limit=100&created[gte]=${gte}` +
-      (starting_after ? `&starting_after=${starting_after}` : '');
+      (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : '');
     const res = await stripeGet(q, secretKey, acct);
-    const data = Array.isArray(res?.data) ? res.data : [];
-    for (const t of data) {
-      if ((t.currency || '').toLowerCase() !== 'mxn') continue;
-      if (!COBROS.has(t.type)) continue;
-      gross += (t.amount || 0);
-      fee   += (t.fee || 0);
-      net   += (t.net || 0);
-      count += 1;
+    if (!Array.isArray(res?.data) || typeof res.has_more !== 'boolean') throw Error('Resumen de Stripe incompleto');
+    for (const t of res.data) {
+      if (t.currency !== 'mxn' || seen.has(t.id)) continue;
+      if (!t.id || !Number.isSafeInteger(t.net) || !Number.isSafeInteger(t.fee) ||
+          !Number.isSafeInteger(t.amount) || t.net !== t.amount - t.fee) throw Error('Movimiento de Stripe incompleto');
+      seen.add(t.id);
+      if (t.type === 'charge' || t.type === 'payment') {
+        gross += t.amount;
+        fee += t.fee;
+        count++;
+      } else if (['refund', 'refund_failure', 'partial_capture_reversal'].includes(t.reporting_category) ||
+                 ['refund', 'payment_refund', 'refund_failure', 'payment_failure_refund'].includes(t.type)) {
+        refunds += t.net;
+      } else if (['dispute', 'dispute_reversal'].includes(t.reporting_category)) {
+        disputes += t.net;
+      }
     }
-    if (!res?.has_more || !data.length) break;
-    starting_after = data[data.length - 1].id;
+    if (!res.has_more) {
+      return { gross_mxn: gross / 100, fee_mxn: fee / 100, refunds_net_mxn: refunds / 100,
+        disputes_net_mxn: disputes / 100, net_mxn: (gross - fee + refunds + disputes) / 100, count };
+    }
+    const next = res.data.at(-1)?.id;
+    if (!next || next === cursor) break;
+    cursor = next;
   }
-  return { gross_mxn: gross / 100, fee_mxn: fee / 100, net_mxn: net / 100, count };
+  throw Error('Paginación del resumen de Stripe incompleta');
 }
 
 Deno.serve(async (req: Request) => {

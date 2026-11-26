@@ -125,6 +125,36 @@ Deno.serve(async (req: Request) => {
 
   try {
     switch (event.type) {
+      case 'charge.refunded':
+      case 'refund.created':
+      case 'refund.updated':
+      case 'refund.failed':
+      case 'charge.refund.updated':
+      case 'charge.dispute.created':
+      case 'charge.dispute.updated':
+      case 'charge.dispute.closed':
+      case 'charge.dispute.funds_withdrawn':
+      case 'charge.dispute.funds_reinstated': {
+        const obj = event.data.object;
+        // These are successive Stripe object snapshots. Financial totals come from
+        // balance transactions, so partial refunds and dispute status changes never add twice.
+        const isCharge = event.type === 'charge.refunded';
+        const { error } = await db.from('stripe_adjustment_events').insert({
+          livemode: event.livemode,
+          stripe_account: evAcct || 'platform',
+          event_id: event.id,
+          event_type: event.type,
+          occurred_at: new Date(event.created * 1000).toISOString(),
+          object_id: obj.id,
+          charge_id: isCharge ? obj.id : (obj.charge?.id || obj.charge || null),
+          payment_intent_id: obj.payment_intent?.id || obj.payment_intent || null,
+          currency: obj.currency,
+          amount_cents: isCharge ? obj.amount_refunded : obj.amount,
+          status: obj.status || null,
+        });
+        if (error && !isDupErr(error)) throw Error('No se pudo registrar el ajuste de Stripe');
+        break;
+      }
       case 'account.updated': {
         const acct = event.data.object;
         const status = acct.charges_enabled && acct.payouts_enabled ? 'enabled' : acct.requirements?.disabled_reason ? 'restricted' : acct.details_submitted ? 'pending' : 'pending';

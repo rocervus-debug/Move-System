@@ -17626,7 +17626,9 @@ function _pvHero(cobradoMes, cobradoMesN, stripe){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px;">
         ${_domiMetric('Cobrado este mes (bruto)', _pvMoney2(ms.gross_mxn), `${ms.count} pago${ms.count===1?'':'s'}`, 'var(--accent)')}
         ${_domiMetric('Comisión de Stripe', '−'+_pvMoney2(ms.fee_mxn), 'procesamiento de tarjeta', 'var(--warn)')}
-        ${_domiMetric('Neto del mes', _pvMoney2(ms.net_mxn), 'tras comisión', 'var(--ok)')}
+        ${ms.refunds_net_mxn ? _domiMetric('Reembolsos', _pvMoney2(ms.refunds_net_mxn), 'efecto neto en Stripe', 'var(--text)') : ''}
+        ${ms.disputes_net_mxn ? _domiMetric('Disputas', _pvMoney2(ms.disputes_net_mxn), 'retiros y restituciones', 'var(--text)') : ''}
+        ${_domiMetric('Neto de cobros del mes', _pvMoney2(ms.net_mxn), ms.refunds_net_mxn === undefined ? 'tras comisión' : 'tras comisiones, reembolsos y disputas', 'var(--ok)')}
         ${_domiMetric('Disponible ahora', _domiMoneyFmt(stripe.available_mxn), 'liberado, aún sin depositar', 'var(--text)')}
       </div>${warnPayouts}`;
   }
