@@ -251,14 +251,16 @@
     window.registerPush = async function (portalToken, supabaseUrl, anonKey) {
       if (!portalToken || !supabaseUrl) return { granted: false, token: null, saved: false };
       try {
-        const perm = await FirebaseMessaging.requestPermissions();
-        if (perm.receive !== 'granted') {
-          console.log('[Bridge] Push: permiso denegado');
-          return { granted: false, token: null, saved: false };
+        let perm = await FirebaseMessaging.checkPermissions();
+        if (perm.receive !== 'granted') perm = await FirebaseMessaging.requestPermissions();
+        if (perm.receive !== 'granted') return { granted: false, saved: false };
+        // On a cold launch APNs can deliver its token after the first FCM request.
+        let token;
+        for (let attempt = 0; attempt < 3 && !token; attempt++) {
+          if (attempt) await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          try { ({ token } = await FirebaseMessaging.getToken()); } catch (_) {}
         }
-        const { token } = await FirebaseMessaging.getToken();
-        if (!token) { console.warn('[Bridge] Push: sin token FCM'); return { granted: true, token: null, saved: false }; }
-        console.log('[Bridge] FCM token:', token.slice(0, 12) + '…');
+        if (!token) return { saved: false, stage: 'token' };
         // Guardar vía edge function (service role): el PATCH directo con anon key lo bloquea
         // el RLS de clientes. El portal_token (secreto) gatea la escritura del lado servidor.
         try {
@@ -281,7 +283,7 @@
         }
       } catch (e) {
         console.warn('[Bridge] Push setup error:', e);
-        return { granted: false, token: null, saved: false };
+        return { saved: false, stage: 'registration' };
       }
     };
   }
