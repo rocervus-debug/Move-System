@@ -4,6 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>VELUM — Gestión Fitness</title>
+<link rel="stylesheet" href="assets/flow-customers/directory.css"/>
+<link rel="stylesheet" href="assets/flow-agenda/agenda.css"/>
+<link rel="stylesheet" href="assets/flow-memberships/catalog.css"/>
+<link rel="stylesheet" href="assets/flow-dashboard/dashboard.css"/>
 
 <!-- ═══ PWA — Web App Manifest ═══ -->
 <link rel="manifest" href="manifest.json"/>
@@ -3502,6 +3506,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
   body:not(.light-mode) #app-wrapper{ background:rgba(14,19,22,.96); }
 }
 </style>
+<link rel="stylesheet" href="assets/flow-shell/shell.css"/>
 </head>
 <body>
 
@@ -3906,6 +3911,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button type="button" class="btn btn-outline" id="flow-dashboard-toggle" aria-expanded="false" aria-controls="flow-dashboard-root" onclick="window.VelumFlowDashboard?.toggle()">Vista Flow</button>
+      </div>
+      <div id="flow-dashboard-root" hidden></div>
+      <div id="dashboard-legacy">
 
       <!-- ══ STRIP DE STUDIOS — KPIs boutique (solo vertical studios) ══ -->
       <div id="studios-dash-strip" style="display:none;"></div>
@@ -4249,6 +4259,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
       <!-- ══ ANALÍTICA DEL GYM — ingresos, retención, planes (al fondo: buena info, pero no debe estorbar al entrar) ══ -->
       <div id="gym-analytics" style="display:none;"></div>
+      </div><!-- /dashboard-legacy -->
     </div><!-- /v-dashboard -->
 
     <!-- ══ ASISTENCIA ══ -->
@@ -4308,6 +4319,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ══ CLIENTES ══ -->
     <div class="view" id="v-clientes">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button type="button" class="btn btn-outline" id="flow-customers-toggle" aria-expanded="false" aria-controls="flow-customers-root" onclick="window.VelumFlowPanel?.toggle()">Vista Flow</button>
+      </div>
+      <div id="flow-customers-root" hidden></div>
+      <div id="clientes-legacy">
       <!-- Buscador -->
       <div class="sh" style="flex-wrap:wrap;gap:10px;margin-bottom:14px;">
         <div class="sh-title">Directorio de Clientes</div>
@@ -4444,6 +4460,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
       </div>
     </div>
+
+    </div><!-- Fin de la vista habitual de clientes -->
 
     <!-- ══ CRM ══ -->
     <div class="view" id="v-crm">
@@ -4673,6 +4691,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button type="button" class="btn btn-outline" id="flow-agenda-toggle" aria-expanded="false" aria-controls="flow-agenda-root" onclick="window.VelumFlowAgenda?.toggle()">Vista Flow</button>
+      </div>
+      <div id="flow-agenda-root" hidden></div>
+      <div id="horario-legacy">
 
       <!-- ═══ STUDIOS · Calendario semanal bespoke (solo studios; reemplaza las tabs genéricas) ═══ -->
       <div id="studios-cal" style="display:none;"></div>
@@ -4722,6 +4745,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
         <div id="nomina-quincena-wrap"></div>
       </div>
+      </div><!-- /horario-legacy -->
     </div>
 
     <!-- ══ COACHES ══ -->
@@ -4767,6 +4791,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ═══ PAQUETES & SERVICIOS — catálogo de planes (sidebar; antes vivía en Config) ═══ -->
     <div class="view" id="v-paquetes">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button type="button" class="btn btn-outline" id="flow-memberships-toggle" aria-expanded="false" aria-controls="flow-memberships-root" onclick="window.VelumFlowMemberships?.toggle()">Vista Flow</button>
+      </div>
+      <div id="flow-memberships-root" hidden></div>
+      <div id="paquetes-legacy">
       <div class="sh">
         <div class="sh-title">Paquetes & Servicios</div>
         <button class="btn btn-primary" onclick="openModal('paquete')">+ Crear paquete</button>
@@ -4775,6 +4804,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <span>◈</span> <strong>Tu catálogo de planes y servicios.</strong> Al registrar un pago, el precio se llena solo al elegir el plan. Crea y edita aquí cuantos necesites.
       </div>
       <div id="paquetes-host"></div>
+      </div>
     </div>
 
     <!-- ═══ RECOVERY · Agenda de citas por recurso (solo vertical recovery) ═══ -->
@@ -9490,6 +9520,10 @@ async function _submitPasswordReset(){
 }
 
 function doLogout(){
+  window.VelumFlowPanel?.close();
+  window.VelumFlowAgenda?.close();
+  window.VelumFlowMemberships?.close();
+  window.VelumFlowDashboard?.close();
   clearSession();
   currentUser = null;
   // Hide coach view
@@ -12101,13 +12135,17 @@ function renderHelpList(query){
   `).join('');
 }
 
-function go(id, el){
+function go(id, el, asistenciaOffset = 0){
   // Guard por rol: cierra la puerta aunque llamen go() desde la consola o desde
   // un botón del nav móvil que sobrevivió al ocultamiento.
   if(typeof roleBlocksView==='function' && roleBlocksView(id)){
     if(typeof toast==='function') toast('No tienes acceso a esta sección','🔒',2500);
     return;
   }
+  if(id !== 'clientes') window.VelumFlowPanel?.close();
+  if(id !== 'horario') window.VelumFlowAgenda?.close();
+  if(id !== 'paquetes') window.VelumFlowMemberships?.close();
+  if(id !== 'dashboard') window.VelumFlowDashboard?.close();
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   // Sync mobile bottom nav active state
@@ -12146,7 +12184,7 @@ function go(id, el){
   if(id==='visitas')     renderVisitas();
   if(id==='retencion')       renderRetencion();
   if(id==='calendario-venc') renderCalVenc();
-  if(id==='asistencia')  { _asistDayOffset=0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); cargarProspectosSemana().then(()=>{ renderAsistDayStrip(); renderAvisoProspectosSemana(); }); cargarBajaOcupacion().then(renderAvisoBajaOcupacion); }
+  if(id==='asistencia')  { _asistDayOffset=Number.isInteger(asistenciaOffset) && asistenciaOffset >= 0 && asistenciaOffset <= 6 ? asistenciaOffset : 0; renderAsistDayStrip(); loadClasesOperativas(); renderAsistHistorial(); loadWaitlistHoy(); cargarProspectosSemana().then(()=>{ renderAsistDayStrip(); renderAvisoProspectosSemana(); }); cargarBajaOcupacion().then(renderAvisoBajaOcupacion); }
   if(id==='campanas')    renderCampanas();
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
@@ -12304,6 +12342,10 @@ async function sbOp(fn){
   }
 }
 function _handleJwtExpiry(){
+  window.VelumFlowPanel?.close();
+  window.VelumFlowAgenda?.close();
+  window.VelumFlowMemberships?.close();
+  window.VelumFlowDashboard?.close();
   clearSession();
   currentUser = null;
   toast('Tu sesión expiró. Vuelve a iniciar sesión.','🔒', 4000);
@@ -20408,6 +20450,10 @@ async function saToggleGym(gymId, nuevoEstado){
 }
 
 async function saContextSwitch(gymId){
+  window.VelumFlowPanel?.close();
+  window.VelumFlowAgenda?.close();
+  window.VelumFlowMemberships?.close();
+  window.VelumFlowDashboard?.close();
   if(gymId === MOVE_GYM_ID){ toast('Ya estás en ese gym.','ℹ️'); closeSaCtxDropdown(); return; }
   closeSaCtxDropdown();
   // El cambio de gym + JWT de contexto se hace DENTRO del try (tras obtener el token de
@@ -22823,7 +22869,7 @@ wizRegister('cita', {
 async function renderRecoveryDash(){
   const host=document.getElementById('recovery-dash'); if(!host) return;
   // Hijos directos del dashboard, menos el propio hero de recovery.
-  const vd=document.getElementById('v-dashboard');
+  const vd=document.getElementById('dashboard-legacy');
   const sibs=vd ? Array.prototype.slice.call(vd.children).filter(c=>c.id!=='recovery-dash') : [];
   if(_gymVertical!=='recovery'){
     host.style.display='none';
@@ -28391,7 +28437,7 @@ async function promoverDeWaitlist(waitlistId){
 async function renderStudiosDash(){
   const strip = document.getElementById('studios-dash-strip');
   if(!strip) return;
-  const vd = document.getElementById('v-dashboard');
+  const vd = document.getElementById('dashboard-legacy');
   const sibs = vd ? Array.prototype.slice.call(vd.children).filter(c=>c.id!=='studios-dash-strip') : [];
   if(typeof _gymVertical==='undefined' || _gymVertical!=='studios'){
     strip.style.display='none'; strip.innerHTML='';
@@ -28494,7 +28540,7 @@ function selStudiosClass(id){ _scSelId=id; renderStudiosCal(); }
 
 async function renderStudiosCal(){
   const host=document.getElementById('studios-cal'); if(!host) return;
-  const vh=document.getElementById('v-horario');
+  const vh=document.getElementById('horario-legacy') || document.getElementById('v-horario');
   const sibs=vh?Array.prototype.slice.call(vh.children).filter(c=>c.id!=='studios-cal'):[];
   if(!_fLugaresP()){
     host.style.display='none';
@@ -31139,5 +31185,16 @@ async function enviarPushNotif(){
 }
 </script>
 
+<script src="assets/flow-customers/directory.js"></script>
+<script src="assets/flow-customers/panel-adapter.js"></script>
+<script src="assets/flow-agenda/model.js"></script>
+<script src="assets/flow-agenda/view.js"></script>
+<script src="assets/flow-agenda/panel-adapter.js"></script>
+<script src="assets/flow-memberships/model.js"></script>
+<script src="assets/flow-memberships/view.js"></script>
+<script src="assets/flow-memberships/panel-adapter.js"></script>
+<script src="assets/flow-dashboard/model.js"></script>
+<script src="assets/flow-dashboard/view.js"></script>
+<script src="assets/flow-dashboard/panel-adapter.js"></script>
 </body>
 </html>
