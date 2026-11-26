@@ -105,6 +105,14 @@
    * Agenda una notificación local 1 hora antes de la clase.
    * Requiere que el usuario haya dado permiso.
    */
+  if (LocalNotifications) {
+    LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
+      const extra = notification?.extra;
+      if (extra?.view === 'clases' || (extra?.fecha && extra.hora && extra.tipo)) {
+        window.abrirVistaDeAviso('clases');
+      }
+    }).catch(e => console.warn('[Bridge] No se pudo escuchar el recordatorio local:', e));
+  }
   window.scheduleClassReminder = async function (tipo, hora, fechaStr) {
     if (!LocalNotifications) return;
     try {
@@ -135,7 +143,7 @@
           schedule: { at: reminderDate },
           smallIcon: 'ic_stat_velum',
           iconColor: '#5DCAA5',
-          extra: { tipo, hora, fecha: fechaStr }
+          extra: { view: 'clases', tipo, hora, fecha: fechaStr }
         }]
       });
     } catch (e) {
@@ -234,9 +242,7 @@
       });
       FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
         const data = (event && event.notification && event.notification.data) || {};
-        if (data.view && typeof window.switchView === 'function') {
-          window.switchView(data.view);
-        }
+        window.abrirVistaDeAviso(data.view);
       });
     } catch (e) { console.warn('[Bridge] Push listeners error:', e); }
 
