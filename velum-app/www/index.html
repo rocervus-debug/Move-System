@@ -2698,7 +2698,7 @@ body::before{
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text1);">Activa las notificaciones</div>
-            <div style="font-size:12px;color:var(--text3);margin-top:2px;">Recibe avisos de clases y tu membresía</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="push-register-status" aria-live="polite">Recibe avisos de clases y tu membresía</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
@@ -4592,7 +4592,7 @@ function showPortal(data){
   // reintentar en el próximo arranque (auto-sanación).
   if(window.registerPush && data.cliente?.portal_token){
     window.registerPush(data.cliente.portal_token, SUPABASE_URL, ANON_KEY)
-      .then(r=>{ if(r && (r.saved || r.granted===false) && typeof _markPushDecided==='function') _markPushDecided(); })
+      .then(r=>{ if(r && r.saved && typeof _markPushDecided==='function') _markPushDecided(); })
       .catch(()=>{});
   }
 
@@ -4729,21 +4729,38 @@ async function registerWebPush(portalToken){
 function _markPushDecided(){ try{ localStorage.setItem('velum_push_done','1'); }catch(_){}; _updatePushPromptBanner(); }
 
 async function requestPushPermission(){
+  const banner = document.getElementById('push-prompt-banner');
+  const status = document.getElementById('push-register-status');
   const token = portalData?.cliente?.portal_token;
-  if(!token) return;
+  if(!token){
+    if(status) status.textContent = 'Vuelve a entrar al portal para registrar este dispositivo.';
+    return;
+  }
   try{
-    // NATIVO: el permiso lo maneja el bridge (Capacitor PushNotifications). La API web
-    // Notification.permission NO es confiable en WKWebView -> por eso el banner no se ocultaba.
-    if(window._isNative && typeof window.registerPush === 'function'){
-      const r = await window.registerPush(token, SUPABASE_URL, ANON_KEY);
-      if(r && r.saved){
-        _markPushDecided();                                   // guardado OK → ocultar banner
-        showToast('Notificaciones activadas','🔔',2500);
-      } else if(r && r.granted===false){
-        _markPushDecided();                                   // el user dijo que no → no insistir
-        showToast('Notificaciones desactivadas. Puedes activarlas en Ajustes del teléfono.','✕',4000);
-      } else {
-        showToast('No se pudo activar. Inténtalo de nuevo en un momento.','✕',3500);
+    if(window._isNative || window.Capacitor?.isNativePlatform?.()){
+      if(banner?.getAttribute('aria-busy') === 'true') return;
+      banner?.setAttribute('aria-busy','true');
+      if(status) status.textContent = 'Registrando este dispositivo…';
+      let timer;
+      try{
+        if(typeof window.registerPush !== 'function') throw new Error('bridge');
+        const result = await Promise.race([
+          window.registerPush(token, SUPABASE_URL, ANON_KEY),
+          new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),20000);})
+        ]);
+        if(result?.saved){
+          _markPushDecided();
+          showToast('Notificaciones activadas','🔔',2500);
+        } else if(status){
+          status.textContent = result?.granted === false ? 'Permite las notificaciones en los ajustes del teléfono.' :
+            result?.stage === 'token' ? 'El teléfono aún no entregó su identificador. Toca para reintentar.' :
+            'No se pudo registrar el dispositivo. Toca para reintentar.';
+        }
+      } catch(_){
+        if(status) status.textContent = 'El registro no respondió. Toca para reintentar.';
+      } finally {
+        clearTimeout(timer);
+        banner?.removeAttribute('aria-busy');
       }
       return;
     }

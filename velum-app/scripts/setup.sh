@@ -70,6 +70,13 @@ if [[ "$OSTYPE" == "darwin"* ]] && [ -d "ios" ]; then
   echo "🍎  Aplicando config iOS adicional…"
 
   # Info.plist — permisos de cámara y notificaciones
+  delegate="ios/App/App/AppDelegate.swift"
+  if ! grep -q 'didRegisterForRemoteNotificationsWithDeviceToken' "$delegate"; then
+    cat native/ios/register.swift >> "$delegate"
+  fi
+  if ! grep -q 'didFailToRegisterForRemoteNotificationsWithError' "$delegate"; then
+    cat native/ios/registration-error.swift >> "$delegate"
+  fi
   PLIST="ios/App/App/Info.plist"
   if [ -f "$PLIST" ]; then
     # Camera permission
