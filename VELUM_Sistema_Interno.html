@@ -1872,6 +1872,7 @@ select option{background:var(--bg-card);color:var(--text);}
   color:var(--text);font-size:var(--fs-sm);font-family:var(--font);
   outline:none;transition:all .18s;width:260px;
 }
+#fis-retry[hidden]{display:none;}
 .settings-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);}
 
 /* ── Theme Picker ── */
@@ -5935,40 +5936,53 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
             <div>
               <h2 class="card-title">Datos de facturación (CFDI)</h2>
               <p style="font-size:var(--fs-sm);color:var(--text2);margin-top:6px;line-height:1.5;">
-                Para que VELUM emita la factura de tu suscripción. Guárdalos una vez; el timbrado automático llega pronto.
+                Guarda los datos que usarás para facturar tu suscripción de VELUM.
               </p>
             </div>
           </div>
           <div style="padding:0 20px 20px;">
-            <div class="field"><label>RFC</label><input id="fis-rfc" class="settings-input" maxlength="13" placeholder="XAXX010101000" style="text-transform:uppercase;"/></div>
-            <div class="field"><label>Razón social / Nombre</label><input id="fis-razon" class="settings-input" placeholder="Como aparece en tu Constancia de Situación Fiscal"/></div>
-            <div class="field-grid">
-              <div class="field"><label>Régimen fiscal</label>
-                <select id="fis-regimen" class="settings-input">
-                  <option value="">Selecciona…</option>
-                  <option value="626">626 · RESICO (Simplificado de Confianza)</option>
-                  <option value="612">612 · Persona Física c/ Actividad Empresarial</option>
-                  <option value="601">601 · General de Ley Personas Morales</option>
-                  <option value="603">603 · Personas Morales sin Fines de Lucro</option>
-                  <option value="621">621 · Incorporación Fiscal</option>
-                  <option value="605">605 · Sueldos y Salarios</option>
-                </select>
+            <fieldset id="fis-fields" disabled style="border:0;padding:0;margin:0;min-width:0;">
+              <div class="field"><label for="fis-rfc">RFC</label><input id="fis-rfc" class="settings-input" maxlength="13" placeholder="XAXX010101000" style="text-transform:uppercase;"/></div>
+              <div class="field"><label for="fis-razon">Razón social / Nombre</label><input id="fis-razon" class="settings-input" placeholder="Como aparece en tu Constancia de Situación Fiscal"/></div>
+              <div class="field-grid">
+                <div class="field"><label for="fis-regimen">Régimen fiscal</label>
+                  <select id="fis-regimen" class="settings-input">
+                    <option value="">Selecciona…</option>
+                    <option value="626">626 · RESICO (Simplificado de Confianza)</option>
+                    <option value="612">612 · Persona Física c/ Actividad Empresarial</option>
+                    <option value="601">601 · General de Ley Personas Morales</option>
+                    <option value="603">603 · Personas Morales sin Fines de Lucro</option>
+                    <option value="621">621 · Incorporación Fiscal</option>
+                    <option value="605">605 · Sueldos y Salarios</option>
+                  </select>
+                </div>
+                <div class="field"><label for="fis-uso">Uso de CFDI</label>
+                  <select id="fis-uso" class="settings-input">
+                    <option value="G03">G03 · Gastos en general</option>
+                    <option value="G01">G01 · Adquisición de mercancías</option>
+                    <option value="S01">S01 · Sin efectos fiscales</option>
+                    <option value="CP01">CP01 · Pagos</option>
+                  </select>
+                </div>
               </div>
-              <div class="field"><label>Uso de CFDI</label>
-                <select id="fis-uso" class="settings-input">
-                  <option value="G03">G03 · Gastos en general</option>
-                  <option value="G01">G01 · Adquisición de mercancías</option>
-                  <option value="S01">S01 · Sin efectos fiscales</option>
-                  <option value="CP01">CP01 · Pagos</option>
-                </select>
+              <div class="field-grid">
+                <div class="field"><label for="fis-cp">Código postal fiscal</label><input id="fis-cp" class="settings-input" maxlength="5" inputmode="numeric" pattern="[0-9]{5}" placeholder="37000"/></div>
+                <div class="field"><label for="fis-email">Email para facturas</label><input id="fis-email" type="email" class="settings-input" placeholder="facturas@tugym.com"/></div>
               </div>
-            </div>
-            <div class="field-grid">
-              <div class="field"><label>Código postal fiscal</label><input id="fis-cp" class="settings-input" maxlength="5" placeholder="37000"/></div>
-              <div class="field"><label>Email para facturas</label><input id="fis-email" type="email" class="settings-input" placeholder="facturas@tugym.com"/></div>
-            </div>
-            <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveFiscalData(this)">Guardar datos fiscales</button>
-            <div id="fis-msg" style="font-size:var(--fs-xs);margin-top:10px;display:none;"></div>
+              <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="saveFiscalData(this)">Guardar datos fiscales</button>
+            </fieldset>
+            <div id="fis-msg" role="status" style="font-size:var(--fs-xs);margin-top:10px;display:none;"></div>
+            <button id="fis-retry" type="button" class="btn btn-outline" hidden onclick="renderFiscalData()">Volver a cargar datos fiscales</button>
+            <form onsubmit="enviarSolicitudFiscal(event)" style="margin-top:18px;">
+              <div class="field">
+                <label for="fis-periodo">Mes del cobro a facturar</label>
+                <input id="fis-periodo" class="settings-input" type="month" required pattern="[0-9]{4}-(0[1-9]|1[0-2])"/>
+              </div>
+              <button class="btn btn-outline" type="submit">Solicitar CFDI</button>
+              <p id="fis-solicitud-msg" role="status"></p>
+            </form>
+            <h3>Mis solicitudes de factura</h3>
+            <div id="fis-solicitudes" aria-live="polite"></div>
           </div>
         </div>
 
@@ -6212,6 +6226,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <div style="font-size:var(--fs-sm);color:var(--text3);">Acceso restringido. Solo visible para usuarios con rol superadmin.</div>
         </div>
       </div>
+      <section class="card" style="margin-bottom:16px;padding:16px;">
+        <h2 class="card-title">Solicitudes de CFDI pendientes</h2>
+        <p>Marca la solicitud como atendida cuando hayas enviado la factura al gimnasio.</p>
+        <div id="sa-cfdi" aria-live="polite"></div>
+      </section>
       <div id="sa-kpis" class="kpi-grid"></div>
       <!-- ══ MÉTRICAS DEL NEGOCIO VELUM (SaaS) ══ -->
       <div class="card" style="margin-bottom:16px;">
@@ -9295,8 +9314,6 @@ async function renderSuscripcion(){
   const desc = document.getElementById('suscripcion-status-desc');
   if (desc) desc.textContent = isOwner ? 'Cortesía · acceso completo' : `${info.nombre} · ${status||'—'}`;
 
-  // Cargar datos fiscales (CFDI) del gym
-  if (typeof renderFiscalData === 'function') renderFiscalData();
 }
 
 // ── Cancelar suscripción (self-service, al final del periodo) ──
@@ -9324,38 +9341,196 @@ async function cancelarSuscripcion(btn){
 }
 
 // ── Datos fiscales (CFDI) — recolectar ahora, timbrar después ──
+let fiscalLoad = 0;
+
+function fiscalMessage(text, color){
+  const msg = document.getElementById('fis-msg');
+  msg.style.display = text ? 'block' : 'none';
+  msg.style.color = color;
+  msg.textContent = text;
+}
+
 async function renderFiscalData(){
+  const fields = document.getElementById('fis-fields');
+  const retry = document.getElementById('fis-retry');
+  if (!currentUser?.gym_id || !['admin','superadmin'].includes(currentUser.rol)) return;
+  const gymId = String(currentUser.gym_id);
+  if (fields.dataset.saving === gymId) return;
+  const load = ++fiscalLoad;
+  const stillCurrent = () => load === fiscalLoad && String(currentUser?.gym_id) === gymId;
+  delete fields.dataset.saving;
+  const gymChanged = fields.dataset.gymId !== gymId;
+  fields.dataset.gymId = gymId;
+  fields.dataset.gymName = '';
+  fields.disabled = true;
+  setBtnLoading(fields.querySelector('button'), false);
+  if (gymChanged){
+    document.getElementById('fis-periodo').value = '';
+    document.getElementById('fis-solicitud-msg').textContent = '';
+  }
+  cargarSolicitudesFiscales();
+  for (const option of fields.querySelectorAll('option[data-saved]')) option.remove();
+  for (const field of fields.querySelectorAll('input,select')) field.value = '';
+  retry.hidden = true;
+  fiscalMessage('Cargando datos fiscales…', 'var(--text2)');
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${currentUser.gym_id}&select=rfc,razon_social,regimen_fiscal,uso_cfdi,cp_fiscal,email_fiscal`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${gymId}&select=nombre,rfc,razon_social,regimen_fiscal,uso_cfdi,cp_fiscal,email_fiscal`, {
       headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
     });
-    const rows = await res.json();
-    const g = (Array.isArray(rows) && rows[0]) || {};
-    const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
-    set('fis-rfc', g.rfc); set('fis-razon', g.razon_social); set('fis-cp', g.cp_fiscal); set('fis-email', g.email_fiscal);
-    const reg = document.getElementById('fis-regimen'); if (reg && g.regimen_fiscal) reg.value = g.regimen_fiscal;
-    const uso = document.getElementById('fis-uso'); if (uso && g.uso_cfdi) uso.value = g.uso_cfdi;
-  } catch(e){ console.warn('renderFiscalData:', e); }
+    if (!res.ok) throw Error();
+    const [gym] = await res.json();
+    if (!gym) throw Error();
+    if (!stillCurrent()) return;
+    fields.dataset.gymName = gym.nombre || '';
+    for (const [id, value] of Object.entries({
+      'fis-rfc': gym.rfc, 'fis-razon': gym.razon_social, 'fis-cp': gym.cp_fiscal,
+      'fis-email': gym.email_fiscal, 'fis-regimen': gym.regimen_fiscal, 'fis-uso': gym.uso_cfdi || 'G03'
+    })) {
+      const field = document.getElementById(id);
+      if (field.options && value && !Array.from(field.options).some(option => option.value === value)) {
+        const saved = new Option(value, value);
+        saved.dataset.saved = '';
+        field.add(saved);
+      }
+      field.value = value || '';
+    }
+    fields.disabled = false;
+    fiscalMessage('', '');
+  } catch {
+    if (!stillCurrent()) return;
+    fiscalMessage('No se pudieron cargar los datos fiscales.', 'var(--warn)');
+    retry.hidden = false;
+  }
 }
 
 async function saveFiscalData(btn){
-  if(btn?.disabled) return;
-  const msg = document.getElementById('fis-msg');
-  const show = (txt, color) => { if(msg){ msg.style.display='block'; msg.style.color=color; msg.textContent=txt; } };
-  const rfc = (document.getElementById('fis-rfc').value||'').trim().toUpperCase();
-  if (rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc)) { show('El RFC no parece válido. Revísalo.', 'var(--warn,var(--warn))'); return; }
+  const fields = document.getElementById('fis-fields');
+  const gymId = String(currentUser?.gym_id);
+  if (btn?.disabled || fields.disabled || fields.dataset.gymId !== gymId) return;
+  const rfc = document.getElementById('fis-rfc').value.trim().toUpperCase();
+  if (rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc)) {
+    fiscalMessage('El RFC no parece válido. Revísalo.', 'var(--warn)');
+    document.getElementById('fis-rfc').focus();
+    return;
+  }
+  for (const input of fields.querySelectorAll('input')) {
+    input.value = input.value.trim();
+    if (!input.reportValidity()) return;
+  }
+  const load = fiscalLoad;
+  fields.dataset.saving = gymId;
+  fields.disabled = true;
   setBtnLoading(btn, true);
-  const { error } = await window.supabaseClient.rpc('update_gym_fiscal_data', {
-    p_rfc: rfc,
-    p_razon: (document.getElementById('fis-razon').value||'').trim(),
-    p_regimen: document.getElementById('fis-regimen').value || '',
-    p_uso: document.getElementById('fis-uso').value || '',
-    p_cp: (document.getElementById('fis-cp').value||'').trim(),
-    p_email: (document.getElementById('fis-email').value||'').trim(),
-  });
-  if (error) { setBtnLoading(btn,false); show('Error al guardar: ' + error.message, '#ff8a80'); return; }
-  show('✓ Datos fiscales guardados.', 'var(--ok,var(--ok))');
-  setBtnLoading(btn, false);
+  try {
+    const { error } = await window.supabaseClient.rpc('update_gym_fiscal_data', {
+      p_rfc: rfc,
+      p_razon: document.getElementById('fis-razon').value,
+      p_regimen: document.getElementById('fis-regimen').value,
+      p_uso: document.getElementById('fis-uso').value,
+      p_cp: document.getElementById('fis-cp').value,
+      p_email: document.getElementById('fis-email').value
+    });
+    if (error) throw error;
+    if (load === fiscalLoad && String(currentUser?.gym_id) === gymId) {
+      document.getElementById('fis-rfc').value = rfc;
+      fiscalMessage('Datos fiscales guardados.', 'var(--ok)');
+    }
+  } catch {
+    if (load === fiscalLoad && String(currentUser?.gym_id) === gymId) {
+      fiscalMessage('No se pudieron guardar los datos. Revisa la conexión y vuelve a intentarlo.', 'var(--warn)');
+    }
+  } finally {
+    if (load === fiscalLoad) {
+      delete fields.dataset.saving;
+      fields.disabled = false;
+      setBtnLoading(btn, false);
+    }
+  }
+}
+
+async function cargarSolicitudesFiscales(gyms){
+  const bandeja = Array.isArray(gyms);
+  const usuario = currentUser;
+  if(!usuario?.gym_id || !['admin','superadmin'].includes(usuario.rol) || (bandeja && usuario.rol !== 'superadmin')) return;
+  const contenedor = document.getElementById(bandeja ? 'sa-cfdi' : 'fis-solicitudes');
+  const peticion = String(Number(contenedor.dataset.peticion || 0) + 1);
+  contenedor.dataset.peticion = peticion;
+  const gymId = usuario.gym_id;
+  const vigente = () => currentUser === usuario && currentUser.gym_id === gymId && contenedor.dataset.peticion === peticion;
+  contenedor.textContent = 'Cargando solicitudes…';
+  try{
+    let consulta = window.supabaseClient.from('solicitudes_cfdi_suscripcion').select('id,gym_id,periodo,atendida');
+    consulta = bandeja ? consulta.eq('atendida',false).order('creada_en').limit(50)
+                       : consulta.eq('gym_id',usuario.gym_id).order('periodo',{ascending:false}).limit(12);
+    const {data,error} = await consulta;
+    if(error) throw error;
+    if(!vigente()) return;
+    contenedor.textContent = data.length ? '' : (bandeja ? 'Sin solicitudes pendientes.' : 'Aún no tienes solicitudes.');
+    for(const fila of data){
+      const bloque = document.createElement('div');
+      bloque.className = 'field';
+      const gym = bandeja && gyms.find(g => String(g.id) === String(fila.gym_id));
+      const titulo = document.createElement('strong');
+      titulo.textContent = [bandeja && (gym?.nombre || 'Gimnasio #' + fila.gym_id), fila.periodo.slice(0,7), fila.atendida ? 'Atendida' : 'Pendiente'].filter(Boolean).join(' · ');
+      const folio = document.createElement('small');
+      folio.textContent = 'Folio ' + fila.id;
+      bloque.append(titulo,folio);
+      if(bandeja){
+        const fiscal = document.createElement('div');
+        const datos = gym && {'RFC':gym.rfc,'Razón social':gym.razon_social,'Régimen':gym.regimen_fiscal,
+          'Uso de CFDI':gym.uso_cfdi,'C.P.':gym.cp_fiscal,'Correo':gym.email_fiscal};
+        fiscal.textContent = datos ? Object.entries(datos).map(([campo,valor]) => campo + ': ' + (valor || 'Sin registrar')).join(' · ') : 'Datos fiscales no disponibles.';
+        const boton = document.createElement('button');
+        boton.type = 'button'; boton.className = 'btn btn-outline'; boton.textContent = 'Marcar como atendida';
+        boton.onclick = async () => {
+          if(!vigente() || boton.disabled) return;
+          boton.disabled = true;
+          try{
+            const {error} = await window.supabaseClient.from('solicitudes_cfdi_suscripcion').update({atendida:true}).eq('id',fila.id).eq('atendida',false);
+            if(error) throw error;
+            if(vigente()) await cargarSolicitudesFiscales(gyms);
+          }catch{ if(vigente()){ boton.disabled = false; toast('No se pudo actualizar la solicitud. Vuelve a intentar.'); } }
+        };
+        bloque.append(fiscal,boton);
+      }
+      contenedor.append(bloque);
+    }
+  }catch{
+    if(!vigente()) return;
+    contenedor.textContent = 'No pudimos cargar las solicitudes. ';
+    const boton = document.createElement('button');
+    boton.className = 'btn btn-outline'; boton.textContent = 'Volver a cargar';
+    boton.onclick = () => cargarSolicitudesFiscales(gyms);
+    contenedor.append(boton);
+  }
+}
+
+async function enviarSolicitudFiscal(event){
+  event.preventDefault();
+  const usuario = currentUser;
+  if(!usuario?.gym_id || !['admin','superadmin'].includes(usuario.rol)) return;
+  const form = event.currentTarget, boton = form.querySelector('button'), mes = document.getElementById('fis-periodo');
+  if(boton.disabled || !mes.reportValidity()) return;
+  const periodo = mes.value + '-01';
+  const mensaje = document.getElementById('fis-solicitud-msg');
+  if(!/^\d{4}-(0[1-9]|1[0-2])-01$/.test(periodo) || mes.value > _hoyMX().slice(0,7)){
+    mensaje.textContent = 'Elige el mes de un cobro actual o anterior.'; return;
+  }
+  boton.disabled = true;
+  mensaje.textContent = 'Registrando solicitud…';
+  try{
+    const tabla = () => window.supabaseClient.from('solicitudes_cfdi_suscripcion');
+    let {data,error} = await tabla().insert({periodo}).select('id,atendida').single();
+    if(error?.code === '23505' && currentUser === usuario){
+      ({data,error} = await tabla().select('id,atendida').eq('gym_id',usuario.gym_id).eq('periodo',periodo).single());
+    }
+    if(error || !data) throw error;
+    if(currentUser !== usuario) return;
+    mensaje.textContent = 'Solicitud ' + (data.atendida ? 'atendida' : 'registrada') + ' para ' + periodo.slice(0,7) + '. Folio ' + data.id + '.';
+    await cargarSolicitudesFiscales();
+  }catch{
+    if(currentUser === usuario) mensaje.textContent = 'No pudimos confirmar la solicitud. Puedes volver a intentar con el mismo mes.';
+  }finally{ boton.disabled = false; }
 }
 
 async function openBillingPortal(){
@@ -11918,7 +12093,7 @@ function openSettingsPanel(id){
   if(id === 'storefront'){
     if(typeof loadStorefrontPanel === 'function') loadStorefrontPanel();
   }
-  if(id === 'stripe'){ renderStripeSettings(); renderSuscripcion(); }
+  if(id === 'stripe'){ renderStripeSettings(); renderSuscripcion(); renderFiscalData(); }
   if(id === 'menu')       renderSidebarCustomizer();
   if(id === 'personalizacion') renderThemeGrid();
   if(id === 'portal')     updatePortalLinkBox();
@@ -12104,7 +12279,7 @@ const _HELP_DATA = [
   { cat:'Operación', q:'¿Cómo funciona el check-in y el código QR?', a:'En Asistencia registras la entrada de cada atleta. Tus clientes también pueden mostrar su QR desde la app para hacer check-in rápido sin filas. Cada check-in cuenta para sus rachas y su historial.' },
   { cat:'Operación', q:'¿Cómo armo el horario de clases?', a:'Ve a Horario Semanal. Crea cada clase con día, hora, coach y cupo. Esas clases aparecen en la app del atleta para que reserven su lugar, y en tu calendario.' },
   { cat:'Operación', q:'¿Qué ven mis clientes en la app?', a:'La app del atleta muestra su clase de hoy, el horario para reservar, su plan de entrenamiento, su progreso (asistencia y rachas), el chat con Aura y la opción de renovar su membresía. Se ve con el logo y color de tu gym.' },
-  { cat:'Cuenta y facturación', q:'¿Cómo agrego mis datos de facturación (CFDI)?', a:'Ve a Mi Suscripción → Datos fiscales y captura tu RFC, razón social, régimen, uso de CFDI y código postal. Esto prepara tu cuenta para emitir facturas (el timbrado automático se activa más adelante).' },
+  { cat:'Cuenta y facturación', q:'¿Cómo agrego mis datos de facturación (CFDI)?', a:'Ve a Mi Suscripción → Datos fiscales y captura tu RFC, razón social, régimen, uso de CFDI y código postal. Guarda los datos, elige el mes del cobro y pulsa Solicitar CFDI y consulta ahí mismo el folio y su estado.' },
   { cat:'Cuenta y facturación', q:'¿Cuántos clientes puedo tener según mi plan?', a:'El plan Pro permite hasta 60 atletas y 3 coaches; el plan Max amplía esos límites y baja la comisión de cobro en línea a 0%. Si llegas al tope, el sistema te avisa al intentar dar de alta a alguien más.' },
   { cat:'Cuenta y facturación', q:'¿Qué pasa si no pago mi suscripción de VELUM?', a:'Tienes 3 días de gracia tras el vencimiento. Después, tu panel de administración se bloquea hasta regularizar el pago — pero tu página pública y la app de tus clientes siguen funcionando, así no afecta a tus atletas.' },
 ];
@@ -20015,6 +20190,7 @@ async function renderSuperAdmin(){
     toast('No se pudieron cargar los gyms: '+errMsg,'✕');
   }
   const allGyms = gymsData || [];
+  cargarSolicitudesFiscales(allGyms);
   _saGymsCache = allGyms; // cache for context switcher dropdown
   updateSaCtxLabel();
   const gymVersion = '2.0.0-saas';
