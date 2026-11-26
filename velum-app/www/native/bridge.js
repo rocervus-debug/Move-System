@@ -106,12 +106,12 @@
    * Requiere que el usuario haya dado permiso.
    */
   if (LocalNotifications) {
-    LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
+    Promise.resolve(LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
       const extra = notification?.extra;
       if (extra?.view === 'clases' || (extra?.fecha && extra.hora && extra.tipo)) {
         window.abrirVistaDeAviso('clases');
       }
-    }).catch(e => console.warn('[Bridge] No se pudo escuchar el recordatorio local:', e));
+    })).catch(e => console.warn('[Bridge] No se pudo escuchar el recordatorio local:', e));
   }
   window.scheduleClassReminder = async function (tipo, hora, fechaStr) {
     if (!LocalNotifications) return;

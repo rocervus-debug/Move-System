@@ -16,7 +16,9 @@ function telefono(platform){
   const navegacion = [];
   const listeners = {};
   const app = { style: { display: 'none' } };
-  const plugin = { addListener(nombre, callback){ listeners[nombre] = callback; return Promise.resolve(); } };
+  const plugin = { addListener(nombre, callback){ listeners[nombre] = callback;
+    const handle = { remove: async () => { delete listeners[nombre]; } };
+    return platform === 'ios' ? handle : Promise.resolve(handle); } };
   const ctx = vm.createContext({
     console: { log(){}, warn(){} }, portalData: null,
     document: { querySelector(){ return null; }, addEventListener(){}, getElementById(id){
@@ -30,6 +32,7 @@ function telefono(platform){
   ctx.window = ctx;
   vm.runInContext(portal.slice(start, end), ctx);
   vm.runInContext(bridge, ctx);
+  assert.equal(typeof ctx.registerPush, 'function');
   return { listeners, navegacion, entrar(){
     ctx.portalData = { cliente: {} };
     app.style.display = 'flex';
