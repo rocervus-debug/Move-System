@@ -8803,6 +8803,52 @@ function limpiarEmail(v){
     .toLowerCase();
 }
 
+// El acceso sólo queda activo cuando la API reconoce la sesión del personal.
+let intentoAcceso = 0;
+async function activarSesionPersonal(session, intento, restaurada){
+  const expirada = 'Tu sesión expiró. Vuelve a iniciar sesión.';
+  const temporal = 'No pudimos conectar con los datos del gimnasio. Revisa tu conexión y vuelve a intentar.';
+  function rechazar(mensaje, definitiva){
+    if(intento === intentoAcceso){
+      if(restaurada && definitiva) clearSession();
+      const error = document.getElementById('login-error');
+      error.textContent = mensaje;
+      error.classList.add('show');
+    }
+    return false;
+  }
+  if(!session.jwt || isJwtExpired(session.jwt) || !session.id || !session.gym_id){
+    return rechazar(expirada, true);
+  }
+  try{
+    const cliente = crearClientePersonal(session.jwt);
+    const { data: persona, error, status } = await cliente.from('usuarios')
+      .select('id,nombre,email,rol,gym_id,pw_version')
+      .eq('id',session.id).eq('gym_id',session.gym_id).eq('activo',true).maybeSingle();
+    if(intento !== intentoAcceso) return false;
+    if(error){
+      if(status === 401 || status === 403){
+        return rechazar('El servicio de datos rechazó tu sesión. Vuelve a ingresar. Si persiste, contacta a soporte.', true);
+      }
+      return rechazar(temporal, false);
+    }
+    if(!persona || persona.rol !== session.rol ||
+       (restaurada && (persona.pw_version ?? 1) !== (session.pw_version ?? 1))){
+      return rechazar('Tu acceso cambió. Vuelve a iniciar sesión.', true);
+    }
+    const confirmada = { ...session, ...persona };
+    setSession(confirmada);
+    window.supabaseClient = cliente;
+    currentUser = confirmada;
+    MOVE_GYM_ID = persona.gym_id;
+    _realJwt = confirmada.jwt;
+    _realGymId = persona.gym_id;
+    return true;
+  } catch(_){
+    return rechazar(temporal, false);
+  }
+}
+
 async function doLogin(totpCode){
   const email = limpiarEmail(document.getElementById('login-email').value);
   const pass  = document.getElementById('login-pass').value;
@@ -8810,6 +8856,8 @@ async function doLogin(totpCode){
   errEl.classList.remove('show');
   if(!email||!pass){ errEl.textContent='Completa todos los campos.'; errEl.classList.add('show'); return; }
   const btn = document.querySelector('.login-btn');
+  if(btn.disabled) return;
+  const intento = ++intentoAcceso;
   btn.textContent = 'Verificando…'; btn.disabled = true;
   try{
     const pw_hash = await hashPassword(pass);
@@ -8839,16 +8887,11 @@ async function doLogin(totpCode){
       btn.textContent = 'ENTRAR'; btn.disabled = false;
       return;
     }
-    // ── Init authenticated Supabase client with signed JWT (RLS now enforced) ──
-    initAuthClient(result.token);
-    const session = { ...result.user, jwt: result.token };
-    setSession(session);
-    currentUser = session;
-    MOVE_GYM_ID = session.gym_id;
-    _realJwt = session.jwt; _realGymId = session.gym_id;   // ancla de la sesión real (contexto)
-    auditLog('LOGIN','usuarios', session.id, `Login desde ${navigator.platform||'web'}`);
-    // Guard: verify gym_id is present before firing queries (prevents data bleed on misconfigured sessions)
-    if(!MOVE_GYM_ID){ errEl.textContent='Error: sesión sin gym_id — contacta soporte.'; errEl.classList.add('show'); currentUser=null; MOVE_GYM_ID=null; clearSession(); btn.textContent='ENTRAR'; btn.disabled=false; return; }
+    if(!await activarSesionPersonal({ ...result.user, jwt: result.token }, intento, false)){
+      btn.textContent = 'ENTRAR'; btn.disabled = false;
+      return;
+    }
+    auditLog('LOGIN','usuarios',currentUser.id, `Login desde ${navigator.platform||'web'}`);
     // Reload all data filtered by the correct gym_id before showing app
     // Críticos para el primer render (dashboard + branding + auto-gastos). El primer paint
     // espera solo por estos, no por las 16 tablas.
@@ -8856,9 +8899,11 @@ async function doLogin(totpCode){
       loadConfigFromSupabase(), loadLeadsFromSupabase(), loadCoachesFromSupabase(),
       loadPagosFromSupabase(), loadClientesFromSupabase(), loadCampanasFromSupabase(),
       loadSolicitudesFromSupabase(), loadContenidosFromSupabase(), loadHorarioFromSupabase(),
+      loadHorarioOverridesFromSupabase(), loadHorarioCancelaciones(),
       loadGastosFromSupabase(), loadVisitasFromSupabase()
     ]);
     await autoCrearGastosRecurrentes();
+    try { initDashboardCustomize(); } catch(e){ console.warn('dash init:', e); }
     showApp();
     initRealtimeSubscriptions();
     // Diferidos: no bloquean el primer paint. Cada uno lo consume su vista al abrirse
@@ -9490,22 +9535,15 @@ async function _submitPasswordReset(){
 }
 
 function doLogout(){
+  ++intentoAcceso;
   clearSession();
   currentUser = null;
-  // Hide coach view
+  MOVE_GYM_ID = null;
+  _realJwt = null;
+  _realGymId = null;
+  document.getElementById('app-wrapper').style.display = 'none';
   document.getElementById('coach-screen').classList.remove('visible');
-  closeCoachDetail();
-  // Ocultar app, mostrar login
-  const aw = document.getElementById('app-wrapper');
-  if(aw) aw.style.display = 'none';
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('login-email').value='';
-  document.getElementById('login-pass').value='';
-  // Reset main app nav
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('v-dashboard').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('nav-dashboard').classList.add('active');
+  window.location.reload();
 }
 
 function showApp(){
@@ -26772,96 +26810,55 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // Snapshot original nav items before any data-driven changes
   _initOrigNavItems();
 
-  await new Promise(r => setTimeout(r, 150));
-
-  // ── STEP 1: Auth check FIRST — set MOVE_GYM_ID before any data load ──
-  // CRITICAL: gf() uses MOVE_GYM_ID to filter queries by gym.
-  // If data loads before knowing which gym, ALL gyms' data leaks in (multi-tenancy breach).
+  const intento = intentoAcceso;
   const session = getSession();
-  if(session){
-    // ── JWT expiry check BEFORE any data load ──
-    if(session.jwt && isJwtExpired(session.jwt)){
-      clearSession();
-      toast('Tu sesión expiró. Por favor vuelve a iniciar sesión.','🔒', 4000);
-      // Skip to login screen — don't load any data
-      const _aw = document.getElementById('app-wrapper');
-      if(_aw) _aw.style.display = 'none';
-      document.getElementById('login-screen').classList.remove('hidden');
-      return;
-    }
-    // Restore JWT-authenticated client if we have a stored token
-    if(session.jwt){
-      initAuthClient(session.jwt);
-    }
+  if(session && intento === 0){
+    const boton = document.querySelector('.login-btn');
+    boton.disabled = true;
     try{
-      const { data: freshUser } = await window.supabaseClient
-        .from('usuarios').select('id,nombre,email,rol,gym_id,pw_version').eq('email', session.email).eq('activo', true).single();
-      if(freshUser){
-        // ── pw_version check: if password changed elsewhere, force logout ──
-        const sessionPwVersion = session.pw_version ?? 1;
-        const dbPwVersion      = freshUser.pw_version ?? 1;
-        if(dbPwVersion !== sessionPwVersion){
-          clearSession();
-          currentUser = null;
-          toast('Tu contraseña fue cambiada. Por favor vuelve a iniciar sesión.','🔒');
-        } else {
-          const updated = { ...session, id: freshUser.id, nombre: freshUser.nombre, email: freshUser.email, rol: freshUser.rol, gym_id: freshUser.gym_id || 1, pw_version: dbPwVersion };
-          setSession(updated);
-          currentUser = updated;
-          MOVE_GYM_ID = updated.gym_id;
-          _realJwt = updated.jwt; _realGymId = updated.gym_id;   // ancla de la sesión real (contexto)
-        }
-      } else {
-        clearSession();
-        currentUser = null;
+      if(await activarSesionPersonal(session, intento, true)){
+        await Promise.all([
+          loadConfigFromSupabase(),
+          loadLeadsFromSupabase(),
+          loadCoachesFromSupabase(),
+          loadEvalsFromSupabase(),
+          loadPagosFromSupabase(),
+          loadClientesFromSupabase(),
+          loadCampanasFromSupabase(),
+          loadSolicitudesFromSupabase(),
+          loadContenidosFromSupabase(),
+          loadHorarioFromSupabase(),
+          loadHorarioOverridesFromSupabase(),
+          loadHorarioCancelaciones(),
+          loadGastosFromSupabase(),
+          loadProgramasFromSupabase(),
+          loadProgConfigFromSupabase(),
+          loadLeadsLandingFromSupabase(),
+          loadVisitasFromSupabase(),
+        ]);
+        renderDashboard();
+        renderCoaches();
+        renderEvalSelects();
+        renderEvalHistory();
+        renderPagos();
+        renderMembresiasAlert();
+        renderClientes();
+        renderCampanas();
+        renderSolicitudes();
+        renderCalendario();
+        renderLeadsLanding();
+        updateBadges();
+
+        // Init dashboard layout (after render so elements exist)
+        try { initDashboardCustomize(); } catch(e){ console.warn('dash init:', e); }
+
+        // ── STEP 3: Show app ──
+        showApp();
+        initRealtimeSubscriptions();
+        setTimeout(()=>{ if(typeof renderOnboardingCard==='function') renderOnboardingCard(); if(typeof renderGymAnalytics==='function') renderGymAnalytics(); }, 600);
       }
-    } catch(e){
-      // DB unreachable — fall back to cached session
-      currentUser = session;
-      MOVE_GYM_ID = session.gym_id || 1;
-      _realJwt = session.jwt; _realGymId = session.gym_id || 1;
-    }
+    } finally { boton.disabled = false; }
   }
-
-  // ── STEP 2: Load data — MOVE_GYM_ID is now set, gf() will filter correctly ──
-  await Promise.all([
-    loadConfigFromSupabase(),
-    loadLeadsFromSupabase(),
-    loadCoachesFromSupabase(),
-    loadEvalsFromSupabase(),
-    loadPagosFromSupabase(),
-    loadClientesFromSupabase(),
-    loadCampanasFromSupabase(),
-    loadSolicitudesFromSupabase(),
-    loadContenidosFromSupabase(),
-    loadHorarioFromSupabase(),
-    loadHorarioOverridesFromSupabase(),
-    loadHorarioCancelaciones(),
-    loadGastosFromSupabase(),
-    loadProgramasFromSupabase(),
-    loadProgConfigFromSupabase(),
-    loadLeadsLandingFromSupabase(),
-    loadVisitasFromSupabase(),
-  ]);
-  renderDashboard();
-  renderCoaches();
-  renderEvalSelects();
-  renderEvalHistory();
-  renderPagos();
-  renderMembresiasAlert();
-  renderClientes();
-  renderCampanas();
-  renderSolicitudes();
-  renderCalendario();
-  renderLeadsLanding();
-  updateBadges();
-
-  // Init dashboard layout (after render so elements exist)
-  try { initDashboardCustomize(); } catch(e){ console.warn('dash init:', e); }
-
-  // ── STEP 3: Show app ──
-  if(currentUser){ showApp(); try{ setTimeout(()=>{ if(typeof renderOnboardingCard==='function') renderOnboardingCard(); if(typeof renderGymAnalytics==='function') renderGymAnalytics(); }, 600); }catch(_){} }
-  // else: login screen remains visible (it's shown by default in CSS)
 
   document.addEventListener('click',e=>{
     if(!e.target.closest('#detailPanel')&&!e.target.closest('.tbl td'))
@@ -27074,15 +27071,14 @@ async function enviarEmailsVencimiento(){
   window._EDGE_BASE    = `${supabaseUrl}/functions/v1`;
   window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-  // Re-initialize Supabase client with a JWT after login (enforces RLS)
-  // Usamos el mismo cliente base y actualizamos el header — evita múltiples instancias GoTrueClient
-  // Siempre crear cliente nuevo con JWT — el warning de GoTrueClient es inofensivo
-  // El problema de múltiples instancias es cosmético; NO aplicar el JWT sí rompe RLS
-  function initAuthClient(jwt){
-    window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+  function crearClientePersonal(jwt){
+    return window.supabase.createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
       auth:   { persistSession: false, autoRefreshToken: false }
     });
+  }
+  function initAuthClient(jwt){
+    window.supabaseClient = crearClientePersonal(jwt);
   }
 </script>
 
