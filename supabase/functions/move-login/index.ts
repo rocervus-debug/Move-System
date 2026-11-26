@@ -14,7 +14,7 @@
 // Migrado a Deno.serve nativo: deno.land/std provoca timeouts de bundling al
 // desplegar (regla del manual de VELUM).
 // deploy: supabase functions deploy move-login --no-verify-jwt
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   try {
-    const { email, pw_hash } = await req.json();
+    const { email, pw_hash, challenge, totp_code } = await req.json();
     if (!email || !pw_hash) return new Response(JSON.stringify({ error: 'Faltan campos.' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
     // v35: limpieza defensiva (antes: email.toLowerCase().trim() — no quitaba invisibles)
     const normalizedEmail = limpiarEmail(email);
@@ -128,11 +128,24 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const { data: factor, error: factorError } = await db.rpc('core_staff_factor', {
+      p_subject: user.id, p_action: 'login',
+      p_challenge: typeof challenge === 'string' ? challenge : null,
+      p_code: typeof totp_code === 'string' ? totp_code.trim() : null,
+    });
+    if (factorError || factor?.ok !== true) {
+      const body = factorError ? { error: 'Servicio de acceso temporalmente no disponible.' } : factor;
+      return new Response(JSON.stringify(body), {
+        status: factorError ? 503 : factor?.requires_2fa && !factor.error ? 200 : 401,
+        headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
     await db.from('login_attempts').insert({ email: normalizedEmail, ip, success: true });
 
     const now = Math.floor(Date.now() / 1000);
     const payload = {
-      aud: 'authenticated', iss: 'supabase', iat: now, exp: now + 60 * 60 * 24,
+      staff_login: true, aud: 'authenticated', iss: 'supabase', iat: now, exp: now + 60 * 60 * 24,
       sub: String(user.id), email: user.email, role: 'authenticated',
       gym_id: user.gym_id, app_rol: user.rol, pw_version: 2,
     };
