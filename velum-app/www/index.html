@@ -3720,6 +3720,19 @@ function openFabSheet(){ openSheet('fab-sheet'); }
 function closeFabSheet(){ closeSheet('fab-sheet',null); document.body.style.overflow=''; }
 
 // ── View switching ───────────────────────────────────
+// La app puede recibir el toque mientras todavía está recuperando la sesión del atleta.
+let vistaDeAvisoPendiente = null;
+function abrirVistaDeAviso(destino){
+  const vista = destino === 'membresia' ? 'planes' : destino;
+  if(typeof vista !== 'string' || !document.getElementById('view-'+vista)?.classList.contains('view')) return;
+  if(!portalData || document.getElementById('app').style.display !== 'flex'){
+    vistaDeAvisoPendiente = vista;
+    return;
+  }
+  vistaDeAvisoPendiente = null;
+  switchView(vista);
+}
+
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
 
@@ -4129,6 +4142,7 @@ function switchHistTab(tab){ /* replaced by new PROG tab */ }
 
 // ── Logout ───────────────────────────────────────────
 function doLogout(){
+  vistaDeAvisoPendiente = null;
   try{ localStorage.removeItem('velum_session'); }catch(_){}
   _clearAtletaAuthJWT(); // V2: limpiar JWT también
   clearProfilePhoto();
@@ -4568,6 +4582,7 @@ function showPortal(data){
   $('app').style.display='flex';
   handleDesktopLayout();
   // Señal para el native bridge (oculta splash, etc.)
+  if(vistaDeAvisoPendiente) abrirVistaDeAviso(vistaDeAvisoPendiente);
   window.dispatchEvent(new CustomEvent('velum:appReady'));
 
   // Registrar push notifications en app nativa (no-op en browser).
@@ -4592,9 +4607,9 @@ function showPortal(data){
   loadClasesData().then(()=>{ renderProximaClase(); renderNextClassCard(); }).catch(()=>{});
 
   // Cargar ausentes para cálculo correcto de racha (async, no bloquea UI)
-  if(data.cliente?.portal_token){
-    fetch(`${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${encodeURIComponent(data.cliente.portal_token)}&estado=eq.ausente&select=fecha`,
-      {headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`}})
+  if(data.cliente?.id || data.cliente?.portal_token){
+    fetch(`${SUPABASE_URL}/rest/v1/reservas?${filtroReservasAtleta(data.cliente, data.gym?.id)}&estado=eq.ausente&select=fecha`,
+      {headers:_sbHeaders()})
       .then(r=>r.ok?r.json():[])
       .then(ausentes=>{
         portalData.ausentes=ausentes||[];
@@ -4801,7 +4816,7 @@ function _urlBase64ToUint8Array(base64String){
 // Escuchar mensajes del SW para navegación desde notificaciones
 navigator.serviceWorker?.addEventListener('message', (event) => {
   if(event.data?.type === 'velum:navigate' && event.data.view){
-    if(typeof window.switchView === 'function') window.switchView(event.data.view);
+    abrirVistaDeAviso(event.data.view);
   }
 });
 
@@ -6104,10 +6119,13 @@ function renderPlanes(){
       <div class="plan-nombre">${esc(plan.name||'Plan')}</div>
       <div class="plan-desc">${esc(detail)}</div>
       <div class="plan-precio">
-        <span class="plan-precio-num">${fmtMXN(plan.price_mxn)}</span>
-        <span class="plan-precio-cur">MXN</span>
+        ${(plan.price_mxn > 0)
+          ? `<span class="plan-precio-num">${fmtMXN(plan.price_mxn)}</span><span class="plan-precio-cur">MXN</span>`
+          : `<span class="plan-precio-num">Gratis</span>`}
       </div>
-      <button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="doCheckout(${plan.package_id})">Renovar / Comprar →</button>
+      ${(plan.price_mxn > 0)
+        ? `<button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="doCheckout(${plan.package_id})">Renovar / Comprar →</button>`
+        : `<button class="plan-btn ${esPaquete?'paquete':'membresia'}" onclick="showToast('Pide este plan en recepción — es cortesía del gym.','✓',5000)">Pídelo en recepción</button>`}
     </div>`;
   });
   html+=`</div>`;
@@ -6116,6 +6134,12 @@ function renderPlanes(){
 
 async function doCheckout(packageId){
   if(!portalData) return;
+  // Stripe rechaza cobros de $0: un plan gratis se entrega en recepción.
+  const _pl = ((portalData.paquetes)||[]).find(p=>String(p.package_id)===String(packageId));
+  if(_pl && !(_pl.price_mxn > 0)){
+    showToast('Pide este plan en recepción — es cortesía del gym.','✓',5000);
+    return;
+  }
   const slug = portalData.gym?.slug;
   const c = portalData.cliente;
   if(!slug){ showToast('Este gym aún no tiene tienda en línea activa.','❌',5000); return; }
@@ -6749,6 +6773,26 @@ function _sbHeaders(){
   return {'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json'};
 }
 
+// Una reserva de recepción o de la tienda puede guardar solo cliente_id.
+// Los registros antiguos del portal también pueden identificarse solo por token.
+function filtroReservasAtleta(cliente, gymId){
+  const params = new URLSearchParams();
+  if(gymId) params.set('gym_id', 'eq.'+gymId);
+  const token = String(cliente.portal_token || '');
+  const id = Number(cliente.id);
+  if(Number.isSafeInteger(id) && id > 0){
+    if(token){
+      const quoted = JSON.stringify(token);
+      params.set('or', '(cliente_id.eq.'+id+',and(cliente_id.is.null,portal_token.eq.'+quoted+'))');
+    }else{
+      params.set('cliente_id', 'eq.'+id);
+    }
+  }else{
+    params.set('portal_token', 'eq.'+token);
+  }
+  return params.toString();
+}
+
 // Resolves gym_id: uses portalData.gym.id if present, otherwise looks it up
 // from the clientes table using the portal_token (fallback for old edge function versions)
 async function _resolveGymId(){
@@ -6830,17 +6874,18 @@ async function loadClasesData(){
     const fechaMin = dates[0].fecha;
     const fechaMax = dates[6].fecha;
     const hids = needed.length ? [...new Set(needed.map(n=>n.hid))] : [];
-    clasesReservas = {}; clasesCupos = {}; clasesNombres = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
+    clasesCupos = {}; clasesNombres = {}; clasesWaitlist = {}; clasesWaitlistN = {}; clasesCancelaciones = {};
 
     await Promise.all([
       // 2. Mis reservas (próximos 7 días)
       (async()=>{
         const rRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reservas?portal_token=eq.${token}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,estado,spot`,
+          `${SUPABASE_URL}/rest/v1/reservas?${filtroReservasAtleta(portalData.cliente, gymId)}&fecha=gte.${fechaMin}&fecha=lte.${fechaMax}&estado=eq.reservado&select=id,horario_id,fecha,clase_hora,clase_tipo,estado,spot`,
           { headers: _sbHeaders() }
-        ).catch(()=>null);
-        const myReservas = rRes?.ok ? await rRes.json() : [];
-        myReservas.forEach(r=>{ clasesReservas[r.horario_id+'_'+r.fecha] = r; });
+        );
+        if(!rRes.ok) throw new Error('No se pudieron consultar las reservas.');
+        const myReservas = await rRes.json();
+        clasesReservas = Object.fromEntries(myReservas.map(r=>[r.horario_id+'_'+r.fecha, r]));
       })(),
       // 3. Conteo de cupos en UN batch
       (async()=>{
@@ -7443,6 +7488,22 @@ function _showReservaConfirmBanner(tipo, hora, fechaStr){
 
 async function cancelarReserva(reservaId, key){
   if(!portalData) return;
+  // Cancelar con menos de N horas (default 2, por gym) cuenta como falta y la base
+  // descuenta la clase del paquete. Avisamos antes para que no sea sorpresa.
+  try{
+    const r = clasesReservas[key] || {};
+    const horas = Number(portalData.gym?.flags?.cancelacion_horas ?? 2);
+    const m = String(r.clase_hora||'').toLowerCase().match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if(r.fecha && m){
+      let h = parseInt(m[1])||0; const mi = parseInt(m[2]||'0')||0;
+      if(m[3]==='pm' && h!==12) h+=12; if(m[3]==='am' && h===12) h=0;
+      const ini = new Date(r.fecha+'T12:00:00'); ini.setHours(h,mi,0,0);
+      if(ini - new Date() < horas*3600*1000){
+        const ok = confirm(`Faltan menos de ${horas} h para tu clase. Si cancelas ahora cuenta como falta y se descuenta de tu paquete.\n\n¿Cancelar de todos modos?`);
+        if(!ok) return;
+      }
+    }
+  }catch(_){}
   const btn = document.querySelector(`#cls-card-${key} .cls-btn`);
   if(btn){ btn.className='cls-btn loading'; btn.disabled=true; btn.textContent='Cancelando…'; }
 

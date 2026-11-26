@@ -3697,6 +3697,19 @@ function openFabSheet(){ openSheet('fab-sheet'); }
 function closeFabSheet(){ closeSheet('fab-sheet',null); document.body.style.overflow=''; }
 
 // ── View switching ───────────────────────────────────
+// La app puede recibir el toque mientras todavía está recuperando la sesión del atleta.
+let vistaDeAvisoPendiente = null;
+function abrirVistaDeAviso(destino){
+  const vista = destino === 'membresia' ? 'planes' : destino;
+  if(typeof vista !== 'string' || !document.getElementById('view-'+vista)?.classList.contains('view')) return;
+  if(!portalData || document.getElementById('app').style.display !== 'flex'){
+    vistaDeAvisoPendiente = vista;
+    return;
+  }
+  vistaDeAvisoPendiente = null;
+  switchView(vista);
+}
+
 function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
 
@@ -4106,6 +4119,7 @@ function switchHistTab(tab){ /* replaced by new PROG tab */ }
 
 // ── Logout ───────────────────────────────────────────
 function doLogout(){
+  vistaDeAvisoPendiente = null;
   try{ localStorage.removeItem('velum_session'); }catch(_){}
   _clearAtletaAuthJWT(); // V2: limpiar JWT también
   clearProfilePhoto();
@@ -4545,6 +4559,7 @@ function showPortal(data){
   $('app').style.display='flex';
   handleDesktopLayout();
   // Señal para el native bridge (oculta splash, etc.)
+  if(vistaDeAvisoPendiente) abrirVistaDeAviso(vistaDeAvisoPendiente);
   window.dispatchEvent(new CustomEvent('velum:appReady'));
 
   // Registrar push notifications en app nativa (no-op en browser).
@@ -4778,7 +4793,7 @@ function _urlBase64ToUint8Array(base64String){
 // Escuchar mensajes del SW para navegación desde notificaciones
 navigator.serviceWorker?.addEventListener('message', (event) => {
   if(event.data?.type === 'velum:navigate' && event.data.view){
-    if(typeof window.switchView === 'function') window.switchView(event.data.view);
+    abrirVistaDeAviso(event.data.view);
   }
 });
 

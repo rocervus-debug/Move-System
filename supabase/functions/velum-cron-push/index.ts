@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       const { data: rows } = await db.rpc('clients_expiring_in', { days: 3 });
       const list = (rows || []) as Array<{ portal_token: string; gym_id: number; email: string | null; nombre: string | null }>;
       const ptoks = list.map(r => r.portal_token);
-      out.expiry_fcm = await sendFcmByPortalTokens(ptoks, 'Tu membresía vence pronto', 'Te quedan 3 días. Renueva desde la app para no perder tu lugar.', 'membresia');
+      out.expiry_fcm = await sendFcmByPortalTokens(ptoks, 'Tu membresía vence pronto', 'Te quedan 3 días. Renueva desde la app para no perder tu lugar.', 'planes');
       out.expiry_web = await sendWebPush(ptoks, 'Tu membresía vence pronto', 'Te quedan 3 días. Renueva desde la app para no perder tu lugar.', 'expiry');
       const withEmail = list.filter(r => r.email);
       if (withEmail.length) {
