@@ -4720,7 +4720,10 @@ async function requestPushPermission(){
       if(status) status.textContent = 'Registrando este dispositivo…';
       let timer;
       try{
-        if(typeof window.registerPush !== 'function') throw new Error('bridge');
+        if(typeof window.registerPush !== 'function'){
+          if(status) status.textContent = 'No se pudo iniciar el registro de la app.';
+          return;
+        }
         const result = await Promise.race([
           window.registerPush(token, SUPABASE_URL, ANON_KEY),
           new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),20000);})
