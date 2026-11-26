@@ -469,7 +469,8 @@ Deno.serve(async (req: Request) => {
 
       case 'invoice.payment_succeeded': {
         const inv = event.data.object;
-        const subId = inv.subscription as string;
+        const subscription = inv.parent?.subscription_details?.subscription ?? inv.subscription;
+        const subId = typeof subscription === 'string' ? subscription : subscription?.id;
         if (!subId) break;
         const { data: ms } = await db.from('member_subscriptions').select('*').eq('stripe_subscription_id', subId).maybeSingle();
         if (ms) {
@@ -494,7 +495,8 @@ Deno.serve(async (req: Request) => {
       }
       case 'invoice.payment_failed': {
         const inv = event.data.object;
-        const subId = inv.subscription as string;
+        const subscription = inv.parent?.subscription_details?.subscription ?? inv.subscription;
+        const subId = typeof subscription === 'string' ? subscription : subscription?.id;
         if (!subId) break;
         const { data: ms } = await db.from('member_subscriptions').select('id, gym_id, customer_email, cliente_nombre').eq('stripe_subscription_id', subId).maybeSingle();
         if (ms) {
@@ -511,13 +513,14 @@ Deno.serve(async (req: Request) => {
       }
       case 'customer.subscription.updated': {
         const sub = event.data.object;
+        const periodEnd = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end;
         const statusMap: Record<string,string> = { active:'active', past_due:'past_due', canceled:'canceled', unpaid:'past_due', trialing:'trialing', incomplete:'incomplete', incomplete_expired:'canceled' };
         const { data: ms } = await db.from('member_subscriptions').select('id').eq('stripe_subscription_id', sub.id).maybeSingle();
         if (ms) {
-          await db.from('member_subscriptions').update({ status: statusMap[sub.status] || sub.status, cancel_at_period_end: !!sub.cancel_at_period_end, current_period_end: sub.current_period_end ? new Date(sub.current_period_end*1000).toISOString() : null, canceled_at: sub.canceled_at ? new Date(sub.canceled_at*1000).toISOString() : null, updated_at: new Date().toISOString() }).eq('id', ms.id);
+          await db.from('member_subscriptions').update({ status: statusMap[sub.status] || sub.status, cancel_at_period_end: !!sub.cancel_at_period_end, current_period_end: periodEnd ? new Date(periodEnd*1000).toISOString() : null, canceled_at: sub.canceled_at ? new Date(sub.canceled_at*1000).toISOString() : null, updated_at: new Date().toISOString() }).eq('id', ms.id);
           break;
         }
-        await db.from('gyms').update({ subscription_status: statusMap[sub.status] || sub.status, subscription_current_period_end: sub.current_period_end ? new Date(sub.current_period_end*1000).toISOString() : null, subscription_updated_at: new Date().toISOString() }).eq('stripe_subscription_id', sub.id);
+        await db.from('gyms').update({ subscription_status: statusMap[sub.status] || sub.status, subscription_current_period_end: periodEnd ? new Date(periodEnd*1000).toISOString() : null, subscription_updated_at: new Date().toISOString() }).eq('stripe_subscription_id', sub.id);
         break;
       }
       case 'customer.subscription.deleted': {

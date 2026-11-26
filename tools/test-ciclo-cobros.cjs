@@ -238,6 +238,18 @@ test("Renovación, recuperación, link, reserva y recibo al reintentar un cobro"
   await evento("invoice.payment_succeeded", facturaGym);
   assert.equal(gym.subscription_status, "active");
   assert.equal(tablas.pagos.length, 2, "La suscripción del gimnasio queda fuera de la caja de socios");
+  const endOfCycle = 1799003445;
+  const currentInvoice = { ...invoice, parent: { subscription_details: { subscription: gym.stripe_subscription_id } },
+    lines: { data: [{ period: { end: endOfCycle } }] }, amount_paid: 99900 };
+  delete currentInvoice.subscription;
+  await evento("invoice.payment_failed", currentInvoice);
+  assert.equal(gym.subscription_status, "past_due");
+  await evento("invoice.payment_succeeded", currentInvoice);
+  assert.equal(gym.subscription_status, "active");
+  await evento("customer.subscription.updated", { id: gym.stripe_subscription_id, status: "active",
+    items: { data: [{ current_period_end: endOfCycle }] } });
+  assert.equal(gym.subscription_current_period_end, new Date(endOfCycle * 1000).toISOString());
+  assert.equal(tablas.pagos.length, 2);
   const simFecha = day(base);
   const sale = (id, metadata, amount_total = 45000) => ({
     id,
