@@ -1,0 +1,73 @@
+/* Marco de Flow: se activa por la vista visible y se restaura al salir. */
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) {
+  --flow-ink: #0B132B;
+  --flow-navy: #1C2541;
+  --flow-steel: #3A506B;
+  --flow-sky: #5BC0DE;
+  --flow-sand: #F4D6B0;
+  --flow-amber: #D97706;
+  --vfs-bg: var(--flow-ink);
+  --vfs-surface: var(--flow-navy);
+  --vfs-soft: color-mix(in srgb, var(--flow-steel) 45%, var(--flow-navy));
+  --vfs-text: #f8fafc;
+  --vfs-muted: color-mix(in srgb, var(--flow-sand) 72%, var(--flow-steel));
+  --vfs-line: var(--flow-steel);
+  --vfs-control: color-mix(in srgb, var(--flow-steel) 60%, white);
+  --vfs-focus: var(--flow-sky);
+  background:var(--vfs-bg)!important;
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])).light-mode {
+  --vfs-bg: color-mix(in srgb, var(--flow-sand) 32%, white);
+  --vfs-surface: white;
+  --vfs-soft: color-mix(in srgb, var(--flow-sand) 42%, white);
+  --vfs-text: var(--flow-ink);
+  --vfs-muted: var(--flow-steel);
+  --vfs-line: color-mix(in srgb, var(--flow-steel) 32%, white);
+  --vfs-control: var(--flow-steel);
+  --vfs-focus: var(--flow-navy);
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden]))::before { display:none; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) #app-wrapper {
+  background:var(--vfs-bg); margin:12px; width:calc(100% - 24px)!important; height:calc(100dvh - 24px)!important;
+  border:0; border-radius:0; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+  font-family:"Velum Flow Text",system-ui,sans-serif;
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .sidebar {
+  background:var(--vfs-surface); border:0; border-radius:22px; box-shadow:none;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .topbar {
+  background:var(--vfs-bg); border:0; box-shadow:none; color:var(--vfs-text);
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) :is(.topbar-title,.logo-mark,.logo-velum-wordmark,.user-name) { color:var(--vfs-text); }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) :is(.nav-label,.nav-item,.logo-tagline,.user-role,.topbar-sub) { color:var(--vfs-muted); }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .nav-item { min-height:44px; border-radius:12px; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .nav-item:hover { color:var(--vfs-text); background:var(--vfs-soft); }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .nav-item.active {
+  color:var(--flow-ink); background:var(--flow-sky); box-shadow:none;
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .nav-item.active::before { display:none; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) :is(.logo,.sidebar-bottom,.nav-label) { border-color:var(--vfs-line); }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .content { padding:12px 0 16px 16px; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) #mobile-bottom-nav {
+  background:var(--vfs-surface)!important; border-top:1px solid var(--vfs-line)!important;
+  box-shadow:none!important; backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .mbn-item { color:var(--vfs-muted); }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .mbn-item.active { color:var(--flow-ink); background:var(--flow-sky); border-radius:12px; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .mbn-item.active svg { filter:none; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) [id$="-toggle"][aria-controls^="flow-"] { background:var(--vfs-surface); color:var(--vfs-text); border-color:var(--vfs-line); }
+@media(max-width:768px) {
+  body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) #app-wrapper { margin:0; width:100%!important; height:100dvh!important; }
+  body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .content { padding:12px 0 calc(86px + env(safe-area-inset-bottom,0px)); }
+  body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .topbar { padding-inline:16px; }
+  body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) [id$="-toggle"][aria-controls^="flow-"] { margin-right:12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) :is(.nav-item,.mbn-item) { transition:none!important; }
+}
+
+/* Los drawers cerrados no proyectan sombra sobre la vista activa. */
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) .detail-panel:not(.open) { visibility:hidden; }
+body:has(.view.active > [id^="flow-"][id$="-root"]:not([hidden])) :is(.mbn-item,.nav-item):focus-visible { outline:3px solid var(--vfs-text); outline-offset:-3px; }
