@@ -3515,6 +3515,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 #core-acceso-dialog .core-tabla{max-height:45vh;overflow:auto;margin:12px 0}#core-acceso-dialog th,#core-acceso-dialog td{padding:6px;text-align:left;vertical-align:top}
 </style>
 <link rel="stylesheet" href="/design-system/core-cobros.css">
+<link rel="stylesheet" href="/design-system/core-operacion.css">
+<script defer src="/core-ficha.js"></script>
 <script defer src="/core-cobros.js"></script>
 <script defer src="/core-acceso.js"></script>
 </head>
@@ -3958,8 +3960,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
             <div class="mhw-action-icon mhw-ic-green">
               <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             </div>
-            <div class="mhw-action-lbl">Cobrar</div>
-            <div class="mhw-action-sub">Registrar pago</div>
+            <div class="mhw-action-lbl">Registrar pago</div>
+            <div class="mhw-action-sub">Ya recibido</div>
           </div>
           <div class="mhw-action" onclick="go('asistencia',document.getElementById('nav-asistencia'))">
             <div class="mhw-action-icon mhw-ic-blue">
@@ -4039,11 +4041,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           </button>
           <button class="qa-btn qa-primary" onclick="openModal('pago')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            + Pago
+            Registrar pago recibido
           </button>
           <button class="qa-btn qa-secondary" id="qa-cobrar-btn" onclick="openCobrarLink()" style="display:none;" title="Generar link de pago Stripe y enviarlo al cliente">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Cobrar
+            Crear enlace de cobro
           </button>
           <button class="qa-btn qa-secondary" onclick="openModal('visita')" style="background:rgba(167,139,250,.12);color:var(--violet);border-color:rgba(167,139,250,.25);">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 9a3 3 0 0 1 0 6v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-3a3 3 0 0 1 0-6V6a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg>
@@ -4274,12 +4276,12 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button onclick="abrirKiosco()" style="font-size:var(--fs-xs);padding:7px 14px;border-radius:8px;background:var(--accent);color:var(--bg-card);border:none;cursor:pointer;font-weight:700;white-space:nowrap;">Kiosco</button>
-          <button onclick="loadClasesOperativas()" style="font-size:var(--fs-xs);padding:7px 14px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border);cursor:pointer;font-weight:700;" title="Actualizar">↺</button>
+          <button onclick="loadClasesOperativas()" style="font-size:var(--fs-xs);padding:7px 14px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border);cursor:pointer;font-weight:700;" title="Actualizar" aria-label="Actualizar clases">↺</button>
         </div>
       </div>
 
       <!-- Day Picker Strip -->
-      <div class="asist-day-strip" id="asist-day-strip"></div>
+      <div class="asist-day-strip" id="asist-day-strip"></div><p class="op-caption" id="asist-actualizado" role="status"></p>
 
       <!-- Reservas del enlace público de la semana (pueden ser de días futuros) -->
       <div id="asist-prospectos-semana" style="display:none;"></div>
@@ -4303,7 +4305,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       </div>
 
       <!-- ── Historial de Check-ins por Mes ── -->
-      <div id="asist-historial-section" style="margin-top:28px;">
+      <details id="asist-historial-section" class="op-extra"><summary>Historial de asistencia por mes</summary>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
           <div>
             <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);">Historial de Check-ins</div>
@@ -4314,7 +4316,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div id="asist-hist-body" style="min-height:60px;">
           <div style="color:var(--text3);font-size:var(--fs-sm);padding:10px 0;">Cargando historial…</div>
         </div>
-      </div>
+      </details>
 
     </div>
 
@@ -4330,11 +4332,10 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
       </div>
 
-      <!-- KPIs -->
-      <div id="clientes-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;"></div>
-
-      <!-- Acciones rápidas — desktop -->
-      <div id="clientes-action-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+      <div class="op-toolbar">
+        <button class="btn btn-primary" onclick="openModal('solo-cliente')">Agregar cliente</button>
+        <details class="op-tools"><summary>Más acciones</summary>
+<div id="clientes-action-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
         <button class="btn btn-sm btn-wa btn-icon" onclick="waEnMasa()" id="btn-wa-masa">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
           Contactar por WhatsApp
@@ -4352,8 +4353,12 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <button class="btn btn-sm btn-icon" id="btn-bulk-portales" style="background:rgba(138,43,226,.12);color:var(--hyrox);border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Portales pendientes</button>
         <button class="btn btn-sm btn-icon" style="background:rgba(16,232,160,.1);color:var(--ok);border:1px solid rgba(16,232,160,.28);" onclick="importarClientesCSV()" title="Importar clientes desde un archivo CSV/Excel">⬆ Importar CSV</button>
         <button class="btn btn-sm btn-icon" style="background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);" onclick="openNotificarPush()" title="Enviar una notificación push a tus clientes con la app"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Notificar</button>
-        <button class="btn btn-sm btn-primary btn-icon" onclick="openModal('solo-cliente')">+ Cliente</button>
       </div>
+        </details>
+      </div>
+      <details class="op-extra"><summary>Resumen del directorio</summary>
+        <div id="clientes-kpis" class="kpi-grid"></div>
+      </details>
 
       <!-- Modal: enviar notificación push a los clientes (feature push nativo) -->
       <div class="modal-overlay" id="modal-notificar-push">
@@ -4381,29 +4386,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
       </div>
 
-      <!-- Acciones rápidas — mobile (rail scrollable, oculto en desktop por CSS) -->
-      <div id="cli-mob-actions" style="display:none;">
-        <button class="btn btn-sm btn-primary btn-icon" onclick="openModal('solo-cliente')">+ Cliente</button>
-        <button class="btn btn-sm btn-wa btn-icon" onclick="waEnMasa()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-          WA
-        </button>
-        <button class="btn btn-sm btn-export btn-icon" onclick="exportarClientesCSV()">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          CSV
-        </button>
-        <button class="btn btn-sm btn-xlsx btn-icon" onclick="exportarClientesXLSX()">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Excel
-        </button>
-        <button class="btn btn-sm btn-icon" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.28);" onclick="abrirRenovacionMasiva()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Renovar</button>
-        <button class="btn btn-sm btn-icon" style="background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);" onclick="launchKiosco()">Kiosco</button>
-        <button class="btn btn-sm btn-icon" style="background:rgba(138,43,226,.12);color:var(--hyrox);border:1px solid rgba(138,43,226,.28);" onclick="generarPortalesPendientes()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Portales</button>
-        <!-- Paridad con escritorio: Importar CSV y Notificar no existían en el rail móvil -->
-        <button class="btn btn-sm btn-icon" style="background:rgba(16,232,160,.1);color:var(--ok,var(--ok));border:1px solid rgba(16,232,160,.25);" onclick="importarClientesCSV()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importar</button>
-        <button class="btn btn-sm btn-icon" style="background:rgba(0,212,255,.1);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);" onclick="openNotificarPush()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notificar</button>
-      </div>
-
+      <!-- Filtros del directorio -->
+      <div class="op-filterbar">
+        <button type="button" class="cli-tab-estado" data-estado="todos" onclick="setCliFiltroRapido('todos',this)">Todos</button>
+        <button type="button" class="cli-tab-estado" data-estado="atender" onclick="setCliFiltroRapido('atender',this)">Por atender</button>
+        <details class="op-tools"><summary>Más filtros</summary>
       <!-- Filtro por TIPO (paquete vs pase) -->
       <div class="cli-filter-block cli-filter-wrap" style="margin-bottom:8px;">
         <div class="cli-filter-label" style="font-size:var(--fs-xs);font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">Tipo de cliente</div>
@@ -4418,12 +4405,14 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <div class="cli-filter-block cli-filter-wrap" style="margin-bottom:16px;">
         <div class="cli-filter-label" style="font-size:var(--fs-xs);font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">Estado de membresía</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="tabs-cli-estado">
-          <button class="cli-tab-estado active" data-estado="todos"       onclick="setCliEstado('todos',this)">Todos</button>
+          <button class="cli-tab-estado active" data-estado="todos"       onclick="setCliEstado('todos',this)">Cualquier estado</button>
           <button class="cli-tab-estado"         data-estado="activo"     onclick="setCliEstado('activo',this)">✓ Activos</button>
           <button class="cli-tab-estado"         data-estado="por-vencer" onclick="setCliEstado('por-vencer',this)"> Por vencer</button>
           <button class="cli-tab-estado"         data-estado="vencido"    onclick="setCliEstado('vencido',this)">Vencidos</button>
           <button class="cli-tab-estado"         data-estado="sin-fecha"  onclick="setCliEstado('sin-fecha',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Sin fecha</button>
         </div>
+      </div>
+        </details>
       </div>
       <script>
         // Restaurar filtros desde sessionStorage al cargar la vista
@@ -4448,7 +4437,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div class="empty-state" id="clientes-zero-state">
           <div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div class="empty-title">Tu primer cliente está a un paso</div>
-          <div class="empty-sub" style="max-width:360px;">Registra un pago para añadir tu primer cliente al directorio. VELUM calculará automáticamente su vencimiento, estado y alertas de renovación.</div>
+          <div class="empty-sub" style="max-width:360px;">Agrega a tu primer cliente. Después podrás registrar su membresía y sus pagos.</div>
           <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;">
             <button class="btn btn-primary" onclick="openModal('solo-cliente')">Agregar primer cliente</button>
             <button class="btn btn-outline" onclick="go('crm', document.getElementById('nav-crm'))">Agregar prospecto</button>
@@ -4534,13 +4523,15 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div id="pagos-month-nav"></div>
         <span style="font-size:var(--fs-sm);color:var(--text4);">La lista muestra pagos registrados en el mes seleccionado</span>
       </div>
-      <div class="kpi-grid" style="margin-bottom:18px;">
+      <div class="op-pay-summary">
         <div class="kpi-card" style="--kpi-color:var(--ok)">
-          <div class="kpi-label">Ingresos del Mes</div>
+          <div class="kpi-label">Pagos y visitas del mes</div>
           <div class="kpi-value" id="pagos-kpi-cobrado">$0</div>
           <div class="kpi-trend" id="pagos-kpi-cobrado-trend" style="display:none;"></div>
           <div class="kpi-meta" id="pagos-kpi-cobrado-meta">Este mes</div>
+          <button class="btn btn-outline btn-sm" id="pagos-informe" hidden onclick="go('revenue')">Ver informe de ingresos</button>
         </div>
+        <details class="op-extra"><summary>Vencimientos y proyección</summary><div class="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--warn)">
           <div class="kpi-label">En Riesgo (7 días)</div>
           <div class="kpi-value" id="pagos-kpi-pvencer">$0</div>
@@ -4556,7 +4547,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <div class="kpi-value" id="pagos-kpi-proyeccion">$0</div>
           <div class="kpi-meta" id="pagos-kpi-proyeccion-meta">Prom. 3 meses</div>
         </div>
-      </div>
+      </div></details></div>
       <div class="card">
         <div class="card-header">
           <div class="card-title">Registro de Pagos</div>
@@ -4567,7 +4558,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                 style="padding:6px 10px 6px 28px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:var(--fs-xs);outline:none;width:160px;font-family:var(--font);"/>
             </div>
             <button class="btn btn-outline btn-sm" onclick="exportarPagosCSV()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
-            <button class="btn btn-primary btn-sm" onclick="openModal('pago')">+ Registrar Pago</button>
+            <button class="btn btn-outline btn-sm" id="pagos-enlace" hidden onclick="openCobrarLink()">Crear enlace de cobro</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('pago')">Registrar pago recibido</button>
           </div>
         </div>
         <!-- Filtros: colapsados bajo un botón (desplegable) para no saturar la vista -->
@@ -4981,10 +4973,14 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ── REVENUE DASHBOARD ── -->
     <div class="view" id="v-revenue">
+      <div id="rev-month-nav"></div>
+      <p class="op-caption">Ingresos brutos de pagos registrados y pases de día en el mes seleccionado.</p>
+      <div class="op-toolbar"><button class="btn btn-outline" onclick="go('pagos',document.getElementById('nav-pagos'))">Ver pagos del periodo</button>
+      <button class="btn btn-outline" onclick="go('domiciliados',document.getElementById('nav-domiciliados'))">Ver depósitos de Stripe</button></div>
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
         <button class="btn btn-sm btn-outline" onclick="exportRevenueXLSX()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:var(--fs-xs);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Exportar Excel
+          Exportar historial de pagos a Excel
         </button>
       </div>
       <div id="revenue-kpis" class="kpi-grid" style="margin-bottom:20px;"></div>
@@ -6277,7 +6273,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 <!-- CLIENTE DETAIL PANEL -->
 <div class="detail-panel" id="clientePanel" style="z-index:460;">
   <div class="detail-head">
-    <button class="detail-close" onclick="closeClientePanel()">✕</button>
+    <button class="detail-close" aria-label="Cerrar ficha del cliente" onclick="closeClientePanel()">✕</button>
     <div style="font-size:var(--fs-xs);color:var(--sidebar-text);text-transform:uppercase;letter-spacing:1px;">Cliente</div>
     <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
       <div id="cpanel-avatar"></div>
@@ -6288,9 +6284,6 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
     </div>
   </div>
   <div class="detail-body">
-    <!-- KPIs del cliente -->
-    <div id="cpanel-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;"></div>
-
     <!-- Membresía actual -->
     <div class="detail-section">
       <div class="detail-section-title">Membresía Actual</div>
@@ -6303,6 +6296,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <div id="cpanel-acciones" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
     </div>
 
+    <details class="op-extra"><summary>Historial en cifras</summary><div id="cpanel-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;"></div></details>
     <!-- QR Personal -->
     <div class="detail-section" id="cpanel-qr-section">
       <div class="detail-section-title">QR Personal de Check-in</div>
@@ -7089,7 +7083,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
         </div>
         <div>
-          <div class="modal-title" style="margin:0;font-size:var(--fs-base);">Registrar Pago</div>
+          <div class="modal-title" style="margin:0;font-size:var(--fs-base);">Registrar pago recibido</div>
           <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:1px;font-weight:400;">Te llevamos paso a paso — nada se guarda hasta el final</div>
         </div>
       </div>
@@ -8366,7 +8360,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <span style="font-size:var(--fs-sm);color:var(--text3);margin-top:4px;display:block;">Viene del cupo de tu horario base; cámbialo solo si esta clase lleva otro número.</span>
       </div>
       <div class="field" style="margin-top:12px;">
-        <label>¿Hasta cuándo aplica?</label>
+        <label for="hov-alcance">¿Qué clases quieres cambiar?</label>
         <select id="hov-alcance" onchange="_hovAlcanceHint()">
           <option value="unica">Solo esta fecha</option>
           <option value="recurrente">Todas las semanas (cambia el horario base)</option>
@@ -10990,6 +10984,7 @@ async function loadPagosFromSupabase(){
   pagos = (data||[]).map(p=>({
     id: p.id, cliente: p.cliente||'', monto: p.monto||0, fecha: p.fecha||'',
     plan: p.plan||'', metodo: p.metodo||'', vence: p.vence||'—', notas: p.notas||'',
+    stripe_sub_id:p.stripe_sub_id||null, congelado:p.congelado, congelado_desde:p.congelado_desde, dias_congelados:p.dias_congelados,
     source:      p.source||'',
     telefono:    p.telefono||'',
     cumpleanos:  p.cumpleanos||'',
@@ -11564,7 +11559,7 @@ const topTitles = {
 };
 const topBtnLabels = {
   crm:         '+ Nuevo Prospecto',
-  pagos:       '+ Registrar Pago',
+  pagos:       'Registrar pago recibido',
   clientes:    '+ Agregar cliente',
   visitas:     '+ Registrar Visita',
   asistencia:  '+ Registrar Clase',
@@ -12008,7 +12003,7 @@ function go(id, el){
   topBtn.onclick = topBtnActions[id]||null;
   // Hide + button in settings for non-admins (coaches, marketing, etc.)
   if(id==='settings') topBtn.style.display = (currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) ? 'inline-flex' : 'none';
-  else if(id==='dashboard' || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
+  else if(['dashboard','clientes','pagos','revenue'].includes(id) || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ Promise.resolve(renderReporteCoach()).catch(e=>console.error('reporte coach:', e)); }catch(e){ console.error('reporte coach:', e); } }
@@ -14612,6 +14607,12 @@ function limpiarFiltrosClientes(){
   document.querySelectorAll('.cli-tab-tipo').forEach(b => b.classList.toggle('active', b.dataset.tipo === 'todos'));
   setCliEstado('todos',document.querySelector('.cli-tab-estado[data-estado="todos"]'));
 }
+function setCliFiltroRapido(val,btn){
+  _cliTipo='todos';
+  sessionStorage.setItem('velum_cliTipo','todos');
+  document.querySelectorAll('.cli-tab-tipo').forEach(b=>b.classList.toggle('active',b.dataset.tipo==='todos'));
+  setCliEstado(val,btn);
+}
 function setCliEstado(val, btn){
   _cliEstado = val;
   sessionStorage.setItem('velum_cliEstado', val);
@@ -14705,6 +14706,14 @@ function renderClientes(){
   const busq   = (document.getElementById('clientes-search')||{value:''}).value.toLowerCase().trim();
   if(!listEl) return;
 
+  document.querySelectorAll('.op-filterbar button[data-estado]').forEach(b=>{
+    const on=b.dataset.estado===_cliEstado && (!b.parentElement.classList.contains('op-filterbar') || _cliTipo==='todos');
+    b.classList.toggle('active',on);
+    b.setAttribute('aria-pressed',String(on));
+  });
+  const advanced=document.querySelector('.op-filterbar summary');
+  if(advanced) advanced.textContent=_cliTipo!=='todos'||!['todos','atender'].includes(_cliEstado)?'Más filtros · activos':'Más filtros';
+
   // Actualizar conteo de portales pendientes en el botón
   const sinPortal = clientesDB.filter(c=>!c.portal_token).length;
   const btnBulk = document.getElementById('btn-bulk-portales');
@@ -14791,7 +14800,7 @@ function renderClientes(){
 
     // Tipo
     const tienePaquete = todosPagos.some(p=>!esPaseDia(p.plan));
-    const tipo = !total ? 'paquete' : (tienePaquete?'paquete':'pase');
+    const tipo = !total ? 'sin-plan' : (tienePaquete?'paquete':'pase');
 
     return {
       nombre, telefono, cumpleanos, cliId, numeroCliente,
@@ -14820,12 +14829,12 @@ function renderClientes(){
     <div class="kpi-card" style="--kpi-color:#a78bfa">
       <div class="kpi-label" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg> Paquetes</div>
       <div class="kpi-value">${nPaquetes}</div>
-      <div class="kpi-meta">${totalC>0?Math.round(nPaquetes/totalC*100):0}% recurrentes</div>
+      <div class="kpi-meta">${totalC>0?Math.round(nPaquetes/totalC*100):0}% del directorio</div>
     </div>
     <div class="kpi-card" style="--kpi-color:#f472b6">
       <div class="kpi-label" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><line x1="9" y1="9" x2="9" y2="15"/></svg> Pase de Día</div>
       <div class="kpi-value">${nPases}</div>
-      <div class="kpi-meta">${totalC>0?Math.round(nPases/totalC*100):0}% ocasionales</div>
+      <div class="kpi-meta">${totalC>0?Math.round(nPases/totalC*100):0}% del directorio</div>
     </div>
     <div class="kpi-card" style="--kpi-color:var(--warn)">
       <div class="kpi-label" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Por atender</div>
@@ -14843,7 +14852,8 @@ function renderClientes(){
 
   // ── Aplicar filtros ──────────────────────────────────────────────
   let lista = clientes;
-  if(_cliEstado !== 'todos') lista = lista.filter(c => c.estado === _cliEstado);
+  if(_cliEstado === 'atender') lista = lista.filter(c=>c.estado==='vencido'||c.estado==='por-vencer');
+  else if(_cliEstado !== 'todos') lista = lista.filter(c => c.estado === _cliEstado);
   if(_cliTipo   !== 'todos') lista = lista.filter(c => c.tipo   === _cliTipo);
   if(busq){
     const normalizar = valor => String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -14970,7 +14980,7 @@ function renderClientes(){
                   background:color-mix(in srgb, var(--accent) 8%, transparent);color:var(--accent);
                   font-size:var(--fs-xs);font-weight:700;border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);
                   cursor:pointer;white-space:nowrap;flex-shrink:0;">
-           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Cobrar</button>`
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Crear enlace de cobro</button>`
       : '';
     const waBtn = numWA.length >= 12
       ? `<div style="display:flex;gap:6px;align-items:center;">
@@ -14998,7 +15008,7 @@ function renderClientes(){
       cliDbId && !portalToken ? 'Sin portal' : ''
     ].filter(Boolean);
 
-    return `<div class="cli-row" onclick="openClientePanel('${esc(c.nombre)}')"
+    return `<div class="cli-row" tabindex="0" data-socio="${esc(c.nombre).replace(/"/g,'&quot;')}" onclick="openClientePanel(this.dataset.socio)" onkeydown="if(event.target===this && (event.key==='Enter'||event.key===' ')){event.preventDefault();this.click()}"
                  style="display:flex;align-items:center;gap:16px;padding:18px 18px;min-height:var(--row-h);
                          background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);
                          border-left:3px solid ${cfg.color};cursor:pointer;transition:background .15s;"
@@ -15148,34 +15158,6 @@ async function saveEditarCliente(btn){
 }
 
 // ─── Panel de detalle de cliente ──────────────────────────────────
-async function _pintarPaqueteFicha(clienteId){
-  const host = document.getElementById('cpanel-paquete');
-  if(!host || !clienteId) return;
-  const m = await _cargarPaquetesLista([clienteId], _hoyMX());
-  const e = m[parseInt(clienteId)];
-  if(!e || e.membresia || !e.totales){ host.innerHTML=''; return; }   // mensualidad: no cuenta clases
-  const quedan = Math.max(0, e.restantes ?? 0);
-  const usadas = Math.max(0, e.totales - quedan);
-  const pct    = Math.round((usadas / e.totales) * 100);
-  const color  = e.sin_clases || quedan<=0 ? 'var(--danger)' : (quedan===1 ? 'var(--warn)' : 'var(--ok)');
-  let venceTxt = '';
-  try{ if(e.vence) venceTxt = new Date(e.vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'}); }catch(_){}
-  host.innerHTML = `
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-        <div style="font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;">Clases del paquete</div>
-        <div style="font-size:var(--fs-lg);font-weight:800;color:${color};">${quedan} <span style="font-size:var(--fs-sm);color:var(--text3);font-weight:600;">de ${e.totales}</span></div>
-      </div>
-      <div style="height:6px;border-radius:99px;background:var(--card2);margin:8px 0 6px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;"></div>
-      </div>
-      <div style="font-size:var(--fs-xs);color:var(--text3);">
-        ${e.sin_clases ? '<b style="color:var(--danger);">Sin clases disponibles</b> — necesita renovar para reservar.'
-          : `Ha usado ${usadas} · le ${quedan===1?'queda':'quedan'} ${quedan}${venceTxt?' · vence '+esc(venceTxt):''}`}
-      </div>
-    </div>`;
-}
-
 // Cancelaciones tardías de los últimos 30 días (la marca la pone la base al
 // cancelar desde la app dentro de la ventana del gym). Solo informa: a quien tiene
 // paquete de clases ya se le descontó; a las ilimitadas no se les castiga.
@@ -15310,12 +15292,6 @@ function openClientePanel(nombreCliente){
     </div>`;
 
   // Membresía actual
-  const venceFmt = ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'
-    ? (() => { const [y,m,d]=ultimo.vence.split('-'); const ms=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return `${parseInt(d)} de ${ms[parseInt(m)-1]} de ${y}`; })()
-    : '—';
-  const diasLabel = diff!==null
-    ? (diff<0?`Venció hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`:diff===0?'Vence hoy':`Vence en ${diff} día${diff!==1?'s':''}`)
-    : 'Sin membresía activa';
   // 2.1 — Congelado status for panel
   const freezeInfo = ultimo && ultimo.congelado
     ? `<div style="margin-top:7px;font-size:var(--fs-sm);color:var(--blue);font-weight:700;">Membresía congelada desde ${fmtDate(ultimo.congelado_desde||'')}${ultimo.dias_congelados>0?` · ${ultimo.dias_congelados}d acumulados`:''}</div>`
@@ -15329,19 +15305,22 @@ function openClientePanel(nombreCliente){
     : '';
 
   document.getElementById('cpanel-membresia').innerHTML = `
-    <div style="background:${cfg.color}11;border:1px solid ${cfg.color}33;border-radius:10px;padding:14px;">
-      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);margin-bottom:6px;">${esc(ultimo?ultimo.plan:'Sin membresía')}</div>
-      ${ultimo?`<div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:3px;">Vencimiento: <strong style="color:${cfg.color};">${venceFmt}</strong></div>`:''}
-      <div style="font-size:var(--fs-xs);color:${cfg.color};font-weight:700;">${diasLabel}</div>
+    <div>
+      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);margin-bottom:6px;">${ultimo?'Último plan registrado · '+esc(ultimo.plan||'Sin nombre'):'Sin plan registrado'}</div>
+      <dl id="cpanel-resumen" class="op-facts">
+        <div><dt>Vigencia del acceso</dt><dd data-fact="vigencia">Por confirmar</dd></div>
+        <div><dt>Clases disponibles</dt><dd data-fact="clases">Por confirmar</dd></div>
+        <div><dt>Renovación automática</dt><dd data-fact="renovacion">Por confirmar</dd></div>
+      </dl>
       ${tel?`<div style="font-size:var(--fs-sm);color:var(--text3);margin-top:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> ${tel}</div>`:''}
       ${freezeInfo}${refPor}${refInfo}
-      <div id="cpanel-paquete"></div>
+
       <div id="cpanel-tardias"></div>
     </div>`;
   // Clases que le quedan: lo calcula la base (estado_paquete_cliente), la MISMA
   // regla que descuenta el check-in y que pinta la lista de la clase. Así la
   // ficha, la lista y la app del cliente nunca dicen números distintos.
-  _pintarPaqueteFicha(cliRec.id);
+  cargarResumenFicha(cliRec,historial);
   _pintarTardiasFicha(cliRec.id);
 
   // Acciones
@@ -15355,18 +15334,20 @@ function openClientePanel(nombreCliente){
              background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-xs);font-weight:700;
              text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WhatsApp</a>`);
   }
-  accs.push(`<button onclick="abrirEditarCliente('${esc(nombreCliente)}')"
+  accs.push(`<button data-editar-ficha
     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
            background:var(--card2);color:var(--text);font-size:var(--fs-xs);font-weight:600;
            border:1px solid var(--border);cursor:pointer;">
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Editar cliente</button>`);
-  accs.push(`<button onclick="openModal('pago');document.getElementById('p-cliente').value='${esc(nombreCliente)}';closeClientePanel();"
-    style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
-           background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);font-size:var(--fs-xs);font-weight:600;
-           border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);cursor:pointer;">
-    + Registrar Pago</button>`);
-  document.getElementById('cpanel-acciones').innerHTML = accs.join('');
+  accs.unshift('<button class="btn btn-primary" data-ficha-pago>Registrar pago recibido</button>');
+  if(gymConfig?.stripe_account_id && CoreCobros.canCreate()) accs.splice(1,0,'<button class="btn btn-outline" data-ficha-link>Crear enlace de cobro</button>');
+  const actions=document.getElementById('cpanel-acciones');
+  actions.innerHTML=accs.join('');
+  actions.querySelector('[data-ficha-pago]').onclick=()=>{closeClientePanel();openModal('pago');_pcSelect(nombreCliente);};
+  const link=actions.querySelector('[data-ficha-link]');
+  if(link) link.onclick=()=>{closeClientePanel();openCobrarLink(nombreCliente);};
+  actions.querySelector('[data-editar-ficha]').onclick=()=>abrirEditarCliente(nombreCliente);
 
   // Historial completo
   const mesesES=['enero','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -18617,40 +18598,53 @@ function _gymTxHTML(){
 // Ocupación de hoy: cuenta reservas por horario_id (no-canceladas).
 async function _gymHoyOcupacion(){
   try{
-    const hoy=_hoyMX();
-    const { data } = await gf(window.supabaseClient.from('reservas').select('horario_id,estado')).eq('fecha',hoy).neq('estado','cancelado');
+    const hoy=_asistFechaSel_offset(0);
+    const { data,error } = await gf(window.supabaseClient.from('reservas').select('horario_id,estado')).eq('fecha',hoy).neq('estado','cancelado');
+    if(error) return null;
     const map={}; (data||[]).forEach(r=>{ if(r.horario_id!=null) map[r.horario_id]=(map[r.horario_id]||0)+1; });
     return map;
-  }catch(_){ return {}; }
+  }catch(_){ return null; }
+}
+async function abrirClaseHoy(id){
+  const gym=MOVE_GYM_ID,fecha=_asistFechaSel_offset(0);
+  go('asistencia',document.getElementById('nav-asistencia'));
+  try{
+    const clases=await _horariosEfectivosFecha(fecha,_hovDiaNombre(fecha));
+    if(gym!==MOVE_GYM_ID || fecha!==_asistFechaSel() || !document.getElementById('v-asistencia').classList.contains('active')) return;
+    const h=clases.find(c=>String(c.id)===id);
+    if(h) abrirDetalleClase(h.id,h.hora,h.tipo,h.coach_nombre,h.cupo,h.base_id);
+    else toast('Esta clase ya no aparece en la agenda de hoy.','↺');
+  }catch{toast('No se pudo consultar la clase. Actualiza la lista.','↺');}
 }
 function _gymHoyHTML(ocup){
-  if(!horario||!horario.length) return `<div style="padding:14px 4px;font-size:var(--fs-xs);color:var(--text3);">Cargando horario…</div>`;
-  const now=new Date(), today=now.toISOString().slice(0,10);
+  if(!horario?.length && !horarioOverrides?.length) return `<button class="btn btn-outline btn-sm" onclick="go('asistencia')">Ver clases de hoy</button>`;
+  const now=new Date(), today=_asistFechaSel_offset(0);
   const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const todayDia=dias[now.getDay()];
+  const todayDia=dias[new Date(today+'T12:00:00').getDay()];
   const ovs=(typeof horarioOverrides!=='undefined'?horarioOverrides:[]);
   const clases=horario.filter(h=>{ if(h.tipo==='CERRADO') return false;
     if(ovs.find(o=>o.fecha===today&&o.hora===h.hora)) return false;
     return h.dia===todayDia; });
   const ovHoy=ovs.filter(o=>o.fecha===today&&o.tipo!=='CERRADO');
-  const all=[...clases,...ovHoy].sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+  const all=[...clases,...ovHoy].filter(h=>!isCancelada(h.id,today)).sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
   if(!all.length) return `<div style="padding:14px 4px;font-size:var(--fs-xs);color:var(--text3);">Sin clases programadas para hoy.</div>`;
   const nowMin=now.getHours()*60+now.getMinutes();
   return all.map(h=>{
-    const coach=(coaches.find(c=>String(c.id)===String(h.coach_id))||{}).nombre||'';
+    const coach=h.coach_nombre||(coaches.find(c=>String(c.id)===String(h.coach_id))||{}).nombre||'';
     const hora=(typeof formatHoraDisplay==='function')?formatHoraDisplay(h.hora):h.hora;
-    const cupo=h.cupo||0, res=(ocup&&h.id!=null)?(ocup[h.id]||0):0;
+    const base=h.fecha?horario.find(b=>b.dia===todayDia && b.hora===h.hora && !isCancelada(b.id,today)):null;
+    const cupo=h.cupo||0, res=ocup?(ocup[h.id]||0)+(base?ocup[base.id]||0:0):null;
     const pct=cupo>0?Math.min(100,Math.round(res/cupo*100)):0;
     const barCol=pct>=90?'var(--danger)':pct>=60?'var(--warn)':'var(--ok)';
     const past=_horaToMinutes(h.hora)<nowMin;
-    return `<div style="display:flex;align-items:center;gap:11px;padding:8px 0;${past?'opacity:.5;':''}">
+    return `<button type="button" class="op-today" data-slot="${esc(String(h.id)).replace(/"/g,'&quot;')}" onclick="abrirClaseHoy(this.dataset.slot)" style="display:flex;align-items:center;gap:11px;padding:8px 0;${past?'opacity:.5;':''}">
       <span style="font-size:var(--fs-sm);color:${past?'var(--text4)':'var(--accent)'};width:64px;flex-shrink:0;font-weight:600;">${esc(hora)}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:var(--fs-sm);color:var(--text);">${esc(h.tipo||'Clase')}${coach?`<span style="color:var(--text4);"> · ${esc(coach)}</span>`:''}</div>
         ${cupo>0?`<div style="height:4px;background:rgba(255,255,255,.06);border-radius:4px;margin-top:5px;"><div style="width:${pct}%;height:100%;background:${barCol};border-radius:4px;"></div></div>`:''}
       </div>
-      ${cupo>0?`<span style="font-size:var(--fs-sm);color:var(--text3);width:40px;text-align:right;flex-shrink:0;">${res}/${cupo}</span>`:''}
-    </div>`;
+      ${cupo>0?`<span style="font-size:var(--fs-sm);color:var(--text3);width:40px;text-align:right;flex-shrink:0;">${res??'…'}/${cupo}</span>`:''}
+      <span aria-hidden="true">›</span></button>`;
   }).join('');
 }
 function _applyGymAnalisisState(){
@@ -18696,12 +18690,13 @@ async function renderGymPulso(){
   const txb=document.getElementById('gym-tx-body'); if(txb) txb.innerHTML=_gymTxHTML();
   const hoyb=document.getElementById('gym-hoy-body');
   if(hoyb){
-    hoyb.innerHTML=_gymHoyHTML({});
+    hoyb.innerHTML=_gymHoyHTML(null);
     // Solo consultar reservas (ocupación) cuando el dashboard es la vista activa — renderDashboard
     // se llama en ~8 lugares (cada carga de datos); sin este gate haríamos una query extra cada vez.
     const vd=document.getElementById('v-dashboard');
     if(vd && vd.classList.contains('active')){
-      const oc=await _gymHoyOcupacion();
+      const gym=MOVE_GYM_ID,oc=await _gymHoyOcupacion();
+      if(gym!==MOVE_GYM_ID) return;
       if(_gymVertical==='gym'){ const hb=document.getElementById('gym-hoy-body'); if(hb) hb.innerHTML=_gymHoyHTML(oc); }
     }
   }
@@ -19002,7 +18997,7 @@ function renderDashboard(){
 
   // ─── Mes anterior (para trends) ───
   const prevDate = new Date(now.getFullYear(), now.getMonth()-1, 1);
-  const lastMonth = prevDate.toISOString().slice(0,7);
+  const lastMonth = prevDate.getFullYear()+'-'+String(prevDate.getMonth()+1).padStart(2,'0');
   const pagosLastMes = pagos.filter(p=>(p.fecha||'').startsWith(lastMonth) && p.notas!=='__sin_pago__');
   const ingresosLastMes = pagosLastMes.reduce((s,p)=>s+p.monto,0);
 
@@ -24204,6 +24199,10 @@ function _depositoTag(p){
 }
 
 function renderPagos(){
+  const informe=document.getElementById('pagos-informe');
+  informe.hidden=roleBlocksView('revenue')||roleOcultaDinero();
+  const link=document.getElementById('pagos-enlace');
+  if(link) link.hidden=!(gymConfig?.stripe_account_id && CoreCobros.canCreate());
   // Filtros de plan dinámicos (planes reales del gym)
   renderPlanFilters();
   _updatePagosFilterCount();
@@ -24376,7 +24375,7 @@ function renderPagos(){
       <td data-label="Vencimiento / Clases">${venceCol}</td>
       <td class="tbl-action">
         ${descontarBtn}${freezeBtn}
-        ${gymStripeId ? `<button class="btn btn-outline btn-sm" onclick="openStripeCharge('${esc(p.cliente)}',${p.monto},'${esc(p.plan)}')" title="Generar link de cobro Stripe" style="font-size:var(--fs-xs);padding:3px 8px;border-color:#7c3aed;color:var(--violet);">Cobrar</button>` : ''}
+        ${gymStripeId && CoreCobros.canCreate() ? `<button class="btn btn-outline btn-sm" data-cliente="${esc(p.cliente).replace(/"/g,'&quot;')}" data-concepto="${esc(p.plan).replace(/"/g,'&quot;')}" data-monto="${Number(p.monto)}" onclick="CoreCobros.create(this.dataset.cliente,false,'',this.dataset)" title="Crear enlace de cobro" style="font-size:var(--fs-xs);padding:3px 8px;">Crear enlace de cobro</button>` : ''}
         ${reciboBtn}
         <button class="btn btn-outline btn-sm" onclick="openEditPago('${p.id}')" style="font-size:var(--fs-xs);padding:3px 8px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
         <button class="btn btn-danger btn-sm" onclick="deletePago('${p.id}')" style="font-size:var(--fs-xs);padding:3px 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg></button>
@@ -24944,7 +24943,7 @@ async function loadHorarioOverridesFromSupabase(){
   const { data, error } = await gf(window.supabaseClient.from('horarios').select('*')).gte('fecha', start).lte('fecha', end).not('fecha','is',null);
   if(error){ console.error('Error cargando overrides:', error); if(_handleSessionError(error))return; horarioOverrides=[]; return; }
   horarioOverrides = (data||[]).filter(o=>o.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(o.fecha)).map(o=>({
-    id: o.id, fecha: o.fecha, hora: o.hora,
+    id: o.id, fecha: o.fecha, hora: o.hora, cupo:o.cupo, coaches_extra:o.coaches_extra,
     tipo: o.tipo||'', coach_id: o.coach_id||'',
     coach_nombre: o.coach_nombre||'',
     notas: o.notas||'',
@@ -25153,9 +25152,13 @@ function _hovAlcanceHint(){
   if(!sel || !txt) return;
   const fechaStr = document.getElementById('hov-fecha').value;
   const dia = _hovDiaNombre(fechaStr);
-  txt.textContent = sel.value === 'recurrente'
-    ? `Cambia el horario base: aplica a TODOS los ${dia} de aquí en adelante.`
-    : 'Este cambio aplica solo a esta fecha. La plantilla semanal no se modifica.';
+  const fecha=new Date(fechaStr+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const dias={Sábado:'sábados',Domingo:'domingos'};
+  const serie='Todos los '+(dias[dia]||dia.toLowerCase());
+  const hora=formatHoraDisplay(document.getElementById('hov-hora').value);
+  sel.options[0].textContent='Sólo el '+fecha;
+  sel.options[1].textContent=serie+' a las '+hora;
+  txt.textContent = sel.value==='recurrente' ? serie+' a las '+hora+' en la plantilla semanal. Las excepciones de fecha conservan su horario.' : 'Se actualizará la clase del '+fecha+' a las '+hora+'.';
   _hovMoverHint();
 }
 
@@ -25212,6 +25215,8 @@ function openEditClaseCell(fechaStr, hora){
     if(clase.tipo==='CERRADO'||clase.cerrado){
       sel.value = '__cerrado__';
     } else {
+      if(clase.coach_id && !Array.from(sel.options).some(o=>o.value===String(clase.coach_id)))
+        sel.add(new Option(clase.coach_nombre||String(clase.coach_id),clase.coach_id));
       sel.value = clase.coach_id || '';
     }
     const tipoVal = (clase.tipo==='CERRADO'||!clase.tipo) ? 'Strength' : clase.tipo;
@@ -25283,7 +25288,8 @@ async function _saveHorarioOverrideImpl(){
 
   const coachId  = cerrado ? '' : (coachVal||'');   // coach_id es text NOT NULL → '' nunca null (mismo patrón que saveClase)
   const coachObj = coachId ? coaches.find(c=>String(c.id)===String(coachId)||c.nombre===coachId) : null;
-  const coachNom = coachObj ? coachObj.nombre : '';
+  const actual=getEffectiveClase(fechaStr,hora);
+  const coachNom=coachObj?.nombre || (String(actual?.coach_id||'')===coachId?actual?.coach_nombre:'') || '';
 
   // Cerrar el gym ese día afecta a los atletas: confirmar antes.
   if(cerrado){
@@ -25309,7 +25315,7 @@ async function _saveHorarioOverrideImpl(){
     coach_id:     coachId,
     coach_nombre: cerrado ? 'CERRADO' : coachNom,
     cupo:         cupoVal,
-    notas:        ''
+    notas:        actual?.notas||''
   };
 
   const alcance  = (document.getElementById('hov-alcance')||{}).value || 'unica';
@@ -25329,7 +25335,7 @@ async function _saveHorarioOverrideImpl(){
   if(alcance === 'recurrente'){
     // Escribe en la PLANTILLA (dia + fecha vacía), no un override de un día.
     const base = (horario||[]).find(h => h.dia===diaNom && h.hora===hora && !(h.fecha||''));
-    const basePayload = { ...payload, fecha:'', dia:diaNom };
+    const basePayload = { ...payload, fecha:'', dia:diaNom, notas:base?.notas||'' };
     const r = base
       ? await window.supabaseClient.from('horarios').update(basePayload).eq('id', base.id)
       : await _guardarHorarioUnico(basePayload);
@@ -25373,6 +25379,7 @@ async function _saveHorarioOverrideImpl(){
   closeModal('horario-override');
   toast(alcance === 'recurrente' ? `Horario de los ${diaNom} actualizado ✓` : 'Clase actualizada ✓','✓');
   renderHorarioMensual();
+  if(document.getElementById('v-asistencia')?.classList.contains('active')) loadClasesOperativas();
 }
 
 async function deleteHorarioOverride(){
@@ -27170,7 +27177,10 @@ async function _horariosEfectivosFecha(fechaStr, diaNombre){
   const ovs  = filas.filter(h => h.fecha === fechaStr);
   const horasPisadas = new Set(ovs.map(h => h.hora));
   const base = filas.filter(h => h.dia === diaNombre && !(h.fecha||'') && !horasPisadas.has(h.hora));
-  const extra = ovs.filter(h => (h.tipo||'') !== 'CERRADO');
+  const extra = ovs.filter(h => h.tipo!=='CERRADO').map(h=>{
+    const original=filas.find(b=>!b.fecha && b.dia===diaNombre && b.hora===h.hora);
+    return {...h,base_id:original?.id};
+  });
   return [...base, ...extra].sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
 }
 
@@ -27476,7 +27486,18 @@ function renderAvisoProspectosSemana(){
     </div>`;
 }
 
+let _asistLectura=0;
+function idsClaseEnFecha(id){
+  const ctx=window._dc;
+  return ctx && ctx.horarioId===id && ctx.fecha===_asistFechaSel() && ctx.gym===MOVE_GYM_ID && ctx.baseId && ctx.baseId!==id ? [id,ctx.baseId] : [id];
+}
+function detalleDesdeTarjeta(btn){
+  const h=JSON.parse(btn.dataset.clase);
+  abrirDetalleClase(h.id,h.hora,h.tipo,h.coach_nombre,h.cupo,h.base_id);
+}
 async function loadClasesOperativas(){
+  const lectura=++_asistLectura,scope=MOVE_GYM_ID;
+  document.getElementById('asist-actualizado').textContent='';
   const el     = document.getElementById('asist-clases-list');
   const lbl    = document.getElementById('asist-dia-label');
   const fLbl   = document.getElementById('asist-fecha-label');
@@ -27497,13 +27518,15 @@ async function loadClasesOperativas(){
   try{
     const gymId = MOVE_GYM_ID||null;
     const horarios = await _horariosEfectivosFecha(hoyStr, diaHoy);
+    if(lectura!==_asistLectura || scope!==MOVE_GYM_ID) return;
     if(!horarios||!horarios.length){
-      el.innerHTML = `<div style="padding:48px 20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;"></div><div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:6px;">Sin clases hoy</div><div style="font-size:var(--fs-xs);color:var(--text3);">No hay clases programadas para el ${diaHoy}.</div></div>`;
+      el.innerHTML = `<div style="padding:48px 20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;"></div><div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:6px;">Sin clases para esta fecha</div><div style="font-size:var(--fs-xs);color:var(--text3);">No hay clases programadas para el ${diaHoy}.</div></div>`;
       return;
     }
     let rQ = window.supabaseClient.from('reservas').select('id,horario_id,cliente_nombre,estado').eq('fecha',hoyStr).neq('estado','cancelado');
     if(gymId) rQ = rQ.eq('gym_id',gymId);
-    const {data:reservas} = await rQ;
+    const {data:reservas,error:errReservas} = await rQ;
+    if(errReservas) throw errReservas;
     const rMap = {};
     (reservas||[]).forEach(r=>{ if(!r.horario_id) return; if(!rMap[r.horario_id]) rMap[r.horario_id]=[]; rMap[r.horario_id].push(r); });
     // Prospectos del enlace público (storefront_leads) de ESE día: no son socios
@@ -27516,11 +27539,15 @@ async function loadClasesOperativas(){
       const {data:props} = await pQ;
       (props||[]).forEach(pr=>{ if(!pr.horario_id) return; pMap[pr.horario_id] = (pMap[pr.horario_id]||0)+1; });
     }catch(e){ console.warn('prospectos por clase:', e); }
+    if(lectura!==_asistLectura || scope!==MOVE_GYM_ID) return;
+    const updated=document.getElementById('asist-actualizado');
+    if(updated) updated.textContent='Actualizado '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     // ── Feed check-in count to mobile home widget ──
     window._mhwCheckins = (reservas||[]).filter(r=>r.estado==='checkin').length;
     renderMobileHome();
     el.innerHTML = horarios.map(h=>{
-      const lista    = rMap[h.id]||[];
+      const lista = (rMap[h.id]||[]).concat(h.base_id?rMap[h.base_id]||[]:[]);
+      const prospectos=(pMap[h.id]||0)+(h.base_id?pMap[h.base_id]||0:0);
       const ocupados = lista.length;
       const cupo     = h.cupo||0;
       const libres   = Math.max(0,cupo-ocupados);
@@ -27530,7 +27557,7 @@ async function loadClasesOperativas(){
       const checkins = lista.filter(r=>r.estado==='checkin').length;
       const barW     = cupo>0 ? Math.min(pct*100,100).toFixed(0) : 0;
       const barClr   = dotCls==='full'?'#f06060':dotCls==='warn'?'#f5a623':'var(--accent)';
-      return `<div class="clase-card ${cardCls}" onclick="abrirDetalleClase('${h.id}','${esc(h.hora)}','${esc(h.tipo)}','${esc(h.coach_nombre||'')}',${cupo})">
+      return `<button type="button" class="clase-card ${cardCls}" data-clase="${esc(JSON.stringify(h)).replace(/"/g,'&quot;')}" onclick="detalleDesdeTarjeta(this)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="display:flex;align-items:center;gap:14px;min-width:0;">
             <div class="cupo-dot ${dotCls}"></div>
@@ -27544,13 +27571,14 @@ async function loadClasesOperativas(){
             <div style="font-size:var(--fs-2xl);font-weight:900;font-family:var(--fd);color:#fff;line-height:1;">${ocupados}<span style="font-size:var(--fs-base);color:var(--text3);font-weight:500;"> / ${cupo}</span></div>
             <div style="font-size:var(--fs-xs);font-weight:700;margin-top:4px;color:${libres===0?'#f06060':libres<=3?'#f5a623':'var(--ok)'};">${libres===0?'LLENO':`${libres} libre${libres!==1?'s':''}`}</div>
             ${checkins>0?`<div style="font-size:var(--fs-xs);color:var(--text3);margin-top:2px;">${checkins} check-in${checkins!==1?'s':''}</div>`:''}
-            ${(pMap[h.id]||0)>0?`<div style="font-size:var(--fs-xs);font-weight:800;color:var(--warn);margin-top:3px;">+${pMap[h.id]} prospecto${pMap[h.id]!==1?'s':''}</div>`:''}
+            ${prospectos>0?`<div style="font-size:var(--fs-xs);font-weight:800;color:var(--warn);margin-top:3px;">+${prospectos} prospecto${prospectos!==1?'s':''}</div>`:''}
           </div>
         </div>
         ${cupo>0?`<div style="margin-top:12px;height:4px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;"><div style="height:100%;width:${barW}%;background:${barClr};border-radius:99px;transition:width .4s;"></div></div>`:''}
-      </div>`;
+      </button>`;
     }).join('');
   }catch(e){
+    if(lectura!==_asistLectura || scope!==MOVE_GYM_ID) return;
     el.innerHTML = `<div style="padding:20px;text-align:center;font-size:var(--fs-sm);color:var(--text3);">Error cargando clases: ${esc(e.message||String(e))}</div>`;
     console.error('loadClasesOperativas',e);
   }
@@ -27558,7 +27586,20 @@ async function loadClasesOperativas(){
 
 let _detalleCtx = null;
 
-async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
+async function editarClaseDeAsistencia(){
+  const ctx=_detalleCtx,fecha=_asistFechaSel(),gym=MOVE_GYM_ID;
+  if(!ctx || !gym || !['admin','superadmin','staff'].includes(currentUser?.rol)) return;
+  const {data,error}=await window.supabaseClient.from('horarios').select('*').eq('gym_id',gym).eq('hora',ctx.hora).or('fecha.eq.'+fecha+',dia.eq.'+_hovDiaNombre(fecha));
+  if(error){toast('No se pudo consultar el horario. Vuelve a intentar.','↺');return;}
+  if(_detalleCtx!==ctx || gym!==MOVE_GYM_ID || fecha!==_asistFechaSel()) return;
+  const matches=data||[],dia=_hovDiaNombre(fecha);
+  horario=horario.filter(h=>h.dia!==dia || h.hora!==ctx.hora).concat(matches.filter(h=>!h.fecha && h.dia===dia));
+  horarioOverrides=horarioOverrides.filter(h=>h.fecha!==fecha || h.hora!==ctx.hora).concat(matches.filter(h=>h.fecha===fecha));
+  const clase=getEffectiveClase(fecha,ctx.hora);
+  if(String(clase?.id)!==String(ctx.horarioId)){toast('La clase cambió. Actualiza la lista.','↺');return;}
+  cerrarDetalleClase();openEditClaseCell(fecha,ctx.hora);
+}
+async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo,baseId=null){
   _detalleCtx = {horarioId,hora,tipo,coach,cupo};
   const panel   = document.getElementById('asist-detalle-panel');
   const overlay = document.getElementById('asist-detalle-overlay');
@@ -27570,18 +27611,21 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo){
   document.body.style.overflow='hidden';
 
   // Store context on window so inline handlers can reference safely without string escaping issues
-  window._dc = {horarioId, hora, tipo, coach, cupo};
+  window._dc = {horarioId,hora,tipo,coach,cupo,baseId,fecha:_asistFechaSel(),gym:MOVE_GYM_ID};
 
   panel.innerHTML = `
     <!-- ① Header — sticky, always visible -->
     <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2,var(--bg));gap:12px;">
       <div style="min-width:0;">
         <div style="font-size:var(--fs-xl);font-weight:900;font-family:var(--fd);color:#fff;">${fmtHoraClase(hora)}</div>
-        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(hora)} · ${esc(tipo)}${coach ? ' · '+esc(coach) : ''}</div>
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tipo)}${coach ? ' · '+esc(coach) : ''}</div>
       </div>
-      <button onclick="cerrarDetalleClase()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:var(--fs-base);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      <button aria-label="Cerrar lista de clase" onclick="cerrarDetalleClase()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--text);font-size:var(--fs-base);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
 
+    <div class="op-class-actions"><span>${new Date(_asistFechaSel()+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</span>
+      ${['admin','superadmin','staff'].includes(currentUser?.rol)?'<button class="btn btn-outline btn-sm" onclick="editarClaseDeAsistencia()">Editar clase</button>':''}
+    </div>
     <!-- ② Buscador — sticky, overflow:visible para que dropdown sea visible -->
     <div id="detalle-search-wrap" style="padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:20;isolation:isolate;background:var(--bg2,var(--bg));">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -27629,6 +27673,7 @@ function cerrarDetalleClase(){
   if(overlay){ overlay.classList.remove('open'); overlay.style.display = 'none'; }
   document.body.style.overflow='';
   _detalleCtx = null;
+  window._dc = null;
   loadClasesOperativas();
 }
 
@@ -27660,15 +27705,18 @@ async function desbloquearLugar(reservaId, horarioId, hora, tipo, cupo){
 async function loadDetalleClase(horarioId,hora,tipo,cupo){
   const body = document.getElementById('detalle-body');
   if(!body) return;
+  const ctx=window._dc;
+  const vigente=()=>ctx===window._dc && body.isConnected && MOVE_GYM_ID===gymId && hoyStr===_asistFechaSel();
   const hoyStr = _asistFechaSel();   // el día que el usuario está viendo, no "hoy"
   window._dcFecha = hoyStr;          // las acciones del panel escriben en esa misma fecha
   const gymId  = MOVE_GYM_ID||null;
   try{
     let q = window.supabaseClient.from('reservas')
       .select('id,cliente_nombre,estado,portal_token,cliente_id,spot')
-      .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado').order('created_at',{ascending:true});
+      .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).neq('estado','cancelado').order('created_at',{ascending:true});
     if(gymId) q = q.eq('gym_id',gymId);
     const {data:reservas,error} = await q;
+    if(!vigente()) return;
     if(error) throw error;
     const todas     = reservas||[];
     // Lugares bloqueados por el admin (estado='bloqueado'): ocupan lugar pero no son personas
@@ -27683,7 +27731,9 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     // Cuántas clases le quedan a cada quien. Lo calcula la BASE con la misma
     // regla que descuenta el check-in (estado_paquetes_lista): no hay una segunda
     // cuenta en el navegador que se pueda desfasar.
-    window._dcPaquetes = await _cargarPaquetesLista(lista.map(r=>r.cliente_id), hoyStr);
+    const paquetes=await _cargarPaquetesLista(lista.map(r=>r.cliente_id), hoyStr);
+    if(!vigente()) return;
+    window._dcPaquetes=paquetes;
     // Prospectos: quien reservó esta clase desde el enlace público. No son socios
     // (no tienen ficha ni membresía), por eso viven en storefront_leads y no en
     // reservas. Antes solo se veían en Storefront → Leads, así que el gym no
@@ -27692,11 +27742,12 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     try{
       let pq = window.supabaseClient.from('storefront_leads')
         .select('id,visitor_name,visitor_phone,visitor_email,preferred_day,status')
-        .eq('horario_id',horarioId).eq('fecha',hoyStr)
+        .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr)
         .eq('type','trial_class').neq('status','converted')
         .order('created_at',{ascending:true});
       if(gymId) pq = pq.eq('gym_id',gymId);
       const { data:props, error:pErr } = await pq;
+      if(!vigente()) return;
       if(pErr) console.warn('prospectos:', pErr.message);
       window._dcProspectos = props || [];
       if((props||[]).length){
@@ -27728,11 +27779,12 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     try{
       let tq = window.supabaseClient.from('reservas')
         .select('id,cliente_nombre,pago_id')
-        .eq('horario_id',horarioId).eq('fecha',hoyStr)
+        .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr)
         .eq('estado','cancelado').eq('cancelacion_tardia',true)
         .order('created_at',{ascending:true});
       if(gymId) tq = tq.eq('gym_id',gymId);
       const { data:tardes, error:tErr } = await tq;
+      if(!vigente()) return;
       if(tErr) console.warn('cancelaron tarde:', tErr.message);
       if((tardes||[]).length){
         tardesHtml = `
@@ -27750,10 +27802,11 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     let waitlistHtml = '';
     if(_fWaitlistP()){
       let wq = window.supabaseClient.from('waitlist')
-        .select('id,cliente_nombre,posicion').eq('horario_id',horarioId).eq('fecha',hoyStr).eq('estado','espera')
+        .select('id,cliente_nombre,posicion').in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).eq('estado','espera')
         .order('posicion',{ascending:true});
       if(gymId) wq = wq.eq('gym_id',gymId);
       const { data:wl, error:wlErr } = await wq;
+      if(!vigente()) return;
       if(wlErr) console.warn('waitlist query:', wlErr.message);
       if(wl && wl.length){
         waitlistHtml = `
@@ -28589,7 +28642,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   // ── Validación 2: duplicado en esta clase ───────────────────────
   const {count:dupCount} = await window.supabaseClient
     .from('reservas').select('id',{count:'exact',head:true})
-    .eq('horario_id',horarioId).eq('fecha',hoyStr)
+    .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr)
     .eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
   if(dupCount>0){
     toast('Este cliente ya tiene una reserva para esta clase.','⚠️');
@@ -28623,7 +28676,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   // ── Validación 3: cupo disponible ───────────────────────────────
   const {count:cntActual} = await window.supabaseClient
     .from('reservas').select('id',{count:'exact',head:true})
-    .eq('horario_id',horarioId).eq('fecha',hoyStr).neq('estado','cancelado');
+    .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).neq('estado','cancelado');
   if(cupo>0 && (cntActual||0)>=cupo){
     // Clase llena → ofrecer lista de espera (switch waitlist; antes solo studios,
     // mientras la app la ofrecía a todos: esa divergencia muere aquí).
@@ -30062,17 +30115,23 @@ async function removeWaitlistEntry(id){
 // ══════════════════════════════════════════════════════
 let _revenueChartInst = null;
 
+function navIngresosMes(delta){
+  _pagosMes=delta<0?_mesPrev(_pagosMes):_mesNext(_pagosMes);
+  renderRevenue();
+}
 function renderRevenue(){
-  const now = new Date(); now.setHours(0,0,0,0);
-  const thisMonth = now.toISOString().slice(0,7);
+  if(roleOcultaDinero()) return;
+  const today=_hoyMX(), thisMonth=_pagosMes;
+  const now=thisMonth===today.slice(0,7)?new Date(today+'T12:00:00'):new Date(Number(thisMonth.slice(0,4)),Number(thisMonth.slice(5)),0,12);
+  document.getElementById('rev-month-nav').innerHTML=_buildMonthNav(thisMonth,'navIngresosMes(-1)','navIngresosMes(1)');
   const prevDate  = new Date(now.getFullYear(), now.getMonth()-1, 1);
-  const lastMonth = prevDate.toISOString().slice(0,7);
+  const lastMonth = prevDate.getFullYear()+'-'+String(prevDate.getMonth()+1).padStart(2,'0');
 
   // ── 12-month revenue array (oldest first) ──
   const months = [];
   for(let i=11;i>=0;i--){
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    months.push(d.toISOString().slice(0,7));
+    months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
   }
   const monthlyRevenue = months.map(m=>
     pagos.filter(p=>(p.fecha||'').startsWith(m) && p.notas!=='__sin_pago__')
@@ -30095,7 +30154,11 @@ function renderRevenue(){
   const ingrRenov  = renov.reduce((s,p)=>s+p.monto,0);
 
   // Ticket promedio
-  const ticketProm = pagosEsteMes.length>0 ? Math.round(ingresosMes/pagosEsteMes.length) : 0;
+  const visitasMes=(visitasDB||[]).filter(v=>(v.fecha||'').startsWith(thisMonth));
+  const movimientos=pagosEsteMes.length+visitasMes.length;
+  const ticketProm=movimientos?Math.round(ingresosMes/movimientos):0;
+  const efectivo=[...pagosEsteMes,...visitasMes].filter(p=>String(p.metodo||'').trim().toLowerCase()==='efectivo')
+    .reduce((sum,p)=>sum+(Number(p.monto)||0),0);
   // Proyección: ratio del día del mes
   const dayOfMonth = now.getDate();
   const daysInMonth = new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
@@ -30118,24 +30181,25 @@ function renderRevenue(){
     };
     kpiEl.innerHTML=`
       <div class="kpi-card" style="cursor:default;">
-        <div class="kpi-label">Ingresos este mes</div>
+        <div class="kpi-label">Ingresos del periodo</div>
         <div class="kpi-value" style="font-size:var(--fs-3xl);">$${ingresosMes.toLocaleString('es-MX')}</div>
+        <div class="kpi-meta">Registrado en efectivo · ${_pvMoney2(efectivo)}</div>
         ${trendStr(ingresosMes,ingresosLast)}
       </div>
       <div class="kpi-card" style="cursor:default;">
-        <div class="kpi-label">Proyección del mes</div>
+        <div class="kpi-label">${thisMonth<today.slice(0,7)?'Cierre del mes':'Proyección del mes'}</div>
         <div class="kpi-value" style="font-size:var(--fs-3xl);">$${proyeccion.toLocaleString('es-MX')}</div>
-        <div class="kpi-meta">Basada en ritmo actual (día ${dayOfMonth}/${daysInMonth})</div>
+        <div class="kpi-meta">${thisMonth===today.slice(0,7)?'Al ritmo de los primeros '+dayOfMonth+' días':thisMonth<today.slice(0,7)?'Periodo cerrado':'Periodo futuro'}</div>
       </div>
       <div class="kpi-card" style="cursor:default;">
         <div class="kpi-label">Ticket promedio</div>
         <div class="kpi-value" style="font-size:var(--fs-3xl);">$${ticketProm.toLocaleString('es-MX')}</div>
-        <div class="kpi-meta">${pagosEsteMes.length} pago${pagosEsteMes.length!==1?'s':''} este mes</div>
+        <div class="kpi-meta">${movimientos} movimiento${movimientos===1?'':'s'} del periodo</div>
       </div>
       <div class="kpi-card" style="cursor:default;">
         <div class="kpi-label">Tasa de retención</div>
-        <div class="kpi-value" style="font-size:var(--fs-3xl);">${tasaReten}%</div>
-        <div class="kpi-meta">${retenidos} de ${cliLastMes.size} del mes pasado renovaron</div>
+        <div class="kpi-value" style="font-size:var(--fs-3xl);">${cliLastMes.size?tasaReten+'%':'—'}</div>
+        <div class="kpi-meta">${cliLastMes.size?retenidos+' de '+cliLastMes.size+' del mes pasado renovaron':'Sin clientes con pago el mes anterior'}</div>
       </div>`;
   }
 
@@ -30182,8 +30246,8 @@ function renderRevenue(){
   const subEl= document.getElementById('rev-breakdown-sub');
   if(subEl) subEl.textContent=`${pagosEsteMes.length} pagos · ${MESES_ES[now.getMonth()]||''} ${now.getFullYear()}`;
   if(bdEl){
-    const total = ingresosMes||1;
-    const pctN = Math.round(ingrNuevos/total*100), pctR=100-pctN;
+    const total=ingrNuevos+ingrRenov;
+    const pctN=total?Math.round(ingrNuevos/total*100):0, pctR=total?100-pctN:0;
     bdEl.innerHTML=`
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div>
@@ -30269,12 +30333,12 @@ function exportRevenueCSV(){
 }
 
 async function exportRevenueXLSX(){
+  if(roleOcultaDinero() || roleBlocksView('revenue')) return;
   toast('Generando Excel…','📊');
   try{
     const XLSX = await ensureXLSX();
     const now = new Date();
     const gymNombre = gymConfig.gym_nombre || 'Gym';
-    const mesLabel  = _mesLabel ? _mesLabel() : now.toISOString().slice(0,7);
 
     // ── Sheet 1: Todos los pagos ──────────────────────────────
     const pagosFiltrados = pagos.filter(p=>p.notas!=='__sin_pago__');

@@ -240,7 +240,7 @@ window.CoreCobros = (function core(){
     catalogReturn=null;
     if (saved && current(saved.ctx)) create(saved.name,true,saved.email);
   }
-  async function create(name='',monthly=false,email=''){
+  async function create(name='',monthly=false,email='',received=null){
     if (!canCreate()) {toast('Se necesita acceso de administración del gimnasio para crear un cobro.','✕');return;}
     const ctx=context();
     const box=openBox('Crear cobro','<p class="hint" role="status">Cargando tu catálogo…</p>');
@@ -252,7 +252,7 @@ window.CoreCobros = (function core(){
     } catch {
       if(current(ctx) && box.open) {
         box.querySelector('[role=status]').innerHTML='No pudimos cargar los datos del cobro. '+btn('retry','Reintentar');
-        box.querySelector('[data-act=retry]').onclick=()=>create(name,monthly,email);
+        box.querySelector('[data-act=retry]').onclick=()=>create(name,monthly,email,received);
       }
       return;
     }
@@ -264,7 +264,7 @@ window.CoreCobros = (function core(){
         if(!current(ctx) || !canCreate()) return;
         if(action.dataset.act==='activate'){box.close();conectarStripe();return;}
         action.disabled=true;
-        try {await edge('stripe-account-sync',{},ctx);if(current(ctx) && box.open) create(name,monthly,email);}
+        try {await edge('stripe-account-sync',{},ctx);if(current(ctx) && box.open) create(name,monthly,email,received);}
         catch {if(current(ctx)) toast('No pudimos consultar la activación. Vuelve a intentar.','✕');}
         finally {action.disabled=false;}
       };
@@ -323,6 +323,7 @@ window.CoreCobros = (function core(){
       if(billing){billing.value='recurring';billing.dispatchEvent(new Event('change',{bubbles:true}));}
     };
     options();
+    if(received && !monthly){fields.plan.value='free';fields.amount.value=received.monto;fields.description.value=received.concepto||'';price();}
     fields.member.focus();
     let sending=false;
     f.onsubmit=async event=>{
@@ -352,7 +353,7 @@ window.CoreCobros = (function core(){
   }
   function mobileCharge(){
     if (!canCreate() || !gymConfig?.stripe_account_id) {openModal('pago');return;}
-    const box=openBox('Cobrar',`<div class="vc-methods">${btn('online','Crear un enlace de cobro','primary')}${btn('manual','Registrar un pago recibido','secondary')}</div>`);
+    const box=openBox('Cobrar',`<div class="vc-methods">${btn('online','Crear enlace de cobro','primary')}${btn('manual','Registrar pago recibido','secondary')}</div>`);
     box.querySelector('[data-act=online]').onclick=()=>create();
     box.querySelector('[data-act=manual]').onclick=()=>{box.close();openModal('pago');};
   }
@@ -369,5 +370,5 @@ window.CoreCobros = (function core(){
     if(!totals.size) return '';
     return `<details><summary>Cobros del mes por canal</summary>${facts(Array.from(totals,([k,v])=>[names[k],money(v/100)]))}</details>`;
   }
-  return {render,create,canCreate,reset,resume,mobileCharge,reviewActivation};
+  return {render,create,canCreate,reset,resume,mobileCharge,reviewActivation,frequency};
 })();
