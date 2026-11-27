@@ -124,6 +124,8 @@ function renderPorVencer(){
   document.getElementById('pv-plazo').hidden=_pvEstado==='vencidos';
   const btn=document.getElementById('pv-btn-todos');btn.disabled=!lista.some(p=>p.telefono);
   const host=document.getElementById('pv-list');
+  const gym=MOVE_GYM_ID, usuario=currentUser, token=usuario.jwt, rol=usuario.rol;
+  const directorio=clientesDB, historial=pagos;
   const fecha=p=>p.mejorVence?new Date(p.mejorVence+'T12:00:00Z').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}):'';
   const moneyHidden=roleOcultaDinero();
   document.getElementById('pv-summary').textContent=lista.length&&!moneyHidden
@@ -133,7 +135,14 @@ function renderPorVencer(){
     '<p class="pv-empty">'+(_pvEstado==='vencidos'?'Sin membresías vencidas ni paquetes agotados.':'Sin vencimientos en los próximos '+_pvDays+' días.')+'</p>';
   host.onclick=e=>{
     const b=e.target.closest('[data-pv-persona]');if(!b) return;
-    const p=lista[Number(b.dataset.pvPersona)];
+    if(!b.isConnected || !host.contains(b) || !pvDatosListos() || gym!==MOVE_GYM_ID || usuario!==currentUser ||
+       token!==currentUser.jwt || rol!==currentUser.rol || directorio!==clientesDB || historial!==pagos){
+      renderPorVencer();return;
+    }
+    const anterior=lista[Number(b.dataset.pvPersona)];
+    const p=pvPersonas().find(x=>x.nombre===anterior.nombre);
+    if(!p || p.homonimo!==anterior.homonimo || p.telefono!==anterior.telefono ||
+       p.mejorVence!==anterior.mejorVence || p.plan!==anterior.plan){renderPorVencer();return;}
     if(p.homonimo){
       const aviso=b.closest('.pv-persona').querySelector('.pv-aviso');
       aviso.hidden=!aviso.hidden;b.setAttribute('aria-expanded',String(!aviso.hidden));return;
@@ -141,9 +150,25 @@ function renderPorVencer(){
     if(p.telefono) pvRevisar([p],true);else abrirEditarTelefono(p.nombre);
   };
 }
-function pvRevisarNombre(nombre){
-  const p=pvPersonas(30,'ambos').find(p=>p.nombre===nombre);
-  if(p) pvRevisar([p],true);
+function pvEventosCalendario(mes){
+  return pvPersonas(Infinity,'ambos').filter(p=>p.mejorVence?.startsWith(mes+'-')).map(p=>({
+    ...p,estado:p.diasRest<0?'vencido':p.diasRest<=3?'urgente':p.diasRest<=14?'pronto':'activo'
+  }));
+}
+function pvBotonHomonimo(){
+  return `<button type="button" class="btn btn-outline btn-sm" onclick="abrirDialogoCore('Revisar homónimos','<p>Hay varias fichas con este nombre. Verifica su identidad en Clientes antes de contactar.</p>')">Revisar homónimos</button>`;
+}
+function pvBotonRecordatorio(p){
+  if(p.homonimo) return pvBotonHomonimo();
+  if(!p.telefono) return '<span>Sin teléfono</span>';
+  return `<button type="button" data-socio="${esc(p.nombre).replace(/"/g,'&quot;')}" data-gym="${MOVE_GYM_ID}" class="btn btn-outline btn-sm" onclick="event.stopPropagation();pvRevisarNombre(this.dataset.socio,this.dataset.gym)">Ver recordatorio</button>`;
+}
+function pvRevisarNombre(nombre,gym){
+  if(gym!=null && String(gym)!==String(MOVE_GYM_ID)) return;
+  const p=pvPersonas(Infinity,'ambos').find(p=>p.nombre===nombre);
+  if(!p){toast('La vigencia cambió. Vuelve a consultar la lista.','ℹ️');return;}
+  if(p.homonimo || !p.telefono){toast('Revisa la identidad y el número en Clientes.','ℹ️');return;}
+  pvRevisar([p],true);
 }
 function pvEnviarTodos(){pvRevisar(pvPersonas());}
 function waEnMasa(){pvRevisar(pvPersonas(14,'ambos'));}
@@ -179,7 +204,7 @@ function pvRevisar(personas,individual=false){
       if(!vigente()){dialog.close();return;}
       const p=filas[Number(b.dataset.pvAbrir)];
       // Si el panel recibió una renovación o un teléfono nuevo durante la revisión, pide seleccionar otra vez.
-      const actual=pvPersonas(30,'ambos').find(socio=>socio.nombre===p.nombre);
+      const actual=pvPersonas(Infinity,'ambos').find(socio=>socio.nombre===p.nombre);
       if(!actual || actual.telefono!==p.telefono || pvTexto(actual)!==p.texto){
         dialog.close();
         if(origen==='por-vencer') renderPorVencer();

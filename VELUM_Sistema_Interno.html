@@ -11084,12 +11084,50 @@ async function loadCoachesFromSupabase(){
   }));
 }
 
+// Una vigencia antigua puede seguir dando acceso. Conserva el orden del directorio y el historial completos.
+const lecturasDirectorio={pagos:0,clientes:0};
+async function leerDirectorioCompleto(db,tabla,gym,columna,ascendente,vigente){
+  if(!db || !gym) return {error:{message:'Falta la sesión del gimnasio.'}};
+  try{
+    for(let intento=0;intento<2;intento++){
+      const filas=[],ids=new Set();
+      let total=null;
+      while(vigente()){
+        const desde=filas.length;
+        const {data,count,error}=await db.from(tabla).select('*',{count:'exact'}).eq('gym_id',gym)
+          .order(columna,{ascending:ascendente}).order('id',{ascending:ascendente}).range(desde,desde+499);
+        if(error){
+          if(desde && error.code==='PGRST103') break;
+          return {error};
+        }
+        if(!Array.isArray(data)) return {error:{message:'No se pudo confirmar la lista completa.'}};
+        if(count!=null && total!=null && total!==count) break;
+        if(count!=null) total=count;
+        // Si una inserción desplazó la página, vuelve a comenzar una vez para no mezclar lecturas.
+        if(desde && data.some(f=>ids.has(f.id))) break;
+        for(const f of data){filas.push(f);ids.add(f.id);}
+        if(total!==null && filas.length===total) return {data:filas};
+        if(!data.length){
+          if(total===null) return {data:filas};
+          break;
+        }
+        if(total!==null && filas.length>total) break;
+      }
+      if(!vigente()) return {error:{message:'Cambió la sesión o la consulta.'}};
+    }
+    return {error:{message:'El directorio cambió durante la consulta. Vuelve a intentar.'}};
+  }catch(error){return {error};}
+}
+
 async function loadPagosFromSupabase(){
   const gym=MOVE_GYM_ID,user=currentUser,token=user?.jwt;
-  const { data, error } = await gf(window.supabaseClient.from('pagos').select('*')).order('created_at', {ascending: false}).limit(2000);
-  if(gym!==MOVE_GYM_ID || user!==currentUser || token!==currentUser?.jwt) return;
+  const lectura=++lecturasDirectorio.pagos;
+  const vigente=()=>lectura===lecturasDirectorio.pagos && gym===MOVE_GYM_ID && user===currentUser && token===currentUser?.jwt;
+  const {data,error}=await leerDirectorioCompleto(window.supabaseClient,'pagos',gym,'created_at',false,vigente);
+  if(!vigente()) return;
   contextoPagosInicio=error?null:{gym,user,token};
   if(error){
+    if(document.getElementById('v-por-vencer')?.classList.contains('active')) renderPorVencer();
     console.error('Error cargando pagos:', error); if(_handleSessionError(error))return;
     const m = error.message||'';
     if(m.includes('JWT')||m.includes('expired')||m.includes('invalid claim')){ _handleJwtExpiry(); }
@@ -11112,10 +11150,13 @@ async function loadPagosFromSupabase(){
 
 async function loadClientesFromSupabase(){
   const gym=MOVE_GYM_ID,user=currentUser,token=user?.jwt;
-  const { data, error } = await gf(window.supabaseClient.from('clientes').select('*')).order('nombre').limit(2000);
-  if(gym!==MOVE_GYM_ID || user!==currentUser || token!==currentUser?.jwt) return;
+  const lectura=++lecturasDirectorio.clientes;
+  const vigente=()=>lectura===lecturasDirectorio.clientes && gym===MOVE_GYM_ID && user===currentUser && token===currentUser?.jwt;
+  const {data,error}=await leerDirectorioCompleto(window.supabaseClient,'clientes',gym,'nombre',true,vigente);
+  if(!vigente()) return;
   contextoClientesInicio=error?null:{gym,user,token};
   if(error){
+    if(document.getElementById('v-por-vencer')?.classList.contains('active')) renderPorVencer();
     console.error('Error cargando clientes:', error); if(_handleSessionError(error))return;
     clientesDB=[];
     const m = error.message||'';
@@ -13225,23 +13266,10 @@ function renderCalVenc(){
   const dayMap={};
   const mesStr=`${y}-${String(m+1).padStart(2,'0')}`;
 
-  // For each cliente, find their latest pago and check if it vence this month
-  const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
-  [...nombresSet].forEach(nombre=>{
-    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
-    if(!ps.length) return;
-    const ult=ps[0];
-    if(!(ult.vence||'').startsWith(mesStr)) return;
-    const day=parseInt((ult.vence||'').slice(8,10));
-    if(!day||isNaN(day)) return;
-    const vDate=new Date(ult.vence+'T12:00:00');
-    const diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
-    const estado=diff<0?'vencido':diff<=3?'urgente':diff<=14?'pronto':'activo';
-    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
-    const tel=(cliRec.telefono||'').replace(/\D/g,'');
-    if(!dayMap[day]) dayMap[day]=[];
-    dayMap[day].push({nombre,estado,plan:ult.plan||'—',vence:ult.vence,tel,diff});
-  });
+  for(const e of pvEventosCalendario(mesStr)){
+    const day=Number(e.mejorVence.slice(8));
+    (dayMap[day]??=[]).push(e);
+  }
 
   // Cumpleaños del mes (feature 11-ago): misma fuente que el widget del
   // dashboard — pagos[].cumpleanos (YYYY-MM-DD), dedup por cliente. Se pintan
@@ -13330,21 +13358,7 @@ function calVencShowDay(day){
   const y=_calVencYear, m=_calVencMonth;
   const mesStr=`${y}-${String(m+1).padStart(2,'0')}`;
   const dayStr=`${mesStr}-${String(day).padStart(2,'0')}`;
-  const hoy=new Date(); hoy.setHours(0,0,0,0);
-
-  const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
-  const events=[];
-  [...nombresSet].forEach(nombre=>{
-    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence===dayStr&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan));
-    if(!ps.length) return;
-    const ult=ps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
-    const vDate=new Date(dayStr+'T12:00:00');
-    const diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
-    const estado=diff<0?'vencido':diff<=3?'urgente':diff<=14?'pronto':'activo';
-    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
-    const tel=(cliRec.telefono||'').replace(/\D/g,'');
-    events.push({nombre,estado,plan:ult.plan||'—',vence:dayStr,tel,diff});
-  });
+  const events=pvEventosCalendario(mesStr).filter(e=>e.mejorVence===dayStr);
 
   // Cumpleaños de ese día (mes-día del cumpleanos más reciente por cliente)
   const mmdd=`${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -13392,25 +13406,17 @@ function calVencShowDay(day){
   } else if(!events.length){
     listEl.innerHTML=cumpleHtml;
   } else {
-    const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
     const stateColor={vencido:'var(--danger)',urgente:'#ff6b35',pronto:'var(--warn)',activo:'var(--ok)'};
-    const stateLabel={vencido:'Vencido',urgente:'Vence hoy/mañana',pronto:'Por vencer',activo:'Activo'};
     listEl.innerHTML=events.map(e=>{
-      const numWA=e.tel.length===10?'52'+e.tel:e.tel;
-      const msgWA=encodeURIComponent(buildWAMsg(e.nombre,e.plan,e.vence));
-      const waBtn=numWA.length>=12
-        ?`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-              style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-sm);font-weight:700;text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WA</a>`
-        :`<button onclick="openClientePanel('${esc(e.nombre)}')"
-              style="padding:5px 10px;border-radius:8px;background:var(--card2);color:var(--text3);font-size:var(--fs-sm);font-weight:600;border:1px dashed var(--border);cursor:pointer;">Ver</button>`;
+      const waBtn=pvBotonRecordatorio(e);
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;"
-                   onclick="go('clientes',document.getElementById('nav-clientes'));setTimeout(()=>openClientePanel('${esc(e.nombre)}'),180)">
+                   data-socio="${esc(e.nombre).replace(/"/g,'&quot;')}" onclick="go('clientes',document.getElementById('nav-clientes'));openClientePanel(this.dataset.socio)">
         ${getAvatarHTML(e.nombre,32)}
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(e.nombre)}</div>
           <div style="font-size:var(--fs-sm);color:var(--text3);">${esc(e.plan)}</div>
         </div>
-        <span style="font-size:var(--fs-sm);padding:3px 8px;border-radius:8px;background:${stateColor[e.estado]}18;color:${stateColor[e.estado]};font-weight:700;">${stateLabel[e.estado]}</span>
+        <span style="font-size:var(--fs-sm);padding:3px 8px;border-radius:8px;background:${stateColor[e.estado]}18;color:${stateColor[e.estado]};font-weight:700;">${pvVigencia(e)}</span>
         <div onclick="event.stopPropagation()">${waBtn}</div>
       </div>`;
     }).join('') + cumpleHtml;
@@ -14682,36 +14688,6 @@ function renderMembresiasAlert(){
 // ═══════════════════════════════════════════════════════════════════
 
 // ─── Helper: construye el mensaje de WhatsApp ───────────────────────
-function buildWAMsg(nombre, plan, vence){
-  // Nombre legible del plan
-  const planMap = {
-    'mensual':     'membresía mensual',
-    'quincenal':   'membresía quincenal',
-    'trimestral':  'membresía trimestral',
-    'semestral':   'membresía semestral',
-    'anual':       'membresía anual',
-    'mensual familiar': 'membresía familiar mensual',
-    'pase de día': 'pase de día',
-    'pase':        'pase de día',
-  };
-  const planKey = (plan||'').toLowerCase().trim();
-  const planLabel = planMap[planKey] || (plan||'membresía').toLowerCase();
-
-  // Fecha legible
-  let fechaLabel = vence||'';
-  if(vence && vence.length >= 10){
-    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    const [y,m,d] = vence.split('-');
-    fechaLabel = `${parseInt(d)} de ${meses[parseInt(m)-1]} de ${y}`;
-  }
-
-  // Primer nombre solamente
-  const primerNombre = (nombre||'').split(' ')[0];
-
-  const gNombre = gymConfig.gym_nombre||'el gym';
-  return `Hola ${primerNombre}! Te escribimos desde ${gNombre} para avisarte que tu ${planLabel} vence el ${fechaLabel}. Queremos que sigas siendo parte de la comunidad, asi que cuando quieras renovar aqui estamos para ayudarte. Un saludo!`;
-}
-
 // Estado activo de los filtros
 let _cliEstado = sessionStorage.getItem('velum_cliEstado') || 'todos';
 let _cliTipo   = sessionStorage.getItem('velum_cliTipo')   || 'todos';
@@ -14824,12 +14800,6 @@ function renderClientes(){
   // Los pases de día ahora van a la tabla `visitas` — no al directorio de socios
   const nombresSet = new Set();
   clientesDB.forEach(c => { if(c.nombre) nombresSet.add(c.nombre.trim()); });
-  // Incluir nombres de pagos SOLO si ya tienen registro en clientesDB (para migración de datos históricos)
-  pagos.filter(p=>p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).forEach(p => {
-    const n=(p.cliente||'').trim();
-    if(n && clientesDB.some(c=>c.nombre===n)) nombresSet.add(n);
-  });
-
   // ── Zero-data empty state (no clients AND no payments at all) ──
   if(!nombresSet.size){
     if(kpisEl) kpisEl.innerHTML = '';
@@ -14856,8 +14826,11 @@ function renderClientes(){
     let arr=_pagosPorCliente.get(k); if(!arr){ arr=[]; _pagosPorCliente.set(k,arr); }
     arr.push(p);
   }
-  const _cliPorNombre = new Map();
-  for(const c of clientesDB){ if(c.nombre && !_cliPorNombre.has(c.nombre)) _cliPorNombre.set(c.nombre, c); }
+  const _cliPorNombre = new Map(), _nombresDuplicados=new Set();
+  for(const c of clientesDB){
+    const n=(c.nombre||'').trim();if(!n) continue;
+    if(_cliPorNombre.has(n)) _nombresDuplicados.add(n);else _cliPorNombre.set(n,c);
+  }
 
   // Estado real por cliente (regla canónica: incluye paquetes agotados como vencidos)
   const _estadoMap = estadoMembresiaPorCliente();
@@ -14986,7 +14959,6 @@ function renderClientes(){
   const paginated = lista.slice(_cliPage * PAGE, (_cliPage + 1) * PAGE);
 
   // ── Render tarjetas ──────────────────────────────────────────────
-  const WA_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
 
   const esCfg = {
     activo:      { color:'var(--ok)',     bg:'rgba(16,185,129,.10)',  label:'Activo',     icon:'✓' },
@@ -15036,7 +15008,6 @@ function renderClientes(){
     // WhatsApp
     const tel   = (c.telefono||'').replace(/\D/g,'');
     const numWA = tel.length===10 ? '52'+tel : tel;
-    const msgWA = encodeURIComponent(buildWAMsg(c.nombre, c.plan, c.vence));
     const editBtn = `<button onclick="abrirEditarTelefono('${esc(c.nombre)}')"
          title="Editar información"
          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
@@ -15083,22 +15054,11 @@ function renderClientes(){
                   cursor:pointer;white-space:nowrap;flex-shrink:0;">
            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Crear enlace de cobro</button>`
       : '';
-    const waBtn = numWA.length >= 12
-      ? `<div style="display:flex;gap:6px;align-items:center;">
-           <a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-              style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
-                     background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-xs);font-weight:700;
-                     text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;">${WA_SVG} WhatsApp</a>
-           ${cobrarBtn}${editBtn}${qrBtn}${medBtn}${delBtn}
-         </div>`
-      : `<div style="display:flex;gap:6px;align-items:center;">
-           <button onclick="abrirEditarTelefono('${esc(c.nombre)}')"
-               style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
-                      background:var(--card2);color:var(--text3);font-size:var(--fs-xs);font-weight:600;
-                      border:1px dashed var(--border);cursor:pointer;white-space:nowrap;">
-             Agregar número</button>
-           ${cobrarBtn}${qrBtn}${medBtn}${delBtn}
-         </div>`;
+    const homonimo=_nombresDuplicados.has(c.nombre);
+    const contacto=homonimo?pvBotonHomonimo():numWA.length>=12
+      ? `<a href="https://wa.me/${numWA}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Contactar por WhatsApp</a>`
+      : `<button data-socio="${esc(c.nombre).replace(/"/g,'&quot;')}" onclick="abrirEditarTelefono(this.dataset.socio)" class="btn btn-outline btn-sm">Agregar número</button>`;
+    const waBtn=`<div style="display:flex;gap:6px;align-items:center;">${contacto}${cobrarBtn}${numWA.length>=12?editBtn:''}${qrBtn}${medBtn}${delBtn}</div>`;
 
     // Ola 3 (densidad): la fila muestra NOMBRE + contacto + UN estado.
     // El resto (tipo, congelado, referidos, portal, historial y las 6 acciones)
@@ -15426,15 +15386,11 @@ function openClientePanel(nombreCliente){
   _pintarTardiasFicha(cliRec.id);
 
   // Acciones
-  const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
   const numWA = tel.length===10?'52'+tel:tel;
   const accs = [];
-  if(numWA.length>=12){
-    const msgWA = encodeURIComponent(buildWAMsg(nombreCliente, ultimo?ultimo.plan:'', ultimo?ultimo.vence:''));
-    accs.push(`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-      style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
-             background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-xs);font-weight:700;
-             text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WhatsApp</a>`);
+  if(clientesDB.filter(c=>(c.nombre||'').trim()===nombreCliente).length>1) accs.push(pvBotonHomonimo());
+  else if(numWA.length>=12){
+    accs.push(`<a href="https://wa.me/${numWA}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Contactar por WhatsApp</a>`);
   }
   accs.push(`<button data-editar-ficha
     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
@@ -16262,18 +16218,7 @@ function renderAsistencia(){
     const hace30Str = hace30.toISOString().slice(0,10);
 
     // Clientes con membresía activa
-    const mapaUltimo = {};
-    pagos.forEach(p=>{
-      const n=(p.cliente||'').trim(); if(!n) return;
-      if(!mapaUltimo[n]||((p.vence||'')>(mapaUltimo[n].vence||''))) mapaUltimo[n]=p;
-    });
-    const clientesActivos = Object.entries(mapaUltimo)
-      .filter(([,p])=>{
-        if(!p.vence||p.vence.length<10) return false;
-        const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
-        return diff>=0;
-      })
-      .map(([nombre])=>nombre);
+    const clientesActivos=pvPersonas(Infinity,'proximos');
 
     // Quiénes asistieron en los últimos 30 días
     const asistReciente = new Set(
@@ -16281,23 +16226,17 @@ function renderAsistencia(){
         .flatMap(r=>r.participantes.map(p=>p.toLowerCase().trim()))
     );
 
-    const enRiesgo = clientesActivos.filter(n=>!asistReciente.has(n.toLowerCase().trim()));
+    const enRiesgo = clientesActivos.filter(p=>!asistReciente.has(p.nombre.toLowerCase().trim()));
     if(!enRiesgo.length){
       riesgoEl.innerHTML=`<div style="padding:20px;text-align:center;"><span style="font-size:var(--fs-xl);">✓</span><div style="font-size:var(--fs-xs);color:var(--text3);margin-top:6px;">Todos los clientes activos han asistido recientemente.</div></div>`;
     } else {
       riesgoEl.innerHTML=`<div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:10px;">Membresía activa pero sin check-in en 30 días (${enRiesgo.length}):</div>`+
-        enRiesgo.slice(0,10).map(nombre=>{
-          const p = mapaUltimo[nombre];
-          const tel=(p.telefono||'').replace(/\D/g,'');
-          const numWA=tel.length===10?'52'+tel:tel;
-          const msgWA=encodeURIComponent(buildWAMsg(nombre, p.plan, p.vence));
-          const waLink=numWA.length>=12
-            ?`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener" style="font-size:var(--fs-sm);color:var(--wa);text-decoration:none;font-weight:700;">WhatsApp →</a>`
-            :'';
+        enRiesgo.slice(0,10).map(p=>{
+          const nombre=p.nombre,waLink=pvBotonRecordatorio(p);
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(239,68,68,.06);border-radius:8px;border-left:3px solid var(--danger);margin-bottom:5px;">
             <div>
               <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${esc(nombre)}</div>
-              <div style="font-size:var(--fs-xs);color:var(--text3);">${esc(p.plan||'—')} · vence ${p.vence||'—'}</div>
+              <div style="font-size:var(--fs-xs);color:var(--text3);">${esc(p.plan||'—')} · vence ${p.mejorVence||'—'}</div>
             </div>
             ${waLink}
           </div>`;
@@ -18749,7 +18688,7 @@ function renderBriefingHoy(){
   });
 
   // ── Vencimientos hoy ────────────────────────────────────────────
-  const vencenHoy = pagos.filter(p=>p.vence===today && !esPaseDia(p.plan));
+  const vencenHoy=pvPersonas(0,'proximos');
 
   // No data yet
   if(!todasClasesHoy.length && !cumpleHoy.length && !vencenHoy.length){
@@ -18803,16 +18742,7 @@ function renderBriefingHoy(){
   }).join('');
 
   const venceCards = vencenHoy.map(p=>{
-    const cliRec   = clientesDB.find(x=>x.nombre===p.cliente)||{};
-    const tel      = (cliRec.telefono||'').replace(/\D/g,'');
-    const numWA    = tel.length===10?'52'+tel:tel;
-    const msgWA    = encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
-    const waBtn    = numWA.length>=12
-      ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank"
-           style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;
-                  background:rgba(37,211,102,.12);color:var(--wa);font-size:var(--fs-sm);font-weight:700;
-                  text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> WA</a>`
-      : '';
+    const waBtn=pvBotonRecordatorio(p);
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
                   padding:10px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
@@ -18820,7 +18750,7 @@ function renderBriefingHoy(){
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="display:inline-flex;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
           <div>
-            <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${esc(p.cliente)}</div>
+            <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${esc(p.nombre)}</div>
             <div style="font-size:var(--fs-xs);color:var(--text3);">Vence hoy · ${esc(p.plan||'—')}</div>
           </div>
         </div>
@@ -18875,36 +18805,30 @@ function renderMobileHome(){
   if(ingEl) ingEl.textContent = ingresosHoy > 0 ? '$'+ingresosHoy.toLocaleString('es-MX') : '$0';
 
   // Active members (memberships not expired)
-  const pagosSinPH = (pagos||[]).filter(p=>p.notas!=='__sin_pago__');
+  const estados=estadoMembresiaPorCliente(), disponibles=pvDatosListos();
   const actEl = document.getElementById('mhw-activos');
-  if(actEl) actEl.textContent = Array.from(estadoMembresiaPorCliente().values()).filter(e=>e.acceso).length;
+  if(actEl) actEl.textContent = Array.from(estados.values()).filter(e=>e.acceso).length;
 
   // Check-ins today (from cached window._mhwCheckins set by loadClasesOperativas)
   const chkEl = document.getElementById('mhw-checkins');
   if(chkEl) chkEl.textContent = typeof window._mhwCheckins === 'number' ? window._mhwCheckins : '—';
 
   // Por vencer (next 7 days)
-  const in7 = new Date(now); in7.setDate(in7.getDate()+7);
-  const porVencer = pagosSinPH.filter((p,i,a)=>{
-    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
-    if(!isLatest||!p.vence||p.vence==='—') return false;
-    const vd = new Date(p.vence+'T12:00:00');
-    return vd >= now && vd <= in7;
-  });
+  const porVencer=disponibles?personasParaRenovar(estados,clientesDB,7,'proximos'):[];
   const vencerEl = document.getElementById('mhw-vencer');
-  if(vencerEl){ vencerEl.textContent = porVencer.length; vencerEl.className = 'mhw-stat-val '+(porVencer.length>0?'amber':'green'); }
+  if(vencerEl){ vencerEl.textContent = disponibles?porVencer.length:"—"; vencerEl.className = 'mhw-stat-val '+(porVencer.length>0?'amber':'green'); }
   const vSubEl = document.getElementById('mhw-vencer-sub');
-  if(vSubEl) vSubEl.textContent = porVencer.length === 1 ? '1 membresía' : porVencer.length+' membresías';
+  if(vSubEl) vSubEl.textContent = !disponibles?'Consultar miembros':porVencer.length === 1 ? '1 membresía' : porVencer.length+' membresías';
 
   // Espejo desktop (Panel v2): KPIs "Check-ins hoy" y "Por vencer · 7d" del dashboard.
   const kChk = document.getElementById('kpi-checkins-hoy');
   if(kChk) kChk.textContent = typeof window._mhwCheckins === 'number' ? window._mhwCheckins : '—';
   const kPv = document.getElementById('kpi-porvencer-7d');
-  if(kPv) kPv.textContent = porVencer.length;
+  if(kPv) kPv.textContent = disponibles?porVencer.length:'—';
   const kPvMeta = document.getElementById('kpi-porvencer-7d-meta');
   if(kPvMeta){
-    const _pvSum = porVencer.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
-    kPvMeta.textContent = porVencer.length ? ('$'+_pvSum.toLocaleString('es-MX')+' en juego') : 'Sin urgencias esta semana';
+    const _pvSum = porVencer.reduce((s,p)=>s+(parseFloat(p.pago.monto)||0),0);
+    kPvMeta.textContent = !disponibles?'Por confirmar':porVencer.length ? ('$'+_pvSum.toLocaleString('es-MX')+' en juego') : 'Sin urgencias esta semana';
   }
 
   // Alerts
@@ -18913,23 +18837,18 @@ function renderMobileHome(){
   const alerts = [];
 
   // Urgentes: vencen mañana
-  const manana = new Date(now); manana.setDate(manana.getDate()+1);
-  const mananaStr = manana.toISOString().slice(0,10);
-  const urgentes = pagosSinPH.filter((p,i,a)=>{
-    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
-    return isLatest && p.vence === mananaStr;
-  });
-  if(urgentes.length) alerts.push({dot:'red',txt:`<b>${urgentes.map(p=>p.cliente.split(' ')[0]).slice(0,2).join(', ')}</b> vence${urgentes.length>1?'n':''} mañana`,badge:'Urgente',badgeClass:'red',action:`go('por-vencer',document.getElementById('nav-por-vencer'))`});
+  const urgentes=porVencer.filter(p=>p.diasRest===1);
+  if(urgentes.length) alerts.push({dot:'red',txt:`<b>${urgentes.map(p=>esc(p.nombre.split(' ')[0])).slice(0,2).join(', ')}</b> vence${urgentes.length>1?'n':''} mañana`,badge:'Urgente',badgeClass:'red',action:`go('por-vencer',document.getElementById('nav-por-vencer'));setPVFilter(7)`});
 
   // Por vencer en 7 días
-  const resto = porVencer.filter(p=>p.vence!==mananaStr);
-  if(resto.length) alerts.push({dot:'amber',txt:`<b>${resto.length} socio${resto.length!==1?'s':''}</b> vence${resto.length!==1?'n':''} en menos de 7 días`,badge:`${resto.length} días`,badgeClass:'amber',action:`go('por-vencer',document.getElementById('nav-por-vencer'))`});
+  const resto = porVencer.filter(p=>p.diasRest!==1);
+  if(resto.length) alerts.push({dot:'amber',txt:`<b>${resto.length} socio${resto.length!==1?'s':''}</b> vence${resto.length!==1?'n':''} en los próximos 7 días`,badge:null,badgeClass:'amber',action:`go('por-vencer',document.getElementById('nav-por-vencer'));setPVFilter(7)`});
 
   // Cumpleaños hoy
   const todayMMDD = todayStr.slice(5);
   const cumples = (pagos||[]).filter(p=>p.cumpleanos&&p.cumpleanos.slice(5)===todayMMDD).map(p=>p.cliente);
   const uniqCumples = [...new Set(cumples)];
-  if(uniqCumples.length) alerts.push({dot:'green',txt:`Hoy es el cumpleaños de <b>${uniqCumples[0].split(' ')[0]}${uniqCumples.length>1?' y '+(uniqCumples.length-1)+' más':''}</b>`,badge:null,action:null});
+  if(uniqCumples.length) alerts.push({dot:'green',txt:`Hoy es el cumpleaños de <b>${esc(uniqCumples[0].split(' ')[0])}${uniqCumples.length>1?' y '+(uniqCumples.length-1)+' más':''}</b>`,badge:null,action:null});
 
   alertsEl.innerHTML = alerts.length
     ? alerts.map(a=>`<div class="mhw-alert" ${a.action?`onclick="${a.action}"`:''}>
@@ -18937,7 +18856,7 @@ function renderMobileHome(){
         <div class="mhw-alert-txt">${a.txt}</div>
         ${a.badge?`<div class="mhw-alert-badge ${a.badgeClass}">${a.badge}</div>`:''}
       </div>`).join('')
-    : '<div style="font-size:var(--fs-xs);color:var(--text3);padding:4px 0;">Sin alertas por ahora ✓</div>';
+    : '<div style="font-size:var(--fs-xs);color:var(--text3);padding:4px 0;">'+(disponibles?'Sin alertas por ahora':'Consultando vencimientos…')+'</div>';
 }
 
 function renderDashboard(){
