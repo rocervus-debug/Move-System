@@ -1,3 +1,4 @@
+import { verifyPanelSession } from '../_shared/panel-session.ts';
 // velum-stripe-balance — v4: relleno de pagos.stripe_available_on Y stripe_fee_mxn
 // (v3 leía la balance_transaction y tiraba el fee: el neto quedaba inflado). Fecha en que
 // Stripe libera cada cobro) para mostrar al gym cuándo cae su depósito.
@@ -21,37 +22,6 @@ function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
-}
-
-// ── base64url helpers ────────────────────────────────────────────────
-function b64urlToStr(b64url: string): string {
-  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  while (b64.length % 4) b64 += '=';
-  return atob(b64);
-}
-function b64urlToBytes(b64url: string) {
-  const s = b64urlToStr(b64url);
-  return Uint8Array.from(s, (c) => c.charCodeAt(0));
-}
-
-// ── Verifica el JWT HS256 del panel (firmado por move-login con SUPABASE_JWT_SECRET) ──
-async function verifyJWT(token: string, secret: string): Promise<Record<string, unknown> | null> {
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [h, p, s] = parts;
-  try {
-    const key = await crypto.subtle.importKey(
-      'raw', new TextEncoder().encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
-    );
-    const ok = await crypto.subtle.verify(
-      'HMAC', key, b64urlToBytes(s), new TextEncoder().encode(`${h}.${p}`),
-    );
-    if (!ok) return null;
-    const payload = JSON.parse(b64urlToStr(p));
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return payload;
-  } catch { return null; }
 }
 
 // ── Stripe REST helpers ──────────────────────────────────────────────
@@ -138,16 +108,13 @@ Deno.serve(async (req: Request) => {
   const serviceKey     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   // El ecosistema Stripe desplegado usa STRIPE_SECRET_KEY (webhook); charge usa el alias PLATFORM.
   const platformSecret = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_PLATFORM_SECRET_KEY');
-  const jwtSecret      = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('MOVE_JWT_SECRET');
-
-  if (!jwtSecret) return json({ error: 'Auth no configurada en el servidor.' }, 500);
 
   // ── Autenticación PRIMERO: gym_id sale del JWT verificado (no filtra config a anónimos) ──
   const authHeader = req.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) return json({ error: 'No autenticado.' }, 401);
 
-  const claims = await verifyJWT(token, jwtSecret);
+  const claims = await verifyPanelSession(token);
   if (!claims) return json({ error: 'Sesión inválida o expirada.' }, 401);
 
   const gymId = claims.gym_id;
