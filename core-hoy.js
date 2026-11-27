@@ -49,8 +49,8 @@ async function renderInicioHoy(estados){
   if(disponible){
     const socios=new Set(clientesDB.map(c=>c.nombre?.trim()));
     for(const [nombre,estado] of estados||estadoMembresiaPorCliente()){
-      if(!socios.has(nombre)) continue;
-      if(!estado.acceso) vencidos++;
+      if(!socios.has(nombre) || estado.congelado) continue;
+      if(!estado.acceso && (estado.agotado || estado.mejorVence)) vencidos++;
       else if(estado.diasRest!=null && estado.diasRest<=14) proximos++;
     }
   }

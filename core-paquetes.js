@@ -8,6 +8,10 @@ window.CorePaquetes = (() => {
     const n = Number(valor);
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
+  // El checkout con tarjeta acepta importes desde $10 MXN. Las solicitudes gratuitas usan otro flujo.
+  function admiteCheckout(precio) {
+    return precio !== null && Math.round(precio*100) >= 1000;
+  }
   function recurrente(p) {
     return p.billing_type != null ? p.billing_type === 'recurring' : p.recurring === true;
   }
@@ -24,9 +28,11 @@ window.CorePaquetes = (() => {
     const dias = Number(p.duration_days);
     const vigencia = Number.isSafeInteger(dias) && dias > 0 ? dias+' '+(dias===1?'día':'días') : 'Por confirmar';
     const monto = precio === null ? 'Precio por confirmar' : precio === 0 ? 'Gratis' : (Number.isInteger(precio)?pesos:centavos).format(precio);
+    const condicion = p.solo_primera_vez === true && admiteCheckout(precio)
+      ? '<p class="vplan-condicion">Solo para primera visita</p>' : '';
     return `<div class="vplan-price">${monto}${precio > 0 ? ' <small>MXN</small>':''}</div>
       <p class="vplan-frequency">${frecuencia}</p>
-      <dl class="vplan-facts"><div><dt>${label}</dt><dd>${cantidad}</dd></div><div><dt>Vigencia</dt><dd>${vigencia}</dd></div></dl>`;
+      <dl class="vplan-facts"><div><dt>${label}</dt><dd>${cantidad}</dd></div><div><dt>Vigencia</dt><dd>${vigencia}</dd></div></dl>${condicion}`;
   }
-  return { importe, recurrente, resumen };
+  return { importe, admiteCheckout, recurrente, resumen };
 })();
