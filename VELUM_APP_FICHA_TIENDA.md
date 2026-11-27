@@ -33,7 +33,7 @@ VELUM se adapta a la identidad de cada gimnasio, así que tu app se ve como tu e
 
 Nota: necesitas ser miembro de un gimnasio o estudio que use VELUM para iniciar sesión.
 
-¿Tienes un gimnasio y quieres usar VELUM? Conoce más en myvelum.app
+¿Tienes un gimnasio y quieres usar VELUM? Conoce más en https://myvelum.app/para-negocios
 ```
 
 ---
@@ -43,7 +43,7 @@ Nota: necesitas ser miembro de un gimnasio o estudio que use VELUM para iniciar 
 - **Categoría:** Salud y forma física (Health & Fitness).
 - **Palabras clave (iOS, 100 car.):** `gym,gimnasio,fitness,clases,crossfit,pilates,yoga,checkin,membresia,entrenamiento`
 - **URL de soporte:** https://myvelum.app
-- **URL de marketing:** https://myvelum.app
+- **URL de marketing:** https://myvelum.app/para-negocios
 - **Política de privacidad:** https://myvelum.app/privacidad.html
 - **Clasificación de contenido:** 4+ / Everyone (sin contenido sensible).
 - **Precio:** Gratis (la app es gratis; los pagos son la membresía del gym vía Stripe).
