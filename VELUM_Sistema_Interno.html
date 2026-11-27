@@ -2218,6 +2218,18 @@ body.role-oculta-dinero [data-col-ltv]{display:none !important;}
 .persona-row{display:flex;align-items:center;gap:10px;padding:14px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);}
 .persona-row.checkin{background:rgba(15,223,154,.05);border-color:rgba(15,223,154,.18);}
 
+#calVencGrid>button {display:flex;flex-direction:column;align-items:stretch;min-width:0;text-align:left;font:inherit;color:var(--text)}
+#gym-analisis-toggle {width:100%;text-align:left;font:inherit}
+.month-nav button.month-nav-btn {min-width:44px;min-height:44px;padding:0 8px}
+.month-nav-btn:disabled {opacity:.35;cursor:default}
+.sf-acciones {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.sf-acciones button,#sf-opciones>summary {min-height:44px}
+#sf-opciones>summary {display:flex;align-items:center;cursor:pointer;font-weight:700;gap:.5rem}
+#sf-opciones>summary::after {content:'+'}
+#sf-opciones[open]>summary::after {content:'−'}
+#sf-theme-grid button {padding:0;text-align:left;font:inherit;background:var(--card2)}
+:is(#calVencGrid button,.mhw-action,#gym-analisis-toggle,.month-nav-btn,.sf-theme-card,.sf-acciones button,#sf-opciones summary):focus-visible {outline:2px solid var(--accent);outline-offset:2px}
+
 /* ── Day Picker Strip (asistencia) ── */
 .asist-day-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none;-ms-overflow-style:none;margin-bottom:16px;}
 .asist-day-strip::-webkit-scrollbar{display:none;}
@@ -2801,6 +2813,7 @@ body.role-oculta-dinero [data-col-ltv]{display:none !important;}
     padding: 0 18px 16px;
   }
   .mhw-action {
+    text-align:left;color:var(--text);font:inherit;align-items:flex-start;
     background: var(--card2);
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -3540,6 +3553,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 <link rel="stylesheet" href="/design-system/core-paquetes.css">
 <script src="/core-paquetes.js"></script>
 <script defer src="/core-hoy.js"></script>
+<script defer src="/core-ocupacion.js"></script>
+<script defer src="/core-agenda.js"></script>
 <script defer src="/core-ficha.js"></script>
 <script defer src="/core-vencimientos.js"></script>
 <link rel="stylesheet" href="/design-system/core-vencimientos.css">
@@ -3957,6 +3972,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               <button class="core-hoy-link" onclick="go('asistencia',document.getElementById('nav-asistencia'))">Agenda de hoy <span aria-hidden="true">→</span></button>
             </div>
             <div id="gym-hoy-body"></div>
+            <button type="button" id="core-reservar-lugar" class="btn btn-outline" hidden onclick="abrirMostradorDesdeInicio()">Reservar lugar</button>
           </section>
           <section class="core-hoy-renovaciones" aria-labelledby="core-renovaciones-titulo">
             <h3 id="core-renovaciones-titulo">Renovaciones</h3>
@@ -4005,34 +4021,34 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
         <div class="mhw-section-lbl">Acciones rápidas</div>
         <div class="mhw-actions">
-          <div class="mhw-action" onclick="openModal('pago')">
-            <div class="mhw-action-icon mhw-ic-green">
+          <button type="button" class="mhw-action" onclick="openModal('pago')">
+            <span class="mhw-action-icon mhw-ic-green">
               <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-            </div>
-            <div class="mhw-action-lbl">Registrar pago</div>
-            <div class="mhw-action-sub">Ya recibido</div>
-          </div>
-          <div class="mhw-action" onclick="go('asistencia',document.getElementById('nav-asistencia'))">
-            <div class="mhw-action-icon mhw-ic-blue">
+            </span>
+            <span class="mhw-action-lbl">Registrar pago</span>
+            <span class="mhw-action-sub">Ya recibido</span>
+          </button>
+          <button type="button" class="mhw-action" onclick="go('asistencia',document.getElementById('nav-asistencia'))">
+            <span class="mhw-action-icon mhw-ic-blue">
               <svg viewBox="0 0 24 24" fill="none" stroke="#4e82dc"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-            </div>
-            <div class="mhw-action-lbl">Asistencia</div>
-            <div class="mhw-action-sub">Check-ins de hoy</div>
-          </div>
-          <div class="mhw-action" onclick="go('por-vencer',document.getElementById('nav-por-vencer'))">
-            <div class="mhw-action-icon mhw-ic-amber">
+            </span>
+            <span class="mhw-action-lbl">Asistencia</span>
+            <span class="mhw-action-sub">Check-ins de hoy</span>
+          </button>
+          <button type="button" class="mhw-action" onclick="go('por-vencer',document.getElementById('nav-por-vencer'))">
+            <span class="mhw-action-icon mhw-ic-amber">
               <svg viewBox="0 0 24 24" fill="none" stroke="#e09c3a"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            </div>
-            <div class="mhw-action-lbl">Por vencer</div>
-            <div class="mhw-action-sub" id="mhw-vencer-sub">Membresías</div>
-          </div>
-          <div class="mhw-action" onclick="openModal('solo-cliente')">
-            <div class="mhw-action-icon mhw-ic-purple">
+            </span>
+            <span class="mhw-action-lbl">Por vencer</span>
+            <span class="mhw-action-sub" id="mhw-vencer-sub">Membresías</span>
+          </button>
+          <button type="button" class="mhw-action" onclick="openModal('solo-cliente')">
+            <span class="mhw-action-icon mhw-ic-purple">
               <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa"><path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            </div>
-            <div class="mhw-action-lbl">Nuevo socio</div>
-            <div class="mhw-action-sub">Agregar cliente</div>
-          </div>
+            </span>
+            <span class="mhw-action-lbl">Nuevo socio</span>
+            <span class="mhw-action-sub">Agregar cliente</span>
+          </button>
         </div>
         <div class="mhw-alerts"><div class="mhw-section-lbl" id="mhw-alerts-lbl">Atención</div><div id="mhw-alerts-list"></div></div>
       </div>
@@ -4157,12 +4173,18 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
       </div>
       <!-- Toggle Análisis del negocio (plegado por defecto; solo gym) -->
-      <div id="gym-analisis-toggle" onclick="_gymAnalisisToggle()" style="display:none;align-items:center;gap:10px;cursor:pointer;padding:11px 15px;margin-bottom:18px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;user-select:none;">
+      <button type="button" aria-expanded="false" id="gym-analisis-toggle" onclick="_gymAnalisisToggle()" style="display:none;align-items:center;gap:10px;cursor:pointer;padding:11px 15px;margin-bottom:18px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;user-select:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="color-mix(in srgb, var(--accent) 70%, transparent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <span style="flex:1;font-size:var(--fs-sm);color:var(--text2);">Análisis del negocio <span style="color:var(--text4);">— ingresos, retención, meta, cumpleaños</span></span>
         <span id="gym-analisis-chev" style="font-size:var(--fs-xs);color:var(--text3);transition:transform .2s;">▾</span>
-      </div>
+      </button>
 
+      <section id="core-ocupacion" class="card" hidden aria-labelledby="core-ocupacion-titulo">
+        <h3 id="core-ocupacion-titulo">Qué horarios se llenan</h3>
+        <p id="core-ocupacion-periodo"></p>
+        <p>Lugares reservados sobre el cupo del horario guardado. Los cambios en la plantilla pueden modificar la comparación histórica.</p>
+        <div id="core-ocupacion-lista" aria-live="polite"></div>
+      </section>
       <!-- Secondary metrics — collapsible (FORGE v5) -->
       <details id="kpi-secondary-details" style="margin-bottom:18px;">
         <summary style="
@@ -4716,25 +4738,33 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
     <!-- ══ HORARIO ══ -->
     <div class="view" id="v-horario">
 
-      <!-- ═══ STUDIOS · Calendario semanal bespoke (solo studios; reemplaza las tabs genéricas) ═══ -->
-      <div id="studios-cal" style="display:none;"></div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-        <div class="tabs" style="margin-bottom:0;">
-          <div class="tab active" id="htab-btn-mensual" onclick="switchHorTab('mensual')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Vista Mensual</div>
-          <div class="tab" id="htab-btn-plantilla" onclick="switchHorTab('plantilla')">Horario semanal</div>
-          <div class="tab" id="htab-btn-nomina" onclick="switchHorTab('nomina')">Nómina</div>
+      <div class="hor-controles">
+        <div class="tabs hor-vistas" role="group" aria-label="Vista del horario">
+          <button type="button" class="tab" id="htab-btn-dia" aria-controls="hor-tab-dia" aria-pressed="false" onclick="switchHorTab('dia')">Agenda del día</button>
+          <button type="button" class="tab active" id="htab-btn-mensual" aria-controls="hor-tab-mensual" aria-pressed="true" onclick="switchHorTab('mensual')">Mes</button>
+          <button type="button" class="tab" id="htab-btn-plantilla" aria-controls="hor-tab-plantilla" aria-pressed="false" onclick="switchHorTab('plantilla')">Horario semanal</button>
+          <button type="button" class="tab" id="htab-btn-nomina" aria-controls="hor-tab-nomina" aria-pressed="false" onclick="switchHorTab('nomina')">Nómina</button>
+          <button type="button" class="tab" id="htab-btn-lugares" aria-controls="studios-cal" aria-pressed="false" onclick="switchHorTab('lugares')" hidden>Calendario de lugares</button>
         </div>
-        <a href="horario-publico.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);padding:7px 14px;border-radius:8px;background:color-mix(in srgb, var(--accent) 10%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);text-decoration:none;font-weight:700;white-space:nowrap;">Ver Horario Público</a>
+        <div id="hor-publico"></div>
+      </div>
+      <div id="studios-cal" style="display:none;"></div>
+      <div id="hor-tab-dia" style="display:none;">
+        <div class="hor-dia-fechas">
+          <label for="hor-dia-fecha">Fecha de la agenda</label>
+          <input id="hor-dia-fecha" type="date" onchange="renderAgendaDia()">
+          <button type="button" class="btn btn-outline" onclick="agendaVolverAHoy()">Hoy</button>
+        </div>
+        <div id="hor-dia-lista" aria-live="polite"></div>
       </div>
 
       <!-- Tab: Vista Mensual -->
       <div id="hor-tab-mensual">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <button class="btn btn-outline btn-sm" onclick="changeHorMonth(-1)" style="font-size:var(--fs-base);padding:4px 12px;">‹</button>
+            <button class="btn btn-outline btn-sm" aria-label="Mes anterior" onclick="changeHorMonth(-1)" style="font-size:var(--fs-base);padding:4px 12px;">‹</button>
             <span id="hor-mes-label" style="font-size:var(--fs-base);font-weight:800;color:var(--text1);min-width:150px;text-align:center;letter-spacing:.3px;">—</span>
-            <button class="btn btn-outline btn-sm" onclick="changeHorMonth(1)" style="font-size:var(--fs-base);padding:4px 12px;">›</button>
+            <button class="btn btn-outline btn-sm" aria-label="Mes siguiente" onclick="changeHorMonth(1)" style="font-size:var(--fs-base);padding:4px 12px;">›</button>
           </div>
           <!-- Leyenda dinámica: se llena en renderHorarioMensual() con las disciplinas reales del gym -->
           <div id="hor-legend" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
@@ -4758,9 +4788,9 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <!-- Tab: Nómina Quincena -->
       <div id="hor-tab-nomina" style="display:none;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <button class="btn btn-outline btn-sm" onclick="changeHorMonth(-1);switchHorTab('nomina');" style="font-size:var(--fs-base);padding:4px 12px;">‹</button>
+          <button class="btn btn-outline btn-sm" aria-label="Mes anterior" onclick="changeHorMonth(-1);switchHorTab('nomina');" style="font-size:var(--fs-base);padding:4px 12px;">‹</button>
           <span id="hor-mes-label2" style="font-size:var(--fs-base);font-weight:800;color:var(--text1);min-width:150px;text-align:center;">—</span>
-          <button class="btn btn-outline btn-sm" onclick="changeHorMonth(1);switchHorTab('nomina');" style="font-size:var(--fs-base);padding:4px 12px;">›</button>
+          <button class="btn btn-outline btn-sm" aria-label="Mes siguiente" onclick="changeHorMonth(1);switchHorTab('nomina');" style="font-size:var(--fs-base);padding:4px 12px;">›</button>
         </div>
         <div id="nomina-quincena-wrap"></div>
       </div>
@@ -5334,8 +5364,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               <div class="field" style="width:190px;margin:0;">
                 <label>Cobro</label>
                 <select id="plan-nuevo-cobro" class="settings-input" title="Pago único, o mensualidad domiciliada con cobro automático cada mes">
-                  <option value="one_time">Pago único</option>
-                  <option value="recurring">Mensualidad domiciliada</option>
+                  <option value="one_time">Se cobra una vez</option>
+                  <option value="recurring">Se cobra cada mes automáticamente</option>
                 </select>
               </div>
               <div class="field" style="width:170px;margin:0;">
@@ -5349,6 +5379,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               <button class="btn btn-primary btn-sm" onclick="agregarPlan()" style="margin-bottom:1px;">+ Agregar al catálogo</button>
             </div>
 
+        <div id="plan-nuevo-revision-cobro" class="revision-cobro-plan" hidden></div>
             <div id="plan-nuevo-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:8px;"></div>
             </details>
           </div>
@@ -5362,16 +5393,16 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
         <div class="card">
           <div class="settings-section" style="margin-bottom:0;">
-            <div class="settings-section-title">Storefront público</div>
-            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:18px;">Configura cómo se ve tu página pública en <code style="color:var(--accent);">myvelum.app/g/[slug]</code>. Cambios se guardan automáticamente al cambiar de campo.</div>
+            <div class="settings-section-title">Mi página pública</div>
+            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:18px;">Los cambios se guardan al salir de cada campo.</div>
 
             <!-- Estado / URL card -->
             <div style="background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), var(--card2));border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px;">
-              <div style="font-size:var(--fs-sm);color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;font-weight:600;">Tu URL pública</div>
+              <div style="font-size:var(--fs-sm);color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;font-weight:600;">Enlace de tu página</div>
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
                 <div id="sf-url-display" style="flex:1;min-width:200px;font-family:var(--fm);font-size:var(--fs-base);font-weight:700;color:var(--accent);background:var(--bg2);padding:10px 14px;border-radius:10px;border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);word-break:break-all;">myvelum.app/g/…</div>
                 <button class="btn btn-sm btn-outline" onclick="sfCopyUrl()" title="Copiar URL"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar</button>
-                <button class="btn btn-sm btn-primary" onclick="sfOpenUrl()" title="Abrir en nueva pestaña">↗ Abrir</button>
+                <button class="btn btn-sm btn-primary" onclick="sfOpenUrl()" title="Abrir en nueva pestaña">Ver mi página ↗</button>
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 <div style="display:flex;align-items:center;gap:8px;">
@@ -5380,17 +5411,6 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                 </div>
                 <button id="sf-toggle-btn" class="btn btn-sm" onclick="sfToggleEnabled()" style="background:var(--accent);color:var(--bg-card);border:none;">Activar</button>
               </div>
-            </div>
-
-            <!-- Slug -->
-            <div class="field" style="margin-bottom:8px;">
-              <label>Slug de tu URL <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;">(lowercase, números, guiones)</span></label>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <span style="font-family:var(--fm);font-size:var(--fs-sm);color:var(--text3);">myvelum.app/g/</span>
-                <input id="sf-slug-input" type="text" class="settings-input" placeholder="mi-gym" style="flex:1;font-family:var(--fm);" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
-                <button class="btn btn-sm btn-outline" onclick="sfSaveSlug()">Guardar</button>
-              </div>
-              <div id="sf-slug-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:6px;"></div>
             </div>
 
             <!-- ════ WIZARD: Personaliza tu página (v2) ════ -->
@@ -5405,18 +5425,35 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               <button class="btn btn-primary btn-sm" onclick="openSfWizard()">Personalizar →</button>
             </div>
 
+            <div class="sf-acciones" aria-label="Tareas de la página pública">
+              <button type="button" class="btn btn-outline" onclick="go('horario',document.getElementById('nav-horario'))">Editar horarios</button>
+              <button type="button" class="btn btn-outline" onclick="sfMostrarSeccion('sf-listings-list')">Publicar planes</button>
+              <button type="button" class="btn btn-outline" onclick="sfMostrarSeccion('sf-social-wa')">Editar contacto</button>
+            </div>
+            <details id="sf-opciones"><summary>Más opciones de la página</summary>
+            <!-- Slug -->
+            <div class="field" style="margin-bottom:8px;">
+              <label for="sf-slug-input">Dirección de tu página <span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;">(minúsculas, números y guiones)</span></label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span style="font-family:var(--fm);font-size:var(--fs-sm);color:var(--text3);">myvelum.app/g/</span>
+                <input id="sf-slug-input" type="text" class="settings-input" placeholder="mi-gym" style="flex:1;font-family:var(--fm);" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+                <button class="btn btn-sm btn-outline" onclick="sfSaveSlug()">Guardar</button>
+              </div>
+              <div id="sf-slug-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:6px;"></div>
+            </div>
+
             <!-- ════ SECCIONES COLAPSABLES ════ -->
             <div id="sf-sections" style="margin-top:22px;">
 
               <!-- BRANDING -->
-              <details class="sf-accordion" open>
-                <summary>Branding & Descripción</summary>
+              <details class="sf-accordion">
+                <summary>Imagen y descripción</summary>
                 <div class="sf-acc-body">
                   <div class="field">
-                    <label>Estilo visual del Storefront</label>
+                    <label>Estilo de la página</label>
                     <div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:10px;">Elige la estética que va con tu estudio. Cambia colores, tipografía y personalidad de tu página pública.</div>
                     <div id="sf-theme-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
-                      <div class="sf-theme-card" data-theme="claro" onclick="sfSetTheme('claro')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                      <button type="button" class="sf-theme-card" data-theme="claro" onclick="sfSetTheme('claro')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
                         <div style="height:54px;background:#F7F9FA;display:flex;align-items:center;justify-content:center;">
                           <div style="width:20px;height:20px;border-radius:6px;background:#21674F;"></div>
                         </div>
@@ -5424,8 +5461,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Claro</div>
                           <div style="font-size:var(--fs-xs);color:var(--text3);">Limpio · Para todos (default)</div>
                         </div>
-                      </div>
-                      <div class="sf-theme-card" data-theme="pulse" onclick="sfSetTheme('pulse')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                      </button>
+                      <button type="button" class="sf-theme-card" data-theme="pulse" onclick="sfSetTheme('pulse')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
                         <div style="height:54px;background:#050D14;position:relative;display:flex;align-items:center;justify-content:center;">
                           <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 50% 0%,color-mix(in srgb, var(--accent) 25%, transparent),transparent);"></div>
                           <div style="width:20px;height:20px;border-radius:4px;background:var(--accent);"></div>
@@ -5434,8 +5471,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Pulse</div>
                           <div style="font-size:var(--fs-xs);color:var(--text3);">Box · Funcional · CrossFit</div>
                         </div>
-                      </div>
-                      <div class="sf-theme-card" data-theme="atelier" onclick="sfSetTheme('atelier')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                      </button>
+                      <button type="button" class="sf-theme-card" data-theme="atelier" onclick="sfSetTheme('atelier')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
                         <div style="height:54px;background:#EDE6DC;display:flex;align-items:center;justify-content:center;">
                           <div style="width:22px;height:22px;border-radius:50%;background:#6B2737;display:flex;align-items:center;justify-content:center;color:#F6F2EC;font-family:Georgia,serif;font-style:italic;font-size:var(--fs-sm);">a</div>
                         </div>
@@ -5443,8 +5480,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Atelier</div>
                           <div style="font-size:var(--fs-xs);color:var(--text3);">Pilates · Barre · Reformer</div>
                         </div>
-                      </div>
-                      <div class="sf-theme-card" data-theme="lumen" onclick="sfSetTheme('lumen')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
+                      </button>
+                      <button type="button" class="sf-theme-card" data-theme="lumen" onclick="sfSetTheme('lumen')" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;">
                         <div style="height:54px;background:#E6DAC6;display:flex;align-items:center;justify-content:center;">
                           <div style="width:24px;height:24px;border-radius:50%;background:#7A8B6F;"></div>
                         </div>
@@ -5452,7 +5489,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Lumen</div>
                           <div style="font-size:var(--fs-xs);color:var(--text3);">Yoga · Wellness · Holístico</div>
                         </div>
-                      </div>
+                      </button>
                     </div>
                     <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:6px;">El tema define la estructura (tipografía, layout, claro/oscuro). El color de acento (abajo) le da el toque de tu marca dentro del tema.</div>
                   </div>
@@ -5476,21 +5513,21 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
               <!-- STATS -->
               <details class="sf-accordion">
-                <summary>Stats & Reseñas</summary>
+                <summary>Cifras y reseñas</summary>
                 <div class="sf-acc-body">
                   <div class="field-grid">
-                    <div class="field"><label>Años abierto</label>
+                    <div class="field"><label for="sf-years-open">Años abierto</label>
                       <input id="sf-years-open" type="number" class="settings-input" min="0" placeholder="5" onblur="sfSaveField('years_open', parseInt(this.value)||null)"/>
                     </div>
-                    <div class="field"><label>Atletas activos</label>
+                    <div class="field"><label for="sf-athletes-count">Atletas activos</label>
                       <input id="sf-athletes-count" type="number" class="settings-input" min="0" placeholder="200" onblur="sfSaveField('active_athletes_count', parseInt(this.value)||null)"/>
                     </div>
                   </div>
                   <div class="field-grid">
-                    <div class="field"><label>Rating Google (1.0 - 5.0)</label>
+                    <div class="field"><label for="sf-google-rating">Rating Google (1.0 - 5.0)</label>
                       <input id="sf-google-rating" type="number" step="0.1" min="1" max="5" class="settings-input" placeholder="4.9" onblur="sfSaveField('google_rating', parseFloat(this.value)||null)"/>
                     </div>
-                    <div class="field"><label># Reseñas Google</label>
+                    <div class="field"><label for="sf-google-reviews"># Reseñas Google</label>
                       <input id="sf-google-reviews" type="number" min="0" class="settings-input" placeholder="87" onblur="sfSaveField('google_review_count', parseInt(this.value)||0)"/>
                     </div>
                   </div>
@@ -5501,21 +5538,21 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               <details class="sf-accordion">
                 <summary>Ubicación & Mapa</summary>
                 <div class="sf-acc-body">
-                  <div class="field"><label>Dirección (calle y número)</label>
+                  <div class="field"><label for="sf-address">Dirección (calle y número)</label>
                     <input id="sf-address" type="text" class="settings-input" placeholder="Blvd. Aurora 451" onblur="sfSaveField('address', this.value)"/>
                   </div>
                   <div class="field-grid">
-                    <div class="field"><label>Ciudad</label>
+                    <div class="field"><label for="sf-city">Ciudad</label>
                       <input id="sf-city" type="text" class="settings-input" placeholder="León" onblur="sfSaveField('city', this.value)"/>
                     </div>
-                    <div class="field"><label>Estado</label>
+                    <div class="field"><label for="sf-state">Estado</label>
                       <input id="sf-state" type="text" class="settings-input" placeholder="Guanajuato" onblur="sfSaveField('state', this.value)"/>
                     </div>
-                    <div class="field"><label>CP</label>
+                    <div class="field"><label for="sf-postal-code">CP</label>
                       <input id="sf-postal-code" type="text" class="settings-input" placeholder="37000" onblur="sfSaveField('postal_code', this.value)"/>
                     </div>
                   </div>
-                  <div class="field"><label>Horario de atención (texto libre)</label>
+                  <div class="field"><label for="sf-hours-text">Horario de atención (texto libre)</label>
                     <input id="sf-hours-text" type="text" class="settings-input" placeholder="L-V 6am-10pm · Sáb 8am-2pm" onblur="sfSaveField('hours_text', this.value)"/>
                   </div>
                   <div class="field"><label>Link de Google Maps <span style="font-size:var(--fs-xs);color:var(--text3);">(pega el link de Compartir de tu negocio — cualquiera sirve)</span></label>
@@ -5531,16 +5568,16 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               <details class="sf-accordion">
                 <summary><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Redes sociales</summary>
                 <div class="sf-acc-body">
-                  <div class="field"><label>Instagram (sin @)</label>
+                  <div class="field"><label for="sf-social-ig">Instagram (sin @)</label>
                     <input id="sf-social-ig" type="text" class="settings-input" placeholder="miguim" onblur="sfSaveField('social_instagram', this.value.replace(/^@/,''))"/>
                   </div>
-                  <div class="field"><label>Facebook (URL o username)</label>
+                  <div class="field"><label for="sf-social-fb">Facebook (URL o username)</label>
                     <input id="sf-social-fb" type="text" class="settings-input" placeholder="MiGym o https://facebook.com/MiGym" onblur="sfSaveField('social_facebook', this.value)"/>
                   </div>
-                  <div class="field"><label>WhatsApp (número con código país)</label>
+                  <div class="field"><label for="sf-social-wa">WhatsApp (número con código país)</label>
                     <input id="sf-social-wa" type="tel" class="settings-input" placeholder="+524771234567" onblur="sfSaveField('social_whatsapp', this.value)"/>
                   </div>
-                  <div class="field"><label>TikTok (sin @)</label>
+                  <div class="field"><label for="sf-social-tt">TikTok (sin @)</label>
                     <input id="sf-social-tt" type="text" class="settings-input" placeholder="migym" onblur="sfSaveField('social_tiktok', this.value.replace(/^@/,''))"/>
                   </div>
                 </div>
@@ -5548,7 +5585,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
               <!-- HIGHLIGHTS -->
               <details class="sf-accordion">
-                <summary>Highlights (qué incluye)</summary>
+                <summary>Qué incluye</summary>
                 <div class="sf-acc-body">
                   <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:10px;">Listado de beneficios que aparecen en la sección "Qué incluye".</div>
                   <div id="sf-highlights-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
@@ -5571,7 +5608,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
               <!-- FAQS -->
               <details class="sf-accordion">
-                <summary>FAQs (preguntas frecuentes)</summary>
+                <summary>Preguntas frecuentes</summary>
                 <div class="sf-acc-body">
                   <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:10px;">Resuelve objeciones antes de que las pregunten.</div>
                   <div id="sf-faqs-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
@@ -5634,7 +5671,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                     <span style="font-size:var(--fs-sm);">Ofrecer clase de prueba GRATIS</span>
                   </label>
                   <div class="field" style="margin-top:10px;">
-                    <label>¿Cuánto horario ve el público?</label>
+                    <label for="sf-semanas">¿Cuánto horario ve el público?</label>
                     <select id="sf-semanas" class="settings-input" onchange="sfSaveField('semanas_visibles', parseInt(this.value,10))">
                       <option value="1">1 semana (los próximos 7 días)</option>
                       <option value="2">2 semanas</option>
@@ -5647,7 +5684,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
                     </span>
                   </div>
                   <div class="field" style="margin-top:10px;">
-                    <label>¿Cómo se reserva desde tu página?</label>
+                    <label for="sf-reserva-modo">¿Cómo se reserva desde tu página?</label>
                     <select id="sf-reserva-modo" class="settings-input" onchange="sfSaveField('reserva_modo', this.value)">
                       <option value="contacto">Dejan sus datos y tú los contactas (no aparta lugar)</option>
                       <option value="pago">Solo con pago: compran un paquete y su lugar queda apartado</option>
@@ -5672,7 +5709,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
               <!-- ANALYTICS & TRACKING -->
               <details class="sf-accordion">
-                <summary>Analytics & Tracking</summary>
+                <summary>Medición de visitas</summary>
                 <div class="sf-acc-body">
                   <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:14px;">IDs de pixels para que tus campañas de Meta Ads / Google Ads tengan tracking real de conversión.</div>
                   <div class="field"><label>Meta Pixel ID <span style="font-size:var(--fs-xs);color:var(--text3);">(Facebook Business Manager → Events Manager → Tu Pixel)</span></label>
@@ -5706,8 +5743,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               </details>
 
               <!-- LISTINGS (paquetes públicos) -->
-              <details class="sf-accordion" open>
-                <summary>Paquetes públicos (Storefront y app)</summary>
+              <details class="sf-accordion">
+                <summary>Planes en la tienda y la app</summary>
                 <div class="sf-acc-body">
                   <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:12px;">Marca qué paquetes pueden comprar tus clientes. La casilla controla tanto tu Storefront público como la app del atleta: <strong>si la desmarcas, ese paquete se esconde y nadie puede comprarlo en línea</strong> (sigues pudiendo venderlo en recepción).</div>
                   <div id="sf-listings-list" style="display:flex;flex-direction:column;gap:8px;">
@@ -5717,6 +5754,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
               </details>
 
             </div>
+            </details>
 
           </div>
         </div>
@@ -7092,8 +7130,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       </div>
       <div class="field"><label>Tipo de cobro</label>
         <select id="ep-cobro">
-          <option value="one_time">Pago único</option>
-          <option value="recurring">Mensualidad domiciliada</option>
+          <option value="one_time">Se cobra una vez</option>
+          <option value="recurring">Se cobra cada mes automáticamente</option>
         </select>
       </div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:4px;">
@@ -7106,6 +7144,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       </label>
       <span style="font-size:var(--fs-sm);color:var(--text3);display:block;margin:4px 0 0 23px;">Apágalo para venderlo solo en recepción (transferencia o efectivo): tus atletas no lo verán ni podrán pagarlo en línea.</span>
       <div id="ep-aviso" style="display:none;font-size:var(--fs-sm);color:var(--warn);margin-top:10px;"></div>
+        <div id="ep-revision-cobro" class="revision-cobro-plan" hidden></div>
       <div id="ep-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:8px;"></div>
     </div>
     <div class="modal-footer">
@@ -7635,8 +7674,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div class="field" style="margin-top:12px;">
           <label>Tipo de cobro *</label>
           <select id="pk-cobro" style="width:100%;">
-            <option value="one_time">Pago único</option>
-            <option value="recurring">Mensualidad domiciliada — cobro automático cada mes</option>
+            <option value="one_time">Se cobra una vez</option>
+            <option value="recurring">Se cobra cada mes automáticamente</option>
           </select>
           <span style="font-size:var(--fs-sm);color:var(--text3);margin-top:4px;display:block;">Domiciliada: el socio registra su tarjeta una vez y se le cobra solo cada mes (usa vigencia de 30 días).</span>
         </div>
@@ -7647,6 +7686,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div class="wzd-q">Confirma el paquete</div>
         <div class="wzd-hint">Revisa que esté bien. Puedes regresar a corregir cualquier dato.</div>
         <div id="pk-confirm"></div>
+        <div id="pk-revision-cobro" class="revision-cobro-plan" hidden></div>
         <span class="field-err" id="pk-err" style="display:none;font-size:var(--fs-sm);color:var(--danger);margin-top:10px;"></span>
       </div>
 
@@ -12206,7 +12246,7 @@ function go(id, el){
   if(id==='solicitudes')   renderSolicitudes();
   if(id==='landing-leads'){ marcarLandingLeadsVistos(); renderLeadsLanding(); }
   if(id==='marketing')     renderCalendario();
-  if(id==='horario')     { Promise.all([loadHorarioOverridesFromSupabase(),loadHorarioCancelaciones()]).then(()=>{ switchHorTab('mensual'); if(typeof renderStudiosCal==='function') renderStudiosCal(); }); }
+  if(id==='horario')       entrarAlHorario();
   if(id==='gastos')      { renderGastos(); }
   if(id==='revenue')     { renderRevenue(); }
   if(id==='por-vencer')  { renderPorVencer(); }
@@ -12478,6 +12518,7 @@ function openModal(id){
     const pt=document.getElementById('pk-tipo'); if(pt) pt.value='ilimitado';
     ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(fid=>{ const e=document.getElementById(fid); if(e) e.value=''; });
     const pd=document.getElementById('pk-permite-desc'); if(pd) pd.checked=true;
+    delete document.getElementById('pk-revision-cobro').dataset.clave;
     const pco=document.getElementById('pk-cobro'); if(pco) pco.value='one_time';
     const cf=document.getElementById('pk-clases-field'); if(cf) cf.style.display='none';
     ['pk-nombre','pk-precio','pk-dias','pk-clases'].forEach(f=>wzdFieldErr(f,''));
@@ -13325,33 +13366,33 @@ function renderCalVenc(){
     const hasEvents=events.length>0||cumplesDia.length>0;
     const maxShow=3;
     const eventDots=events.slice(0,maxShow).map(e=>`
-      <div onclick="event.stopPropagation();calVencShowDay(${d})" title="${esc(e.nombre)}"
+      <span title="${esc(e.nombre)}"
            style="font-size:var(--fs-xs);padding:1px 4px;border-radius:4px;background:${stateColor[e.estado]}22;
                   color:${stateColor[e.estado]};border-left:2px solid ${stateColor[e.estado]};
                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:pointer;">
         ${esc(e.nombre.split(' ')[0])}
-      </div>`).join('');
-    const moreLabel=events.length>maxShow?`<div style="font-size:var(--fs-xs);color:var(--text3);padding:1px 2px;">+${events.length-maxShow} más</div>`:'';
+      </span>`).join('');
+    const moreLabel=events.length>maxShow?`<span style="font-size:var(--fs-xs);color:var(--text3);padding:1px 2px;">+${events.length-maxShow} más</span>`:'';
     // Cumpleaños: violeta con borde PUNTEADO + regalo — inconfundible vs vencimiento
     const cumpleDots=cumplesDia.map(n=>`
-      <div onclick="event.stopPropagation();calVencShowDay(${d})" title="Cumpleaños de ${esc(n)}"
+      <span title="Cumpleaños de ${esc(n)}"
            style="font-size:var(--fs-xs);padding:1px 4px;border-radius:4px;background:rgba(167,139,250,.14);
                   color:var(--violet);border-left:2px dashed var(--violet);
                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:pointer;
                   display:flex;align-items:center;gap:3px;">
         ${CUMPLE_SVG}${esc(n.split(' ')[0])}
-      </div>`).join('');
+      </span>`).join('');
 
-    html+=`<div onclick="calVencShowDay(${d})"
+    html+=`<button type="button" aria-label="${d} de ${mesNombres[m]}, ${events.length} vencimientos y ${cumplesDia.length} cumpleaños" onclick="calVencShowDay(${d})"
                style="min-height:70px;padding:4px;border-radius:8px;cursor:${hasEvents?'pointer':'default'};
                       background:${isToday?'var(--accent-bg)':'var(--card)'};
                       border:1px solid ${isToday?'var(--accent)':'var(--border)'};
                       transition:background .15s;"
                onmouseenter="if(${hasEvents})this.style.background='var(--card2)'"
                onmouseleave="this.style.background='${isToday?'var(--accent-bg)':'var(--card)'}'">
-        <div style="font-size:var(--fs-sm);font-weight:${isToday?'800':'600'};color:${isToday?'var(--accent)':'var(--text3)'};margin-bottom:3px;">${d}</div>
-        <div style="display:flex;flex-direction:column;gap:2px;">${eventDots}${moreLabel}${cumpleDots}</div>
-      </div>`;
+        <span style="font-size:var(--fs-sm);font-weight:${isToday?'800':'600'};color:${isToday?'var(--accent)':'var(--text3)'};margin-bottom:3px;">${d}</span>
+        <span style="display:flex;flex-direction:column;gap:2px;">${eventDots}${moreLabel}${cumpleDots}</span>
+      </button>`;
   }
 
   const grid=document.getElementById('calVencGrid');
@@ -16680,6 +16721,8 @@ function editarPlan(id){
   if(chk) chk.checked = p.allow_discount !== false;
   const vis = document.getElementById('ep-visible-app');
   if(vis) vis.checked = !!p._publicado;
+  delete document.getElementById('ep-revision-cobro').dataset.clave;
+  revisarModalidadPaquete('ep');
   _epToggleTipo();
 
   // Avisos honestos según el estado real del plan, no genéricos.
@@ -16696,6 +16739,38 @@ function editarPlan(id){
   if(err){ err.textContent=''; err.style.display='none'; }
   openModal('editar-plan');
 }
+
+// Pedir una revisión sólo cuando el nombre promete una modalidad distinta.
+function revisarModalidadPaquete(prefijo, exigir=false){
+  const host=document.getElementById(prefijo+'-revision-cobro');
+  const plan={
+    name:document.getElementById(prefijo+'-nombre').value.trim(),
+    price_mxn:document.getElementById(prefijo+'-precio').value,
+    billing_type:document.getElementById(prefijo+'-cobro').value
+  };
+  const clave=JSON.stringify([MOVE_GYM_ID,currentUser?.id,prefijo==='ep'?document.getElementById('ep-id').value:null,plan]);
+  if(host.dataset.clave!==clave){
+    host.dataset.clave=clave;
+    host.replaceChildren();
+    host.hidden=!CorePaquetes.revisarNombreCobro(plan);
+    if(!host.hidden){
+      const aviso=document.createElement('p');
+      aviso.textContent='El nombre sugiere otra modalidad. '+CorePaquetes.explicacionCobro(plan)+'.';
+      const label=document.createElement('label');
+      const check=document.createElement('input');
+      check.type='checkbox';
+      label.append(check, ' Revisé el nombre y quiero guardar esta modalidad');
+      host.append(aviso,label);
+    }
+  }
+  const check=host.querySelector('input');
+  if(exigir && check && !check.checked){ check.focus(); return false; }
+  return true;
+}
+document.addEventListener('input',event=>{
+  const m=/^(ep|plan-nuevo|pk)-(?:nombre|precio|cobro)$/.exec(event.target.id);
+  if(m) revisarModalidadPaquete(m[1]);
+});
 
 async function guardarPlanEditado(){
   const errEl = document.getElementById('ep-err');
@@ -16717,6 +16792,7 @@ async function guardarPlanEditado(){
   if(dias < 1){ showErr('La vigencia debe ser al menos 1 día.'); return; }
   if(tipo === 'paquete' && (!clases || clases < 1)){ showErr('Indica cuántas clases incluye el paquete.'); return; }
 
+  if(!revisarModalidadPaquete('ep',true)) return;
   const payload = {
     name: nombre,
     price_mxn: Math.round(precio),
@@ -16793,6 +16869,7 @@ async function agregarPlan(){
   const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
   const nextSort = ((_packagesDB||[]).reduce((m,p)=>Math.max(m, p.sort_order||0), 0)) + 1;
 
+  if(!revisarModalidadPaquete('plan-nuevo',true)) return;
   const payload = {
     gym_id: gymId,
     name: nombre,
@@ -16825,6 +16902,8 @@ async function agregarPlan(){
   // "mis paquetes no aparecen" (el gym veía los nuevos y sus atletas seguían con los viejos).
   if(_nuevoPkg && _nuevoPkg.id) await _publicarPaquete(_nuevoPkg.id, nextSort);
 
+  document.getElementById('plan-nuevo-revision-cobro').hidden=true;
+  delete document.getElementById('plan-nuevo-revision-cobro').dataset.clave;
   // Reset form
   document.getElementById('plan-nuevo-nombre').value = '';
   document.getElementById('plan-nuevo-precio').value = '';
@@ -17472,7 +17551,7 @@ async function loadStorefrontPanel(){
   const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
   const [sfRes, listRes] = await Promise.all([
     window.supabaseClient.from('gym_storefront').select('*').eq('gym_id', gymId).maybeSingle(),
-    window.supabaseClient.from('storefront_listings').select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes)').eq('gym_id', gymId).order('sort_order', {ascending: true})
+    window.supabaseClient.from('storefront_listings').select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes, billing_type)').eq('gym_id', gymId).order('sort_order', {ascending: true})
   ]);
 
   _storefrontData = sfRes.data;
@@ -17494,7 +17573,7 @@ async function loadStorefrontPanel(){
         // Recargar listings con los nuevos
         const rr = await window.supabaseClient
           .from('storefront_listings')
-          .select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes)')
+          .select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes, billing_type)')
           .eq('gym_id', gymId).order('sort_order', {ascending: true});
         _storefrontListings = rr.data || _storefrontListings;
       }
@@ -17520,7 +17599,7 @@ async function loadStorefrontPanel(){
     // También crear listings automáticos (todos como private inicialmente)
     await _sfSeedListingsForGym(gymId);
     // Reload listings
-    const r2 = await window.supabaseClient.from('storefront_listings').select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes)').eq('gym_id', gymId).order('sort_order', {ascending: true});
+    const r2 = await window.supabaseClient.from('storefront_listings').select('*, packages!inner(name, price_mxn, duration_days, unlimited_classes, num_classes, billing_type)').eq('gym_id', gymId).order('sort_order', {ascending: true});
     _storefrontListings = r2.data || [];
   }
 
@@ -17606,7 +17685,7 @@ function renderStorefrontPanel(){
     return `
       <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card2);border:1px solid ${l.is_public ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'var(--border)'};border-radius:10px;">
         <label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0;">
-          <input type="checkbox" ${l.is_public ? 'checked' : ''} onchange="sfToggleListing(${l.id}, this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
+          <input type="checkbox" ${l.is_public ? 'checked' : ''} aria-label="Publicar ${esc(p.name).replace(/"/g,'&quot;')}" onchange="sfToggleListing(${l.id}, this.checked, this)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);"/>
         </label>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
@@ -17615,7 +17694,7 @@ function renderStorefrontPanel(){
             ${isFeatured ? '<span style="font-size:var(--fs-xs);background:color-mix(in srgb, var(--accent) 18%, transparent);color:var(--accent);padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:.3px;">DESTACADO</span>' : ''}
           </div>
           <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:2px;">
-            ${p.duration_days} día${p.duration_days===1?'':'s'} · ${meta}
+             ${CorePaquetes.explicacionCobro(p)} · ${p.duration_days} día${p.duration_days===1?'':'s'} · ${meta}
             ${l.badge_text ? ' · Badge: ' + esc(l.badge_text) : ''}
           </div>
         </div>
@@ -17661,12 +17740,12 @@ async function sfSaveSlug(){
   const errEl = document.getElementById('sf-slug-err');
   const showErr = m => { if(errEl){ errEl.textContent = m; errEl.style.display = m?'block':'none'; } };
   showErr('');
-  if(!/^[a-z0-9-]{3,60}$/.test(newSlug)){ showErr('El slug debe tener 3-60 caracteres: lowercase, números y guiones.'); return; }
-  if(newSlug === _storefrontData?.slug){ toast('Slug sin cambios.', 'ℹ️'); return; }
+  if(!/^[a-z0-9-]{3,60}$/.test(newSlug)){ showErr('Usa entre 3 y 60 caracteres: letras minúsculas, números o guiones.'); return; }
+  if(newSlug === _storefrontData?.slug){ toast('La dirección sigue igual.', 'ℹ️'); return; }
   const { error } = await window.supabaseClient.from('gym_storefront').update({slug: newSlug}).eq('gym_id', _storefrontData.gym_id);
   if(error){
     if((error.message||'').includes('unique') || (error.message||'').includes('duplicate')){
-      showErr('Ese slug ya está tomado por otro gym. Elige otro.');
+      showErr('Otro gimnasio ya usa esa dirección. Elige otra.');
     } else {
       showErr('Error: ' + error.message);
     }
@@ -17677,11 +17756,27 @@ async function sfSaveSlug(){
   toast('Slug actualizado ✓ Nueva URL: myvelum.app/g/' + newSlug, '🌐');
 }
 
-async function sfToggleListing(listingId, isPublic){
-  const { error } = await window.supabaseClient.from('storefront_listings').update({is_public: isPublic}).eq('id', listingId);
-  if(error){ if(_handleSessionError(error))return; toast('Error: ' + error.message, '✕'); return; }
+async function sfToggleListing(listingId, isPublic, input){
   const item = _storefrontListings.find(l => l.id === listingId);
-  if(item){ item.is_public = isPublic; renderStorefrontPanel(); }
+  const gym = _gymIdActual(), user = currentUser, token = user?.jwt;
+  if(!item || !gym || String(_storefrontData?.gym_id)!==String(gym) || !user){ if(input) input.checked=!!item?.is_public; return; }
+  if(input){ input.disabled=true; input.checked=!!item.is_public; }
+  const vigente=()=>currentUser===user && currentUser?.jwt===token && _gymIdActual()===gym && _storefrontListings.includes(item);
+  try{
+    if(isPublic && CorePaquetes.revisarNombreCobro(item.packages)){
+      const ok=await confirmDialog('El nombre «'+item.packages.name+'» sugiere otra modalidad. '+CorePaquetes.explicacionCobro(item.packages)+'.', {title:'Revisar antes de publicar',danger:false,confirmText:'Publicar con esta modalidad',cancelText:'Volver a revisar'});
+      if(!ok || !vigente()) return;
+    }
+    const {error}=await window.supabaseClient.from('storefront_listings').update({is_public:isPublic}).eq('gym_id',gym).eq('id',listingId);
+    if(!vigente()) return;
+    if(error) throw error;
+    item.is_public=isPublic;
+    renderStorefrontPanel();
+  }catch(error){
+    if(vigente() && !_handleSessionError(error)) toast('No se pudo actualizar la publicación. Intenta de nuevo.','✕');
+  }finally{
+    if(input && input.isConnected){input.disabled=false;input.checked=!!item.is_public;}
+  }
 }
 
 async function sfToggleFeatured(listingId, isFeatured){
@@ -17844,10 +17939,22 @@ async function sfSetTheme(theme){
   toast('Estética ' + (names[theme]||theme) + ' aplicada ✓', '🎨');
 }
 
+function sfMostrarSeccion(id){
+  const target=document.getElementById(id);
+  if(!target) return;
+  document.getElementById('sf-opciones').open=true;
+  const panel=target.closest('details');
+  panel.open=true;
+  const control=id==='sf-listings-list' ? panel.querySelector('summary') : target;
+  control.focus();
+  control.scrollIntoView({block:'center'});
+}
+
 function _sfHighlightTheme(theme){
   const cards = document.querySelectorAll('#sf-theme-grid .sf-theme-card');
   cards.forEach(c => {
     const sel = c.getAttribute('data-theme') === theme;
+    c.setAttribute('aria-pressed',String(sel));
     c.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
     c.style.boxShadow = sel ? '0 0 0 1px var(--accent)' : 'none';
   });
@@ -18595,30 +18702,54 @@ function _gymTxHTML(){
 }
 // Ocupación de hoy: cuenta reservas por horario_id (no-canceladas).
 async function _gymHoyOcupacion(hoy,gym){
+  if(!gym) return null;
   try{
-    const { data,error } = await window.supabaseClient.from('reservas').select('horario_id,estado').eq('gym_id',gym).eq('fecha',hoy).neq('estado','cancelado');
-    if(error || !Array.isArray(data)) return null;
-    const map={}; (data||[]).forEach(r=>{ if(r.horario_id!=null) map[r.horario_id]=(map[r.horario_id]||0)+1; });
-    return {porClase:map,asistencias:(data||[]).filter(r=>r.estado==='checkin').length};
-  }catch(_){ return null; }
+    const porClase={},asistenciasPorClase={},ids=new Set();
+    let asistencias=0,total=null;
+    for(;;){
+      const desde=ids.size;
+      const {data,count,error}=await window.supabaseClient.from('reservas')
+        .select('id,horario_id,estado',{count:'exact'}).eq('gym_id',gym).eq('fecha',hoy)
+        .neq('estado','cancelado').order('id').range(desde,desde+499);
+      if(error || !Array.isArray(data) || (total!=null && count!==total)) return null;
+      total=count;
+      for(const r of data){
+        if(ids.has(r.id)) return null;
+        ids.add(r.id);
+        if(r.horario_id!=null) porClase[r.horario_id]=(porClase[r.horario_id]||0)+1;
+        if(r.estado==='checkin'){
+          asistencias++;
+          if(r.horario_id!=null) asistenciasPorClase[r.horario_id]=(asistenciasPorClase[r.horario_id]||0)+1;
+        }
+      }
+      if(total!=null ? ids.size===total : data.length<500) break;
+      if(!data.length || (total!=null && ids.size>total)) return null;
+    }
+    return {porClase,asistenciasPorClase,asistencias};
+  }catch{ return null; }
 }
-async function abrirClaseHoy(id){
-  const gym=MOVE_GYM_ID,fecha=_asistFechaSel_offset(0);
+async function abrirClaseHoy(id, fecha=_asistFechaSel_offset(0)){
+  const contexto=contextoPagoGym();
+  if(!contexto.vista || roleBlocksView('asistencia') || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
+  const offset=(Date.parse(fecha+'T00:00:00Z')-Date.parse(_asistFechaSel_offset(0)+'T00:00:00Z'))/86400000;
   go('asistencia',document.getElementById('nav-asistencia'));
+  if(offset!==0) selectAsistDia(offset);
   try{
-    const clases=await _horariosEfectivosFecha(fecha,_hovDiaNombre(fecha));
-    if(gym!==MOVE_GYM_ID || fecha!==_asistFechaSel() || !document.getElementById('v-asistencia').classList.contains('active')) return;
+    const clases=await _horariosEfectivosFecha(fecha,_hovDiaNombre(fecha),true);
+    if(!pagoGymVigente(contexto) || fecha!==_asistFechaSel() || !document.getElementById('v-asistencia').classList.contains('active')) return;
     const h=clases.find(c=>String(c.id)===id);
     if(h) abrirDetalleClase(h.id,h.hora,h.tipo,h.coach_nombre,h.cupo,h.base_id);
-    else toast('Esta clase ya no aparece en la agenda de hoy.','↺');
+    else toast('Esta clase ya no está en la agenda de la fecha seleccionada.','↺');
   }catch{toast('No se pudo consultar la clase. Actualiza la lista.','↺');}
 }
 function _applyGymAnalisisState(){
   let open=false; try{ open=localStorage.getItem('velum_gym_analisis')==='1'; }catch(_){}
+  mostrarOcupacion(open);
   const sec=document.getElementById('kpi-secondary-details');
   const wid=document.getElementById('dash-widgets-grid');
   if(sec) sec.style.display=open?'':'none';
   if(wid) wid.style.display=open?'':'none';
+  document.getElementById('gym-analisis-toggle')?.setAttribute('aria-expanded',String(open));
   const ch=document.getElementById('gym-analisis-chev'); if(ch) ch.style.transform=open?'rotate(180deg)':'';
 }
 function _gymAnalisisToggle(){
@@ -18649,7 +18780,7 @@ function renderGymPulso(estados){
   const toggle=document.getElementById('gym-analisis-toggle');
   if(!pulso||!toggle) return;
   renderInicioHoy(estados);
-  if(_gymVertical!=='gym'){ pulso.style.display='none'; toggle.style.display='none'; return; }
+  if(_gymVertical!=='gym'){ pulso.style.display='none'; toggle.style.display='none'; mostrarOcupacion(false); return; }
   pulso.style.display=''; toggle.style.display='flex';
   const briefing=document.getElementById('dash-briefing-hoy'); if(briefing) briefing.style.display='none';
   _applyGymAnalisisState();
@@ -20357,11 +20488,11 @@ function _mesNext(mesStr){
 // Returns HTML for a ← Mes Año → nav, using string callbacks (eval-safe via data attrs)
 function _buildMonthNav(mesStr, prevCallback, nextCallback){
   const isCurrentMonth = mesStr === new Date().toISOString().slice(0,7);
-  const nextDisabled = isCurrentMonth ? 'opacity:.35;pointer-events:none;' : '';
+  const nextDisabled = isCurrentMonth ? 'disabled' : '';
   return `<div class="month-nav">
-    <button class="month-nav-btn" onclick="${prevCallback}" title="Mes anterior">‹</button>
+    <button class="month-nav-btn" onclick="${prevCallback}" aria-label="Mes anterior" title="Mes anterior">‹</button>
     <span class="month-nav-label">${_mesLabel(mesStr)}</span>
-    <button class="month-nav-btn" onclick="${nextCallback}" style="${nextDisabled}" title="Mes siguiente">›</button>
+    <button class="month-nav-btn" onclick="${nextCallback}" ${nextDisabled} aria-label="Mes siguiente" title="Mes siguiente">›</button>
   </div>`;
 }
 
@@ -23017,6 +23148,8 @@ wizRegister('paquete', {
     ];
     if(tipo==='paquete') rows.push(_wzdRow(_pkUnidadCap(), (parseInt(document.getElementById('pk-clases').value)||0)+' '+_pkUnidad()));
     rows.push(_wzdRow('Descuentos', document.getElementById('pk-permite-desc').checked?'Permitidos':'No permitidos'));
+    rows.push(_wzdRow('Cobro',CorePaquetes.explicacionCobro({price_mxn:precio,billing_type:document.getElementById('pk-cobro').value})));
+    revisarModalidadPaquete('pk');
     document.getElementById('pk-confirm').innerHTML=rows.join('');
     const err=document.getElementById('pk-err'); if(err) err.style.display='none';
   }
@@ -23038,6 +23171,7 @@ async function savePaqueteWizard(){
 
   const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
   const nextSort = ((_packagesDB||[]).reduce((m,p)=>Math.max(m, p.sort_order||0), 0)) + 1;
+  if(!revisarModalidadPaquete('pk',true)) return;
   const payload = {
     gym_id: gymId,
     name: nombre,
@@ -24323,7 +24457,7 @@ function renderPagos(){
       ? `<button class="btn btn-outline btn-sm" onclick="toggleCongelarPago('${p.id}',${!!p.congelado})" title="${p.congelado?'Descongelar membresía':'Congelar membresía'}" style="font-size:var(--fs-sm);padding:3px 8px;${p.congelado?'border-color:var(--blue);color:var(--blue);':'border-color:var(--text3);color:var(--text3);'}">${p.congelado?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5 4 4M20 20l-1-1M5 19l-1 1M20 4l-1 1"/></svg>':'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M4 4l16 16M20 4 4 20"/></svg>'}</button>`
       : '';
     // 2.3 — Recibo PDF
-    const reciboBtn=`<button class="btn btn-outline btn-sm" onclick="printRecibo('${p.id}')" title="Generar recibo" style="font-size:var(--fs-sm);padding:3px 8px;border-color:var(--text3);color:var(--text3);"></button>`;
+    const reciboBtn=`<button class="btn btn-outline btn-sm" onclick="printRecibo('${p.id}')" title="Generar recibo" style="min-height:44px;">Generar recibo</button>`;
     html += `<tr>
       <td class="name">${esc(p.cliente)}</td>
       <td data-label="Plan">${esc(p.plan)}</td>
@@ -24335,8 +24469,8 @@ function renderPagos(){
         ${descontarBtn}${freezeBtn}
         ${gymStripeId && CoreCobros.canCreate() ? `<button class="btn btn-outline btn-sm" data-cliente="${esc(p.cliente).replace(/"/g,'&quot;')}" data-concepto="${esc(p.plan).replace(/"/g,'&quot;')}" data-monto="${Number(p.monto)}" onclick="CoreCobros.create(this.dataset.cliente,false,'',this.dataset)" title="Crear enlace de cobro" style="font-size:var(--fs-xs);padding:3px 8px;">Crear enlace de cobro</button>` : ''}
         ${reciboBtn}
-        <button class="btn btn-outline btn-sm" onclick="openEditPago('${p.id}')" style="font-size:var(--fs-xs);padding:3px 8px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-        <button class="btn btn-danger btn-sm" onclick="deletePago('${p.id}')" style="font-size:var(--fs-xs);padding:3px 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg></button>
+        <button class="btn btn-outline btn-sm" aria-label="Editar pago" onclick="openEditPago('${p.id}')" style="font-size:var(--fs-xs);padding:3px 8px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="btn btn-danger btn-sm" aria-label="Eliminar pago" onclick="deletePago('${p.id}')" style="font-size:var(--fs-xs);padding:3px 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg></button>
       </td>
     </tr>`;
   });
@@ -24912,6 +25046,7 @@ function coachColorIdx(coach_id, coach_nombre){
 }
 
 async function loadHorarioOverridesFromSupabase(){
+  const gym=MOVE_GYM_ID,mes=hvMonth,year=hvYear;
   const mm    = String(hvMonth+1).padStart(2,'0');
   const dd    = String(new Date(hvYear, hvMonth+1, 0).getDate());  // último día real del mes
   // ±7 días: una semana de nómina puede cruzar de mes y necesita los overrides
@@ -24921,6 +25056,7 @@ async function loadHorarioOverridesFromSupabase(){
   const end   = _iso(new Date(hvYear, hvMonth, Number(dd) + 7));
   // Overrides = records in the same 'horarios' table that have a specific fecha
   const { data, error } = await gf(window.supabaseClient.from('horarios').select('*')).gte('fecha', start).lte('fecha', end).not('fecha','is',null);
+  if(gym!==MOVE_GYM_ID || mes!==hvMonth || year!==hvYear) return;
   if(error){ console.error('Error cargando overrides:', error); if(_handleSessionError(error))return; horarioOverrides=[]; return; }
   horarioOverrides = (data||[]).filter(o=>o.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(o.fecha)).map(o=>({
     id: o.id, fecha: o.fecha, hora: o.hora, cupo:o.cupo, coaches_extra:o.coaches_extra,
@@ -24932,6 +25068,7 @@ async function loadHorarioOverridesFromSupabase(){
 }
 
 async function loadHorarioCancelaciones(){
+  const gym=MOVE_GYM_ID,mes=hvMonth,year=hvYear;
   const mm    = String(hvMonth+1).padStart(2,'0');
   const dd    = String(new Date(hvYear, hvMonth+1, 0).getDate());  // último día real del mes
   // ±7 días: una semana de nómina puede cruzar de mes y necesita los overrides
@@ -24940,6 +25077,7 @@ async function loadHorarioCancelaciones(){
   const start = _iso(new Date(hvYear, hvMonth, 1 - 7));
   const end   = _iso(new Date(hvYear, hvMonth, Number(dd) + 7));
   const { data, error } = await gf(window.supabaseClient.from('horario_cancelaciones').select('id,horario_id,fecha,motivo')).gte('fecha', start).lte('fecha', end);
+  if(gym!==MOVE_GYM_ID || mes!==hvMonth || year!==hvYear) return;
   if(error){ console.error('Error cargando cancelaciones:', error); if(_handleSessionError(error))return; horarioCancelaciones=[]; return; }
   horarioCancelaciones = data||[];
 }
@@ -24966,18 +25104,27 @@ function getEffectiveClase(fechaStr, hora){
   return out;
 }
 
-function switchHorTab(tab){
+function switchHorTab(tab, elegida=true){
+  if(tab==='lugares' && !_fLugaresP()) return;
   // Nómina Quincena expone tarifa por coach y el total a pagar del gym.
   if(tab==='nomina' && typeof roleOcultaDinero==='function' && roleOcultaDinero()){
     if(typeof toast==='function') toast('No tienes acceso a esta información','🔒',2500);
     return;
   }
-  ['mensual','plantilla','nomina'].forEach(t=>{
-    const el = document.getElementById('hor-tab-'+t);
+  horTabElegida=elegida;
+  horTabActual=tab;
+  ['dia','mensual','plantilla','nomina','lugares'].forEach(t=>{
+    const el = document.getElementById(t==='lugares'?'studios-cal':'hor-tab-'+t);
     const btn= document.getElementById('htab-btn-'+t);
     if(el)  el.style.display  = t===tab ? '' : 'none';
-    if(btn) btn.classList.toggle('active', t===tab);
+    if(btn){
+      btn.classList.toggle('active', t===tab);
+      btn.setAttribute('aria-pressed',String(t===tab));
+    }
   });
+  document.getElementById('htab-btn-lugares').hidden=!_fLugaresP();
+  if(tab==='dia') renderAgendaDia();
+  if(tab==='lugares') renderStudiosCal();
   if(tab==='mensual')   renderHorarioMensual();
   if(tab==='plantilla') renderHorario();
   if(tab==='nomina')    loadCoachRates(hvYear, hvMonth);
@@ -27154,15 +27301,7 @@ async function _horariosEfectivosFecha(fechaStr, diaNombre, verificarCancelacion
   if(canRes.error && verificarCancelaciones) throw canRes.error;
   if(canRes.error) console.warn('cancelaciones del día:', canRes.error.message);
   const canceladas = new Set((canRes.data||[]).map(c=>String(c.horario_id)));
-  const filas = (data||[]).filter(h => !canceladas.has(String(h.id)));
-  const ovs  = filas.filter(h => h.fecha === fechaStr);
-  const horasPisadas = new Set(ovs.map(h => h.hora));
-  const base = filas.filter(h => h.tipo!=='CERRADO' && h.dia === diaNombre && !(h.fecha||'') && !horasPisadas.has(h.hora));
-  const extra = ovs.filter(h => h.tipo!=='CERRADO').map(h=>{
-    const original=filas.find(b=>!b.fecha && b.dia===diaNombre && b.hora===h.hora);
-    return {...h,base_id:original?.id};
-  });
-  return [...base, ...extra].sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+  return resolverClasesFecha(data||[],fechaStr,diaNombre,canceladas);
 }
 
 async function loadReservasHoy(){
@@ -27343,19 +27482,23 @@ function renderAsistDayStrip(){
   if(!strip) return;
   const diasAbrev = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
   const hoy = new Date();
-  strip.innerHTML = Array.from({length:7},(_,i)=>{
+  const inicio=(_asistDayOffset<0 || _asistDayOffset>6)?_asistDayOffset:0;
+  const foco=strip.contains(document.activeElement)?document.activeElement.dataset.dia:null;
+  strip.innerHTML = Array.from({length:7},(_,index)=>{
+    const i=inicio+index;
     const d = new Date(hoy);
     d.setDate(hoy.getDate() + i);
     const isToday = i===0;
     const isActive = i===_asistDayOffset;
     const fechaPill = _asistFechaSel_offset(i);
     const nProsp = (_asistProxProspectos||[]).filter(pr=>pr.fecha===fechaPill).length;
-    return `<div class="asist-day-pill${isActive?' active':''}${isToday?' today-pill':''}${nProsp?' con-prospecto':''}" onclick="selectAsistDia(${i})"${nProsp?` title="${nProsp} reserva${nProsp!==1?'s':''} del enlace público"`:''}>
-      <div class="adp-day">${isToday?'HOY':diasAbrev[d.getDay()]}</div>
-      <div class="adp-num">${d.getDate()}</div>
-      <div class="adp-dot"></div>
-    </div>`;
+    return `<button type="button" data-dia="${i}" aria-label="${d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}" aria-pressed="${isActive}" class="asist-day-pill${isActive?' active':''}${isToday?' today-pill':''}${nProsp?' con-prospecto':''}" onclick="selectAsistDia(${i})"${nProsp?` title="${nProsp} reserva${nProsp!==1?'s':''} del enlace público"`:''}>
+      <span class="adp-day">${isToday?'HOY':diasAbrev[d.getDay()]}</span>
+      <span class="adp-num">${d.getDate()}</span>
+      <span class="adp-dot"></span>
+    </button>`;
   }).join('');
+  if(foco!=null) strip.querySelector('[data-dia="'+foco+'"]')?.focus({preventScroll:true});
 }
 
 function selectAsistDia(offset){
@@ -27498,18 +27641,15 @@ async function loadClasesOperativas(){
   el.innerHTML = '<div style="padding:28px 0;text-align:center;font-size:var(--fs-sm);color:var(--text3);">Cargando clases…</div>';
   try{
     const gymId = MOVE_GYM_ID||null;
-    const horarios = await _horariosEfectivosFecha(hoyStr, diaHoy);
+    if(!gymId){ el.textContent='Selecciona un gimnasio para ver sus clases.'; return; }
+    const horarios = await _horariosEfectivosFecha(hoyStr, diaHoy, true);
     if(lectura!==_asistLectura || scope!==MOVE_GYM_ID) return;
     if(!horarios||!horarios.length){
       el.innerHTML = `<div style="padding:48px 20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;"></div><div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:6px;">Sin clases para esta fecha</div><div style="font-size:var(--fs-xs);color:var(--text3);">No hay clases programadas para el ${diaHoy}.</div></div>`;
       return;
     }
-    let rQ = window.supabaseClient.from('reservas').select('id,horario_id,cliente_nombre,estado').eq('fecha',hoyStr).neq('estado','cancelado');
-    if(gymId) rQ = rQ.eq('gym_id',gymId);
-    const {data:reservas,error:errReservas} = await rQ;
-    if(errReservas) throw errReservas;
-    const rMap = {};
-    (reservas||[]).forEach(r=>{ if(!r.horario_id) return; if(!rMap[r.horario_id]) rMap[r.horario_id]=[]; rMap[r.horario_id].push(r); });
+    const ocupacion=await _gymHoyOcupacion(hoyStr,gymId);
+    if(!ocupacion) throw new Error('No se pudo confirmar la ocupación. Actualiza la lista.');
     // Prospectos del enlace público (storefront_leads) de ESE día: no son socios
     // ni ocupan cupo, pero el gym tiene que saber que van a llegar.
     const pMap = {};
@@ -27524,18 +27664,17 @@ async function loadClasesOperativas(){
     const updated=document.getElementById('asist-actualizado');
     if(updated) updated.textContent='Actualizado '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     // ── Feed check-in count to mobile home widget ──
-    if(esHoy) window._mhwCheckins = (reservas||[]).filter(r=>r.estado==='checkin').length;
+    if(esHoy) window._mhwCheckins=ocupacion.asistencias;
     renderMobileHome();
     el.innerHTML = horarios.map(h=>{
-      const lista = (rMap[h.id]||[]).concat(h.base_id?rMap[h.base_id]||[]:[]);
+      const ocupados=(ocupacion.porClase[h.id]||0)+(h.base_id?ocupacion.porClase[h.base_id]||0:0);
       const prospectos=(pMap[h.id]||0)+(h.base_id?pMap[h.base_id]||0:0);
-      const ocupados = lista.length;
       const cupo     = h.cupo||0;
       const libres   = Math.max(0,cupo-ocupados);
       const pct      = cupo>0 ? ocupados/cupo : 0;
       const dotCls   = pct>=1?'full':pct>=.75?'warn':'ok';
       const cardCls  = pct>=1?'lleno':pct>=.75?'casi-lleno':'';
-      const checkins = lista.filter(r=>r.estado==='checkin').length;
+      const checkins=(ocupacion.asistenciasPorClase[h.id]||0)+(h.base_id?ocupacion.asistenciasPorClase[h.base_id]||0:0);
       const barW     = cupo>0 ? Math.min(pct*100,100).toFixed(0) : 0;
       const barClr   = dotCls==='full'?'var(--asist-peligro)':dotCls==='warn'?'var(--warn)':'var(--accent)';
       return `<button type="button" class="clase-card ${cardCls}" data-clase="${esc(JSON.stringify(h)).replace(/"/g,'&quot;')}" onclick="detalleDesdeTarjeta(this)">
@@ -27592,7 +27731,8 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo,baseId=null){
   document.body.style.overflow='hidden';
 
   // Store context on window so inline handlers can reference safely without string escaping issues
-  window._dc = {horarioId,hora,tipo,coach,cupo,baseId,fecha:_asistFechaSel(),gym:MOVE_GYM_ID};
+  window._dc = {horarioId,hora,tipo,coach,cupo,baseId,fecha:_asistFechaSel(),gym:MOVE_GYM_ID,user:currentUser,token:currentUser?.jwt};
+  window._dcClientes=[];
 
   panel.innerHTML = `
     <!-- ① Header — sticky, always visible -->
@@ -27608,11 +27748,19 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo,baseId=null){
       ${['admin','superadmin','staff'].includes(currentUser?.rol)?'<button class="btn btn-outline btn-sm" onclick="editarClaseDeAsistencia()">Editar clase</button>':''}
     </div>
     <!-- ② Buscador — sticky, overflow:visible para que dropdown sea visible -->
-    <div id="detalle-search-wrap" style="padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:20;isolation:isolate;background:var(--bg2,var(--bg));">
+    <div id="detalle-search-wrap" ${puedeReservarMostrador()?'':'hidden'} style="padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:20;isolation:isolate;background:var(--bg2,var(--bg));">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:var(--fs-xs);font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;">+ Reservar cliente</span>
+        <label for="asist-add-input" style="font-size:var(--fs-sm);font-weight:800;color:var(--text);">Reservar lugar</label>
         <span style="font-size:var(--fs-sm);color:var(--text4);">Nombre, número o teléfono</span>
       </div>
+      <details class="mostrador-origen" style="margin-bottom:10px;">
+        <summary style="color:var(--text2);cursor:pointer;">¿Viene de una plataforma?</summary>
+        <label for="mostrador-origen">Origen de la reserva</label>
+        <select id="mostrador-origen" onchange="_detalleSearch(document.getElementById('asist-add-input').value)">
+          <option value="mostrador">Directa del gimnasio</option><option>TotalPass</option><option>Wellhub</option><option>ClassPass</option><option>Otra plataforma</option>
+        </select>
+        <p style="color:var(--text2);font-size:var(--fs-sm);">Las reservas de plataforma ocupan un lugar sin cobrar ni usar clases del paquete.</p>
+      </details>
       <div class="asist-search-wrap" style="position:relative;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="asist-add-input"
@@ -27640,11 +27788,27 @@ function _detalleSearch(query){
 }
 
 // Called from search result buttons — uses pre-stored client list to avoid quote issues
-function _agregarDesdeLista(idx, estado){
+function puedeReservarMostrador(){
+  return !!MOVE_GYM_ID && ['admin','staff','recepcion','superadmin'].includes(currentUser?.rol) && !roleBlocksView('asistencia');
+}
+function abrirMostradorDesdeInicio(){
+  if(!puedeReservarMostrador()) return;
+  go('asistencia',document.getElementById('nav-asistencia'));
+  toast('Elige la clase para reservar un lugar.');
+}
+function contextoMostradorVigente(ctx){
+  return !!ctx && ctx===window._dc && ctx.user===currentUser && ctx.token===currentUser?.jwt &&
+    ctx.gym===MOVE_GYM_ID && ctx.fecha===_asistFechaSel() && puedeReservarMostrador();
+}
+async function _agregarDesdeLista(idx, estado){
   const ctx = window._dc;
   const c   = (window._dcClientes||[])[idx];
-  if(!ctx||!c){ toast('Cliente no encontrado.','⚠️'); return; }
-  agregarClienteAClase(c.id, c.nombre, ctx.horarioId, ctx.hora, ctx.tipo, estado);
+  if(!contextoMostradorVigente(ctx) || !c || ctx.escribiendo) return;
+  const origen=document.getElementById('mostrador-origen').value;
+  ctx.escribiendo=true;
+  try{
+    await agregarClienteAClase(c.id, c.nombre, ctx.horarioId, ctx.hora, ctx.tipo, estado, origen);
+  }finally{ctx.escribiendo=false;}
 }
 
 function cerrarDetalleClase(){
@@ -27693,7 +27857,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
   const gymId  = MOVE_GYM_ID||null;
   try{
     let q = window.supabaseClient.from('reservas')
-      .select('id,cliente_nombre,estado,portal_token,cliente_id,spot')
+      .select('id,cliente_nombre,estado,cliente_id,spot,origen_mostrador')
       .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).neq('estado','cancelado').order('created_at',{ascending:true});
     if(gymId) q = q.eq('gym_id',gymId);
     const {data:reservas,error} = await q;
@@ -27783,7 +27947,7 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
     let waitlistHtml = '';
     if(_fWaitlistP()){
       let wq = window.supabaseClient.from('waitlist')
-        .select('id,cliente_nombre,posicion').in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).eq('estado','espera')
+        .select('id,cliente_nombre,posicion,origen_mostrador').in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).eq('estado','espera')
         .order('posicion',{ascending:true});
       if(gymId) wq = wq.eq('gym_id',gymId);
       const { data:wl, error:wlErr } = await wq;
@@ -27795,13 +27959,19 @@ async function loadDetalleClase(horarioId,hora,tipo,cupo){
           <div style="display:flex;flex-direction:column;gap:6px;">
             ${wl.map(w=>`<div class="persona-row" style="border-color:rgba(167,139,250,.2);background:rgba(167,139,250,.04);">
               <div style="width:34px;height:34px;border-radius:50%;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:var(--violet);">${w.posicion}</div>
-              <div style="flex:1;min-width:0;font-size:var(--fs-base);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(w.cliente_nombre)}</div>
+              <div style="flex:1;min-width:0;font-size:var(--fs-base);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(w.cliente_nombre)}${w.origen_mostrador && w.origen_mostrador!=='mostrador'?' · '+esc(w.origen_mostrador):''}</div>
               <button onclick="promoverDeWaitlist('${w.id}')" style="flex-shrink:0;padding:6px 11px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-bg2);font-size:var(--fs-sm);font-weight:700;cursor:pointer;">↑ Promover</button>
             </div>`).join('')}
           </div>`;
       }
     }
     const checkins  = lista.filter(r=>r.estado==='checkin');
+    if(checkins.length && puedeReservarMostrador()){
+      const {data:hitos}=await window.supabaseClient.rpc('core_hitos_asistencia',{p_gym:gymId,p_reservas:checkins.map(r=>r.id)});
+      if(!vigente()) return;
+      const porId=new Map((Array.isArray(hitos)?hitos:[]).map(h=>[h.reserva_id,Number(h.asistencias)]));
+      checkins.forEach(r=>r.hito=porId.get(r.id));
+    }
     const ausentes  = lista.filter(r=>r.estado==='ausente');
     const pendientes= lista.filter(r=>r.estado==='reservado');
     // Cupo efectivo: los lugares bloqueados descuentan
@@ -27919,8 +28089,8 @@ async function _paqueteBloquea(clienteId, nombre, fecha){
 }
 async function _paqueteBloqueaReserva(reservaId, nombre){
   const { data:r } = await window.supabaseClient.from('reservas')
-    .select('cliente_id, fecha').eq('id', reservaId).maybeSingle();
-  return r ? _paqueteBloquea(r.cliente_id, nombre, r.fecha) : false;
+    .select('cliente_id,fecha,origen_mostrador').eq('id',reservaId).eq('gym_id',MOVE_GYM_ID).maybeSingle();
+  return r && (!r.origen_mostrador || r.origen_mostrador==='mostrador') ? _paqueteBloquea(r.cliente_id, nombre, r.fecha) : false;
 }
 
 function _renderPersonaRow(r,estado,horarioId,hora,tipo){
@@ -27946,12 +28116,16 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
       style="flex-shrink:0;padding:6px 8px;border-radius:8px;background:var(--accent-bg);border:1px solid var(--accent-bg2);color:var(--accent);font-size:var(--fs-sm);font-weight:700;cursor:pointer;font-family:var(--font);max-width:110px;">${opts}</select>`;
   }
   const labelSpot = (showSpot && r.spot) ? ` · <span style="color:var(--accent);font-weight:700;">Spot ${r.spot}</span>` : '';
-  const labelPaq  = _chipPaquete((window._dcPaquetes||{})[r.cliente_id]);
+  const externa=r.origen_mostrador && r.origen_mostrador!=='mostrador';
+  const labelPaq = externa ? '' : _chipPaquete((window._dcPaquetes||{})[r.cliente_id]);
+  const hito=r.hito===1?'Primera clase completada':r.hito===100?'100 clases completadas':'';
   return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}" style="${isAusente?'border-color:rgba(240,96,96,.2);background:rgba(240,96,96,.04);':''}">
     <div style="width:36px;height:36px;border-radius:50%;background:${avatar};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:var(--fs-base);">${icon}</div>
     <div style="flex:1;min-width:0;">
       <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</div>
       <div style="font-size:var(--fs-sm);color:${lColor};">${label}${labelSpot}</div>
+      ${r.origen_mostrador?'<div style="color:var(--text2);font-size:var(--fs-sm);">'+(externa?esc(r.origen_mostrador):'Mostrador')+'</div>':''}
+      ${hito?'<strong style="color:var(--accent);font-size:var(--fs-sm);">'+hito+'</strong>':''}
       ${labelPaq}
     </div>
     ${spotSel}
@@ -28004,16 +28178,21 @@ async function _agregarAWaitlist(clienteId, nombre, horarioId, hora, tipo, fecha
 
 // Studios: promueve a alguien de la lista de espera → crea su reserva.
 async function promoverDeWaitlist(waitlistId){
-  const { data:w, error:eRead } = await window.supabaseClient.from('waitlist').select('*').eq('id', waitlistId).single();
-  if(eRead || !w){ toast('Entrada de lista de espera no encontrada','⚠️'); return; }
-  const { error:eIns } = await window.supabaseClient.from('reservas').insert({
-    gym_id: w.gym_id, horario_id: w.horario_id, cliente_id: w.cliente_id,
-    cliente_nombre: w.cliente_nombre, fecha: w.fecha, clase_tipo: w.clase_tipo,
-    clase_hora: w.clase_hora, clase_dia: w.clase_dia, estado: 'reservado'
-  });
-  if(eIns){ toast('No se pudo promover ✕'+(eIns&&eIns.message?': '+eIns.message:''), '✕'); console.error('promoverDeWaitlist',eIns); return; }
-  const { error:eUpd } = await window.supabaseClient.from('waitlist').update({ estado:'promovido' }).eq('id', waitlistId);
-  if(eUpd){ console.error('promoverDeWaitlist update', eUpd); toast('Reserva creada, pero la lista de espera no se actualizó — no lo promuevas de nuevo o se duplicará.','⚠️',5000); }
+  const ctx=window._dc,gym=MOVE_GYM_ID;
+  if(!puedeReservarMostrador()) return;
+  const { data:w, error:eRead } = await window.supabaseClient.from('waitlist').select('*').eq('gym_id',gym).eq('id',waitlistId).single();
+  if(gym!==MOVE_GYM_ID || ctx!==window._dc) return;
+  if(eRead || !w || w.estado!=='espera'){toast('La lista de espera ya cambió.','↺');return;}
+  if(w.cliente_id){
+    const {error}=await window.supabaseClient.rpc('core_reservar_mostrador',{p_gym:gym,p_clase:w.horario_id,p_socio:w.cliente_id,p_fecha:w.fecha,p_estado:'reservado',p_origen:w.origen_mostrador||'mostrador',p_espera:w.id});
+    if(error){toast(error.message||'No se pudo asignar el lugar.','✕');return;}
+  }else{
+    // Las inscripciones antiguas por token conservan su forma de promoción.
+    const {error:eIns}=await window.supabaseClient.from('reservas').insert({gym_id:gym,horario_id:w.horario_id,cliente_id:null,cliente_nombre:w.cliente_nombre,portal_token:w.portal_token,fecha:w.fecha,clase_tipo:w.clase_tipo,clase_hora:w.clase_hora,clase_dia:w.clase_dia,estado:'reservado'});
+    if(eIns){toast('No se pudo promover a la persona.','✕');return;}
+    const {error:eUpd}=await window.supabaseClient.from('waitlist').update({estado:'promovido'}).eq('gym_id',gym).eq('id',w.id);
+    if(eUpd){toast('Se asignó el lugar. Actualiza la lista de espera.','↺');return;}
+  }
   toast(`${(w.cliente_nombre||'').split(' ')[0]} promovido a la clase ✓`,'✓');
   if(_detalleCtx) loadDetalleClase(_detalleCtx.horarioId, _detalleCtx.hora, _detalleCtx.tipo, _detalleCtx.cupo);
   if(_fLugaresP() && typeof renderStudiosCal==='function') renderStudiosCal();
@@ -28126,16 +28305,17 @@ function selStudiosClass(id){ _scSelId=id; renderStudiosCal(); }
 
 async function renderStudiosCal(){
   const host=document.getElementById('studios-cal'); if(!host) return;
-  const vh=document.getElementById('v-horario');
-  const sibs=vh?Array.prototype.slice.call(vh.children).filter(c=>c.id!=='studios-cal'):[];
-  if(!_fLugaresP()){
-    host.style.display='none';
-    sibs.forEach(el=>{ if(el.dataset.shHidden){ el.style.display=el.dataset.shPrev||''; delete el.dataset.shHidden; delete el.dataset.shPrev; } });
+  const usaLugares=_fLugaresP();
+  document.getElementById('htab-btn-lugares').hidden=!usaLugares;
+  if(!document.getElementById('v-horario').classList.contains('active')) return;
+  const predeterminada=horTabPredeterminada();
+  if((!horTabElegida && horTabActual!==predeterminada) || (horTabActual==='lugares' && !usaLugares)){
+    switchHorTab(predeterminada,false);
     return;
   }
-  sibs.forEach(el=>{ if(!el.dataset.shHidden){ el.dataset.shPrev=el.style.display||''; el.dataset.shHidden='1'; } el.style.display='none'; });
-  host.style.display='';
-  if(!host.innerHTML.trim()) host.innerHTML='<div class="card" style="color:var(--text3);">Cargando calendario…</div>';
+  if(horTabActual!=='lugares' || !usaLugares || !MOVE_GYM_ID) return;
+  const contexto=contextoPagoGym(), lectura=++lecturaCalendarioLugares;
+  host.innerHTML='<div class="card" style="color:var(--text3);">Cargando calendario…</div>';
   try{
     const gymId=MOVE_GYM_ID||null;
     const pad=n=>String(n).padStart(2,'0');
@@ -28151,8 +28331,9 @@ async function renderStudiosCal(){
     let wQ=window.supabaseClient.from('waitlist').select('id,horario_id,cliente_nombre').gte('fecha',dstr(monday)).lte('fecha',dstr(sunday)).eq('estado','espera');
     if(gymId) wQ=wQ.eq('gym_id',gymId);
     let {data:wl}=await wQ; wl=(wl||[]);
+    if(!pagoGymVigente(contexto) || lectura!==lecturaCalendarioLugares || horTabActual!=='lugares') return;
     host.innerHTML=_studiosCalHTML(clases,res,wl);
-  }catch(e){ console.warn('renderStudiosCal',e); host.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el calendario.</div>'; }
+  }catch(e){ if(!pagoGymVigente(contexto) || lectura!==lecturaCalendarioLugares) return; console.warn('renderStudiosCal',e); host.innerHTML='<div class="card" style="color:var(--text3);">No se pudo cargar el calendario.</div>'; }
 }
 
 function _studiosCalHTML(clases,res,wl){
@@ -28218,8 +28399,10 @@ let _asistSearchTimer = null;
 function buscarClienteDetalle(query,horarioId,hora,tipo){
   const res = document.getElementById('asist-add-results');
   if(!res) return;
-  if(!query||query.length<2){ res.style.display='none'; return; }
+  const ctxBusqueda=window._dc;
   clearTimeout(_asistSearchTimer);
+  res.style.display='none';window._dcClientes=[];
+  if(!contextoMostradorVigente(ctxBusqueda)||!query||query.length<2) return;
   _asistSearchTimer = setTimeout(async()=>{
     const gymId = MOVE_GYM_ID||null;
     const numQuery = parseInt(query)||0;
@@ -28227,13 +28410,15 @@ function buscarClienteDetalle(query,horarioId,hora,tipo){
     if(gymId) q = q.eq('gym_id',gymId);
     if(numQuery) q = q.or(`nombre.ilike.%${query}%,numero_cliente.eq.${numQuery},telefono.ilike.%${query}%`);
     else q = q.or(`nombre.ilike.%${query}%,telefono.ilike.%${query}%`);
-    const {data} = await q;
+    const {data,error} = await q;
+    if(!contextoMostradorVigente(ctxBusqueda) || !res.isConnected || document.getElementById('asist-add-input').value!==query) return;
+    if(error){res.textContent='No se pudo consultar el directorio.';res.style.display='block';return;}
     // La persona que no está en el padrón antes no tenía camino: el buscador
     // decía "Sin resultados" y el lugar seguía marcándose libre. La opción de
     // registrarla va SIEMPRE al final, nunca en lugar de los resultados, para
     // que dar de alta un duplicado cueste más que usar la ficha que ya existe.
     window._dcVisitaQuery = query;
-    const _filaVisita = `
+    const _filaVisita = document.getElementById('mostrador-origen').value!=='mostrador'?'':`
       <div class="asist-search-item" onclick="_abrirVisitaNueva(window._dcVisitaQuery)"
         style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;border-top:1px solid var(--border);color:var(--accent);font-weight:700;font-size:var(--fs-sm);">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
@@ -28603,7 +28788,12 @@ async function _guardarVisita(estado){
   }
 }
 
-async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,estado='checkin'){
+async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,estado='checkin',origen=null){
+  const ctx=window._dc;
+  const vigente=()=>!origen || contextoMostradorVigente(ctx);
+  if(!vigente()) return;
+  const externa=origen && origen!=='mostrador';
+  let sobrecupo=false;
   const input = document.getElementById('asist-add-input');
   const res   = document.getElementById('asist-add-results');
   if(input) input.value='';
@@ -28618,13 +28808,15 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   if(!clienteId){ toast('Cliente no encontrado.','⚠️'); return; }
 
   // ── Validación 1.5: paquete con clases (misma regla que la base) ──
-  if(await _paqueteBloquea(clienteId, clienteNombre, hoyStr)) return;
+  if(!externa && await _paqueteBloquea(clienteId, clienteNombre, hoyStr)) return;
+  if(!vigente()) return;
 
   // ── Validación 2: duplicado en esta clase ───────────────────────
   const {count:dupCount} = await window.supabaseClient
     .from('reservas').select('id',{count:'exact',head:true})
     .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr)
-    .eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
+    .eq('gym_id',gymId).eq('cliente_id',clienteId).neq('estado','cancelado');
+  if(!vigente()) return;
   if(dupCount>0){
     toast('Este cliente ya tiene una reserva para esta clase.','⚠️');
     return;
@@ -28634,7 +28826,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   // AVISA pero no bloquea: el admin es la autoridad y puede tener motivo
   // (un drop-in pagado aparte). Antes esta regla solo vivía en la app del
   // atleta, así que las dos superficies se contradecían en silencio.
-  const _maxDia = _maxReservasDiaCliente(clienteNombre);
+  const _maxDia = externa?Infinity:_maxReservasDiaCliente(clienteNombre);
   if(_maxDia === 0){
     const _ok0 = await confirmDialog(
       `El plan de ${clienteNombre} no incluye reservar clases — es de solo acceso al gimnasio. ¿Reservar de todos modos?`,
@@ -28644,7 +28836,8 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   } else if(Number.isFinite(_maxDia)){
     const {count:diaCount} = await window.supabaseClient
       .from('reservas').select('id',{count:'exact',head:true})
-      .eq('fecha',hoyStr).eq('cliente_nombre',clienteNombre).neq('estado','cancelado');
+      .eq('gym_id',gymId).eq('fecha',hoyStr).eq('cliente_id',clienteId).neq('estado','cancelado').or('origen_mostrador.is.null,origen_mostrador.eq.mostrador');
+    if(!vigente()) return;
     if((diaCount||0) >= _maxDia){
       const _ok = await confirmDialog(
         `${clienteNombre} ya tiene ${diaCount} ${diaCount===1?'reserva':'reservas'} para hoy y su plan permite ${_maxDia} al día. ¿Reservar de todos modos?`,
@@ -28657,7 +28850,8 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   // ── Validación 3: cupo disponible ───────────────────────────────
   const {count:cntActual} = await window.supabaseClient
     .from('reservas').select('id',{count:'exact',head:true})
-    .in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).neq('estado','cancelado');
+    .eq('gym_id',gymId).in('horario_id',idsClaseEnFecha(horarioId)).eq('fecha',hoyStr).neq('estado','cancelado');
+  if(!vigente()) return;
   if(cupo>0 && (cntActual||0)>=cupo){
     // Clase llena → ofrecer lista de espera (switch waitlist; antes solo studios,
     // mientras la app la ofrecía a todos: esa divergencia muere aquí).
@@ -28666,7 +28860,15 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
         `La clase está llena (${cntActual}/${cupo}). ¿Agregar a ${clienteNombre.split(' ')[0]} a la lista de espera?`,
         {title:'Clase llena',icon:'⏳',confirmText:'Sí, a la lista'}
       );
-      if(irWaitlist) await _agregarAWaitlist(clienteId, clienteNombre, horarioId, hora, tipo, hoyStr, gymId);
+      if(irWaitlist && vigente()){
+        if(!origen) await _agregarAWaitlist(clienteId,clienteNombre,horarioId,hora,tipo,hoyStr,gymId);
+        else{
+          const {error}=await window.supabaseClient.rpc('core_reservar_mostrador',{p_gym:gymId,p_clase:horarioId,p_socio:clienteId,p_fecha:hoyStr,p_origen:origen,p_estado:'espera'});
+          if(!vigente()) return;
+          toast(error?error.message:'Socio añadido a la lista de espera.',error?'✕':'✓');
+          if(!error) await loadDetalleClase(horarioId,hora,tipo,cupo);
+        }
+      }
       return; // no crea reserva en clase llena
     }
     // Resto de verticales: comportamiento actual sin cambios.
@@ -28677,6 +28879,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
       toast('La clase está llena. No se puede reservar más personas.','🚫');
       return;
     }
+    sobrecupo=true;
   }
 
   // ── Validación 4 (opcional): membresía vencida ──────────────────
@@ -28684,7 +28887,7 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   const tieneClasesActivas = pagosCliente.some(p=>p.clases_totales&&(p.clases_usadas??0)<p.clases_totales);
   const ultimoVence = pagosCliente.map(p=>p.vence).filter(Boolean).sort().reverse()[0]||null;
   const membresiVencida = !tieneClasesActivas && ultimoVence && new Date(ultimoVence+'T12:00:00') < new Date();
-  if(membresiVencida){
+  if(!externa && membresiVencida){
     const continuar = await confirmDialog(
       `La membresía de ${clienteNombre} está vencida desde ${ultimoVence}. ¿Registrarlo de todas formas?`,
       {title:'Membresía vencida',icon:''}
@@ -28696,7 +28899,10 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
   // El día de la semana sale de la FECHA de la reserva, no de hoy: una reserva
   // para el jueves creada un lunes se guardaba como "Lunes".
   const diaHoy = _DIAS_ES[new Date(hoyStr+'T12:00:00').getDay()];
-  const {error} = await window.supabaseClient.from('reservas').insert({
+  if(!vigente()) return;
+  const {error} = origen?await window.supabaseClient.rpc('core_reservar_mostrador',{
+    p_gym:gymId,p_clase:horarioId,p_socio:clienteId,p_fecha:hoyStr,p_origen:origen,p_estado:estado,p_sobrecupo:sobrecupo
+  }):await window.supabaseClient.from('reservas').insert({
     gym_id:          gymId,
     horario_id:      horarioId,
     cliente_id:      parseInt(clienteId)||null,
@@ -28707,7 +28913,9 @@ async function agregarClienteAClase(clienteId,clienteNombre,horarioId,hora,tipo,
     clase_dia:       diaHoy,
     estado,
   });
-  if(error){ if(_handleSessionError(error))return; toast('No se pudo completar la reserva. Intenta de nuevo.','✕'); console.error(error); return; }
+  if(!vigente()) return;
+  if(error){ if(_handleSessionError(error))return; toast(error.code==='23505'?'El socio ya tiene un lugar en esta clase.':error.code==='P0001'?error.message:'No se pudo completar la reserva. Actualiza la lista.','✕');return; }
+  if(origen){document.getElementById('mostrador-origen').value='mostrador';}
 
   const label = estado==='checkin' ? 'Check-in registrado ✓' : 'Cliente reservado correctamente.';
   toast(`${clienteNombre} — ${label}`,'✓');

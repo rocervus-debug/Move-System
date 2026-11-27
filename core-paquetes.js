@@ -15,6 +15,19 @@ window.CorePaquetes = (() => {
   function recurrente(p) {
     return p.billing_type != null ? p.billing_type === 'recurring' : p.recurring === true;
   }
+  function explicacionCobro(p) {
+    const precio = importe(p);
+    if (precio === null) return 'Precio por confirmar';
+    if (precio === 0) return 'Sin cobro';
+    return recurrente(p) ? 'Se cobra cada mes automáticamente' : 'Se cobra una vez';
+  }
+  function revisarNombreCobro(p) {
+    const n = String(p.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const unico = /\b(pago unico|una sola vez|una vez|one[ -]time|sin (?:cobro automatico|domiciliaci[oó]n|domiciliar|renovacion automatica)|no domiciliad[oa])\b/.test(n);
+    const automatico = !unico && /\b(domiciliad[oa]s?|domiciliacion|recurrente|cobro automatico|renovacion automatica|suscripcion)\b/.test(n);
+    if (importe(p) === 0) return automatico;
+    return recurrente(p) ? unico : automatico;
+  }
   function resumen(p, unidad='clases') {
     const precio = importe(p);
     const frecuencia = precio === null ? 'Cobro por confirmar' : precio === 0 ? 'Sin cobro' : recurrente(p) ? 'Cobro mensual automático' : 'Pago único';
@@ -34,5 +47,5 @@ window.CorePaquetes = (() => {
       <p class="vplan-frequency">${frecuencia}</p>
       <dl class="vplan-facts"><div><dt>${label}</dt><dd>${cantidad}</dd></div><div><dt>Vigencia</dt><dd>${vigencia}</dd></div></dl>${condicion}`;
   }
-  return { importe, admiteCheckout, recurrente, resumen };
+  return { importe, admiteCheckout, recurrente, explicacionCobro, revisarNombreCobro, resumen };
 })();

@@ -69,3 +69,18 @@ test('storefront-config lee la restricción de cada paquete publicado y la devue
   assert.deepEqual(filters,[['gym_id',33],['is_public',true],['packages.is_active',true]]);
   assert.deepEqual((await res.json()).packages.map(p=>p.solo_primera_vez),[true,false,false]);
 });
+
+test('la revisión de nombre respeta mensualidades manuales, negación y el importe real',()=>{
+  const {explicacionCobro,revisarNombreCobro}=ctx.window.CorePaquetes;
+  const pago={price_mxn:999,billing_type:'one_time'};
+  for(const name of ['Mensualidad domiciliada','Plan recurrente','Suscripción con renovación automática']){
+    assert.equal(revisarNombreCobro({...pago,name}),true);
+    assert.equal(revisarNombreCobro({...pago,name,billing_type:'recurring'}),false);
+  }
+  for(const name of ['Mensualidad','4 clases al mes','Mensualidad no domiciliada','Sin domiciliación']){
+    assert.equal(revisarNombreCobro({...pago,name}),false);
+  }
+  assert.equal(revisarNombreCobro({...pago,name:'Pago Único',billing_type:'recurring'}),true);
+  assert.equal(explicacionCobro({...pago,price_mxn:0,billing_type:'recurring'}),'Sin cobro');
+  assert.equal(explicacionCobro(pago),'Se cobra una vez');
+});
