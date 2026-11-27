@@ -10212,7 +10212,13 @@ async function saveNewUser(){
   if(!nombre||!email||!pass){ alert('Completa todos los campos.'); return; }
   if(pass.length<6){ alert('La contraseña debe tener al menos 6 caracteres.'); return; }
   const pw_hash = await hashPassword(pass);
-  const { error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: pw_hash, rol, activo:true})]);
+  let { error } = await window.supabaseClient.rpc('p0a6_create_user', {
+    p_nombre: nombre, p_email: email, p_hash: pw_hash, p_role: rol, p_gym: MOVE_GYM_ID
+  });
+  // Las instalaciones anteriores al procedimiento todavía usan sus políticas de tabla.
+  if (error?.code === 'PGRST202') {
+    ({ error } = await window.supabaseClient.from('usuarios').insert([withGymId({nombre, email, pw_hash, password: pw_hash, rol, activo:true})]));
+  }
   if(error){ if(_handleSessionError(error))return; toast('Error al crear usuario ✕'+(error&&error.message?': '+error.message:''), '✕'); console.error(error); return; }
   auditLog('CREAR_USUARIO', 'usuarios', '', `Nuevo usuario: ${email} (${rol})`);
   closeModal('add-user');
@@ -10402,12 +10408,13 @@ async function loadConfigFromSupabase(){
   }
   // Load gym plan from gyms table for PLAN_LIMITS (prioriza subscription_plan)
   if(MOVE_GYM_ID && !gymConfig.gym_plan){
-    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,subscription_current_period_end,nombre,acceso_garantizado').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
+    window.supabaseClient.from('gyms').select('plan,subscription_plan,subscription_status,subscription_current_period_end,subscription_grace_until,nombre,acceso_garantizado').eq('id', MOVE_GYM_ID).single().then(({data:g})=>{
       if(g){
         gymConfig.gym_plan = g.subscription_plan || g.plan || 'max';
         gymConfig.subscription_status = g.subscription_status || null;
         gymConfig.acceso_garantizado = !!g.acceso_garantizado;
         gymConfig.subscription_current_period_end = g.subscription_current_period_end || null;
+        gymConfig.subscription_grace_until = g.subscription_grace_until || null;
         if(typeof checkSubscriptionBlock === 'function') checkSubscriptionBlock();
       }
     });
@@ -14648,11 +14655,8 @@ function checkSubscriptionBlock(){
   // gym entraría y se toparía con la pantalla de bloqueo.
   if (gymConfig.acceso_garantizado) { removeSubBlock(); return; }
   if (!['past_due','canceled','cancelled','unpaid'].includes(status)) { removeSubBlock(); return; }
-  const GRACE_MS = 3 * 24 * 60 * 60 * 1000;
-  const periodEnd = gymConfig.subscription_current_period_end ? new Date(gymConfig.subscription_current_period_end).getTime() : 0;
-  const grace = status === 'past_due' ? GRACE_MS : 0;
-  const deadline = periodEnd ? periodEnd + grace : (Date.now() - 1); // sin fecha → tratar como vencido
-  if (Date.now() <= deadline) { removeSubBlock(); return; } // aún dentro de la gracia
+  const deadline = status === 'past_due' ? gymConfig.subscription_grace_until : gymConfig.subscription_current_period_end;
+  if (Date.now() < Date.parse(deadline || '')) { removeSubBlock(); return; }
   showSubBlock(status);
 }
 function removeSubBlock(){ document.getElementById('sub-block-overlay')?.remove(); }

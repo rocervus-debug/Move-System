@@ -118,13 +118,13 @@ Deno.serve(async (req: Request) => {
     }
 
     if (user.gym_id) {
-      const { data: gym } = await db.from('gyms').select('subscription_status, acceso_garantizado').eq('id', user.gym_id).maybeSingle();
-      const allowedStatuses = ['active', 'trialing', 'owner'];
-      // acceso_garantizado: acuerdo especial con el gym (ej. Krajo paga por
-      // transferencia). subscription_status sigue reflejando a Stripe para saber
-      // si debe, pero el acceso NUNCA se corta. Solo el superadmin puede ponerla.
-      if (gym && !gym.acceso_garantizado && !allowedStatuses.includes(gym.subscription_status ?? '')) {
-        return new Response(JSON.stringify({ error: 'Tu suscripción no está activa.', subscription_status: gym.subscription_status }), { status: 402, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      const { data: gym, error: gymError } = await db.from('gyms').select('subscription_status, acceso_garantizado, subscription_grace_until').eq('id', user.gym_id).maybeSingle();
+      if (gymError) {
+        return new Response(JSON.stringify({ error: 'Servicio de acceso temporalmente no disponible.' }), { status: 503, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
+      const inGrace = gym?.subscription_status === 'past_due' && Date.now() < Date.parse(gym.subscription_grace_until ?? '');
+      if (!gym || (!gym.acceso_garantizado && !inGrace && !['active', 'trialing', 'owner'].includes(gym.subscription_status ?? ''))) {
+        return new Response(JSON.stringify({ error: 'Tu suscripción no está activa.', subscription_status: gym?.subscription_status }), { status: 402, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
     }
 
