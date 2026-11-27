@@ -24,7 +24,7 @@ const sub = {
 };
 const tablas = {
   member_subscriptions: [sub],
-  gyms: [{ id: 1, nombre: "MOVE QA" }],
+  gyms: [{ id: 1, nombre: "MOVE QA", stripe_account_id: "acct_qa" }],
   packages: [{ id: 7, name: "Cuatro clases QA", price_mxn: 500, num_classes: 4, duration_days: 30 }],
   pagos: [{
     gym_id: 1,
@@ -259,8 +259,8 @@ test("Renovación, recuperación, link, reserva y recibo al reintentar un cobro"
   });
   const charge = (session, status) => evento("checkout.session.completed", session, status);
   const manual = sale("cs_link", { source: "manual_link", cliente: "Atleta QA" }, 30000);
-  await charge(manual);
-  await charge(manual);
+  await evento("checkout.session.completed", manual, 200, { account: "acct_qa" });
+  await evento("checkout.session.completed", manual, 200, { account: "acct_qa" });
   assert.equal(tablas.pagos.filter((p) => p.stripe_session_id === "cs_link").length, 1);
   assert.equal(tablas.pagos.at(-1).monto, 300);
   tablas.clientes = [{ id: 61, nombre: "Atleta QA", gym_id: 1, email: sub.customer_email }];

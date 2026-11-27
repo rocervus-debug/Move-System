@@ -124,6 +124,17 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    if (evAcct && event.type.startsWith('checkout.session.')) {
+      const metadata = event.data.object.metadata || {};
+      // Direct charges belong to the connected gym. CORE subscriptions belong to the platform.
+      if (metadata.velum_signup === 'true' || metadata.velum_saas_existing === 'true') return json({ received: true });
+      const gymId = Number(metadata.gym_id);
+      if (!Number.isSafeInteger(gymId) || gymId <= 0) return json({ received: true });
+      const { data: merchant, error } = await db.from('gyms').select('id')
+        .eq('id', gymId).eq('stripe_account_id', evAcct).maybeSingle();
+      if (error) throw error;
+      if (!merchant) return json({ received: true });
+    }
     switch (event.type) {
       case 'charge.refunded':
       case 'refund.created':
