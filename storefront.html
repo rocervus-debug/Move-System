@@ -1256,7 +1256,7 @@ function renderPackages(packages){
         <ul class="pkg-features">${featuresHtml}</ul>
         ${precio === 0
           ? `<button class="pkg-cta" onclick="sfPedirPlanGratis(${p.package_id}, '${jsAttr(p.name)}')">Reservar mi lugar</button>`
-          : precio === null || Math.round(precio*100)<1000
+          : !CorePaquetes.admiteCheckout(precio)
             ? `<button class="pkg-cta" onclick="openLeadModal('info')">Consultar con el gimnasio</button>`
             : `<button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${precio}, '${jsAttr(p.name)}', ${mensual?1:0})">${mensual?'Suscribirme':'Comprar ahora'}</button>`}
       </div>`;

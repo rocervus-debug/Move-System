@@ -30,6 +30,8 @@
 - [ ] (Opcional) Cuenta Higgsfield + autenticar su MCP para creativos de video
 
 ## [HECHO] (reciente)
+- [x] 27-nov-2026 · CORE. Por vencer usa la vigencia por socio y permite revisar destinatarios y mensaje antes de abrir WhatsApp. La tienda identifica los planes de primera visita y Mi plan consulta en Stripe la fecha de cancelación programada.
+
 - [x] 27-nov-2026 · CORE. Inicio conecta clase y renovaciones con sus listas. Catálogo y tienda comparten condiciones. Ajustes distingue cobros del gimnasio y suscripción VELUM. Marketing y Superadministración adaptados a móvil. Verificado con datos de prueba a 390 y 1440 px y ambas vistas secundarias a 320 px.
 
 - [x] COBROS CERTIFICADO (condicional a Resend): P1-P5 en verde con dinero real + P6 dunning verificado en código. Link con paquete (extiende membresía) + monto libre, cancelar/reactivar domiciliación, domiciliar socio existente/nuevo, fix success page, Cobros VELUM con NETO real (comisión Stripe descontada) · CAUDAL+FORJA+CENTINELA · 08 jul

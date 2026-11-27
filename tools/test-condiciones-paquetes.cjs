@@ -31,3 +31,41 @@ test('Precio gratis y datos incompletos se distinguen incluso con configuración
   }
   assert.match(resumen({price_mxn:50}),/Clases<\/dt><dd>Por confirmar[\s\S]*Vigencia<\/dt><dd>Por confirmar/);
 });
+
+test('La condición de primera visita se muestra solo en paquetes restringidos que pasan por checkout',()=>{
+  const aviso='Solo para primera visita';
+  for(const billing_type of ['one_time','recurring']){
+    const plan={price_mxn:80,billing_type,solo_primera_vez:true};
+    assert.ok(resumen(plan).includes(aviso));
+    assert.ok(!resumen({...plan,solo_primera_vez:false}).includes(aviso));
+    assert.ok(!resumen({...plan,solo_primera_vez:undefined}).includes(aviso));
+    assert.ok(!resumen({...plan,price_mxn:0}).includes(aviso));
+    assert.ok(!resumen({...plan,price_mxn:9.99}).includes(aviso));
+  }
+});
+
+test('storefront-config lee la restricción de cada paquete publicado y la devuelve como booleano',async()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../supabase/functions/storefront-config/index.ts'),'utf8');
+  let handler;
+  const packages=[true,false,undefined].map((flag,i)=>({id:i+1,package_id:i+1,packages:{name:'Clase',price_mxn:80,solo_primera_vez:flag}}));
+  const data={gym_storefront:{slug:'qa',gym_id:33},gyms:{vertical:'gym'},gym_config:[],storefront_listings:packages};
+  const filters=[];
+  const db={
+    rpc:async()=>({data:{}}),
+    from(table){
+      return {
+        select(cols){if(table==='storefront_listings') assert.match(cols,/packages!inner\s*\([^)]*\bsolo_primera_vez\b/);return this;},
+        eq(col,v){if(table==='storefront_listings') filters.push([col,v]);return this;},
+        in(){return this;}, single(){return this;}, maybeSingle(){return this;},order(){return this;},
+        then(resolve){resolve({data:data[table]});}
+      };
+    }
+  };
+  vm.runInNewContext(require('node:module').stripTypeScriptTypes(source.replace(/^import .*;$/gm,'')),{
+    URL, Response, console, createClient:()=>db, Deno:{env:{get:()=>''},serve:f=>{handler=f;}}
+  });
+  const res=await handler(new Request('https://example.test/?slug=qa'));
+  assert.equal(res.status,200);
+  assert.deepEqual(filters,[['gym_id',33],['is_public',true],['packages.is_active',true]]);
+  assert.deepEqual((await res.json()).packages.map(p=>p.solo_primera_vez),[true,false,false]);
+});

@@ -19,9 +19,11 @@ function inicio() {
     _horaToMinutes: h => Number(h.slice(0,2))*60 + Number(h.slice(3,5)),
     esc: String, fmtHoraClase: String,
     contextoPagosInicio: {gym:10,user}, contextoClientesInicio: {gym:10,user},
-    clientesDB: [{nombre:'Ada'}, {nombre:'Leo'}],
+    clientesDB: [{nombre:'Ada'}, {nombre:'Leo'}, {nombre:'Iris'}, {nombre:'Ana'}],
     estadoMembresiaPorCliente: () => new Map([
-      ['Ada', {acceso:true,diasRest:9}], ['Leo', {acceso:false}], ['Otro', {acceso:false}]
+      ['Ada', {acceso:true,diasRest:9}], ['Leo', {acceso:false, mejorVence:'2026-11-26', diasRest:-1}],
+      ['Iris', {acceso:false, congelado:true}], ['Ana', {acceso:false, mejorVence:null, diasRest:null}],
+      ['Otro', {acceso:false, agotado:true}]
     ]),
     _horariosEfectivosFecha: async () => [], _gymHoyOcupacion: async () => ({porClase:{},asistencias:0})
   });

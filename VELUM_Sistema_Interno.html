@@ -3533,6 +3533,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 <script src="/core-paquetes.js"></script>
 <script defer src="/core-hoy.js"></script>
 <script defer src="/core-ficha.js"></script>
+<script defer src="/core-vencimientos.js"></script>
+<link rel="stylesheet" href="/design-system/core-vencimientos.css">
 <script defer src="/core-cobros.js"></script>
 <script defer src="/core-acceso.js"></script>
 </head>
@@ -5041,21 +5043,19 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ── POR VENCER ── -->
     <div class="view" id="v-por-vencer">
-      <!-- Filtro días -->
-      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;" id="pv-filter-row">
-        <button class="btn btn-sm active" id="pv-btn-7"  onclick="setPVFilter(7)"  style="padding:6px 14px;border-radius:20px;">7 días</button>
-        <button class="btn btn-sm btn-outline" id="pv-btn-14" onclick="setPVFilter(14)" style="padding:6px 14px;border-radius:20px;">14 días</button>
-        <button class="btn btn-sm btn-outline" id="pv-btn-30" onclick="setPVFilter(30)" style="padding:6px 14px;border-radius:20px;">30 días</button>
-        <div style="margin-left:auto;display:flex;gap:8px;">
-          <button class="btn btn-sm" id="pv-btn-todos" onclick="pvEnviarTodos()" style="background:rgba(37,211,102,.12);color:var(--wa);border:1px solid rgba(37,211,102,.3);padding:6px 14px;border-radius:20px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> WhatsApp a todos</button>
+      <div class="pv-toolbar">
+        <div class="pv-group" id="pv-estado" role="group" aria-label="Estado de la renovación">
+          <button type="button" class="btn btn-outline" data-estado="proximos" onclick="pvElegirEstado('proximos')">Próximos a vencer</button>
+          <button type="button" class="btn btn-outline" data-estado="vencidos" onclick="pvElegirEstado('vencidos')">Vencidos</button>
         </div>
+        <button type="button" class="btn btn-primary" id="pv-btn-todos" onclick="pvEnviarTodos()">Preparar recordatorios</button>
       </div>
-      <!-- Summary bar -->
-      <div id="pv-summary" style="margin-bottom:16px;"></div>
-      <!-- List -->
-      <div id="pv-list">
-        <div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="empty-title">Sin vencimientos próximos</div><div class="empty-sub">No hay membresías por vencer en los próximos días.</div></div>
+      <div class="pv-group" id="pv-plazo" role="group" aria-label="Plazo de vencimiento">
+        <button type="button" class="btn btn-sm" id="pv-btn-7" onclick="setPVFilter(7)">7 días</button>
+        <button type="button" class="btn btn-sm" id="pv-btn-14" onclick="setPVFilter(14)">14 días</button>
+        <button type="button" class="btn btn-sm" id="pv-btn-30" onclick="setPVFilter(30)">30 días</button>
       </div>
+      <p id="pv-summary"></p><div id="pv-list"></div>
     </div>
 
     <div class="view" id="v-settings">
@@ -9212,6 +9212,22 @@ async function actualizarTituloMenuPlan(){
   }catch{/* El menú conserva el nombre del panel hasta confirmar el plan. */}
 }
 
+async function leerRenovacionPlan(ctx, suscripcionId){
+  const res=await fetch(supabaseUrl+'/functions/v1/velum-saas-info',{
+    method:'GET',headers:{apikey:window._ANON_KEY||'',Authorization:'Bearer '+ctx.jwt},cache:'no-store'
+  });
+  if(!res.ok) throw Error();
+  const data=await res.json();
+  if(data.ok!==true || data.has_sub!==true || data.subscription_id!==suscripcionId ||
+      typeof data.status!=='string' || typeof data.scheduled!=='boolean') throw Error();
+  return data;
+}
+
+function fechaPlanVelum(valor){
+  const d=valor?new Date(valor):null;
+  return d && Number.isFinite(d.getTime())?d.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric',timeZone:'America/Mexico_City'}):'';
+}
+
 let lecturaPlan=0;
 async function renderSuscripcion(){
   const el=document.getElementById('suscripcion-content'), card=document.getElementById('cfg-cancel-plan');
@@ -9231,23 +9247,38 @@ async function renderSuscripcion(){
   if(!vigente()) return;
   titulo.textContent=tituloPlanVelum(g);
   const cortesia=(g.subscription_plan||g.plan)==='owner' || g.subscription_status==='owner';
-  const estado=cortesia?'Cortesía':estadoPlanVelum(g.subscription_status);
-  const fin=g.subscription_current_period_end?new Date(g.subscription_current_period_end):null;
-  const fecha=fin && Number.isFinite(fin.getTime())?fin.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric',timeZone:'America/Mexico_City'}):'';
-  el.innerHTML='<div class="cfg-plan-state"><span>Estado de mi plan</span><strong>'+estado+'</strong></div>';
+  const consultaStripe=!cortesia && !!g.stripe_subscription_id && administrarPagosGym();
+  let renovacion=null;
+  if(consultaStripe){
+    el.textContent='Consultando la renovación en Stripe…';
+    try{renovacion=await leerRenovacionPlan(usuario,g.stripe_subscription_id);}catch{/* Se ofrece reintento en el panel. */}
+    if(!vigente()) return;
+  }
+  const status=renovacion?.status||g.subscription_status;
+  const estado=cortesia?'Cortesía':renovacion?.scheduled?'Cancelación programada':estadoPlanVelum(status);
+  const etiqueta=consultaStripe && !renovacion?'Estado registrado en VELUM':'Estado de mi plan';
+  el.innerHTML='<div class="cfg-plan-state"><span>'+etiqueta+'</span><strong>'+estado+'</strong></div>';
   if(cortesia){el.insertAdjacentHTML('beforeend','<p>Tu gimnasio tiene acceso de cortesía.</p>');return;}
-  if(fecha) el.insertAdjacentHTML('beforeend','<p>Fin del periodo registrado · '+fecha+'</p>');
-  if(g.subscription_status==='past_due') el.insertAdjacentHTML('beforeend','<p>Revisa tu último pago y el método de pago de la suscripción.</p>');
+  if(consultaStripe && !renovacion){
+    el.insertAdjacentHTML('beforeend','<p>La renovación está por confirmar. Consulta de nuevo o revisa tu suscripción en Stripe.</p><button class="btn btn-outline" onclick="renderSuscripcion()">Volver a consultar</button>');
+  }else if(renovacion?.scheduled){
+    const fecha=fechaPlanVelum(renovacion.cancel_at);
+    el.insertAdjacentHTML('beforeend','<p>'+(fecha?'Tu suscripción termina el '+fecha+'.':'Stripe confirmó la cancelación. La fecha de finalización está por confirmar.')+'</p>');
+  }else if(['canceled','cancelled','incomplete_expired'].includes(status)){
+    const fecha=fechaPlanVelum(renovacion?.ended_at);
+    if(fecha) el.insertAdjacentHTML('beforeend','<p>Tu suscripción terminó el '+fecha+'.</p>');
+  }else{
+    const fecha=fechaPlanVelum(renovacion?renovacion.current_period_end:g.subscription_current_period_end);
+    if(fecha) el.insertAdjacentHTML('beforeend','<p>Fin del periodo registrado · '+fecha+'</p>');
+  }
+  if(status==='past_due') el.insertAdjacentHTML('beforeend','<p>Revisa tu último pago y el método de pago de la suscripción.</p>');
   if(!administrarPagosGym()) return;
   if(g.stripe_customer_id) el.insertAdjacentHTML('beforeend','<button class="btn btn-primary" onclick="openBillingPortal(this)">Gestionar mi suscripción en Stripe</button>');
   else el.insertAdjacentHTML('beforeend','<p>Para revisar la facturación de esta cuenta, escribe a soporte@myvelum.app.</p>');
-  if(g.stripe_subscription_id && !['canceled','cancelled','incomplete_expired'].includes(g.subscription_status)){
+  if(renovacion && !renovacion.scheduled && !['canceled','cancelled','incomplete_expired'].includes(status)){
     const btn=card.querySelector('button'), msg=document.getElementById('cancel-msg');
-    if(card.dataset.sub!==g.stripe_subscription_id){
-      card.dataset.sub=g.stripe_subscription_id;
-      btn.disabled=false;btn.textContent='Cancelar mi suscripción';msg.textContent='';msg.style.display='none';
-    }
-    card.hidden=false;
+    btn.disabled=false;btn.textContent='Cancelar mi suscripción';
+    msg.textContent='';msg.style.display='none';card.hidden=false;
   }
 }
 
@@ -9269,10 +9300,8 @@ async function cancelarSuscripcion(btn){
     const data = await res.json();
     if(!vigente()) return;
     if(!res.ok || !data.ok) throw new Error(data.error || 'No se pudo cancelar.');
-    const fecha = data.period_end ? new Date(data.period_end).toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : null;
-    if(msg){ msg.style.display='block'; msg.style.color='var(--ok)'; msg.textContent = fecha ? `Listo. Tu suscripción se cancelará el ${fecha}; conservas el acceso hasta entonces.` : 'Listo. Tu suscripción quedó programada para cancelarse al final del periodo.'; }
-    btn.textContent = 'Cancelación programada ✓';
-    toast('Suscripción cancelada al final del periodo','✓');
+    if(data.cancel_at_period_end===true) toast('Cancelación programada en Stripe','✓');
+    await renderSuscripcion();
   }catch(e){
     if(!vigente()) return;
     if(msg){ msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent = 'No se pudo confirmar la cancelación. Revisa tu suscripción en Stripe.'; }
@@ -9634,6 +9663,7 @@ function initRealtimeSubscriptions(){
 }
 
 function doLogout(){
+  document.querySelector('dialog[data-renovaciones]')?.close();
   window.CoreCobros?.reset();
   ++intentoAcceso;
   clearSession();
@@ -11054,12 +11084,50 @@ async function loadCoachesFromSupabase(){
   }));
 }
 
+// Una vigencia antigua puede seguir dando acceso. Conserva el orden del directorio y el historial completos.
+const lecturasDirectorio={pagos:0,clientes:0};
+async function leerDirectorioCompleto(db,tabla,gym,columna,ascendente,vigente){
+  if(!db || !gym) return {error:{message:'Falta la sesión del gimnasio.'}};
+  try{
+    for(let intento=0;intento<2;intento++){
+      const filas=[],ids=new Set();
+      let total=null;
+      while(vigente()){
+        const desde=filas.length;
+        const {data,count,error}=await db.from(tabla).select('*',{count:'exact'}).eq('gym_id',gym)
+          .order(columna,{ascending:ascendente}).order('id',{ascending:ascendente}).range(desde,desde+499);
+        if(error){
+          if(desde && error.code==='PGRST103') break;
+          return {error};
+        }
+        if(!Array.isArray(data)) return {error:{message:'No se pudo confirmar la lista completa.'}};
+        if(count!=null && total!=null && total!==count) break;
+        if(count!=null) total=count;
+        // Si una inserción desplazó la página, vuelve a comenzar una vez para no mezclar lecturas.
+        if(desde && data.some(f=>ids.has(f.id))) break;
+        for(const f of data){filas.push(f);ids.add(f.id);}
+        if(total!==null && filas.length===total) return {data:filas};
+        if(!data.length){
+          if(total===null) return {data:filas};
+          break;
+        }
+        if(total!==null && filas.length>total) break;
+      }
+      if(!vigente()) return {error:{message:'Cambió la sesión o la consulta.'}};
+    }
+    return {error:{message:'El directorio cambió durante la consulta. Vuelve a intentar.'}};
+  }catch(error){return {error};}
+}
+
 async function loadPagosFromSupabase(){
   const gym=MOVE_GYM_ID,user=currentUser,token=user?.jwt;
-  const { data, error } = await gf(window.supabaseClient.from('pagos').select('*')).order('created_at', {ascending: false}).limit(2000);
-  if(gym!==MOVE_GYM_ID || user!==currentUser || token!==currentUser?.jwt) return;
+  const lectura=++lecturasDirectorio.pagos;
+  const vigente=()=>lectura===lecturasDirectorio.pagos && gym===MOVE_GYM_ID && user===currentUser && token===currentUser?.jwt;
+  const {data,error}=await leerDirectorioCompleto(window.supabaseClient,'pagos',gym,'created_at',false,vigente);
+  if(!vigente()) return;
   contextoPagosInicio=error?null:{gym,user,token};
   if(error){
+    if(document.getElementById('v-por-vencer')?.classList.contains('active')) renderPorVencer();
     console.error('Error cargando pagos:', error); if(_handleSessionError(error))return;
     const m = error.message||'';
     if(m.includes('JWT')||m.includes('expired')||m.includes('invalid claim')){ _handleJwtExpiry(); }
@@ -11077,14 +11145,18 @@ async function loadPagosFromSupabase(){
     created_at:  p.created_at || null,
   }));
   try{ if(typeof renderGymAnalytics==='function') renderGymAnalytics(); }catch(_){}
+  if(document.getElementById('v-por-vencer')?.classList.contains('active')) renderPorVencer();
 }
 
 async function loadClientesFromSupabase(){
   const gym=MOVE_GYM_ID,user=currentUser,token=user?.jwt;
-  const { data, error } = await gf(window.supabaseClient.from('clientes').select('*')).order('nombre').limit(2000);
-  if(gym!==MOVE_GYM_ID || user!==currentUser || token!==currentUser?.jwt) return;
+  const lectura=++lecturasDirectorio.clientes;
+  const vigente=()=>lectura===lecturasDirectorio.clientes && gym===MOVE_GYM_ID && user===currentUser && token===currentUser?.jwt;
+  const {data,error}=await leerDirectorioCompleto(window.supabaseClient,'clientes',gym,'nombre',true,vigente);
+  if(!vigente()) return;
   contextoClientesInicio=error?null:{gym,user,token};
   if(error){
+    if(document.getElementById('v-por-vencer')?.classList.contains('active')) renderPorVencer();
     console.error('Error cargando clientes:', error); if(_handleSessionError(error))return;
     clientesDB=[];
     const m = error.message||'';
@@ -11092,6 +11164,7 @@ async function loadClientesFromSupabase(){
     return;
   }
   clientesDB = data||[];
+  if(document.getElementById('v-por-vencer')?.classList.contains('active')) renderPorVencer();
 }
 
 // ── QR Modal ─────────────────────────────────────────────────────────
@@ -11661,7 +11734,7 @@ const topBtnLabels = {
   recursos:    '+ Agregar Recurso',
   protocolos:  '+ Agregar Protocolo',
   revenue:     '↓ Descargar Excel',
-  'por-vencer':'WA a todos',
+  'por-vencer':'Preparar recordatorios',
   gastos:      '+ Nuevo Gasto',
   programa:    '+ Entrenamiento',
   retencion:         '↗ Exportar',
@@ -12105,7 +12178,7 @@ function go(id, el){
   try{ const _vb=(typeof _VERTICAL_TOPBTN!=='undefined') && _VERTICAL_TOPBTN[_gymVertical] && _VERTICAL_TOPBTN[_gymVertical][id];
     if(_vb) topBtn.textContent=_vb; }catch(_){}
   topBtn.onclick = topBtnActions[id]||null;
-  if(['dashboard','clientes','pagos','revenue'].includes(id) || !topBtnActions[id]) topBtn.style.display = 'none';
+  if(['dashboard','clientes','pagos','revenue','por-vencer'].includes(id) || !topBtnActions[id]) topBtn.style.display = 'none';
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ Promise.resolve(renderReporteCoach()).catch(e=>console.error('reporte coach:', e)); }catch(e){ console.error('reporte coach:', e); } }
@@ -12278,6 +12351,7 @@ async function sbOp(fn){
   }
 }
 function _handleJwtExpiry(){
+  document.querySelector('dialog[data-renovaciones]')?.close();
   clearSession();
   currentUser = null;
   toast('Tu sesión expiró. Vuelve a iniciar sesión.','🔒', 4000);
@@ -12820,7 +12894,7 @@ function buildNotifAlerts(){
   // sin límite de antigüedad (salían vencidas de hace meses). Decisión de Roy 2026-07-23:
   //   · vencidas  → solo las de los ÚLTIMOS 15 días (lo accionable; lo más viejo es churn)
   //   · por vencer → los PRÓXIMOS 7 días (antes 3)
-  const _estados = [...estadoMembresiaPorCliente(now).values()];
+  const _estados = [...estadoMembresiaPorCliente().values()];
   const vencidas = _estados.filter(e => !e.acceso && e.diasRest !== null && e.diasRest < 0 && e.diasRest >= -15);
   if(vencidas.length){
     alerts.push({
@@ -13192,23 +13266,10 @@ function renderCalVenc(){
   const dayMap={};
   const mesStr=`${y}-${String(m+1).padStart(2,'0')}`;
 
-  // For each cliente, find their latest pago and check if it vence this month
-  const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
-  [...nombresSet].forEach(nombre=>{
-    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence&&p.vence!=='—'&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).sort((a,b)=>(b.vence||'').localeCompare(a.vence||''));
-    if(!ps.length) return;
-    const ult=ps[0];
-    if(!(ult.vence||'').startsWith(mesStr)) return;
-    const day=parseInt((ult.vence||'').slice(8,10));
-    if(!day||isNaN(day)) return;
-    const vDate=new Date(ult.vence+'T12:00:00');
-    const diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
-    const estado=diff<0?'vencido':diff<=3?'urgente':diff<=14?'pronto':'activo';
-    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
-    const tel=(cliRec.telefono||'').replace(/\D/g,'');
-    if(!dayMap[day]) dayMap[day]=[];
-    dayMap[day].push({nombre,estado,plan:ult.plan||'—',vence:ult.vence,tel,diff});
-  });
+  for(const e of pvEventosCalendario(mesStr)){
+    const day=Number(e.mejorVence.slice(8));
+    (dayMap[day]??=[]).push(e);
+  }
 
   // Cumpleaños del mes (feature 11-ago): misma fuente que el widget del
   // dashboard — pagos[].cumpleanos (YYYY-MM-DD), dedup por cliente. Se pintan
@@ -13297,21 +13358,7 @@ function calVencShowDay(day){
   const y=_calVencYear, m=_calVencMonth;
   const mesStr=`${y}-${String(m+1).padStart(2,'0')}`;
   const dayStr=`${mesStr}-${String(day).padStart(2,'0')}`;
-  const hoy=new Date(); hoy.setHours(0,0,0,0);
-
-  const nombresSet=new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
-  const events=[];
-  [...nombresSet].forEach(nombre=>{
-    const ps=pagos.filter(p=>(p.cliente||'').trim()===nombre&&p.vence===dayStr&&p.notas!=='__sin_pago__'&&!esPaseDia(p.plan));
-    if(!ps.length) return;
-    const ult=ps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
-    const vDate=new Date(dayStr+'T12:00:00');
-    const diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
-    const estado=diff<0?'vencido':diff<=3?'urgente':diff<=14?'pronto':'activo';
-    const cliRec=clientesDB.find(c=>c.nombre===nombre)||{};
-    const tel=(cliRec.telefono||'').replace(/\D/g,'');
-    events.push({nombre,estado,plan:ult.plan||'—',vence:dayStr,tel,diff});
-  });
+  const events=pvEventosCalendario(mesStr).filter(e=>e.mejorVence===dayStr);
 
   // Cumpleaños de ese día (mes-día del cumpleanos más reciente por cliente)
   const mmdd=`${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -13359,25 +13406,17 @@ function calVencShowDay(day){
   } else if(!events.length){
     listEl.innerHTML=cumpleHtml;
   } else {
-    const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
     const stateColor={vencido:'var(--danger)',urgente:'#ff6b35',pronto:'var(--warn)',activo:'var(--ok)'};
-    const stateLabel={vencido:'Vencido',urgente:'Vence hoy/mañana',pronto:'Por vencer',activo:'Activo'};
     listEl.innerHTML=events.map(e=>{
-      const numWA=e.tel.length===10?'52'+e.tel:e.tel;
-      const msgWA=encodeURIComponent(buildWAMsg(e.nombre,e.plan,e.vence));
-      const waBtn=numWA.length>=12
-        ?`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-              style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-sm);font-weight:700;text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WA</a>`
-        :`<button onclick="openClientePanel('${esc(e.nombre)}')"
-              style="padding:5px 10px;border-radius:8px;background:var(--card2);color:var(--text3);font-size:var(--fs-sm);font-weight:600;border:1px dashed var(--border);cursor:pointer;">Ver</button>`;
+      const waBtn=pvBotonRecordatorio(e);
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;"
-                   onclick="go('clientes',document.getElementById('nav-clientes'));setTimeout(()=>openClientePanel('${esc(e.nombre)}'),180)">
+                   data-socio="${esc(e.nombre).replace(/"/g,'&quot;')}" onclick="go('clientes',document.getElementById('nav-clientes'));openClientePanel(this.dataset.socio)">
         ${getAvatarHTML(e.nombre,32)}
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(e.nombre)}</div>
           <div style="font-size:var(--fs-sm);color:var(--text3);">${esc(e.plan)}</div>
         </div>
-        <span style="font-size:var(--fs-sm);padding:3px 8px;border-radius:8px;background:${stateColor[e.estado]}18;color:${stateColor[e.estado]};font-weight:700;">${stateLabel[e.estado]}</span>
+        <span style="font-size:var(--fs-sm);padding:3px 8px;border-radius:8px;background:${stateColor[e.estado]}18;color:${stateColor[e.estado]};font-weight:700;">${pvVigencia(e)}</span>
         <div onclick="event.stopPropagation()">${waBtn}</div>
       </div>`;
     }).join('') + cumpleHtml;
@@ -14575,19 +14614,8 @@ function renderMembresiasAlert(){
   const el = document.getElementById('dash-membresias-alert');
   if(!el) return;
 
-  const hoy   = new Date(); hoy.setHours(0,0,0,0);
-  const dias14 = new Date(hoy); dias14.setDate(hoy.getDate()+14);
-
-  // Filtra pagos que vencen en los próximos 14 días (o ya vencidos)
-  const alertas = pagos
-    .filter(p => p.vence && p.vence.length >= 10)
-    .map(p => {
-      const vDate = new Date(p.vence + 'T12:00:00');
-      const diff  = Math.ceil((vDate - hoy) / (1000*60*60*24));
-      return { ...p, diff, vDate };
-    })
-    .filter(p => p.diff <= 14)
-    .sort((a,b) => a.diff - b.diff);
+  if(!pvDatosListos()){el.textContent='Pendiente de consultar membresías.';return;}
+  const alertas=pvPersonas(14,'ambos').map(e=>({...e.pago,cliente:e.nombre,vence:e.mejorVence,telefono:e.telefono,diff:e.diasRest,agotado:e.agotado}));
 
   if(!alertas.length){
     el.innerHTML = `<div style="padding:16px 20px;color:var(--text3);font-size:var(--fs-sm);text-align:center;">
@@ -14622,11 +14650,11 @@ function renderMembresiasAlert(){
   }
 
   el.innerHTML = alertas.map(p => {
-    const isVencida  = p.diff < 0;
+    const isVencida  = p.agotado || p.diff < 0;
     const isUrgente  = p.diff <= 3;
     const color      = isVencida ? 'var(--danger)' : isUrgente ? 'var(--warn)' : 'var(--ok)';
     const colorBg    = isVencida ? 'rgba(248,113,113,.08)' : isUrgente ? 'rgba(251,191,36,.08)' : 'rgba(16,185,129,.06)';
-    const etiqueta   = isVencida
+    const etiqueta   = p.agotado?'Clases agotadas':isVencida
       ? `Venció hace ${Math.abs(p.diff)} día${Math.abs(p.diff)!==1?'s':''}`
       : p.diff === 0 ? 'Vence hoy'
       : `Vence en ${p.diff} día${p.diff!==1?'s':''}`;
@@ -14634,16 +14662,8 @@ function renderMembresiasAlert(){
     // WhatsApp link
     const tel    = (p.telefono||'').replace(/\D/g,'');
     const numWA  = tel.length===10 ? '52'+tel : tel;
-    const msgWA  = encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
-    const waBtn  = numWA.length >= 12
-      ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-           style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
-                  border-radius:8px;background:rgba(37,211,102,.15);color:var(--wa);
-                  font-size:var(--fs-sm);font-weight:700;text-decoration:none;border:1px solid rgba(37,211,102,.3);
-                  white-space:nowrap;flex-shrink:0;">
-           <svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-           WhatsApp
-         </a>`
+    const waBtn  = numWA
+      ? `<button type="button" data-socio="${esc(p.cliente).replace(/"/g,'&quot;')}" onclick="pvRevisarNombre(this.dataset.socio)" class="btn btn-outline btn-sm">Ver recordatorio</button>`
       : `<span style="font-size:var(--fs-xs);color:var(--text4);font-style:italic;">Sin número</span>`;
 
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
@@ -14668,36 +14688,6 @@ function renderMembresiasAlert(){
 // ═══════════════════════════════════════════════════════════════════
 
 // ─── Helper: construye el mensaje de WhatsApp ───────────────────────
-function buildWAMsg(nombre, plan, vence){
-  // Nombre legible del plan
-  const planMap = {
-    'mensual':     'membresía mensual',
-    'quincenal':   'membresía quincenal',
-    'trimestral':  'membresía trimestral',
-    'semestral':   'membresía semestral',
-    'anual':       'membresía anual',
-    'mensual familiar': 'membresía familiar mensual',
-    'pase de día': 'pase de día',
-    'pase':        'pase de día',
-  };
-  const planKey = (plan||'').toLowerCase().trim();
-  const planLabel = planMap[planKey] || (plan||'membresía').toLowerCase();
-
-  // Fecha legible
-  let fechaLabel = vence||'';
-  if(vence && vence.length >= 10){
-    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    const [y,m,d] = vence.split('-');
-    fechaLabel = `${parseInt(d)} de ${meses[parseInt(m)-1]} de ${y}`;
-  }
-
-  // Primer nombre solamente
-  const primerNombre = (nombre||'').split(' ')[0];
-
-  const gNombre = gymConfig.gym_nombre||'el gym';
-  return `Hola ${primerNombre}! Te escribimos desde ${gNombre} para avisarte que tu ${planLabel} vence el ${fechaLabel}. Queremos que sigas siendo parte de la comunidad, asi que cuando quieras renovar aqui estamos para ayudarte. Un saludo!`;
-}
-
 // Estado activo de los filtros
 let _cliEstado = sessionStorage.getItem('velum_cliEstado') || 'todos';
 let _cliTipo   = sessionStorage.getItem('velum_cliTipo')   || 'todos';
@@ -14755,27 +14745,10 @@ function _hoyMX(){
 // sumaba un "vencido" para siempre (MOVE mostraba 108 con ~76 clientes reales).
 // Devuelve Map<nombre, { acceso, mejorVence, diasRest }>.
 function estadoMembresiaPorCliente(hoy){
-  const H = hoy || (()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
-  const _valido = p => p.vence && p.vence.length>=10 && p.vence!=='—';
-  const _noVencido = p => { if(!_valido(p)) return true; const d=new Date(p.vence+'T12:00:00'); return !isNaN(d.getTime()) && d>=H; };
-  const porCli = {};
-  (pagos||[]).forEach(p=>{
-    const n=(p.cliente||'').trim();
-    if(!n || p.notas==='__sin_pago__' || esPaseDia(p.plan)) return;
-    (porCli[n]=porCli[n]||[]).push(p);
-  });
-  const res = new Map();
-  Object.entries(porCli).forEach(([n,ps])=>{
-    const acceso = ps.some(p => p.clases_totales!=null
-      ? ((p.clases_usadas??0) < p.clases_totales && _noVencido(p))     // paquete
-      : (_valido(p) && _noVencido(p)));                               // membresía por tiempo
-    let mejorVence=null, pagoMejor=null;
-    ps.forEach(p=>{ if(_valido(p) && (!mejorVence || p.vence>mejorVence)){ mejorVence=p.vence; pagoMejor=p; } });
-    if(!pagoMejor) pagoMejor = ps[0];   // sin fecha válida → el primero para mostrar plan/monto
-    const diasRest = mejorVence ? Math.ceil((new Date(mejorVence+'T12:00:00')-H)/86400000) : null;
-    res.set(n, { nombre:n, acceso, mejorVence, diasRest, pago:pagoMejor });
-  });
-  return res;
+  const fecha=hoy instanceof Date
+    ? [hoy.getFullYear(),String(hoy.getMonth()+1).padStart(2,'0'),String(hoy.getDate()).padStart(2,'0')].join('-')
+    : hoy||_hoyMX();
+  return resumenVigencias(pagos,fecha,esPaseDia);
 }
 
 // Abre/cierra el menú "···" de una fila. Solo uno abierto a la vez.
@@ -14827,12 +14800,6 @@ function renderClientes(){
   // Los pases de día ahora van a la tabla `visitas` — no al directorio de socios
   const nombresSet = new Set();
   clientesDB.forEach(c => { if(c.nombre) nombresSet.add(c.nombre.trim()); });
-  // Incluir nombres de pagos SOLO si ya tienen registro en clientesDB (para migración de datos históricos)
-  pagos.filter(p=>p.notas!=='__sin_pago__'&&!esPaseDia(p.plan)).forEach(p => {
-    const n=(p.cliente||'').trim();
-    if(n && clientesDB.some(c=>c.nombre===n)) nombresSet.add(n);
-  });
-
   // ── Zero-data empty state (no clients AND no payments at all) ──
   if(!nombresSet.size){
     if(kpisEl) kpisEl.innerHTML = '';
@@ -14859,16 +14826,19 @@ function renderClientes(){
     let arr=_pagosPorCliente.get(k); if(!arr){ arr=[]; _pagosPorCliente.set(k,arr); }
     arr.push(p);
   }
-  const _cliPorNombre = new Map();
-  for(const c of clientesDB){ if(c.nombre && !_cliPorNombre.has(c.nombre)) _cliPorNombre.set(c.nombre, c); }
+  const _cliPorNombre = new Map(), _nombresDuplicados=new Set();
+  for(const c of clientesDB){
+    const n=(c.nombre||'').trim();if(!n) continue;
+    if(_cliPorNombre.has(n)) _nombresDuplicados.add(n);else _cliPorNombre.set(n,c);
+  }
 
   // Estado real por cliente (regla canónica: incluye paquetes agotados como vencidos)
-  const _estadoMap = estadoMembresiaPorCliente(hoy);
+  const _estadoMap = estadoMembresiaPorCliente();
 
   let clientes = [...nombresSet].map(nombre => {
     // Identidad desde tabla clientes
     const cliRec = _cliPorNombre.get(nombre) || {};
-    const telefono     = cliRec.telefono || '';
+    const telefono     = _nombresDuplicados.has(nombre)?'':cliRec.telefono||'';
     const cumpleanos   = cliRec.cumpleanos || null;
     const cliId        = cliRec.id || null;
     const numeroCliente = cliRec.numero_cliente || null;
@@ -14893,9 +14863,9 @@ function renderClientes(){
     }
     if(_est){
       // Cliente con pago real (no-pase): el helper decide acceso
-      estado = !_est.acceso ? 'vencido'
+      estado = _est.congelado ? 'congelado' : !_est.acceso ? (_est.agotado||_est.mejorVence?'vencido':'sin-fecha')
              : (_est.diasRest!=null && _est.diasRest<=14 ? 'por-vencer' : 'activo');
-      if(_est.diasRest!=null) diff = _est.diasRest;
+      diff = _est.diasRest;
     } else if(ultimo && esPaseDia(ultimo.plan) && diff!=null){
       estado = diff<0?'sin-fecha':'activo';   // solo pases de día
     }
@@ -14907,8 +14877,9 @@ function renderClientes(){
     return {
       nombre, telefono, cumpleanos, cliId, numeroCliente,
       nivel: cliRec.nivel||null,   // padel: nivel de juego del alumno
-      plan:  ultimo?ultimo.plan:'Sin membresía',
-      vence: ultimo?ultimo.vence:null,
+      plan: _est?.pago?.plan || (ultimo?ultimo.plan:'Sin membresía'),
+      vence: _est?_est.mejorVence:ultimo?.vence,
+      agotado: _est?.agotado,
       monto: ultimo?ultimo.monto:0,
       total, estado, diff, tipo
     };
@@ -14988,12 +14959,12 @@ function renderClientes(){
   const paginated = lista.slice(_cliPage * PAGE, (_cliPage + 1) * PAGE);
 
   // ── Render tarjetas ──────────────────────────────────────────────
-  const WA_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
 
   const esCfg = {
     activo:      { color:'var(--ok)',     bg:'rgba(16,185,129,.10)',  label:'Activo',     icon:'✓' },
     'por-vencer':{ color:'var(--warn)',   bg:'rgba(251,191,36,.10)',  label:'Por vencer', icon:'' },
     vencido:     { color:'var(--danger)', bg:'rgba(248,113,113,.10)', label:'Vencido',    icon:'' },
+    congelado: {color:'var(--blue)',bg:'var(--card2)',label:'Congelado',icon:''},
     'sin-fecha': { color:'var(--text3)',  bg:'rgba(100,116,139,.10)', label:'Sin fecha',  icon:'' },
   };
 
@@ -15015,7 +14986,7 @@ function renderClientes(){
     const venceFmt = c.vence && c.vence.length >= 10
       ? fmtDate(c.vence)
       : '—';
-    const diasLabel = c.diff !== null
+    const diasLabel = c.estado==='congelado'?'Congelada':c.agotado?'Clases agotadas':c.diff !== null
       ? (c.diff < 0 ? `Venció hace ${Math.abs(c.diff)}d` : c.diff===0 ? 'Vence hoy' : `Vence en ${c.diff}d`)
       : 'Sin fecha';
 
@@ -15037,7 +15008,6 @@ function renderClientes(){
     // WhatsApp
     const tel   = (c.telefono||'').replace(/\D/g,'');
     const numWA = tel.length===10 ? '52'+tel : tel;
-    const msgWA = encodeURIComponent(buildWAMsg(c.nombre, c.plan, c.vence));
     const editBtn = `<button onclick="abrirEditarTelefono('${esc(c.nombre)}')"
          title="Editar información"
          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
@@ -15084,22 +15054,11 @@ function renderClientes(){
                   cursor:pointer;white-space:nowrap;flex-shrink:0;">
            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Crear enlace de cobro</button>`
       : '';
-    const waBtn = numWA.length >= 12
-      ? `<div style="display:flex;gap:6px;align-items:center;">
-           <a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-              style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
-                     background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-xs);font-weight:700;
-                     text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;">${WA_SVG} WhatsApp</a>
-           ${cobrarBtn}${editBtn}${qrBtn}${medBtn}${delBtn}
-         </div>`
-      : `<div style="display:flex;gap:6px;align-items:center;">
-           <button onclick="abrirEditarTelefono('${esc(c.nombre)}')"
-               style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
-                      background:var(--card2);color:var(--text3);font-size:var(--fs-xs);font-weight:600;
-                      border:1px dashed var(--border);cursor:pointer;white-space:nowrap;">
-             Agregar número</button>
-           ${cobrarBtn}${qrBtn}${medBtn}${delBtn}
-         </div>`;
+    const homonimo=_nombresDuplicados.has(c.nombre);
+    const contacto=homonimo?pvBotonHomonimo():numWA.length>=12
+      ? `<a href="https://wa.me/${numWA}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Contactar por WhatsApp</a>`
+      : `<button data-socio="${esc(c.nombre).replace(/"/g,'&quot;')}" onclick="abrirEditarTelefono(this.dataset.socio)" class="btn btn-outline btn-sm">Agregar número</button>`;
+    const waBtn=`<div style="display:flex;gap:6px;align-items:center;">${contacto}${cobrarBtn}${numWA.length>=12?editBtn:''}${qrBtn}${medBtn}${delBtn}</div>`;
 
     // Ola 3 (densidad): la fila muestra NOMBRE + contacto + UN estado.
     // El resto (tipo, congelado, referidos, portal, historial y las 6 acciones)
@@ -15341,15 +15300,15 @@ function openClientePanel(nombreCliente){
 
   // Estado membresía por regla canónica (misma que el kiosco/app y la lista)
   let estado='sin-fecha', diff=null;
-  const _estDet = estadoMembresiaPorCliente(hoy).get(nombreCliente);
+  const _estDet = estadoMembresiaPorCliente().get(nombreCliente);
   if(ultimo && ultimo.vence && ultimo.vence.length>=10 && ultimo.vence!=='—'){
     const vDate=new Date(ultimo.vence+'T12:00:00');
     diff=Math.ceil((vDate-hoy)/(1000*60*60*24));
   }
   if(_estDet){
-    estado = !_estDet.acceso ? 'vencido'
+    estado = _estDet.congelado ? 'congelado' : !_estDet.acceso ? (_estDet.agotado||_estDet.mejorVence?'vencido':'sin-fecha')
            : (_estDet.diasRest!=null && _estDet.diasRest<=14 ? 'por-vencer' : 'activo');
-    if(_estDet.diasRest!=null) diff=_estDet.diasRest;
+    diff=_estDet.diasRest;
   } else if(ultimo && esPaseDia(ultimo.plan) && diff!=null){
     estado = diff<0?'sin-fecha':'activo';
   }
@@ -15357,12 +15316,14 @@ function openClientePanel(nombreCliente){
     activo:      {color:'var(--ok)',     label:'Activo',     icon:'✓'},
     'por-vencer':{color:'var(--warn)',   label:'Por vencer', icon:''},
     vencido:     {color:'var(--danger)', label:'Vencido',    icon:''},
+    congelado: {color:'var(--blue)',label:'Congelada',icon:''},
     'sin-fecha': {color:'var(--text3)',  label:'Sin membresía',  icon:''},
   };
   const cfg  = esCfg[estado];
   const tipo = historial.some(p=>!esPaseDia(p.plan)) ? 'Paquete / Membresía' : (historial.length?'Pase de Día':'Sin membresía');
   // Use clientes table for contact info (more reliable than pagos)
-  const tel = (cliRec.telefono||(ultimo?ultimo.telefono:'')||'').replace(/\D/g,'');
+  const homonimo=clientesDB.filter(c=>(c.nombre||'').trim()===nombreCliente).length>1;
+  const tel = homonimo?'':(cliRec.telefono||(ultimo?ultimo.telefono:'')||'').replace(/\D/g,'');
 
   // Header
   const avatarEl = document.getElementById('cpanel-avatar');
@@ -15426,15 +15387,11 @@ function openClientePanel(nombreCliente){
   _pintarTardiasFicha(cliRec.id);
 
   // Acciones
-  const WA_SVG=`<svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.512A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.936-3.619-.235-.373A9.79 9.79 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>`;
   const numWA = tel.length===10?'52'+tel:tel;
   const accs = [];
-  if(numWA.length>=12){
-    const msgWA = encodeURIComponent(buildWAMsg(nombreCliente, ultimo?ultimo.plan:'', ultimo?ultimo.vence:''));
-    accs.push(`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener"
-      style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
-             background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-xs);font-weight:700;
-             text-decoration:none;border:1px solid rgba(37,211,102,.3);">${WA_SVG} WhatsApp</a>`);
+  if(homonimo) accs.push(pvBotonHomonimo());
+  else if(numWA.length>=12){
+    accs.push(`<a href="https://wa.me/${numWA}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Contactar por WhatsApp</a>`);
   }
   accs.push(`<button data-editar-ficha
     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
@@ -15754,41 +15711,6 @@ async function deleteClienteNota(id){
 }
 
 // ─── WhatsApp en masa ──────────────────────────────────────────────
-function waEnMasa(){
-  const hoy = new Date(); hoy.setHours(0,0,0,0);
-
-  // Agrupar último pago por cliente
-  const mapaUltimo = {};
-  pagos.forEach(p=>{
-    const n=(p.cliente||'').trim(); if(!n) return;
-    if(!mapaUltimo[n]){ mapaUltimo[n]=p; return; }
-    if((p.vence||'')>(mapaUltimo[n].vence||'')) mapaUltimo[n]=p;
-  });
-
-  const candidatos = Object.values(mapaUltimo).filter(p=>{
-    const tel=(p.telefono||'').replace(/\D/g,'');
-    if(tel.length!==10) return false; // sin teléfono, skip
-    if(!p.vence||p.vence.length<10) return false;
-    if(esPaseDia(p.plan)) return false; // pases de día no se notifican como vencidos
-    const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
-    return diff<=14; // vencidos o por vencer en 14 días
-  });
-
-  if(!candidatos.length){
-    toast('No hay clientes con teléfono registrado vencidos o por vencer esta quincena.','ℹ️');
-    return;
-  }
-
-  toast(`Abriendo ${candidatos.length} conversación${candidatos.length!==1?'es':''} de WhatsApp...`,'📲');
-
-  // Abrir cada chat con delay de 600ms para que el navegador no bloquee los popups
-  candidatos.forEach((p,i)=>{
-    const numWA='52'+p.telefono.replace(/\D/g,'');
-    const msgWA=encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
-    setTimeout(()=>window.open(`https://wa.me/${numWA}?text=${msgWA}`,'_blank'), i*600);
-  });
-}
-
 // ─── Renovación Masiva ─────────────────────────────────────────────
 function abrirRenovacionMasiva(){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
@@ -16025,14 +15947,14 @@ function exportarClientesCSV(){
     if((p.vence||'')>(mapaConteo[n].ultimo.vence||'')) mapaConteo[n].ultimo=p;
   });
 
-  const _estCsv = estadoMembresiaPorCliente(hoy);
+  const _estCsv = estadoMembresiaPorCliente();
   const filas = [['Nombre','Teléfono','Plan','Vencimiento','Estado','Tipo','Total Pagos','Total Pagado']];
   Object.entries(mapaConteo).forEach(([nombre,datos])=>{
     const c=datos.ultimo;
     // Estado por regla canónica (misma que el panel/kiosco); pase de día no se marca vencido
     let estado='Sin fecha';
     const _e=_estCsv.get(nombre);
-    if(_e){ estado = !_e.acceso?'Vencido':(_e.diasRest!=null&&_e.diasRest<=14?'Por vencer':'Activo'); }
+    if(_e){ estado = _e.congelado?'Congelado':!_e.acceso?(_e.agotado||_e.mejorVence?'Vencido':'Sin fecha'):(_e.diasRest!=null&&_e.diasRest<=14?'Por vencer':'Activo'); }
     else if(c.vence&&c.vence.length>=10 && esPaseDia(c.plan)){
       const diff=Math.ceil((new Date(c.vence+'T12:00:00')-hoy)/(1000*60*60*24));
       estado = diff<0?'Sin fecha':'Activo';
@@ -16078,7 +16000,7 @@ function _doExportarClientesXLSX(){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
 
   // ── Hoja 1: Directorio ──
-  const _estXlsx = estadoMembresiaPorCliente(hoy);
+  const _estXlsx = estadoMembresiaPorCliente();
   const dirRows = [['Nombre','Teléfono','Email','Cumpleaños','Plan Actual','Vencimiento','Estado','Total Pagos','Total Pagado ($)','Tipo','LTV ($)','Portal Enviado']];
   const nombresSet = new Set([...clientesDB.map(c=>c.nombre).filter(Boolean),...pagos.map(p=>(p.cliente||'').trim()).filter(Boolean)]);
   [...nombresSet].forEach(nombre=>{
@@ -16088,7 +16010,7 @@ function _doExportarClientesXLSX(){
     // Estado por regla canónica (misma que el panel/kiosco)
     let estado='Sin fecha';
     const _e=_estXlsx.get(nombre);
-    if(_e){ estado = !_e.acceso?'Vencido':(_e.diasRest!=null&&_e.diasRest<=14?'Por vencer':'Activo'); }
+    if(_e){ estado = _e.congelado?'Congelado':!_e.acceso?(_e.agotado||_e.mejorVence?'Vencido':'Sin fecha'):(_e.diasRest!=null&&_e.diasRest<=14?'Por vencer':'Activo'); }
     else if(ult&&ult.vence&&ult.vence.length>=10 && esPaseDia(ult.plan)){
       const diff=Math.ceil((new Date(ult.vence+'T12:00:00')-hoy)/(1000*60*60*24));
       estado = diff<0?'Sin fecha':'Activo';
@@ -16297,18 +16219,7 @@ function renderAsistencia(){
     const hace30Str = hace30.toISOString().slice(0,10);
 
     // Clientes con membresía activa
-    const mapaUltimo = {};
-    pagos.forEach(p=>{
-      const n=(p.cliente||'').trim(); if(!n) return;
-      if(!mapaUltimo[n]||((p.vence||'')>(mapaUltimo[n].vence||''))) mapaUltimo[n]=p;
-    });
-    const clientesActivos = Object.entries(mapaUltimo)
-      .filter(([,p])=>{
-        if(!p.vence||p.vence.length<10) return false;
-        const diff=Math.ceil((new Date(p.vence+'T12:00:00')-hoy)/(1000*60*60*24));
-        return diff>=0;
-      })
-      .map(([nombre])=>nombre);
+    const clientesActivos=pvPersonas(Infinity,'proximos');
 
     // Quiénes asistieron en los últimos 30 días
     const asistReciente = new Set(
@@ -16316,23 +16227,17 @@ function renderAsistencia(){
         .flatMap(r=>r.participantes.map(p=>p.toLowerCase().trim()))
     );
 
-    const enRiesgo = clientesActivos.filter(n=>!asistReciente.has(n.toLowerCase().trim()));
+    const enRiesgo = clientesActivos.filter(p=>!asistReciente.has(p.nombre.toLowerCase().trim()));
     if(!enRiesgo.length){
       riesgoEl.innerHTML=`<div style="padding:20px;text-align:center;"><span style="font-size:var(--fs-xl);">✓</span><div style="font-size:var(--fs-xs);color:var(--text3);margin-top:6px;">Todos los clientes activos han asistido recientemente.</div></div>`;
     } else {
       riesgoEl.innerHTML=`<div style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:10px;">Membresía activa pero sin check-in en 30 días (${enRiesgo.length}):</div>`+
-        enRiesgo.slice(0,10).map(nombre=>{
-          const p = mapaUltimo[nombre];
-          const tel=(p.telefono||'').replace(/\D/g,'');
-          const numWA=tel.length===10?'52'+tel:tel;
-          const msgWA=encodeURIComponent(buildWAMsg(nombre, p.plan, p.vence));
-          const waLink=numWA.length>=12
-            ?`<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank" rel="noopener" style="font-size:var(--fs-sm);color:var(--wa);text-decoration:none;font-weight:700;">WhatsApp →</a>`
-            :'';
+        enRiesgo.slice(0,10).map(p=>{
+          const nombre=p.nombre,waLink=pvBotonRecordatorio(p);
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(239,68,68,.06);border-radius:8px;border-left:3px solid var(--danger);margin-bottom:5px;">
             <div>
               <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${esc(nombre)}</div>
-              <div style="font-size:var(--fs-xs);color:var(--text3);">${esc(p.plan||'—')} · vence ${p.vence||'—'}</div>
+              <div style="font-size:var(--fs-xs);color:var(--text3);">${esc(p.plan||'—')} · vence ${p.mejorVence||'—'}</div>
             </div>
             ${waLink}
           </div>`;
@@ -16667,7 +16572,7 @@ async function loadPackagesFromCatalog(){
     const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
     const { data, error } = await window.supabaseClient
       .from('packages')
-      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active, billing_type, max_reservas_dia')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, is_active, billing_type, max_reservas_dia, solo_primera_vez')
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
@@ -18784,7 +18689,7 @@ function renderBriefingHoy(){
   });
 
   // ── Vencimientos hoy ────────────────────────────────────────────
-  const vencenHoy = pagos.filter(p=>p.vence===today && !esPaseDia(p.plan));
+  const vencenHoy=pvPersonas(0,'proximos');
 
   // No data yet
   if(!todasClasesHoy.length && !cumpleHoy.length && !vencenHoy.length){
@@ -18838,16 +18743,7 @@ function renderBriefingHoy(){
   }).join('');
 
   const venceCards = vencenHoy.map(p=>{
-    const cliRec   = clientesDB.find(x=>x.nombre===p.cliente)||{};
-    const tel      = (cliRec.telefono||'').replace(/\D/g,'');
-    const numWA    = tel.length===10?'52'+tel:tel;
-    const msgWA    = encodeURIComponent(buildWAMsg(p.cliente, p.plan, p.vence));
-    const waBtn    = numWA.length>=12
-      ? `<a href="https://wa.me/${numWA}?text=${msgWA}" target="_blank"
-           style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;
-                  background:rgba(37,211,102,.12);color:var(--wa);font-size:var(--fs-sm);font-weight:700;
-                  text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> WA</a>`
-      : '';
+    const waBtn=pvBotonRecordatorio(p);
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
                   padding:10px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
@@ -18855,7 +18751,7 @@ function renderBriefingHoy(){
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="display:inline-flex;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
           <div>
-            <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${esc(p.cliente)}</div>
+            <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${esc(p.nombre)}</div>
             <div style="font-size:var(--fs-xs);color:var(--text3);">Vence hoy · ${esc(p.plan||'—')}</div>
           </div>
         </div>
@@ -18910,36 +18806,30 @@ function renderMobileHome(){
   if(ingEl) ingEl.textContent = ingresosHoy > 0 ? '$'+ingresosHoy.toLocaleString('es-MX') : '$0';
 
   // Active members (memberships not expired)
-  const pagosSinPH = (pagos||[]).filter(p=>p.notas!=='__sin_pago__');
+  const estados=estadoMembresiaPorCliente(), disponibles=pvDatosListos();
   const actEl = document.getElementById('mhw-activos');
-  if(actEl) actEl.textContent = Array.from(estadoMembresiaPorCliente().values()).filter(e=>e.acceso).length;
+  if(actEl) actEl.textContent = Array.from(estados.values()).filter(e=>e.acceso).length;
 
   // Check-ins today (from cached window._mhwCheckins set by loadClasesOperativas)
   const chkEl = document.getElementById('mhw-checkins');
   if(chkEl) chkEl.textContent = typeof window._mhwCheckins === 'number' ? window._mhwCheckins : '—';
 
   // Por vencer (next 7 days)
-  const in7 = new Date(now); in7.setDate(in7.getDate()+7);
-  const porVencer = pagosSinPH.filter((p,i,a)=>{
-    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
-    if(!isLatest||!p.vence||p.vence==='—') return false;
-    const vd = new Date(p.vence+'T12:00:00');
-    return vd >= now && vd <= in7;
-  });
+  const porVencer=disponibles?personasParaRenovar(estados,clientesDB,7,'proximos'):[];
   const vencerEl = document.getElementById('mhw-vencer');
-  if(vencerEl){ vencerEl.textContent = porVencer.length; vencerEl.className = 'mhw-stat-val '+(porVencer.length>0?'amber':'green'); }
+  if(vencerEl){ vencerEl.textContent = disponibles?porVencer.length:"—"; vencerEl.className = 'mhw-stat-val '+(porVencer.length>0?'amber':'green'); }
   const vSubEl = document.getElementById('mhw-vencer-sub');
-  if(vSubEl) vSubEl.textContent = porVencer.length === 1 ? '1 membresía' : porVencer.length+' membresías';
+  if(vSubEl) vSubEl.textContent = !disponibles?'Consultar miembros':porVencer.length === 1 ? '1 membresía' : porVencer.length+' membresías';
 
   // Espejo desktop (Panel v2): KPIs "Check-ins hoy" y "Por vencer · 7d" del dashboard.
   const kChk = document.getElementById('kpi-checkins-hoy');
   if(kChk) kChk.textContent = typeof window._mhwCheckins === 'number' ? window._mhwCheckins : '—';
   const kPv = document.getElementById('kpi-porvencer-7d');
-  if(kPv) kPv.textContent = porVencer.length;
+  if(kPv) kPv.textContent = disponibles?porVencer.length:'—';
   const kPvMeta = document.getElementById('kpi-porvencer-7d-meta');
   if(kPvMeta){
-    const _pvSum = porVencer.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
-    kPvMeta.textContent = porVencer.length ? ('$'+_pvSum.toLocaleString('es-MX')+' en juego') : 'Sin urgencias esta semana';
+    const _pvSum = porVencer.reduce((s,p)=>s+(parseFloat(p.pago.monto)||0),0);
+    kPvMeta.textContent = !disponibles?'Por confirmar':porVencer.length ? ('$'+_pvSum.toLocaleString('es-MX')+' en juego') : 'Sin urgencias esta semana';
   }
 
   // Alerts
@@ -18948,23 +18838,18 @@ function renderMobileHome(){
   const alerts = [];
 
   // Urgentes: vencen mañana
-  const manana = new Date(now); manana.setDate(manana.getDate()+1);
-  const mananaStr = manana.toISOString().slice(0,10);
-  const urgentes = pagosSinPH.filter((p,i,a)=>{
-    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
-    return isLatest && p.vence === mananaStr;
-  });
-  if(urgentes.length) alerts.push({dot:'red',txt:`<b>${urgentes.map(p=>p.cliente.split(' ')[0]).slice(0,2).join(', ')}</b> vence${urgentes.length>1?'n':''} mañana`,badge:'Urgente',badgeClass:'red',action:`go('por-vencer',document.getElementById('nav-por-vencer'))`});
+  const urgentes=porVencer.filter(p=>p.diasRest===1);
+  if(urgentes.length) alerts.push({dot:'red',txt:`<b>${urgentes.map(p=>esc(p.nombre.split(' ')[0])).slice(0,2).join(', ')}</b> vence${urgentes.length>1?'n':''} mañana`,badge:'Urgente',badgeClass:'red',action:`go('por-vencer',document.getElementById('nav-por-vencer'));setPVFilter(7)`});
 
   // Por vencer en 7 días
-  const resto = porVencer.filter(p=>p.vence!==mananaStr);
-  if(resto.length) alerts.push({dot:'amber',txt:`<b>${resto.length} socio${resto.length!==1?'s':''}</b> vence${resto.length!==1?'n':''} en menos de 7 días`,badge:`${resto.length} días`,badgeClass:'amber',action:`go('por-vencer',document.getElementById('nav-por-vencer'))`});
+  const resto = porVencer.filter(p=>p.diasRest!==1);
+  if(resto.length) alerts.push({dot:'amber',txt:`<b>${resto.length} socio${resto.length!==1?'s':''}</b> vence${resto.length!==1?'n':''} en los próximos 7 días`,badge:null,badgeClass:'amber',action:`go('por-vencer',document.getElementById('nav-por-vencer'));setPVFilter(7)`});
 
   // Cumpleaños hoy
   const todayMMDD = todayStr.slice(5);
   const cumples = (pagos||[]).filter(p=>p.cumpleanos&&p.cumpleanos.slice(5)===todayMMDD).map(p=>p.cliente);
   const uniqCumples = [...new Set(cumples)];
-  if(uniqCumples.length) alerts.push({dot:'green',txt:`Hoy es el cumpleaños de <b>${uniqCumples[0].split(' ')[0]}${uniqCumples.length>1?' y '+(uniqCumples.length-1)+' más':''}</b>`,badge:null,action:null});
+  if(uniqCumples.length) alerts.push({dot:'green',txt:`Hoy es el cumpleaños de <b>${esc(uniqCumples[0].split(' ')[0])}${uniqCumples.length>1?' y '+(uniqCumples.length-1)+' más':''}</b>`,badge:null,action:null});
 
   alertsEl.innerHTML = alerts.length
     ? alerts.map(a=>`<div class="mhw-alert" ${a.action?`onclick="${a.action}"`:''}>
@@ -18972,7 +18857,7 @@ function renderMobileHome(){
         <div class="mhw-alert-txt">${a.txt}</div>
         ${a.badge?`<div class="mhw-alert-badge ${a.badgeClass}">${a.badge}</div>`:''}
       </div>`).join('')
-    : '<div style="font-size:var(--fs-xs);color:var(--text3);padding:4px 0;">Sin alertas por ahora ✓</div>';
+    : '<div style="font-size:var(--fs-xs);color:var(--text3);padding:4px 0;">'+(disponibles?'Sin alertas por ahora':'Consultando vencimientos…')+'</div>';
 }
 
 function renderDashboard(){
@@ -18984,7 +18869,7 @@ function renderDashboard(){
 
   // Clientes activos = membresías vigentes POR CLIENTE (regla canónica, no por fila)
   const _hoyKpi = new Date(); _hoyKpi.setHours(0,0,0,0);
-  const _estadoCli = estadoMembresiaPorCliente(_hoyKpi);
+  const _estadoCli = estadoMembresiaPorCliente();
   const activosMembr = [..._estadoCli.values()].filter(e=>e.acceso).length;
 
   countUp(document.getElementById('kpi-activos'), activosMembr);
@@ -19145,11 +19030,7 @@ function renderDashboard(){
   // ── Por Vencer nav badge ──
   const pvBadge=document.getElementById('pv-nav-badge');
   if(pvBadge){
-    const in7=pagos.filter(p=>{
-      if(!p.vence||p.vence==='—'||esPaseDia(p.plan)||p.congelado) return false;
-      const v=new Date(p.vence+'T12:00:00'), c=new Date(now); c.setDate(now.getDate()+7);
-      return v>=now&&v<=c;
-    }).length;
+    const in7=personasParaRenovar(_estadoCli,clientesDB,7,'proximos').length;
     if(in7>0){pvBadge.textContent=in7;pvBadge.style.display='inline-flex';}
     else pvBadge.style.display='none';
   }
@@ -20134,6 +20015,7 @@ async function saContextSwitch(gymId){
     }
     if(typeof initAuthClient==='function') initAuthClient(currentUser.jwt);
     window.CoreCobros?.reset();
+    document.querySelector('dialog[data-renovaciones]')?.close();
     MOVE_GYM_ID = gymId;
     if(currentUser) currentUser.gym_id = gymId;
 
@@ -23489,7 +23371,7 @@ async function loadPackagesForPagoModal(){
     const gymId = (typeof MOVE_GYM_ID !== 'undefined' && MOVE_GYM_ID) ? MOVE_GYM_ID : 1;
     const { data, error } = await window.supabaseClient
       .from('packages')
-      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, billing_type, max_reservas_dia')
+      .select('id, name, price_mxn, duration_days, num_classes, unlimited_classes, allow_discount, max_discount_pct, internal_only, sort_order, billing_type, max_reservas_dia, solo_primera_vez')
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
@@ -24304,7 +24186,7 @@ function renderPagos(){
 
   // Clientes vencidos / en riesgo — regla canónica por cliente (misma que el dashboard,
   // el kiosco y la app): cuenta CLIENTES, no filas, e incluye paquetes agotados.
-  const _estadoPagos = [...estadoMembresiaPorCliente(today).values()];
+  const _estadoPagos = [...estadoMembresiaPorCliente().values()];
   const vencidasCount = _estadoPagos.filter(e=>!e.acceso).length;
   const enRiesgoClientes = _estadoPagos.filter(e=>e.acceso && e.diasRest!=null && e.diasRest>=0 && e.diasRest<=7).map(e=>e.nombre);
 
@@ -26895,7 +26777,7 @@ function generarReporteMensual(){
 
   // ─ Salud de cartera — MISMAS reglas canónicas del dashboard (por cliente):
   //   activos = con acceso · por vencer = próximos 7 días · vencidos = últimos 15 días
-  const _cart = [...estadoMembresiaPorCliente(hoyMs).values()];   // hoyMs: normalizada a medianoche, igual que el dashboard
+  const _cart = [...estadoMembresiaPorCliente().values()];   // hoyMs: normalizada a medianoche, igual que el dashboard
   const cartActivos   = _cart.filter(e=>e.acceso).length;
   const cartPorVencer = _cart.filter(e=>e.acceso && e.diasRest!==null && e.diasRest>=0 && e.diasRest<=7).length;
   const cartVencidos  = _cart.filter(e=>!e.acceso && e.diasRest!==null && e.diasRest<0 && e.diasRest>=-15).length;
@@ -29050,9 +28932,9 @@ function checkMembresiasNotificaciones(){
   if(lastCheck === todayStr) return; // ya notificamos hoy
 
   // Regla canónica por cliente (misma que el dashboard/kiosco): {cliente} para el cuerpo del aviso
-  const _estadoNotif = [...estadoMembresiaPorCliente(hoy).values()];
+  const _estadoNotif = [...estadoMembresiaPorCliente().values()].filter(e=>!e.congelado);
   const urgentes = _estadoNotif.filter(e=>e.acceso && e.diasRest!=null && e.diasRest>=0 && e.diasRest<=3).map(e=>({cliente:e.nombre}));
-  const vencidos = _estadoNotif.filter(e=>!e.acceso).map(e=>({cliente:e.nombre}));
+  const vencidos = _estadoNotif.filter(e=>!e.acceso && !e.congelado).map(e=>({cliente:e.nombre}));
 
   try{
     if(urgentes.length>0){
@@ -29385,7 +29267,7 @@ function vaGetContext(){
 
   // Clientes activos/vencidos/por-vencer — regla canónica por cliente (misma que el
   // dashboard, el kiosco y la app). Antes la IA le daba al dueño cifras infladas.
-  const _estadoIA = [...estadoMembresiaPorCliente(hoy).values()];
+  const _estadoIA = [...estadoMembresiaPorCliente().values()];
   const activos    = _estadoIA.filter(e=>e.acceso).length;
   const vencidas   = _estadoIA.filter(e=>!e.acceso).length;
   const proxVencer = _estadoIA.filter(e=>e.acceso && e.diasRest!=null && e.diasRest>=0 && e.diasRest<=7).length;
@@ -30417,127 +30299,6 @@ async function exportRevenueXLSX(){
 }
 
 // ══════════════════════════════════════════════════════
-// TIER 4.1 — POR VENCER + WA RECORDATORIOS
-// ══════════════════════════════════════════════════════
-let _pvDays = 7;
-
-function setPVFilter(days){
-  _pvDays=days;
-  [7,14,30].forEach(d=>{
-    const b=document.getElementById('pv-btn-'+d);
-    if(!b) return;
-    const active=d===days;
-    b.classList.toggle('active',active);
-    b.classList.toggle('btn-outline',!active);
-  });
-  renderPorVencer();
-}
-
-function renderPorVencer(){
-  const now  = new Date(); now.setHours(0,0,0,0);
-  const cutoff = new Date(now); cutoff.setDate(now.getDate()+_pvDays);
-
-  const lista = pagos.filter(p=>{
-    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)) return false;
-    if(p.congelado) return false;
-    const v=new Date(p.vence+'T12:00:00');
-    return v>=now && v<=cutoff;
-  }).sort((a,b)=>(a.vence||'').localeCompare(b.vence||''));
-
-  // Nav badge
-  const badge = document.getElementById('pv-nav-badge');
-  if(badge){
-    if(lista.length>0){ badge.textContent=lista.length; badge.style.display='inline-flex'; }
-    else badge.style.display='none';
-  }
-
-  // Summary
-  const sumEl = document.getElementById('pv-summary');
-  if(sumEl){
-    const hoy    = lista.filter(p=>p.vence===now.toISOString().slice(0,10)).length;
-    const maña   = lista.filter(p=>{const d=new Date(now);d.setDate(d.getDate()+1);return p.vence===d.toISOString().slice(0,10);}).length;
-    const resto  = lista.length-hoy-maña;
-    const ingrEst= lista.reduce((s,p)=>s+(p.monto||0),0);
-    sumEl.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
-      ${hoy>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(239,68,68,.12);color:var(--danger);font-size:var(--fs-xs);font-weight:700;border:1px solid rgba(239,68,68,.25);">Hoy: ${hoy}</span>`:''}
-      ${maña>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(245,158,11,.12);color:var(--warn);font-size:var(--fs-xs);font-weight:700;border:1px solid rgba(245,158,11,.25);">Mañana: ${maña}</span>`:''}
-      ${resto>0?`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(74,222,128,.1);color:#4ade80;font-size:var(--fs-xs);font-weight:700;border:1px solid rgba(74,222,128,.2);">Próximos: ${resto}</span>`:''}
-      ${(typeof roleOcultaDinero==='function' && roleOcultaDinero()) ? '' : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.04);color:var(--text2);font-size:var(--fs-xs);font-weight:700;border:1px solid var(--border);">En riesgo: $${ingrEst.toLocaleString('es-MX')}</span>`}
-    </div>`;
-  }
-
-  const listEl = document.getElementById('pv-list');
-  if(!listEl) return;
-  if(!lista.length){
-    listEl.innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="empty-title">¡Todo al día!</div><div class="empty-sub">No hay membresías por vencer en los próximos ${_pvDays} días.</div></div>`;
-    return;
-  }
-
-  const gymNombre = gymConfig?.gym_nombre||'el gym';
-  listEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">` +
-    lista.map(p=>{
-      const v=new Date(p.vence+'T12:00:00');
-      const diffDays=Math.round((v-now)/(1000*60*60*24));
-      const urgColor=diffDays===0?'#f87171':diffDays<=3?'#fbbf24':diffDays<=7?'#f97316':'#4ade80';
-      const urgLabel=diffDays===0?'¡Hoy!':diffDays===1?'Mañana':`${diffDays} días`;
-      const vFmt=v.toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
-
-      // Pre-filled WA message
-      const tel=(p.telefono||'').replace(/\D/g,'');
-      const numWA=tel.length===10?'52'+tel:tel;
-      const msgWA=encodeURIComponent(buildWAMsg_PV(p.cliente, p.plan, p.vence, gymNombre));
-      const waHref=`https://wa.me/${numWA}?text=${msgWA}`;
-
-      const waBtn=numWA.length>=12
-        ?`<a href="${waHref}" target="_blank" rel="noopener"
-            style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
-                   background:rgba(37,211,102,.15);color:var(--wa);font-size:var(--fs-xs);font-weight:700;
-                   text-decoration:none;border:1px solid rgba(37,211,102,.3);white-space:nowrap;flex-shrink:0;">
-            ${WA_SVG} Recordatorio</a>`
-        :`<button onclick="abrirEditarTelefono('${esc(p.cliente)}')" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;background:var(--card2);color:var(--text3);font-size:var(--fs-xs);border:1px dashed var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Sin número</button>`;
-
-      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;border-left:3px solid ${urgColor};">
-        ${getAvatarHTML(p.cliente,40,null)}
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--fs-base);font-weight:700;margin-bottom:2px;">${esc(p.cliente)}</div>
-          <div style="font-size:var(--fs-sm);color:var(--text3);">${esc(p.plan||'—')} · vence ${vFmt}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-right:8px;">
-          <div style="font-size:var(--fs-sm);font-weight:800;color:${urgColor};">${urgLabel}</div>
-          <div style="font-size:var(--fs-xs);color:var(--text3);">$${(p.monto||0).toLocaleString('es-MX')}</div>
-        </div>
-        ${waBtn}
-      </div>`;
-    }).join('') + `</div>`;
-}
-
-function buildWAMsg_PV(nombre, plan, vence, gymNombre){
-  const nombre1=nombre?nombre.split(' ')[0]:nombre;
-  const vFmt=vence?new Date(vence+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long'}):vence;
-  return `Hola ${nombre1} \n\nTe recordamos que tu membresía *${plan||''}* en *${gymNombre}* vence el *${vFmt}*.\n\nRenueva para seguir disfrutando de todos los beneficios sin interrupciones. \n\n_Equipo ${gymNombre}_`;
-}
-
-function pvEnviarTodos(){
-  const now=new Date(); now.setHours(0,0,0,0);
-  const cutoff=new Date(now); cutoff.setDate(now.getDate()+_pvDays);
-  const lista=pagos.filter(p=>{
-    if(!p.vence||p.vence==='—'||esPaseDia(p.plan)||p.congelado) return false;
-    const v=new Date(p.vence+'T12:00:00');
-    return v>=now&&v<=cutoff;
-  });
-  const conNum=lista.filter(p=>(p.telefono||'').replace(/\D/g,'').length===10);
-  if(!conNum.length){ toast('Ninguno tiene número de WhatsApp registrado.','⚠️'); return; }
-  if(conNum.length>10){ toast(`Son ${conNum.length} clientes. Te abrirá 10 chats por vez para no saturar el navegador.`,'ℹ️'); }
-  const gymNombre=gymConfig?.gym_nombre||'el gym';
-  conNum.slice(0,10).forEach(p=>{
-    const tel=(p.telefono||'').replace(/\D/g,'');
-    const numWA='52'+tel;
-    const msg=encodeURIComponent(buildWAMsg_PV(p.cliente,p.plan,p.vence,gymNombre));
-    window.open(`https://wa.me/${numWA}?text=${msg}`,'_blank');
-  });
-  toast(`Abriendo ${Math.min(conNum.length,10)} conversaciones de WhatsApp...`,'📲');
-}
-
 // ══════════════════════════════════════════════════════
 // TIER 3.1 — MEDIDAS DE PROGRESO (ADMIN)
 // ══════════════════════════════════════════════════════
