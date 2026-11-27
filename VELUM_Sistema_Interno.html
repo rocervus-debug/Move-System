@@ -3516,6 +3516,22 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 </style>
 <link rel="stylesheet" href="/design-system/core-cobros.css">
 <link rel="stylesheet" href="/design-system/core-operacion.css">
+<style>
+.cfg-money-icon {background:var(--accent-bg);color:var(--accent)}
+.cfg-money-states {display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.7rem;margin:1rem 0}
+.cfg-money-states div,.cfg-plan-state {border:1px solid var(--border);border-radius:10px;padding:.95rem;background:var(--card2)}
+.cfg-money-states dt,.cfg-plan-state span {font-size:var(--fs-sm);color:var(--text2)}
+.cfg-money-states dd,.cfg-plan-state strong {display:block;font-size:var(--fs-base);font-weight:700;margin:.35rem 0 0;color:var(--text)}
+.cfg-money-actions {display:flex;flex-wrap:wrap;gap:.5rem}
+#stripe-connect-status p,#suscripcion-content p {margin:1rem 0;line-height:1.5}
+#cfg-panel-stripe .btn,#cfg-panel-suscripcion .btn {min-height:42px}
+#cfg-panel-suscripcion [hidden],#stripe-sync-msg:empty,#v-settings:has(.cfg-panel-active)>.sh {display:none!important}
+@media(max-width:640px){#cfg-menu-landing .cfg-item-label:has(+.cfg-item-desc){min-width:0} #cfg-plan-label{white-space:normal}}
+</style>
+<link rel="stylesheet" href="/design-system/core-agenda-admin.css">
+<link rel="stylesheet" href="/design-system/core-paquetes.css">
+<script src="/core-paquetes.js"></script>
+<script defer src="/core-hoy.js"></script>
 <script defer src="/core-ficha.js"></script>
 <script defer src="/core-cobros.js"></script>
 <script defer src="/core-acceso.js"></script>
@@ -3921,6 +3937,29 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
     <!-- ══ DASHBOARD ══ -->
     <div class="view active" id="v-dashboard">
 
+      <section id="core-hoy" aria-labelledby="core-hoy-titulo" hidden>
+        <header class="core-hoy-cabecera">
+          <h2 id="core-hoy-titulo">Hoy</h2><span id="core-hoy-fecha"></span>
+        </header>
+        <div class="core-hoy-grid">
+          <section class="core-hoy-clase" aria-label="Próxima clase">
+            <div class="core-hoy-encabezado"><h3>Próxima clase</h3>
+              <button class="core-hoy-link" onclick="go('asistencia',document.getElementById('nav-asistencia'))">Agenda de hoy <span aria-hidden="true">→</span></button>
+            </div>
+            <div id="gym-hoy-body"></div>
+          </section>
+          <section class="core-hoy-renovaciones" aria-labelledby="core-renovaciones-titulo">
+            <h3 id="core-renovaciones-titulo">Renovaciones</h3>
+            <button type="button" data-estado="por-vencer" onclick="abrirRenovacionesHoy(this.dataset.estado)">
+              <span>Por vencer · 14 días</span><strong id="core-hoy-por-vencer">—</strong><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" data-estado="vencido" onclick="abrirRenovacionesHoy(this.dataset.estado)">
+              <span>Acceso vencido o agotado</span><strong id="core-hoy-vencido">—</strong><span aria-hidden="true">›</span>
+            </button>
+          </section>
+        </div>
+      </section>
+
       <!-- ══ STRIP DE STUDIOS — KPIs boutique (solo vertical studios) ══ -->
       <div id="studios-dash-strip" style="display:none;"></div>
 
@@ -4094,17 +4133,10 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <div class="kpi-meta" id="kpi-porvencer-7d-meta">Membresías esta semana</div>
         </div>
       </div>
-      <!-- ══ EL PULSO (solo gym) — Hoy + Transacciones recientes. renderGymPulso() lo muestra/oculta. ══ -->
+      <!-- Cumpleaños y transacciones recientes del gimnasio -->
       <div id="gym-pulso" style="display:none;margin-bottom:18px;">
         <div id="gym-cumple"></div>
-        <div id="gym-pulso-grid" style="display:grid;grid-template-columns:1.35fr 1fr;gap:14px;align-items:start;">
-          <div class="card" style="padding:15px 17px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <span style="font-size:var(--fs-base);font-weight:800;color:var(--text);">Hoy</span>
-              <span onclick="go('horario',document.getElementById('nav-horario'))" style="font-size:var(--fs-sm);color:var(--accent);cursor:pointer;">Ver semana →</span>
-            </div>
-            <div id="gym-hoy-body"></div>
-          </div>
+        <div>
           <div class="card" style="padding:15px 17px;border-color:color-mix(in srgb, var(--accent) 18%, transparent);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
               <span style="font-size:var(--fs-base);font-weight:800;color:var(--text);">Transacciones recientes</span>
@@ -4610,25 +4642,27 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
     <div class="view" id="v-marketing">
       <div class="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--accent)"><div class="kpi-label">Leads del Mes</div><div class="kpi-value" id="mkt-leads">0</div><div class="kpi-meta">Del CRM</div></div>
-        <div class="kpi-card" style="--kpi-color:#7c3aed"><div class="kpi-label">Contenidos Publicados</div><div class="kpi-value" id="mkt-contenidos">0</div><div class="kpi-meta" id="mkt-contenidos-meta">Este mes</div></div>
+        <div class="kpi-card" style="--kpi-color:#7c3aed"><div class="kpi-label">Contenidos programados</div><div class="kpi-value" id="mkt-contenidos">0</div><div class="kpi-meta" id="mkt-contenidos-meta">Este mes</div></div>
         <div class="kpi-card" style="--kpi-color:var(--ok)"><div class="kpi-label">Campañas Activas</div><div class="kpi-value" id="mkt-campanas">0</div><div class="kpi-meta" id="mkt-campanas-meta">En curso</div></div>
         <div class="kpi-card" style="--kpi-color:var(--warn)"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value" id="mkt-solicitudes">0</div><div class="kpi-meta">Sin responder</div></div>
       </div>
       <div class="card">
         <div class="card-header" style="flex-wrap:wrap;gap:10px;">
-          <div class="card-title" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Calendario de Contenido</div>
+          <div class="card-title" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <span class="mkt-cal-label">Calendario de contenido</span><span class="mkt-agenda-only">Agenda de contenido</span></div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div class="cal-mkt-nav">
-              <button class="btn btn-outline btn-sm" onclick="mktPrevMonth()" style="padding:3px 10px;font-size:var(--fs-base);">‹</button>
+              <button class="btn btn-outline btn-sm" aria-label="Mes anterior" onclick="mktPrevMonth()" style="padding:3px 10px;font-size:var(--fs-base);">‹</button>
               <span id="mkt-mes-label" style="font-size:var(--fs-base);font-weight:800;min-width:140px;text-align:center;color:var(--text1);">—</span>
-              <button class="btn btn-outline btn-sm" onclick="mktNextMonth()" style="padding:3px 10px;font-size:var(--fs-base);">›</button>
+              <button class="btn btn-outline btn-sm" aria-label="Mes siguiente" onclick="mktNextMonth()" style="padding:3px 10px;font-size:var(--fs-base);">›</button>
             </div>
             <button class="btn btn-outline btn-sm" onclick="mktGoToday()" style="font-size:var(--fs-sm);">Hoy</button>
-            <button class="btn btn-primary btn-sm" onclick="openModal('contenido')">+ Agregar</button>
+            <button class="btn btn-primary btn-sm" onclick="mktAgregarEnMes()">Agregar contenido</button>
           </div>
         </div>
+        <p class="mkt-agenda-only" id="mkt-agenda-summary" role="status"></p>
+        <label class="mkt-agenda-only mkt-agenda-options"><input type="checkbox" id="mkt-incluir-fechas"> Ver días con festivos o cumpleaños</label>
         <div class="cal-grid" id="cal-grid"></div>
-        <div style="display:flex;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center;">
+        <div class="mkt-cal-legend" style="display:flex;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center;">
           <span class="cal-post cp-reel" style="display:inline;">Reel</span>
           <span class="cal-post cp-ig" style="display:inline;">Feed</span>
           <span class="cal-post cp-story" style="display:inline;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Story</span>
@@ -4768,9 +4802,6 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
       <div class="sh">
         <div class="sh-title">Paquetes & Servicios</div>
         <button class="btn btn-primary" onclick="openModal('paquete')">+ Crear paquete</button>
-      </div>
-      <div style="background:var(--accent-bg);border:1px solid rgba(18,70,96,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:var(--fs-sm);color:var(--accent);display:flex;align-items:center;gap:8px;">
-        <span>◈</span> <strong>Tu catálogo de planes y servicios.</strong> Al registrar un pago, el precio se llena solo al elegir el plan. Crea y edita aquí cuantos necesites.
       </div>
       <div id="paquetes-host"></div>
     </div>
@@ -5039,7 +5070,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
              socio / mi equipo / mi cuenta / lo técnico. Los paneles y openSettingsPanel() no cambian. -->
 
         <!-- Menú compacto (jul-2026): 4 grupos; lo técnico vive plegado en Avanzado.
-             Los paneles fusionados (metas/suscripcion/seguridad) redirigen vía alias en openSettingsPanel(). -->
+             Los paneles fusionados (metas/seguridad) redirigen vía alias en openSettingsPanel(). -->
 
         <div class="cfg-group-label">Mi negocio</div>
         <div class="cfg-menu-group">
@@ -5057,13 +5088,17 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           </button>
         </div>
 
-        <div class="cfg-group-label">Cobros</div>
+        <div class="cfg-group-label">Pagos</div>
         <div class="cfg-menu-group">
-<button type="button" class="cfg-menu-item" style="border-bottom:none;" onclick="openSettingsPanel('stripe')">
-            <span class="cfg-item-icon" style="background:rgba(99,102,241,.13);color:#6366f1;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
-            <span class="cfg-item-label">Pagos y suscripción</span>
-            <span class="cfg-item-desc" id="suscripcion-status-desc">Cobros con tarjeta, tu plan VELUM y facturación</span>
-            <span class="cfg-chevron">›</span>
+          <button type="button" class="cfg-menu-item" onclick="openSettingsPanel('stripe')">
+            <span class="cfg-item-icon cfg-money-icon"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 10h20M6 15h4"/></svg></span>
+            <span class="cfg-item-label">Recibir pagos de mis clientes</span>
+            <span class="cfg-item-desc">Tarjetas y depósitos a mi banco</span><span class="cfg-chevron">›</span>
+          </button>
+          <button type="button" class="cfg-menu-item" onclick="openSettingsPanel('suscripcion')">
+            <span class="cfg-item-icon cfg-money-icon"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM8 8h8M8 12h6"/></svg></span>
+            <span class="cfg-item-label" id="cfg-plan-label">Mi plan VELUM</span>
+            <span class="cfg-item-desc">Mi suscripción y mis datos fiscales</span><span class="cfg-chevron">›</span>
           </button>
         </div>
 
@@ -5227,8 +5262,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         <div class="card">
           <div class="settings-section" style="margin-bottom:0;">
             <div class="settings-section-title">Catálogo de Planes</div>
-            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:12px;">Al registrar un pago, el precio se llena automático al seleccionar el plan. Cambios sincronizados con la base de datos.</div>
-            <div id="planes-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:12px;">Los planes publicados también aparecen en la tienda del gimnasio.</div>
+            <div id="planes-lista"></div>
 
             <!-- Domiciliaciones activas (atletas con cobro mensual automático) -->
             <div id="domiciliaciones-wrap" style="margin:18px 0 16px;">
@@ -5254,7 +5289,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
             </div>
 
             <!-- Acceso guiado: crea un paquete paso a paso -->
-            <button class="btn btn-primary" onclick="openModal('paquete')" style="width:100%;justify-content:center;margin-bottom:14px;">◈ Crear paquete paso a paso</button>
+            <button class="btn btn-primary vplan-create" onclick="openModal('paquete')" style="width:100%;justify-content:center;margin-bottom:14px;">Crear paquete paso a paso</button>
 
             <details style="margin-bottom:4px;">
               <summary style="cursor:pointer;font-size:var(--fs-sm);color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:600;list-style:none;user-select:none;padding:6px 0;">Modo avanzado — agregar en una fila</summary>
@@ -5800,31 +5835,35 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
         <div class="card" id="stripe-settings-card">
           <div class="settings-section" style="margin-bottom:0;">
-            <div class="settings-section-title">Pagos en Línea — Stripe</div>
-            <div id="stripe-connect-status">
+            <div class="card-title">Recibir pagos de mis clientes</div>
+            <div id="stripe-connect-status" role="status">
               <div style="color:var(--text3);font-size:var(--fs-sm);">Cargando estado de Stripe...</div>
             </div>
+            <div id="stripe-sync-msg" class="op-caption" role="status"></div>
           </div>
         </div>
-        <!-- Suscripción y facturación (fusionado desde el panel Mi Suscripción) -->
+      </div><!-- /cfg-panel-stripe -->
+
+      <div class="cfg-panel" id="cfg-panel-suscripcion">
+        <div class="cfg-panel-header"><button class="cfg-back-btn" onclick="closeSettingsPanel()">‹ Configuración</button></div>
         <div class="card">
           <div class="card-head">
             <div>
-              <h2 class="card-title">Mi Suscripción VELUM</h2>
+              <h2 class="card-title" id="cfg-plan-title">Mi plan VELUM</h2>
               <p style="font-size:var(--fs-sm);color:var(--text2);margin-top:6px;line-height:1.5;">
-                Tu plan, método de pago e historial de facturación.
+                Mensualidad del sistema de tu gimnasio.
               </p>
             </div>
           </div>
           <div style="padding:0 20px 20px;">
-            <div id="suscripcion-content">
+            <div id="suscripcion-content" role="status">
               <div style="color:var(--text3);font-size:var(--fs-sm);padding:8px 0;">Cargando suscripción…</div>
             </div>
           </div>
         </div>
 
         <!-- Datos de facturación (CFDI) -->
-        <div class="card" style="margin-top:16px;">
+        <div id="cfg-fiscal-card" class="card" style="margin-top:16px;">
           <div class="card-head">
             <div>
               <h2 class="card-title">Datos de facturación (CFDI)</h2>
@@ -5834,7 +5873,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
             </div>
           </div>
           <div style="padding:0 20px 20px;">
-            <fieldset id="fis-fields" disabled style="border:0;padding:0;margin:0;min-width:0;">
+            <fieldset id="fis-fields" oninput="cambioFiscal()" onchange="cambioFiscal()" disabled style="border:0;padding:0;margin:0;min-width:0;">
               <div class="field"><label for="fis-rfc">RFC</label><input id="fis-rfc" class="settings-input" maxlength="13" placeholder="XAXX010101000" style="text-transform:uppercase;"/></div>
               <div class="field"><label for="fis-razon">Razón social / Nombre</label><input id="fis-razon" class="settings-input" placeholder="Como aparece en tu Constancia de Situación Fiscal"/></div>
               <div class="field-grid">
@@ -5880,7 +5919,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
 
         <!-- Cancelar suscripción -->
-        <div class="card" style="margin-top:16px;border-color:rgba(239,68,68,.18);">
+        <div hidden id="cfg-cancel-plan" class="card" style="margin-top:16px;border-color:rgba(239,68,68,.18);">
           <div class="card-head">
             <div>
               <h2 class="card-title" style="color:var(--danger);">Cancelar suscripción</h2>
@@ -5891,11 +5930,11 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           </div>
           <div style="padding:0 20px 20px;">
             <button class="btn btn-outline" style="width:100%;color:var(--danger);border-color:rgba(239,68,68,.35);" onclick="cancelarSuscripcion(this)">Cancelar mi suscripción</button>
-            <div id="cancel-msg" style="font-size:var(--fs-xs);margin-top:10px;display:none;"></div>
+            <div id="cancel-msg" role="status" style="font-size:var(--fs-xs);margin-top:10px;display:none;"></div>
           </div>
         </div>
       
-      </div><!-- /cfg-panel-stripe -->
+      </div><!-- /cfg-panel-suscripcion -->
 
       <!-- ══ PANEL: Push Broadcast ══ -->
       <div class="cfg-panel" id="cfg-panel-push-broadcast">
@@ -6112,13 +6151,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ══ SUPER ADMIN ══ -->
     <div class="view" id="v-superadmin">
-      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:var(--fs-xl);"></span>
-        <div>
-          <div style="font-size:var(--fs-sm);font-weight:700;color:var(--danger);">Modo Super Admin</div>
-          <div style="font-size:var(--fs-sm);color:var(--text3);">Acceso restringido. Solo visible para usuarios con rol superadmin.</div>
-        </div>
-      </div>
+      <div class="sa-context-bar"><span>Gimnasio activo</span><strong id="sa-operating-gym" aria-live="polite">Consultando…</strong></div>
       <section class="card" style="margin-bottom:16px;padding:16px;">
         <h2 class="card-title">Solicitudes de CFDI pendientes</h2>
         <p>Marca la solicitud como atendida cuando hayas enviado la factura al gimnasio.</p>
@@ -6133,7 +6166,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
         </div>
         <div id="sa-saas-metrics"></div>
       </div>
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card sa-directory" style="margin-bottom:16px;">
         <div class="card-header">
           <div class="card-title" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg> Gyms Registrados</div>
           <div style="display:flex;align-items:center;gap:8px;" id="sa-gyms-header-actions"></div>
@@ -8683,6 +8716,7 @@ function ensureGymId(){
 let gymConfig  = {}; // loaded from gym_config table
 let leads      = []; // loaded from Supabase
 let coaches    = []; // loaded from Supabase
+let contextoPagosInicio=null, contextoClientesInicio=null;
 let pagos      = []; // loaded from Supabase
 let clientesDB = []; // loaded from clientes table
 let campanas   = []; // loaded from Supabase
@@ -9131,105 +9165,134 @@ function startVoluntary2FAEnrollment(){
 }
 
 // ── Mi Suscripción VELUM (Stripe Billing) ──
+function contextoPagoGym(){
+  return {user:currentUser, gym_id:currentUser?.gym_id, vista:MOVE_GYM_ID, jwt:currentUser?.jwt,
+    rol:currentUser?.rol, db:window.supabaseClient};
+}
+
+function pagoGymVigente(ctx){
+  return !!ctx?.user && currentUser===ctx.user && currentUser.gym_id===ctx.gym_id &&
+    currentUser.jwt===ctx.jwt && currentUser.rol===ctx.rol && MOVE_GYM_ID===ctx.vista;
+}
+
+function administrarPagosGym(){
+  return !!currentUser?.jwt && ['admin','superadmin'].includes(currentUser.rol) && !_pvImpersonando();
+}
+
+function estadoPlanVelum(estado){
+  const nombres={active:'Activa',trialing:'En prueba',past_due:'Pago pendiente',unpaid:'Impago',canceled:'Cancelada',cancelled:'Cancelada',incomplete:'Activación pendiente',incomplete_expired:'Activación vencida',paused:'En pausa',pending:'Sin pago',owner:'Cortesía'};
+  return Object.hasOwn(nombres,estado)?nombres[estado]:'Por confirmar';
+}
+
+function tituloPlanVelum(g){
+  const plan=String(g?.subscription_plan||g?.plan||'').toLowerCase();
+  if(plan==='owner' || g?.subscription_status==='owner') return 'Mi plan VELUM · Cortesía';
+  if(!Object.hasOwn(PLAN_LIMITS,plan) && plan!=='core') return 'Mi plan VELUM';
+  return 'Mi plan VELUM · $'+planPrecio(plan).toLocaleString('es-MX')+' MXN al mes';
+}
+
+async function datosPagoGym(usuario, columnas){
+  const res=await fetch(supabaseUrl+'/rest/v1/gyms?id=eq.'+encodeURIComponent(usuario.gym_id)+'&select='+columnas,{
+    headers:{apikey:window._ANON_KEY||'',Authorization:'Bearer '+usuario.jwt},cache:'no-store'
+  });
+  if(!res.ok) throw Error();
+  const [gym]=await res.json();
+  if(!gym) throw Error();
+  return gym;
+}
+
+let lecturaMenuPlan=0;
+async function actualizarTituloMenuPlan(){
+  const el=document.getElementById('cfg-plan-label'), ctx=contextoPagoGym(), lectura=++lecturaMenuPlan;
+  el.textContent='Mi plan VELUM';
+  if(!ctx.gym_id || !ctx.jwt || !roleAllowsSettings('suscripcion') || _pvImpersonando()) return;
+  try{
+    const gym=await datosPagoGym(ctx,'subscription_plan,plan,subscription_status');
+    if(lectura===lecturaMenuPlan && pagoGymVigente(ctx)) el.textContent=tituloPlanVelum(gym);
+  }catch{/* El menú conserva el nombre del panel hasta confirmar el plan. */}
+}
+
+let lecturaPlan=0;
 async function renderSuscripcion(){
-  const el = document.getElementById('suscripcion-content');
-  if(!el) return;
-  el.innerHTML = `<div style="color:var(--text3);font-size:var(--fs-sm);padding:8px 0;">Cargando suscripción…</div>`;
-  let g = null;
-  try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${currentUser.gym_id}&select=nombre,subscription_plan,subscription_status,subscription_current_period_end,stripe_customer_id`, {
-      headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
-    });
-    const rows = await res.json();
-    g = (Array.isArray(rows) && rows[0]) || null;
-  } catch(e){ console.error('renderSuscripcion:', e); }
-  if(!g){ el.innerHTML = `<div style="color:var(--danger);font-size:var(--fs-sm);">No se pudo cargar tu suscripción.</div>`; return; }
-
-  const plan = (g.subscription_plan || 'max').toLowerCase();
-  const status = (g.subscription_status || '').toLowerCase();
-  const isOwner = plan === 'owner' || status === 'owner';
-  const planInfo = { max: { nombre:'VELUM Max', precio:planPrecioTxt('max'), color:'#00D4FF' }, pro: { nombre:'VELUM Pro', precio:planPrecioTxt('pro'), color:'#fbbf24' }, owner: { nombre:'Cortesía VELUM', precio:planPrecioTxt('owner'), color:'#00ff80' } };
-  const info = isOwner ? planInfo.owner : (planInfo[plan] || planInfo.max);
-
-  // Estado visual
-  const statusBadge = isOwner
-    ? `<span style="background:rgba(0,255,128,.12);color:var(--ok);font-size:var(--fs-sm);font-weight:700;padding:3px 10px;border-radius:999px;">CORTESÍA</span>`
-    : status === 'active'
-      ? `<span style="background:rgba(0,255,128,.12);color:var(--ok);font-size:var(--fs-sm);font-weight:700;padding:3px 10px;border-radius:999px;">ACTIVA</span>`
-      : status === 'past_due'
-        ? `<span style="background:rgba(251,191,36,.12);color:var(--warn);font-size:var(--fs-sm);font-weight:700;padding:3px 10px;border-radius:999px;">PAGO PENDIENTE</span>`
-        : status === 'canceled'
-          ? `<span style="background:rgba(239,68,68,.12);color:var(--danger);font-size:var(--fs-sm);font-weight:700;padding:3px 10px;border-radius:999px;">CANCELADA</span>`
-          : `<span style="background:rgba(255,255,255,.08);color:var(--text3);font-size:var(--fs-sm);font-weight:700;padding:3px 10px;border-radius:999px;">${esc((status||'—').toUpperCase())}</span>`;
-
-  const periodEnd = g.subscription_current_period_end
-    ? new Date(g.subscription_current_period_end).toLocaleDateString('es-MX', {day:'numeric',month:'long',year:'numeric'})
-    : null;
-
-  let html = `
-    <div style="background:color-mix(in srgb, var(--accent) 5%, transparent);border:1px solid ${info.color}33;border-radius:12px;padding:18px;margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:var(--fs-sm);color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Plan actual</div>
-          <div style="font-size:var(--fs-xl);font-weight:800;color:${info.color};">${info.nombre}</div>
-          <div style="font-size:var(--fs-sm);color:var(--text2);margin-top:2px;">${info.precio}</div>
-        </div>
-        ${statusBadge}
-      </div>
-      ${periodEnd && !isOwner ? `<div style="margin-top:12px;font-size:var(--fs-xs);color:var(--text2);">${status==='canceled'?'Acceso hasta':'Próximo cobro'}: <strong>${periodEnd}</strong></div>` : ''}
-    </div>`;
-
-  if (isOwner) {
-    html += `<div style="font-size:var(--fs-xs);color:var(--text2);line-height:1.6;padding:10px 14px;background:rgba(0,255,128,.05);border:1px solid rgba(0,255,128,.15);border-radius:10px;">
-      ✦ Tu cuenta es de cortesía VELUM con acceso completo sin costo. No tienes facturación activa.
-    </div>`;
-  } else if (g.stripe_customer_id) {
-    html += `
-      <button class="btn btn-primary" style="width:100%;" onclick="openBillingPortal()">Gestionar suscripción y facturación →</button>
-      <p style="font-size:var(--fs-sm);color:var(--text3);margin-top:10px;line-height:1.5;">
-        Desde el portal de Stripe puedes actualizar tu tarjeta, ver/descargar tus facturas, o cancelar tu suscripción.
-      </p>`;
-    if (status === 'past_due') {
-      html = `<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px;margin-bottom:14px;font-size:var(--fs-sm);color:var(--warn);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2.5px;margin-right:4px;"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg> Tu último pago falló. Actualiza tu método de pago para no perder acceso.</div>` + html;
-    }
-  } else {
-    html += `<div style="font-size:var(--fs-sm);color:var(--text2);">No hay información de facturación. Si crees que es un error, contacta a soporte@myvelum.app</div>`;
+  const el=document.getElementById('suscripcion-content'), card=document.getElementById('cfg-cancel-plan');
+  const usuario=contextoPagoGym(), lectura=++lecturaPlan, gym=usuario?.gym_id;
+  const vigente=()=>lectura===lecturaPlan && pagoGymVigente(usuario) && !_pvImpersonando();
+  card.hidden=true;
+  const titulo=document.getElementById('cfg-plan-title');
+  titulo.textContent='Mi plan VELUM';
+  if(!gym || !roleAllowsSettings('suscripcion') || _pvImpersonando()){el.textContent='Disponible en la cuenta del gimnasio.';return;}
+  el.textContent='Consultando tu plan…';
+  let g;
+  try{g=await datosPagoGym(usuario,'subscription_plan,plan,subscription_status,subscription_current_period_end,stripe_customer_id,stripe_subscription_id');}
+  catch{
+    if(vigente()) el.innerHTML='<p>Tu plan está por confirmar.</p><button class="btn btn-outline" onclick="renderSuscripcion()">Volver a consultar</button>';
+    return;
   }
-
-  el.innerHTML = html;
-
-  // Actualizar el desc del menú
-  const desc = document.getElementById('suscripcion-status-desc');
-  if (desc) desc.textContent = isOwner ? 'Cortesía · acceso completo' : `${info.nombre} · ${status||'—'}`;
-
+  if(!vigente()) return;
+  titulo.textContent=tituloPlanVelum(g);
+  const cortesia=(g.subscription_plan||g.plan)==='owner' || g.subscription_status==='owner';
+  const estado=cortesia?'Cortesía':estadoPlanVelum(g.subscription_status);
+  const fin=g.subscription_current_period_end?new Date(g.subscription_current_period_end):null;
+  const fecha=fin && Number.isFinite(fin.getTime())?fin.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric',timeZone:'America/Mexico_City'}):'';
+  el.innerHTML='<div class="cfg-plan-state"><span>Estado de mi plan</span><strong>'+estado+'</strong></div>';
+  if(cortesia){el.insertAdjacentHTML('beforeend','<p>Tu gimnasio tiene acceso de cortesía.</p>');return;}
+  if(fecha) el.insertAdjacentHTML('beforeend','<p>Fin del periodo registrado · '+fecha+'</p>');
+  if(g.subscription_status==='past_due') el.insertAdjacentHTML('beforeend','<p>Revisa tu último pago y el método de pago de la suscripción.</p>');
+  if(!administrarPagosGym()) return;
+  if(g.stripe_customer_id) el.insertAdjacentHTML('beforeend','<button class="btn btn-primary" onclick="openBillingPortal(this)">Gestionar mi suscripción en Stripe</button>');
+  else el.insertAdjacentHTML('beforeend','<p>Para revisar la facturación de esta cuenta, escribe a soporte@myvelum.app.</p>');
+  if(g.stripe_subscription_id && !['canceled','cancelled','incomplete_expired'].includes(g.subscription_status)){
+    const btn=card.querySelector('button'), msg=document.getElementById('cancel-msg');
+    if(card.dataset.sub!==g.stripe_subscription_id){
+      card.dataset.sub=g.stripe_subscription_id;
+      btn.disabled=false;btn.textContent='Cancelar mi suscripción';msg.textContent='';msg.style.display='none';
+    }
+    card.hidden=false;
+  }
 }
 
 // ── Cancelar suscripción (self-service, al final del periodo) ──
 async function cancelarSuscripcion(btn){
+  const usuario=contextoPagoGym();
+  const vigente=()=>pagoGymVigente(usuario) && administrarPagosGym();
+  if(!vigente() || btn.disabled || document.getElementById('cfg-cancel-plan').hidden) return;
   const ok = await confirmDialog('¿Cancelar tu suscripción de VELUM? Conservarás el acceso hasta el final del periodo ya pagado y no se te volverá a cobrar.',
     { title:'Cancelar suscripción', danger:true, confirmText:'Sí, cancelar', icon:'' });
-  if(!ok) return;
+  if(!ok || !vigente()) return;
   const msg = document.getElementById('cancel-msg');
   btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Cancelando…';
   try{
     const res = await fetch(`${supabaseUrl}/functions/v1/velum-cancel-subscription`, {
       method:'POST',
-      headers:{ 'Content-Type':'application/json', 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
+      headers:{ 'Content-Type':'application/json', 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (usuario.jwt||'') }
     });
     const data = await res.json();
+    if(!vigente()) return;
     if(!res.ok || !data.ok) throw new Error(data.error || 'No se pudo cancelar.');
     const fecha = data.period_end ? new Date(data.period_end).toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) : null;
     if(msg){ msg.style.display='block'; msg.style.color='var(--ok)'; msg.textContent = fecha ? `Listo. Tu suscripción se cancelará el ${fecha}; conservas el acceso hasta entonces.` : 'Listo. Tu suscripción quedó programada para cancelarse al final del periodo.'; }
     btn.textContent = 'Cancelación programada ✓';
     toast('Suscripción cancelada al final del periodo','✓');
   }catch(e){
-    if(msg){ msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent = 'Error: ' + (e.message||e); }
+    if(!vigente()) return;
+    if(msg){ msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent = 'No se pudo confirmar la cancelación. Revisa tu suscripción en Stripe.'; }
     btn.disabled=false; btn.textContent = orig;
   }
 }
 
 // ── Datos fiscales (CFDI) — recolectar ahora, timbrar después ──
 let fiscalLoad = 0;
+let fiscalSaved='', fiscalUser=null;
+function fiscalValues(){
+  return JSON.stringify(Array.from(document.querySelectorAll('#fis-fields input,#fis-fields select'),el=>el.value));
+}
+function cambioFiscal(){
+  const fields=document.getElementById('fis-fields');
+  if(fields.disabled || !administrarPagosGym() || !pagoGymVigente(fiscalUser)) return;
+  const dirty=fiscalValues()!==fiscalSaved;
+  fiscalMessage(dirty?'Cambios sin guardar.':'Sin cambios pendientes.',dirty?'var(--warn)':'var(--text2)');
+}
+
 
 function fiscalMessage(text, color){
   const msg = document.getElementById('fis-msg');
@@ -9241,11 +9304,15 @@ function fiscalMessage(text, color){
 async function renderFiscalData(){
   const fields = document.getElementById('fis-fields');
   const retry = document.getElementById('fis-retry');
-  if (!currentUser?.gym_id || !['admin','superadmin'].includes(currentUser.rol)) return;
-  const gymId = String(currentUser.gym_id);
-  if (fields.dataset.saving === gymId) return;
+  if (!currentUser?.gym_id || !administrarPagosGym()) return;
+  const usuario=contextoPagoGym();
+  const gymId = String(usuario.gym_id);
+  if (pagoGymVigente(fiscalUser) && fields.dataset.gymId===gymId){
+    if(fields.dataset.saving===gymId || (!fields.disabled && fiscalValues()!==fiscalSaved)) return;
+  }
+  fiscalUser=usuario;
   const load = ++fiscalLoad;
-  const stillCurrent = () => load === fiscalLoad && String(currentUser?.gym_id) === gymId;
+  const stillCurrent = () => load === fiscalLoad && pagoGymVigente(usuario) && administrarPagosGym();
   delete fields.dataset.saving;
   const gymChanged = fields.dataset.gymId !== gymId;
   fields.dataset.gymId = gymId;
@@ -9254,6 +9321,7 @@ async function renderFiscalData(){
   setBtnLoading(fields.querySelector('button'), false);
   if (gymChanged){
     document.getElementById('fis-periodo').value = '';
+    document.querySelector('#cfg-fiscal-card form button[type=submit]').disabled=false;
     document.getElementById('fis-solicitud-msg').textContent = '';
   }
   cargarSolicitudesFiscales();
@@ -9263,7 +9331,7 @@ async function renderFiscalData(){
   fiscalMessage('Cargando datos fiscales…', 'var(--text2)');
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${gymId}&select=nombre,rfc,razon_social,regimen_fiscal,uso_cfdi,cp_fiscal,email_fiscal`, {
-      headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (currentUser.jwt||'') }
+      headers: { 'apikey': window._ANON_KEY||'', 'Authorization': 'Bearer ' + (usuario.jwt||'') }
     });
     if (!res.ok) throw Error();
     const [gym] = await res.json();
@@ -9283,7 +9351,8 @@ async function renderFiscalData(){
       field.value = value || '';
     }
     fields.disabled = false;
-    fiscalMessage('', '');
+    fiscalSaved=fiscalValues();
+    fiscalMessage('Sin cambios pendientes.', 'var(--text2)');
   } catch {
     if (!stillCurrent()) return;
     fiscalMessage('No se pudieron cargar los datos fiscales.', 'var(--warn)');
@@ -9294,7 +9363,7 @@ async function renderFiscalData(){
 async function saveFiscalData(btn){
   const fields = document.getElementById('fis-fields');
   const gymId = String(currentUser?.gym_id);
-  if (btn?.disabled || fields.disabled || fields.dataset.gymId !== gymId) return;
+  if (!administrarPagosGym() || !pagoGymVigente(fiscalUser) || btn?.disabled || fields.disabled || fields.dataset.gymId !== gymId) return;
   const rfc = document.getElementById('fis-rfc').value.trim().toUpperCase();
   if (rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc)) {
     fiscalMessage('El RFC no parece válido. Revísalo.', 'var(--warn)');
@@ -9306,11 +9375,13 @@ async function saveFiscalData(btn){
     if (!input.reportValidity()) return;
   }
   const load = fiscalLoad;
+  const usuario=contextoPagoGym();
   fields.dataset.saving = gymId;
+  fiscalMessage('Guardando datos fiscales…','var(--text2)');
   fields.disabled = true;
   setBtnLoading(btn, true);
   try {
-    const { error } = await window.supabaseClient.rpc('update_gym_fiscal_data', {
+    const { error } = await usuario.db.rpc('update_gym_fiscal_data', {
       p_rfc: rfc,
       p_razon: document.getElementById('fis-razon').value,
       p_regimen: document.getElementById('fis-regimen').value,
@@ -9319,16 +9390,17 @@ async function saveFiscalData(btn){
       p_email: document.getElementById('fis-email').value
     });
     if (error) throw error;
-    if (load === fiscalLoad && String(currentUser?.gym_id) === gymId) {
+    if (load === fiscalLoad && pagoGymVigente(usuario)) {
       document.getElementById('fis-rfc').value = rfc;
+      fiscalSaved=fiscalValues();
       fiscalMessage('Datos fiscales guardados.', 'var(--ok)');
     }
   } catch {
-    if (load === fiscalLoad && String(currentUser?.gym_id) === gymId) {
+    if (load === fiscalLoad && pagoGymVigente(usuario)) {
       fiscalMessage('No se pudieron guardar los datos. Revisa la conexión y vuelve a intentarlo.', 'var(--warn)');
     }
   } finally {
-    if (load === fiscalLoad) {
+    if (load === fiscalLoad && pagoGymVigente(usuario)) {
       delete fields.dataset.saving;
       fields.disabled = false;
       setBtnLoading(btn, false);
@@ -9338,16 +9410,15 @@ async function saveFiscalData(btn){
 
 async function cargarSolicitudesFiscales(gyms){
   const bandeja = Array.isArray(gyms);
-  const usuario = currentUser;
+  const usuario = contextoPagoGym();
   if(!usuario?.gym_id || !['admin','superadmin'].includes(usuario.rol) || (bandeja && usuario.rol !== 'superadmin')) return;
   const contenedor = document.getElementById(bandeja ? 'sa-cfdi' : 'fis-solicitudes');
   const peticion = String(Number(contenedor.dataset.peticion || 0) + 1);
   contenedor.dataset.peticion = peticion;
-  const gymId = usuario.gym_id;
-  const vigente = () => currentUser === usuario && currentUser.gym_id === gymId && contenedor.dataset.peticion === peticion;
+  const vigente = () => pagoGymVigente(usuario) && contenedor.dataset.peticion === peticion;
   contenedor.textContent = 'Cargando solicitudes…';
   try{
-    let consulta = window.supabaseClient.from('solicitudes_cfdi_suscripcion').select('id,gym_id,periodo,atendida');
+    let consulta = usuario.db.from('solicitudes_cfdi_suscripcion').select('id,gym_id,periodo,atendida');
     consulta = bandeja ? consulta.eq('atendida',false).order('creada_en').limit(50)
                        : consulta.eq('gym_id',usuario.gym_id).order('periodo',{ascending:false}).limit(12);
     const {data,error} = await consulta;
@@ -9374,7 +9445,7 @@ async function cargarSolicitudesFiscales(gyms){
           if(!vigente() || boton.disabled) return;
           boton.disabled = true;
           try{
-            const {error} = await window.supabaseClient.from('solicitudes_cfdi_suscripcion').update({atendida:true}).eq('id',fila.id).eq('atendida',false);
+            const {error} = await usuario.db.from('solicitudes_cfdi_suscripcion').update({atendida:true}).eq('id',fila.id).eq('atendida',false);
             if(error) throw error;
             if(vigente()) await cargarSolicitudesFiscales(gyms);
           }catch{ if(vigente()){ boton.disabled = false; toast('No se pudo actualizar la solicitud. Vuelve a intentar.'); } }
@@ -9388,15 +9459,15 @@ async function cargarSolicitudesFiscales(gyms){
     contenedor.textContent = 'No pudimos cargar las solicitudes. ';
     const boton = document.createElement('button');
     boton.className = 'btn btn-outline'; boton.textContent = 'Volver a cargar';
-    boton.onclick = () => cargarSolicitudesFiscales(gyms);
+    boton.onclick = () => {if(vigente()) cargarSolicitudesFiscales(gyms);};
     contenedor.append(boton);
   }
 }
 
 async function enviarSolicitudFiscal(event){
   event.preventDefault();
-  const usuario = currentUser;
-  if(!usuario?.gym_id || !['admin','superadmin'].includes(usuario.rol)) return;
+  const usuario = contextoPagoGym();
+  if(!usuario?.gym_id || !administrarPagosGym()) return;
   const form = event.currentTarget, boton = form.querySelector('button'), mes = document.getElementById('fis-periodo');
   if(boton.disabled || !mes.reportValidity()) return;
   const periodo = mes.value + '-01';
@@ -9407,32 +9478,37 @@ async function enviarSolicitudFiscal(event){
   boton.disabled = true;
   mensaje.textContent = 'Registrando solicitud…';
   try{
-    const tabla = () => window.supabaseClient.from('solicitudes_cfdi_suscripcion');
+    const tabla = () => usuario.db.from('solicitudes_cfdi_suscripcion');
     let {data,error} = await tabla().insert({periodo}).select('id,atendida').single();
-    if(error?.code === '23505' && currentUser === usuario){
+    if(error?.code === '23505' && pagoGymVigente(usuario)){
       ({data,error} = await tabla().select('id,atendida').eq('gym_id',usuario.gym_id).eq('periodo',periodo).single());
     }
     if(error || !data) throw error;
-    if(currentUser !== usuario) return;
+    if(!pagoGymVigente(usuario)) return;
     mensaje.textContent = 'Solicitud ' + (data.atendida ? 'atendida' : 'registrada') + ' para ' + periodo.slice(0,7) + '. Folio ' + data.id + '.';
     await cargarSolicitudesFiscales();
   }catch{
-    if(currentUser === usuario) mensaje.textContent = 'No pudimos confirmar la solicitud. Puedes volver a intentar con el mismo mes.';
-  }finally{ boton.disabled = false; }
+    if(pagoGymVigente(usuario)) mensaje.textContent = 'No pudimos confirmar la solicitud. Puedes volver a intentar con el mismo mes.';
+  }finally{ if(pagoGymVigente(usuario)) boton.disabled=false; }
 }
 
-async function openBillingPortal(){
+async function openBillingPortal(btn){
+  const usuario=contextoPagoGym();
+  if(!administrarPagosGym() || btn?.disabled) return;
+  if(btn) btn.disabled=true;
   toast('Abriendo portal de facturación...', '⏳', 2000);
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/velum-saas-portal`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+usuario.jwt},
       body: JSON.stringify({})
     });
     const data = await res.json();
-    if (!res.ok || !data.url) { alert(data.error || 'No se pudo abrir el portal.'); return; }
-    window.location.href = data.url;
-  } catch(e){ console.error(e); alert('Error de conexión.'); }
+    if(!pagoGymVigente(usuario) || !administrarPagosGym()) return;
+    if(!res.ok || !data.url) throw Error();
+    window.location.href=data.url;
+  }catch{if(pagoGymVigente(usuario)) toast('No se pudo abrir el portal. Vuelve a intentar.','✕');}
+  finally{if(btn && pagoGymVigente(usuario)) btn.disabled=false;}
 }
 
 async function regenerate2FACodes(){
@@ -9599,6 +9675,10 @@ function showApp(){
     applyRoleModules();
     // Dashboard ya fue inicializado en DOMContentLoaded; solo re-renderiza con datos reales
     renderDashboard();
+    if(administrarPagosGym() && ['#stripe-onboarded','#stripe-onboarding-refresh'].includes(location.hash)){
+      go('settings');
+      openSettingsPanel('stripe');
+    }
     // Show onboarding wizard — forzado si viene de success.html (?onboarding=true)
     const forceOnboarding = new URLSearchParams(location.search).get('onboarding') === 'true';
     setTimeout(() => checkOnboarding(forceOnboarding), 800);
@@ -10566,6 +10646,7 @@ function _roleCfg(){
 
 // ¿Esta vista está vetada para el rol actual?
 function roleBlocksView(id){
+  if(id==='superadmin' && currentUser?.rol!=='superadmin') return true;
   const cfg = _roleCfg();
   return !!(cfg && (cfg.blockViews||[]).indexOf(id) !== -1);
 }
@@ -10974,7 +11055,10 @@ async function loadCoachesFromSupabase(){
 }
 
 async function loadPagosFromSupabase(){
+  const gym=MOVE_GYM_ID,user=currentUser,token=user?.jwt;
   const { data, error } = await gf(window.supabaseClient.from('pagos').select('*')).order('created_at', {ascending: false}).limit(2000);
+  if(gym!==MOVE_GYM_ID || user!==currentUser || token!==currentUser?.jwt) return;
+  contextoPagosInicio=error?null:{gym,user,token};
   if(error){
     console.error('Error cargando pagos:', error); if(_handleSessionError(error))return;
     const m = error.message||'';
@@ -10996,7 +11080,10 @@ async function loadPagosFromSupabase(){
 }
 
 async function loadClientesFromSupabase(){
+  const gym=MOVE_GYM_ID,user=currentUser,token=user?.jwt;
   const { data, error } = await gf(window.supabaseClient.from('clientes').select('*')).order('nombre').limit(2000);
+  if(gym!==MOVE_GYM_ID || user!==currentUser || token!==currentUser?.jwt) return;
+  contextoClientesInicio=error?null:{gym,user,token};
   if(error){
     console.error('Error cargando clientes:', error); if(_handleSessionError(error))return;
     clientesDB=[];
@@ -11580,7 +11667,6 @@ const topBtnLabels = {
   retencion:         '↗ Exportar',
   'calendario-venc': 'Hoy',
   superadmin:  '↻ Actualizar',
-  settings:    '+ Nuevo Usuario',
 };
 const topBtnActions = {
   crm:         ()=>openModal('lead'),
@@ -11605,7 +11691,6 @@ const topBtnActions = {
   retencion:         ()=>exportRetencionCSV(),
   'calendario-venc': ()=>calVencGoToday(),
   superadmin:  ()=>renderSuperAdmin(),
-  settings:    ()=>{ if(currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) openModal('add-user'); },
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -11690,7 +11775,7 @@ function openSettingsPanel(id){
   // El catálogo de planes se movió al sidebar (vista 'paquetes'). Redirigir accesos viejos.
   if(id==='planes'){ go('paquetes', document.getElementById('nav-paquetes')); return; }
   // Paneles fusionados (jul-2026): sus accesos viejos redirigen al nuevo hogar
-  const _cfgAlias = { metas:'personalizacion', suscripcion:'stripe', seguridad:'cuenta' };
+  const _cfgAlias = { metas:'personalizacion', seguridad:'cuenta' };
   if(_cfgAlias[id]) id = _cfgAlias[id];
   // Guard por rol: recepción solo entra a "Mi Cuenta" (contraseña y 2FA). El resto
   // expone meta de ingresos, precios, domiciliaciones, Stripe, suscripción y CFDI.
@@ -11702,7 +11787,15 @@ function openSettingsPanel(id){
   if(landing) landing.style.display = 'none';
   document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('cfg-panel-active'));
   const panel = document.getElementById('cfg-panel-' + id);
-  if(panel) panel.classList.add('cfg-panel-active');
+  if(panel){
+    panel.classList.add('cfg-panel-active');
+    const entrada=Array.from(landing.querySelectorAll('.cfg-menu-item')).find(b=>b.getAttribute('onclick')==="openSettingsPanel('"+id+"')");
+    const titulo=id==='suscripcion'?'Mi plan VELUM':entrada?.querySelector('.cfg-item-label')?.textContent;
+    if(titulo){
+      document.getElementById('topTitle').textContent=titulo;
+      document.getElementById('topSub').textContent='Configuración';
+    }
+  }
   const view = document.getElementById('v-settings');
   if(view) view.scrollTop = 0;
   const _cont = document.querySelector('.content'); if(_cont) _cont.scrollTop = 0;   // móvil: el scroll real vive en .content
@@ -11719,7 +11812,13 @@ function openSettingsPanel(id){
   if(id === 'storefront'){
     if(typeof loadStorefrontPanel === 'function') loadStorefrontPanel();
   }
-  if(id === 'stripe'){ renderStripeSettings(); renderSuscripcion(); renderFiscalData(); }
+  if(id === 'stripe') renderStripeSettings();
+  if(id === 'suscripcion'){
+    const puedeEditar=administrarPagosGym();
+    document.getElementById('cfg-fiscal-card').hidden=!puedeEditar;
+    renderSuscripcion();
+    if(puedeEditar) renderFiscalData();
+  }
   if(id === 'menu')       renderSidebarCustomizer();
   if(id === 'portal')     updatePortalLinkBox();
   if(id === 'usuarios' && currentUser && (currentUser.rol==='admin'||currentUser.rol==='superadmin')) renderUsuarios();
@@ -11740,6 +11839,11 @@ function toggleCfgAdvanced(){
 }
 
 function closeSettingsPanel(){
+  if(document.getElementById('v-settings').classList.contains('active')){
+    document.getElementById('topTitle').textContent=topTitles.settings[0];
+    document.getElementById('topSub').textContent=topTitles.settings[1];
+  }
+  if(document.getElementById('v-settings').classList.contains('active')) actualizarTituloMenuPlan();
   document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('cfg-panel-active'));
   const landing = document.getElementById('cfg-menu-landing');
   if(landing) landing.style.display = '';
@@ -12001,9 +12105,7 @@ function go(id, el){
   try{ const _vb=(typeof _VERTICAL_TOPBTN!=='undefined') && _VERTICAL_TOPBTN[_gymVertical] && _VERTICAL_TOPBTN[_gymVertical][id];
     if(_vb) topBtn.textContent=_vb; }catch(_){}
   topBtn.onclick = topBtnActions[id]||null;
-  // Hide + button in settings for non-admins (coaches, marketing, etc.)
-  if(id==='settings') topBtn.style.display = (currentUser&&(currentUser.rol==='admin'||currentUser.rol==='superadmin')) ? 'inline-flex' : 'none';
-  else if(['dashboard','clientes','pagos','revenue'].includes(id) || !topBtnActions[id]) topBtn.style.display = 'none';  // dashboard usa quick-actions del hero; sin acción → no mostrar botón muerto
+  if(['dashboard','clientes','pagos','revenue'].includes(id) || !topBtnActions[id]) topBtn.style.display = 'none';
   else topBtn.style.display = 'inline-flex';
   if(id==='crm')         renderCRM('prospectos');
   if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ Promise.resolve(renderReporteCoach()).catch(e=>console.error('reporte coach:', e)); }catch(e){ console.error('reporte coach:', e); } }
@@ -16575,8 +16677,9 @@ async function loadPackagesFromCatalog(){
     // catálogo pero no está publicado es invisible para los atletas — era la causa clásica
     // de "creé mis paquetes y no aparecen". Si falla, no rompe la carga del catálogo.
     try{
-      const { data: lst } = await window.supabaseClient
+      const { data: lst, error: listadoError } = await window.supabaseClient
         .from('storefront_listings').select('package_id, is_public').eq('gym_id', gymId);
+      if(listadoError) throw listadoError;
       const publicados = new Set((lst||[]).filter(l => l.is_public).map(l => l.package_id));
       _packagesDB.forEach(p => { p._publicado = publicados.has(p.id); });
     }catch(e){ console.warn('listings (indicador publicado):', e); }
@@ -17421,44 +17524,26 @@ function renderPlanes(){
   if(!el) return;
   const planes = _packagesDB || [];
   if(!planes.length){
-    el.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--text3);padding:8px 0;">Sin planes en tu catálogo. Crea el primero abajo ↓</div>`;
+    el.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--text3);padding:8px 0;">Aún no hay planes en tu catálogo.</div>`;
     return;
   }
   el.innerHTML = planes.map(p=>{
-    const _u = (typeof _pkUnidad==='function') ? _pkUnidad() : 'clases'; // sesiones/créditos/clases por giro
-    const tipo = p.unlimited_classes ? 'Ilimitado' : (p.num_classes ? `${p.num_classes} ${_u}` : `Sin ${_u}`);
-    const descBadge = p.allow_discount === false
-      ? '<span style="font-size:var(--fs-xs);background:rgba(251,191,36,.15);color:var(--warn);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">SIN DESC</span>'
-      : '';
-    const cobroBadge = p.billing_type === 'recurring'
-      ? '<span style="font-size:var(--fs-xs);background:rgba(0,212,255,.15);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;">DOMICILIADO /MES</span>'
-      : '';
-    // Reservas por día: si el plan no reserva o permite varias, hay que verlo
-    // de un vistazo en la lista, no solo al abrir el editor.
-    const _mrd = p.max_reservas_dia;
-    const resBadge = (_mrd === 1 || _mrd === undefined)
-      ? ''
-      : (_mrd === 0
-        ? '<span style="font-size:var(--fs-xs);background:rgba(211,119,117,.15);color:var(--danger);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Solo acceso al gimnasio: no puede apartar clases">NO RESERVA</span>'
-        : `<span style="font-size:var(--fs-xs);background:rgba(0,212,255,.15);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Reservas de clase permitidas por día">${esc(_maxDiaTexto(_mrd)).toUpperCase()}</span>`);
-    // Si no está publicado, el atleta NUNCA lo ve: hay que decirlo de frente.
-    const pubBadge = p._publicado
-      ? '<span style="font-size:var(--fs-xs);background:rgba(16,232,160,.15);color:var(--ok);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Visible en la app y en tu página pública">EN LA APP</span>'
-      : '<span style="font-size:var(--fs-xs);background:rgba(251,191,36,.15);color:var(--warn);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;letter-spacing:.3px;" title="Tus atletas NO lo ven. Publícalo desde Configuración → Página pública.">NO VISIBLE</span>';
-    return `
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:8px;">
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${esc(p.name)}</span>
-          <span style="font-size:var(--fs-xs);color:var(--ok);font-weight:700;">$${p.price_mxn.toLocaleString('es-MX')}</span>${cobroBadge}${pubBadge}${resBadge}${descBadge}
-        </div>
-        <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:2px;">
-          ${p.duration_days} día${p.duration_days===1?'':'s'} · ${tipo}
-        </div>
+    const unidad=typeof _pkUnidad==='function'?_pkUnidad():'clases';
+    const notas=[];
+    if(p.max_reservas_dia===0) notas.push('Sin reservas de clase');
+    else if(p.max_reservas_dia===null) notas.push('Reservas diarias sin límite');
+    else if(p.max_reservas_dia>1) notas.push('Hasta '+Number(p.max_reservas_dia)+' reservas al día');
+    if(p.allow_discount===false) notas.push('Sin descuentos');
+    const visibilidad=p._publicado==null?'Publicación por confirmar':p._publicado?'Publicado':'Solo en catálogo';
+    return `<article class="vplan-admin">
+      <h3>${esc(p.name)}</h3>
+      ${CorePaquetes.resumen(p,unidad)}
+      ${notas.length?'<p class="vplan-notes">'+notas.join(' · ')+'</p>':''}
+      <div class="vplan-foot"><span class="vplan-state ${p._publicado?'is-public':''}">${visibilidad}</span>
+        <button class="btn btn-sm btn-outline" onclick="editarPlan(${p.id})">Editar</button>
+        <button class="btn btn-sm btn-outline" onclick="eliminarPlan(${p.id})" aria-label="Eliminar del catálogo" title="Eliminar del catálogo">✕</button>
       </div>
-      <button onclick="editarPlan(${p.id})" title="Editar este plan" style="background:none;border:none;color:var(--text3);cursor:pointer;opacity:.6;padding:6px 8px;display:flex;align-items:center;" onmouseenter="this.style.opacity=1;this.style.color='var(--accent)'" onmouseleave="this.style.opacity=.6;this.style.color='var(--text3)'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-      <button onclick="eliminarPlan(${p.id})" title="Eliminar del catálogo" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:var(--fs-base);opacity:.5;padding:6px 8px;" onmouseenter="this.style.opacity=1;this.style.color='var(--danger)'" onmouseleave="this.style.opacity=.5;this.style.color='var(--text3)'">✕</button>
-    </div>`;
+    </article>`;
   }).join('');
 }
 
@@ -18596,13 +18681,12 @@ function _gymTxHTML(){
   return rows + `<div onclick="go('pagos',document.getElementById('nav-pagos'))" style="text-align:center;font-size:var(--fs-xs);color:var(--accent);cursor:pointer;padding-top:11px;">Ver todas</div>`;
 }
 // Ocupación de hoy: cuenta reservas por horario_id (no-canceladas).
-async function _gymHoyOcupacion(){
+async function _gymHoyOcupacion(hoy,gym){
   try{
-    const hoy=_asistFechaSel_offset(0);
-    const { data,error } = await gf(window.supabaseClient.from('reservas').select('horario_id,estado')).eq('fecha',hoy).neq('estado','cancelado');
-    if(error) return null;
+    const { data,error } = await window.supabaseClient.from('reservas').select('horario_id,estado').eq('gym_id',gym).eq('fecha',hoy).neq('estado','cancelado');
+    if(error || !Array.isArray(data)) return null;
     const map={}; (data||[]).forEach(r=>{ if(r.horario_id!=null) map[r.horario_id]=(map[r.horario_id]||0)+1; });
-    return map;
+    return {porClase:map,asistencias:(data||[]).filter(r=>r.estado==='checkin').length};
   }catch(_){ return null; }
 }
 async function abrirClaseHoy(id){
@@ -18615,37 +18699,6 @@ async function abrirClaseHoy(id){
     if(h) abrirDetalleClase(h.id,h.hora,h.tipo,h.coach_nombre,h.cupo,h.base_id);
     else toast('Esta clase ya no aparece en la agenda de hoy.','↺');
   }catch{toast('No se pudo consultar la clase. Actualiza la lista.','↺');}
-}
-function _gymHoyHTML(ocup){
-  if(!horario?.length && !horarioOverrides?.length) return `<button class="btn btn-outline btn-sm" onclick="go('asistencia')">Ver clases de hoy</button>`;
-  const now=new Date(), today=_asistFechaSel_offset(0);
-  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const todayDia=dias[new Date(today+'T12:00:00').getDay()];
-  const ovs=(typeof horarioOverrides!=='undefined'?horarioOverrides:[]);
-  const clases=horario.filter(h=>{ if(h.tipo==='CERRADO') return false;
-    if(ovs.find(o=>o.fecha===today&&o.hora===h.hora)) return false;
-    return h.dia===todayDia; });
-  const ovHoy=ovs.filter(o=>o.fecha===today&&o.tipo!=='CERRADO');
-  const all=[...clases,...ovHoy].filter(h=>!isCancelada(h.id,today)).sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
-  if(!all.length) return `<div style="padding:14px 4px;font-size:var(--fs-xs);color:var(--text3);">Sin clases programadas para hoy.</div>`;
-  const nowMin=now.getHours()*60+now.getMinutes();
-  return all.map(h=>{
-    const coach=h.coach_nombre||(coaches.find(c=>String(c.id)===String(h.coach_id))||{}).nombre||'';
-    const hora=(typeof formatHoraDisplay==='function')?formatHoraDisplay(h.hora):h.hora;
-    const base=h.fecha?horario.find(b=>b.dia===todayDia && b.hora===h.hora && !isCancelada(b.id,today)):null;
-    const cupo=h.cupo||0, res=ocup?(ocup[h.id]||0)+(base?ocup[base.id]||0:0):null;
-    const pct=cupo>0?Math.min(100,Math.round(res/cupo*100)):0;
-    const barCol=pct>=90?'var(--danger)':pct>=60?'var(--warn)':'var(--ok)';
-    const past=_horaToMinutes(h.hora)<nowMin;
-    return `<button type="button" class="op-today" data-slot="${esc(String(h.id)).replace(/"/g,'&quot;')}" onclick="abrirClaseHoy(this.dataset.slot)" style="display:flex;align-items:center;gap:11px;padding:8px 0;${past?'opacity:.5;':''}">
-      <span style="font-size:var(--fs-sm);color:${past?'var(--text4)':'var(--accent)'};width:64px;flex-shrink:0;font-weight:600;">${esc(hora)}</span>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:var(--fs-sm);color:var(--text);">${esc(h.tipo||'Clase')}${coach?`<span style="color:var(--text4);"> · ${esc(coach)}</span>`:''}</div>
-        ${cupo>0?`<div style="height:4px;background:rgba(255,255,255,.06);border-radius:4px;margin-top:5px;"><div style="width:${pct}%;height:100%;background:${barCol};border-radius:4px;"></div></div>`:''}
-      </div>
-      ${cupo>0?`<span style="font-size:var(--fs-sm);color:var(--text3);width:40px;text-align:right;flex-shrink:0;">${res??'…'}/${cupo}</span>`:''}
-      <span aria-hidden="true">›</span></button>`;
-  }).join('');
 }
 function _applyGymAnalisisState(){
   let open=false; try{ open=localStorage.getItem('velum_gym_analisis')==='1'; }catch(_){}
@@ -18678,28 +18731,18 @@ function _gymCumpleHTML(){
   </div>`;
 }
 // Muestra/oculta el Pulso por giro y rinde sus columnas. Recovery/studios lo ocultan vía su hide-all.
-async function renderGymPulso(){
+function renderGymPulso(estados){
   const pulso=document.getElementById('gym-pulso');
   const toggle=document.getElementById('gym-analisis-toggle');
   if(!pulso||!toggle) return;
+  renderInicioHoy(estados);
   if(_gymVertical!=='gym'){ pulso.style.display='none'; toggle.style.display='none'; return; }
   pulso.style.display=''; toggle.style.display='flex';
   const briefing=document.getElementById('dash-briefing-hoy'); if(briefing) briefing.style.display='none';
   _applyGymAnalisisState();
   const cu=document.getElementById('gym-cumple'); if(cu) cu.innerHTML=_gymCumpleHTML();
   const txb=document.getElementById('gym-tx-body'); if(txb) txb.innerHTML=_gymTxHTML();
-  const hoyb=document.getElementById('gym-hoy-body');
-  if(hoyb){
-    hoyb.innerHTML=_gymHoyHTML(null);
-    // Solo consultar reservas (ocupación) cuando el dashboard es la vista activa — renderDashboard
-    // se llama en ~8 lugares (cada carga de datos); sin este gate haríamos una query extra cada vez.
-    const vd=document.getElementById('v-dashboard');
-    if(vd && vd.classList.contains('active')){
-      const gym=MOVE_GYM_ID,oc=await _gymHoyOcupacion();
-      if(gym!==MOVE_GYM_ID) return;
-      if(_gymVertical==='gym'){ const hb=document.getElementById('gym-hoy-body'); if(hb) hb.innerHTML=_gymHoyHTML(oc); }
-    }
-  }
+
 }
 
 function renderBriefingHoy(){
@@ -18868,14 +18911,8 @@ function renderMobileHome(){
 
   // Active members (memberships not expired)
   const pagosSinPH = (pagos||[]).filter(p=>p.notas!=='__sin_pago__');
-  const membActivos = pagosSinPH.filter((p,i,a)=>{
-    const isLatest = !a.some(q=>q.cliente===p.cliente&&(q.fecha||'')>(p.fecha||''));
-    if(!isLatest) return false;
-    if(!p.vence||p.vence==='—') return true;
-    return new Date(p.vence+'T12:00:00') >= now;
-  }).length;
   const actEl = document.getElementById('mhw-activos');
-  if(actEl) actEl.textContent = membActivos;
+  if(actEl) actEl.textContent = Array.from(estadoMembresiaPorCliente().values()).filter(e=>e.acceso).length;
 
   // Check-ins today (from cached window._mhwCheckins set by loadClasesOperativas)
   const chkEl = document.getElementById('mhw-checkins');
@@ -19241,7 +19278,7 @@ function renderDashboard(){
 
   updateBadges();
   renderBriefingHoy();
-  if(typeof renderGymPulso==='function') renderGymPulso();
+  if(typeof renderGymPulso==='function') renderGymPulso(_estadoCli);
   renderMembresiasAlert();
   renderMetaMensual(ingresosMes);
   renderRetencionWidget();
@@ -19575,6 +19612,7 @@ async function renderSuperAdmin(){
     }
     toast('No se pudieron cargar los gyms: '+errMsg,'✕');
   }
+  if(currentUser?.rol!=='superadmin') return;
   const allGyms = gymsData || [];
   cargarSolicitudesFiscales(allGyms);
   _saGymsCache = allGyms; // cache for context switcher dropdown
@@ -19606,48 +19644,53 @@ async function renderSuperAdmin(){
 
   // ── Gym List ──
   const PLAN_COLOR = { pro:'var(--ok)', basic:'var(--accent)', free:'var(--text3)' };
+  const selectedGym=document.querySelector('#sa-gyms-list [aria-expanded="true"]')?.dataset.gym;
   const gymsRows = allGyms.map(g=>{
     const isCurrent = g.id === MOVE_GYM_ID;
+    const planRegistrado=String(g.plan||'').trim();
     const planColor = PLAN_COLOR[g.plan] || 'var(--text3)';
     const created = g.created_at ? new Date(g.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
     // Subscription status badge
     const subStatus = g.subscription_status || 'pending';
-    const subColors = { active:'var(--ok)', past_due:'var(--warn)', cancelled:'var(--danger)', pending:'var(--text3)', owner:'#c084fc' };
-    const subLabels = { active:'Activo', past_due:'Pago pendiente', cancelled:'Cancelado', pending:'Sin pago', owner:'Propietario' };
+    const subColors = { active:'var(--ok)', trialing:'var(--accent)', past_due:'var(--warn)', unpaid:'var(--warn)', incomplete:'var(--warn)', canceled:'var(--danger)', cancelled:'var(--danger)', pending:'var(--text3)', owner:'#c084fc' };
     const subColor = subColors[subStatus] || 'var(--text3)';
-    const subLabel = subLabels[subStatus] || subStatus;
-    const isOwner = subStatus === 'owner';
+    const subLabel = estadoPlanVelum(subStatus);
+    const expanded=String(g.id)===selectedGym;
     return `
-    <tr style="border-bottom:1px solid var(--border);${isCurrent?'background:color-mix(in srgb, var(--accent) 5%, transparent);':''}">
+    <tr class="sa-gym-row" style="border-bottom:1px solid var(--border);${isCurrent?'background:color-mix(in srgb, var(--accent) 5%, transparent);':''}">
       <td style="padding:11px 22px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${subColor};" title="${subLabel}"></div>
+        <button type="button" class="sa-mobile-summary" data-gym="${g.id}" aria-expanded="${expanded}" aria-controls="sa-plan-${g.id} sa-created-${g.id} sa-actions-${g.id}" onclick="saToggleGymDetails(this)">
+          <span><strong>${esc(g.nombre||'Gimnasio')}</strong><small>${isCurrent?'En uso · ':''}${esc(subLabel)}</small></span><span class="sa-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="sa-gym-identity" style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${subColor};" ></div>
           <div>
             <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);line-height:1.3;">${esc(g.nombre)}${isCurrent?'&nbsp;<span style="font-size:var(--fs-xs);color:var(--accent);">● actual</span>':''}</div>
-            <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:1px;">ID&nbsp;${g.id} &middot; ${esc(g.owner_email||'—')} &middot; <span style="color:${subColor};font-weight:600;">${subLabel}</span></div>
+            <div style="font-size:var(--fs-sm);color:var(--text3);margin-top:1px;">ID&nbsp;${g.id} &middot; ${esc(g.owner_email||'—')} &middot; <span style="color:${subColor};font-weight:600;">${esc(subLabel)}</span></div>
           </div>
         </div>
       </td>
-      <td style="padding:11px 12px;">
+      <td id="sa-plan-${g.id}" data-label="Plan registrado">
         <div style="display:flex;flex-direction:column;gap:3px;">
-          <span style="font-size:var(--fs-xs);font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;display:inline-block;">${(g.plan||'max').toUpperCase()}</span>
-          <select onchange="saUpdateGymPlan(${g.id},this.value)" style="font-size:var(--fs-xs);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;color:var(--text3);padding:2px 4px;cursor:pointer;font-family:var(--font);">
-            <option value="max" selected data-plan-precio="max" data-plan-precio-fmt="monto" data-plan-precio-tpl="Max {p}">Max $999</option>
-          </select>
+          <span style="font-size:var(--fs-xs);font-weight:700;padding:2px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:${planColor};letter-spacing:.5px;display:inline-block;">${esc(planRegistrado.toUpperCase()||'Sin registrar')}</span>
+          ${planRegistrado.toLowerCase()!=='max'?`<select aria-label="Cambiar plan registrado" onchange="saUpdateGymPlan(${g.id},this.value);this.value=''" style="font-size:var(--fs-xs);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;color:var(--text3);padding:2px 4px;cursor:pointer;font-family:var(--font);">
+            <option value="" selected disabled>Cambiar de plan…</option>
+            <option value="max">Max · ${planPrecioTxt('max')}</option>
+          </select>` : ''}
         </div>
       </td>
-      <td style="padding:11px 12px;font-size:var(--fs-sm);color:var(--text3);">${created}</td>
-      <td style="padding:11px 22px;text-align:right;">
+      <td id="sa-created-${g.id}" data-label="Fecha de alta" style="padding:11px 12px;font-size:var(--fs-sm);color:var(--text3);">${created}</td>
+      <td id="sa-actions-${g.id}" data-label="Acciones" style="padding:11px 22px;text-align:right;">
         <div style="display:flex;gap:5px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
-          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" style="font-size:var(--fs-xs);padding:4px 10px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Ver</button>` : ''}
+          ${!isCurrent ? `<button class="btn btn-sm" onclick="saContextSwitch(${g.id})" style="font-size:var(--fs-xs);padding:4px 10px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Entrar al gimnasio</button>` : ''}
           ${!['active','owner'].includes(subStatus)
             ? `<button class="btn btn-sm" onclick="saActivateGym(${g.id})" style="font-size:var(--fs-xs);padding:4px 10px;background:color-mix(in srgb, var(--accent) 15%, transparent);color:var(--ok);border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);">✓ Activar</button>`
             : subStatus==='active'
               ? `<button class="btn btn-sm btn-outline" onclick="saSetGymOwner(${g.id})" style="font-size:var(--fs-xs);padding:4px 10px;" title="Marcar como gym propio (sin pago)">Propio</button>`
               : `<span style="font-size:var(--fs-xs);color:var(--hyrox);">Gym propio</span>`
           }
-          <button class="btn btn-sm btn-outline" onclick="saResetGymPassword(${g.id},'${esc(g.owner_email||'')}')" style="font-size:var(--fs-xs);padding:4px 10px;" title="Cambiar contraseña del admin"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.5-8.5M16 6l3 3"/></svg> </button>
-          <button class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:var(--fs-xs);padding:4px 10px;">${g.activo?'⏸':'▶'}</button>
+          <button class="btn btn-sm btn-outline" onclick="saResetGymPassword(${g.id},_saGymsCache.find(g=>g.id===${g.id})?.owner_email||'')" style="font-size:var(--fs-xs);padding:4px 10px;" aria-label="Cambiar contraseña del administrador" title="Cambiar contraseña del admin"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.5-8.5M16 6l3 3"/></svg><span class="sa-action-caption">Acceso admin</span></button>
+          <button aria-label="${g.activo?'Pausar gimnasio':'Reactivar gimnasio'}" class="btn btn-sm btn-outline" onclick="saToggleGym(${g.id},${!g.activo})" style="font-size:var(--fs-xs);padding:4px 10px;">${g.activo?'⏸':'▶'} <span class="sa-action-caption">${g.activo?'Pausar':'Reactivar'}</span></button>
         </div>
       </td>
     </tr>`;
@@ -19692,11 +19735,11 @@ async function renderSuperAdmin(){
         <button class="btn btn-sm btn-outline" onclick="saToggleCreateForm()">Cancelar</button>
       </div>
     </div>
-    <div style="margin:0 -22px;">
+    <div class="sa-directory-table" style="margin:0 -22px;">
       <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
         <thead><tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);">
           <th style="text-align:left;padding:9px 22px;font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Gym</th>
-          <th style="text-align:left;padding:9px 12px;font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Plan</th>
+          <th style="text-align:left;padding:9px 12px;font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Plan registrado</th>
           <th style="text-align:left;padding:9px 12px;font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Creado</th>
           <th style="text-align:right;padding:9px 22px;font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Acciones</th>
         </tr></thead>
@@ -19840,7 +19883,7 @@ async function saCreateGym(){
 // respetan aunque Stripe diga lo que diga.
 async function saActivateGym(gymId){
   if(!await confirmDialog('El gym tendrá acceso permanente al panel aunque su cobro en Stripe falle o esté cancelado. Úsalo para gyms que pagan por transferencia o con acuerdo especial.', {
-    title:'Acceso garantizado', danger:false, confirmText:'Activar acceso garantizado', icon:'✓'
+    title:'Acceso garantizado · '+saNombreGym(gymId), danger:false, confirmText:'Activar acceso garantizado', icon:'✓'
   })) return;
   const { error } = await window.supabaseClient.from('gyms').update({
     subscription_status: 'active', activo: true, acceso_garantizado: true
@@ -19854,7 +19897,7 @@ async function saActivateGym(gymId){
 // ── Marcar gym como "propio" (tuyo, sin Stripe nunca) ────────────────
 async function saSetGymOwner(gymId){
   if(!await confirmDialog('¿Marcar este gym como "Propio"? Quedará activo permanentemente sin requerir suscripción.', {
-    title:'Gym propio', danger:false, confirmText:'Marcar como propio', icon:''
+    title:'Gym propio · '+saNombreGym(gymId), danger:false, confirmText:'Marcar como propio', icon:''
   })) return;
   const { error } = await window.supabaseClient.from('gyms').update({
     subscription_status: 'owner', activo: true
@@ -19943,7 +19986,7 @@ async function saResetGymPassword(gymId, ownerEmail){
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
   modal.innerHTML = `
     <div style="background:var(--white);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:16px;padding:28px;width:100%;max-width:360px;text-align:center;">
-      <div style="font-size:var(--fs-3xl);margin-bottom:10px;">${hasAdmin ? '' : ''}</div>
+      <div style="color:var(--accent);font-weight:650;margin-bottom:10px;">${esc(saNombreGym(gymId))}</div>
       <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:4px;">${hasAdmin ? 'Cambiar contraseña del admin' : 'Crear admin para este gym'}</div>
       <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:16px;">${hasAdmin ? esc(adminEmail) : 'Este gym no tiene admin — crea uno ahora'}</div>
       ${!hasAdmin ? `
@@ -20023,16 +20066,29 @@ async function _saDoResetGymPw(gymId, hasAdmin){
 
 // ── Cambiar plan de un gym ───────────────────────────────────────────
 async function saUpdateGymPlan(gymId, newPlan){
-  const { error } = await window.supabaseClient.from('gyms').update({ plan: newPlan }).eq('id', gymId);
+  const sesion=contextoPagoGym();
+  const gym=_saGymsCache.find(g=>g.id===gymId);
+  if(sesion.rol!=='superadmin' || !gym || newPlan!=='max' || String(gym.plan||'').toLowerCase()==='max') return;
+  const anterior=gym.plan?String(gym.plan).toUpperCase():'Sin registrar';
+  const confirmado=await confirmDialog(
+    `En ${saNombreGym(gymId)}, el plan registrado cambiará de ${anterior} a Max (${planPrecioTxt('max')}). La suscripción de Stripe se gestiona por separado.`,
+    {title:'Cambiar plan registrado',confirmText:'Cambiar a Max',cancelText:'Conservar plan',danger:false});
+  if(!confirmado || !pagoGymVigente(sesion)) return;
+  const { error } = await sesion.db.from('gyms').update({ plan: newPlan }).eq('id', gymId);
+  if(!pagoGymVigente(sesion)) return;
   if(error){ if(_handleSessionError(error))return; toast('Error al cambiar plan','✕'); return; }
   toast(`Plan cambiado a ${newPlan.toUpperCase()} ✓`,'📋');
   renderSuperAdmin();
 }
 
 async function saToggleGym(gymId, nuevoEstado){
+  const sesion=contextoPagoGym();
+  if(sesion.rol!=='superadmin') return;
   const label = nuevoEstado ? 'activar' : 'pausar';
-  if(!await confirmDialog(`¿Deseas ${label} este gym?`, {title:`${nuevoEstado?'Activar':'Pausar'} gym`, danger:!nuevoEstado, confirmText:nuevoEstado?'Activar':'Pausar', icon:nuevoEstado?'▶':'⏸'})) return;
-  const { error } = await window.supabaseClient.from('gyms').update({activo: nuevoEstado}).eq('id', gymId);
+  if(!await confirmDialog(`¿Deseas ${label} ${saNombreGym(gymId)}?`, {title:`${nuevoEstado?'Activar':'Pausar'} gym`, danger:!nuevoEstado, confirmText:nuevoEstado?'Activar':'Pausar', icon:nuevoEstado?'▶':'⏸'})) return;
+  if(!pagoGymVigente(sesion)) return;
+  const { error } = await sesion.db.from('gyms').update({activo: nuevoEstado}).eq('id', gymId);
+  if(!pagoGymVigente(sesion)) return;
   if(error){ if(_handleSessionError(error))return; toast('Error al actualizar gym','✕'); return; }
   toast(nuevoEstado ? 'Gym activado ✓' : 'Gym pausado ✓', nuevoEstado?'▶':'⏸');
   renderSuperAdmin();
@@ -20106,7 +20162,19 @@ async function saContextSwitch(gymId){
 
 // ── SA Context Switcher helpers ────────────────────────────────────
 let _saGymsCache = [];
+function saNombreGym(gymId){
+  const gym=_saGymsCache.find(g=>String(g.id)===String(gymId));
+  return gym?.nombre?gym.nombre+' · ID '+gymId:'Gimnasio '+gymId;
+}
+function saToggleGymDetails(button){
+  const opening=button.getAttribute('aria-expanded')!=='true';
+  document.querySelectorAll('#sa-gyms-list .sa-mobile-summary').forEach(b=>{
+    b.setAttribute('aria-expanded',String(b===button && opening));
+  });
+}
 function updateSaCtxLabel(){
+  const indicator=document.getElementById('sa-operating-gym');
+  if(indicator) indicator.textContent=MOVE_GYM_ID?saNombreGym(MOVE_GYM_ID):'Sin seleccionar';
   const lbl = document.getElementById('sa-ctx-gym-name');
   if(!lbl) return;
   const gym = _saGymsCache.find(g=>g.id===MOVE_GYM_ID);
@@ -24608,7 +24676,17 @@ let _mktMonth = new Date().getMonth() + 1; // 1-indexed
 
 function mktPrevMonth(){ _mktMonth--; if(_mktMonth<1){_mktMonth=12;_mktYear--;} renderCalendario(); }
 function mktNextMonth(){ _mktMonth++; if(_mktMonth>12){_mktMonth=1;_mktYear++;} renderCalendario(); }
-function mktGoToday(){ _mktYear=new Date().getFullYear(); _mktMonth=new Date().getMonth()+1; renderCalendario(); }
+async function mktGoToday(){
+  const hoy=_hoyMX();
+  _mktYear=Number(hoy.slice(0,4)); _mktMonth=Number(hoy.slice(5,7));
+  await renderCalendario();
+  if(matchMedia('(max-width:700px)').matches)
+    document.querySelector('#cal-grid .today')?.scrollIntoView({block:'center'});
+}
+function mktAgregarEnMes(){
+  const mes=_mktYear+'-'+String(_mktMonth).padStart(2,'0'),hoy=_hoyMX();
+  openContenidoForDay(hoy.startsWith(mes)?hoy:mes+'-01');
+}
 
 // ── Días festivos fijos de México — Calendario SEP + LFT (mes 1-12, día)
 const MX_FESTIVOS_FIJOS = [
@@ -24794,13 +24872,17 @@ async function saveEditContenido(){
 // El campo en Supabase se llama `cumpleanos` (sin tilde)
 let _bdays_cache = null;
 async function _getBirthdays(){
-  if(_bdays_cache) return _bdays_cache;
+  const gym=MOVE_GYM_ID;
+  if(!gym) return [];
+  if(_bdays_cache?.gym===gym) return _bdays_cache.rows;
   try{
-    const { data } = await window.supabaseClient
-      .from('clientes').select('nombre,cumpleanos').not('cumpleanos','is',null);
-    _bdays_cache = (data||[]).map(c=>({nombre:(c.nombre||'?').split(' ')[0], fn:c.cumpleanos}));
-  }catch(_){ _bdays_cache=[]; }
-  return _bdays_cache;
+    const {data,error}=await window.supabaseClient.from('clientes').select('nombre,cumpleanos')
+      .eq('gym_id',gym).not('cumpleanos','is',null);
+    if(error || gym!==MOVE_GYM_ID) return [];
+    const rows=(data||[]).map(c=>({nombre:(c.nombre||'?').split(' ')[0],fn:c.cumpleanos}));
+    _bdays_cache={gym,rows};
+    return rows;
+  }catch{ return []; }
 }
 
 async function renderCalendario(){
@@ -24809,7 +24891,7 @@ async function renderCalendario(){
   if(!grid) return;
 
   const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const y=_mktYear, m=_mktMonth;
+  const y=_mktYear, m=_mktMonth, gym=MOVE_GYM_ID;
   if(label) label.textContent=`${MESES_FULL[m-1]} ${y}`;
 
   const todayStr = _hoyMX();
@@ -24828,6 +24910,7 @@ async function renderCalendario(){
 
   // Cumpleaños del mes
   const allBdays = await _getBirthdays();
+  if(y!==_mktYear || m!==_mktMonth || gym!==MOVE_GYM_ID) return;
   const bdayMap  = {};
   allBdays.forEach(b=>{
     if(!b.fn) return;
@@ -24857,19 +24940,23 @@ async function renderCalendario(){
     const hasFest  = !!festivoMap[d];
     const fests    = festivoMap[d]||[];
     const bdays    = bdayMap[d]||[];
-    const items    = myContenidos.filter(c=> c.fecha ? parseInt(c.fecha.slice(8,10),10)===d : c.dia===d);
+    const items    = myContenidos.filter(c=> c.fecha ? parseInt(c.fecha.slice(8,10),10)===d : Number(c.dia)===d);
     const fechaStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-    let inner=`<div class="cal-date${isToday?' cal-today-num':''}">${d}</div>`;
+    const diaLargo=new Date(y,m-1,d).toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+    let inner=`<div class="mkt-agenda-day-head mkt-agenda-only"><strong>${isToday?'Hoy · ':''}${diaLargo}</strong>
+        <button class="btn btn-outline btn-sm" aria-label="Agregar contenido el ${diaLargo}" onclick="event.stopPropagation();openContenidoForDay('${fechaStr}')">Agregar</button></div>
+      <div class="cal-date${isToday?' cal-today-num':''}">${d}</div>`;
     fests.forEach(f=>{ inner+=`<div class="cal-holiday-badge" title="${f}">${f}</div>`; });
     bdays.forEach(n=>{ inner+=`<div class="cal-birthday-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="4" y="12" width="16" height="9" rx="2"/><path d="M4 16c1.5 1 3 1 4 0s2.5-1 4 0 2.5 1 4 0 2.5-1 4 0M12 8V6"/></svg> ${esc(n)}</div>`; });
     items.forEach(c=>{
       const cls=CON_TIPO_CLASS[c.tipo]||'cp-ig';
       const ico=CON_TIPO_ICO[c.tipo]||'';
-      inner+=`<div class="cal-post ${cls}" style="position:relative;">${ico} <span style="margin-right:22px;display:inline-block;max-width:calc(100% - 50px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${esc(c.titulo)}</span><div class="cal-post-actions"><button onclick="event.stopPropagation();openEditContenido('${c.id}')" title="Editar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><button onclick="event.stopPropagation();deleteContenido('${c.id}')" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg></button></div></div>`;
+      inner+=`<div class="cal-post ${cls}" style="position:relative;"><small class="mkt-agenda-only">${esc(c.tipo||'Contenido')}</small>${ico} <span style="margin-right:22px;display:inline-block;max-width:calc(100% - 50px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${esc(c.titulo)}</span><div class="cal-post-actions"><button onclick="event.stopPropagation();openEditContenido('${c.id}')" title="Editar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><button onclick="event.stopPropagation();deleteContenido('${c.id}')" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4h6v2"/></svg></button></div></div>`;
     });
 
-    html+=`<div class="cal-day${isToday?' today':''}${hasFest?' holiday-day':''}" onclick="openContenidoForDay('${fechaStr}')">${inner}</div>`;
+    if(isToday && !items.length && !hasFest && !bdays.length) inner+='<span class="mkt-agenda-only mkt-day-empty">Sin contenido programado.</span>';
+    html+=`<div class="cal-day${isToday||hasFest||bdays.length||items.length?' mkt-day-listed':''}${items.length?' mkt-has-content':''}${isToday?' today':''}${hasFest?' holiday-day':''}" onclick="openContenidoForDay('${fechaStr}')">${inner}</div>`;
   }
 
   const totalCells=startOffset+daysInMonth;
@@ -24877,6 +24964,9 @@ async function renderCalendario(){
   if(remainder!==0) for(let i=0;i<(7-remainder);i++) html+=`<div class="cal-day" style="background:transparent;border-color:transparent;pointer-events:none;"></div>`;
 
   grid.innerHTML=html;
+  document.getElementById('mkt-agenda-summary').textContent=myContenidos.length
+    ? myContenidos.length+' contenido'+(myContenidos.length===1?' programado':'s programados')+' en el mes'
+    : 'Sin contenido programado este mes.';
 
   // KPIs
   const vw=document.getElementById('v-marketing');
@@ -27158,7 +27248,7 @@ async function loadQRCheckinsHoy(){
 // calendario. Sin esto, la vista de asistencia solo leía la plantilla: en un día
 // con override la app reserva contra el id del override y el roster del panel
 // abría el id de la plantilla → reservas y prospectos invisibles.
-async function _horariosEfectivosFecha(fechaStr, diaNombre){
+async function _horariosEfectivosFecha(fechaStr, diaNombre, verificarCancelaciones=false){
   const gymId = MOVE_GYM_ID||null;
   let q = window.supabaseClient.from('horarios')
     .select('id,hora,tipo,coach_nombre,cupo,dia,fecha')
@@ -27171,12 +27261,13 @@ async function _horariosEfectivosFecha(fechaStr, diaNombre){
   if(gymId) cq = cq.eq('gym_id', gymId);
   const [{ data, error }, canRes] = await Promise.all([q, cq]);
   if(error) throw error;
+  if(canRes.error && verificarCancelaciones) throw canRes.error;
   if(canRes.error) console.warn('cancelaciones del día:', canRes.error.message);
   const canceladas = new Set((canRes.data||[]).map(c=>String(c.horario_id)));
   const filas = (data||[]).filter(h => !canceladas.has(String(h.id)));
   const ovs  = filas.filter(h => h.fecha === fechaStr);
   const horasPisadas = new Set(ovs.map(h => h.hora));
-  const base = filas.filter(h => h.dia === diaNombre && !(h.fecha||'') && !horasPisadas.has(h.hora));
+  const base = filas.filter(h => h.tipo!=='CERRADO' && h.dia === diaNombre && !(h.fecha||'') && !horasPisadas.has(h.hora));
   const extra = ovs.filter(h => h.tipo!=='CERRADO').map(h=>{
     const original=filas.find(b=>!b.fecha && b.dia===diaNombre && b.hora===h.hora);
     return {...h,base_id:original?.id};
@@ -27295,7 +27386,7 @@ function _horaUTCtoLocal(fecha, horaUTC){
 
 function fmtHoraClase(h){
   if(!h) return '—';
-  const m = h.match(/^(\d+):(\d+)\s*(am|pm)?$/i);
+  const m = h.match(/^(\d+):(\d{1,2})(?::\d{2})?\s*(am|pm)?$/i);
   if(!m) return h;
   let hr = parseInt(m[1],10); const mn = m[2]; const period = (m[3]||'').toLowerCase();
   if(period==='pm' && hr<12) hr+=12;
@@ -27306,7 +27397,7 @@ function fmtHoraClase(h){
 
 function _horaToMinutes(h){
   if(!h) return 9999;
-  const m = h.match(/^(\d+):(\d+)\s*(am|pm)?$/i);
+  const m = h.match(/^(\d+):(\d{1,2})(?::\d{2})?\s*(am|pm)?$/i);
   if(!m) return 9999;
   let hr = parseInt(m[1],10); const mn = parseInt(m[2],10);
   const period = (m[3]||'').toLowerCase();
@@ -27543,7 +27634,7 @@ async function loadClasesOperativas(){
     const updated=document.getElementById('asist-actualizado');
     if(updated) updated.textContent='Actualizado '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     // ── Feed check-in count to mobile home widget ──
-    window._mhwCheckins = (reservas||[]).filter(r=>r.estado==='checkin').length;
+    if(esHoy) window._mhwCheckins = (reservas||[]).filter(r=>r.estado==='checkin').length;
     renderMobileHome();
     el.innerHTML = horarios.map(h=>{
       const lista = (rMap[h.id]||[]).concat(h.base_id?rMap[h.base_id]||[]:[]);
@@ -29441,146 +29532,91 @@ const SUPA_STRIPE_CHARGE   = 'https://savzjanpydyjtrgdkllx.supabase.co/functions
 const STRIPE_PLATFORM_CLIENT_ID = 'ca_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
 // ── Render Stripe settings block ──────────────────────────────────
+let lecturaStripe=0;
 async function renderStripeSettings(){
-  const el = document.getElementById('stripe-connect-status');
-  if(!el) return;
-  el.innerHTML = `<div style="color:var(--text3);font-size:var(--fs-sm);">Cargando estado de Stripe...</div>`;
-
-  // Fetch estado actual del gym desde tabla gyms
-  let g = null;
-  try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/gyms?id=eq.${currentUser.gym_id}&select=stripe_account_id,stripe_account_status,stripe_charges_enabled,stripe_payouts_enabled,stripe_details_submitted,stripe_onboarded_at`, {
-      headers: { 'apikey': window._ANON_KEY || '', 'Authorization': 'Bearer ' + (currentUser.jwt || '') }
-    });
-    const rows = await res.json();
-    g = (Array.isArray(rows) && rows[0]) || null;
-  } catch(e){ console.error('renderStripeSettings fetch:', e); }
-
-  const hasAccount = g?.stripe_account_id;
-  const enabled    = !!g?.stripe_charges_enabled;
-  const status     = g?.stripe_account_status || 'none';
-
-  if (enabled) {
-    const connectedDate = g?.stripe_onboarded_at
-      ? new Date(g.stripe_onboarded_at).toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric'})
-      : '';
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-          <div style="width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0;"></div>
-          <div>
-            <div style="font-size:var(--fs-sm);font-weight:700;color:#fff;">Stripe Express conectado ✓</div>
-            <div style="font-size:var(--fs-sm);color:var(--text3);"><code style="font-family:var(--fm);font-size:var(--fs-xs);">${g.stripe_account_id}</code>${connectedDate ? ' · activado ' + connectedDate : ''}</div>
-          </div>
-        </div>
-        <button onclick="refreshStripeStatus()" class="btn btn-outline btn-sm" style="font-size:var(--fs-sm);">Refrescar</button>
-      </div>
-      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div style="background:rgba(0,255,128,.08);border:1px solid rgba(0,255,128,.2);border-radius:8px;padding:12px;text-align:center;">
-          <div style="font-size:var(--fs-lg);margin-bottom:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> </div>
-          <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Cobros</div>
-          <div style="font-size:var(--fs-xs);color:var(--ok);margin-top:2px;">Activos ✓</div>
-        </div>
-        <div style="background:${g.stripe_payouts_enabled ? 'rgba(0,255,128,.08)' : 'rgba(251,191,36,.08)'};border:1px solid ${g.stripe_payouts_enabled ? 'rgba(0,255,128,.2)' : 'rgba(251,191,36,.2)'};border-radius:8px;padding:12px;text-align:center;">
-          <div style="font-size:var(--fs-lg);margin-bottom:4px;"></div>
-          <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Payouts al banco</div>
-          <div style="font-size:var(--fs-xs);color:${g.stripe_payouts_enabled ? '#00ff80' : '#fbbf24'};margin-top:2px;">${g.stripe_payouts_enabled ? 'Activos ✓' : 'Pendiente'}</div>
-        </div>
-      </div>
-      <div style="margin-top:14px;padding:10px 14px;background:color-mix(in srgb, var(--accent) 5%, transparent);border:1px solid color-mix(in srgb, var(--accent) 15%, transparent);border-radius:8px;font-size:var(--fs-xs);color:var(--text2);line-height:1.7;">
-        Tu <strong>Storefront público</strong> (myvelum.app/g/{slug}) ya puede vender paquetes. Las ventas van directo a tu cuenta Stripe. VELUM cobra $999 MXN al mes y 0% por venta. Stripe aplica su tarifa de procesamiento.
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="https://dashboard.stripe.com/test/connect/accounts/${g.stripe_account_id}" target="_blank" class="btn btn-outline btn-sm" style="font-size:var(--fs-sm);">Abrir dashboard Stripe →</a>
-        <button onclick="reonboardStripe()" class="btn btn-outline btn-sm" style="font-size:var(--fs-sm);">Actualizar datos de banco/identidad</button>
-      </div>`;
-  } else if (hasAccount && status === 'pending') {
-    el.innerHTML = `
-      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:var(--fs-xl);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> </span>
-        <div style="flex:1;">
-          <strong style="color:var(--warn);">Onboarding en proceso</strong>
-          <p style="font-size:var(--fs-xs);color:var(--text2);margin-top:4px;">Stripe está revisando tu información. Completa los pasos pendientes para activar cobros.</p>
-        </div>
-      </div>
-      <button onclick="reonboardStripe()" class="btn btn-primary" style="width:100%;">Continuar configuración en Stripe →</button>
-      <button onclick="refreshStripeStatus()" class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;font-size:var(--fs-sm);">Refrescar estado</button>`;
-  } else if (hasAccount && status === 'restricted') {
-    el.innerHTML = `
-      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
-        <strong style="color:var(--danger);"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg> Acción requerida en Stripe</strong>
-        <p style="font-size:var(--fs-xs);color:var(--text2);margin-top:4px;">Stripe pausó los cobros porque falta información. Completa los requisitos para reactivar.</p>
-      </div>
-      <button onclick="reonboardStripe()" class="btn btn-primary" style="width:100%;">Completar requisitos →</button>`;
-  } else {
-    el.innerHTML = `
-      <div style="font-size:var(--fs-sm);color:var(--text2);margin-bottom:14px;line-height:1.6;">
-        <strong style="color:#fff;">Conecta Stripe para vender desde tu Storefront público.</strong><br>
-        Cualquier persona podrá comprar tus paquetes desde <code style="font-family:var(--fm);font-size:var(--fs-sm);color:var(--accent);">myvelum.app/g/${gymConfig?.slug || 'tu-gym'}</code> con tarjeta. El dinero va directo a tu cuenta de banco.
-      </div>
-      <div style="background:color-mix(in srgb, var(--accent) 5%, transparent);border:1px solid color-mix(in srgb, var(--accent) 15%, transparent);border-radius:10px;padding:12px 16px;margin-bottom:14px;">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--accent-light);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Cómo funciona</div>
-        <ol style="font-size:var(--fs-xs);color:var(--text2);padding-left:18px;margin:0;line-height:1.7;">
-          <li>Click <strong>"Conectar Stripe"</strong> abajo</li>
-          <li>Stripe te pide datos: identidad (INE/RFC), cuenta bancaria mexicana</li>
-          <li>Cuando termines vuelves a VELUM con cobros activos</li>
-          <li>Si cobras $1,500 MXN, recibes ese importe menos la tarifa de Stripe.</li>
-        </ol>
-      </div>
-      <button onclick="conectarStripe()" class="btn btn-primary" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        Conectar Stripe
-      </button>
-      <div style="margin-top:10px;font-size:var(--fs-sm);color:var(--text3);text-align:center;">
-        Powered by Stripe Express · KYC y payouts gestionados por Stripe
-      </div>`;
+  const el=document.getElementById('stripe-connect-status'), usuario=contextoPagoGym(), gym=usuario?.gym_id;
+  const lectura=++lecturaStripe;
+  document.getElementById('stripe-sync-msg').textContent='';
+  const vigente=()=>lectura===lecturaStripe && pagoGymVigente(usuario) && !_pvImpersonando();
+  if(!gym || !roleAllowsSettings('stripe') || _pvImpersonando()){el.textContent='Disponible en la cuenta del gimnasio.';return;}
+  el.textContent='Consultando la conexión con Stripe…';
+  let g;
+  try{g=await datosPagoGym(usuario,'stripe_account_id,stripe_account_status,stripe_charges_enabled,stripe_payouts_enabled,stripe_details_submitted');}
+  catch{
+    if(vigente()) el.innerHTML='<p>La conexión está por confirmar.</p><button class="btn btn-outline" onclick="renderStripeSettings()">Volver a consultar</button>';
+    return;
   }
-
-  // Detectar return URL después de onboarding y forzar sync con Stripe
-  if (location.hash === '#stripe-onboarded' || location.hash === '#stripe-onboarding-refresh') {
-    history.replaceState(null, '', location.pathname);
-    setTimeout(() => refreshStripeStatus(), 600);
+  if(!vigente()) return;
+  const cuenta=!!g.stripe_account_id, gestiona=administrarPagosGym();
+  const estado=valor=>!cuenta?'Sin conectar':valor===true?'Habilitados':valor===false?'Pendientes':'Por confirmar';
+  el.innerHTML='<dl class="cfg-money-states"><div><dt>Cobros con tarjeta</dt><dd>'+estado(g.stripe_charges_enabled)+'</dd></div><div><dt>Depósitos al banco</dt><dd>'+estado(g.stripe_payouts_enabled)+'</dd></div></dl>';
+  const lista=cuenta && g.stripe_charges_enabled;
+  const info=!cuenta?'Conecta la cuenta donde recibes las ventas de tus paquetes y enlaces.':
+    g.stripe_account_status==='restricted'?'Stripe requiere que revises los datos de tu cuenta.':
+    !g.stripe_details_submitted?'Completa los datos del negocio en Stripe.':
+    !lista?'La activación de cobros está pendiente en Stripe.':
+    !g.stripe_payouts_enabled?'Revisa los datos bancarios en Stripe para habilitar los depósitos.':'Las ventas se abonan a tu cuenta de Stripe.';
+  el.insertAdjacentHTML('beforeend','<p>'+info+'</p>');
+  const actions=document.createElement('div');
+  actions.className='cfg-money-actions';
+  if(lista && !roleBlocksView('domiciliados')) actions.innerHTML=`<button class="btn btn-primary" onclick="go('domiciliados')">Ver cobros y depósitos</button>`;
+  if(gestiona){
+    const connect=document.createElement('button');
+    connect.type='button';connect.className='btn '+(lista?'btn-outline':'btn-primary');
+    connect.textContent=!cuenta?'Conectar Stripe':lista?'Actualizar datos en Stripe':'Continuar en Stripe';
+    connect.onclick=()=>conectarStripe(connect);actions.append(connect);
+    if(cuenta){
+      actions.insertAdjacentHTML('beforeend','<button class="btn btn-outline" onclick="refreshStripeStatus(this)">Actualizar estado</button>');
+      if(lista) actions.insertAdjacentHTML('beforeend','<a class="btn btn-outline" target="_blank" rel="noopener" href="https://connect.stripe.com/express_login">Abrir Stripe Express</a>');
+    }
+  }
+  el.append(actions);
+  el.insertAdjacentHTML('beforeend','<p class="op-caption">Stripe aplica su tarifa de procesamiento. VELUM cobra 0% de comisión por venta.</p>');
+  if(gestiona && ['#stripe-onboarded','#stripe-onboarding-refresh'].includes(location.hash)){
+    history.replaceState(null,'',location.pathname+location.search);
+    refreshStripeStatus();
   }
 }
 
-async function conectarStripe(){
-  if(!currentUser?.jwt){ toast('Sesión no válida.','✕'); return; }
-  toast('Generando link de onboarding...', '⏳', 2000);
+async function conectarStripe(btn){
+  const usuario=contextoPagoGym();
+  if(!administrarPagosGym() || btn?.disabled) return;
+  if(btn) btn.disabled=true;
+  toast('Abriendo Stripe…', '', 2000);
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/stripe-connect-onboard`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+usuario.jwt},
       body: JSON.stringify({})
     });
     const data = await res.json();
-    if (!res.ok || !data.onboarding_url) {
-      console.error('connect-onboard:', data);
-      alert(data.error || 'No se pudo iniciar el onboarding.');
-      return;
-    }
-    // Redirigir a Stripe
-    window.location.href = data.onboarding_url;
-  } catch (e) {
-    console.error(e);
-    alert('Error de conexión.');
-  }
+    if(!pagoGymVigente(usuario) || !administrarPagosGym()) return;
+    if(!res.ok || !data.onboarding_url) throw Error();
+    window.location.href=data.onboarding_url;
+  }catch{if(pagoGymVigente(usuario)) toast('No se pudo abrir Stripe. Vuelve a intentar.','✕');}
+  finally{if(btn && pagoGymVigente(usuario)) btn.disabled=false;}
 }
 
 // Alias para "Continuar configuración" cuando el gym está en pending
 function reonboardStripe(){ conectarStripe(); }
 
-async function refreshStripeStatus(){
-  toast('Sincronizando con Stripe...', '⏳', 2000);
-  try {
-    // 1. Llamar edge function que hace fetch a Stripe y actualiza DB
-    await fetch(`${supabaseUrl}/functions/v1/stripe-account-sync`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.jwt},
-      body: JSON.stringify({})
+async function refreshStripeStatus(btn){
+  const usuario=contextoPagoGym();
+  if(!administrarPagosGym() || btn?.disabled) return;
+  if(btn){btn.disabled=true;btn.textContent='Actualizando…';}
+  const msg=document.getElementById('stripe-sync-msg');
+  msg.textContent='Consultando el estado actual en Stripe…';
+  try{
+    const res=await fetch(supabaseUrl+'/functions/v1/stripe-account-sync',{
+      method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+usuario.jwt},body:'{}'
     });
-    // 2. Re-render con datos frescos
-    await renderStripeSettings();
-  } catch(e){ console.error('refreshStripeStatus:', e); toast('Error al sincronizar.','✕'); }
+    if(!res.ok) throw Error();
+    const resultado=await res.json();
+    if(!resultado || resultado.error || resultado.ok===false) throw Error();
+    if(pagoGymVigente(usuario) && administrarPagosGym()) await renderStripeSettings();
+  }catch{
+    if(pagoGymVigente(usuario) && administrarPagosGym()) msg.textContent='No se pudo actualizar el estado con Stripe. Vuelve a intentar.';
+  }finally{if(btn && pagoGymVigente(usuario)){btn.disabled=false;btn.textContent='Actualizar estado';}}
 }
 
 async function desconectarStripe(){
@@ -29896,7 +29932,7 @@ function waCobrarLink(){
 }
 
 // Hook renderStripeSettings into settings tab
-document.addEventListener('velumAppReady', ()=>{ renderStripeSettings(); });
+
 
 // Inicializar cuando el app esté listo
 document.addEventListener('velumAppReady', vaInit);
