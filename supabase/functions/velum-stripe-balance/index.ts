@@ -1,3 +1,4 @@
+import { verifyPanelSession } from '../_shared/panel-session.ts';
 // velum-stripe-balance — v4: relleno de pagos.stripe_available_on Y stripe_fee_mxn
 // (v3 leía la balance_transaction y tiraba el fee: el neto quedaba inflado). Fecha en que
 // Stripe libera cada cobro) para mostrar al gym cuándo cae su depósito.
@@ -21,37 +22,6 @@ function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
-}
-
-// ── base64url helpers ────────────────────────────────────────────────
-function b64urlToStr(b64url: string): string {
-  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  while (b64.length % 4) b64 += '=';
-  return atob(b64);
-}
-function b64urlToBytes(b64url: string) {
-  const s = b64urlToStr(b64url);
-  return Uint8Array.from(s, (c) => c.charCodeAt(0));
-}
-
-// ── Verifica el JWT HS256 del panel (firmado por move-login con SUPABASE_JWT_SECRET) ──
-async function verifyJWT(token: string, secret: string): Promise<Record<string, unknown> | null> {
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [h, p, s] = parts;
-  try {
-    const key = await crypto.subtle.importKey(
-      'raw', new TextEncoder().encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
-    );
-    const ok = await crypto.subtle.verify(
-      'HMAC', key, b64urlToBytes(s), new TextEncoder().encode(`${h}.${p}`),
-    );
-    if (!ok) return null;
-    const payload = JSON.parse(b64urlToStr(p));
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return payload;
-  } catch { return null; }
 }
 
 // ── Stripe REST helpers ──────────────────────────────────────────────
@@ -93,31 +63,41 @@ async function monthNetSummary(secretKey: string, acct: string) {
   const mx = new Date(now.getTime() - 6 * 3600 * 1000);
   const firstUtc = Date.UTC(mx.getUTCFullYear(), mx.getUTCMonth(), 1, 6, 0, 0); // 00:00 CDMX
   const gte = Math.floor(firstUtc / 1000);
-  let gross = 0, fee = 0, net = 0, count = 0;
-  let starting_after = '';
-  // Cobros entrantes = type 'charge' (cargos directos) o 'payment' (destination charges con
-  // on_behalf_of=gym: en la cuenta conectada el ingreso llega como 'payment', NO 'charge').
-  // NO filtramos por type en la URL para no perder ninguno; se filtra abajo. Se excluyen
-  // 'transfer'/'payout'/'refund'/etc. para no doble-contar ni restar depósitos.
-  const COBROS = new Set(['charge', 'payment']);
-  // Paginación con tope de seguridad (10 páginas = 1000 movimientos/mes).
+  let gross = 0, fee = 0, refunds = 0, disputes = 0, count = 0;
+  let cursor = '';
+  // A dispute can have both a withdrawal and a reinstatement. Use the signed
+  // net posted to this account, including any fee Stripe applied to the adjustment.
+  const seen = new Set<string>();
   for (let page = 0; page < 10; page++) {
     const q = `balance_transactions?limit=100&created[gte]=${gte}` +
-      (starting_after ? `&starting_after=${starting_after}` : '');
+      (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : '');
     const res = await stripeGet(q, secretKey, acct);
-    const data = Array.isArray(res?.data) ? res.data : [];
-    for (const t of data) {
-      if ((t.currency || '').toLowerCase() !== 'mxn') continue;
-      if (!COBROS.has(t.type)) continue;
-      gross += (t.amount || 0);
-      fee   += (t.fee || 0);
-      net   += (t.net || 0);
-      count += 1;
+    if (!Array.isArray(res?.data) || typeof res.has_more !== 'boolean') throw Error('Resumen de Stripe incompleto');
+    for (const t of res.data) {
+      if (t.currency !== 'mxn' || seen.has(t.id)) continue;
+      if (!t.id || !Number.isSafeInteger(t.net) || !Number.isSafeInteger(t.fee) ||
+          !Number.isSafeInteger(t.amount) || t.net !== t.amount - t.fee) throw Error('Movimiento de Stripe incompleto');
+      seen.add(t.id);
+      if (t.type === 'charge' || t.type === 'payment') {
+        gross += t.amount;
+        fee += t.fee;
+        count++;
+      } else if (['refund', 'refund_failure', 'partial_capture_reversal'].includes(t.reporting_category) ||
+                 ['refund', 'payment_refund', 'refund_failure', 'payment_failure_refund'].includes(t.type)) {
+        refunds += t.net;
+      } else if (['dispute', 'dispute_reversal'].includes(t.reporting_category)) {
+        disputes += t.net;
+      }
     }
-    if (!res?.has_more || !data.length) break;
-    starting_after = data[data.length - 1].id;
+    if (!res.has_more) {
+      return { gross_mxn: gross / 100, fee_mxn: fee / 100, refunds_net_mxn: refunds / 100,
+        disputes_net_mxn: disputes / 100, net_mxn: (gross - fee + refunds + disputes) / 100, count };
+    }
+    const next = res.data.at(-1)?.id;
+    if (!next || next === cursor) break;
+    cursor = next;
   }
-  return { gross_mxn: gross / 100, fee_mxn: fee / 100, net_mxn: net / 100, count };
+  throw Error('Paginación del resumen de Stripe incompleta');
 }
 
 Deno.serve(async (req: Request) => {
@@ -128,16 +108,13 @@ Deno.serve(async (req: Request) => {
   const serviceKey     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   // El ecosistema Stripe desplegado usa STRIPE_SECRET_KEY (webhook); charge usa el alias PLATFORM.
   const platformSecret = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_PLATFORM_SECRET_KEY');
-  const jwtSecret      = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('MOVE_JWT_SECRET');
-
-  if (!jwtSecret) return json({ error: 'Auth no configurada en el servidor.' }, 500);
 
   // ── Autenticación PRIMERO: gym_id sale del JWT verificado (no filtra config a anónimos) ──
   const authHeader = req.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) return json({ error: 'No autenticado.' }, 401);
 
-  const claims = await verifyJWT(token, jwtSecret);
+  const claims = await verifyPanelSession(token);
   if (!claims) return json({ error: 'Sesión inválida o expirada.' }, 401);
 
   const gymId = claims.gym_id;

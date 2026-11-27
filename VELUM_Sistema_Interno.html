@@ -15439,7 +15439,7 @@ function renderClientes(){
       .slice(0,3);
     const histHtml = historial.map(h=>`
       <span style="font-size:var(--fs-xs);padding:2px 8px;border-radius:10px;background:var(--card2);color:var(--text3);border:1px solid var(--border);">
-        ${h.fecha||'—'} · $${(h.monto||0).toLocaleString('es-MX')} · ${esc(h.plan||'—')}
+        ${h.fecha||'—'} · ${esPagoDeTienda(h)?'Cobro original ':''}${_pvMoney2(h.monto)} · ${esc(h.plan||'—')}
       </span>`).join('');
 
     // WhatsApp
@@ -15716,6 +15716,52 @@ async function _pintarTardiasFicha(clienteId){
     ${n} cancelaci${n===1?'ón tardía':'ones tardías'} en 30 días${desc?` · ${desc} descontada${desc===1?'':'s'} de su paquete`:''}</div>`;
 }
 
+function esPagoDeTienda(pago){
+  return pago.source === 'storefront' || pago.metodo === 'Stripe (Storefront)';
+}
+
+async function mostrarDevolucionesFicha(historial, totalCentavos){
+  const total = document.getElementById('cpanel-total-pagado');
+  const avisos = [...document.querySelectorAll('#cpanel-historial [data-devolucion]')];
+  const pagosTienda = historial.filter(esPagoDeTienda);
+  const ajustes = new Map();
+  try {
+    for(let i=0; i<pagosTienda.length; i+=100){
+      const ids = pagosTienda.slice(i,i+100).map(p=>p.id);
+      const {data,error} = await window.supabaseClient.rpc('storefront_refunds_for_payments',{p_pago_ids:ids});
+      if(!total.isConnected) return;
+      if(error || !Array.isArray(data)) throw Error('Consulta de devoluciones incompleta');
+      for(const ajuste of data) ajustes.set(String(ajuste.pago_id), ajuste);
+    }
+  } catch {
+    if(!total.isConnected) return;
+    total.textContent = 'Por confirmar';
+    avisos.forEach(el=>{ el.textContent='No se pudieron consultar las devoluciones.'; });
+    return;
+  }
+  let devuelto = 0;
+  let porConfirmar = false;
+  for(const [i,pago] of pagosTienda.entries()){
+    const ajuste = ajustes.get(String(pago.id));
+    const importe = Math.round(Number(pago.monto)*100);
+    const centavos = Number(ajuste?.refunded_cents ?? 0);
+    if(ajuste?.needs_review || !Number.isSafeInteger(centavos) || centavos < 0 || centavos > importe){
+      avisos[i].textContent = 'Devolución por verificar';
+      porConfirmar = true;
+    } else if(centavos > 0){
+      const estado = centavos === importe ? 'Devolución total' : 'Devolución parcial';
+      avisos[i].textContent = estado + ' · Devuelto ' + _pvMoney2(centavos/100) + ' · Cobrado tras devolución ' + _pvMoney2((importe-centavos)/100);
+      if(pago.clases_totales != null){
+        avisos[i].append(document.createElement('br'), 'El paquete conserva sus clases. Puedes ajustarlas en Pagos → Editar pago.');
+      }
+      devuelto += centavos;
+    } else {
+      avisos[i].textContent = '';
+    }
+  }
+  total.textContent = porConfirmar ? 'Por confirmar' : _pvMoney2((totalCentavos-devuelto)/100);
+}
+
 function openClientePanel(nombreCliente){
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   // Identity data from clientes table
@@ -15725,7 +15771,8 @@ function openClientePanel(nombreCliente){
     .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
 
   const ultimo     = historial[0]||null;
-  const totalPagado = historial.reduce((s,p)=>s+p.monto,0);
+  const totalCentavos = historial.reduce((s,p)=>s+Math.round(Number(p.monto||0)*100),0);
+  const tieneTienda = historial.some(esPagoDeTienda);
   const primerPago  = historial[historial.length-1]||null;
 
   // Estado membresía por regla canónica (misma que el kiosco/app y la lista)
@@ -15766,8 +15813,8 @@ function openClientePanel(nombreCliente){
     : (cliRec.created_at ? (() => { const d=new Date(cliRec.created_at); return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`; })() : '—');
   document.getElementById('cpanel-kpis').innerHTML = `
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
-      <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:4px;">Total pagado</div>
-      <div style="font-size:var(--fs-lg);font-weight:800;color:var(--ok);">$${totalPagado.toLocaleString('es-MX')}</div>
+      <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:4px;">${tieneTienda?'Total tras devoluciones registradas':'Total pagado'}</div>
+      <div id="cpanel-total-pagado" style="font-size:var(--fs-lg);font-weight:800;color:var(--ok);">${tieneTienda?'Consultando…':_pvMoney2(totalCentavos/100)}</div>
     </div>
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;">
       <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Cliente desde</div>
@@ -15867,6 +15914,7 @@ function openClientePanel(nombreCliente){
               ${esAbonoPago&&abonoText?`<span style="color:var(--warn);font-weight:600;"> · ${esc(abonoText)}</span>`:''}
               ${!esAbonoPago&&p.notas?`· ${esc(p.notas)}`:''}
             </div>
+            ${esPagoDeTienda(p)?'<div data-devolucion style="font-size:var(--fs-xs);color:var(--text2);">Consultando devoluciones…</div>':''}
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div style="font-size:var(--fs-base);font-weight:800;color:${esAbonoPago?'var(--warn)':'var(--ok)'};">$${(p.monto||0).toLocaleString('es-MX')}</div>
@@ -15875,6 +15923,8 @@ function openClientePanel(nombreCliente){
         </div>`;
       }).join('')
     : `<div style="color:var(--text3);font-size:var(--fs-sm);">Sin pagos registrados.</div>`;
+
+  if(tieneTienda) mostrarDevolucionesFicha(historial, totalCentavos);
 
   // ── QR Personal ──
   const kioskoBase  = getKioskoUrl();
@@ -17626,7 +17676,9 @@ function _pvHero(cobradoMes, cobradoMesN, stripe){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px;">
         ${_domiMetric('Cobrado este mes (bruto)', _pvMoney2(ms.gross_mxn), `${ms.count} pago${ms.count===1?'':'s'}`, 'var(--accent)')}
         ${_domiMetric('Comisión de Stripe', '−'+_pvMoney2(ms.fee_mxn), 'procesamiento de tarjeta', 'var(--warn)')}
-        ${_domiMetric('Neto del mes', _pvMoney2(ms.net_mxn), 'tras comisión', 'var(--ok)')}
+        ${ms.refunds_net_mxn ? _domiMetric('Reembolsos', _pvMoney2(ms.refunds_net_mxn), 'efecto neto en Stripe', 'var(--text)') : ''}
+        ${ms.disputes_net_mxn ? _domiMetric('Disputas', _pvMoney2(ms.disputes_net_mxn), 'retiros y restituciones', 'var(--text)') : ''}
+        ${_domiMetric('Neto de cobros del mes', _pvMoney2(ms.net_mxn), ms.refunds_net_mxn === undefined ? 'tras comisión' : 'tras comisiones, reembolsos y disputas', 'var(--ok)')}
         ${_domiMetric('Disponible ahora', _domiMoneyFmt(stripe.available_mxn), 'liberado, aún sin depositar', 'var(--text)')}
       </div>${warnPayouts}`;
   }

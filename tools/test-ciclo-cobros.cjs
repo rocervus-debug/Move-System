@@ -24,7 +24,7 @@ const sub = {
 };
 const tablas = {
   member_subscriptions: [sub],
-  gyms: [{ id: 1, nombre: "MOVE QA" }],
+  gyms: [{ id: 1, nombre: "MOVE QA", stripe_account_id: "acct_qa" }],
   packages: [{ id: 7, name: "Cuatro clases QA", price_mxn: 500, num_classes: 4, duration_days: 30 }],
   pagos: [{
     gym_id: 1,
@@ -84,7 +84,15 @@ function from(table) {
         table === "pagos" && obj.stripe_session_id &&
         source.some((r) => r.stripe_session_id === obj.stripe_session_id)
       ) return Promise.resolve({ error: { code: "23505" } });
-      source.push({ ...obj, id: source.length + 1 });
+      if (table === "stripe_adjustment_events" && source.some((row) =>
+        row.stripe_account === obj.stripe_account && row.livemode === obj.livemode && row.event_id === obj.event_id
+      )) return Promise.resolve({ error: { code: "23505" } });
+      if (table === "gyms") {
+        const row = { ...obj, id: source.length + 1 };
+        source.push(row);
+        return { select() { return { single: async () => ({ data: { id: row.id }, error: null }) }; } };
+      }
+      for (const entry of Array.isArray(obj) ? obj : [obj]) source.push({ ...entry, id: source.length + 1 });
       return Promise.resolve({ error: null });
     },
     then(resolve, reject) {
@@ -153,6 +161,7 @@ vm.runInNewContext(stripTypeScriptTypes(code), {
   Response,
   TextEncoder,
   crypto: webcrypto,
+  btoa,
   console,
   fetch: async (url, opts) => {
     if (url === "https://fixture.invalid/functions/v1/velum-email") {
@@ -174,8 +183,8 @@ const invoice = {
   amount_due: 50000,
   hosted_invoice_url: "https://invoice.example.test/fixture",
 };
-async function evento(type, obj, expectedStatus = 200) {
-  const body = JSON.stringify({ type, data: { object: obj } }), t = Math.floor(Date.now() / 1000);
+async function evento(type, obj, expectedStatus = 200, envelope = {}) {
+  const body = JSON.stringify({ type, ...envelope, data: { object: obj } }), t = Math.floor(Date.now() / 1000);
   const checksum = createHmac("sha256", notificationsSecret).update(t + "." + body).digest("hex");
   const result = await handler(
     new Request("https://fixture.invalid/", {
@@ -229,6 +238,18 @@ test("Renovación, recuperación, link, reserva y recibo al reintentar un cobro"
   await evento("invoice.payment_succeeded", facturaGym);
   assert.equal(gym.subscription_status, "active");
   assert.equal(tablas.pagos.length, 2, "La suscripción del gimnasio queda fuera de la caja de socios");
+  const endOfCycle = 1799003445;
+  const currentInvoice = { ...invoice, parent: { subscription_details: { subscription: gym.stripe_subscription_id } },
+    lines: { data: [{ period: { end: endOfCycle } }] }, amount_paid: 99900 };
+  delete currentInvoice.subscription;
+  await evento("invoice.payment_failed", currentInvoice);
+  assert.equal(gym.subscription_status, "past_due");
+  await evento("invoice.payment_succeeded", currentInvoice);
+  assert.equal(gym.subscription_status, "active");
+  await evento("customer.subscription.updated", { id: gym.stripe_subscription_id, status: "active",
+    items: { data: [{ current_period_end: endOfCycle }] } });
+  assert.equal(gym.subscription_current_period_end, new Date(endOfCycle * 1000).toISOString());
+  assert.equal(tablas.pagos.length, 2);
   const simFecha = day(base);
   const sale = (id, metadata, amount_total = 45000) => ({
     id,
@@ -238,8 +259,8 @@ test("Renovación, recuperación, link, reserva y recibo al reintentar un cobro"
   });
   const charge = (session, status) => evento("checkout.session.completed", session, status);
   const manual = sale("cs_link", { source: "manual_link", cliente: "Atleta QA" }, 30000);
-  await charge(manual);
-  await charge(manual);
+  await evento("checkout.session.completed", manual, 200, { account: "acct_qa" });
+  await evento("checkout.session.completed", manual, 200, { account: "acct_qa" });
   assert.equal(tablas.pagos.filter((p) => p.stripe_session_id === "cs_link").length, 1);
   assert.equal(tablas.pagos.at(-1).monto, 300);
   tablas.clientes = [{ id: 61, nombre: "Atleta QA", gym_id: 1, email: sub.customer_email }];
@@ -300,4 +321,93 @@ test("Renovación, recuperación, link, reserva y recibo al reintentar un cobro"
   assert.equal(mails.length, correosAntes + 1);
   assert.equal(mails.at(-1).data.vence, pagosReintentados[0].vence);
   assert.equal(mails.at(-1).data.plan, tablas.packages[0].name);
+});
+
+test("Los reembolsos y disputas quedan registrados una vez y conservan el consumo", async () => {
+  tablas.stripe_adjustment_events = [];
+  const original = { id: 100, gym_id: 1, monto: 450, clases_totales: 4, clases_usadas: 1 };
+  tablas.pagos.push({ ...original });
+  const charge = { object: "charge", id: "ch_qa", currency: "mxn", amount: 45000, payment_intent: "pi_qa" };
+  const dispute = { object: "dispute", id: "dp_qa", currency: "mxn", amount: 45000, charge: "ch_otro", payment_intent: "pi_otro" };
+  const cases = [
+    ["charge.refunded", { ...charge, amount_refunded: 10000 }, 10000],
+    ["charge.refunded", { ...charge, amount_refunded: 45000 }, 45000],
+    ["charge.dispute.created", { ...dispute, status: "needs_response" }, 45000],
+    ["charge.dispute.closed", { ...dispute, status: "won" }, 45000],
+  ];
+  for (const [i, [type, object, amount]] of cases.entries()) {
+    const env = { id: "evt_" + i, account: "acct_qa", livemode: false, created: 1795700000 + i };
+    await evento(type, object, 200, env);
+    await evento(type, object, 200, env);
+    assert.equal(tablas.stripe_adjustment_events.length, i + 1);
+    const saved = tablas.stripe_adjustment_events.at(-1);
+    assert.equal(saved.amount_cents, amount);
+    assert.equal(saved.charge_id, object.charge || object.id);
+    assert.equal(saved.stripe_account, env.account);
+  }
+  assert.deepEqual(tablas.pagos.at(-1), original);
+});
+
+test("El corte concilia por movimiento de saldo y rechaza una respuesta parcial", async () => {
+  const source = readFileSync(path.join(__dirname, "../supabase/functions/velum-stripe-balance/index.ts"), "utf8")
+    .replace(/^import .*?;$/gm, "");
+  const row = (id, type, reporting_category, amount, fee = 0) =>
+    ({ id, type, reporting_category, currency: "mxn", amount, fee, net: amount - fee });
+  const original = row("txn_sale", "charge", "charge", 45000, 2488);
+  const partial = row("txn_partial", "refund", "refund", -10000);
+  const final = row("txn_final", "refund", "refund", -35000);
+  const hold = row("txn_withdrawn", "adjustment", "dispute", -45000, 1500);
+  const restored = row("txn_won", "adjustment", "dispute_reversal", 45000);
+  let pages;
+  const monthly = vm.runInNewContext(stripTypeScriptTypes(source) + "\nmonthNetSummary", {
+    Deno: { serve() {} }, Response,
+    fetch: async (url, opts) => {
+      assert.equal(opts.headers["Stripe-Account"], "acct_qa");
+      const page = pages.shift();
+      assert.ok(page);
+      if (page.after) assert.equal(new URL(url).searchParams.get("starting_after"), page.after);
+      return Response.json(page);
+    },
+  });
+  pages = [{ data: [original, partial], has_more: false }];
+  let summary = await monthly("fixture", "acct_qa");
+  assert.equal(summary.net_mxn, 325.12);
+  pages = [{ data: [original, partial], has_more: true }, { after: partial.id, data: [partial, final], has_more: false }];
+  summary = await monthly("fixture", "acct_qa");
+  assert.equal(summary.count, 1);
+  assert.equal(summary.gross_mxn, 450);
+  assert.equal(summary.refunds_net_mxn, -450);
+  assert.equal(summary.net_mxn, -24.88);
+  pages = [{ data: [original, hold], has_more: false }];
+  assert.equal((await monthly("fixture", "acct_qa")).net_mxn, -39.88);
+  pages = [{ data: [original, hold, restored, row("po", "payout", "payout", -1000)], has_more: false }];
+  assert.equal((await monthly("fixture", "acct_qa")).net_mxn, 410.12);
+  pages = [{ data: [original], has_more: true }, { error: "processor unavailable" }];
+  await assert.rejects(monthly("fixture", "acct_qa"), /incompleto/);
+});
+
+test("Una confirmación de alta crea una cuenta de gimnasio y permite reentrega", async () => {
+  tablas.usuarios = [];
+  tablas.gym_config = [];
+  tablas.velum_saas_plans = [{ id: "max", max_clientes: null }];
+  const checkout = {
+    id: "cs_test_alta",
+    mode: "subscription",
+    customer: "cus_qa",
+    subscription: "sub_nuevo",
+    metadata: { velum_signup: "true", plan: "max", gym_nombre: "CORE de prueba",
+      email: "alta@example.test", nombre_admin: "Dueña QA", pw_hash: "a".repeat(64) },
+  };
+  const before = mails.length;
+  await evento("checkout.session.completed", checkout);
+  await evento("checkout.session.completed", checkout);
+  const gyms = tablas.gyms.filter(g => g.stripe_subscription_id === checkout.subscription);
+  assert.equal(gyms.length, 1);
+  assert.equal(tablas.usuarios.length, 1);
+  const owner = tablas.usuarios[0];
+  assert.equal(owner.gym_id, gyms[0].id);
+  assert.equal(owner.rol, "admin");
+  assert.match(owner.pw_hash, /^v2:/);
+  assert.ok(tablas.gym_config.some(c => c.gym_id === owner.gym_id && c.key === "moneda" && c.value === "MXN"));
+  assert.deepEqual(mails.slice(before).map(m => m.template), ["welcome"]);
 });
