@@ -286,7 +286,16 @@ Deno.serve(async (req: Request) => {
           const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end*1000).toISOString() : null;
           const feePct = Number(md.velum_fee_pct || '0');
 
-          const { data: ph } = await db.from('member_subscriptions').select('id').eq('gym_id', gymId).eq('package_id', packageId).eq('customer_email', email).is('stripe_subscription_id', null).order('created_at',{ascending:false}).limit(1).maybeSingle();
+          let phQuery = db.from('member_subscriptions').select('id').eq('gym_id',gymId)
+            .eq('package_id',packageId).eq('status','incomplete').is('stripe_subscription_id',null);
+          if (md.core_checkout === 'tracked') {
+            phQuery = phQuery.eq('stripe_checkout_session_id',session.id);
+          } else {
+            phQuery = phQuery.is('stripe_checkout_session_id',null).eq('customer_email',email);
+          }
+          const {data: candidates,error: lookupError} = await phQuery.limit(2);
+          if (lookupError) throw Error('No se pudo consultar la activación.');
+          const ph = candidates?.length===1 ? candidates[0] : null;
           const row = {
             cliente_id: cli.id, cliente_nombre: cli.nombre, customer_email: email,
             // Cobro DIRECTO: la sub vive en la cuenta del gym (evAcct). Cobro de destino (viejo):
@@ -296,8 +305,12 @@ Deno.serve(async (req: Request) => {
             status: sub?.status || 'active', amount_cents: Math.round(Number(pkg.price_mxn)*100), application_fee_pct: feePct,
             interval: 'month', current_period_end: periodEnd, cancel_at_period_end: !!sub?.cancel_at_period_end, updated_at: new Date().toISOString(),
           };
-          if (ph) await db.from('member_subscriptions').update(row).eq('id', ph.id);
-          else { const { error: upErr } = await db.from('member_subscriptions').upsert({ gym_id: gymId, package_id: packageId, ...row }, { onConflict: 'stripe_subscription_id' }); if (upErr && !isDupErr(upErr)) console.error('member sub upsert err:', upErr); }
+          if (ph) {
+            const {data: saved,error} = await db.from('member_subscriptions').update({...row,stripe_checkout_session_id:session.id})
+              .eq('id',ph.id).eq('status','incomplete').is('stripe_subscription_id',null).select('id').maybeSingle();
+            if (error || !saved) throw Error('No se pudo confirmar la activación.');
+          }
+          else { const { error: upErr } = await db.from('member_subscriptions').upsert({ gym_id: gymId, package_id: packageId, stripe_checkout_session_id:session.id, ...row }, { onConflict: 'stripe_subscription_id' }); if (upErr) throw Error('No se pudo guardar la activación.'); }
 
           const clasesTotales = pkg.unlimited_classes ? null : (pkg.num_classes || null);
           const invoiceId = (sub?.latest_invoice && typeof sub.latest_invoice==='string') ? sub.latest_invoice : (session.invoice as string)||'';
@@ -547,12 +560,12 @@ Deno.serve(async (req: Request) => {
         const session = event.data.object;
         await db.from('storefront_orders').update({ status: event.type === 'checkout.session.expired' ? 'expired' : 'failed', raw_event: event }).eq('stripe_session_id', session.id);
         if (session.mode === 'subscription' && session.metadata?.velum_member_sub === 'true') {
-          const email = (session.metadata?.customer_email || session.customer_email || '').toLowerCase().trim();
-          const gymId = parseInt(session.metadata?.gym_id || '0', 10);
-          const packageId = parseInt(session.metadata?.package_id || '0', 10);
-          if (email && gymId && packageId) {
-            await db.from('member_subscriptions').delete().eq('gym_id', gymId).eq('package_id', packageId).eq('customer_email', email).is('stripe_subscription_id', null).eq('status','incomplete');
-          }
+          // Una persona puede tener dos enlaces para un mismo plan. Sólo vence su sesión concreta.
+          const {error} = await db.from('member_subscriptions').update({status:'canceled',canceled_at:new Date().toISOString()})
+            .eq('gym_id',Number(session.metadata.gym_id)).eq('stripe_checkout_session_id',session.id)
+            .eq('status','incomplete').is('stripe_subscription_id',null);
+          if (error) throw Error('No se pudo cerrar la activación.');
+
         }
         break;
       }
