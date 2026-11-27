@@ -72,14 +72,14 @@ test('una respuesta anterior al cierre de sesión no reactiva al usuario', async
 });
 
 const login = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'functions', 'move-login', 'index.ts'), 'utf8');
-const consultaGym = login.slice(login.indexOf('    if (user.gym_id)'), login.indexOf('    const { data: factor'));
+const consultaGym = login.slice(login.indexOf('    let readOnly = false;'), login.indexOf('    const { data: factor'));
 const bloqueoPanel = panel.slice(panel.indexOf('function checkSubscriptionBlock()'), panel.indexOf('function removeSubBlock()'));
 const vencimiento = '2026-11-30T12:00:00.000Z';
 const limite = Date.parse(vencimiento);
 
-async function probarAcceso(gymConfig, instante, error = null) {
+async function probarAcceso(gymConfig, instante, error = null, rol = 'admin') {
   const ctx = vm.createContext({
-    gymConfig, getPlan: () => 'max', user: { gym_id: 1 }, CORS: {}, Response,
+    gymConfig, getPlan: () => 'max', user: { gym_id: 1, rol }, CORS: {}, Response,
     Date: class extends Date { static now() { return instante; } },
     db: { from() { return { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: gymConfig, error }) }; } },
     removeSubBlock() { ctx.bloqueado = false; }, showSubBlock() { ctx.bloqueado = true; }
@@ -105,6 +105,13 @@ for (const [nombre, fecha, reloj, esperado] of [
 test('el pago recuperado y un convenio vigente conservan el acceso', async () => {
   assert.deepEqual(await probarAcceso({ subscription_status: 'active' }, limite), [200, false]);
   assert.deepEqual(await probarAcceso({ subscription_status: 'past_due', acceso_garantizado: true }, limite), [200, false]);
+});
+
+test('la baja mantiene el panel bloqueado y sólo admite administración en el plazo de exportación', async () => {
+  const gym = { subscription_status: 'canceled', exportacion_hasta: vencimiento, subscription_current_period_end: '2027-01-01' };
+  assert.deepEqual(await probarAcceso(gym, limite - 1), [200, true]);
+  assert.deepEqual(await probarAcceso(gym, limite - 1, null, 'recepcion'), [402, true]);
+  assert.deepEqual(await probarAcceso(gym, limite), [402, true]);
 });
 
 test('el acceso espera a que el gimnasio pueda verificarse', async () => {

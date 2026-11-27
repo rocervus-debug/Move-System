@@ -16,6 +16,8 @@
 // deploy: supabase functions deploy move-login --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
+import { exportAccess, staffPasswordHash } from '../_shared/core-recovery.ts';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -33,14 +35,6 @@ function limpiarEmail(v: unknown): string {
     .toLowerCase();
 }
 
-async function hashPBKDF2(input: string): Promise<string> {
-  const salt   = crypto.getRandomValues(new Uint8Array(16));
-  const saltB64 = btoa(String.fromCharCode(...salt));
-  const keyMat = await crypto.subtle.importKey('raw', new TextEncoder().encode(input), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' }, keyMat, 256);
-  const hashB64 = btoa(String.fromCharCode(...new Uint8Array(bits)));
-  return `v2:${saltB64}:${hashB64}`;
-}
 async function verifyPBKDF2(input: string, stored: string): Promise<boolean> {
   try {
     const parts = stored.split(':');
@@ -112,18 +106,22 @@ Deno.serve(async (req: Request) => {
 
     if (version < 2) {
       try {
-        const newHash = await hashPBKDF2(pw_hash);
-        await db.from('usuarios').update({ pw_hash: newHash, pw_version: 2 }).eq('id', user.id);
-      } catch (e) { console.error('pw upgrade err:', e); }
+        const newHash = await staffPasswordHash(pw_hash);
+        const updated = await db.from('usuarios').update({ pw_hash: newHash, pw_version: 2 }).eq('id', user.id).eq('pw_hash',user.pw_hash).select('id').maybeSingle();
+        if (updated.error || !updated.data) throw new Error('Credencial modificada.');
+        user.pw_version = 2;
+      } catch (e) { return new Response(JSON.stringify({error:'Vuelve a iniciar sesión.'}),{status:409,headers:CORS}); }
     }
 
+    let readOnly = false;
     if (user.gym_id) {
-      const { data: gym, error: gymError } = await db.from('gyms').select('subscription_status, acceso_garantizado, subscription_grace_until').eq('id', user.gym_id).maybeSingle();
+      const { data: gym, error: gymError } = await db.from('gyms').select('subscription_status, acceso_garantizado, subscription_grace_until, exportacion_hasta').eq('id', user.gym_id).maybeSingle();
       if (gymError) {
         return new Response(JSON.stringify({ error: 'Servicio de acceso temporalmente no disponible.' }), { status: 503, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
       const inGrace = gym?.subscription_status === 'past_due' && Date.now() < Date.parse(gym.subscription_grace_until ?? '');
-      if (!gym || (!gym.acceso_garantizado && !inGrace && !['active', 'trialing', 'owner'].includes(gym.subscription_status ?? ''))) {
+      readOnly = gym?.subscription_status === 'canceled' && !gym.acceso_garantizado && user.rol === 'admin' && Date.now() < Date.parse(gym.exportacion_hasta ?? '');
+      if (!readOnly && (!gym || (!gym.acceso_garantizado && !inGrace && !['active', 'trialing', 'owner'].includes(gym.subscription_status ?? '')))) {
         return new Response(JSON.stringify({ error: 'Tu suscripción no está activa.', subscription_status: gym?.subscription_status }), { status: 402, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
     }
@@ -143,16 +141,21 @@ Deno.serve(async (req: Request) => {
 
     await db.from('login_attempts').insert({ email: normalizedEmail, ip, success: true });
 
+    if (readOnly) {
+      const permiso = await exportAccess(db,user);
+      return new Response(JSON.stringify(permiso ? {lectura:permiso} : {error:'El plazo de exportación terminó.'}),
+        {status:permiso?200:402,headers:{...CORS,'Content-Type':'application/json','Cache-Control':'no-store'}});
+    }
     const now = Math.floor(Date.now() / 1000);
     const payload = {
       staff_login: true, aud: 'authenticated', iss: 'supabase', iat: now, exp: now + 60 * 60 * 24,
       sub: String(user.id), email: user.email, role: 'authenticated',
-      gym_id: user.gym_id, app_rol: user.rol, pw_version: 2,
+      gym_id: user.gym_id, app_rol: user.rol, pw_version: user.pw_version,
     };
     const token = await signJWT(payload, jwtSecret);
     return new Response(JSON.stringify({
       token,
-      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, gym_id: user.gym_id, pw_version: 2 },
+      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, gym_id: user.gym_id, pw_version: user.pw_version },
     }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('move-login error:', e);
