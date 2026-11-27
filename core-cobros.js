@@ -39,13 +39,25 @@ window.CoreCobros = (function core(){
     return data;
   }
   const ready = a => !!(a?.stripe_account_id && a.stripe_charges_enabled);
+  function frequency(row){
+    if(row.kind==='sub') return 'Mensual recurrente';
+    if(row.kind==='link') return 'Pago único';
+    const p=row.data, method=String(p.metodo||'').toLowerCase();
+    const note=String(p.notas||'');
+    const legacyMode=note.match(/^\[STRIPE\] session=\S+ mode=(subscription|payment)\b/)?.[1];
+    if(legacyMode==='subscription' || /^\[STRIPE-SUB\] invoice=/.test(note)) return 'Recurrente';
+    if(legacyMode==='payment' || /^\[PORTAL\] session=/.test(note)) return 'Pago único';
+    if(p.stripe_sub_id || p.source==='domiciliacion' || method.includes('domiciliaci')) return 'Recurrente';
+    if(method.includes('(link)') || method.includes('(storefront)') || ['manual_link','storefront','atleta_renewal'].includes(p.source)) return 'Pago único';
+    return 'Frecuencia por confirmar';
+  }
   function makeRows(paid,links,subs){
     const sessions = new Set(paid.map(p => p.stripe_session_id).filter(Boolean));
     const rows = paid.map(p => ({kind:'paid',name:p.cliente,plan:p.plan||p.metodo,status:'Pagado',amount:p.monto,at:p.created_at||p.fecha,data:p}));
     links.filter(l => !sessions.has(l.session_id) && new Date(l.vence) > new Date()).forEach(l =>
       rows.push({kind:'link',name:l.cliente,plan:l.descripcion,status:'Pendiente de pago',amount:l.monto,at:l.created_at,data:l}));
     subs.filter(s => ['past_due','incomplete'].includes(s.status)).forEach(s =>
-      rows.push({kind:'sub',name:s.cliente_nombre||s.customer_email,plan:s.packages?.name||'Mensualidad',status:s.status==='past_due'?'Requiere atención':'Pendiente de activación',amount:s.amount_cents == null ? null : s.amount_cents/100,at:s.updated_at,data:s}));
+      rows.push({kind:'sub',name:s.cliente_nombre||s.customer_email,plan:s.packages?.name||'Mensualidad',status:s.status==='past_due'?'Requiere atención':s.stripe_subscription_id?'Primer pago por confirmar':'Pendiente de activación',amount:s.amount_cents == null ? null : s.amount_cents/100,at:s.updated_at,data:s}));
     return rows.sort((a,b) => String(b.at||'').localeCompare(String(a.at||'')));
   }
   async function render(){
@@ -58,7 +70,7 @@ window.CoreCobros = (function core(){
     const since = new Date(Date.now()-45*86400000).toISOString().slice(0,10);
     const [a,b,p,l,s] = await Promise.allSettled([
       account(ctx), _pvStripeData(),
-      pages(()=>scoped('pagos','id,cliente,monto,fecha,created_at,metodo,plan,source,stripe_session_id,stripe_balance_transaction_id,stripe_fee_mxn,velum_commission_mxn,net_to_gym_mxn,stripe_available_on',ctx).ilike('metodo','Stripe%').gte('fecha',since).order('id')),
+      pages(()=>scoped('pagos','id,cliente,monto,fecha,created_at,metodo,plan,source,notas,stripe_sub_id,stripe_session_id,stripe_balance_transaction_id,stripe_fee_mxn,velum_commission_mxn,net_to_gym_mxn,stripe_available_on',ctx).ilike('metodo','Stripe%').gte('fecha',since).order('id')),
       pages(()=>scoped('payment_links','token,session_id,cliente,monto,descripcion,vence,created_at',ctx).gt('vence',at).order('token')),
       pages(()=>scoped('member_subscriptions','id,cliente_nombre,customer_email,status,current_period_end,cancel_at_period_end,amount_cents,stripe_subscription_id,packages(name),updated_at',ctx).in('status',['active','past_due','incomplete','trialing']).order('id'))
     ]);
@@ -100,7 +112,7 @@ window.CoreCobros = (function core(){
       ${state.incomplete?`<p class="message" role="status">Hay movimientos que no pudimos cargar. ${btn('reload','Reintentar')}</p>`:''}
       <div class="ledger">${filtered.slice(0,limit).map(({r,i})=>{
         const name = r.name || 'Cliente', initials=name.trim().split(/\s+/).slice(0,2).map(w=>w.charAt(0)).join('').toUpperCase();
-        return `<button class="item" data-row="${i}"><span class="avatar" aria-hidden="true">${html(initials)}</span><span><span class="name">${html(name)}</span><span class="sub">${html(r.plan||'Cobro')}</span></span><span class="tag ${r.kind==='paid'?'':'waiting'}">${r.status}</span><span class="sum">${money(r.amount)}</span><span class="arrow" aria-hidden="true">›</span></button>`;
+        return `<button class="item" data-row="${i}"><span class="avatar" aria-hidden="true">${html(initials)}</span><span><span class="name">${html(name)}</span><span class="sub">${html(r.plan||'Cobro')} · <strong class="vc-frequency">${frequency(r)}</strong></span></span><span class="tag ${r.kind==='paid'?'':'waiting'}">${r.status}</span><span class="sum">${money(r.amount)}</span><span class="arrow" aria-hidden="true">›</span></button>`;
       }).join('') || (state.incomplete?'':'<p class="nothing">Sin movimientos con este filtro.</p>')}</div>${filtered.length>limit?btn('more','Ver más movimientos'):''}</section>
       ${channels(state.paid)}
       ${state.subs?.length?`<details><summary>Administrar mensualidades (${state.subs.length})</summary><div class="details-list">${state.subs.map(_domiSubRow).join('')}</div></details>`:''}`;
@@ -146,7 +158,7 @@ window.CoreCobros = (function core(){
       `<h3>Depósitos recientes</h3>${b.payouts?.length?facts(b.payouts.map(p=>[date(p.arrival_date)+' · '+(states[p.status]||'Por confirmar'),money(p.amount_mxn)])):'<p class="hint">Aún no hay depósitos registrados.</p>'}`);
   }
   function detail(row){
-    const p=row.data, items=[['Cliente',row.name||'Cliente'],['Concepto',row.plan||'Cobro'],['Estado',row.status],['Importe',money(row.amount)]];
+    const p=row.data, items=[['Cliente',row.name||'Cliente'],['Concepto',row.plan||'Cobro'],['Tipo de cobro',frequency(row)],['Estado',row.status],['Importe',money(row.amount)]];
     let share='';
     if (row.kind==='paid'){
       const settled=_pvNeto(p).confirmado;
@@ -157,8 +169,46 @@ window.CoreCobros = (function core(){
       items.push(['Vigencia',date(p.vence)]);
       if (/^[A-Za-z0-9_-]{16,64}$/.test(p.token) && new Date(p.vence)>new Date()) share=`${location.origin}/pagar/${p.token}`;
     } else {items.push(['Correo del cliente',p.customer_email||'Por confirmar']);}
-    const box=openBox('Detalle del movimiento', facts(items)+(share?shareFields():''));
-    if(share) configureShare(box,share);
+    const cancellable=canCreate() && (row.kind==='link' || (row.kind==='sub' && p.status==='incomplete' && !p.stripe_subscription_id));
+    const action=row.kind==='sub'?'Cancelar activación':'Cancelar enlace';
+    const box=openBox('Detalle del movimiento', facts(items)+(share?shareFields():'')+
+      (cancellable?btn('cancel',action,'secondary vc-cancel'):''));
+    if(cancellable) box.querySelector('[data-act=cancel]').onclick=()=>confirmPending(row);
+    if(share) configureShare(box,share,false);
+  }
+  function reviewActivation(id){
+    if(!panel || !current(panel.ctx)) return;
+    const row=panel.rows.find(r=>r.kind==='sub' && r.data.id===id);
+    if(row) detail(row);
+  }
+  function confirmPending(row){
+    if(!panel || !current(panel.ctx) || !canCreate()) return;
+    const ctx=panel.ctx, monthly=row.kind==='sub', title=monthly?'¿Cancelar esta activación?':'¿Cancelar este enlace?';
+    const box=openBox(title, facts([['Cliente',row.name],['Concepto',row.plan],['Tipo de cobro',frequency(row)],['Importe',money(row.amount)]])+
+      '<p class="hint">El enlace dejará de aceptar pagos.'+(monthly?' El cliente necesitará un enlace nuevo para iniciar la mensualidad.':'')+'</p>'+
+      '<p class="message" role="alert"></p><div class="actions">'+btn('keep','Conservar enlace','secondary')+btn('confirm',monthly?'Sí, cancelar activación':'Sí, cancelar enlace','primary')+'</div>');
+    box.querySelector('[data-act=keep]').focus();
+    box.querySelector('[data-act=keep]').onclick=()=>detail(row);
+    const confirm=box.querySelector('[data-act=confirm]');
+    confirm.onclick=async()=>{
+      if(confirm.disabled || !current(ctx)) return;
+      confirm.disabled=true;confirm.textContent='Cancelando…';
+      try{
+        const subject=monthly?{kind:'activation',id:row.data.id}:{kind:'link',token:row.data.token};
+        const result=await edge('velum-member-subscription',{action:'cancel_pending',...subject},ctx);
+        if(!result.canceled) throw Error('No pudimos verificar la cancelación.');
+        if(!current(ctx)) return;
+        if(box.open) box.close();
+        toast(monthly?'Activación cancelada':'Enlace cancelado','✓');
+        await render();
+      }catch(e){
+        if(!current(ctx) || !box.open) return;
+        box.querySelector('[role=alert]').textContent=e.message||'No pudimos verificar la cancelación.';
+        confirm.disabled=false;confirm.textContent='Reintentar';
+        box.querySelector('[data-act=keep]').textContent='Ver movimientos';
+        box.querySelector('[data-act=keep]').onclick=()=>{box.close();render();};
+      }
+    };
   }
   async function edge(name,body,ctx){
     if (!current(ctx) || !canCreate()) throw Error('Vuelve a iniciar sesión en tu gimnasio.');
@@ -170,9 +220,9 @@ window.CoreCobros = (function core(){
   function shareFields(){
     return `<label class="field">Enlace para tu cliente<input class="fieldinput" name="url" readonly></label><div class="actions">${btn('copy','Copiar enlace','primary')}<a class="linkbtn" target="_blank" rel="noopener noreferrer">Abrir WhatsApp ↗</a></div><p class="hint" role="status"></p>`;
   }
-  function configureShare(box,url){
+  function configureShare(box,url,monthly){
     const field=box.querySelector('[name=url]');field.value=url;
-    box.querySelector('a').href='https://wa.me/?text='+encodeURIComponent('Aquí puedes completar tu pago en VELUM: '+url);
+    box.querySelector('a').href='https://wa.me/?text='+encodeURIComponent((monthly?'Aquí puedes activar tu mensualidad recurrente en VELUM: ':'Aquí puedes completar tu pago único en VELUM: ')+url);
     box.querySelector('[data-act=copy]').onclick=async()=>{
       const status=box.querySelector('[role=status]');
       try {await navigator.clipboard.writeText(url);status.textContent='Enlace copiado.';}
@@ -289,8 +339,8 @@ window.CoreCobros = (function core(){
         if(!result.ok) throw Error('No se pudo generar el enlace.');
         const url=shareUrl(rec?result.checkout_url:result.url);
         if(box.open){
-          const resultBox=openBox('Enlace listo',`<p class="hint">${rec?'La mensualidad comenzará cuando':'El cobro se confirmará cuando'} ${html(member)} complete el pago.</p>`+shareFields());
-          configureShare(resultBox,url);
+          const resultBox=openBox('Enlace listo',`<p class="hint">${rec?'La mensualidad recurrente comenzará cuando':'El pago único se confirmará cuando'} ${html(member)} complete el pago.</p>`+shareFields());
+          configureShare(resultBox,url,rec);
         }
         if(host()?.closest('.view')?.classList.contains('active')) render();
       } catch(e){
@@ -319,5 +369,5 @@ window.CoreCobros = (function core(){
     if(!totals.size) return '';
     return `<details><summary>Cobros del mes por canal</summary>${facts(Array.from(totals,([k,v])=>[names[k],money(v/100)]))}</details>`;
   }
-  return {render,create,canCreate,reset,resume,mobileCharge};
+  return {render,create,canCreate,reset,resume,mobileCharge,reviewActivation};
 })();

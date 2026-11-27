@@ -46,8 +46,8 @@ function from(table) {
       return this;
     },
     is(k, v) {
-      assert.equal(k, "metadata->>reserva_resultado");
-      predicates.push((r) => (r.metadata?.reserva_resultado ?? null) === v);
+      const value = r => k === "metadata->>reserva_resultado" ? r.metadata?.reserva_resultado : r[k];
+      predicates.push((r) => (value(r) ?? null) === v);
       return this;
     },
     eq(k, v) {
@@ -418,4 +418,14 @@ test("Una confirmación de alta crea una cuenta de gimnasio y permite reentrega"
   assert.match(owner.pw_hash, /^v2:/);
   assert.ok(tablas.gym_config.some(c => c.gym_id === owner.gym_id && c.key === "moneda" && c.value === "MXN"));
   assert.deepEqual(mails.slice(before).map(m => m.template), ["welcome"]);
+});
+
+test("Al vencer un enlace, el webhook conserva otro para el mismo socio y paquete",async()=>{
+  const pending={id:9901,gym_id:1,status:'incomplete',package_id:7,customer_email:'qa@example.test',stripe_checkout_session_id:'cs_primero'};
+  const other={...pending,id:9902,stripe_checkout_session_id:'cs_segundo'};
+  tablas.member_subscriptions.push(pending,other);
+  const message={id:'cs_primero',mode:'subscription',metadata:{velum_member_sub:'true',gym_id:'1',package_id:'7',customer_email:pending.customer_email}};
+  await evento('checkout.session.expired',message);
+  await evento('checkout.session.expired',message);
+  assert.equal(pending.status,'canceled');assert.equal(other.status,'incomplete');
 });

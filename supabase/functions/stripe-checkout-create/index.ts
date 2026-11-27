@@ -145,16 +145,21 @@ Deno.serve(async (req) => {
         customer_email: customer.email,
         success_url: successUrl,
         cancel_url: cancelUrl,
-        metadata: { ...sharedMeta, velum_member_sub: 'true' },
+        metadata: { ...sharedMeta, velum_member_sub: 'true', core_checkout:'tracked' },
         locale: 'es',
       }, stripeSecret, gym.stripe_account_id) as { id: string; url: string };
 
-      await db.from('member_subscriptions').insert({
+      const {error: pendingError} = await db.from('member_subscriptions').insert({
+        stripe_checkout_session_id:session.id,
         gym_id: gym.id, package_id: pkg.id, cliente_nombre: customer.name || null, customer_email: customer.email,
         status: 'incomplete', amount_cents: amountCents, application_fee_pct: 0, interval: 'month',
         stripe_account_id: gym.stripe_account_id,
       });
 
+      if (pendingError) {
+        await stripeFetch('/checkout/sessions/'+session.id+'/expire','POST',{},stripeSecret,gym.stripe_account_id);
+        return json({error:'No se pudo guardar la mensualidad. Intenta de nuevo.'},500);
+      }
       return json({ ok: true, session_id: session.id, checkout_url: session.url, recurring: true });
     }
 

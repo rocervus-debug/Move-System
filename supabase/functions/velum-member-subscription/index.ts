@@ -1,13 +1,6 @@
-// velum-member-subscription — v5 (propuesta, corrige P1×2 de la auditoría de cobros):
-//   P1-1  Idempotencia del placeholder: antes de insertar la fila 'incomplete' se busca
-//         una existente (mismo gym+package+email, sin stripe_subscription_id) y se
-//         reutiliza en vez de insertar otra. El error del insert/update YA se chequea:
-//         si falla, se devuelve 500 (nada de fallo silencioso).
-//   P1-2  Se puebla cliente_id en el placeholder cuando el cliente ya existe en
-//         `clientes` (lookup por gym_id + email).
-//   Además: verifyJWT ahora valida `exp` (token vencido → 403) y se migró a Deno.serve
-//   nativo (sin deno.land/std). Lógica de cancel/reactivate intacta.
 // deploy: supabase functions deploy velum-member-subscription --no-verify-jwt
+import { verifyPanelSession } from '../_shared/panel-session.ts';
+import { cancelPendingCheckout, PendingCheckoutError } from '../_shared/cancel-pending-checkout.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey' };
@@ -36,30 +29,11 @@ async function stripeFetch(path: string, method: string, body: Record<string, un
   if (!res.ok) throw new Error(`Stripe ${res.status}: ${JSON.stringify(j).slice(0,300)}`);
   return j;
 }
-function decodeJWT(token: string): Record<string, unknown> | null {
-  try { const [, p] = token.split('.'); const pad = '='.repeat((4 - p.length % 4) % 4); return JSON.parse(atob((p + pad).replace(/-/g, '+').replace(/_/g, '/'))); } catch { return null; }
-}
-async function verifyJWT(token: string, secret: string): Promise<boolean> {
-  try {
-    const [h, p, s] = token.split('.');
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-    const pad = '='.repeat((4 - s.length % 4) % 4);
-    const sigBytes = Uint8Array.from(atob((s + pad).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-    return await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(`${h}.${p}`));
-  } catch { return false; }
-}
-async function adminClaims(req: Request, jwtSecret: string): Promise<Record<string, unknown> | null> {
-  const auth = req.headers.get('Authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token || !jwtSecret || !await verifyJWT(token, jwtSecret)) return null;
-  const claims = decodeJWT(token);
-  if (!claims) return null;
-  // Validar expiración: un token vencido no autoriza nada.
-  const exp = Number(claims.exp);
-  if (Number.isFinite(exp) && exp < Math.floor(Date.now() / 1000)) return null;
-  const rol = claims.app_rol as string;
-  if (!['admin','superadmin'].includes(rol)) return null;
-  return claims;
+async function adminClaims(req:Request){
+  const auth=req.headers.get('Authorization') || '';
+  if(!auth.startsWith('Bearer ')) return null;
+  const claims=await verifyPanelSession(auth.slice(7));
+  return claims && ['admin','superadmin'].includes(String(claims.app_rol)) ? claims : null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -68,15 +42,28 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY') || '';
-    const jwtSecret    = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('MOVE_JWT_SECRET');
     if (!stripeSecret) return json({ error: 'Stripe no configurado.' }, 500);
     const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || 'cancel') as string;
 
+    if (action === 'cancel_pending') {
+      const claims = await adminClaims(req);
+      if (!claims || !claims.gym_id) return json({error:'Necesitas acceso de administración del gimnasio.'},403);
+      try {
+        const result = await cancelPendingCheckout(db, Number(claims.gym_id), body,
+          (path, method, acct) => stripeFetch(path, method, undefined, stripeSecret, acct));
+        return json({ok:true, ...result});
+      } catch (err) {
+        if (err instanceof PendingCheckoutError) return json({error:err.message},err.status);
+        console.error('cancel_pending: conciliación incompleta');
+        return json({error:'No pudimos verificar la cancelación. Revisa el estado y vuelve a intentar.'},502);
+      }
+    }
+
     if (action === 'create_link') {
-      const claims = await adminClaims(req, jwtSecret || '');
+      const claims = await adminClaims(req);
       if (!claims) return json({ error: 'No autorizado.' }, 403);
       const gymId = claims.gym_id as number;
       const packageId = parseInt(body.package_id || '0', 10);
@@ -95,7 +82,19 @@ Deno.serve(async (req: Request) => {
       const amountCents = Math.round(Number(pkg.price_mxn) * 100);
       if (amountCents < 1000) return json({ error: 'Monto mínimo $10 MXN.' }, 400);
 
-      const meta = { gym_id: String(gymId), package_id: String(pkg.id), customer_email: email, customer_name: customer.name || '', customer_phone: customer.phone || '', velum_member_sub: 'true', velum_fee_pct: '0' };
+      // Reutilizar la sesión abierta conserva un solo enlace al reenviar la misma solicitud.
+      const {data: pending, error: lookupError} = await db.from('member_subscriptions')
+        .select('stripe_checkout_session_id,amount_cents').eq('gym_id',gymId).eq('package_id',pkg.id)
+        .eq('customer_email',email).eq('status','incomplete').eq('stripe_account_id',gym.stripe_account_id)
+        .is('stripe_subscription_id',null).not('stripe_checkout_session_id','is',null)
+        .order('created_at',{ascending:false}).limit(1).maybeSingle();
+      if (lookupError) return json({error:'No pudimos consultar los enlaces existentes.'},503);
+      if (pending && pending.amount_cents === amountCents) {
+        const existing = await stripeFetch('/checkout/sessions/'+encodeURIComponent(pending.stripe_checkout_session_id),'GET',undefined,stripeSecret,gym.stripe_account_id);
+        if (existing.status==='open' && existing.url) return json({ok:true,checkout_url:existing.url,session_id:existing.id});
+        if (existing.status==='complete') return json({error:'El cliente ya completó el pago. Actualiza los movimientos.'},409);
+      }
+      const meta = { core_checkout: 'tracked', gym_id: String(gymId), package_id: String(pkg.id), customer_email: email, customer_name: customer.name || '', customer_phone: customer.phone || '', velum_member_sub: 'true', velum_fee_pct: '0' };
       // Stripe procesa la domiciliación directamente en la cuenta del gimnasio.
       const subData: Record<string, unknown> = { metadata: meta };
 
@@ -115,36 +114,14 @@ Deno.serve(async (req: Request) => {
       const { data: cliRow } = await db.from('clientes').select('id').eq('gym_id', gymId).eq('email', email).maybeSingle();
       const clienteId = cliRow?.id ?? null;
 
-      // Idempotencia: si ya hay un placeholder 'incomplete' sin suscripción para este
-      // gym+paquete+email, se reutiliza (se refresca) en vez de insertar otro.
-      const placeholderRow = {
-        cliente_id: clienteId,
-        cliente_nombre: customer.name || null,
-        customer_email: email,
-        status: 'incomplete',
-        amount_cents: amountCents,
-        application_fee_pct: 0,
-        interval: 'month',
-        stripe_account_id: gym.stripe_account_id,
-        updated_at: new Date().toISOString(),
-      };
-      const { data: existing } = await db.from('member_subscriptions').select('id')
-        .eq('gym_id', gymId).eq('package_id', pkg.id).eq('customer_email', email)
-        .eq('status', 'incomplete').is('stripe_subscription_id', null)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle();
-
-      let phErr = null as { message?: string } | null;
-      if (existing) {
-        const { error } = await db.from('member_subscriptions').update(placeholderRow).eq('id', existing.id);
-        phErr = error;
-      } else {
-        const { error } = await db.from('member_subscriptions').insert({ gym_id: gymId, package_id: pkg.id, ...placeholderRow });
-        phErr = error;
-      }
-      if (phErr) {
-        // Sin placeholder no dejamos correr el flujo a ciegas: error explícito.
-        console.error('member_subscriptions placeholder err:', phErr);
-        return json({ error: 'No se pudo registrar la suscripción pendiente. Intenta de nuevo.' }, 500);
+      const {error: saveError} = await db.from('member_subscriptions').insert({
+        gym_id:gymId, package_id:pkg.id, cliente_id:clienteId, cliente_nombre:customer.name || null,
+        customer_email:email, status:'incomplete', amount_cents:amountCents, application_fee_pct:0,
+        interval:'month', stripe_account_id:gym.stripe_account_id, stripe_checkout_session_id:session.id,
+      });
+      if (saveError) {
+        await stripeFetch('/checkout/sessions/'+session.id+'/expire','POST',undefined,stripeSecret,gym.stripe_account_id);
+        return json({error:'No se pudo guardar el enlace. Intenta de nuevo.'},500);
       }
 
       return json({ ok: true, checkout_url: session.url, session_id: session.id });
@@ -163,7 +140,7 @@ Deno.serve(async (req: Request) => {
       if (cli && cli.id === ms.cliente_id) authorized = true;
     }
     if (!authorized) {
-      const claims = await adminClaims(req, jwtSecret || '');
+      const claims = await adminClaims(req);
       if (claims && ((claims.gym_id as number) === ms.gym_id || claims.app_rol === 'superadmin')) authorized = true;
     }
     if (!authorized) return json({ error: 'No autorizado.' }, 403);

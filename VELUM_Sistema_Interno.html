@@ -16934,6 +16934,7 @@ function _domiSubRow(s){
   else if(s.status==='active'){    badge=_domiBadge('Al corriente','var(--ok)');     sub='próx. cobro '+next; }
   else if(s.status==='past_due'){  badge=_domiBadge('Cobro falló','var(--danger)');  sub='revisa el estado con tu cliente'; brd='color-mix(in srgb,var(--danger) 28%,transparent)'; }
   else if(s.status==='trialing'){  badge=_domiBadge('Prueba','var(--accent)');       sub='inicia cobro '+next; }
+  else if(s.status==='incomplete' && s.stripe_subscription_id){ badge=_domiBadge('En revisión','var(--warn)'); sub='primer pago por confirmar'; }
   else {                            badge=_domiBadge('Por activar','var(--text3)');    sub='falta completar el registro de tarjeta'; }
   // Acciones por fila: cancelar (active/past_due) o reactivar (ya marcada para cancelar).
   // El sub id de Stripe (sub_...) es seguro para interpolar en el onclick.
@@ -16944,6 +16945,9 @@ function _domiSubRow(s){
     } else if(s.status==='active'||s.status==='past_due'){
       accion=`<button class="btn btn-ghost btn-sm" onclick="domiCancelarSub('${s.stripe_subscription_id}')" style="font-size:var(--fs-sm);flex-shrink:0;color:var(--text3);">Cancelar</button>`;
     }
+  }
+  if(s.status==='incomplete' && !s.stripe_subscription_id && Number.isSafeInteger(s.id) && CoreCobros.canCreate()){
+    accion=`<button class="btn btn-outline btn-sm" onclick="CoreCobros.reviewActivation(${s.id})">Ver activación</button>`;
   }
   return `<div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid ${brd};border-radius:11px;padding:10px 13px;">
     <div style="width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:var(--fs-sm);font-weight:700;flex-shrink:0;">${esc(ini)}</div>
