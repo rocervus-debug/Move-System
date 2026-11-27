@@ -1,6 +1,6 @@
 -- El origen describe quién cubre esta clase. NULL conserva el comportamiento histórico.
-alter table public.reservas add column origen_mostrador text check (origen_mostrador in ('mostrador','TotalPass','Wellhub','ClassPass','Otra plataforma'));
-alter table public.waitlist add column origen_mostrador text check (origen_mostrador in ('mostrador','TotalPass','Wellhub','ClassPass','Otra plataforma'));
+alter table public.reservas add column origen_mostrador text check (origen_mostrador in ('mostrador','TotalPass','Nessty','Wellhub','ClassPass','Otra plataforma'));
+alter table public.waitlist add column origen_mostrador text check (origen_mostrador in ('mostrador','TotalPass','Nessty','Wellhub','ClassPass','Otra plataforma'));
 
 create function public.core_validar_origen_mostrador() returns trigger
 language plpgsql set search_path = '' as $$
@@ -33,36 +33,55 @@ create function public.core_validar_lugar_clase() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare
   h public.horarios%rowtype;
-  dia text := (array['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'])[extract(dow from new.fecha)::int+1];
+  v_dia text := (array['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'])[extract(dow from new.fecha)::int+1];
   base_id uuid;
   sesion_ids uuid[];
-  es_personal boolean := public.auth_app_rol() in ('admin','staff','recepcion','superadmin');
+  claims jsonb := auth.jwt();
+  es_personal boolean := false;
+  compra_publica boolean := coalesce(claims->>'role'='service_role' and tg_table_name='reservas' and tg_op='INSERT'
+    and new.estado='reservado' and new.cliente_id is not null and new.origen_mostrador is null,false);
 begin
   if new.estado='cancelado' or new.horario_id is null or new.gym_id is null then return new; end if;
-  if (new.gym_id=public.auth_gym_id() or public.is_superadmin()) is not true then
-    if new.origen_mostrador is not null then raise exception 'Sede incorrecta.' using errcode='42501'; end if;
-    return new; -- otros clientes se rigen por sus políticas existentes
+  if claims->>'app_rol' in ('admin','staff','recepcion','superadmin') then
+    es_personal := (public.auth_app_rol() in ('admin','staff','recepcion','superadmin') and
+      (new.gym_id=public.auth_gym_id() or public.is_superadmin())) is true;
+    if not es_personal then raise exception 'Sede incorrecta.' using errcode='42501'; end if;
+  elsif not compra_publica and (claims->>'app_rol'='atleta' and claims->>'gym_id'=new.gym_id::text and
+      (claims->>'cliente_id'=new.cliente_id::text or claims->>'portal_token'=new.portal_token)) is not true then
+    -- Integraciones existentes sin sesión de personal o de atleta mantienen
+    -- sus políticas. Nunca pueden registrar una reserva externa.
+    return new;
   end if;
   select * into h from public.horarios where id=new.horario_id and gym_id=new.gym_id;
   if not found then
+    if compra_publica then raise exception 'La clase ya no está disponible.' using errcode='23505'; end if;
     if new.origen_mostrador is not null then raise exception 'La clase ya no está disponible.'; end if;
     return new;
   end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(concat_ws('/',new.gym_id,new.fecha,h.hora),0));
   if coalesce(h.fecha,'')='' then
     base_id := h.id;
-    if exists(select 1 from public.horarios x where x.gym_id=h.gym_id and x.hora=h.hora and x.fecha=new.fecha::text) then
-      select x.* into h from public.horarios x where x.gym_id=new.gym_id and x.hora=h.hora and x.fecha=new.fecha::text order by x.id limit 1;
+    -- Dos grupos simultáneos conservan su capacidad propia. Sólo se une una
+    -- excepción a la plantilla cuando el horario de origen es inequívoco.
+    if (select count(*) from public.horarios x where x.gym_id=new.gym_id and x.hora=h.hora and x.dia=v_dia and coalesce(x.fecha,'')='')=1
+      and (select count(*) from public.horarios x where x.gym_id=new.gym_id and x.hora=h.hora and x.fecha=new.fecha::text)=1 then
+      select x.* into h from public.horarios x where x.gym_id=new.gym_id and x.hora=h.hora and x.fecha=new.fecha::text;
     end if;
   else
-    select x.id into base_id from public.horarios x where x.gym_id=new.gym_id and x.hora=h.hora and x.dia=dia and coalesce(x.fecha,'')='' order by x.id limit 1;
+    if (select count(*) from public.horarios x where x.gym_id=new.gym_id and x.hora=h.hora and x.fecha=new.fecha::text)=1 then
+      select (array_agg(x.id))[1] into base_id from public.horarios x
+        where x.gym_id=new.gym_id and x.hora=h.hora and x.dia=v_dia and coalesce(x.fecha,'')='' having count(*)=1;
+    end if;
   end if;
   sesion_ids := array_remove(array[h.id,base_id],null);
-  if new.origen_mostrador is not null and (
-      (coalesce(h.fecha,'')='' and h.dia is distinct from dia) or (coalesce(h.fecha,'')<>'' and h.fecha<>new.fecha::text)
-      or h.tipo='CERRADO' or exists(select 1 from public.horario_cancelaciones c where c.gym_id=new.gym_id and c.fecha=new.fecha and c.horario_id=h.id)
+  if (new.origen_mostrador is not null or compra_publica) and (
+      (coalesce(h.fecha,'')='' and h.dia is distinct from v_dia) or (coalesce(h.fecha,'')<>'' and h.fecha<>new.fecha::text)
+      or (new.horario_id<>h.id and tg_op='INSERT') or h.tipo='CERRADO' or exists(select 1 from public.horario_cancelaciones c where c.gym_id=new.gym_id and c.fecha=new.fecha and c.horario_id=h.id)
       or not exists(select 1 from public.clientes c where c.gym_id=new.gym_id and c.id=new.cliente_id)
-  ) then raise exception 'La clase o el socio ya no están disponibles en esta sede.'; end if;
+  ) then
+    if compra_publica then raise exception 'La clase o el socio ya no están disponibles.' using errcode='23505'; end if;
+    raise exception 'La clase o el socio ya no están disponibles en esta sede.';
+  end if;
   if tg_table_name='reservas' then
     if new.cliente_id is not null and exists(select 1 from public.reservas r where r.gym_id=new.gym_id and r.fecha=new.fecha and r.horario_id=any(sesion_ids)
        and r.estado<>'cancelado' and (r.cliente_id=new.cliente_id or (r.cliente_id is null and lower(trim(r.cliente_nombre))=lower(trim(new.cliente_nombre))))) then
@@ -70,6 +89,7 @@ begin
     end if;
     if coalesce(h.cupo,0)>0 and (not es_personal or (new.origen_mostrador is not null and coalesce(current_setting('velum.sobrecupo',true),'')<>'confirmado'))
       and (select count(*) from public.reservas r where r.gym_id=new.gym_id and r.fecha=new.fecha and r.horario_id=any(sesion_ids) and r.estado<>'cancelado')>=h.cupo then
+      if compra_publica then raise exception 'El último lugar ya se ocupó.' using errcode='23505'; end if;
       raise exception 'El último lugar ya se ocupó. Actualiza la lista.';
     end if;
   elsif new.cliente_id is not null and new.estado='espera' then
@@ -84,6 +104,8 @@ end;
 $$;
 revoke all on function public.core_validar_lugar_clase() from public, anon, authenticated;
 create trigger core_validar_lugar before insert on public.reservas for each row execute function public.core_validar_lugar_clase();
+create trigger core_validar_reingreso before update of estado on public.reservas
+  for each row when (old.estado='cancelado' and new.estado<>'cancelado') execute function public.core_validar_lugar_clase();
 create trigger core_validar_lugar before insert on public.waitlist for each row execute function public.core_validar_lugar_clase();
 
 create function public.core_reservar_mostrador(p_gym bigint,p_clase uuid,p_socio bigint,p_fecha date,p_origen text,p_estado text,p_sobrecupo boolean default false,p_espera uuid default null)
@@ -91,7 +113,7 @@ returns void language plpgsql security invoker set search_path='' as $$
 declare
   h public.horarios%rowtype;
   nombre text;
-  dia text:=(array['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'])[extract(dow from p_fecha)::int+1];
+  v_dia text:=(array['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'])[extract(dow from p_fecha)::int+1];
   w public.waitlist%rowtype;
 begin
   if (public.auth_app_rol() in ('admin','staff','recepcion','superadmin') and
@@ -107,11 +129,11 @@ begin
   end if;
   if p_estado='espera' then
     insert into public.waitlist(gym_id,horario_id,cliente_id,cliente_nombre,fecha,clase_tipo,clase_hora,clase_dia,estado,posicion,origen_mostrador)
-    values(p_gym,p_clase,p_socio,nombre,p_fecha,h.tipo,h.hora,dia,'espera',1,p_origen);
+    values(p_gym,p_clase,p_socio,nombre,p_fecha,h.tipo,h.hora,v_dia,'espera',1,p_origen);
   else
     perform pg_catalog.set_config('velum.sobrecupo',case when p_sobrecupo then 'confirmado' else '' end,true);
     insert into public.reservas(gym_id,horario_id,cliente_id,cliente_nombre,fecha,clase_tipo,clase_hora,clase_dia,estado,origen_mostrador)
-    values(p_gym,p_clase,p_socio,nombre,p_fecha,h.tipo,h.hora,dia,p_estado,p_origen);
+    values(p_gym,p_clase,p_socio,nombre,p_fecha,h.tipo,h.hora,v_dia,p_estado,p_origen);
     if p_espera is not null then update public.waitlist set estado='promovido' where id=w.id; end if;
   end if;
 end;

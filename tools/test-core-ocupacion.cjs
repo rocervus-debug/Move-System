@@ -39,3 +39,13 @@ test('lectura completa por cursor bajo un límite inferior al solicitado y sin d
   assert.equal((await ctx.leerFilasOcupacion(fetch,()=>true)).length,106);assert.equal(calls,4);
   await assert.rejects(ctx.leerFilasOcupacion(fetch,()=>false));
 });
+
+test('los lugares bloqueados reducen los lugares ofrecidos y no cuentan como socios',()=>{
+  const h={id:'a',fecha:fechas[7],hora:'08:00',tipo:'Pilates',cupo:6};
+  const filas=['bloqueado','bloqueado','checkin','reservado'].map(estado=>({fecha:h.fecha,horario_id:h.id,estado}));
+  const f=ctx.franjasOcupacion(fechas,[h],[],filas)[0];
+  const t=ctx.totalesOcupacion(f.actual);
+  assert.equal(t.lugares,4);assert.equal(t.reservas,2);assert.equal(t.porcentaje,50);
+  const cerrado=ctx.franjasOcupacion(fechas,[{...h,cupo:2}],[],filas.slice(0,2))[0];
+  assert.equal(ctx.totalesOcupacion(cerrado.actual).porcentaje,null);
+});

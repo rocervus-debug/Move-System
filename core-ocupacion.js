@@ -35,8 +35,8 @@ function franjasOcupacion(fechas, horarios, cancelaciones, reservas){
     const sinPlantilla=new Map();
     for(const r of porFecha.get(fecha)||[]){
       const id=String(r.horario_id);
-      if(canceladas.has(id)) continue;
       let clase=porId.get(id);
+      if(!clase && canceladas.has(id)) continue;
       // Las filas borradas del horario conservan las reservas, pero su cupo ya no se conoce.
       if(!clase && conocidas.has(id)) continue;
       if(!clase && r.horario_id==null){
@@ -51,7 +51,11 @@ function franjasOcupacion(fechas, horarios, cancelaciones, reservas){
           sinPlantilla.set(clave,clase);
         }
       }
-      clase.reservas++;
+      if(r.estado==='bloqueado'){
+        if(clase.cupo!==null) clase.cupo=Math.max(0,clase.cupo-1);
+      }else{
+        clase.reservas++;
+      }
     }
     for(const clase of [...clases,...sinPlantilla.values()]){
       const hora=_horaToMinutes(clase.hora);
@@ -70,7 +74,7 @@ function franjasOcupacion(fechas, horarios, cancelaciones, reservas){
 function totalesOcupacion(clases){
   const lugares=clases.reduce((n,c)=>n+(c.cupo||0),0);
   const reservas=clases.reduce((n,c)=>n+c.reservas,0);
-  const porcentaje=lugares && clases.every(c=>c.cupo!=null)?Math.round(100*reservas/lugares):null;
+  const porcentaje=lugares>0 && clases.every(c=>c.cupo!=null)?Math.round(100*reservas/lugares):null;
   return {lugares,reservas,porcentaje};
 }
 

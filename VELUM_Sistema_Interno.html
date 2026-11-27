@@ -4746,7 +4746,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
           <button type="button" class="tab" id="htab-btn-nomina" aria-controls="hor-tab-nomina" aria-pressed="false" onclick="switchHorTab('nomina')">Nómina</button>
           <button type="button" class="tab" id="htab-btn-lugares" aria-controls="studios-cal" aria-pressed="false" onclick="switchHorTab('lugares')" hidden>Calendario de lugares</button>
         </div>
-        <div id="hor-publico"></div>
+        <div class="hor-acciones"><span id="hor-accion-clase"></span><div id="hor-publico"></div></div>
       </div>
       <div id="studios-cal" style="display:none;"></div>
       <div id="hor-tab-dia" style="display:none;">
@@ -12228,6 +12228,7 @@ function go(id, el){
   topBtn.onclick = topBtnActions[id]||null;
   if(['dashboard','clientes','pagos','revenue','por-vencer'].includes(id) || !topBtnActions[id]) topBtn.style.display = 'none';
   else topBtn.style.display = 'inline-flex';
+  if(typeof colocarAccionHorario==='function') colocarAccionHorario(id);
   if(id==='crm')         renderCRM('prospectos');
   if(id==='coaches')     { renderCoaches(); renderMetasCoach(); initCoachReportMes(); try{ Promise.resolve(renderReporteCoach()).catch(e=>console.error('reporte coach:', e)); }catch(e){ console.error('reporte coach:', e); } }
   if(id==='recursos')    { loadRecursos().then(renderRecursos); }
@@ -18704,7 +18705,7 @@ function _gymTxHTML(){
 async function _gymHoyOcupacion(hoy,gym){
   if(!gym) return null;
   try{
-    const porClase={},asistenciasPorClase={},ids=new Set();
+    const porClase={},bloqueadosPorClase={},asistenciasPorClase={},ids=new Set();
     let asistencias=0,total=null;
     for(;;){
       const desde=ids.size;
@@ -18717,6 +18718,7 @@ async function _gymHoyOcupacion(hoy,gym){
         if(ids.has(r.id)) return null;
         ids.add(r.id);
         if(r.horario_id!=null) porClase[r.horario_id]=(porClase[r.horario_id]||0)+1;
+        if(r.estado==='bloqueado' && r.horario_id!=null) bloqueadosPorClase[r.horario_id]=(bloqueadosPorClase[r.horario_id]||0)+1;
         if(r.estado==='checkin'){
           asistencias++;
           if(r.horario_id!=null) asistenciasPorClase[r.horario_id]=(asistenciasPorClase[r.horario_id]||0)+1;
@@ -18725,7 +18727,7 @@ async function _gymHoyOcupacion(hoy,gym){
       if(total!=null ? ids.size===total : data.length<500) break;
       if(!data.length || (total!=null && ids.size>total)) return null;
     }
-    return {porClase,asistenciasPorClase,asistencias};
+    return {porClase,bloqueadosPorClase,asistenciasPorClase,asistencias};
   }catch{ return null; }
 }
 async function abrirClaseHoy(id, fecha=_asistFechaSel_offset(0)){
@@ -25113,6 +25115,11 @@ function switchHorTab(tab, elegida=true){
   }
   horTabElegida=elegida;
   horTabActual=tab;
+  if(_gymVertical==='gym' && document.getElementById('v-horario').classList.contains('active')){
+    const nombres={dia:'Agenda del día',mensual:'Calendario de clases',plantilla:'Horario semanal',nomina:'Nómina de coaches',lugares:'Calendario de lugares'};
+    document.getElementById('topTitle').textContent=nombres[tab];
+    document.getElementById('topSub').textContent='';
+  }
   ['dia','mensual','plantilla','nomina','lugares'].forEach(t=>{
     const el = document.getElementById(t==='lugares'?'studios-cal':'hor-tab-'+t);
     const btn= document.getElementById('htab-btn-'+t);
@@ -27538,7 +27545,7 @@ function renderAvisoBajaOcupacion(){
         ${items.length} clase${items.length!==1?'s':''} con 1 sola persona
       </div>
       <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:10px;">
-        Si cancelas, a esa persona se le guarda su clase 30 días para reagendarla y la clase desaparece de la app y de tu página pública.
+        La clase se retira del horario. Si se pagó con un plan personal identificable, se amplía su vigencia 30 días.
       </div>
       ${items.map((c,i)=>`
         <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(248,113,113,.18);">
@@ -27550,7 +27557,7 @@ function renderAvisoBajaOcupacion(){
               : esc(c.plan||'clase suelta')}</div>
           </div>
           <button onclick="cancelarPorBajaOcupacion(${i})"
-            style="border:none;cursor:pointer;border-radius:8px;padding:7px 12px;font-size:var(--fs-xs);font-weight:800;background:rgba(248,113,113,.16);color:var(--danger);">${c.es_muestra?'Cancelar clase':'Cancelar y acreditar'}</button>
+            style="border:none;cursor:pointer;border-radius:8px;padding:7px 12px;font-size:var(--fs-xs);font-weight:800;background:rgba(248,113,113,.16);color:var(--danger);">Revisar cancelación</button>
         </div>`).join('')}
     </div>`;
 }
@@ -27560,11 +27567,8 @@ async function cancelarPorBajaOcupacion(idx){
   if(!c) return;
   const ok = await confirmDialog(
     `Se cancelará ${c.tipo||'la clase'} del ${c.fecha} a las ${typeof fmtHoraClase==='function'?fmtHoraClase(c.hora):c.hora}.\n\n` +
-    (c.es_muestra
-      ? `${c.cliente_nombre} venía a una clase muestra. Se le guarda 30 días para que la reagende; avísale por WhatsApp. `
-      : `${c.cliente_nombre} recibirá 30 días más de vigencia para usar su clase otro día — no pierde su pago. `) +
-    `La clase desaparecerá de la app y de tu página pública.`,
-    { title:'Cancelar por baja ocupación', icon:'⚠', danger:true, confirmText: c.es_muestra?'Sí, cancelar':'Sí, cancelar y acreditar', cancelText:'Mejor no' });
+    'Si la reserva corresponde a un pago personal identificable, se amplía su vigencia 30 días. Las reservas de plataforma se cancelan sin crédito personal. La clase desaparecerá de la app y de tu página pública.',
+    { title:'Cancelar por baja ocupación', icon:'⚠', danger:true, confirmText:'Cancelar clase', cancelText:'Volver' });
   if(!ok) return;
   const { data, error } = await window.supabaseClient.rpc('cancelar_clase_baja_ocupacion',
     { p_horario_id: c.horario_id, p_fecha: c.fecha, p_dias_credito: 30 });
@@ -27573,7 +27577,7 @@ async function cancelarPorBajaOcupacion(idx){
     toast((r && r.mensaje) || 'No se pudo cancelar'+(error?': '+error.message:''), '✕', 6000);
     return;
   }
-  toast(`Clase cancelada · ${r.cliente||'el cliente'} tiene crédito hasta ${r.credito_hasta||'—'}`, '✓', 6000);
+  toast(r.credito_hasta ? `Clase cancelada · ${r.cliente} tiene crédito hasta ${r.credito_hasta}` : r.mensaje, '✓', 6000);
   await cargarBajaOcupacion();
   renderAvisoBajaOcupacion();
   if(typeof loadClasesOperativas==='function') loadClasesOperativas();
@@ -27667,11 +27671,11 @@ async function loadClasesOperativas(){
     if(esHoy) window._mhwCheckins=ocupacion.asistencias;
     renderMobileHome();
     el.innerHTML = horarios.map(h=>{
-      const ocupados=(ocupacion.porClase[h.id]||0)+(h.base_id?ocupacion.porClase[h.base_id]||0:0);
+      const {reservados,bloqueados,ofrecidos}=cupoAgendaDia(h,ocupacion);
       const prospectos=(pMap[h.id]||0)+(h.base_id?pMap[h.base_id]||0:0);
       const cupo     = h.cupo||0;
-      const libres   = Math.max(0,cupo-ocupados);
-      const pct      = cupo>0 ? ocupados/cupo : 0;
+      const libres   = Math.max(0,ofrecidos-reservados);
+      const pct      = ofrecidos>0 ? reservados/ofrecidos : (cupo>0 ? 1 : 0);
       const dotCls   = pct>=1?'full':pct>=.75?'warn':'ok';
       const cardCls  = pct>=1?'lleno':pct>=.75?'casi-lleno':'';
       const checkins=(ocupacion.asistenciasPorClase[h.id]||0)+(h.base_id?ocupacion.asistenciasPorClase[h.base_id]||0:0);
@@ -27688,8 +27692,9 @@ async function loadClasesOperativas(){
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:var(--fs-2xl);font-weight:900;font-family:var(--fd);color:var(--text);line-height:1;">${ocupados}<span style="font-size:var(--fs-base);color:var(--text3);font-weight:500;"> / ${cupo}</span></div>
-            <div style="font-size:var(--fs-xs);font-weight:700;margin-top:4px;color:${libres===0?'var(--asist-peligro)':libres<=3?'var(--warn)':'var(--ok)'};">${libres===0?'LLENO':`${libres} libre${libres!==1?'s':''}`}</div>
+            <div style="font-size:var(--fs-2xl);font-weight:900;font-family:var(--fd);color:var(--text);line-height:1;">${reservados}<span style="font-size:var(--fs-base);color:var(--text3);font-weight:500;"> / ${cupo>0?ofrecidos:'—'}</span></div>
+            <div style="font-size:var(--fs-xs);font-weight:700;margin-top:4px;color:${libres===0?'var(--asist-peligro)':libres<=3?'var(--warn)':'var(--ok)'};">${!cupo?'CUPO SIN DEFINIR':libres===0?'LLENO':`${libres} libre${libres!==1?'s':''}`}</div>
+            ${bloqueados>0?`<div style="font-size:var(--fs-xs);color:var(--text3);">${bloqueados} lugar${bloqueados===1?' bloqueado':'es bloqueados'}</div>`:''}
             ${checkins>0?`<div style="font-size:var(--fs-xs);color:var(--text3);margin-top:2px;">${checkins} check-in${checkins!==1?'s':''}</div>`:''}
             ${prospectos>0?`<div style="font-size:var(--fs-xs);font-weight:800;color:var(--warn);margin-top:3px;">+${prospectos} prospecto${prospectos!==1?'s':''}</div>`:''}
           </div>
@@ -27757,9 +27762,9 @@ async function abrirDetalleClase(horarioId,hora,tipo,coach,cupo,baseId=null){
         <summary style="color:var(--text2);cursor:pointer;">¿Viene de una plataforma?</summary>
         <label for="mostrador-origen">Origen de la reserva</label>
         <select id="mostrador-origen" onchange="_detalleSearch(document.getElementById('asist-add-input').value)">
-          <option value="mostrador">Directa del gimnasio</option><option>TotalPass</option><option>Wellhub</option><option>ClassPass</option><option>Otra plataforma</option>
+          <option value="mostrador">Directa del gimnasio</option><option>TotalPass</option><option>Nessty</option><option>Wellhub</option><option>ClassPass</option><option>Otra plataforma</option>
         </select>
-        <p style="color:var(--text2);font-size:var(--fs-sm);">Las reservas de plataforma ocupan un lugar sin cobrar ni usar clases del paquete.</p>
+        <p style="color:var(--text2);font-size:var(--fs-sm);">La plataforma cubre la clase. Confirma la llegada aquí en la lista.</p>
       </details>
       <div class="asist-search-wrap" style="position:relative;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -28093,6 +28098,14 @@ async function _paqueteBloqueaReserva(reservaId, nombre){
   return r && (!r.origen_mostrador || r.origen_mostrador==='mostrador') ? _paqueteBloquea(r.cliente_id, nombre, r.fecha) : false;
 }
 
+function accionPersonaEnClase(boton,accion){
+  const fila=boton.closest('.persona-row'),ctx=window._dc;
+  if(!fila || !ctx || ctx.gym!==MOVE_GYM_ID || ctx.fecha!==_asistFechaSel() || ctx.user!==currentUser || ctx.token!==currentUser?.jwt) return;
+  const {reserva,socio}=fila.dataset;
+  if(accion==='cancelar') return cancelarReservaAdmin(reserva,socio);
+  if(accion==='presente') return marcarPresenteReserva(reserva,socio,ctx.horarioId,ctx.hora,ctx.tipo);
+  if(accion==='ausente') return marcarAusenteReserva(reserva,socio,ctx.horarioId,ctx.hora,ctx.tipo);
+}
 function _renderPersonaRow(r,estado,horarioId,hora,tipo){
   const n = esc(r.cliente_nombre||'—');
   const isCheckin = estado==='checkin';
@@ -28119,7 +28132,7 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
   const externa=r.origen_mostrador && r.origen_mostrador!=='mostrador';
   const labelPaq = externa ? '' : _chipPaquete((window._dcPaquetes||{})[r.cliente_id]);
   const hito=r.hito===1?'Primera clase completada':r.hito===100?'100 clases completadas':'';
-  return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}" style="${isAusente?'border-color:rgba(240,96,96,.2);background:rgba(240,96,96,.04);':''}">
+  return `<div class="persona-row${isCheckin?' checkin':''}" id="prow-${r.id}" data-reserva="${r.id}" data-socio="${n.replace(/"/g,'&quot;')}" style="${isAusente?'border-color:rgba(240,96,96,.2);background:rgba(240,96,96,.04);':''}">
     <div style="width:36px;height:36px;border-radius:50%;background:${avatar};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:var(--fs-base);">${icon}</div>
     <div style="flex:1;min-width:0;">
       <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</div>
@@ -28131,16 +28144,16 @@ function _renderPersonaRow(r,estado,horarioId,hora,tipo){
     ${spotSel}
     ${estado==='reservado'?`
     <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-      <button onclick="marcarPresenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
+      <button onclick="accionPersonaEnClase(this,'presente')"
         style="padding:6px 10px;border-radius:8px;background:rgba(15,223,154,.12);color:var(--ok);border:1px solid rgba(15,223,154,.3);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✓ Asistió</button>
-      <button onclick="marcarAusenteReserva('${r.id}','${n}','${horarioId}','${hora}','${tipo}')"
+      <button onclick="accionPersonaEnClase(this,'ausente')"
         style="padding:6px 10px;border-radius:8px;background:rgba(240,96,96,.1);color:var(--asist-peligro);border:1px solid rgba(240,96,96,.25);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">✕ No asistió</button>
-      <button onclick="cancelarReservaAdmin('${r.id}','${n}')"
+      <button onclick="accionPersonaEnClase(this,'cancelar')"
         style="padding:6px 10px;border-radius:8px;background:transparent;color:var(--text3);border:1px solid var(--border);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">Cancelar reserva</button>
     </div>`:''}
     ${isAusente?`
     <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-      <button onclick="cancelarReservaAdmin('${r.id}','${n}')" title="Si avisó a tiempo, cámbiala a cancelada"
+      <button onclick="accionPersonaEnClase(this,'cancelar')" title="Si avisó a tiempo, cámbiala a cancelada"
         style="padding:6px 10px;border-radius:8px;background:transparent;color:var(--text3);border:1px solid var(--border);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;min-height:30px;">Avisó · cancelar</button>
     </div>`:''}
   </div>`;

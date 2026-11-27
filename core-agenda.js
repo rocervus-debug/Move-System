@@ -6,16 +6,44 @@ let lecturaHorarioPublico=0;
 let lecturaCalendarioLugares=0;
 
 function resolverClasesFecha(filas,fecha,dia,canceladas){
-  const plantillas=filas.filter(h=>!h.fecha && h.dia===dia && h.tipo!=='CERRADO' && !canceladas.has(String(h.id)));
-  const excepciones=filas.filter(h=>h.fecha===fecha);
-  const horasSustituidas=new Set(excepciones.map(h=>h.hora));
-  const clases=plantillas.filter(h=>!horasSustituidas.has(h.hora));
-  for(const h of excepciones){
-    if(h.tipo==='CERRADO' || canceladas.has(String(h.id))) continue;
-    const base=plantillas.find(b=>b.hora===h.hora);
-    clases.push({...h,base_id:base?.id});
+  const horas=new Map();
+  for(const h of filas){
+    const esExcepcion=h.fecha===fecha;
+    if(!esExcepcion && (h.fecha || h.dia!==dia)) continue;
+    if(!horas.has(h.hora)) horas.set(h.hora,{plantillas:[],excepciones:[]});
+    const grupo=horas.get(h.hora);
+    (esExcepcion?grupo.excepciones:grupo.plantillas).push(h);
+  }
+  const clases=[];
+  const abierta=h=>h.tipo!=='CERRADO' && !canceladas.has(String(h.id));
+  for(const {plantillas,excepciones} of horas.values()){
+    // El trigger de reserva asocia los dos IDs sólo si la relación es inequívoca,
+    // contando también filas cerradas o canceladas antes de decidir qué mostrar.
+    if(plantillas.length===1 && excepciones.length===1){
+      const excepcion=excepciones[0];
+      if(abierta(excepcion)) clases.push({...excepcion,base_id:plantillas[0].id});
+    }else{
+      clases.push(...plantillas.filter(abierta),...excepciones.filter(abierta));
+    }
   }
   return clases.sort((a,b)=>_horaToMinutes(a.hora)-_horaToMinutes(b.hora));
+}
+
+let horarioMovil;
+
+function colocarAccionHorario(vista){
+  if(!horarioMovil){
+    horarioMovil=window.matchMedia('(max-width:768px)');
+    horarioMovil.addEventListener('change',()=>{
+      colocarAccionHorario(document.getElementById('v-horario').classList.contains('active')?'horario':'');
+    });
+  }
+  const boton=document.getElementById('topBtn'), destino=document.getElementById('hor-accion-clase');
+  if(vista==='horario' && horarioMovil.matches){
+    if(boton.parentElement!==destino) destino.append(boton);
+  }else if(boton.parentElement===destino){
+    document.getElementById('msearch-btn').before(boton);
+  }
 }
 
 function horTabPredeterminada(){
@@ -39,6 +67,13 @@ function agendaVolverAHoy(){
   renderAgendaDia();
 }
 
+function cupoAgendaDia(clase,ocupacion){
+  const suma=mapa=>(mapa[clase.id]||0)+(clase.base_id?mapa[clase.base_id]||0:0);
+  const bloqueados=suma(ocupacion.bloqueadosPorClase);
+  const cupo=Number(clase.cupo);
+  return {bloqueados,reservados:suma(ocupacion.porClase)-bloqueados,ofrecidos:cupo>0?Math.max(0,cupo-bloqueados):null};
+}
+
 async function renderAgendaDia(){
   const lectura=++lecturaAgendaDia, contexto=contextoPagoGym();
   const selector=document.getElementById('hor-dia-fecha'), lista=document.getElementById('hor-dia-lista');
@@ -57,9 +92,12 @@ async function renderAgendaDia(){
     if(!clases.length){ lista.textContent='No hay clases programadas para esta fecha.'; return; }
     const puedeAbrir=!roleBlocksView('asistencia');
     const filas=clases.map(h=>{
-      const cupo=Number(h.cupo);
-      const total=ocupacion?(ocupacion.porClase[h.id]||0)+(h.base_id?ocupacion.porClase[h.base_id]||0:0):null;
-      const resumen=total===null?'Ocupación por confirmar':cupo>0?total+' / '+cupo+' lugares':total+' reservados · Sin cupo definido';
+      let resumen='Ocupación por confirmar';
+      if(ocupacion){
+        const {reservados,ofrecidos,bloqueados}=cupoAgendaDia(h,ocupacion);
+        resumen=ofrecidos==null?reservados+' reservados · Sin cupo definido':reservados+' / '+ofrecidos+' lugares';
+        if(bloqueados) resumen+=' · '+bloqueados+(bloqueados===1?' bloqueado':' bloqueados');
+      }
       const fila=document.createElement(puedeAbrir?'button':'div');
       fila.className='hor-dia-clase';
       fila.innerHTML='<strong>'+esc(fmtHoraClase(h.hora))+'</strong><span><b>'+esc(h.tipo||'Clase')+'</b><small>'+esc(h.coach_nombre||'Coach por asignar')+'</small></span><span class="hor-dia-cupo">'+resumen+'</span>';
