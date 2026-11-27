@@ -58,3 +58,5 @@
 - [x] Landing v2 (3 olas: SEO invisible, visibles, páginas por vertical) + login.html · 03 jul
 - [x] Panel v2 (sidebar por intención, dashboards por vertical, check-in de reservas studios, saldo recovery) · 02 jul
 - [x] VELUM Studio nivel 2 (sala IA real) + oficina isométrica + puente orden de trabajo · 01 jul
+
+- 2026-11-27 · Asistencia CORE. Se corrigió el fondo nativo que ocultaba las clases en escritorio y el contraste de hora, cupo y asistentes en modo claro. Verificado con clases disponibles, casi llenas y llenas, detalle y día sin clases, a ambos lados del corte de 768 px.
