@@ -12,7 +12,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey' };
 const APP_URL = 'https://myvelum.app';
-const ZERO_FEE_PLANS = new Set(['max', 'owner']);
 function json(b: unknown, s = 200){ return new Response(JSON.stringify(b),{status:s,headers:{...CORS,'Content-Type':'application/json'}}); }
 
 function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
@@ -68,7 +67,7 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY');
+    const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY') || '';
     const jwtSecret    = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('MOVE_JWT_SECRET');
     if (!stripeSecret) return json({ error: 'Stripe no configurado.' }, 500);
     const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -89,21 +88,16 @@ Deno.serve(async (req: Request) => {
       if (!pkg || pkg.gym_id !== gymId || !pkg.is_active) return json({ error: 'Paquete no disponible.' }, 400);
       if (pkg.billing_type !== 'recurring') return json({ error: 'Ese paquete no es de mensualidad domiciliada.' }, 400);
 
-      const { data: gym } = await db.from('gyms').select('id, nombre, stripe_account_id, stripe_charges_enabled, subscription_plan').eq('id', gymId).maybeSingle();
+      const { data: gym } = await db.from('gyms').select('id, nombre, stripe_account_id, stripe_charges_enabled').eq('id', gymId).maybeSingle();
       if (!gym?.stripe_account_id) return json({ error: 'El gym aún no ha conectado Stripe.' }, 400);
       if (!gym.stripe_charges_enabled) return json({ error: 'El gym aún no puede aceptar cobros con Stripe.' }, 400);
 
       const amountCents = Math.round(Number(pkg.price_mxn) * 100);
       if (amountCents < 1000) return json({ error: 'Monto mínimo $10 MXN.' }, 400);
-      const plan = (gym.subscription_plan || '').toLowerCase();
-      const feePct = ZERO_FEE_PLANS.has(plan) ? 0 : 0.02;
 
-      const meta = { gym_id: String(gymId), package_id: String(pkg.id), customer_email: email, customer_name: customer.name || '', customer_phone: customer.phone || '', velum_member_sub: 'true', velum_fee_pct: String(feePct) };
-      // Cobro DIRECTO en la cuenta del gym: el gym es el comercio y paga su propia comisión de
-      // Stripe (recibe el neto). NO se usa transfer_data/on_behalf_of (eso era cobro de destino,
-      // donde VELUM absorbía el fee). La comisión de VELUM (0% en Max) va como application_fee.
+      const meta = { gym_id: String(gymId), package_id: String(pkg.id), customer_email: email, customer_name: customer.name || '', customer_phone: customer.phone || '', velum_member_sub: 'true', velum_fee_pct: '0' };
+      // Stripe procesa la domiciliación directamente en la cuenta del gimnasio.
       const subData: Record<string, unknown> = { metadata: meta };
-      if (feePct > 0) subData.application_fee_percent = Number((feePct * 100).toFixed(4));
 
       const session = await stripeFetch('/checkout/sessions', 'POST', {
         mode: 'subscription',
@@ -129,7 +123,7 @@ Deno.serve(async (req: Request) => {
         customer_email: email,
         status: 'incomplete',
         amount_cents: amountCents,
-        application_fee_pct: feePct,
+        application_fee_pct: 0,
         interval: 'month',
         stripe_account_id: gym.stripe_account_id,
         updated_at: new Date().toISOString(),

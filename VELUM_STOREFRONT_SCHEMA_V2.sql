@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS gym_storefront (
   trial_class_enabled BOOLEAN DEFAULT true,
   free_first_month    BOOLEAN DEFAULT false,
 
-  commission_pct      NUMERIC(5,2) DEFAULT 2.00,
+  commission_pct      NUMERIC(5,2) DEFAULT 0 CHECK (commission_pct = 0),
   commission_cap_mxn  INTEGER DEFAULT 5000,
   trial_period_ends_at TIMESTAMPTZ,
 
@@ -439,43 +439,11 @@ FROM pagos;
 -- 9. FUNCIONES Y TRIGGERS
 -- ============================================================================
 
--- Calcular comisión VELUM (idéntica a v1)
+-- La suscripción mensual incluye los cobros del gimnasio.
 CREATE OR REPLACE FUNCTION calc_velum_commission(p_gym_id UUID, p_gross_amount INTEGER)
 RETURNS INTEGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_pct NUMERIC;
-  v_cap INTEGER;
-  v_trial_ends TIMESTAMPTZ;
-  v_month_total INTEGER;
-  v_commission INTEGER;
-BEGIN
-  SELECT commission_pct, commission_cap_mxn, trial_period_ends_at
-    INTO v_pct, v_cap, v_trial_ends
-  FROM gym_storefront
-  WHERE gym_id = p_gym_id;
-
-  IF v_trial_ends IS NOT NULL AND v_trial_ends > now() THEN
-    RETURN 0;
-  END IF;
-
-  v_commission := FLOOR(p_gross_amount * v_pct / 100);
-
-  SELECT COALESCE(SUM(velum_commission_mxn), 0) INTO v_month_total
-  FROM pagos
-  WHERE gym_id = p_gym_id
-    AND status = 'completed'
-    AND source IN ('storefront', 'recovery', 'qr')
-    AND date_trunc('month', paid_at) = date_trunc('month', now());
-
-  IF v_month_total + v_commission > v_cap THEN
-    v_commission := GREATEST(0, v_cap - v_month_total);
-  END IF;
-
-  RETURN v_commission;
-END;
-$$;
+LANGUAGE sql IMMUTABLE
+AS $$ SELECT 0 $$;
 
 
 -- Snapshot automático del precio del paquete al insertar pago

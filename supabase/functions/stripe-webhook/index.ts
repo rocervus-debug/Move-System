@@ -331,9 +331,6 @@ Deno.serve(async (req: Request) => {
           const { data: dup } = await db.from('pagos').select('id').eq('stripe_session_id', session.id).maybeSingle();
           if (dup) break;
           const amount = (session.amount_total || 0) / 100;
-          const { data: mgGym } = await db.from('gyms').select('subscription_plan').eq('id', mgGymId).maybeSingle();
-          const mgPlan = (mgGym?.subscription_plan || '').toLowerCase();
-          const feePct = (mgPlan === 'max' || mgPlan === 'owner') ? 0 : 0.02;
           const charge = await getSettledCharge(session.payment_intent as string, evAcct);
           // Si el link se generó con un PAQUETE del gym, el pago extiende membresía
           // (vence con stacking + clases) igual que una compra de storefront.
@@ -370,7 +367,7 @@ Deno.serve(async (req: Request) => {
             vence: mlVence, package_id: mlPkgId, is_legacy: !mlPkgId,
             clases_totales: mlClases, clases_usadas: 0,
             applied_price_mxn: Math.round(amount), list_price_mxn: Math.round(amount), source: 'manual_link',
-            ...stripeSettlement(charge, session.amount_total, Math.round(session.amount_total * feePct), !!evAcct),
+            ...stripeSettlement(charge, session.amount_total, charge?.application_fee_amount ?? 0, !!evAcct),
             stripe_session_id: session.id, notas: `Link de pago manual${md.cliente ? ' — ' + md.cliente : ''}`,
           });
           if (mlErr && !isDupErr(mlErr)) console.error('manual_link pago:', mlErr);

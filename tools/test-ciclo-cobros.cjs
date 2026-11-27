@@ -128,6 +128,14 @@ test("El cargo directo separa la comisión de la plataforma y conserva los centa
   assert.equal(fields.velum_commission_mxn, 9);
   assert.equal(stripeSettlement(null, 45000, 900, true).net_to_gym_mxn, null);
 });
+test("Un cobro nuevo de $150 sólo descuenta el costo externo de Stripe", () => {
+  const charge = { balance_transaction: { id: "txn_sin_comision", currency: "mxn", amount: 15000,
+    fee: 974, net: 14026, available_on: 1796169600, fee_details: [{ type: "stripe_fee", amount: 974 }] } };
+  const fields = stripeSettlement(charge, 15000, 0, true);
+  assert.equal(fields.velum_commission_mxn, 0);
+  assert.equal(fields.stripe_fee_mxn, 9.74);
+  assert.equal(fields.net_to_gym_mxn, 140.26);
+});
 test("Un cargo de destino toma el neto del movimiento del gimnasio", async () => {
   const charge = { amount: 45000, currency: "mxn", transfer_data: { destination: "acct_gym" },
     transfer: "tr_qa", application_fee_amount: 900,
