@@ -14838,7 +14838,7 @@ function renderClientes(){
   let clientes = [...nombresSet].map(nombre => {
     // Identidad desde tabla clientes
     const cliRec = _cliPorNombre.get(nombre) || {};
-    const telefono     = cliRec.telefono || '';
+    const telefono     = _nombresDuplicados.has(nombre)?'':cliRec.telefono||'';
     const cumpleanos   = cliRec.cumpleanos || null;
     const cliId        = cliRec.id || null;
     const numeroCliente = cliRec.numero_cliente || null;
@@ -15322,7 +15322,8 @@ function openClientePanel(nombreCliente){
   const cfg  = esCfg[estado];
   const tipo = historial.some(p=>!esPaseDia(p.plan)) ? 'Paquete / Membresía' : (historial.length?'Pase de Día':'Sin membresía');
   // Use clientes table for contact info (more reliable than pagos)
-  const tel = (cliRec.telefono||(ultimo?ultimo.telefono:'')||'').replace(/\D/g,'');
+  const homonimo=clientesDB.filter(c=>(c.nombre||'').trim()===nombreCliente).length>1;
+  const tel = homonimo?'':(cliRec.telefono||(ultimo?ultimo.telefono:'')||'').replace(/\D/g,'');
 
   // Header
   const avatarEl = document.getElementById('cpanel-avatar');
@@ -15388,7 +15389,7 @@ function openClientePanel(nombreCliente){
   // Acciones
   const numWA = tel.length===10?'52'+tel:tel;
   const accs = [];
-  if(clientesDB.filter(c=>(c.nombre||'').trim()===nombreCliente).length>1) accs.push(pvBotonHomonimo());
+  if(homonimo) accs.push(pvBotonHomonimo());
   else if(numWA.length>=12){
     accs.push(`<a href="https://wa.me/${numWA}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Contactar por WhatsApp</a>`);
   }
