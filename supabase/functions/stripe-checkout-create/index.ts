@@ -3,8 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey' };
 const APP_URL = new URL(Deno.env.get('SITE_URL') || 'https://myvelum.app').origin;
-const VELUM_FEE_PCT = 0.02;
-const ZERO_FEE_PLANS = new Set(['max', 'owner']);
 const MEMBER_LIMITS: Record<string, number> = { pro: 60, basic: 60, free: 50 };
 
 function json(body: unknown, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } }); }
@@ -121,10 +119,6 @@ Deno.serve(async (req) => {
     const amountCents = Math.round(Number(pkg.price_mxn) * 100);
     if (amountCents < 1000) return json({ error: 'Monto mínimo $10 MXN.' }, 400);
 
-    const plan = (gym.subscription_plan || '').toLowerCase();
-    const feePct = ZERO_FEE_PLANS.has(plan) ? 0 : VELUM_FEE_PCT;
-    const feeCents = feePct > 0 ? Math.max(1, Math.round(amountCents * feePct)) : 0;
-
     const descriptor = sanitizeDescriptor(gym.nombre);
     const returnTo = safeReturnTo(return_to);
     const successUrl = returnTo
@@ -140,9 +134,8 @@ Deno.serve(async (req) => {
     if (isRecurring) {
       // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
       const subData: Record<string, unknown> = {
-        metadata: { ...sharedMeta, velum_member_sub: 'true', velum_fee_pct: String(feePct) },
+        metadata: { ...sharedMeta, velum_member_sub: 'true', velum_fee_pct: '0' },
       };
-      if (feePct > 0) subData.application_fee_percent = Number((feePct * 100).toFixed(4));
 
       const session = await stripeFetch('/checkout/sessions', 'POST', {
         mode: 'subscription',
@@ -158,7 +151,7 @@ Deno.serve(async (req) => {
 
       await db.from('member_subscriptions').insert({
         gym_id: gym.id, package_id: pkg.id, cliente_nombre: customer.name || null, customer_email: customer.email,
-        status: 'incomplete', amount_cents: amountCents, application_fee_pct: feePct, interval: 'month',
+        status: 'incomplete', amount_cents: amountCents, application_fee_pct: 0, interval: 'month',
         stripe_account_id: gym.stripe_account_id,
       });
 
@@ -168,9 +161,8 @@ Deno.serve(async (req) => {
     // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
     const paymentIntentData: Record<string, unknown> = {
       statement_descriptor: descriptor,
-      metadata: { gym_id: String(gym.id), package_id: String(pkg.id), customer_email: customer.email, customer_name: customer.name || '', velum_platform: 'true', velum_fee_pct: String(feePct) },
+      metadata: { gym_id: String(gym.id), package_id: String(pkg.id), customer_email: customer.email, customer_name: customer.name || '', velum_platform: 'true', velum_fee_pct: '0' },
     };
-    if (feeCents > 0) paymentIntentData.application_fee_amount = feeCents;
 
     const session = await stripeFetch('/checkout/sessions', 'POST', {
       mode: 'payment',
@@ -188,8 +180,8 @@ Deno.serve(async (req) => {
     await db.from('storefront_orders').insert({
       gym_id: gym.id, package_id: pkg.id, stripe_session_id: session.id, stripe_account_id: gym.stripe_account_id,
       customer_email: customer.email, customer_name: customer.name || null, customer_phone: customer.phone || null,
-      amount_cents: amountCents, application_fee_cents: feeCents, currency: 'mxn',
-      status: 'pending', metadata: { visitor_session: visitorSession || null, source: returnTo ? 'atleta_renewal' : 'storefront', fee_pct: feePct, reserva_horario_id: rHorario || null, reserva_fecha: rFecha || null },
+      amount_cents: amountCents, application_fee_cents: 0, currency: 'mxn',
+      status: 'pending', metadata: { visitor_session: visitorSession || null, source: returnTo ? 'atleta_renewal' : 'storefront', fee_pct: 0, reserva_horario_id: rHorario || null, reserva_fecha: rFecha || null },
     });
 
     return json({ ok: true, session_id: session.id, checkout_url: session.url });

@@ -135,17 +135,17 @@ test('La reserva confirmada y la reserva sin resultado tienen mensajes distintos
   assert.match(unresolved.elements['page-sub'].textContent, /Consulta en el portal/);
 });
 
-test('El checkout envía los retornos de Stripe al sitio del entorno', async () => {
+test('El checkout cobra en la cuenta del gimnasio sin comisión VELUM y regresa al sitio del entorno', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../supabase/functions/stripe-checkout-create/index.ts'), 'utf8');
   const catalog = {
     gym_storefront: { gym_id: 1, is_enabled: true },
-    gyms: { id: 1, nombre: 'Gym QA', subscription_plan: 'max', stripe_account_id: 'acct_fixture', stripe_charges_enabled: true },
+    gyms: { id: 1, nombre: 'Gym QA', subscription_plan: null, stripe_account_id: 'acct_fixture', stripe_charges_enabled: true },
     packages: { id: 7, gym_id: 1, name: 'Paquete QA', is_active: true, price_mxn: 450 },
     storefront_listings: { is_public: true }
   };
   for (const site of [undefined, 'https://preview.example.test/']) {
     const origin = site ? new URL(site).origin : 'https://myvelum.app';
-    let handler, form;
+    let handler, form, saved;
     vm.runInNewContext(stripTypeScriptTypes(source.replace(/^import .*;$/gm, '')), {
       Deno: { serve: callback => { handler = callback; }, env: { get: key => key === 'SITE_URL' ? site : 'fixture' } },
       createClient: () => ({
@@ -153,10 +153,11 @@ test('El checkout envía los retornos de Stripe al sitio del entorno', async () 
         from: table => ({
           select() { return this; }, eq() { return this; },
           maybeSingle: async () => ({ data: catalog[table] }),
-          insert: async () => ({ error: null })
+          insert: async row => { saved = row; return { error: null }; }
         })
       }),
       fetch: async (_url, request) => {
+        assert.equal(request.headers['Stripe-Account'], 'acct_fixture');
         form = new URLSearchParams(request.body);
         return Response.json({ id: 'cs_fixture', url: 'https://example.test/checkout' });
       },
@@ -170,6 +171,10 @@ test('El checkout envía los retornos de Stripe al sitio del entorno', async () 
       const result = await handler(new Request('https://example.test', { method: 'POST',
         body: JSON.stringify({ slug: 'gym-qa', package_id: 7, customer: { email: 'qa@example.test' }, return_to: returnTo }) }));
       assert.equal(result.status, 200);
+      assert.equal(form.get('line_items[0][price_data][unit_amount]'), '45000');
+      assert.equal(form.has('payment_intent_data[application_fee_amount]'), false);
+      assert.equal(form.has('subscription_data[application_fee_percent]'), false);
+      assert.equal(billing === 'single' ? saved.application_fee_cents : saved.application_fee_pct, 0);
       assert.equal(form.get('cancel_url'), origin + expectedCancel);
       assert.equal(form.get('success_url'), origin + successPath + 'session_id={CHECKOUT_SESSION_ID}');
     }

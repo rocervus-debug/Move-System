@@ -1,21 +1,4 @@
-// velum-stripe-charge — v16 (propuesta, corrige P0×2 + P1 de la auditoría de cobros):
-//   P0-1  AUTH obligatoria: JWT custom verificado (firma HMAC-SHA256 + exp) y el gym_id
-//         sale de los CLAIMS, nunca del body. Solo admin/superadmin del gym.
-//   P0-2  Fee por plan (igual que stripe-checkout-create): max/owner → 0%, resto → 2%.
-//         Se elimina el 1.5% hardcodeado.
-//   P1    Arquitectura: la sesión de checkout se crea a NIVEL PLATAFORMA con
-//         payment_intent_data[transfer_data][destination] + on_behalf_of (mismo patrón
-//         que stripe-checkout-create), y con metadata source='manual_link' + gym_id +
-//         cliente + descripcion para que la rama existente de stripe-webhook v15
-//         registre el pago en `pagos` automáticamente.
-//   Además: migrado a Deno.serve nativo (sin deno.land/std), monto validado con
-//   Math.round(Number(monto)*100) y mínimo 1000 centavos, expires_at a 30 min.
-//   NOTA: se ELIMINA el modo 'suscripcion' de esta función. Una suscripción manual sin
-//   package_id no es compatible con la rama velum_member_sub del webhook (requiere
-//   package_id) y quedaría sin registrar. Las mensualidades domiciliadas se generan con
-//   velum-member-subscription (action create_link) sobre un paquete recurring.
-// deploy: supabase functions deploy velum-stripe-charge --no-verify-jwt
-
+// Enlaces de cobro directo en la cuenta Stripe del gimnasio. El webhook registra el pago.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
@@ -24,8 +7,6 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
 };
 const APP_URL = 'https://myvelum.app';
-const VELUM_FEE_PCT = 0.02;                       // fee estándar de plataforma
-const ZERO_FEE_PLANS = new Set(['max', 'owner']); // planes sin comisión (igual que stripe-checkout-create)
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -39,7 +20,7 @@ function b64urlToStr(b64url: string): string {
   while (b64.length % 4) b64 += '=';
   return atob(b64);
 }
-function b64urlToBytes(b64url: string): Uint8Array {
+function b64urlToBytes(b64url: string) {
   const s = b64urlToStr(b64url);
   return Uint8Array.from(s, (c) => c.charCodeAt(0));
 }
@@ -151,13 +132,13 @@ Deno.serve(async (req: Request) => {
       desc = String(descripcion).trim();
     }
 
-    // ── Gym: cuenta conectada + plan (para el fee) ───────────────────────────
+    // ── Gym: cuenta conectada ───────────────────────────
     const db = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { data: gym, error: gymErr } = await db
       .from('gyms')
-      .select('id, nombre, stripe_account_id, stripe_charges_enabled, subscription_plan')
+      .select('id, nombre, stripe_account_id, stripe_charges_enabled')
       .eq('id', gymId)
       .maybeSingle();
 
@@ -189,15 +170,10 @@ Deno.serve(async (req: Request) => {
       desc = pkg.name;
     }
 
-    // Fee por plan, idéntico a stripe-checkout-create: max/owner → 0, resto → 2%.
-    const plan = (gym.subscription_plan || '').toLowerCase();
-    const feePct = ZERO_FEE_PLANS.has(plan) ? 0 : VELUM_FEE_PCT;
-    const feeCents = feePct > 0 ? Math.max(1, Math.round(amountCents * feePct)) : 0;
-
     const gymNombre = gym.nombre || 'Gym';
     const descriptor = sanitizeDescriptor(gymNombre);
 
-    // ── Sesión de checkout a NIVEL PLATAFORMA (transfer al gym) ──────────────
+    // ── Sesión de checkout en la cuenta del gimnasio ──────────────
     // metadata.source='manual_link' + gym_id + cliente + descripcion (+ package_id si el
     // cobro es de un paquete) → la rama manual_link de stripe-webhook registra el pago
     // en `pagos`; con paquete además extiende la membresía (vence + clases).
@@ -211,9 +187,8 @@ Deno.serve(async (req: Request) => {
     // Cobro DIRECTO en la cuenta del gym (gym paga su fee de Stripe). Sin transfer_data/on_behalf_of.
     const paymentIntentData: Record<string, unknown> = {
       statement_descriptor: descriptor,
-      metadata: { ...meta, velum_platform: 'true', velum_fee_pct: String(feePct) },
+      metadata: { ...meta, velum_platform: 'true', velum_fee_pct: '0' },
     };
-    if (feeCents > 0) paymentIntentData.application_fee_amount = feeCents;
 
     const sessionBody: Record<string, unknown> = {
       mode: 'payment',
@@ -279,7 +254,7 @@ Deno.serve(async (req: Request) => {
       stripe_url: session.url,
       session_id: session.id,
       expires_at: session.expires_at,
-      fee_pct: feePct,
+      fee_pct: 0,
     });
   } catch (e) {
     console.error('velum-stripe-charge:', e);

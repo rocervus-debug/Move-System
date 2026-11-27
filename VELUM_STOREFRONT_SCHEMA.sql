@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS gym_storefront (
   free_first_month    BOOLEAN DEFAULT false,
 
   -- Comisión VELUM
-  commission_pct      NUMERIC(5,2) DEFAULT 2.00,
+  commission_pct      NUMERIC(5,2) DEFAULT 0 CHECK (commission_pct = 0),
   commission_cap_mxn  INTEGER DEFAULT 5000,
   trial_period_ends_at TIMESTAMPTZ,
 
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS gym_storefront (
 COMMENT ON TABLE gym_storefront IS 'Configuración del storefront público de cada gym (URL pública, branding, comisión)';
 COMMENT ON COLUMN gym_storefront.slug IS 'Slug único para URL: myvelum.app/g/{slug}';
 COMMENT ON COLUMN gym_storefront.mode IS 'public=anyone buys, curated=approval required, private=invite only';
-COMMENT ON COLUMN gym_storefront.commission_pct IS 'Comisión VELUM sobre ventas vía storefront (default 2%)';
+COMMENT ON COLUMN gym_storefront.commission_pct IS 'Comisión VELUM por venta: 0%';
 
 
 -- ============================================================================
@@ -447,46 +447,11 @@ CREATE POLICY "Owners read own payouts" ON commission_payouts
 -- 9. FUNCTIONS
 -- ============================================================================
 
--- Calcular comisión VELUM con cap mensual
+-- La suscripción mensual incluye los cobros del gimnasio.
 CREATE OR REPLACE FUNCTION calc_velum_commission(p_gym_id UUID, p_gross_amount INTEGER)
 RETURNS INTEGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_pct NUMERIC;
-  v_cap INTEGER;
-  v_trial_ends TIMESTAMPTZ;
-  v_month_total INTEGER;
-  v_commission INTEGER;
-BEGIN
-  SELECT commission_pct, commission_cap_mxn, trial_period_ends_at
-    INTO v_pct, v_cap, v_trial_ends
-  FROM gym_storefront
-  WHERE gym_id = p_gym_id;
-
-  -- Si está en trial period, comisión = 0
-  IF v_trial_ends IS NOT NULL AND v_trial_ends > now() THEN
-    RETURN 0;
-  END IF;
-
-  -- Calcular comisión base
-  v_commission := FLOOR(p_gross_amount * v_pct / 100);
-
-  -- Verificar si ya llegó al cap mensual
-  SELECT COALESCE(SUM(velum_commission_mxn), 0) INTO v_month_total
-  FROM storefront_transactions
-  WHERE gym_id = p_gym_id
-    AND status = 'completed'
-    AND date_trunc('month', created_at) = date_trunc('month', now());
-
-  -- Aplicar cap
-  IF v_month_total + v_commission > v_cap THEN
-    v_commission := GREATEST(0, v_cap - v_month_total);
-  END IF;
-
-  RETURN v_commission;
-END;
-$$;
+LANGUAGE sql IMMUTABLE
+AS $$ SELECT 0 $$;
 
 
 -- Auto-marcar carritos como abandonados después de 30 minutos sin completar
