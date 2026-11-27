@@ -126,6 +126,7 @@ footer a{color:var(--text2);text-decoration:none;font-weight:600;}
       <div class="login-menu" id="login-menu">
         <a href="/atleta" onclick="typeof gtag!=='undefined'&&gtag('event','home_login_atleta')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>Soy atleta<span class="lm-sub">Mi membresía, reservas y progreso</span></span></a>
         <a href="https://apps.apple.com/mx/app/velum/id6780286384" id="lm-appstore" style="display:none;" rel="noopener" onclick="typeof gtag!=='undefined'&&gtag('event','home_appstore_click')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></span><span>Descarga la app<span class="lm-sub">VELUM en App Store</span></span></a>
+        <a href="https://play.google.com/store/apps/details?id=app.myvelum.platform" id="lm-googleplay" style="display:none;" rel="noopener" onclick="typeof gtag!=='undefined'&&gtag('event','home_googleplay_click')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></span><span>Descarga la app<span class="lm-sub">VELUM en Google Play</span></span></a>
         <a href="/app" onclick="typeof gtag!=='undefined'&&gtag('event','home_login_negocio')"><span class="lm-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span><span>Tengo un negocio<span class="lm-sub">Panel de administración</span></span></a>
       </div>
     </div>
@@ -186,10 +187,10 @@ document.addEventListener('click', e => {
     document.getElementById('btn-login').setAttribute('aria-expanded', 'false');
   }
 });
-// La app iOS ya es pública; Android sigue en prueba cerrada → el link solo aparece en iPhone/iPad
-if (/iPhone|iPad|iPod/.test(navigator.userAgent)){
-  const el = document.getElementById('lm-appstore');
-  if (el) el.style.display = '';
+if (/Android/i.test(navigator.userAgent)){
+  document.getElementById('lm-googleplay').style.display = '';
+} else if (/iPhone|iPad|iPod/.test(navigator.userAgent)){
+  document.getElementById('lm-appstore').style.display = '';
 }
 
 let _negocios = [];   // [{slug, nombre, ciudad, vertical, foto, logo, color, disciplinas}]
