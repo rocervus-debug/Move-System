@@ -660,7 +660,7 @@ body.theme-lumen .pkg-card, body.theme-lumen .schedule-card, body.theme-lumen .s
       <div class="newsletter-sub">Promos exclusivas, nuevas clases y tips de entrenamiento. Sin spam.</div>
       <form class="newsletter-row" onsubmit="event.preventDefault(); submitNewsletter();">
         <input type="text" id="nl-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
-        <input type="email" id="nl-email" placeholder="tu@email.com" required/>
+        <input type="email" id="nl-email" aria-label="Correo para recibir novedades" autocomplete="email" placeholder="tu@email.com" required/>
         <button type="submit" id="nl-btn">Suscribirme</button>
       </form>
       <div id="nl-msg" style="display:none;font-size:11px;color:var(--accent);margin-top:8px;"></div>
@@ -693,7 +693,7 @@ body.theme-lumen .pkg-card, body.theme-lumen .schedule-card, body.theme-lumen .s
       <div class="ia-msgs" id="iaMsgs"></div>
       <div class="suggest-row" id="iaSuggestions"></div>
       <div class="ia-input-bar">
-        <input type="text" class="ia-input" id="iaInput" placeholder="Pregúntame lo que quieras..." onkeypress="if(event.key==='Enter') iaSend()">
+        <input type="text" class="ia-input" id="iaInput" aria-label="Pregunta para el asistente" placeholder="Pregúntame lo que quieras..." onkeypress="if(event.key==='Enter') iaSend()">
         <button class="ia-send" id="iaSend" onclick="iaSend()">
           <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
         </button>
@@ -727,19 +727,19 @@ body.theme-lumen .pkg-card, body.theme-lumen .schedule-card, body.theme-lumen .s
         <!-- Honeypot anti-bots: oculto a humanos; si llega lleno, el servidor lo descarta -->
         <input type="text" id="lead-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
         <div class="form-field">
-          <label class="form-label">Nombre completo</label>
+          <label class="form-label" for="lead-name">Nombre completo</label>
           <input type="text" id="lead-name" class="form-input" placeholder="Daniel Martínez">
         </div>
         <div class="form-field">
-          <label class="form-label">WhatsApp</label>
+          <label class="form-label" for="lead-phone">WhatsApp</label>
           <input type="tel" id="lead-phone" class="form-input" placeholder="+52 477 123 4567">
         </div>
         <div class="form-field">
-          <label class="form-label">Email (opcional)</label>
+          <label class="form-label" for="lead-email">Email (opcional)</label>
           <input type="email" id="lead-email" class="form-input" placeholder="tu@email.com">
         </div>
         <div class="form-field" id="lead-day-field">
-          <label class="form-label">¿Qué día te queda mejor?</label>
+          <label class="form-label" for="lead-day">¿Qué día te queda mejor?</label>
           <input type="text" id="lead-day" class="form-input" placeholder="Ej: Sábado por la mañana">
         </div>
         <div class="form-field" id="lead-message-field" style="display:none;">
@@ -1065,7 +1065,7 @@ function _sfBuildTabs(data){
   if (ubiEmpty) ubiEmpty.style.display = hasUbicacion ? 'none' : '';
   // Tab inicial: hash válido > Horario > Planes
   const hash = (location.hash || '').replace('#','');
-  const inicial = (visibles[hash] ? hash : null) || (hasSchedule ? 'horario' : 'planes');
+  const inicial = (Object.hasOwn(visibles,hash) && visibles[hash]) ? hash : (visibles.horario ? 'horario' : 'planes');
   sfTab(inicial);
 }
 

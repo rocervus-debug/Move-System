@@ -69,3 +69,45 @@
   #sa-cross-gym td:nth-child(4)::before {content:"Ingresos"}
   #sa-cross-gym td:nth-child(5)::before {content:"Prospectos"}
 }
+
+/* Agenda diaria de recepción y navegación del horario. */
+.hor-controles,.hor-vistas,.hor-dia-fechas,#hor-publico {display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.hor-controles {justify-content:space-between;margin-bottom:1rem}
+.hor-vistas.tabs {margin:0;max-width:100%;overflow:visible}
+.hor-vistas button[hidden] {display:none}
+.hor-vistas button.tab {font-family:inherit;background:transparent;border:0;cursor:pointer}
+.hor-vistas button.tab.active {background:var(--card2);color:var(--text)}
+#v-horario .hor-vistas button,#v-horario button[aria-label^="Mes "],#hor-publico :is(button,a),#hor-tab-dia :is(button,input) {min-height:44px;min-width:44px}
+#hor-publico {font-size:var(--fs-sm);color:var(--text2)}
+.hor-dia-fechas {margin-bottom:1rem}
+.hor-dia-fechas label {font-weight:700}
+.hor-dia-fechas input {width:auto;max-width:100%;font:inherit;padding:0 .65rem;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px}
+#hor-dia-lista {display:grid;gap:.5rem;color:var(--text2)}
+.hor-dia-clase {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.65rem;width:100%;padding:.85rem;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;text-align:left;font:inherit}
+button.hor-dia-clase {cursor:pointer}
+.hor-dia-clase strong {font-variant-numeric:tabular-nums}
+.hor-dia-clase small,.hor-dia-clase b {display:block;overflow-wrap:anywhere}
+.hor-dia-clase small,.hor-dia-cupo {color:var(--text2);font-size:var(--fs-sm)}
+.hor-dia-cupo {max-width:10rem}
+#v-horario :is(button,input,a):focus-visible,.asist-day-pill:focus-visible {outline:2px solid var(--accent);outline-offset:2px}
+.asist-day-pill {font-family:inherit;min-height:44px}
+@media(max-width:480px){
+  .hor-dia-clase {grid-template-columns:auto 1fr}
+  .hor-dia-cupo {grid-column:2;max-width:none}
+  #v-horario .hor-vistas.tabs {white-space:normal;flex-wrap:wrap;width:100%}
+}
+@media(max-width:480px){
+  .hor-dia-fechas {display:grid;grid-template-columns:minmax(0,1fr) auto}
+  .hor-dia-fechas label {grid-column:1/-1}
+  .hor-dia-fechas input {width:100%}
+}
+button.hor-dia-clase {position:relative;padding-right:2rem}
+button.hor-dia-clase::after {content:"›";position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:1.4rem;color:var(--accent)}
+
+.hor-acciones {display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+#hor-accion-clase:empty {display:none}
+#hor-accion-clase #topBtn {min-height:44px}
+@media(max-width:768px){
+  .main:has(#v-horario.active) .topbar-divider {display:none}
+  .main:has(#v-horario.active) #topTitle {white-space:normal;line-height:1.2}
+}

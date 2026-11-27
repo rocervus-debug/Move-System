@@ -60,3 +60,5 @@
 - [x] VELUM Studio nivel 2 (sala IA real) + oficina isométrica + puente orden de trabajo · 01 jul
 
 - 2026-11-27 · Asistencia CORE. Se corrigió el fondo nativo que ocultaba las clases en escritorio y el contraste de hora, cupo y asistentes en modo claro. Verificado con clases disponibles, casi llenas y llenas, detalle y día sin clases, a ambos lados del corte de 768 px.
+
+- 2026-11-27 · Recepción CORE. Agenda diaria móvil y enlace al horario publicado de la sede, reserva de mostrador con origen de plataforma, hitos de primera y centésima clase y análisis de ocupación por franja. La tienda permite revisar la modalidad al guardar o publicar un paquete. Se simplificaron los ajustes públicos y los controles de teclado y móvil. Las dos migraciones se comprobaron en staging y producción. La concurrencia por el último lugar se probó en PostgreSQL con dos conexiones.

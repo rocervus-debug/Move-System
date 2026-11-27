@@ -39,6 +39,8 @@ async function renderInicioHoy(estados){
   clearTimeout(refrescoInicioHoy);
   const el=document.getElementById('core-hoy'), cuerpo=document.getElementById('gym-hoy-body');
   const gym=MOVE_GYM_ID, user=currentUser, token=user?.jwt;
+  const reservar=document.getElementById('core-reservar-lugar');
+  if(reservar) reservar.hidden=!gym || !['admin','staff','recepcion','superadmin'].includes(user?.rol) || roleBlocksView('asistencia');
   el.hidden=_gymVertical!=='gym' || !gym || !user;
   if(document.hidden || el.hidden || !document.getElementById('v-dashboard').classList.contains('active')) return;
   const fecha=_asistFechaSel_offset(0);
