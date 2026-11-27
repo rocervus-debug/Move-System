@@ -515,6 +515,8 @@ body.theme-lumen .pkg-card, body.theme-lumen .schedule-card, body.theme-lumen .s
 }
 .velum-credit{display:inline-flex;align-items:center;gap:5px;vertical-align:middle;font-weight:700;letter-spacing:.06em;}
 </style>
+<link rel="stylesheet" href="/design-system/core-paquetes.css">
+<script src="/core-paquetes.js"></script>
 <script src="/cookie-banner.js" defer></script>
 </head>
 <body>
@@ -1238,11 +1240,8 @@ function renderPackages(packages){
     const esRec = (SF_CFG.pkg_rec != null && String(p.package_id) === String(SF_CFG.pkg_rec)) || (!SF_CFG.pkg_rec && p.is_featured);
     const featured = esRec ? 'featured' : '';
     const badge = esRec ? `<span class="pkg-badge">${escapeHtml(p.badge || 'Recomendado')}</span>` : '';
-    const meta = p.unlimited
-      ? `Ilimitadas · ${p.duration_days} día${p.duration_days===1?'':'s'}`
-      : (p.num_classes
-        ? `${p.num_classes} clase${p.num_classes===1?'':'s'} · ${p.duration_days} día${p.duration_days===1?'':'s'}`
-        : `${p.duration_days} día${p.duration_days===1?'':'s'}`);
+    const precio = CorePaquetes.importe(p);
+    const mensual = CorePaquetes.recurrente(p);
     const featuresHtml = (p.features || []).map(f => `
       <li class="pkg-feature">
         <div class="pkg-feature-check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
@@ -1253,14 +1252,13 @@ function renderPackages(packages){
       <div class="pkg-card ${featured}" data-listing-id="${p.listing_id}">
         ${badge}
         <div class="pkg-name">${escapeHtml(p.name)}</div>
-        ${(p.price_mxn > 0)
-          ? `<div class="pkg-price-row"><span class="pkg-currency">$</span><span class="pkg-price">${p.price_mxn.toLocaleString('es-MX')}</span>${p.recurring ? '<span style="font-size:14px;color:var(--text-3);font-weight:600;margin-left:3px;">/mes</span>' : ''}</div>`
-          : `<div class="pkg-price-row"><span class="pkg-price">Gratis</span></div>`}
-        <div class="pkg-meta">${escapeHtml(meta)}${p.recurring && p.price_mxn > 0 ? ' · cobro mensual automático' : ''}</div>
+        ${CorePaquetes.resumen(p,_sfTerm('clases'))}
         <ul class="pkg-features">${featuresHtml}</ul>
-        ${(p.price_mxn > 0)
-          ? `<button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${p.price_mxn}, '${jsAttr(p.name)}', ${p.recurring?1:0})">${p.recurring ? 'Suscribirme' : 'Comprar ahora'}</button>`
-          : `<button class="pkg-cta" onclick="sfPedirPlanGratis(${p.package_id}, '${jsAttr(p.name)}')">Reservar mi lugar</button>`}
+        ${precio === 0
+          ? `<button class="pkg-cta" onclick="sfPedirPlanGratis(${p.package_id}, '${jsAttr(p.name)}')">Reservar mi lugar</button>`
+          : precio === null || Math.round(precio*100)<1000
+            ? `<button class="pkg-cta" onclick="openLeadModal('info')">Consultar con el gimnasio</button>`
+            : `<button class="pkg-cta" onclick="onPackageClick(${p.listing_id}, ${p.package_id}, ${precio}, '${jsAttr(p.name)}', ${mensual?1:0})">${mensual?'Suscribirme':'Comprar ahora'}</button>`}
       </div>`;
   }).join('');
 }
@@ -1706,6 +1704,7 @@ function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
     sfPedirPlanGratis(packageId, pkgName);
     return;
   }
+  const paquete=(SF_DATA?.packages||[]).find(p=>String(p.listing_id)===String(listingId) && String(p.package_id)===String(packageId));
   // Abrir modal de checkout
   closeCheckoutModal();
   const modal = document.createElement('div');
@@ -1719,7 +1718,7 @@ function onPackageClick(listingId, packageId, priceMxn, pkgName, recurring){
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">${recurring ? 'Suscribirme' : 'Comprar paquete'}</div>
           <div style="font-size:18px;font-weight:700;line-height:1.3;">${escapeHtml(pkgName)}</div>
-          <div style="font-size:13px;color:#A0E5C9;margin-top:6px;font-weight:600;">$${priceMxn.toLocaleString('es-MX')} MXN${recurring ? ' / mes' : ''}</div>
+          ${CorePaquetes.resumen(paquete || {price_mxn:priceMxn,recurring},_sfTerm('clases'))}
         </div>
         <button onclick="closeCheckoutModal()" aria-label="Cerrar" title="Cerrar" style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">×</button>
       </div>
@@ -1771,6 +1770,7 @@ async function submitCheckout(packageId){
   if (!name || !email) { errEl.textContent = 'Nombre y email son obligatorios.'; return; }
   if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) { errEl.textContent = 'Email inválido.'; return; }
   errEl.textContent = '';
+  const submitLabel=btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Procesando…';
 
@@ -1799,7 +1799,7 @@ async function submitCheckout(packageId){
     const data = await res.json();
     if (!res.ok || !data.checkout_url) {
       errEl.textContent = data.error || 'No se pudo iniciar el pago.';
-      btn.disabled = false; btn.textContent = 'Continuar al pago seguro →';
+      btn.disabled = false; btn.textContent = submitLabel;
       return;
     }
     // Redirigir a Stripe Checkout
@@ -1807,7 +1807,7 @@ async function submitCheckout(packageId){
   } catch (e) {
     console.error('submitCheckout:', e);
     errEl.textContent = 'Error de conexión. Intenta de nuevo.';
-    btn.disabled = false; btn.textContent = 'Continuar al pago seguro →';
+    btn.disabled = false; btn.textContent = submitLabel;
   }
 }
 
