@@ -124,15 +124,15 @@
     style.id = 'velum-cookie-banner-styles';
     style.textContent =
       '#velum-cookie-banner{position:fixed;left:0;right:0;bottom:0;z-index:99999;' +
-      'background:rgba(8,18,30,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' +
-      'border-top:1px solid rgba(0,212,255,.25);color:#e8edf5;' +
+      'background:rgba(53,58,60,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' +
+      'border-top:1px solid rgba(93,202,165,.25);color:#F3F4F1;' +
       'transform:translateY(110%);transition:transform .32s cubic-bezier(.4,0,.2,1);' +
       "font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5;}" +
       '#velum-cookie-banner.vcb-visible{transform:translateY(0);}' +
       '.vcb-inner{max-width:1200px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}' +
       '.vcb-text{flex:1;min-width:280px;color:#c9d3e2;}' +
       '.vcb-text strong{color:#fff;}' +
-      '.vcb-text a{color:#66E8FF;text-decoration:underline;text-underline-offset:2px;}' +
+      '.vcb-text a{color:#A0E5C9;text-decoration:underline;text-underline-offset:2px;}' +
       '.vcb-actions{display:flex;gap:10px;flex-wrap:wrap;}' +
       '.vcb-btn{font:inherit;font-size:13px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;border:none;' +
       'transition:transform .15s ease, opacity .15s ease;letter-spacing:.2px;}' +
@@ -140,8 +140,8 @@
       '.vcb-btn:active{transform:translateY(0);}' +
       '.vcb-btn-secondary{background:rgba(255,255,255,.07);color:#c9d3e2;border:1px solid rgba(255,255,255,.12);}' +
       '.vcb-btn-secondary:hover{background:rgba(255,255,255,.12);}' +
-      '.vcb-btn-primary{background:linear-gradient(135deg,#00D4FF,#0099CC);color:#04101a;}' +
-      '.vcb-btn-primary:hover{box-shadow:0 6px 20px rgba(0,212,255,.4);}' +
+      '.vcb-btn-primary{background:linear-gradient(135deg,#5DCAA5,#5DCAA5);color:#152A23;}' +
+      '.vcb-btn-primary:hover{box-shadow:0 6px 20px rgba(93,202,165,.4);}' +
       '@media (max-width:560px){' +
       '  .vcb-inner{padding:14px 16px;gap:14px;}' +
       '  .vcb-text{font-size:13px;}' +
