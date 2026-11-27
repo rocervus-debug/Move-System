@@ -3514,6 +3514,8 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 #core-acceso-dialog input,#core-acceso-dialog select{padding:10px;background:var(--card2,#142e27);color:inherit;border:1px solid var(--border);border-radius:6px}
 #core-acceso-dialog .core-tabla{max-height:45vh;overflow:auto;margin:12px 0}#core-acceso-dialog th,#core-acceso-dialog td{padding:6px;text-align:left;vertical-align:top}
 </style>
+<link rel="stylesheet" href="/design-system/core-cobros.css">
+<script defer src="/core-cobros.js"></script>
 <script defer src="/core-acceso.js"></script>
 </head>
 <body>
@@ -3812,7 +3814,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
     <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Asistencia
   </button>
-  <button class="mbn-item" id="mbn-cobrar" onclick="openModal('pago')">
+  <button class="mbn-item" id="mbn-cobrar" onclick="CoreCobros.mobileCharge()">
     <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
     Cobrar
   </button>
@@ -4524,13 +4526,7 @@ body:not(.light-mode) #dash-widgets-grid > *:not([data-widget-id="cumple"]){ dis
 
     <!-- ══ PAGOS ══ -->
     <div class="view" id="v-domiciliados">
-      <div id="domi-root" style="max-width:1080px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-          <div style="font-size:var(--fs-sm);color:var(--text3);line-height:1.5;max-width:560px;">Todo lo que cobras en línea con VELUM — storefront, app, domiciliación y links de pago — y <strong style="color:var(--text2);">los depósitos semanales a tu banco</strong>.</div>
-          <button class="btn btn-primary btn-sm" onclick="domiIrADomiciliar()" style="white-space:nowrap;">+ Domiciliar atleta</button>
-        </div>
-        <div id="domi-body"><div class="card" style="text-align:center;color:var(--text3);padding:30px;">Cargando cobros…</div></div>
-      </div>
+      <section id="domi-body" class="vc-pay" aria-label="Cobros"></section>
     </div>
     <div class="view" id="v-pagos">
       <!-- Navegador de mes -->
@@ -9568,6 +9564,7 @@ function initRealtimeSubscriptions(){
 }
 
 function doLogout(){
+  window.CoreCobros?.reset();
   ++intentoAcceso;
   clearSession();
   currentUser = null;
@@ -12337,7 +12334,10 @@ function openModal(id){
     if(typeof wizInit==='function') wizInit('solicitud');
   }
 }
-function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
+function closeModal(id){
+  document.getElementById('modal-'+id).classList.remove('open');
+  if(id==='paquete') window.CoreCobros?.resume();
+}
 
 // ══════════════════════════════════════════════════════════════════
 // AUTOCOMPLETE CUSTOM — #p-cliente en modal de pago
@@ -14963,8 +14963,8 @@ function renderClientes(){
                 border:1px solid rgba(139,92,246,.22);cursor:pointer;flex-shrink:0;transition:background .15s;"
          onmouseenter="this.style.background='rgba(139,92,246,.18)'" onmouseleave="this.style.background='rgba(139,92,246,.08)'"></button>` : '';
     // Botón "Cobrar" — abre el wizard Cobrar con link con este cliente preseleccionado
-    const cobrarBtn = _cliStripeId
-      ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openCobrarLink('${esc(c.nombre)}')"
+    const cobrarBtn = _cliStripeId && CoreCobros.canCreate()
+      ? `<button class="btn btn-outline btn-sm" data-cliente="${esc(c.nombre).replace(/"/g,'&quot;')}" onclick="event.stopPropagation();openCobrarLink(this.dataset.cliente)"
            title="Cobrar con link de pago (Stripe)"
            style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;
                   background:color-mix(in srgb, var(--accent) 8%, transparent);color:var(--accent);
@@ -16925,20 +16925,20 @@ function _domiBadge(txt,color){
   return `<span style="font-size:var(--fs-sm);font-weight:700;color:${color};background:color-mix(in srgb,${color} 14%,transparent);padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;">${txt}</span>`;
 }
 function _domiSubRow(s){
-  const monto = s.amount_cents ? _domiMoneyFmt(s.amount_cents/100)+'/mes' : '';
+  const monto = s.amount_cents ? _pvMoney2(s.amount_cents/100)+'/mes' : '';
   const plan  = (s.packages&&s.packages.name)?s.packages.name:'Plan domiciliado';
   const next  = _domiFecha(s.current_period_end);
   const ini   = (s.cliente_nombre||'S').trim().split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase()||'S';
   let badge, sub, brd='var(--border)';
   if(s.cancel_at_period_end){ badge=_domiBadge('Cancela al final del periodo','var(--warn)'); sub='conserva acceso hasta '+next; }
   else if(s.status==='active'){    badge=_domiBadge('Al corriente','var(--ok)');     sub='próx. cobro '+next; }
-  else if(s.status==='past_due'){  badge=_domiBadge('Cobro falló','var(--danger)');  sub='tarjeta rechazada · reintentando'; brd='color-mix(in srgb,var(--danger) 28%,transparent)'; }
+  else if(s.status==='past_due'){  badge=_domiBadge('Cobro falló','var(--danger)');  sub='revisa el estado con tu cliente'; brd='color-mix(in srgb,var(--danger) 28%,transparent)'; }
   else if(s.status==='trialing'){  badge=_domiBadge('Prueba','var(--accent)');       sub='inicia cobro '+next; }
   else {                            badge=_domiBadge('Por activar','var(--text3)');    sub='falta completar el registro de tarjeta'; }
   // Acciones por fila: cancelar (active/past_due) o reactivar (ya marcada para cancelar).
   // El sub id de Stripe (sub_...) es seguro para interpolar en el onclick.
   let accion='';
-  if(s.stripe_subscription_id){
+  if(CoreCobros.canCreate() && /^sub_[A-Za-z0-9]+$/.test(s.stripe_subscription_id||'')){
     if(s.cancel_at_period_end){
       accion=`<button class="btn btn-outline btn-sm" onclick="domiReactivarSub('${s.stripe_subscription_id}')" style="font-size:var(--fs-sm);flex-shrink:0;">Reactivar</button>`;
     } else if(s.status==='active'||s.status==='past_due'){
@@ -16997,12 +16997,7 @@ function _domiEmpty(){
     <button class="btn btn-primary btn-sm" onclick="domiIrADomiciliar()">+ Domiciliar un atleta</button>
   </div>`;
 }
-function domiIrADomiciliar(){
-  const el=document.getElementById('nav-paquetes'); if(el) go('paquetes',el);
-  setTimeout(()=>{ try{ const f=document.getElementById('domi-form');
-    if(typeof toggleDomiForm==='function' && f && f.style.display==='none') toggleDomiForm();
-    document.getElementById('domiciliaciones-wrap')?.scrollIntoView({behavior:'smooth',block:'center'}); }catch(_){}}, 280);
-}
+function domiIrADomiciliar(){ return CoreCobros.create('',true); }
 // gym_id REAL de la sesión (leído del JWT firmado). NO cambia cuando el superadmin
 // "cambia de contexto" a otro gym — por eso sirve para detectar impersonación.
 function _jwtGymId(){
@@ -17301,90 +17296,7 @@ function _pvAgendaHTML(items){
   </div>`;
 }
 
-async function renderDomiciliados(){
-  // "Panel VELUM" (Cobros VELUM): héroe de saldo/depósitos + canales del mes + subsección Domiciliación
-  const host=document.getElementById('domi-body'); if(!host) return;
-  const gymId=(typeof MOVE_GYM_ID!=='undefined'&&MOVE_GYM_ID)?MOVE_GYM_ID:((currentUser&&currentUser.gym_id)||1);
-  let subs=[];
-  const subsQ = window.supabaseClient
-    .from('member_subscriptions')
-    .select('id, cliente_nombre, status, current_period_end, cancel_at_period_end, amount_cents, stripe_subscription_id, packages(name)')
-    .eq('gym_id', gymId)
-    .in('status',['active','past_due','incomplete','trialing'])
-    .order('current_period_end',{ascending:true});
-  // Las 3 fuentes en paralelo: suscripciones, pagos en línea del mes y saldo Stripe
-  const [subsRes, pagosMes, stripe, depos] = await Promise.all([
-    subsQ.then(r=>r).catch(e=>({error:e})),
-    _pvPagosMes(),
-    _pvStripeData(),
-    _pvDepositos()
-  ]);
-  try{
-    if(subsRes && subsRes.error) throw subsRes.error;
-    subs=((subsRes&&subsRes.data)||[]).filter(s=>s.stripe_subscription_id);
-  }catch(e){ console.error('renderDomiciliados subs', e); if(typeof _handleSessionError==='function')_handleSessionError(e); }
-
-  // ── Héroe: cobrado del mes (todos los canales en línea) ──
-  const cobradoMesTotal = pagosMes.reduce((a,p)=>a+(+p.monto||0),0);
-
-  // ── Desglose por canal del mes ──
-  const canales={ storefront:{label:'Storefront',monto:0,n:0}, app:{label:'App',monto:0,n:0},
-                  domiciliacion:{label:'Domiciliación',monto:0,n:0}, links:{label:'Links de pago',monto:0,n:0} };
-  pagosMes.forEach(p=>{ const c=canales[_pvCanal(p)]; c.monto+=(+p.monto||0); c.n++; });
-  const maxCanal = Math.max(...Object.values(canales).map(c=>c.monto));
-
-  // ── Depósitos (payouts) de Stripe ──
-  const payouts = (stripe && stripe.connected && Array.isArray(stripe.payouts)) ? stripe.payouts : [];
-
-  // ── Subsección Domiciliación (funcionalidad previa, se conserva) ──
-  const allPagos=(typeof pagos!=='undefined'&&Array.isArray(pagos))?pagos:[];
-  const cobros=allPagos.filter(p=>{ const src=(p.source||'').toLowerCase(); const m=(p.metodo||'').toLowerCase(); const n=(p.notas||'').toLowerCase();
-    // pago de domiciliación real (webhook): source='domiciliacion', metodo 'Stripe (Domiciliación)'.
-    return src==='domiciliacion' || m.indexOf('domiciliaci')>=0 || n.indexOf('[stripe-sub]')>=0; })
-    .sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));
-
-  const mrr        = subs.filter(s=>s.status==='active').reduce((a,s)=>a+((s.amount_cents||0)/100),0);
-  const activos    = subs.filter(s=>s.status==='active').length;
-  const enProceso  = subs.filter(s=>s.status==='past_due').reduce((a,s)=>a+((s.amount_cents||0)/100),0);
-  const enProcesoN = subs.filter(s=>s.status==='past_due').length;
-  const mes        = new Date().toISOString().slice(0,7);
-  const cobradoMes = cobros.filter(p=>String(p.fecha||'').slice(0,7)===mes).reduce((a,p)=>a+(+p.monto||0),0);
-  const cobradoMesN= cobros.filter(p=>String(p.fecha||'').slice(0,7)===mes).length;
-
-  host.innerHTML = `
-    ${_pvHero(cobradoMesTotal, pagosMes.length, stripe)}
-    ${ (stripe && stripe.connected) ? _pvNotaDepositos() : '<div style="margin-bottom:18px;"></div>' }
-    ${_pvAgendaHTML(depos)}
-    <div class="card" style="margin-bottom:14px;">
-      <div class="rc-card-title" style="margin-bottom:2px;">Cobros del mes por canal</div>
-      <div class="card-sub" style="color:var(--text3);margin-bottom:10px;">Storefront público, app del atleta, domiciliación y links de pago · montos brutos (antes de comisión)</div>
-      ${ pagosMes.length
-        ? Object.values(canales).map(c=>_pvCanalRow(c.label, c.monto, c.n, maxCanal)).join('')
-        : `<div style="font-size:var(--fs-xs);color:var(--text3);padding:4px 0;">Aún no hay cobros en línea este mes. Publica tus paquetes en el storefront o genera un link de pago para empezar.</div>` }
-    </div>
-    ${ (stripe && stripe.connected) ? `<div class="card" style="margin-bottom:14px;">
-        <div class="rc-card-title" style="margin-bottom:2px;">Depósitos</div>
-        <div class="card-sub" style="color:var(--text3);margin-bottom:8px;">Lo que Stripe manda a tu banco, del más reciente al más antiguo</div>
-        ${ payouts.length ? payouts.map(_pvPayoutRow).join('')
-          : `<div style="font-size:var(--fs-xs);color:var(--text3);padding:4px 0;">Todavía no hay depósitos. En cuanto cobres, el dinero sale a tu banco el viernes siguiente.</div>` }
-      </div>` : '' }
-    <div class="rc-card-title" style="margin:4px 0 10px;">Domiciliación</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
-      ${_domiMetric('Ingreso mensual', _domiMoneyFmt(mrr), `${activos} atleta${activos===1?'':'s'} activo${activos===1?'':'s'} · /mes`, 'var(--accent)')}
-      ${_domiMetric('Cobrado este mes', _domiMoneyFmt(cobradoMes), `${cobradoMesN} cobro${cobradoMesN===1?'':'s'} exitoso${cobradoMesN===1?'':'s'}`, 'var(--ok)')}
-      ${_domiMetric('En proceso', _domiMoneyFmt(enProceso), enProcesoN?`${enProcesoN} reintentando`:'sin pendientes', 'var(--warn)')}
-    </div>
-    ${ subs.length ? `<div class="card">
-        <div class="rc-card-title" style="margin-bottom:2px;">Próximos cobros</div>
-        <div class="card-sub" style="color:var(--text3);margin-bottom:12px;">Ordenado por fecha de cobro</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">${subs.map(_domiSubRow).join('')}</div>
-      </div>` : _domiEmpty() }
-    ${ cobros.length ? `<div class="card" style="margin-top:14px;">
-        <div class="rc-card-title" style="margin-bottom:10px;">Cobros recientes</div>
-        <div>${cobros.slice(0,8).map(_domiCobroRow).join('')}</div>
-      </div>` : '' }
-  `;
-}
+function renderDomiciliados(){ return CoreCobros.render(); }
 
 async function loadMemberSubs(){
   const el = document.getElementById('domiciliaciones-lista');
@@ -20166,6 +20078,7 @@ async function saContextSwitch(gymId){
       currentUser.jwt = _impD.token;
     }
     if(typeof initAuthClient==='function') initAuthClient(currentUser.jwt);
+    window.CoreCobros?.reset();
     MOVE_GYM_ID = gymId;
     if(currentUser) currentUser.gym_id = gymId;
 
@@ -29716,7 +29629,7 @@ function _cblCliente(nombre){
 function _syncCobrarUI(){
   const on = !!(typeof gymConfig!=='undefined' && gymConfig && gymConfig.stripe_account_id);
   const qa = document.getElementById('qa-cobrar-btn');
-  if(qa) qa.style.display = on ? 'inline-flex' : 'none';
+  if(qa) qa.style.display = on && window.CoreCobros?.canCreate() ? 'inline-flex' : 'none';
 }
 
 // ── Modo del paso 2: 'paquete' (liga el cobro a un paquete) o 'libre' (cobro suelto) ──
@@ -29770,27 +29683,7 @@ function _cblFillPaquetes(){
 }
 
 // Punto de entrada del wizard. `nombre` opcional = cliente preseleccionado.
-function openCobrarLink(nombre=''){
-  // Datalist con los clientes ya cargados (mismo patrón que el wizard de cita)
-  const dl = document.getElementById('cbl-cliente-list');
-  if(dl && typeof clientesDB!=='undefined'){
-    dl.innerHTML = clientesDB.slice(0,500).map(c=>`<option value="${esc(c.nombre||'')}"></option>`).join('');
-  }
-  // Reset completo de campos y estado
-  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v; };
-  set('cbl-cliente', nombre||''); set('cbl-monto',''); set('cbl-concepto',''); set('cbl-email',''); set('cbl-link-url','');
-  ['cbl-cliente','cbl-paquete','cbl-monto','cbl-concepto','cbl-email'].forEach(f=>wzdFieldErr(f,''));
-  const err=document.getElementById('cbl-err'); if(err){ err.textContent=''; err.style.display='none'; }
-  const res=document.getElementById('cbl-result'); if(res) res.style.display='none';
-  const btn=document.getElementById('cbl-btn'); if(btn){ btn.disabled=false; btn.textContent='Generar link'; }
-  _cblFillPaquetes(); // default: modo paquete si el gym tiene paquetes de pago único
-  // La cache de paquetes se carga lazy (vista Paquetes) — si está vacía, cargarla y rellenar
-  if(!_cblPkgsUnicos().length && typeof loadPackagesFromCatalog==='function'){
-    loadPackagesFromCatalog().then(()=>_cblFillPaquetes()).catch(()=>{});
-  }
-  openModal('cobrar-link');
-  if(typeof wizInit==='function') wizInit('cobrar-link');
-}
+function openCobrarLink(nombre=''){ return CoreCobros.create(nombre); }
 
 wizRegister('cobrar-link', {
   labels: {1:'Cliente', 2:'Cobro', 3:'Generar y enviar'},
